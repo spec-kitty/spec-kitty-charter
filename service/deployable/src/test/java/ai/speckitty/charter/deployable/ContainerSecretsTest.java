@@ -88,7 +88,6 @@ class ContainerSecretsTest {
                 .orElseThrow();
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/info");
         request.setServerName("localhost");
-        request.addHeader("Host", "localhost");
         request.addHeader("Authorization", "Bearer " + token);
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();

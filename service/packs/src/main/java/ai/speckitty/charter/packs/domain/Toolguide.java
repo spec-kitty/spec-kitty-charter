@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -17,8 +18,8 @@ import org.jspecify.annotations.Nullable;
  * {@link ToolguideIdentifier}. Two toolguides are equal when they have the same identity, whatever their other fields
  * hold; the fidelity of a round trip is asserted on the storage representation, not here.
  *
- * <p>A toolguide carries no relationship fields: its relationships are authored in the pack's graph documents
- * (ADR-0064), and a link in its guide's prose is text. List order and duplicates are significant. Build one with
+ * <p>A toolguide mints no relationships: its {@code references} are bare citation strings, not typed edges
+ * (data-model), and a link in its guide's prose is text. List order and duplicates are significant. Build one with
  * {@link #builder()}.
  *
  * <p>Its {@link Guide} (#194) is stored as a Markdown companion beside the toolguide's file, at {@code guidePath}, which
@@ -55,6 +56,7 @@ public final class Toolguide implements CharterArtifact {
     private final List<String> commands;
     private final List<String> appliesToLanguages;
     private final Optional<String> lastUpdated;
+    private final List<String> references;
 
     /**
      * Reconstructs a toolguide from its parts; reachable only inside the domain package.
@@ -70,6 +72,7 @@ public final class Toolguide implements CharterArtifact {
      * @param commands the commands, in authored order
      * @param appliesToLanguages the languages it applies to, in authored order
      * @param lastUpdated the last-updated text, possibly empty
+     * @param references the bare citation strings, in authored order with duplicates kept
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Toolguide(
@@ -83,7 +86,8 @@ public final class Toolguide implements CharterArtifact {
             Guide guide,
             List<String> commands,
             List<String> appliesToLanguages,
-            Optional<String> lastUpdated) {
+            Optional<String> lastUpdated,
+            List<String> references) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -95,6 +99,7 @@ public final class Toolguide implements CharterArtifact {
         this.commands = List.copyOf(commands);
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
         this.lastUpdated = Objects.requireNonNull(lastUpdated, "lastUpdated");
+        this.references = List.copyOf(references);
         RULES.guard(this);
     }
 
@@ -144,6 +149,12 @@ public final class Toolguide implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return Optional.of(summary);
+    }
+
+    /** A toolguide mints no relationships: its references are bare citation strings, not typed edges. */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
     }
 
     /**
@@ -228,6 +239,15 @@ public final class Toolguide implements CharterArtifact {
         return lastUpdated;
     }
 
+    /**
+     * The bare citation strings, in authored order with duplicates kept.
+     *
+     * @return an immutable list
+     */
+    public List<String> references() {
+        return references;
+    }
+
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -257,6 +277,7 @@ public final class Toolguide implements CharterArtifact {
         private final List<String> commands = new ArrayList<>();
         private final List<String> appliesToLanguages = new ArrayList<>();
         private Optional<String> lastUpdated = Optional.empty();
+        private final List<String> references = new ArrayList<>();
 
         private Builder() {}
 
@@ -383,6 +404,17 @@ public final class Toolguide implements CharterArtifact {
         }
 
         /**
+         * Appends a bare citation reference.
+         *
+         * @param value the citation
+         * @return this builder
+         */
+        public Builder reference(String value) {
+            this.references.add(value);
+            return this;
+        }
+
+        /**
          * Builds the toolguide.
          *
          * @return the validated toolguide
@@ -403,7 +435,8 @@ public final class Toolguide implements CharterArtifact {
                     Objects.requireNonNull(guide, "guide"),
                     commands,
                     appliesToLanguages,
-                    lastUpdated);
+                    lastUpdated,
+                    references);
         }
     }
 }

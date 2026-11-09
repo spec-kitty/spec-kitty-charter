@@ -43,8 +43,7 @@ class PackRoundTripTest {
             Optional.of("drg/fragment.yaml"),
             Optional.empty(),
             List.of(),
-            List.of(),
-            Optional.empty());
+            List.of());
 
     private static final TacticDso ALPHA = new TacticDso(
             ALPHA_ID,
@@ -54,20 +53,27 @@ class PackRoundTripTest {
                     new TacticDso.Step(
                             "First step",
                             Optional.of("Do the first thing."),
-                            List.of("first example", "second example")),
-                    new TacticDso.Step("Second step", Optional.empty(), List.of())),
+                            List.of("first example", "second example"),
+                            List.of(new TacticDso.Reference(
+                                    "Nested reference", "directive", "nested-directive", "during the first step"))),
+                    new TacticDso.Step("Second step", Optional.empty(), List.of(), List.of())),
             Optional.of("Prove that every field survives."),
             Optional.empty(),
             List.of("drifts silently", "drops a field"),
-            List.of());
+            List.of(),
+            List.of(
+                    new TacticDso.Reference("Gamma", "tactic", "gamma-tactic", "always"),
+                    new TacticDso.Reference("Delta", "styleguide", "delta-style", "when styling"),
+                    new TacticDso.Reference("Gamma again", "tactic", "gamma-tactic", "on a second look")));
 
     private static final TacticDso BETA = new TacticDso(
             BETA_ID,
             "1.0",
             "Beta tactic",
-            List.of(new TacticDso.Step("Only step", Optional.empty(), List.of())),
+            List.of(new TacticDso.Step("Only step", Optional.empty(), List.of(), List.of())),
             Optional.empty(),
             Optional.empty(),
+            List.of(),
             List.of(),
             List.of());
 
@@ -122,13 +128,17 @@ class PackRoundTripTest {
         assertThat(tactics(read)).containsExactly(ALPHA, BETA);
     }
 
-    /** The oracle bites: dropping one nested example from the literal makes it differ from what was read. */
+    /** The oracle bites: dropping one nested reference from the literal makes it differ from what was read. */
     @Test
-    void theLiteralOracleDistinguishesADroppedNestedExample(@TempDir Path host) throws IOException {
+    void theLiteralOracleDistinguishesADroppedNestedReference(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
         TacticDso readAlpha = tactic(storeOver(host).read(PACK), ALPHA_ID);
         List<TacticDso.Step> withoutNested = List.of(
-                new TacticDso.Step("First step", Optional.of("Do the first thing."), List.of("first example")),
+                new TacticDso.Step(
+                        "First step",
+                        Optional.of("Do the first thing."),
+                        List.of("first example", "second example"),
+                        List.of()),
                 readAlpha.steps().get(1));
         TacticDso droppedField = new TacticDso(
                 readAlpha.id(),
@@ -138,7 +148,8 @@ class PackRoundTripTest {
                 readAlpha.purpose(),
                 readAlpha.notes(),
                 readAlpha.failureModes(),
-                readAlpha.appliesToLanguages());
+                readAlpha.appliesToLanguages(),
+                readAlpha.references());
 
         assertThat(droppedField).isNotEqualTo(readAlpha);
         assertThat(readAlpha).isEqualTo(ALPHA);
@@ -158,9 +169,10 @@ class PackRoundTripTest {
         // active_charter and pack_drg would be deleted by a from-scratch writer that did not model them.
         assertThat(refetched.descriptor().activeCharter()).contains("org-charter.yaml");
         assertThat(refetched.descriptor().packDrg()).contains("drg/fragment.yaml");
-        // The order of a step's examples.
-        assertThat(tactic(refetched, ALPHA_ID).steps().get(0).examples())
-                .containsExactly("first example", "second example");
+        // The repeated reference id and the reference order of the alpha tactic.
+        assertThat(tactic(refetched, ALPHA_ID).references())
+                .extracting(TacticDso.Reference::name)
+                .containsExactly("Gamma", "Delta", "Gamma again");
         // Present optionals stay present, absent ones stay absent.
         assertThat(tactic(refetched, ALPHA_ID).purpose()).contains("Prove that every field survives.");
         assertThat(tactic(refetched, ALPHA_ID).notes()).isEmpty();
@@ -181,7 +193,8 @@ class PackRoundTripTest {
                 alpha.purpose(),
                 alpha.notes(),
                 alpha.failureModes(),
-                alpha.appliesToLanguages());
+                alpha.appliesToLanguages(),
+                alpha.references());
         FilesystemPackStore.PackRead withMutation = withTactics(
                 original.descriptor(),
                 tactics(original).stream()
@@ -214,8 +227,7 @@ class PackRoundTripTest {
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
-                d.overrides(),
-                d.schemaVersion());
+                d.overrides());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));
@@ -242,8 +254,7 @@ class PackRoundTripTest {
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
-                List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")),
-                d.schemaVersion());
+                List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")));
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(settling, List.of(), List.of()), host.resolve("fresh"));

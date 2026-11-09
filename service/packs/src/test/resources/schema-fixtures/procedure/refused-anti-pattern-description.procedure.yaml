@@ -16,6 +16,11 @@ anti_patterns:
   description: Work lands only after review.
   bad_example: git push --force
   good_example: spec-kitty merge
+references:
+- type: tactic
+  id: review-first
+  when: Before landing.
+  reason: Reviews catch defects.
 notes: A note.
 applies_to_languages:
 - java

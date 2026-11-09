@@ -4,8 +4,8 @@ get:
   description: >-
     The packs the service is configured with (ADR-0020 D1), each with its id, its descriptor pack_id, the
     level storage serves it at, the name and the version its pack.yaml gives, the dependencies it
-    resolved (dependsOn) and the link to its artifacts. The order is the merge order: dependencies and
-    parent_pack parents before the packs that need them, each level contiguous (built-in, then org, then project), and the
+    resolved (dependsOn) and the link to its artifacts. The order is the merge order: dependencies
+    before the packs that need them, each level contiguous (built-in, then org, then project), and the
     packs no dependency relates in configured-level, then pack-id code-point order, so Zeta comes
     before alpha. The level is the one storage serves the pack at:
     the pack_level its pack.yaml declares, org when it declares no valid one (ADR-0038); the offering
@@ -17,13 +17,13 @@ get:
     answer with a 500 pack_unreadable, because the offering names and composes every configured pack whole (the
     pack-scoped reads judge only the artifact they name); inputs that change while it is read refuse it with
     stale_input, which may be retried. A compose the resolver cannot serve is refused whole with a 500 as
-    well, because the configured packs are broken, not the request: pack_dependency_cycle (depends_on and parent_pack edges both count),
+    well, because the configured packs are broken, not the request: pack_dependency_cycle,
     pack_dependency_unknown, pack_dependency_out_of_range (also two ranges on one pack that share no
     version; a range or a pack_version that is no PEP 440 value is pack_unreadable, above), pack_parent_unresolved, pack_level_violation
     (a dependency or a parent further from built-in than the pack), pack_name_conflict, pack_duplicate_id,
     pack_sibling_conflict (two packs of one level that change or define one artifact with no
-    overrides edge settling it, or that hold one preset id with no parent_pack line between them), pack_reference_unqualified, pack_reference_pack_missing and pack_reference_artifact_missing (a
-    qualified reference to a pack of the closure that does not hold the artifact, or a preset item or policy lock naming a held artifact only by case). Each names the
+    overrides edge settling it), pack_reference_unqualified, pack_reference_pack_missing and pack_reference_artifact_missing (a
+    qualified reference to a pack of the closure that does not hold the artifact). Each names the
     violating pack in detail and in the packs member of the body, with the pack_id and name of every pack it
     names. Like every operation it needs the worktree token.
   tags:

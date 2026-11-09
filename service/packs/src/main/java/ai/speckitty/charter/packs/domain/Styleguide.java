@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.ConfigValue;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -17,9 +18,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A styleguide of a {@link Pack}: conventions for the shape of a work product, identified by its
- * {@link StyleguideIdentifier}. Two styleguides are equal when they have the same identity. It has no description and
- * carries no relationship fields: its relationships are authored in the pack's graph documents (ADR-0064). Build one
- * with {@link #builder()}.
+ * {@link StyleguideIdentifier}. Two styleguides are equal when they have the same identity. Its {@code references} are
+ * bare citation strings carried in the body: a styleguide mints no relationships and has no description. Build one with
+ * {@link #builder()}.
  */
 public final class Styleguide implements CharterArtifact {
 
@@ -47,6 +48,7 @@ public final class Styleguide implements CharterArtifact {
     private final Optional<String> qualityTest;
     private final Optional<ConfigValue> structuralLintConfig;
     private final List<String> appliesToLanguages;
+    private final List<String> references;
 
     /**
      * Reconstructs a styleguide from its parts; reachable only inside the domain package.
@@ -63,6 +65,7 @@ public final class Styleguide implements CharterArtifact {
      * @param qualityTest the quality test, when stated
      * @param structuralLintConfig the structural lint config tree, when stated
      * @param appliesToLanguages the applicable languages
+     * @param references the bare citation strings
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Styleguide(
@@ -77,7 +80,8 @@ public final class Styleguide implements CharterArtifact {
             Optional<Map<String, String>> tooling,
             Optional<String> qualityTest,
             Optional<ConfigValue> structuralLintConfig,
-            List<String> appliesToLanguages) {
+            List<String> appliesToLanguages,
+            List<String> references) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -90,6 +94,7 @@ public final class Styleguide implements CharterArtifact {
         this.qualityTest = Objects.requireNonNull(qualityTest, "qualityTest");
         this.structuralLintConfig = Objects.requireNonNull(structuralLintConfig, "structuralLintConfig");
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
+        this.references = List.copyOf(references);
         RULES.guard(this);
     }
 
@@ -149,6 +154,12 @@ public final class Styleguide implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return Optional.empty();
+    }
+
+    /** A styleguide mints no relationships: its references are bare citations in the body. */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
     }
 
     /**
@@ -223,6 +234,15 @@ public final class Styleguide implements CharterArtifact {
         return appliesToLanguages;
     }
 
+    /**
+     * The bare citation strings, kept in the body.
+     *
+     * @return an immutable list
+     */
+    public List<String> references() {
+        return references;
+    }
+
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -253,6 +273,7 @@ public final class Styleguide implements CharterArtifact {
         private Optional<String> qualityTest = Optional.empty();
         private Optional<ConfigValue> structuralLintConfig = Optional.empty();
         private final List<String> appliesToLanguages = new ArrayList<>();
+        private final List<String> references = new ArrayList<>();
 
         private Builder() {}
 
@@ -417,6 +438,17 @@ public final class Styleguide implements CharterArtifact {
         }
 
         /**
+         * Appends a bare citation string.
+         *
+         * @param value the citation
+         * @return this builder
+         */
+        public Builder reference(String value) {
+            this.references.add(value);
+            return this;
+        }
+
+        /**
          * Builds the styleguide.
          *
          * @return the validated styleguide
@@ -436,7 +468,8 @@ public final class Styleguide implements CharterArtifact {
                     tooling,
                     qualityTest,
                     structuralLintConfig,
-                    appliesToLanguages);
+                    appliesToLanguages,
+                    references);
         }
     }
 }

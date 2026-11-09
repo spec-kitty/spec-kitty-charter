@@ -4,7 +4,7 @@ value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
   config:
-    schemaVersion: 2
+    schemaVersion: 1
   _links:
     self:
       href: /api/v1/activations/a-1

@@ -33,25 +33,6 @@ class CharterRefusalTest {
     }
 
     @Test
-    void aRefusalCanNameBothPacksAndViolations() {
-        RefusalPack referrer = new RefusalPack("01M6R0WP14AAAAAAAAAAAAAAAA", "other", "other-pack");
-        List<RefusalPack> packs = new ArrayList<>(List.of(referrer));
-        List<RefusalViolation> violations = new ArrayList<>(List.of(UNKNOWN));
-
-        CharterRefusal refusal =
-                CharterRefusal.withPacksAndViolations(RefusalCode.ARTIFACT_REFERENCED, "detail", packs, violations);
-        packs.clear();
-        violations.clear();
-
-        assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refusal.getMessage()).isEqualTo("detail");
-        assertThat(refusal.packs()).as("the referring packs").containsExactly(referrer);
-        assertThat(refusal.violations()).as("the referring artifacts").containsExactly(UNKNOWN);
-        assertThat(refusal.requiredBy()).isEmpty();
-        assertThatThrownBy(() -> refusal.packs().add(referrer)).isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
     void aRefusalWithRequiringPacksExposesThemAsAnUnmodifiableList() {
         CharterRefusal refusal =
                 CharterRefusal.withRequiredBy(RefusalCode.ARTIFACT_REQUIRED, "detail", List.of(REQUIRING));

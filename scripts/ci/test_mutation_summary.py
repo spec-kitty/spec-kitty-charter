@@ -112,7 +112,6 @@ class RenderTest(unittest.TestCase):
                 group("infra.storage", score="70.0", floor=65, passed=True),
             ),
         )
-        self.write("activations", summary(":activations", group("activations", score="91.4", floor=85, passed=True)))
 
     def test_a_real_summary_renders_its_figures(self) -> None:
         self.write("profiles", PROFILES)
@@ -149,16 +148,14 @@ class RenderTest(unittest.TestCase):
     def test_a_module_without_a_summary_shows_no_report(self) -> None:
         self.write("kernel", summary(":kernel", group("kernel", score="72.4", floor=65, passed=True)))
         text = ms.render(self.root)
-        for module in ("missions", "profiles", "packs", "activations"):
+        for module in ("missions", "profiles", "packs"):
             self.assertIn("⚠️ **no report**", self.row(text, f"| `:{module}` |"))
-        self.assertIn(
-            "`:missions` (no report), `:profiles` (no report), `:packs` (no report), `:activations` (no report)", text
-        )
+        self.assertIn("`:missions` (no report), `:profiles` (no report), `:packs` (no report)", text)
 
     def test_no_summary_at_all_lists_every_expected_module(self) -> None:
         text = ms.render(self.root)
         modules = [line.split("`")[1] for line in text.splitlines() if line.startswith("| `:")]
-        self.assertEqual(modules, [":kernel", ":missions", ":profiles", ":packs", ":activations"])
+        self.assertEqual(modules, [":kernel", ":missions", ":profiles", ":packs"])
 
     def test_an_unreadable_summary_is_not_taken_for_green(self) -> None:
         self.all_green()
@@ -172,7 +169,7 @@ class RenderTest(unittest.TestCase):
         self.write("extra", summary(":extra", group("extra", score="90.0", floor=50, passed=True)))
         text = ms.render(self.root)
         modules = [line.split("`")[1] for line in text.splitlines() if line.startswith("| `:")]
-        self.assertEqual(modules, [":kernel", ":missions", ":profiles", ":packs", ":packs", ":activations", ":extra"])
+        self.assertEqual(modules, [":kernel", ":missions", ":profiles", ":packs", ":packs", ":extra"])
 
     def test_a_pipe_in_a_name_does_not_break_the_row(self) -> None:
         self.write("kernel", summary(":kernel", group("a|b", score="72.4", floor=65, passed=True)))

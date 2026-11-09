@@ -2,7 +2,7 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
 decision_date: '2026-10-27'
 type: ADR
@@ -111,13 +111,7 @@ The record stays Proposed.
   document. The model checks its own invariants when it is built (titles single-line and not
   blank, no leading or trailing blank line in a content, no H1 or H2 inside one), and the canonical
   writer reads its output back and fails unless it reads as the same document, so a document that
-  cannot be written faithfully is never written. *(Note 2026-11-05,
-  [#299](https://github.com/spec-kitty/spec-kitty-charter/issues/299): the line rules the model
-  checks (a heading's text, a block, a document's opening) and the line scanner live in the kernel,
-  `kernel.markdown`, and the structural model stays in `packs.domain.markdown`. A mission step's
-  prompt and guidelines (`StepDocument`, `StepSection`, in `:missions`) check the same rules when they
-  are built, so a step text that builds is one the store writes; only the detailed description's YAML
-  guards stay write-time refusals.)* The structure schema validates the model as the
+  cannot be written faithfully is never written. The structure schema validates the model as the
   JSON tree `{frontmatter?, title?, preamble, sections: [{title, content}]}`, `frontmatter` and
   `title` left out when absent. The whole-pack gate compares a `markdown` file by its model and
   reports a difference at its model path (`sections[2].content`); a Markdown text never reaches the

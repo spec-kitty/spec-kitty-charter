@@ -1,5 +1,6 @@
 summary: >-
-  The effective graph of an activation, two nodes and the edge between them, and no layer override. self is the graph.
+  The effective graph of an activation, two nodes and the edge between them, as the operation answers once it is
+  built (reserved until then, ADR-0020 D8). self is the graph.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -13,7 +14,6 @@ value:
     - source: directive:DIRECTIVE_010
       relation: requires
       target: tactic:acceptance-test-first
-  layerOverrides: []
   _links:
     self:
       href: /api/v1/activations/a-1/graph

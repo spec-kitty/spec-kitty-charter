@@ -2,31 +2,16 @@ parameters:
 - $ref: ../parameters/ActivationId.yaml
 get:
   operationId: listEffectiveArtifacts
-  summary: List the artifacts of the merged closure under an activation.
+  summary: List the artifacts of the offering under an activation.
   description: >-
-    Every artifact of the activation's merged closure with its state, its provenance (packId and level of the version
-    the layer merge keeps), its policy facts and its reason (ADR-0020 D7; operator ruling Q1): "in force" is
-    state=active, and an artifact that is not in force is listed with its state and reason (use state=active for the
-    artifacts in force). kind and state filter the list. Items are ordered by kind, then by id in code-point order,
-    and paged by a keyset cursor over (kind, id): pageCursor, the nextPageCursor of the page before, asks for the items
-    strictly after the position it names, and binds the tag of the set it pages, so a cursor presented after the
-    activation's revision or the packs of its closure changed, or with another kind or state filter, is a 400 Problem
-    without a code, as is a malformed one or a pageSize out of range. summary counts the whole set, not the page, and is
-    identical on every page. The language filter applies here, at read only: an activation with no languages filters
-    nothing (#408 ruling 2). A required artifact stays out of force, with required true, when it is an enhancer with no
-    target in force or is bound to a mission type that is not in force.
-
-    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
-    the activation's closure, and with kind, state, the cursor and the page size, and it does not change when a pack outside the
-    closure changes. A matching If-None-Match is a 304 without a body, and a tag of another representation (another
-    page, kind or state) never matches (RFC 9110 section 13.1.2).
-
-    An unknown activation is 404 activation_not_found. A closure that cannot compose or merge is 500, with its code:
-    pack_unreadable also for a layer override or an overrides edge that the mutability level of the overridden artifact
-    forbids (ADR-0063 D3), naming the artifact, both packs and the level, and for an overrides cycle among active
-    artifacts, naming the cycle; stale_input and internal_error may be retried. The answer is never partial.
+    Each artifact of the offering with its state, its policy facts and the reason, filtered by kind and state and
+    paged (ADR-0020 D7). A required or locked artifact is always active. Reserved: it answers 501 until it is built
+    (ADR-0020 D8).
   tags:
   - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
   parameters:
   - $ref: ../parameters/IfNoneMatch.yaml
   - $ref: ../parameters/EffectiveKindQuery.yaml
@@ -35,7 +20,7 @@ get:
   - $ref: ../../_shared/parameters/PageCursor.yaml
   responses:
     '200':
-      description: A page of the effective artifacts of the merged closure.
+      description: A page of the effective artifacts.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -54,15 +39,15 @@ get:
               $ref: ../examples/EffectiveArtifactList.first-page.yaml
     '304':
       $ref: ../responses/NotModified.yaml
-    '400':
-      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/UnknownActivation.yaml
+      $ref: ../responses/ActivationNotFound.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

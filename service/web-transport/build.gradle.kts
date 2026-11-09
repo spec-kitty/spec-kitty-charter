@@ -13,7 +13,5 @@ dependencies {
     implementation(catalog.lib("jackson-databind"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
-    // The method-validation violations ValidationProblemTest builds come from a real validator.
-    testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
 }

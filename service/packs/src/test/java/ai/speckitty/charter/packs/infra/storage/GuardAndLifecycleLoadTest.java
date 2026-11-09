@@ -120,14 +120,14 @@ class GuardAndLifecycleLoadTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(scripted.derivedRelationships())
+        assertThat(scripted.relationships())
                 .containsExactly(Relationship.of(
                         new Urn(NodeKind.GUARD, "traceability-ready"),
                         new Urn(NodeKind.ASSET, "carrier-lint"),
                         RelationType.IMPLEMENTED_BY));
         assertThat(builtin.implementation())
                 .isEqualTo(new GuardImplementation.Builtin(BuiltinGuard.IMPLEMENTATION_READY));
-        assertThat(builtin.derivedRelationships()).isEmpty();
+        assertThat(builtin.relationships()).isEmpty();
     }
 
     @Test

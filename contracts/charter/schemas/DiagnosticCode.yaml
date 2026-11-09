@@ -8,14 +8,11 @@ description: >-
   the pack descriptor schema does not declare, a retired field included, once loaded with this
   warning; the schema is closed now (ADR-0036 decision 3), so such a pack is refused as
   pack_unreadable. The value stays in the enum so a client built against an earlier draft still
-  reads it. prompt_slot_not_empty: an unversioned pack descriptor keeps legacy text between paired prompt-slot
-  markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is reserved for
-  #424, as the refusal is.
+  reads it.
 type: string
 enum:
   - pack_level_missing
   - pack_unknown_key
-  - prompt_slot_not_empty
 x-source:
-  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Diagnostic.java
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
   symbol: Diagnostic.Code

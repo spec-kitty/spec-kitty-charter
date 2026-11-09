@@ -328,9 +328,17 @@ class OfferingReadServiceTest {
             assertThat(composed.facts().get("beta").defined()).containsExactly("directive:B1");
             assertThat(factsRead).as("each closure pack once").containsExactlyInAnyOrder("alpha", "beta");
             assertThat(OfferingReadService.entriesOf(composed.packs()))
-                    .extracting(entry -> entry.id().value())
-                    .containsExactly("beta", "alpha");
-            assertThat(OfferingReadService.entriesOf(composed.packs()).getLast().dependencies())
+                    .isEqualTo(service(alphaBetaGamma()).closure(roots("alpha")).value());
+        }
+
+        @Test
+        void theVerifiedClosureListsTheRootsClosureWithTheFingerprint() {
+            ConsistentRead.Verified<List<OfferingReadService.OfferingEntry>> closure =
+                    service(alphaBetaGamma()).closure(roots("alpha"));
+
+            assertThat(closure.fingerprint()).isEqualTo(D1);
+            assertThat(closure.value()).extracting(entry -> entry.id().value()).containsExactly("beta", "alpha");
+            assertThat(closure.value().getLast().dependencies())
                     .singleElement()
                     .satisfies(edge -> assertThat(edge.to()).isEqualTo("beta"));
         }

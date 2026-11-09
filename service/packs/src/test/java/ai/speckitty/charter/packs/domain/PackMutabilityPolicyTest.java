@@ -189,14 +189,14 @@ class PackMutabilityPolicyTest {
                 new DirectiveRegistrationService(store, store, new PackMutabilityPolicy(source));
         int before = store.commits;
 
-        assertThatThrownBy(() -> service.registerDirective(PACK, directive("LOCKED"), false, null))
+        assertThatThrownBy(() -> service.registerDirective(PACK, directive("LOCKED"), List.of(), false, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION));
         assertThat(store.commits).as("a refused write commits nothing").isEqualTo(before);
 
         // Same fixture, an open (unlisted) target: the write lands.
-        assertThatCode(() -> service.registerDirective(PACK, directive("OPEN"), false, null))
+        assertThatCode(() -> service.registerDirective(PACK, directive("OPEN"), List.of(), false, null))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(before + 1);
     }
@@ -207,12 +207,6 @@ class PackMutabilityPolicyTest {
 
     /** q (descriptor Q) locks directive:X; pack-a depends on Q. Facts are read only through the compose. */
     private static WritePolicyGate wiredGate(Supplier<String> fingerprint, List<String> factsRead) {
-        return wiredGate(fingerprint, factsRead, MutabilityPolicySource.empty(), List.of());
-    }
-
-    /** As {@link #wiredGate(Supplier, List)}, with pack-a's own policy and the artifacts pack-a holds. */
-    private static WritePolicyGate wiredGate(
-            Supplier<String> fingerprint, List<String> factsRead, MutabilityPolicySource own, List<String> ownHeld) {
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
         PackIdentifier q = new PackIdentifier("q");
         Map<String, PackDescriptor> descriptors = Map.of(
@@ -239,7 +233,7 @@ class PackMutabilityPolicyTest {
                                 .build(),
                         List.of()),
                 PACK.value(),
-                new PackCompositionFacts(List.of(), ownHeld, List.of(), own, List.of()));
+                new PackCompositionFacts(List.of(), List.of(), List.of(), MutabilityPolicySource.empty(), List.of()));
         PackCatalogRepository catalog =
                 () -> List.of(new ConfiguredPack(q, PackLevel.BUILT_IN), new ConfiguredPack(PACK, PackLevel.ORG));
         PackDescriptorRepository byId = new PackDescriptorRepository() {
@@ -286,29 +280,6 @@ class PackMutabilityPolicyTest {
         assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .as("positive control on the same fixture")
                 .doesNotThrowAnyException();
-    }
-
-    // B8 (FR-033, DM-01M6RAA6Y7NVVGKVKQV05GZYES, rule C25): through the wired gate, a pack whose own policy locks x
-    // re-registers x with a per-artifact write (before B8 this was 409), while the dependency's lock still binds it.
-    @Test
-    void b8ThroughTheWiredGateAPacksOwnLockDoesNotRefuseItsOwnReRegistrationButTheDependencysLockStillDoes() {
-        Urn own = new Urn(NodeKind.DIRECTIVE, "OWN");
-        MutabilityPolicySource locksOwn = MutabilityPolicySource.builder()
-                .entry(own, MutabilityLevel.LOCKED)
-                .build();
-        WritePolicyGate gate = wiredGate(() -> "sha256:same", new ArrayList<>(), locksOwn, List.of("directive:OWN"));
-
-        for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(packWithDescriptor(), operation, own))
-                    .as("pack-a's own lock does not bind pack-a's %s", operation)
-                    .doesNotThrowAnyException();
-        }
-        assertThatThrownBy(() ->
-                        gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "X")))
-                .as("same fixture: Q's lock on what Q holds still binds pack-a")
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION));
     }
 
     @Test

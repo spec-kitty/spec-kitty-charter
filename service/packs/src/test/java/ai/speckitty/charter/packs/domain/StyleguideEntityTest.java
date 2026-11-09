@@ -73,14 +73,15 @@ class StyleguideEntityTest {
     }
 
     @Test
-    @DisplayName("as a charter artifact it is labelled by title and has no description and no derived relationship")
+    @DisplayName("as a charter artifact it is labelled by title and mints no description and no relationships")
     void spineContract() {
-        Styleguide sg = valid().build();
+        Styleguide sg = valid().reference("Clean Code ch.3").build();
 
         assertThat(sg.kind()).isEqualTo(ArtifactKind.STYLEGUIDE);
         assertThat(sg.localId()).isEqualTo("java-style");
         assertThat(sg.label()).isEqualTo("Java style");
         assertThat(sg.description()).isEmpty();
-        assertThat(sg.derivedRelationships()).isEmpty();
+        assertThat(sg.relationships()).isEmpty();
+        assertThat(sg.references()).containsExactly("Clean Code ch.3");
     }
 }

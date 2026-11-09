@@ -1,10 +1,7 @@
 title: ToolguideRegistration
 description: >-
-  The registration body of a toolguide: its fields only. A toolguide carries no relationships: every relationship is
-  authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships (ADR-0064).
-  A member this schema does not declare is refused 422 validation_failed, naming the member, before the body is bound
-  and nothing is written (ADR-0064).
-  On POST to the collection the id is
+  The registration body of a toolguide: its fields only. A toolguide mints no relationships (its references are bare
+  citation strings, not typed edges), so this body carries no relationships array. On POST to the collection the id is
   optional (the server answers with Location); on PUT the id is taken from the path. The guide travels in the body,
   never as a path: the body carries exactly one of guide (the Markdown content) or guideUri (a URI the service fetches
   once, at registration), so the service assumes no filesystem shared with its client. Both, neither, a null (also
@@ -122,3 +119,14 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
       symbol: Toolguide.lastUpdated
+  references:
+    type: array
+    maxItems: 256
+    description: >-
+      The bare citation strings the toolguide points at, in authored order;
+      at most 256, a longer list is refused 400 Bad Request (ADR-0041 decision 2).
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.references

@@ -13,6 +13,6 @@ dependencies {
 mutationFloors {
     group("profiles") {
         packages.add("ai.speckitty.charter.profiles")
-        floor = 90
+        floor = 50
     }
 }

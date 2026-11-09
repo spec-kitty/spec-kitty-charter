@@ -47,6 +47,11 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                     optional(a, "bad_example"),
                     optional(a, "good_example")));
         }
+        List<ProcedureDso.Reference> references = new ArrayList<>();
+        for (Map<?, ?> r : mappings(root, "references")) {
+            references.add(new ProcedureDso.Reference(
+                    required(r, "type"), required(r, "id"), optional(r, "when"), optional(r, "reason")));
+        }
         return new ProcedureDso(
                 required(root, "id"),
                 required(root, "schema_version"),
@@ -56,6 +61,7 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                 required(root, "exit_condition"),
                 steps,
                 antiPatterns,
+                references,
                 optional(root, "notes"),
                 strings(root, "applies_to_languages"));
     }
@@ -81,6 +87,15 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
             YamlDumpEmitter.scalarInto(out, "good_example", antiPattern.goodExample());
             antiPatterns.add(out);
         }
+        List<Map<String, Object>> references = new ArrayList<>();
+        for (ProcedureDso.Reference reference : procedure.references()) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("type", reference.type());
+            out.put("id", reference.id());
+            YamlDumpEmitter.scalarInto(out, "when", reference.when());
+            YamlDumpEmitter.scalarInto(out, "reason", reference.reason());
+            references.add(out);
+        }
         return new YamlDumpEmitter()
                 .scalar("schema_version", procedure.schemaVersion())
                 .scalar("id", procedure.id())
@@ -90,6 +105,7 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                 .scalar("exit_condition", procedure.exitCondition())
                 .mappings("steps", steps)
                 .mappings("anti_patterns", antiPatterns)
+                .mappings("references", references)
                 .scalar("notes", procedure.notes())
                 .strings("applies_to_languages", procedure.appliesToLanguages())
                 .dump();

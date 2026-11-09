@@ -1,8 +1,7 @@
 title: CascadeKind
 description: >-
-  A kind a cascade reaches, or all for every kind. mission_type is a kind like any other (rule W21): a cascade scoped
-  to it reaches the mission types the walk meets, and a mission type selected with a cascade reaches the steps it
-  holds. The artifact-kind tokens come from ArtifactKind; the extra token is the contract's own.
+  A kind a cascade reaches, or all for every kind. The artifact-kind tokens come from ArtifactKind; the extra token
+  is the contract's own.
 type: string
 enum:
 - directive
@@ -16,8 +15,6 @@ enum:
 - glossary_pack
 - skill
 - anti_pattern
-- mission_type
-- step_enhancement
 - all
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java

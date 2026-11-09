@@ -16,12 +16,9 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.LayerMerge;
-import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,15 +50,6 @@ class EdgeIndexTest {
          * @return this closure
          */
         Closure pack(String name, List<String> dependsOn, List<String> held, Relationship... edges) {
-            return pack(name, PackLevel.ORG, dependsOn, held, edges);
-        }
-
-        /** A pack at a level; packs are added in merge order (built-in, org, project). */
-        Closure pack(String name, PackLevel level, List<String> held, Relationship... edges) {
-            return pack(name, level, List.of(), held, edges);
-        }
-
-        Closure pack(String name, PackLevel level, List<String> dependsOn, List<String> held, Relationship... edges) {
             List<PackDependency> dependencies = dependsOn.stream()
                     .map(other -> new PackDependency(packId(other), ">=0"))
                     .toList();
@@ -75,7 +63,7 @@ class EdgeIndexTest {
                     PackPaths.none(),
                     dependencies);
             packs.add(new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), held));
+                    new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG), descriptor, List.of(), held));
             facts.put(
                     name,
                     new PackCompositionFacts(
@@ -94,16 +82,6 @@ class EdgeIndexTest {
 
         EdgeIndex index() {
             return EdgeIndex.of(packs, facts);
-        }
-
-        /** The index under the layer merge of the closure, whose packs were added in merge order. */
-        EdgeIndex merged() {
-            return index().merged(mergedClosure());
-        }
-
-        /** The layer merge of the closure, whose packs were added in merge order. */
-        MergedClosure mergedClosure() {
-            return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
         }
     }
 
@@ -134,7 +112,7 @@ class EdgeIndexTest {
     }
 
     private static List<String> written(CharterArtifact node) {
-        return node.derivedRelationships().stream()
+        return node.relationships().stream()
                 .map(relationship ->
                         relationship.from() + " " + relationship.type().token() + " " + relationship.toReference())
                 .toList();
@@ -164,7 +142,7 @@ class EdgeIndexTest {
         assertThat(index.inPack(pack("alpha"))
                         .resolve(urn("tactic:T"))
                         .orElseThrow()
-                        .derivedRelationships())
+                        .relationships())
                 .as("a held artifact with no edges is still a node")
                 .isEmpty();
     }
@@ -249,170 +227,5 @@ class EdgeIndexTest {
         assertThat(written(
                         index.inPack(pack("beta")).resolve(urn("directive:B")).orElseThrow()))
                 .containsExactly("directive:B requires alpha::tactic:T");
-    }
-
-    // ---- the merged view (FR-010; C19, C20, C36) ------------------------------------------------------------------
-
-    @Test
-    void c19AnEdgeStartingAtALosingPlaceIsDroppedWithTheArtifact() {
-        EdgeIndex merged = new Closure()
-                .pack(
-                        "org",
-                        PackLevel.ORG,
-                        List.of("directive:D", "tactic:T1"),
-                        edge("directive:D", RelationType.REQUIRES, "tactic:T1"))
-                .pack(
-                        "project",
-                        PackLevel.PROJECT,
-                        List.of("directive:D", "tactic:T2"),
-                        edge("directive:D", RelationType.REQUIRES, "tactic:T2"))
-                .merged();
-
-        assertThat(merged.inPack(pack("org")).resolve(urn("directive:D")))
-                .as("the losing place no longer holds the artifact, so no edge starts there")
-                .isEmpty();
-        assertThat(written(merged.inPack(pack("project"))
-                        .resolve(urn("directive:D"))
-                        .orElseThrow()))
-                .containsExactly("directive:D requires tactic:T2");
-        assertThat(merged.placesOf(urn("directive:D")))
-                .containsExactly(new EdgeIndex.Place(pack("project"), urn("directive:D")));
-    }
-
-    @Test
-    void c20AnEdgeEndingAtALosingPlaceEndsAtTheWinnerBareOrQualified() {
-        EdgeIndex merged = new Closure()
-                .pack(
-                        "org",
-                        PackLevel.ORG,
-                        List.of("directive:D", "tactic:T"),
-                        edge("tactic:T", RelationType.REQUIRES, "directive:D"))
-                .pack(
-                        "project",
-                        PackLevel.PROJECT,
-                        List.of("org"),
-                        List.of("directive:D", "tactic:U"),
-                        edge("tactic:U", RelationType.REQUIRES, "org::directive:D"))
-                .merged();
-
-        Relationship bare = merged.inPack(pack("org"))
-                .resolve(urn("tactic:T"))
-                .orElseThrow()
-                .derivedRelationships()
-                .getFirst();
-        Relationship qualified = merged.inPack(pack("project"))
-                .resolve(urn("tactic:U"))
-                .orElseThrow()
-                .derivedRelationships()
-                .getFirst();
-        assertThat(merged.neighbour(bare)).contains(new EdgeIndex.Place(pack("project"), urn("directive:D")));
-        assertThat(merged.neighbour(qualified)).contains(new EdgeIndex.Place(pack("project"), urn("directive:D")));
-    }
-
-    @Test
-    void anEdgeEndingAtAWinnerIsLeftAsWritten() {
-        EdgeIndex merged = new Closure()
-                .pack(
-                        "project",
-                        PackLevel.PROJECT,
-                        List.of("directive:D", "tactic:T"),
-                        edge("tactic:T", RelationType.REQUIRES, "directive:D"))
-                .merged();
-
-        Relationship kept = merged.inPack(pack("project"))
-                .resolve(urn("tactic:T"))
-                .orElseThrow()
-                .derivedRelationships()
-                .getFirst();
-        assertThat(kept.toPack()).isEmpty();
-        assertThat(merged.neighbour(kept)).contains(new EdgeIndex.Place(pack("project"), urn("directive:D")));
-    }
-
-    @Test
-    void c36AnOverridesEdgeThatResolvesToItsOwnSourceRefusesTheMerge() {
-        Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("directive:D"))
-                .pack(
-                        "project",
-                        PackLevel.PROJECT,
-                        List.of("org"),
-                        List.of("directive:D"),
-                        edge("directive:D", RelationType.OVERRIDES, "org::directive:D"));
-
-        assertThatThrownBy(closure::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage()).contains("directive:D", "project", "self_override");
-        });
-    }
-
-    @Test
-    void anOverridesEdgeToAnotherArtifactMergesAsAnyEdgeDoes() {
-        EdgeIndex merged = new Closure()
-                .pack("org", PackLevel.ORG, List.of("directive:D"))
-                .pack(
-                        "project",
-                        PackLevel.PROJECT,
-                        List.of("org"),
-                        List.of("directive:X"),
-                        edge("directive:X", RelationType.OVERRIDES, "org::directive:D"))
-                .merged();
-
-        Relationship edge = merged.inPack(pack("project"))
-                .resolve(urn("directive:X"))
-                .orElseThrow()
-                .derivedRelationships()
-                .getFirst();
-        assertThat(merged.neighbour(edge)).contains(new EdgeIndex.Place(pack("org"), urn("directive:D")));
-    }
-
-    @Test
-    void theStepsOfAMissionTypeAreThoseOfTheWinnersOnTheMergedView() {
-        Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one", "action:M/two"))
-                .pack("project", PackLevel.PROJECT, List.of("action:M/one"));
-
-        assertThat(closure.index().stepsOf(urn("mission_type:M")))
-                .extracting(EdgeIndex.Place::urn)
-                .containsExactly(urn("action:M/one"), urn("action:M/two"), urn("action:M/one"));
-        assertThat(closure.merged().stepsOf(urn("mission_type:M")))
-                .containsExactly(
-                        new EdgeIndex.Place(pack("org"), urn("action:M/two")),
-                        new EdgeIndex.Place(pack("project"), urn("action:M/one")));
-    }
-
-    // ---- OD-9, the closure form of StepHolding (decision 01M7037V93Y077H8M4W9V8Y6B3)
-    // ---------------------------------
-
-    @Test
-    void anActionDeclaredWithoutItsMissionTypeInAnyPackIsNotAStepOfThatMissionType() {
-        Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one"))
-                .pack("project", PackLevel.PROJECT, List.of("action:M/two"));
-
-        assertThat(closure.merged().stepsOf(urn("mission_type:M")))
-                .as("no closure pack defines M and declares M/two, so the closure holds no such step")
-                .containsExactly(new EdgeIndex.Place(pack("org"), urn("action:M/one")));
-    }
-
-    @Test
-    void theStepsOfAMissionTypeComeFromAPackThatDefinesItNotFromAPackThatOnlyDeclaresTheAction() {
-        Closure closure = new Closure()
-                .pack("alpha", PackLevel.ORG, List.of("mission_type:M"))
-                .pack("beta", PackLevel.PROJECT, List.of("action:M/s"));
-
-        assertThat(closure.merged().stepsOf(urn("mission_type:M"))).isEmpty();
-        assertThat(closure.index().stepsOf(urn("mission_type:M"))).isEmpty();
-    }
-
-    @Test
-    void aWinningMissionTypeKeepsTheUniqueStepsOfTheVersionItReplaced() {
-        Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one", "action:M/two"))
-                .pack("project", PackLevel.PROJECT, List.of("mission_type:M", "action:M/one"));
-
-        assertThat(closure.merged().stepsOf(urn("mission_type:M")))
-                .containsExactly(
-                        new EdgeIndex.Place(pack("org"), urn("action:M/two")),
-                        new EdgeIndex.Place(pack("project"), urn("action:M/one")));
     }
 }

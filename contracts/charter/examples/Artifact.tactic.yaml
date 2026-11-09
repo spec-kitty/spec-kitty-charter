@@ -13,8 +13,10 @@ value:
       - title: Only step
         description: null
         examples: []
+        references: []
     failureModes: []
     appliesToLanguages: []
+    references: []
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/tactic/rehearse

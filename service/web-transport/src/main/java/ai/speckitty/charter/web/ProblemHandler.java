@@ -1,9 +1,5 @@
 package ai.speckitty.charter.web;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.ElementKind;
-import jakarta.validation.Path;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -39,32 +35,6 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> unexpected(Exception unexpected) {
         logger.error("Unexpected failure", unexpected);
         return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
-    }
-
-    /**
-     * A request parameter that breaks a bound the contract declares (a {@code pageSize} of 0, an empty path segment) is
-     * a malformed request: the plain 400 problem, without a code or a detail, so no violation text reaches the wire.
-     * The generated interfaces are {@code @Validated}, so the method validation proxy refuses the call before any
-     * controller runs, with this exception; every controller gets the same answer. A violation that is not on a
-     * parameter, such as one on a return value, is the service's own failure: the 500 {@code internal_error}, logged.
-     *
-     * @param invalid the violations
-     * @return the {@code application/problem+json} 400, or the 500 when a violation is not on a parameter
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Object> invalidParameter(ConstraintViolationException invalid) {
-        if (invalid.getConstraintViolations().stream().allMatch(ProblemHandler::onParameter)) {
-            return Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY);
-        }
-        return unexpected(invalid);
-    }
-
-    private static boolean onParameter(ConstraintViolation<?> violation) {
-        ElementKind last = null;
-        for (Path.Node node : violation.getPropertyPath()) {
-            last = node.getKind();
-        }
-        return last == ElementKind.PARAMETER || last == ElementKind.CROSS_PARAMETER;
     }
 
     /**

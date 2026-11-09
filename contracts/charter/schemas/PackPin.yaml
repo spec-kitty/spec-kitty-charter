@@ -16,7 +16,6 @@ properties:
     type: string
     minLength: 1
     maxLength: 64
-    pattern: '^\s*\S.*$'
     description: >-
       The pack version the activation builds on, as the pack declares it (pack_version). Absent means the version
       the service holds; with several versions held side by side, the newest (ADR-0033 D7).

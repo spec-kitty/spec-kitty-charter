@@ -36,7 +36,6 @@ class GuardWiringTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final String CONTAINER = "spring.profiles.active=container";
-    private static final String HOSTS = "charter.container.allowed-hosts=charter.internal";
 
     @Configuration(proxyBeanMethods = false)
     static class Surroundings {
@@ -51,8 +50,8 @@ class GuardWiringTest {
         }
     }
 
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withUserConfiguration(Surroundings.class, ContainerWiring.class, GuardWiring.class);
+    private final ApplicationContextRunner runner =
+            new ApplicationContextRunner().withUserConfiguration(Surroundings.class, GuardWiring.class);
 
     private static FilterRegistrationBean<?> registration(AssertableApplicationContext context) {
         assertThat(context).hasNotFailed().hasSingleBean(FilterRegistrationBean.class);
@@ -400,7 +399,7 @@ class GuardWiringTest {
 
     @Test
     void underTheContainerProfileTheMissingTokenRefusalNamesTheEnvVarAndTheMountedFile() {
-        runner.withPropertyValues(CONTAINER, HOSTS)
+        runner.withPropertyValues(CONTAINER)
                 .run(context -> assertThat(failureText(context))
                         .contains("CHARTER_WORKTREE_TOKEN")
                         .contains("/run/secrets/charter.worktree-token")
@@ -409,7 +408,7 @@ class GuardWiringTest {
 
     @Test
     void underTheContainerProfileTheRefusalNamesTheConfiguredSecretsDirectory() {
-        runner.withPropertyValues(CONTAINER, HOSTS, "charter.container.secrets-dir=/srv/secrets/")
+        runner.withPropertyValues(CONTAINER, "charter.container.secrets-dir=/srv/secrets/")
                 .run(context -> assertThat(failureText(context))
                         .contains("/srv/secrets/charter.worktree-token")
                         .doesNotContain("/run/secrets"));
@@ -417,7 +416,7 @@ class GuardWiringTest {
 
     @Test
     void underTheContainerProfileATokenFromTheCommandLineIsRefusedNamingBothAcceptedForms(CapturedOutput output) {
-        runner.withPropertyValues(CONTAINER, HOSTS)
+        runner.withPropertyValues(CONTAINER)
                 .withInitializer(context -> context.getEnvironment()
                         .getPropertySources()
                         .addFirst(new SimpleCommandLinePropertySource("--charter.worktree-token=" + TOKEN)))
@@ -432,7 +431,7 @@ class GuardWiringTest {
 
     @Test
     void underTheContainerProfileABlankTokenSaysAnEmptyEnvVarHidesTheMountedFile() {
-        runner.withPropertyValues(CONTAINER, HOSTS)
+        runner.withPropertyValues(CONTAINER)
                 .withInitializer(context -> context.getEnvironment()
                         .getPropertySources()
                         .addLast(new SystemEnvironmentPropertySource(
@@ -448,60 +447,5 @@ class GuardWiringTest {
             count++;
         }
         return count;
-    }
-
-    // The guard's policy follows the profile (ADR-0041 decisions 6 and 7; issue #268).
-
-    private static MockHttpServletRequest at(String uri, String host, String authorization) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", uri);
-        request.setRequestURI(uri);
-        request.addHeader("Host", host);
-        if (authorization != null) {
-            request.addHeader("Authorization", authorization);
-        }
-        return request;
-    }
-
-    @Test
-    void underTheContainerProfileTheGuardAcceptsTheConfiguredHostsOnly() {
-        runner.withPropertyValues(CONTAINER, HOSTS, "charter.worktree-token=" + TOKEN)
-                .run(context -> {
-                    FilterRegistrationBean<?> registration = registration(context);
-                    assertThat(statusOf(registration, at("/api/v1/info", "charter.internal:8080", "Bearer " + TOKEN)))
-                            .isEqualTo(200);
-                    assertThat(statusOf(registration, at("/api/v1/info", "localhost", "Bearer " + TOKEN)))
-                            .isEqualTo(403);
-                    assertThat(statusOf(registration, at("/api/v1/info", "charter.internal", null)))
-                            .isEqualTo(401);
-                });
-    }
-
-    @Test
-    void underTheContainerProfileOnlyTheHealthCheckPassesWithoutTheToken() {
-        runner.withPropertyValues(CONTAINER, HOSTS, "charter.worktree-token=" + TOKEN)
-                .run(context -> {
-                    FilterRegistrationBean<?> registration = registration(context);
-                    assertThat(statusOf(registration, at("/actuator/health", "charter.internal", null)))
-                            .isEqualTo(200);
-                    assertThat(statusOf(registration, at("/actuator/health/", "charter.internal", null)))
-                            .isEqualTo(401);
-                    assertThat(statusOf(registration, at("/actuator/env", "charter.internal", null)))
-                            .isEqualTo(401);
-                    assertThat(statusOf(registration, at("/actuator/health", "attacker.example", null)))
-                            .isEqualTo(403);
-                });
-    }
-
-    @Test
-    void withoutTheProfileAConfiguredHostIsForbiddenAndHealthNeedsTheToken() {
-        runner.withPropertyValues(HOSTS, "charter.worktree-token=" + TOKEN).run(context -> {
-            FilterRegistrationBean<?> registration = registration(context);
-            assertThat(statusOf(registration, at("/api/v1/info", "charter.internal", "Bearer " + TOKEN)))
-                    .isEqualTo(403);
-            assertThat(statusOf(registration, at("/actuator/health", "localhost", null)))
-                    .isEqualTo(401);
-            assertThat(statusOf(registration, at("/actuator/health", "localhost", "Bearer " + TOKEN)))
-                    .isEqualTo(200);
-        });
     }
 }

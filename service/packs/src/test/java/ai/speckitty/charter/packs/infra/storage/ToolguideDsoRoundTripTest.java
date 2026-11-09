@@ -41,6 +41,7 @@ class ToolguideDsoRoundTripTest {
                 List.of("rg a", "rg b", "rg a"),
                 List.of("java", "python"),
                 Optional.of("2026-07-29"),
+                List.of("docs/a.md", "docs/a.md"),
                 Optional.empty());
 
         String written = yaml.write(ToolguideBinding.INSTANCE, dso);
@@ -55,7 +56,17 @@ class ToolguideDsoRoundTripTest {
     @DisplayName("a minimal toolguide normalizes absent lists to empty and keeps last_updated absent")
     void aMinimalToolguideNormalizesAbsentListsToEmpty() {
         ToolguideDso dso = new ToolguideDso(
-                "a", "1.0", "a", "T", "a.guide.md", "S", List.of(), List.of(), Optional.empty(), Optional.empty());
+                "a",
+                "1.0",
+                "a",
+                "T",
+                "a.guide.md",
+                "S",
+                List.of(),
+                List.of(),
+                Optional.empty(),
+                List.of(),
+                Optional.empty());
 
         assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, dso), FILE)))
                 .isEqualTo(dso);
@@ -74,9 +85,20 @@ class ToolguideDsoRoundTripTest {
                 List.of(),
                 List.of(),
                 Optional.of("2026-01-01"),
+                List.of(),
                 Optional.empty());
         ToolguideDso absent = new ToolguideDso(
-                "a", "1.0", "a", "T", "a.guide.md", "S", List.of(), List.of(), Optional.empty(), Optional.empty());
+                "a",
+                "1.0",
+                "a",
+                "T",
+                "a.guide.md",
+                "S",
+                List.of(),
+                List.of(),
+                Optional.empty(),
+                List.of(),
+                Optional.empty());
 
         assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, present), FILE)))
                 .isEqualTo(present);

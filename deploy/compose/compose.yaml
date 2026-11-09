@@ -12,8 +12,7 @@ services:
       # Local to this example until the image fixes its mount path (#234).
       CHARTER_CONFIGROOT: /var/lib/spec-kitty/charter
     ports:
-      # Loopback only in this example. The service speaks plain HTTP and every request carries the token: publish it
-      # wider only behind a proxy that terminates TLS, and list the names clients use in allowed-hosts.
+      # Loopback only: until the guard reads allowed-hosts it accepts only loopback Host names (#231 follow-up).
       - "127.0.0.1:8080:8080"
     volumes:
       # Required: the service does not start without it. Not created when missing, so a forgotten directory fails.
@@ -26,10 +25,5 @@ services:
       - type: volume
         source: charter-config
         target: /var/lib/spec-kitty/charter
-    # A health check, once the image (#234) ships a client such as curl: GET /actuator/health answers {"status":"UP"}
-    # without the token, with an allowed Host. Kept as a comment so the example does not mark a container unhealthy.
-    # healthcheck:
-    #   test: ["CMD", "curl", "-fsS", "-H", "Host: localhost", "http://127.0.0.1:8080/actuator/health"]
-    #   interval: 30s
 volumes:
   charter-config:

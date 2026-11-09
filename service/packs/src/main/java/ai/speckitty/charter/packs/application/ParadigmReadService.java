@@ -17,8 +17,11 @@ import org.springframework.stereotype.Service;
  * a faithful copy of {@link DirectiveReadService}: both reads are verified by {@link ConsistentRead}, the inputs are
  * digested before and after the load, and the answer carries the digest both agree on.
  *
- * <p>A paradigm carries no relationship: its relationships are authored in the pack's graph documents and read through
- * the references read ({@link ArtifactReadService#references}), ADR-0064.
+ * <p>Each returned {@link Paradigm} carries its {@link Paradigm#relationships() relationships} populated: a paradigm
+ * is its own effective origin and derives those edges from its authored {@code directiveRefs} (minted as
+ * {@code requires} edges to directives, WP03) and its typed {@code references} (minted as {@code suggests}). A
+ * paradigm therefore originates relationships, so its read SHOULD carry them, and does (ADR-0025 Decision 3/4). The
+ * referenced directives themselves are resolved on demand by the walk ({@link GraphWalk}), not by this read.
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its paradigms (the sanctioned list
  * path; it adds no method to the persistence service), while the single read is a point read through
@@ -53,7 +56,8 @@ public final class ParadigmReadService {
     }
 
     /**
-     * The readable paradigms of a pack, with the digest of the inputs they were read from (FR-014).
+     * The readable paradigms of a pack, with the digest of the inputs they were read from. Each carries its
+     * relationships populated (FR-014).
      *
      * @param pack the pack's identity
      * @return the pack's paradigms, in the aggregate's stable order, and the verified fingerprint
@@ -73,7 +77,7 @@ public final class ParadigmReadService {
     }
 
     /**
-     * One paradigm of a pack, with the digest of the inputs it was read from (FR-014).
+     * One paradigm of a pack, with the digest of the inputs it was read from, its relationships populated (FR-014).
      *
      * @param pack the pack's identity
      * @param paradigm the paradigm's identity

@@ -1,6 +1,10 @@
 schema_version: '1.0'
 id: governing
 description: A governing preset that holds every activation list and marks some items must-have.
+activated_kinds:
+  - directives
+  - tactics
+  - styleguides
 activated_directives:
   - id: DIRECTIVE_001
     must_have: true
@@ -23,11 +27,6 @@ activated_mission_step_contracts:
   - id: specify
 activated_anti_patterns:
   - id: big-ball-of-mud
-activated_glossary_packs:
-  - id: core-terms
-activated_skills:
-  - id: pr-review
-    must_have: true
 activated_mission_types:
   - id: software-dev
     must_have: true

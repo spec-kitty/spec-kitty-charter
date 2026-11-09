@@ -16,22 +16,15 @@
   `GET`, so an `ActivationChange` carries no `self`: its `up` link names the activation (`Links` and the example say
   so).
 - A cascading deactivate walks the `specializes_from` lineage exactly as a cascading select does (operator ruling of
-  2026-11-06, ADR-0059 amendment A2): what a select reached through a profile's ancestor is a candidate of the
+  2026-11-06, ADR-0059 amendment R2): what a select reached through a profile's ancestor is a candidate of the
   deactivate of that profile, so a cascading select and a cascading deactivate round-trip. An artifact another active
   artifact needs is still kept and reported in `skippedShared`. `ExclusionRequest.cascade` and
   `deactivateActivationArtifact` say so; two scenarios of `activation-selections.feature` pin it.
 - A cascade walks `enhances` as one of its relations, in its declared direction (operator ruling of 2026-11-06,
-  ADR-0059 amendment A4): `E enhances T` runs from E to T, as `requires` and `scope` do. A cascading select of E
+  ADR-0059 amendment R4): `E enhances T` runs from E to T, as `requires` and `scope` do. A cascading select of E
   selects T; one of T selects no enhancer; a cascading deactivate of E unselects T unless another active artifact
   needs it, which is then kept and named in `skippedShared`. The relation set is core's five and `enhances`; four
   scenarios of `activation-selections.feature` pin it. No write walks `enhances` any other way: there is no
   write-time `enhances` pull, so `includeDeactivated` clears no deny entry the walk does not reach, and a cascading
   deactivate keeps an artifact an active enhancer enhances because the shared walk crosses `enhances` to it, not by a
   rule of its own. `SelectionRequest.includeDeactivated`, `ActivationChange` and the two write descriptions say so.
-- The path id of the four per-artifact writes is read as an id of the activation document is (`ArtifactIdPath`,
-  ADR-0020 D4, operator ruling of 2026-11-06): the declared id, its full URN of the path's kind or another case of
-  either names the declared id, which is what the write stores and reports. An unselect or re-activate reads a stale
-  id the same way against the stored list. A spelling that matches two declared ids differing only by case is
-  `422 activation_invalid` (`ambiguous_artifact`, at `/artifactId`); a URN of another kind is an unknown id, `404`.
-  A `mission_type` path id is not normalized: it is matched exactly, as a document's `missionTypes` is, so another
-  case or its URN is `404 mission_type_not_found`.

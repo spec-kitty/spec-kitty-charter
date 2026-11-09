@@ -2,7 +2,6 @@ package ai.speckitty.charter.activations.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
@@ -32,7 +31,6 @@ class ActivationRuntimeHintsTest {
 
     /** Every DTO {@link ActivationJson} mixes the omission rule into. */
     static final List<Class<?>> MIXED_IN = List.of(
-            Activation.class,
             ActivationConfig.class,
             PackPin.class,
             SelectedArtifacts.class,

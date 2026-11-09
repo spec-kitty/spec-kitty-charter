@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.ParadigmReference;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
@@ -128,9 +130,11 @@ class DoctrineWiringRoundTripTest {
                 .intent("Every field must survive")
                 .enforcement(Enforcement.LENIENT_ADHERENCE)
                 .scope("global")
+                .procedure("release")
                 .integrityRule("rule")
                 .validationCriterion("criterion")
                 .explicitAllowance("spikes may skip it")
+                .reference(new DirectiveReference("tactic", "tdd", Optional.of("always"), Optional.of("why")))
                 .build();
 
         directives.save(saved);
@@ -153,6 +157,7 @@ class DoctrineWiringRoundTripTest {
                 .antiPattern(new StyleguideAntiPattern("A", "an anti-pattern", "bad", "good"))
                 .qualityTest("does it read")
                 .appliesToLanguage("java")
+                .reference("other-style")
                 .build();
 
         styleguides.save(saved);
@@ -170,6 +175,8 @@ class DoctrineWiringRoundTripTest {
                 .schemaVersion("1.0")
                 .name("Round-tripped paradigm")
                 .summary("A way of working")
+                .directiveRef("DIRECTIVE_800")
+                .reference(new ParadigmReference("tactic", "tdd"))
                 .build();
 
         paradigms.save(saved);

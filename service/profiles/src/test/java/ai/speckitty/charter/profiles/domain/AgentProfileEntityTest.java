@@ -321,7 +321,7 @@ class AgentProfileEntityTest {
                 .tacticReference(new ArtifactReference("tdd-red-green", "why"))
                 .build();
 
-        assertThat(profile.derivedRelationships()).isEmpty();
+        assertThat(profile.relationships()).isEmpty();
     }
 
     @Test

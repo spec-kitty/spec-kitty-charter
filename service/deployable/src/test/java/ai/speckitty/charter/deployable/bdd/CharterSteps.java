@@ -46,11 +46,9 @@ public class CharterSteps {
     /**
      * The activation document read and its closure read carry no fingerprint, and the hook checks that they carry
      * none: the document read depends only on the stored document (ADR-0059 D5), and the closure read reports a change
-     * through its {@code ETag}, over the revision and the closure's digest. The registration status is read from the
-     * registration jobs, not from a pack file, so it carries none (decision DM-01M6TV6VDNHNCVWRHHC74WATV0).
+     * through its {@code ETag}, over the revision and the closure's digest.
      */
-    private static final Pattern UNFINGERPRINTED =
-            Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
+    private static final Pattern UNFINGERPRINTED = Pattern.compile("/activations/[^/]+(/packs)?");
 
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
@@ -66,28 +64,6 @@ public class CharterSteps {
     public CharterSteps(ScenarioHttp http, ScenarioPacks packs) {
         this.http = http;
         this.packs = packs;
-    }
-
-    /**
-     * A value an earlier step remembered ({@code I remember the field ... of the response body}), for the steps of other
-     * glue classes that compare against it.
-     *
-     * @param key the field name that was remembered
-     * @return the remembered text; {@code null} when nothing was
-     */
-    public @Nullable String remembered(String key) {
-        return remembered.get(key);
-    }
-
-    /**
-     * The header an earlier step remembered ({@code I remember the header ...}), for the steps of other glue classes that
-     * send it back.
-     *
-     * @param name the header's name
-     * @return the remembered value; {@code null} when nothing was remembered
-     */
-    public @Nullable String rememberedHeader(String name) {
-        return remembered.get(HEADER + name);
     }
 
     @Before
@@ -285,11 +261,9 @@ public class CharterSteps {
         assertThat(JSON.readTree(http.body()).path(field).asString()).matches(SHA256);
     }
 
-    /** Remembers a member of the body, named as it is or, when the name starts with {@code /}, by its JSON pointer. */
     @When("I remember the field {string} of the response body")
     public void remember(String field) throws Exception {
-        JsonNode body = JSON.readTree(http.body());
-        remembered.put(field, (field.startsWith("/") ? body.at(field) : body.path(field)).asString());
+        remembered.put(field, JSON.readTree(http.body()).path(field).asString());
     }
 
     @Then("the field {string} of the response body is the remembered one")
@@ -373,13 +347,6 @@ public class CharterSteps {
         JsonNode field = at(pointer);
         assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
         assertThat(field.asString()).isEqualTo(value);
-    }
-
-    @Then("the field at {string} is absent")
-    public void fieldAbsent(String pointer) throws Exception {
-        assertThat(JSON.readTree(http.body()).at(pointer).isMissingNode())
-                .as("%s is absent: %s", pointer, http.body())
-                .isTrue();
     }
 
     @Then("the field at {string} is {int}")
@@ -520,7 +487,7 @@ public class CharterSteps {
         return field;
     }
 
-    static String linkOf(JsonNode answer, String relation) {
+    private static String linkOf(JsonNode answer, String relation) {
         JsonNode href = answer.path(LINKS).path(relation).path("href");
         assertThat(href.isString())
                 .as("the answer has the link %s: %s", relation, answer)
@@ -529,7 +496,7 @@ public class CharterSteps {
     }
 
     /** A link's href with the server prefix taken off, as the request steps expect a path below it. */
-    static String belowBase(String href) {
+    private static String belowBase(String href) {
         assertThat(href).as("a link's href starts with the server prefix").startsWith(BASE + "/");
         return href.substring(BASE.length());
     }

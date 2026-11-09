@@ -12,18 +12,6 @@ value:
     skippedDeactivated: []
     unreachedBehindDeactivated: []
     skippedShared: []
-    staleIds: []
-    denyNotApplied: []
-    languageFiltered: []
-    overridden: []
-    missionTypeNotInForce: []
-    overrideNotApplied: []
-    enhancedTargetNotInForce: []
-    pinNotHeld: []
-    requiredNotHeld: []
-    requiredNotInForce: []
-  droppedPins: []
-  warnings: []
   _links:
     up:
       href: /api/v1/activations/a-1

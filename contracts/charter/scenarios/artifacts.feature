@@ -81,7 +81,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "tactic",
         "id": "rehearse",
         "packId": "qa",
-        "tactic": {"id": "rehearse", "schemaVersion": "1.0", "name": "Rehearse", "purpose": null, "notes": null, "steps": [{"title": "Only step", "description": null, "examples": []}], "failureModes": [], "appliesToLanguages": []},
+        "tactic": {"id": "rehearse", "schemaVersion": "1.0", "name": "Rehearse", "purpose": null, "notes": null, "steps": [{"title": "Only step", "description": null, "examples": [], "references": []}], "failureModes": [], "appliesToLanguages": [], "references": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=tactic"}
@@ -100,7 +100,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "directive",
         "id": "GUARD",
         "packId": "qa",
-        "directive": {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it.", "enforcement": "required", "scope": null, "integrityRules": [], "validationCriteria": [], "explicitAllowances": []},
+        "directive": {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it.", "enforcement": "required", "scope": null, "procedures": [], "integrityRules": [], "validationCriteria": [], "explicitAllowances": [], "references": [], "relationships": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/directive/GUARD"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=directive"}
@@ -119,7 +119,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Name things plainly."], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Name things plainly."], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": [], "references": [], "relationships": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}
@@ -138,7 +138,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "paradigm",
         "id": "layered",
         "packId": "qa",
-        "paradigm": {"id": "layered", "schemaVersion": "1.0", "name": "Layered architecture", "summary": "Keep the layers apart."},
+        "paradigm": {"id": "layered", "schemaVersion": "1.0", "name": "Layered architecture", "summary": "Keep the layers apart.", "directiveRefs": [], "references": [], "relationships": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/paradigm/layered"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=paradigm"}
@@ -157,7 +157,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "toolguide",
         "id": "git",
         "packId": "qa",
-        "toolguide": {"id": "git", "schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "# How to use git\n\n## Overview\n\nUse git under governance.\n", "summary": "Using git under governance.", "commands": [], "appliesToLanguages": [], "lastUpdated": null},
+        "toolguide": {"id": "git", "schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "# How to use git\n\n## Overview\n\nUse git under governance.\n", "summary": "Using git under governance.", "commands": [], "appliesToLanguages": [], "lastUpdated": null, "references": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/toolguide/git"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=toolguide"}

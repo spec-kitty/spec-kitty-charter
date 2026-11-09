@@ -85,7 +85,7 @@ the activation set (#125) is 0.2.0, and an additive change that is ready earlier
 |---|---|---|
 | #45 | Contract release publishing | Built (PR #198); open until 0.1.0 is cut, which is held |
 | #240 | Re-evaluate the artifact fields that mint relationships | The graph documents (CRG) are the authoritative copy of an edge (operator, 2026-10-27); the registration bodies' `relationships` may change before 1.0.0 |
-| #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first. Closed 2026-11-05: #299 and #319 fixed, and the whole-pack round trip is required under `CI gate / gate` |
+| #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
 
 ### 4.x cutover
 

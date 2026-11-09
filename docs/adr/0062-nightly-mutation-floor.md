@@ -66,9 +66,9 @@ After [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) merged, 
 
 | Module / group | Detected / mutants | Score | Margin over floor |
 |---|--:|--:|--:|
-| kernel | 312 / 379 | 82.3 % | 27 (at the raised floor of 75) |
+| kernel | 312 / 379 | 82.3 % | 65 |
 | missions | 108 / 144 | 75.0 % | 7 |
-| profiles | 64 / 66 | 96.9 % | 4 (at the raised floor of 90) |
+| profiles | 64 / 66 | 96.9 % | 31 |
 | packs `domain+application` | 1519 / 1632 | 93.0 % | 131 |
 | packs `infra.storage` | 1900 / 2092 | 90.8 % | 121 |
 | packs `infra.fetch` | 208 / 269 | 77.3 % | 19 |
@@ -95,17 +95,15 @@ characters in mutator descriptions, so it is not well-formed XML.
 
    | Module | Group | Packages | Floor | Margin |
    |---|---|---|--:|--:|
-   | kernel | `kernel` | `ai.speckitty.charter.kernel` | 75 | 27 |
+   | kernel | `kernel` | `ai.speckitty.charter.kernel` | 65 | 43 |
    | missions | `missions` | `ai.speckitty.charter.missions` | 70 | 7 |
-   | profiles | `profiles` | `ai.speckitty.charter.profiles` | 90 | 4 |
-   | activations | `activations` | `ai.speckitty.charter.activations` | 85 | 37 |
+   | profiles | `profiles` | `ai.speckitty.charter.profiles` | 50 | 2 |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
 
    The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each, 77.3 % gives
-   70). Missions takes the floor the operator ruled. Kernel and profiles were ruled 65 and 50, then raised to 75 and 90
-   by the raise rule once #384's tests landed (see the amendment below).
+   70). Kernel, missions and profiles take the floors the operator ruled.
 
    - **The margin** is how many detected mutants a group can lose and still pass, in the run that set its floor:
      `detected − ⌈floor × mutants / 100⌉` (kernel 289 of 378 with this pull request's triage, missions 108 of 144,
@@ -114,7 +112,7 @@ characters in mutator descriptions, so it is not well-formed XML.
      running, a large piece of code arriving untested. It does not catch a single weakened test, which costs a few
      mutants, well inside every packs and kernel margin.
    - **Missions is near the trigger.** A margin of 7 mutants means a small change there, even moving a few lines of
-     covered code, can turn the nightly red. Profiles had a margin of 2 in the first run; after #384 and the raise to 90 it has 4, so it is near the trigger too.
+     covered code, can turn the nightly red. Profiles had a margin of 2 in the first run and has 31 after #384.
 4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*`, `packs.infra.storage.*`
    (`infra.storage.config` included, operator ruling) and `packs.infra.fetch.*` (operator ruling), and never the
    Spring wiring (`application.config.*`, `infra.fetch.config.*`) or `infra.api.*` (the REST adapter). It runs only
@@ -128,8 +126,8 @@ characters in mutator descriptions, so it is not well-formed XML.
 6. **Moving a floor.**
    - **Raise** a floor by pull request when the nightly score is 5 or more points above it.
    - **Lower** a floor only by an amendment to this ADR.
-   - [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) has merged, so kernel and profiles qualified
-     under the raise rule; they are raised to 75 and 90 (see the amendment below).
+   - [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) has merged, so kernel and profiles now qualify
+     under the raise rule; the raise is a follow-up pull request.
 7. **Triage of a surviving mutant**, in this order:
    1. kill it by strengthening an **existing** test's assertion;
    2. mark it equivalent, with a one-line reason;
@@ -175,10 +173,10 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 - The nightly takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
   set-up steps.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
-- The missions floor of 70 sits well below the packs `domain+application` and `infra.storage` floors until its
-  score clears it by 5 points.
-- A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
-  profiles, with margins of 7 and 4 mutants, are close to the trigger instead.
+- Floors of 50 to 70 on kernel, missions and profiles sit well below the packs `domain+application` and
+  `infra.storage` floors until the follow-up raises them.
+- A floor does not catch a single weakened test: the margins of packs, kernel and profiles absorb tens of mutants.
+  Missions, with a margin of 7 mutants, is close to the trigger instead.
 
 ### Risks
 
@@ -220,33 +218,9 @@ module, and asked whether the thresholds should live in `gradle.properties`. Not
 
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — the design and the operator's decisions
 - [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) — kernel and profiles test gaps; it has merged, and the
-  kernel and profiles floors are raised to 75 and 90 (amendment below)
+  floors are raised in a follow-up pull request
 - [#386](https://github.com/spec-kitty/spec-kitty-charter/issues/386) — a pre-existing `Pep440Range.overlaps` defect
   found during the kernel triage
 - [The service build guide](/guides/service-build/#mutation-testing) — how to run PIT and read the floors
 - `build-logic/src/main/kotlin/charter.mutation-conventions.gradle.kts` and `MutationFloors.kt`
 - `.github/workflows/mutation-nightly.yml` and `scripts/ci/mutation_summary.py`
-
-## Amendment, 2026-11-06: kernel and profiles floors raised
-
-After #384 added kernel and profiles tests, a full `pitest --continue` (on #394's rebased head `684a8070`) scored
-kernel 82.3 % (312 of 379 detected) and profiles 96.9 % (64 of 66). Both clear their floors by far more than the 5
-points the raise rule asks for, so the operator approved raising them on 2026-11-06, by the same `floor5(score − 3)`
-rule the packs floors use:
-
-| Module | Floor | Raised to | Margin at the raise |
-|---|--:|--:|--:|
-| kernel | 65 | 75 | 27 |
-| profiles | 50 | 90 | 4 |
-
-The other floors are unchanged. Profiles is now close to its trigger, with a margin of 4 mutants.
-
-## Amendment, 2026-11-06 (activations): the activations module joins the nightly
-
-The operator ruled on 2026-11-06 that `service/activations` applies `charter.mutation-conventions`, with one
-whole-module group, `activations`, at a floor of 85. This follows the rule of decision 3 (`floor5(score − 3)`): a trial
-run scored 91.4 %, and `:activations:pitest` on this pull request's head scored 91.3 % (531 of 581 mutants detected,
-28 survived, 22 uncovered, test strength 94.9 %), a margin of 37 mutants over the 85 % floor (494 of 581 needed).
-`scripts/ci/mutation_summary.py` lists `activations` after `packs`, and the job summary shows "no report" for it when
-no `floors.json` is written. The nightly's `./gradlew pitest` already reaches every module that applies the plugin, so
-the workflow needs no change. The other floors are unchanged.

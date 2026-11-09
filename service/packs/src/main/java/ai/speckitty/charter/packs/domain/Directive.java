@@ -2,7 +2,9 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -34,7 +36,10 @@ public final class Directive implements CharterArtifact {
             .must(Constraints.of(
                     "A lenient-adherence directive needs at least one explicit allowance.",
                     directive -> directive.enforcement != Enforcement.LENIENT_ADHERENCE
-                            || !directive.explicitAllowances.isEmpty()));
+                            || !directive.explicitAllowances.isEmpty()))
+            .must(Constraints.of(
+                    "Every procedure of a directive must be non-blank.",
+                    directive -> directive.procedures.stream().noneMatch(String::isBlank)));
 
     private final DirectiveIdentifier id;
     private final PackIdentifier packId;
@@ -43,9 +48,11 @@ public final class Directive implements CharterArtifact {
     private final String intent;
     private final Enforcement enforcement;
     private final Optional<String> scope;
+    private final List<String> procedures;
     private final List<String> integrityRules;
     private final List<String> validationCriteria;
     private final List<String> explicitAllowances;
+    private final List<DirectiveReference> references;
 
     /**
      * Reconstructs a directive from its parts; reachable only inside the domain package.
@@ -57,9 +64,11 @@ public final class Directive implements CharterArtifact {
      * @param intent the intent
      * @param enforcement how strictly the directive binds
      * @param scope the scope, possibly empty
+     * @param procedures the ids of the procedures it requires, in authored order
      * @param integrityRules the integrity rules, in authored order
      * @param validationCriteria the validation criteria, in authored order
      * @param explicitAllowances the explicit allowances, in authored order
+     * @param references the references, in authored order with duplicates kept
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Directive(
@@ -70,9 +79,11 @@ public final class Directive implements CharterArtifact {
             String intent,
             Enforcement enforcement,
             Optional<String> scope,
+            List<String> procedures,
             List<String> integrityRules,
             List<String> validationCriteria,
-            List<String> explicitAllowances) {
+            List<String> explicitAllowances,
+            List<DirectiveReference> references) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -80,9 +91,11 @@ public final class Directive implements CharterArtifact {
         this.intent = Objects.requireNonNull(intent, "intent");
         this.enforcement = Objects.requireNonNull(enforcement, "enforcement");
         this.scope = Objects.requireNonNull(scope, "scope");
+        this.procedures = List.copyOf(procedures);
         this.integrityRules = List.copyOf(integrityRules);
         this.validationCriteria = List.copyOf(validationCriteria);
         this.explicitAllowances = List.copyOf(explicitAllowances);
+        this.references = List.copyOf(references);
         RULES.guard(this);
     }
 
@@ -134,6 +147,14 @@ public final class Directive implements CharterArtifact {
         return Optional.of(intent);
     }
 
+    @Override
+    public List<Relationship> relationships() {
+        List<ArtifactEdges.TypedRef> typed = references.stream()
+                .map(ref -> new ArtifactEdges.TypedRef(ref.type(), ref.id(), ref.when(), ref.reason()))
+                .toList();
+        return ArtifactEdges.build(urn(), typed, NodeKind.of(ArtifactKind.PROCEDURE), procedures);
+    }
+
     /**
      * The {@code title}.
      *
@@ -171,6 +192,15 @@ public final class Directive implements CharterArtifact {
     }
 
     /**
+     * The ids of the procedures the directive requires, in authored order.
+     *
+     * @return an immutable list
+     */
+    public List<String> procedures() {
+        return procedures;
+    }
+
+    /**
      * The integrity rules, in authored order.
      *
      * @return an immutable list
@@ -195,6 +225,15 @@ public final class Directive implements CharterArtifact {
      */
     public List<String> explicitAllowances() {
         return explicitAllowances;
+    }
+
+    /**
+     * The references, in authored order with duplicates kept.
+     *
+     * @return an immutable list
+     */
+    public List<DirectiveReference> references() {
+        return references;
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
@@ -222,9 +261,11 @@ public final class Directive implements CharterArtifact {
         private @Nullable String intent;
         private @Nullable Enforcement enforcement;
         private Optional<String> scope = Optional.empty();
+        private final List<String> procedures = new ArrayList<>();
         private final List<String> integrityRules = new ArrayList<>();
         private final List<String> validationCriteria = new ArrayList<>();
         private final List<String> explicitAllowances = new ArrayList<>();
+        private final List<DirectiveReference> references = new ArrayList<>();
 
         private Builder() {}
 
@@ -306,6 +347,17 @@ public final class Directive implements CharterArtifact {
         }
 
         /**
+         * Appends a procedure id.
+         *
+         * @param value the procedure id
+         * @return this builder
+         */
+        public Builder procedure(String value) {
+            this.procedures.add(value);
+            return this;
+        }
+
+        /**
          * Appends a integrity rule.
          *
          * @param value the integrity rule
@@ -339,6 +391,17 @@ public final class Directive implements CharterArtifact {
         }
 
         /**
+         * Appends a reference.
+         *
+         * @param value the reference
+         * @return this builder
+         */
+        public Builder reference(DirectiveReference value) {
+            this.references.add(value);
+            return this;
+        }
+
+        /**
          * Builds the directive.
          *
          * @return the validated directive
@@ -354,9 +417,11 @@ public final class Directive implements CharterArtifact {
                     Objects.requireNonNull(intent, "intent"),
                     Objects.requireNonNull(enforcement, "enforcement"),
                     scope,
+                    procedures,
                     integrityRules,
                     validationCriteria,
-                    explicitAllowances);
+                    explicitAllowances,
+                    references);
         }
     }
 }

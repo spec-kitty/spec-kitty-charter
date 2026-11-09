@@ -51,22 +51,6 @@ class ActivationConditionalRequestTest {
 
     private String revision;
 
-    /** The tag getActivation answers now: over the revision and the closure, not the revision (decision 01M6Y11E55YP5TG1EJ1MDKCFRP). */
-    private String documentTag() throws Exception {
-        MockHttpServletResponse read = send(get(DOCUMENT));
-        assertThat(read.getStatus()).isEqualTo(200);
-        String tag = read.getHeader(HttpHeaders.ETAG);
-        assertThat(tag).matches("\"sha256:[0-9a-f]{64}\"").isNotEqualTo("\"" + revision + "\"");
-        return tag;
-    }
-
-    /** The revision of the document now stored, from the body of a read. */
-    private String storedRevision() throws Exception {
-        return JSON.readTree(send(get(DOCUMENT)).getContentAsString())
-                .path("revision")
-                .asString();
-    }
-
     private static MockHttpServletRequestBuilder authorized(MockHttpServletRequestBuilder request) {
         return request.header(HttpHeaders.AUTHORIZATION, "Bearer " + ActivationTestWiring.TOKEN);
     }
@@ -88,8 +72,7 @@ class ActivationConditionalRequestTest {
     void storeOne() throws Exception {
         repository.clear();
         packs.fingerprint("sha256:fixture");
-        MockHttpServletResponse created =
-                putDocument("{\"schemaVersion\": 2, \"selected\": {\"mission_type\": [\"research\"]}}");
+        MockHttpServletResponse created = putDocument("{\"schemaVersion\": 1, \"missionTypes\": [\"research\"]}");
         assertThat(created.getStatus()).isEqualTo(201);
         revision = JSON.readTree(created.getContentAsString()).path("revision").asString();
         assertThat(created.getHeader(HttpHeaders.ETAG)).isEqualTo("\"" + revision + "\"");
@@ -105,15 +88,13 @@ class ActivationConditionalRequestTest {
     @ParameterizedTest
     @ValueSource(strings = {"W/\"%s\"", "\"%s\"", "\"other\", W/\"%s\"", "\"other\"", "W/\"other\"", "\"%s-x\""})
     void theDocumentReadAnswers304ExactlyWhenSpringsWeakComparisonWould(String template) throws Exception {
-        String quoted = documentTag();
-        String tag = quoted.substring(1, quoted.length() - 1);
-        String ifNoneMatch = template.replace("%s", tag);
-        String etag = EntityTags.quote(tag);
+        String ifNoneMatch = template.replace("%s", revision);
+        String etag = EntityTags.quote(revision);
 
         MockHttpServletResponse read = send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, ifNoneMatch));
 
         boolean notModified = springSaysNotModified(ifNoneMatch, etag);
-        assertThat(EntityTags.noneMatch(ifNoneMatch, tag)).as(ifNoneMatch).isEqualTo(notModified);
+        assertThat(EntityTags.noneMatch(ifNoneMatch, revision)).as(ifNoneMatch).isEqualTo(notModified);
         assertThat(read.getStatus()).as(ifNoneMatch).isEqualTo(notModified ? 304 : 200);
         assertThat(read.getHeader(HttpHeaders.ETAG)).isEqualTo(etag);
         if (notModified) {
@@ -129,42 +110,15 @@ class ActivationConditionalRequestTest {
         MockHttpServletResponse read = send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, "*"));
 
         assertThat(read.getStatus()).isEqualTo(304);
-        assertThat(read.getHeader(HttpHeaders.ETAG)).isEqualTo(documentTag());
+        assertThat(read.getHeader(HttpHeaders.ETAG)).isEqualTo(EntityTags.quote(revision));
     }
 
     @Test
-    void aWeakTagOfTheClosureTagAnswers304AndTheRevisionIsNoTagOfTheRead() throws Exception {
-        String tag = documentTag();
+    void aWeakTagOfTheRevisionAnswers304() throws Exception {
+        MockHttpServletResponse read = send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, "W/\"" + revision + "\""));
 
-        MockHttpServletResponse weak = send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, "W/" + tag));
-        MockHttpServletResponse revisionOnly =
-                send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, "\"" + revision + "\""));
-
-        assertThat(weak.getStatus()).isEqualTo(304);
-        assertThat(weak.getContentAsString()).isEmpty();
-        assertThat(revisionOnly.getStatus())
-                .as("the revision is what a write answers, not this read's tag")
-                .isEqualTo(200);
-    }
-
-    @Test
-    void theDocumentReadsTagChangesWithAPackOfTheClosureAndSoDoesThePreconditionOfAWriteThatSendsIt() throws Exception {
-        String tag = documentTag();
-        assertThat(send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, tag)).getStatus())
-                .isEqualTo(304);
-
-        packs.fingerprint("sha256:changed");
-
-        assertThat(send(get(DOCUMENT).header(HttpHeaders.IF_NONE_MATCH, tag)).getStatus())
-                .isEqualTo(200);
-        assertThat(putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, tag)
-                        .getStatus())
-                .as("a closure tag of the closure before the pack changed")
-                .isEqualTo(412);
-        assertThat(putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"" + revision + "\"")
-                        .getStatus())
-                .as("the revision is still current")
-                .isEqualTo(200);
+        assertThat(read.getStatus()).isEqualTo(304);
+        assertThat(read.getContentAsString()).isEmpty();
     }
 
     @Test
@@ -185,7 +139,7 @@ class ActivationConditionalRequestTest {
                 .isEqualTo(200);
 
         packs.fingerprint("sha256:fixture");
-        assertThat(putDocument("{\"schemaVersion\": 2}").getStatus()).isEqualTo(200);
+        assertThat(putDocument("{\"schemaVersion\": 1}").getStatus()).isEqualTo(200);
         assertThat(send(get(DOCUMENT + "/packs").header(HttpHeaders.IF_NONE_MATCH, etag))
                         .getStatus())
                 .isEqualTo(200);
@@ -194,14 +148,14 @@ class ActivationConditionalRequestTest {
     @Test
     void anIfNoneMatchOtherThanStarOnAWriteIs400WithoutACode() throws Exception {
         for (String value : List.of("\"x\"", "W/\"" + revision + "\"", "\"" + revision + "\"")) {
-            MockHttpServletResponse answer = putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_NONE_MATCH, value);
+            MockHttpServletResponse answer = putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_NONE_MATCH, value);
 
             assertThat(answer.getStatus()).as(value).isEqualTo(400);
             assertThat(JSON.readTree(answer.getContentAsString()).has("code"))
                     .as(value)
                     .isFalse();
         }
-        assertThat(storedRevision()).isEqualTo(revision);
+        assertThat(send(get(DOCUMENT)).getHeader(HttpHeaders.ETAG)).isEqualTo("\"" + revision + "\"");
     }
 
     @Test
@@ -209,20 +163,18 @@ class ActivationConditionalRequestTest {
         int reads = packs.reads();
 
         MockHttpServletResponse answer = putDocument(
-                "{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"" + revision + "\"", HttpHeaders.IF_NONE_MATCH, "*");
+                "{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"" + revision + "\"", HttpHeaders.IF_NONE_MATCH, "*");
 
         assertThat(answer.getStatus()).isEqualTo(400);
         assertThat(JSON.readTree(answer.getContentAsString()).has("code")).isFalse();
-        assertThat(JSON.readTree(answer.getContentAsString()).path("detail").asString())
-                .isEqualTo("A write carries If-Match or If-None-Match, not both.");
         assertThat(packs.reads()).isEqualTo(reads);
-        assertThat(storedRevision()).isEqualTo(revision);
+        assertThat(send(get(DOCUMENT)).getHeader(HttpHeaders.ETAG)).isEqualTo("\"" + revision + "\"");
     }
 
     @Test
     void anIfMatchThatIsNotOneQuotedRevisionIs400() throws Exception {
         MockHttpServletResponse answer =
-                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "W/\"" + revision + "\"");
+                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "W/\"" + revision + "\"");
 
         assertThat(answer.getStatus()).isEqualTo(400);
     }
@@ -230,9 +182,9 @@ class ActivationConditionalRequestTest {
     @Test
     void aStaleIfMatchIs412AndAFreshOneIs200() throws Exception {
         MockHttpServletResponse stale =
-                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"sha256:" + "0".repeat(64) + "\"");
+                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"sha256:" + "0".repeat(64) + "\"");
         MockHttpServletResponse fresh =
-                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"" + revision + "\"");
+                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"" + revision + "\"");
 
         assertThat(stale.getStatus()).isEqualTo(412);
         assertThat(fresh.getStatus()).isEqualTo(200);

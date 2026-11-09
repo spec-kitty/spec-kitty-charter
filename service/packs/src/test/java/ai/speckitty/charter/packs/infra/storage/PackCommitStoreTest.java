@@ -13,12 +13,9 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
-import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -32,8 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -56,17 +51,6 @@ class PackCommitStoreTest {
 
     private static DomainRepositoryService.Locations locations(Path packDir) {
         return () -> List.of(new PackLocation("pack-a", PackLevel.ORG, packDir));
-    }
-
-    /**
-     * {@code pack-a} without its deliberately unreadable tactic. A write through {@link CommitStorePackWriteStore} is
-     * judged over every closure the pack joins as it will be after the write (IC-15), which a pack that cannot be read
-     * cannot be, so a test of the write path itself (the precondition, the shard) starts from a readable pack.
-     */
-    private static Path unbrokenCopyOf(Path host) throws IOException {
-        Path packDir = PackFixtures.copyOf("pack-a", host);
-        Files.delete(packDir.resolve("broken-tactic.tactic.yaml"));
-        return packDir;
     }
 
     private static Pack mutatedWithToolguide(Pack baseline, String toolguideId) {
@@ -179,7 +163,7 @@ class PackCommitStoreTest {
     @Test
     @DisplayName("a commit whose If-Match went stale before the swap is refused (412) and changes zero files")
     void aCommitWithAStaleIfMatchIsRefusedAndChangesNothing(@TempDir Path host) throws IOException {
-        Path packDir = unbrokenCopyOf(host);
+        Path packDir = PackFixtures.copyOf("pack-a", host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
@@ -195,7 +179,8 @@ class PackCommitStoreTest {
         assertThatThrownBy(() -> writeStore.commit(
                         PACK,
                         etag,
-                        Change.artifact(mutatedWithToolguide(service.load(PACK), "ripgrep"), toolguide("ripgrep"))))
+                        Change.artifact(
+                                mutatedWithToolguide(service.load(PACK), "ripgrep"), toolguide("ripgrep"), List.of())))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -253,7 +238,7 @@ class PackCommitStoreTest {
     @DisplayName("a registration over a partly invalid relationship shard is refused and leaves the shard"
             + " byte-unchanged, while one into a pack without a shard lands")
     void aRegistrationOverAnInvalidShardIsRefusedAndKeepsTheShard(@TempDir Path host) throws IOException {
-        Path packDir = unbrokenCopyOf(host);
+        Path packDir = PackFixtures.copyOf("pack-a", host);
         String partlyInvalid = """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -292,7 +277,7 @@ class PackCommitStoreTest {
     @Test
     @DisplayName("a write to a configured but broken pack is pack_unreadable, while an unconfigured pack is not found")
     void aBrokenConfiguredPackIsUnreadableNotNotFoundOnAWrite(@TempDir Path host) throws IOException {
-        Path packDir = unbrokenCopyOf(host);
+        Path packDir = PackFixtures.copyOf("pack-a", host);
         String descriptor = Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8);
         Files.writeString(packDir.resolve(PackFileSet.PACK_YAML), "pack_id: [\n", StandardCharsets.UTF_8);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
@@ -354,11 +339,10 @@ class PackCommitStoreTest {
      * fixture on {@code main} at 90de8f9, when it still read every digested file as UTF-8 text. Captured by a
      * throwaway test printing {@code currentRevision} on this lane's base before the change (its revision readers
      * and the fixture were byte-identical to 90de8f9's); re-captured on 2026-11-03 from the unchanged revision code after the
-     * fixture's {@code pack_id} became a valid ULID (FR-003), and again on 2026-11-05 after the fixture's tactic lost
-     * its {@code references} (ADR-0064); pinned so reading bytes does not move an existing ETag.
+     * fixture's {@code pack_id} became a valid ULID (FR-003); pinned so reading bytes does not move an existing ETag.
      */
     private static final String PACK_A_REVISION_ON_MAIN =
-            "sha256:f76f94e24cb700573c43190b45432b1374360c4f189ab62405e0f4bde9e83744";
+            "sha256:453b87b4217d5a74ff81c31c65019d06f2bac46a16c53a2db364b8be69ea0c92";
 
     /** A root graph shard, which {@link PackFileSet#digested} covers, written with bytes that are not UTF-8. */
     private static final String NON_UTF8_SHARD = "binary.graph.yaml";
@@ -431,195 +415,6 @@ class PackCommitStoreTest {
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
     }
 
-    // ---- whole-pack replace and create (ADR-0065 D1, IC-04 step 10) -------------------------------------------------
-
-    private static StagedPack stagedFrom(Path host, String fixture) throws IOException {
-        Path upload = PackFixtures.copyOf(fixture, host.resolve("stage"));
-        Files.delete(upload.resolve(PackFixtures.BROKEN_FILE));
-        Files.delete(upload.resolve(PackFixtures.BETA_FILE));
-        Files.writeString(
-                upload.resolve(PackFixtures.ALPHA_FILE),
-                Files.readString(upload.resolve(PackFixtures.ALPHA_FILE), StandardCharsets.UTF_8)
-                        .replace("Alpha tactic", "Alpha, replaced"),
-                StandardCharsets.UTF_8);
-        return new StagedPack(upload);
-    }
-
-    private static PackCommitStore wholePackStore(Path packs, PackWriteGeneration generation) {
-        return new PackCommitStore(
-                new StorageRootLocations(packs),
-                new YamlSerializationStrategy(),
-                new RegistryWriteLock(Duration.ofSeconds(5)),
-                generation);
-    }
-
-    @Test
-    @DisplayName("replaceWhole swaps the staged tree in whole: what the tree lacks is gone, and no residue stays")
-    void replaceWholeSwapsTheStagedTreeInAndDropsWhatItLeavesOut(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Path live = PackFixtures.copyOf("pack-a", packs);
-        StagedPack staged = stagedFrom(host, "pack-a");
-        PackCommitStore store = wholePackStore(packs, new PackWriteGeneration());
-
-        PackRevision revision = store.replaceWhole(PACK, staged);
-
-        assertThat(snapshot(live)).isEqualTo(snapshot(staged.directory()));
-        assertThat(snapshot(live).keySet()).doesNotContain(PackFixtures.BETA_FILE, PackFixtures.BROKEN_FILE);
-        assertThat(revision).isEqualTo(store.revisionOf(staged));
-        assertThat(noCommitResidue(packs)).as("no staging or aside residue").isTrue();
-    }
-
-    @Test
-    @DisplayName(
-            "replaceWhole holds the write generation odd for the swap alone, and even again after it, failed or not")
-    void replaceWholeBracketsTheSwapWithTheWriteGeneration(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Path live = PackFixtures.copyOf("pack-a", packs);
-        StagedPack staged = stagedFrom(host, "pack-a");
-        PackWriteGeneration generation = new PackWriteGeneration();
-        List<Boolean> oddInsideTheSwap = new ArrayList<>();
-        PackCommitStore store = new PackCommitStore(
-                new StorageRootLocations(packs),
-                new YamlSerializationStrategy(),
-                (stagingDir, liveDir) -> {
-                    oddInsideTheSwap.add(PackWriteGeneration.isSwapping(generation.registry()));
-                    if (oddInsideTheSwap.size() == 1) {
-                        throw new IOException("the first swap fails");
-                    }
-                    Path aside = liveDir.resolveSibling(liveDir.getFileName() + ".pack-old-test");
-                    PackCommitStore.moveDirectory(liveDir, aside);
-                    PackCommitStore.moveDirectory(stagingDir, liveDir);
-                    PackCommitStore.deleteTree(aside);
-                },
-                new RegistryWriteLock(Duration.ofSeconds(5)),
-                generation);
-        Map<String, String> before = snapshot(live);
-
-        assertThatThrownBy(() -> store.replaceWhole(PACK, staged))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-        assertThat(snapshot(live)).as("a failed swap changes nothing").isEqualTo(before);
-        assertThat(PackWriteGeneration.isSwapping(generation.registry())).isFalse();
-        assertThat(noCommitResidue(packs)).isTrue();
-
-        store.replaceWhole(PACK, staged);
-
-        assertThat(oddInsideTheSwap).as("odd inside both swaps").containsExactly(true, true);
-        assertThat(PackWriteGeneration.isSwapping(generation.registry())).isFalse();
-        assertThat(PackWriteGeneration.isSwapping(generation.ofPack("pack-a"))).isFalse();
-        assertThat(generation.ofPack("pack-a")).as("two swaps ran").isEqualTo(4L);
-    }
-
-    @Test
-    @DisplayName(
-            "a replace the process dies in, between the swap's two renames, is repaired by the next listing (#281)")
-    void aReplaceInterruptedBetweenTheRenamesIsRepairedByTheNextListing(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Path live = PackFixtures.copyOf("pack-a", packs);
-        Map<String, String> before = snapshot(live);
-        StagedPack staged = stagedFrom(host, "pack-a");
-        PackCommitStore dying = new PackCommitStore(
-                new StorageRootLocations(packs),
-                new YamlSerializationStrategy(),
-                (stagingDir, liveDir) -> {
-                    PackCommitStore.moveDirectory(
-                            liveDir, liveDir.resolveSibling(liveDir.getFileName() + ".pack-old-crash"));
-                    throw new IllegalStateException("the process died between the renames");
-                },
-                new RegistryWriteLock(Duration.ofSeconds(5)),
-                new PackWriteGeneration());
-
-        assertThatThrownBy(() -> dying.replaceWhole(PACK, staged))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasCauseInstanceOf(IllegalStateException.class);
-        assertThat(live)
-                .as("the live directory is missing, as a crash leaves it")
-                .doesNotExist();
-
-        assertThat(new StorageRootLocations(packs).all())
-                .extracting(PackLocation::name)
-                .containsExactly("pack-a");
-        assertThat(snapshot(live)).as("the last committed state is back").isEqualTo(before);
-    }
-
-    @Test
-    @DisplayName("create reserves the directory and moves the staged tree in; no residue stays")
-    void createMovesTheStagedTreeInUnderTheName(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Files.createDirectories(packs);
-        StagedPack staged = stagedFrom(host, "pack-a");
-        PackWriteGeneration generation = new PackWriteGeneration();
-        PackCommitStore store = wholePackStore(packs, generation);
-
-        PackRevision revision = store.create("fresh-pack", staged);
-
-        assertThat(snapshot(packs.resolve("fresh-pack"))).isEqualTo(snapshot(staged.directory()));
-        assertThat(revision).isEqualTo(store.revisionOf(staged));
-        assertThat(noCommitResidue(packs)).isTrue();
-        assertThat(PackWriteGeneration.isSwapping(generation.registry())).isFalse();
-        assertThat(generation.ofPack("fresh-pack"))
-                .as("the move was bracketed once")
-                .isEqualTo(2L);
-    }
-
-    @Test
-    @DisplayName("create refuses a name that is taken, and leaves the stored pack as it was")
-    void createRefusesATakenName(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Path live = PackFixtures.copyOf("pack-a", packs);
-        Map<String, String> before = snapshot(live);
-        PackCommitStore store = wholePackStore(packs, new PackWriteGeneration());
-        StagedPack staged = stagedFrom(host, "pack-a");
-
-        assertThatThrownBy(() -> store.create("pack-a", staged))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
-
-        assertThat(snapshot(live)).isEqualTo(before);
-        assertThat(noCommitResidue(packs)).isTrue();
-    }
-
-    @Test
-    @DisplayName("a create that fails leaves neither the reserved directory nor staging behind")
-    void aFailedCreateLeavesNothingBehind(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        Files.createDirectories(packs);
-        PackCommitStore store = wholePackStore(packs, new PackWriteGeneration());
-        StagedPack missing = new StagedPack(host.resolve("not-there"));
-
-        assertThatThrownBy(() -> store.create("fresh-pack", missing))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-
-        assertThat(packs.resolve("fresh-pack")).doesNotExist();
-        assertThat(noCommitResidue(packs)).isTrue();
-        assertThat(PackWriteGeneration.isSwapping(PackWriteGeneration.shared().registry()))
-                .isFalse();
-    }
-
-    @Test
-    @DisplayName(
-            "the writable location is the entry under the writable root: a plain directory or nothing, never a link")
-    void theWritableLocationIsAPlainDirectoryOrNothing(@TempDir Path host) throws IOException {
-        Path packs = host.resolve("packs");
-        PackFixtures.copyOf("pack-a", packs);
-        Path elsewhere = Files.createDirectories(host.resolve("elsewhere"));
-        Files.createSymbolicLink(packs.resolve("linked"), elsewhere);
-        Files.writeString(packs.resolve("a-file"), "x", StandardCharsets.UTF_8);
-        PackCommitStore store = wholePackStore(packs, new PackWriteGeneration());
-
-        store.requireWritableLocation("pack-a");
-        store.requireWritableLocation("not-there-yet");
-        for (String hostile : List.of("linked", "a-file")) {
-            assertThatThrownBy(() -> store.requireWritableLocation(hostile))
-                    .as(hostile)
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
-        }
-    }
-
     /** Every regular file under {@code dir}, relative path to raw bytes, for files that are not UTF-8 text. */
     private static Map<String, byte[]> byteSnapshot(Path dir) {
         Map<String, byte[]> out = new TreeMap<>();
@@ -645,7 +440,6 @@ class PackCommitStoreTest {
 
     /** Every regular file under {@code dir}, relative path to UTF-8 content, for a byte-for-byte comparison. */
     private static Map<String, String> snapshot(Path dir) {
-        assertThat(dir).as("the directory to compare").isDirectory();
         Map<String, String> out = new TreeMap<>();
         try {
             Files.walkFileTree(dir, new SimpleFileVisitor<>() {

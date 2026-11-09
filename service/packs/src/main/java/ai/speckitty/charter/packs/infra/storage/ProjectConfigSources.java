@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -64,16 +63,6 @@ public final class ProjectConfigSources implements PackSources {
         Fingerprint fingerprint = Fingerprint.sha256().add(DOMAIN).add(packs.fingerprint());
         configDir.get().ifPresent(directory -> addConfigFiles(fingerprint, directory));
         return fingerprint.value();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The project configuration files are left out: the closure's own packs are what the digest covers.
-     */
-    @Override
-    public String fingerprintOf(Collection<String> packNames) {
-        return packs.fingerprintOf(packNames);
     }
 
     private static void addConfigFiles(Fingerprint fingerprint, Path directory) {

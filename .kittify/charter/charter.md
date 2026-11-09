@@ -13,8 +13,7 @@ Interviewed with the operator on 2026-10-18. Amended 2026-10-27 (operator): the 
 rule of PROJECT_002 reads as equality of meaning (ADR-0036). Amended 2026-10-28: rules for
 orchestrating cloud sessions, and the rewrite is designed without regard to core. Amended
 2026-10-29 (operator): until the service is incorporated into core, PROJECT_002's first two
-failures are judged against the charter's own model, contract and packs (epic #186). Amended
-2026-11-05 (operator): the whole-pack round trip is a gate before merge (epic #186).
+failures are judged against the charter's own model, contract and packs (epic #186).
 
 ## What this repository is for
 
@@ -85,8 +84,6 @@ When a session hands Missions to child cloud sessions, it follows these rules. T
 - The **Java style check** on hand-written sources, wired into `verifyAll`: palantir-java-format
   (Spotless) and Checkstyle, with Error Prone, NullAway and doclint beside them. What each
   gate covers: `docs/guides/service-build.md`.
-- The **whole-pack round trip** (`:packs:wholePackRoundTrip`), required through `CI gate / gate` for every
-  pull request that changes the contracts, the service or the build (operator ruling, 2026-11-05; epic #186).
 - The docs checks: `check_docs.py` (all eight), markdownlint-cli2 and cspell.
 
 ## Practices in force

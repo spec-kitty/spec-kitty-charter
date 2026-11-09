@@ -36,9 +36,14 @@ class DoctrineRoundTripTest {
                 "Intent",
                 "lenient-adherence",
                 Optional.of("global"),
-                List.of("rule", "other", "rule"),
+                List.of("first", "second", "first"),
+                List.of("rule"),
                 List.of("criterion"),
-                List.of("allowance"));
+                List.of("allowance"),
+                List.of(
+                        new DirectiveDso.Reference("tactic", "t-1", Optional.of("when ready"), Optional.of("why")),
+                        new DirectiveDso.Reference("tactic", "t-1", Optional.empty(), Optional.empty()),
+                        new DirectiveDso.Reference("styleguide", "s-1", Optional.of("w"), Optional.empty())));
 
         assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE)))
                 .isEqualTo(dso);
@@ -46,8 +51,18 @@ class DoctrineRoundTripTest {
 
     @Test
     void aMinimalDirectiveNormalizesAbsentListsToEmpty() {
-        DirectiveDso dso =
-                new DirectiveDso("D", "1.0", "T", "I", "advisory", Optional.empty(), List.of(), List.of(), List.of());
+        DirectiveDso dso = new DirectiveDso(
+                "D",
+                "1.0",
+                "T",
+                "I",
+                "advisory",
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
 
         assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE)))
                 .isEqualTo(dso);
@@ -79,7 +94,8 @@ class DoctrineRoundTripTest {
                 Optional.of(tooling),
                 Optional.of("quality"),
                 Optional.of(new ConfigValue.Mapping(new LinkedHashMap<>(lint))),
-                List.of("java"));
+                List.of("java"),
+                List.of("ref-1", "ref-1"));
 
         StyleguideDso back =
                 read(yaml.read(StyleguideBinding.INSTANCE, yaml.write(StyleguideBinding.INSTANCE, dso), FILE));
@@ -109,7 +125,13 @@ class DoctrineRoundTripTest {
 
     @Test
     void aParadigmSurvivesTheRoundTrip() {
-        ParadigmDso dso = new ParadigmDso("para-1", "1.0", "Name", "Summary");
+        ParadigmDso dso = new ParadigmDso(
+                "para-1",
+                "1.0",
+                "Name",
+                "Summary",
+                List.of("DIRECTIVE_001", "DIRECTIVE_002"),
+                List.of(new ParadigmDso.Reference("tactic", "t"), new ParadigmDso.Reference("tactic", "t")));
 
         assertThat(read(yaml.read(ParadigmBinding.INSTANCE, yaml.write(ParadigmBinding.INSTANCE, dso), FILE)))
                 .isEqualTo(dso);
@@ -145,6 +167,7 @@ class DoctrineRoundTripTest {
                 tooling,
                 Optional.empty(),
                 lint,
+                List.of(),
                 List.of());
     }
 }

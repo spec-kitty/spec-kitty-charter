@@ -7,12 +7,14 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.ParadigmReference;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
@@ -65,9 +67,12 @@ class DoctrineRepositoryContractTest {
                 .intent("Keep it honest")
                 .enforcement(Enforcement.LENIENT_ADHERENCE)
                 .scope("global")
+                .procedure("first")
+                .procedure("second")
                 .integrityRule("rule")
                 .validationCriterion("criterion")
                 .explicitAllowance("allowance")
+                .reference(new DirectiveReference("tactic", "t-1", Optional.of("when"), Optional.of("why")))
                 .build();
     }
 
@@ -83,6 +88,7 @@ class DoctrineRepositoryContractTest {
                 .antiPattern(new StyleguideAntiPattern("A", "an anti-pattern", "bad", "good"))
                 .qualityTest("does it read")
                 .appliesToLanguage("java")
+                .reference("other-styleguide")
                 .build();
     }
 
@@ -93,6 +99,8 @@ class DoctrineRepositoryContractTest {
                 .schemaVersion("1.0")
                 .name(name)
                 .summary("A way of working")
+                .directiveRef("DIRECTIVE_001")
+                .reference(new ParadigmReference("tactic", "t-1"))
                 .build();
     }
 
@@ -169,9 +177,10 @@ class DoctrineRepositoryContractTest {
         Files.writeString(packDirectory.resolve("DIRECTIVE_902.directive.yaml"), """
                 id: DIRECTIVE_902
                 schema_version: '1.0'
-                title: ' '
+                title: Blank procedure
                 intent: i
                 enforcement: required
+                procedures: [' ']
                 """);
 
         Pack pack = service.load(PACK);

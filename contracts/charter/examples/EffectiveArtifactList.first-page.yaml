@@ -1,6 +1,6 @@
 summary: >-
-  The first page of an activation's effective artifacts: the version the layer merge keeps, with the pack and the
-  level that hold it. self is the page.
+  The first page of an activation's effective artifacts, as the operation answers once it is built (reserved until
+  then, ADR-0020 D8). self is the page.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -15,8 +15,6 @@ value:
   items:
     - kind: directive
       artifactId: DIRECTIVE_010
-      packId: main
-      level: org
       state: active
       required: false
       policy: open

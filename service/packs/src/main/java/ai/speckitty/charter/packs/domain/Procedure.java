@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -16,8 +18,7 @@ import org.jspecify.annotations.Nullable;
  * steps, each naming the role that acts. It is a child entity identified by its {@link ProcedureIdentifier}; two
  * procedures are equal when they have the same identity, whatever their other fields hold.
  *
- * <p>It owns its steps and anti-patterns; their order and duplicates are significant. Its relationships are authored
- * in the pack's graph documents (ADR-0064). Build one with
+ * <p>It owns its steps, anti-patterns and references; their order and duplicates are significant. Build one with
  * {@link #builder()}.
  */
 public final class Procedure implements CharterArtifact {
@@ -48,6 +49,7 @@ public final class Procedure implements CharterArtifact {
     private final String exitCondition;
     private final List<ProcedureStep> steps;
     private final List<AntiPatternEntry> antiPatterns;
+    private final List<ProcedureReference> references;
     private final Optional<String> notes;
     private final List<String> appliesToLanguages;
 
@@ -64,6 +66,7 @@ public final class Procedure implements CharterArtifact {
      * @param exitCondition the condition under which the procedure is done
      * @param steps the steps, in authored order; never empty
      * @param antiPatterns the anti-patterns, in authored order
+     * @param references the references, in authored order with duplicates kept
      * @param notes the notes, possibly empty
      * @param appliesToLanguages the applicable languages, in authored order
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
@@ -78,6 +81,7 @@ public final class Procedure implements CharterArtifact {
             String exitCondition,
             List<ProcedureStep> steps,
             List<AntiPatternEntry> antiPatterns,
+            List<ProcedureReference> references,
             Optional<String> notes,
             List<String> appliesToLanguages) {
         this.id = Objects.requireNonNull(id, "id");
@@ -89,6 +93,7 @@ public final class Procedure implements CharterArtifact {
         this.exitCondition = Objects.requireNonNull(exitCondition, "exitCondition");
         this.steps = List.copyOf(steps);
         this.antiPatterns = List.copyOf(antiPatterns);
+        this.references = List.copyOf(references);
         this.notes = Objects.requireNonNull(notes, "notes");
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
         RULES.guard(this);
@@ -140,6 +145,35 @@ public final class Procedure implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return Optional.of(description);
+    }
+
+    /**
+     * A procedure mints no relationship: always empty, even when it carries {@link #references()}.
+     *
+     * <p>The references are kept on the procedure but deliberately not turned into edges (research D3, #189). Minting
+     * them through {@link ArtifactEdges} would yield {@code SUGGESTS} edges while the pack's
+     * {@code procedure.graph.yaml} holds the same edges as {@code requires}, producing conflicting duplicates; which
+     * of the two is the edge authority is #189's decision, not this entity's.
+     *
+     * @return an empty list
+     */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
+    }
+
+    /**
+     * The references the procedure writes: kept though no relationship is minted from them, so the compose's reference
+     * check still covers them.
+     *
+     * @return the references, bare or pack-qualified
+     */
+    @Override
+    public List<PackQualifiedReference> writtenReferences() {
+        return references.stream()
+                .map(ref -> PackQualifiedReference.typed(ref.type().token(), ref.id()))
+                .distinct()
+                .toList();
     }
 
     /**
@@ -208,6 +242,15 @@ public final class Procedure implements CharterArtifact {
     }
 
     /**
+     * The references, in authored order with duplicates kept; never minted as relationships.
+     *
+     * @return an immutable list
+     */
+    public List<ProcedureReference> references() {
+        return references;
+    }
+
+    /**
      * The {@code notes}.
      *
      * @return the notes, empty when absent
@@ -252,6 +295,7 @@ public final class Procedure implements CharterArtifact {
         private @Nullable String exitCondition;
         private final List<ProcedureStep> steps = new ArrayList<>();
         private final List<AntiPatternEntry> antiPatterns = new ArrayList<>();
+        private final List<ProcedureReference> references = new ArrayList<>();
         private Optional<String> notes = Optional.empty();
         private final List<String> appliesToLanguages = new ArrayList<>();
 
@@ -357,6 +401,17 @@ public final class Procedure implements CharterArtifact {
         }
 
         /**
+         * Appends a reference.
+         *
+         * @param value the reference
+         * @return this builder
+         */
+        public Builder reference(ProcedureReference value) {
+            this.references.add(value);
+            return this;
+        }
+
+        /**
          * Sets the notes.
          *
          * @param value the notes, or null for none
@@ -397,6 +452,7 @@ public final class Procedure implements CharterArtifact {
                     Objects.requireNonNull(exitCondition, "exitCondition"),
                     steps,
                     antiPatterns,
+                    references,
                     notes,
                     appliesToLanguages);
         }

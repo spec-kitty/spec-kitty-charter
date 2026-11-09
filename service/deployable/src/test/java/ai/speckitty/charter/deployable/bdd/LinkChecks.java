@@ -17,8 +17,7 @@ import tools.jackson.databind.JsonNode;
  *
  * <ul>
  *   <li><b>Self.</b> When the contract has a {@code GET} for the request path, {@code _links.self.href} is the server
- *       prefix plus the request path, plus the query for a {@code GET} with one; a 202 with a {@code Location}
- *       answers the status of the work it accepted, and its {@code self} is that path. Otherwise a 201 with a
+ *       prefix plus the request path, plus the query for a {@code GET} with one. Otherwise a 201 with a
  *       {@code Location} names its resource there and its {@code self} is that path; any other answer (the
  *       relationships {@code PUT}) has no {@code self}.
  *   <li><b>Resolution.</b> Every link, at any depth, has an {@code href} under the server prefix that, with its query
@@ -28,7 +27,7 @@ import tools.jackson.databind.JsonNode;
  *       not guessed at. {@code templated} is {@code true} exactly when the {@code href} holds an expression. The
  *       operation must be built: one that carries {@code x-reserved} answers 501 until it is built (ADR-0020 D8), and
  *       no link points to an unbuilt operation.
- *   <li><b>Location.</b> On a 201 or a 202 with a {@code Location}, its path is {@code _links.self.href}.
+ *   <li><b>Location.</b> On a 201 with a {@code Location}, its path is {@code _links.self.href}.
  *   <li><b>Relations.</b> Every key of every {@code _links} of the body is a relation of the hypermedia guide's table.
  * </ul>
  */
@@ -38,7 +37,6 @@ final class LinkChecks {
     private static final String LINKS = "_links";
     private static final String HREF = "href";
     private static final int CREATED = 201;
-    private static final int ACCEPTED = 202;
     private static final Pattern FORM_QUERY = Pattern.compile("\\{\\?[A-Za-z0-9_,]+}$");
     private static final Pattern SEGMENT_VARIABLE = Pattern.compile("(?<=/)\\{[A-Za-z0-9_]+}(?=/|$)");
 
@@ -91,10 +89,6 @@ final class LinkChecks {
 
     /** The {@code self} an answer must carry, or {@code null} when it must carry none. */
     private @Nullable String expectedSelf(Answer answer) {
-        if (answer.status() == ACCEPTED && answer.location() != null) {
-            // A 202 answers the status of the work it accepted: its Location is its self, not the path of the request.
-            return URI.create(answer.location()).getRawPath();
-        }
         if (contract.operationTemplate("get", answer.path()).isPresent()) {
             boolean withQuery = answer.method().equals("get") && answer.query() != null;
             return BASE + answer.path() + (withQuery ? "?" + answer.query() : "");
@@ -119,7 +113,7 @@ final class LinkChecks {
     }
 
     private void checkLocation(Answer answer, String what, List<String> violations) {
-        if ((answer.status() != CREATED && answer.status() != ACCEPTED) || answer.location() == null) {
+        if (answer.status() != CREATED || answer.location() == null) {
             return;
         }
         String path = URI.create(answer.location()).getRawPath();

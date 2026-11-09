@@ -25,7 +25,7 @@ class PackAggregateTest {
                 .packId(owner)
                 .schemaVersion("1.0")
                 .name("n")
-                .step(new TacticStep("s", Optional.empty(), List.of()))
+                .step(new TacticStep("s", Optional.empty(), List.of(), List.of()))
                 .build();
     }
 

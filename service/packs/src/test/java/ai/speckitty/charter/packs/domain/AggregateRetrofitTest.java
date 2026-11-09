@@ -3,9 +3,15 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
 import java.util.Optional;
@@ -120,17 +126,45 @@ class AggregateRetrofitTest {
     }
 
     @Test
-    @DisplayName("a tactic without purpose has no description and derives no relationship")
+    @DisplayName("a tactic mints one suggests relationship per typed reference, collapsing a blank when to absent")
+    void tacticMintsASuggestsRelationshipPerTypedReferenceCollapsingBlankWhen() {
+        // The CharterArtifact spine (kind/localId/label/description/urn) is proved per kind by
+        // CharterArtifactFamilyTest; this case keeps only what it does not cover — two typed refs, the second
+        // with a blank `when` that must collapse to Optional.empty rather than empty-string relationship metadata.
+        Tactic tactic = Tactic.builder()
+                .id(new TacticIdentifier("t-1"))
+                .packId(ID)
+                .schemaVersion("1.0")
+                .name("Tactic name")
+                .purpose("Why")
+                .step(new TacticStep("s", Optional.empty(), List.of(), List.of()))
+                .reference(new TacticReference("Dir", "directive", "D-1", "when it rains"))
+                .reference(new TacticReference("Para", "paradigm", "p-1", ""))
+                .build();
+
+        CharterArtifact artifact = tactic;
+
+        assertThat(artifact.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
+                .containsExactly(
+                        tuple(artifact.urn(), new Urn(NodeKind.DIRECTIVE, "D-1"), RelationType.SUGGESTS),
+                        tuple(artifact.urn(), new Urn(NodeKind.PARADIGM, "p-1"), RelationType.SUGGESTS));
+        assertThat(artifact.relationships().get(0).when()).contains("when it rains");
+        assertThat(artifact.relationships().get(1).when()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a tactic without purpose or references has no description and no relationships")
     void bareTacticHasNoDescriptionOrRelationships() {
         Tactic tactic = Tactic.builder()
                 .id(new TacticIdentifier("t-2"))
                 .packId(ID)
                 .schemaVersion("1.0")
                 .name("n")
-                .step(new TacticStep("s", Optional.empty(), List.of()))
+                .step(new TacticStep("s", Optional.empty(), List.of(), List.of()))
                 .build();
 
         assertThat(tactic.description()).isEmpty();
-        assertThat(tactic.derivedRelationships()).isEmpty();
+        assertThat(tactic.relationships()).isEmpty();
     }
 }

@@ -160,7 +160,7 @@ class ToolguideGuideTest {
                 .satisfies(toolguide -> assertThat(toolguide.guide().overview())
                         .contains("../styleguides/commit-messages.styleguide.yaml"));
         assertThat(loaded.artifacts())
-                .flatExtracting(CharterArtifact::derivedRelationships)
+                .flatExtracting(CharterArtifact::relationships)
                 .isEmpty();
     }
 
@@ -422,6 +422,7 @@ class ToolguideGuideTest {
                         read.commands(),
                         read.appliesToLanguages(),
                         read.lastUpdated(),
+                        read.references(),
                         Optional.empty())
                 .withGuide(Optional.of(guide));
 

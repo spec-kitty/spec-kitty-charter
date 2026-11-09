@@ -2,8 +2,7 @@ name: artifactId
 in: path
 required: true
 description: >-
-  The artifact's id; another known spelling of it (its full URN, or another case) is accepted and normalized to the
-  declared id (ADR-0020 D4, operator ruling of 2026-11-06). A mission type's id is normalized as every kind's is:
-  it is a kind of selected and deactivated like any other (one kind model, IC-20).
+  The artifact's declared id, matched exactly as declared. The normalization of another known spelling to the
+  declared id (ADR-0020 D4) is not built (DIV-208).
 schema:
   $ref: ../schemas/ArtifactId.yaml

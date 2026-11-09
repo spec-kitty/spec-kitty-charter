@@ -1,11 +1,6 @@
 package ai.speckitty.charter.activations.application;
 
-import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
-import ai.speckitty.charter.activations.domain.GraphSnapshot;
-import ai.speckitty.charter.activations.domain.MergedSnapshot;
-import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
-import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 
@@ -33,67 +28,4 @@ public interface PacksSession {
      * @return what the walk reached, stopped at, left behind a stop and passed through
      */
     Reach reach(ReachPlan plan);
-
-    /**
-     * The closure under the layer merge: the version of each artifact in force, its provenance and policy, the typed
-     * edges among the winners and the layer overrides (FR-009 to FR-012). It answers from this session's read, so it
-     * and {@link #inForce} never read the packs again (NFR-007); the merge is built on the first call.
-     *
-     * @return the merged closure, as values; empty for a session that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code pack_unreadable} when a layer override
-     *     breaks the owner's level or an {@code overrides} edge resolves to its own source, or with
-     *     {@code pack_sibling_conflict} when a sibling contest is not settled
-     */
-    MergedSnapshot merged();
-
-    /**
-     * What is in force under a document's request, over the merged closure (FR-013 to FR-016): one state and one reason
-     * per winning artifact, and the rules that were not applied. The resolution is the packs slice's; this answers it
-     * from the same read as {@link #merged}.
-     *
-     * @param query what the document selects, denies and filters
-     * @return the states and the rules not applied; empty for a session that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, or with
-     *     {@code pack_unreadable} for an {@code overrides} cycle among the artifacts in force
-     */
-    InForceAnswer inForce(InForceQuery query);
-
-    /**
-     * The effective graph under a document's request (FR-018, rule E15): the nodes in force, the merged edges among them
-     * and the layer overrides of those nodes. It answers from this session's read and its in-force resolution, so it
-     * never reads the packs again nor resolves twice for one request (NFR-007).
-     *
-     * @param query what the document selects, denies and filters
-     * @return the graph; empty for a session that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does
-     */
-    GraphSnapshot graph(InForceQuery query);
-
-    /**
-     * What ADR-0018's walk reaches from one action's step over the artifacts in force under a document's request
-     * (FR-019, rule E16). It answers from this session's read and its in-force resolution.
-     *
-     * @param missionType the mission type of the action
-     * @param action the action
-     * @param depth the number of {@code suggests} hops to follow, at least 0
-     * @param query what the document selects, denies and filters
-     * @return what the walk reached; nothing, and {@code missionTypeInForce} false, for a mission type not in force
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code mission_type_not_found} or
-     *     {@code action_not_found} when the merged closure holds no such mission type or action, whether or not the
-     *     mission type is in force, or as {@link #inForce} does
-     */
-    ActionContext actionContext(String missionType, String action, int depth, InForceQuery query);
-
-    /**
-     * Judges the names of an action context against the merged closure, and nothing else: no in-force resolution and no
-     * walk. A read that answers {@code 304} calls it first, so an unknown name is a {@code 404} whatever
-     * {@code If-None-Match} says.
-     *
-     * @param missionType the mission type of the action
-     * @param action the action
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code mission_type_not_found} or
-     *     {@code action_not_found} when the merged closure holds no such mission type or action, or as {@link #merged}
-     *     does
-     */
-    void requireAction(String missionType, String action);
 }

@@ -66,8 +66,6 @@ The design is grounded in three core ADRs and this repository's own records:
   (ADR-0020).
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
-- [Composition and activation rules](/architecture/composition-and-activation-rules/) — every composition,
-  registration, activation-write and effective-read rule as sets, closures and invariants, with its source and status.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, one writer per pack, loopback binding,
   credentials, freshness and failure behavior of the local option (the hosted option is
   [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)).

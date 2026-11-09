@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "deactivated": {
     "directive": [
       "X_1"
@@ -32,12 +32,6 @@
       "X_1"
     ],
     "anti_pattern": [
-      "X_1"
-    ],
-    "mission_type": [
-      "X_1"
-    ],
-    "step_enhancement": [
       "X_1"
     ]
   }

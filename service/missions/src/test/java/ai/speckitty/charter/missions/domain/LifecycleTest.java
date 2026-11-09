@@ -67,7 +67,7 @@ class LifecycleTest {
         assertThat(wp.edgesFrom("blocked")).extracting(LifecycleTransition::to).containsExactly("canceled");
         assertThat(wp.edgesFrom("done")).isEmpty();
         assertThat(wp.terminalStates()).containsExactly("done", "canceled");
-        assertThat(wp.derivedRelationships()).isEmpty();
+        assertThat(wp.relationships()).isEmpty();
     }
 
     @Test

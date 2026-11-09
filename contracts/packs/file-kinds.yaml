@@ -78,7 +78,6 @@ node_kinds:
   - mission_type
   - guard
   - lifecycle
-  - step_enhancement
 
 artifact_kinds:
   - directive
@@ -97,7 +96,6 @@ artifact_kinds:
   - mission_type
   - guard
   - lifecycle
-  - step_enhancement
 
 fragment_kinds:
   directives: directive
@@ -115,7 +113,6 @@ fragment_kinds:
   templates: template
   mission_types: mission_type
   actions: action
-  step_enhancements: step_enhancement
 
 files:
   - match: "*/pack.yaml"
@@ -183,14 +180,6 @@ files:
     content_form: markdown
   - match: "*/missions/*/steps/*.guidelines.md"
     schema: mission-step-guidelines
-    content_form: markdown
-  # Step enhancements (ADR-0053 decision 22, ADR-0066): additions held beside the mission type they augment. The
-  # target is authored only by an enhances edge in this pack's graph documents. Each prompt_fragments entry names a
-  # Markdown companion beside the enhancement, with its own structure schema and no frontmatter.
-  - match: "*/missions/*/enhancements/*.step-enhancement.yaml"
-    schema: step-enhancement
-  - match: "*/missions/*/enhancements/*.prompt-fragment.md"
-    schema: prompt-fragment
     content_form: markdown
   # Guards (ADR-0054): one file per guard, guards/<id>.guard.yaml; a file anywhere else is refused by placement, not
   # skipped, so the rule matches the token anywhere.

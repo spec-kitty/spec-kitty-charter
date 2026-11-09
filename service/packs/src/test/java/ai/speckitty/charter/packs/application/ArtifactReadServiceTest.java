@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -12,10 +11,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
@@ -25,7 +24,6 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -43,7 +41,6 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,9 +100,6 @@ class ArtifactReadServiceTest {
         return D1;
     });
 
-    /** The graph-document edges of each pack, the references an artifact writes (ADR-0064). */
-    private final Map<PackIdentifier, List<PackEdge>> edges = new HashMap<>();
-
     private ArtifactReadService serviceDigesting(PackSources sources) {
         InMemoryStore store = new InMemoryStore();
         ConsistentRead read = new ConsistentRead(sources);
@@ -125,8 +119,7 @@ class ArtifactReadServiceTest {
                         new StyleguideReadService(store, store, read, revisions),
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read)),
-                pack -> edges.getOrDefault(pack, List.of()));
+                        new TacticReadService(store, store, read)));
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -461,12 +454,10 @@ class ArtifactReadServiceTest {
         List<ArtifactReadService.Reference> references =
                 counting.references(PACK, "directive", "OWN_1").value();
 
+        assertThat(references).hasSize(2);
         assertThat(references)
-                .as("the edges whose source is OWN_1, bare or qualified with its own pack, in document order")
-                .extracting(reference -> reference.written().toString(), reference -> reference.relation())
-                .containsExactly(
-                        tuple("bravo::directive:SHARED_1", RelationType.SUGGESTS),
-                        tuple("directive:OWN_2", RelationType.REQUIRES));
+                .extracting(reference -> reference.written().toString())
+                .containsExactly("bravo::directive:SHARED_1", "directive:OWN_2");
         assertThat(references)
                 .extracting(reference ->
                         reference.holder().orElseThrow().descriptor().name())
@@ -475,28 +466,6 @@ class ArtifactReadServiceTest {
         assertThat(composeResolutions)
                 .as("the two references are resolved against one resolution of the compose")
                 .hasValue(1);
-    }
-
-    @Test
-    void aTargetReachedUnderTwoRelationsIsListedOnceForEachRelation() {
-        // The real packs hold such pairs (a tactic that both requires and suggests one styleguide); dropping one
-        // relation would hide an authored edge (ADR-0064 decision 6). The same edge written twice, from an
-        // own-qualified
-        // source or to an own-qualified target, is still listed once, under its first spelling.
-        ArtifactReadService service = referenceFixture(() -> D1);
-        edges.put(
-                PACK,
-                List.of(
-                        new PackEdge("directive:OWN_1", "directive:OWN_2", RelationType.REQUIRES),
-                        new PackEdge("directive:OWN_1", "directive:OWN_2", RelationType.SUGGESTS),
-                        new PackEdge("alpha::directive:OWN_1", "directive:OWN_2", RelationType.REQUIRES),
-                        new PackEdge("directive:OWN_1", "alpha::directive:OWN_2", RelationType.SUGGESTS)));
-
-        assertThat(service.references(PACK, "directive", "OWN_1").value())
-                .extracting(reference -> reference.written().toString(), reference -> reference.relation())
-                .containsExactly(
-                        tuple("directive:OWN_2", RelationType.REQUIRES),
-                        tuple("directive:OWN_2", RelationType.SUGGESTS));
     }
 
     @Test
@@ -558,26 +527,23 @@ class ArtifactReadServiceTest {
 
     /**
      * The shared two-pack fixture of the grammar (SC-004), over the given digest: {@code pack-a} is alpha and holds
-     * directives {@code OWN_1} and {@code OWN_2}, and its graph document holds three edges: {@code OWN_1} suggests
-     * bravo's {@code SHARED_1} (qualified), {@code alpha::OWN_1} (its own pack's qualifier) requires {@code OWN_2}, and
-     * {@code OWN_2} requires {@code OWN_1}, which is not {@code OWN_1}'s to list; {@code pack-b} is bravo and holds directive {@code SHARED_1}, and the two form one
+     * directives {@code OWN_1} and {@code OWN_2} ({@code OWN_1} writes one qualified reference, to bravo's
+     * {@code SHARED_1}, and one bare, to {@code OWN_2}), {@code pack-b} is bravo and holds directive {@code SHARED_1}, and the two form one
      * compose closure — nothing else is configured, so the closure is exactly the two of them.
      */
     private ArtifactReadService referenceFixture(PackSources sources) {
         stored.clear();
-        edges.clear();
-        edges.put(
-                PACK,
-                List.of(
-                        new PackEdge("directive:OWN_1", "bravo::directive:SHARED_1", RelationType.SUGGESTS),
-                        new PackEdge("alpha::directive:OWN_1", "directive:OWN_2", RelationType.REQUIRES),
-                        new PackEdge("directive:OWN_2", "directive:OWN_1", RelationType.REQUIRES)));
         stored.put(
                 PACK,
                 Pack.builder()
                         .id(PACK)
                         .descriptor(descriptorNamed(PACK, "alpha", SIBLING))
-                        .directive(directiveIn(PACK, "OWN_1"))
+                        .directive(directiveBuilderIn(PACK, "OWN_1")
+                                .reference(new DirectiveReference(
+                                        "directive", "bravo::SHARED_1", Optional.empty(), Optional.empty()))
+                                .reference(new DirectiveReference(
+                                        "directive", "OWN_2", Optional.empty(), Optional.empty()))
+                                .build())
                         .directive(directiveIn(PACK, "OWN_2"))
                         .build());
         stored.put(
@@ -610,7 +576,7 @@ class ArtifactReadServiceTest {
                 .packId(PACK)
                 .schemaVersion("1.0")
                 .name(name)
-                .step(new TacticStep("Only step", Optional.empty(), List.of()))
+                .step(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))
                 .build();
     }
 

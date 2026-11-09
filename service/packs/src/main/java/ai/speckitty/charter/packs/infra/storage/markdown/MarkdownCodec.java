@@ -1,10 +1,10 @@
 package ai.speckitty.charter.packs.infra.storage.markdown;
 
-import ai.speckitty.charter.kernel.markdown.MarkdownScanner;
-import ai.speckitty.charter.kernel.markdown.MarkdownScanner.Kind;
-import ai.speckitty.charter.kernel.markdown.MarkdownScanner.Line;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument.Section;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner.Kind;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner.Line;
 import ai.speckitty.charter.packs.infra.storage.FrontmatterYaml;
 import java.util.ArrayList;
 import java.util.Arrays;

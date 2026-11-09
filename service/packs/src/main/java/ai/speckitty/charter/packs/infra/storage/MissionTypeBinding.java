@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.ExpectedInput;
+import ai.speckitty.charter.missions.domain.MissionReference;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
@@ -164,6 +165,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 .requiresSubstantiveSpec(dso.requiresSubstantiveSpec())
                 .pathConventions(conventionsOf(dso.pathConventions()));
         dso.expectedOutputArtifacts().forEach(a -> builder.expectedOutputArtifact(output(a)));
+        dso.references().forEach(r -> builder.reference(reference(r)));
         dso.steps().forEach(s -> builder.step(step(dso.id(), s)));
         dso.onDemandSteps().forEach(s -> builder.onDemandStep(step(dso.id(), s)));
         return builder.build();
@@ -190,6 +192,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 type.expectedOutputArtifacts().stream()
                         .map(MissionTypeBinding::artifactDso)
                         .toList(),
+                type.references().stream().map(MissionTypeBinding::referenceDso).toList(),
                 type.steps().stream().map(MissionTypeBinding::stepDso).toList(),
                 type.onDemandSteps().stream().map(MissionTypeBinding::stepDso).toList());
     }
@@ -246,7 +249,8 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                         .toList(),
                 step.expectedOutputArtifacts().stream()
                         .map(MissionTypeBinding::output)
-                        .toList());
+                        .toList(),
+                step.references().stream().map(MissionTypeBinding::reference).toList());
     }
 
     private static Optional<StepDocument> document(
@@ -308,6 +312,12 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 artifact.templatePath());
     }
 
+    private static MissionReference reference(MissionTypeDso.Reference reference) {
+        ArtifactKind type = ArtifactKind.fromToken(reference.type())
+                .orElseThrow(() -> new IllegalArgumentException("unknown reference type '" + reference.type() + "'"));
+        return new MissionReference(type, reference.id(), reference.when(), reference.reason());
+    }
+
     private static @Nullable PathConventions conventionsOf(Map<String, String> written) {
         if (written.isEmpty()) {
             return null;
@@ -334,6 +344,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 step.expectedOutputArtifacts().stream()
                         .map(MissionTypeBinding::artifactDso)
                         .toList(),
+                step.references().stream().map(MissionTypeBinding::referenceDso).toList(),
                 step.prompt().map(MissionTypeBinding::markdownOf),
                 step.guidelines().map(MissionTypeBinding::markdownOf));
     }
@@ -360,5 +371,10 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 artifact.pathPattern(),
                 artifact.blocking(),
                 artifact.templatePath());
+    }
+
+    private static MissionTypeDso.Reference referenceDso(MissionReference reference) {
+        return new MissionTypeDso.Reference(
+                reference.type().token(), reference.id(), reference.when(), reference.reason());
     }
 }

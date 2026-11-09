@@ -3,4 +3,4 @@ in: path
 required: true
 description: The kind of the artifact to select or unselect, or mission_type to select a mission type.
 schema:
-  $ref: ../schemas/ActivatableKind.yaml
+  $ref: ../schemas/SelectableKind.yaml

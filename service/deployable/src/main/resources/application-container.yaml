@@ -12,6 +12,3 @@ server:
   # All interfaces, on a fixed port a container can publish (ADR-0041 decision 4).
   address: 0.0.0.0
   port: 8080
-  # Forwarded headers are ignored until a proxy is decided: X-Forwarded-Host never changes the host name the guard
-  # judges, whatever platform Spring detects (issue #232).
-  forward-headers-strategy: none

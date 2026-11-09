@@ -2,17 +2,12 @@ package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
-import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
-import ai.speckitty.charter.activations.domain.GraphSnapshot;
-import ai.speckitty.charter.activations.domain.MergedSnapshot;
-import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
-import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -50,14 +45,12 @@ public class ActivationTestWiring {
     /** The fixture closure. */
     static ClosureSnapshot fixture(String fingerprint) {
         Map<ArtifactKind, Set<String>> held = new EnumMap<>(ArtifactKind.class);
-        Arrays.stream(ArtifactKind.values())
-                .filter(kind -> kind.activatable() && kind != ArtifactKind.MISSION_TYPE)
-                .forEach(kind -> held.put(kind, Set.copyOf(IDS)));
-        held.put(ArtifactKind.MISSION_TYPE, Set.copyOf(MISSION_TYPES));
+        ActivationDocument.kinds().forEach(kind -> held.put(kind, Set.copyOf(IDS)));
         return new ClosureSnapshot(
                 List.of(new ClosureSnapshot.PackEntry(
                         "fixture", "01M4P01D5TWB5FKZGNNQG3943F", "org", "fixture-pack", "1.0.0", List.of())),
                 held,
+                Set.copyOf(MISSION_TYPES),
                 Map.of("directive:" + REQUIRED, List.of("fixture")),
                 Map.of(),
                 Map.of(),
@@ -83,31 +76,6 @@ public class ActivationTestWiring {
                 @Override
                 public Reach reach(ReachPlan plan) {
                     return Reach.empty();
-                }
-
-                @Override
-                public MergedSnapshot merged() {
-                    return MergedSnapshot.empty();
-                }
-
-                @Override
-                public InForceAnswer inForce(InForceQuery query) {
-                    return InForceAnswer.empty();
-                }
-
-                @Override
-                public GraphSnapshot graph(InForceQuery query) {
-                    return GraphSnapshot.empty();
-                }
-
-                @Override
-                public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
-                    return ActionContext.notInForce();
-                }
-
-                @Override
-                public void requireAction(String missionType, String action) {
-                    // the fixture holds no mission type
                 }
             };
         }

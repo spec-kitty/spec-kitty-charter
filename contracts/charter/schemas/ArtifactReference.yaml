@@ -9,7 +9,7 @@ required:
 properties:
   kind:
     allOf:
-    - $ref: ActivatableKind.yaml
+    - $ref: SelectableKind.yaml
     description: The artifact's kind.
     x-derived:
       rule: The kind of the artifact the walk or the write reached.

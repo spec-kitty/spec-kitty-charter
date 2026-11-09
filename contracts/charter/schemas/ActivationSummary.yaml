@@ -21,9 +21,7 @@ properties:
   inactive:
     type: integer
     minimum: 0
-    description: >-
-      Artifacts the offering holds that are not in force and not excluded, a denied artifact that the enhancer or binding
-      rule prunes included.
+    description: Artifacts the offering holds that are not in force.
     x-derived:
       rule: The count in state inactive.
       inputs:
@@ -31,9 +29,7 @@ properties:
   excluded:
     type: integer
     minimum: 0
-    description: >-
-      Artifacts deactivated by the document, those whose reason is deactivated. A denied artifact that the enhancer
-      rule or the mission type binding prunes is inactive, not excluded (E9).
+    description: Artifacts deactivated by the document.
     x-derived:
       rule: The count in state excluded.
       inputs:
@@ -41,21 +37,15 @@ properties:
   required:
     type: integer
     minimum: 0
-    description: >-
-      Artifacts a governing preset requires or a pack locks (the artifact's required member is true), in force or
-      satisfied by an active override of them. Not "always active": a requirement is satisfied by the artifact or an
-      override of it, never by an enhancement, and one that is an enhancer with no target in force, or is bound to a
-      mission type not in force, counts in neither.
+    description: Artifacts a pack requires; always active.
     x-derived:
-      rule: The count of required artifacts, in force or satisfied.
+      rule: The count of required artifacts.
       inputs:
       - schemas/ActivationConfig.yaml
   locked:
     type: integer
     minimum: 0
-    description: >-
-      Artifacts a pack locks, whatever their state: a locked artifact is in force unless it is an enhancer with no target
-      in force or is bound to a mission type not in force (E9).
+    description: Artifacts a pack locks; always active.
     x-derived:
       rule: The count of locked artifacts.
       inputs:
@@ -63,9 +53,7 @@ properties:
   skipped:
     type: integer
     minimum: 0
-    description: >-
-      Entries across the buckets of the skipped report. Each artifact is counted once: a required or locked artifact
-      that the enhancer rule or the binding prunes is listed in requiredNotInForce only.
+    description: Artifacts in the skipped report.
     x-derived:
       rule: The count of entries of the skipped report.
       inputs:

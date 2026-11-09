@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-step-prompt.schema.json",
   "title": "Mission step prompt",
-  "description": "The structure of a mission step's prompt (steps/<id>.prompt.md beside its mission type), over the parsed Markdown model: optional frontmatter holding only the prompt's detailed description, an optional H1, a preamble and H2 sections (ADR-0044, ruling Q1 as refined on 2026-10-30). The raw-Markdown check beside this structure schema applies ADR-0066's prompt-slot rules: a slot is <!-- <slot-id>:start --> followed by <!-- <slot-id>:end -->, its id is <namespace>:<name> with each part matching [a-z][a-z0-9-]*, each id is declared once, starts before it ends, and slots do not nest. Malformed declarations are prompt_slot_malformed. Descriptor schema_version \"1.0\" requires only whitespace between paired markers and refuses prompt_slot_not_empty; an unversioned descriptor admits legacy text with a prompt_slot_not_empty warning. The parsed model cannot express those raw-text checks.",
+  "description": "The structure of a mission step's prompt (steps/<id>.prompt.md beside its mission type), over the parsed Markdown model: optional frontmatter holding only the prompt's detailed description, an optional H1, a preamble and H2 sections (ADR-0044, ruling Q1 as refined on 2026-10-30).",
   "type": "object",
   "required": [
     "preamble",

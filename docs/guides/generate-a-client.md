@@ -128,7 +128,7 @@ java -jar openapi-generator-cli-7.26.0.jar generate -g java --library okhttp-gso
   -i openapi.client.yaml -o charter-client-java \
   --invoker-package com.example.charter --api-package com.example.charter.api \
   --model-package com.example.charter.model \
-  --additional-properties=enumUnknownDefaultCase=true,disallowAdditionalPropertiesIfNotPresent=false,openApiNullable=false,containerDefaultToNull=true,dateLibrary=java8,hideGenerationTimestamp=true,useJakartaEe=true
+  --additional-properties=enumUnknownDefaultCase=true,disallowAdditionalPropertiesIfNotPresent=false,openApiNullable=false,dateLibrary=java8,hideGenerationTimestamp=true,useJakartaEe=true
 cd charter-client-java && mvn -q -DskipTests -Dmaven.compiler.release=21 package
 ```
 
@@ -220,16 +220,11 @@ dropped, not kept.
 | Closed objects opened | the script | not needed | A member a later minor adds does not fail the decode |
 | `disallowAdditionalPropertiesIfNotPresent=false` | yes | yes | An object that declares nothing is open too |
 | `openApiNullable=false` | yes | n/a | Nullability comes from the 3.1 type arrays; no extra wrapper library |
-| `containerDefaultToNull=true` | yes | n/a | An absent list stays absent on the round trip: `[]` and absent differ for `languages` and `packs` |
 | `dateLibrary=java8` | yes | n/a | `java.time` types; the contract has no date-time today |
 | `hideGenerationTimestamp=true` | yes | yes | Two generations from one contract are identical |
 
 This repository's own Java client applies the same options in its build, and opens the closed objects with a
 normalizer instead of the script.
-
-With `containerDefaultToNull=true`, the getter of an optional list that is absent returns `null` instead of `[]` in
-every client model, for example `ActivationChange.getDropped()` and `CharterRefusal.getViolations()`. Check for `null`
-where you iterated such a list without a check.
 
 ## See also
 

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -70,15 +71,16 @@ class DirectiveReadServiceTest {
     }
 
     @Test
-    void aReturnedDirectiveCarriesNoRelationship() {
-        // ADR-0064: no field mints an edge, so a directive derives none, listed or single.
+    void everyReturnedDirectiveCarriesItsRelationshipsPopulated() {
+        // FR-006: the list read returns each directive with its originating relationships derived from its fields.
         Directive read = service.directivesOf(PACK_A).value().stream()
                 .filter(d -> d.id().equals(ALPHA))
                 .findFirst()
                 .orElseThrow();
-        assertThat(read.derivedRelationships()).isEmpty();
-        assertThat(service.directive(PACK_A, ALPHA).value().derivedRelationships())
-                .isEmpty();
+        assertThat(read.relationships()).isNotEmpty();
+        assertThat(read.relationships()).isEqualTo(alpha.relationships());
+        // The single read populates them the same way.
+        assertThat(service.directive(PACK_A, ALPHA).value().relationships()).isEqualTo(alpha.relationships());
     }
 
     @Test
@@ -168,6 +170,8 @@ class DirectiveReadServiceTest {
                 .title(id)
                 .intent("Intent of " + id)
                 .enforcement(Enforcement.REQUIRED)
+                .procedure("some-procedure")
+                .reference(new DirectiveReference("tactic", "a-tactic", Optional.of("always"), Optional.empty()))
                 .build();
     }
 

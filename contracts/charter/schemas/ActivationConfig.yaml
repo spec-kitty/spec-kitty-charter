@@ -4,25 +4,15 @@ description: >-
   /activations/{activationId} and POST /activations and the config of every Activation answer. Core keeps its own
   files and maps them to and from this document (content alignment, not file shape).
 
-  The document is packs, selected, deactivated and languages (one kind model, IC-20): mission types, steps and agent
-  profiles are ordinary kinds of selected and deactivated. There is no kind gate: the former activatedKinds and
-  missionTypes members are not part of the shape, and a write that sends either is refused 422 validation_failed with
-  one violation per member, code removed_member, naming its replacement (selected.mission_type for missionTypes;
-  selected.<kind> for activatedKinds); any other fault of the body is listed beside them. A document stored at schemaVersion 1 is answered as its version 2 upgrade: its missionTypes become
-  selected.mission_type, every selection is kept, and activatedKinds is discarded; the upgrade is stored on the next
-  write, so its revision and ETag change once.
+  Three states, one meaning for absent (ADR-0053 d10): for activatedKinds, missionTypes and each selected kind, absent
+  and [] both mean none is in force, and a list means exactly those; the two stay distinct on the wire, so a fetched
+  document registers unchanged. Nothing is in force by default. packs and languages keep their own absent: every
+  configured pack, and no language filter. null is never a value.
 
-  One meaning for absent (ADR-0053 d10): for each selected kind, absent and [] both mean none is in force, and a list
-  means exactly those. The two register the same document: the canonical form leaves an empty selected.<kind> out, so
-  a client that sends [] for a kind it read as absent keeps the revision and the ETag (FR-042, decision
-  DM-01M6RN62PPCMSH6M54D2HXYZEQ). Nothing is in force by default. packs and languages keep their own absent: every
-  configured pack, and no language filter, while languages: [] means no language. null is never a value.
-
-  Canonical form, which the service stores and answers: ids in their declared spelling (a write may spell an id as its
-  full URN or in another case, and is normalized to the declared id, ADR-0020 D4); id and token lists deduplicated
-  and sorted, except packs, which keeps merge order; an empty selected.<kind> list, and an empty selected or
-  deactivated object, left out; lists sorted by Unicode code point; members in the order of this schema. An empty deny
-  list is refused
+  Canonical form, which the service stores and answers: ids in their declared spelling (an id is matched exactly as
+  declared; another spelling is not normalized, DIV-208); id and token lists deduplicated
+  and sorted, except packs, which keeps merge order; an empty selected or deactivated object left out, while selected.<kind>:
+  [] is kept; lists sorted by Unicode code point; members in the order of this schema. An empty deny list is refused
   (422), never stored. The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization
   of the canonical document.
 
@@ -36,11 +26,9 @@ required:
 properties:
   schemaVersion:
     type: integer
-    minimum: 2
-    maximum: 2
-    description: >-
-      The version of this document's shape: 2, the one kind model (IC-20). A write of any other version is refused
-      (422); a document stored at version 1 is upgraded on read and stored as version 2 on the next write.
+    minimum: 1
+    maximum: 1
+    description: 'The version of this document''s shape: 1.'
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/properties/schemaVersion'
@@ -55,6 +43,26 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/properties/packs'
+  activatedKinds:
+    type: array
+    items:
+      $ref: ActivatableKind.yaml
+    description: >-
+      The kinds in force. Absent means none; [] means none; a list means exactly those. Absent and [] stay distinct
+      on the wire.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/activatedKinds'
+  missionTypes:
+    type: array
+    items:
+      $ref: Slug.yaml
+    description: >-
+      The mission types in force, by id. Absent and [] both mean none: a mission type is never in force by default.
+      Kept distinct on the wire.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/missionTypes'
   selected:
     $ref: SelectedArtifacts.yaml
   deactivated:

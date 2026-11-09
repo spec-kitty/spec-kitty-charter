@@ -16,5 +16,3 @@ files:
   - PreconditionRequired.yaml
   - UnknownActivation.yaml
   - UnsupportedMediaType.yaml
-  - PackPreconditionFailed.yaml
-  - PackRegistrationUnavailable.yaml

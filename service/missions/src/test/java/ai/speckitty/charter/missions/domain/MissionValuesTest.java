@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** The mission values: each invariant with an accepted neighbour and a refused twin (ADR-0044 decision 3). */
@@ -51,33 +53,6 @@ class MissionValuesTest {
     }
 
     @Test
-    @DisplayName("#299: a step's text breaks no markdown line rule when it is built, field by field")
-    void stepTextsFollowTheMarkdownLineRules() {
-        assertThatThrownBy(() -> new StepDocument(Optional.of("Two\nlines"), Optional.empty(), "", List.of()))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageEndingWith("A step document's title must be a single line");
-        assertThatThrownBy(() -> new StepDocument(Optional.of("T"), Optional.empty(), "\ntext", List.of()))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageEndingWith("A step document's preamble must not start with a blank line");
-        assertThatThrownBy(() -> new StepDocument(Optional.empty(), Optional.empty(), "---\nx", List.of()))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A step document's preamble must not start with a --- line");
-        assertThatThrownBy(() -> new StepSection("Title ##", ""))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A step document's section title cannot be a heading's text");
-        assertThatThrownBy(() -> new StepSection("S", "text\n\n# Heading"))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A step document's section content cannot stand inside a document");
-        // The accepted neighbours, one per refusal above.
-        assertThat(new StepDocument(Optional.of("Two lines"), Optional.empty(), "text", List.of()).preamble())
-                .isEqualTo("text");
-        assertThat(new StepDocument(Optional.empty(), Optional.of("Detail."), "---\nx", List.of()).preamble())
-                .isEqualTo("---\nx");
-        assertThat(new StepSection("Release #1", "text\n\n### Heading").content())
-                .isEqualTo("text\n\n### Heading");
-    }
-
-    @Test
     @DisplayName("a step document's title is never blank")
     void stepDocumentTitlesAreNotBlank() {
         assertThatThrownBy(() -> new StepDocument(Optional.of(" "), Optional.empty(), "", List.of()))
@@ -100,6 +75,36 @@ class MissionValuesTest {
         assertThatThrownBy(() -> new ExpectedInput("spec", "spec.md", true))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> new ExpectedInput("input.spec.main", "../spec.md", true))
+                .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @ParameterizedTest(name = "a reference to a {0} is accepted")
+    @EnumSource(
+            value = ArtifactKind.class,
+            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE"})
+    void guidanceReferencesAreAccepted(ArtifactKind kind) {
+        assertThatCode(() -> new MissionReference(kind, "x", Optional.empty(), Optional.empty()))
+                .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest(name = "a reference to a {0} is refused")
+    @EnumSource(
+            value = ArtifactKind.class,
+            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void otherReferencesAreRefused(ArtifactKind kind) {
+        assertThatThrownBy(() -> new MissionReference(kind, "x", Optional.empty(), Optional.empty()))
+                .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
+    @DisplayName("a reference with a blank id, when or reason is refused")
+    void blankReferenceTextsAreRefused() {
+        assertThatThrownBy(() -> new MissionReference(ArtifactKind.TACTIC, " ", Optional.empty(), Optional.empty()))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new MissionReference(ArtifactKind.TACTIC, "x", Optional.of(""), Optional.empty()))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new MissionReference(ArtifactKind.TACTIC, "x", Optional.empty(), Optional.of(" ")))
                 .isInstanceOf(ConstraintBreachException.class);
     }
 
@@ -127,6 +132,7 @@ class MissionValuesTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThat(new MissionStep(
@@ -136,6 +142,7 @@ class MissionValuesTest {
                                 Optional.of("qa-strategist"),
                                 Optional.empty(),
                                 Optional.empty(),
+                                List.of(),
                                 List.of(),
                                 List.of())
                         .role())
@@ -191,7 +198,15 @@ class MissionValuesTest {
 
     private static MissionStep stepWith(Optional<StepDocument> prompt, Optional<StepDocument> guidelines) {
         return new MissionStep(
-                "plan", "Plan", Optional.empty(), Optional.empty(), prompt, guidelines, List.of(), List.of());
+                "plan",
+                "Plan",
+                Optional.empty(),
+                Optional.empty(),
+                prompt,
+                guidelines,
+                List.of(),
+                List.of(),
+                List.of());
     }
 
     private static MissionStep stepDescribedAs(String description) {
@@ -202,6 +217,7 @@ class MissionValuesTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                List.of(),
                 List.of(),
                 List.of());
     }

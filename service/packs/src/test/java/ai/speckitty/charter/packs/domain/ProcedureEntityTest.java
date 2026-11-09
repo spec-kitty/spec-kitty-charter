@@ -46,10 +46,13 @@ class ProcedureEntityTest {
                 "Ask", Optional.of("Confirm."), Optional.of("operator"), Optional.of("go"), Optional.of("stop"));
         var antiPattern = new AntiPatternEntry(
                 "Rushing", Optional.of("Do not rush."), Optional.of("skip review"), Optional.of("review first"));
+        var reference =
+                new ProcedureReference(ArtifactKind.TACTIC, "review-first", Optional.of("always"), Optional.empty());
 
         Procedure procedure = valid("p-1")
                 .step(operatorStep)
                 .antiPattern(antiPattern)
+                .reference(reference)
                 .notes("note")
                 .appliesToLanguage("java")
                 .build();
@@ -65,6 +68,7 @@ class ProcedureEntityTest {
         assertThat(procedure.exitCondition()).isEqualTo("done");
         assertThat(procedure.steps()).containsExactly(step("Do it"), operatorStep);
         assertThat(procedure.antiPatterns()).containsExactly(antiPattern);
+        assertThat(procedure.references()).containsExactly(reference);
         assertThat(procedure.notes()).contains("note");
         assertThat(procedure.appliesToLanguages()).containsExactly("java");
     }
@@ -76,7 +80,21 @@ class ProcedureEntityTest {
 
         assertThat(procedure.notes()).isEmpty();
         assertThat(procedure.antiPatterns()).isEmpty();
+        assertThat(procedure.references()).isEmpty();
         assertThat(procedure.appliesToLanguages()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("relationships() is empty even when the procedure carries references (research D3, #189)")
+    void relationshipsAreNeverMinted() {
+        Procedure procedure = valid("p")
+                .reference(new ProcedureReference(ArtifactKind.TACTIC, "t", Optional.empty(), Optional.empty()))
+                .reference(new ProcedureReference(
+                        ArtifactKind.DIRECTIVE, "DIRECTIVE_001", Optional.of("w"), Optional.of("r")))
+                .build();
+
+        assertThat(procedure.references()).hasSize(2);
+        assertThat(procedure.relationships()).isEmpty();
     }
 
     @Test
@@ -204,5 +222,15 @@ class ProcedureEntityTest {
         assertThatThrownBy(() -> new AntiPatternEntry(" ", Optional.empty(), Optional.empty(), Optional.empty()))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("An anti-pattern entry needs a title that is not blank.");
+    }
+
+    @Test
+    @DisplayName("a procedure reference needs an id")
+    void aReferenceNeedsAnId() {
+        assertThat(new ProcedureReference(ArtifactKind.TACTIC, "t", Optional.empty(), Optional.empty()).id())
+                .isEqualTo("t");
+        assertThatThrownBy(() -> new ProcedureReference(ArtifactKind.TACTIC, "", Optional.empty(), Optional.empty()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("A procedure reference needs an id that is not blank.");
     }
 }

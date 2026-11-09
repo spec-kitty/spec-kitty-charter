@@ -12,5 +12,5 @@ properties:
     type: string
     description: What was found and what the load did about it, naming pack-relative paths only.
     x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Diagnostic.java
+      path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
       symbol: Diagnostic.detail

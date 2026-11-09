@@ -131,7 +131,6 @@ class HypermediaTest {
                         "service-desc",
                         "first",
                         "next",
-                        "artifact",
-                        "pack");
+                        "artifact");
     }
 }

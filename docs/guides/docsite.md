@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -193,14 +193,9 @@ red run names what failed:
   `terms`, `adr`, `changelog` and `orphans`, each a separate step that runs even when an
   earlier one failed;
 - **Markdown lint** and **Spellcheck**, with pinned tool versions;
-- **PlantUML diagrams are current**, with the pinned jar, Java 21 and Graphviz. The jar is
-  cached on its pin (`actions/cache`, keyed on `plantuml_pins.json`), so a pull request does not
-  download it unless the pin changed. The job also runs weekly, which keeps the cache entry alive.
-
-The weekly run of `docs-cleanliness.yml` also runs the freshness check, so a page that goes stale on its own is noticed.
-
-`.github/workflows/docs-nightly.yml` runs the **External links** check (lychee) nightly and on demand, not on pull
-requests: it asks remote sites, which flake. It reports and never fails the run.
+- **PlantUML diagrams are current**, with the pinned jar, Java 21 and Graphviz;
+- **External links**, with lychee. It is not required: remote sites flake, so it reports but
+  never blocks a pull request. It also runs weekly, together with the freshness check, so a page that goes stale on its own is noticed.
 
 `.github/workflows/docs-site.yml` builds and publishes the site:
 

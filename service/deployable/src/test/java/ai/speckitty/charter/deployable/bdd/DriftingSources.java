@@ -1,7 +1,6 @@
 package ai.speckitty.charter.deployable.bdd;
 
 import ai.speckitty.charter.packs.domain.PackSources;
-import java.util.Collection;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -42,12 +41,6 @@ final class DriftingSources implements PackSources {
     /** Forgets an armed change that never ran, so the next scenario starts clean. */
     void disarm() {
         change = null;
-    }
-
-    /** The digest of the named packs' files alone, from the real sources: an armed change fires on a whole digest only. */
-    @Override
-    public String fingerprintOf(Collection<String> packNames) {
-        return real.fingerprintOf(packNames);
     }
 
     @Override

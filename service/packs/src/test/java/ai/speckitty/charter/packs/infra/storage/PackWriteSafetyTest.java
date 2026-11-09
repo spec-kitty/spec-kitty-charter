@@ -26,9 +26,10 @@ class PackWriteSafetyTest {
                 id,
                 "1.0",
                 name,
-                List.of(new TacticDso.Step("Only step", Optional.empty(), List.of())),
+                List.of(new TacticDso.Step("Only step", Optional.empty(), List.of(), List.of())),
                 Optional.empty(),
                 Optional.empty(),
+                List.of(),
                 List.of(),
                 List.of());
     }

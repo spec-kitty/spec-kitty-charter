@@ -86,7 +86,6 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     @Override
     public String writeDescriptor(PackDescriptorDso descriptor) {
         return new YamlDumpEmitter()
-                .scalar("schema_version", descriptor.schemaVersion())
                 .scalar("pack_id", descriptor.packId())
                 .scalar("pack_version", descriptor.packVersion())
                 .scalar("name", descriptor.name())

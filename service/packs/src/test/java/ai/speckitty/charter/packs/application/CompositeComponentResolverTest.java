@@ -108,7 +108,7 @@ class CompositeComponentResolverTest {
             .schemaVersion("1.0")
             .name("Tactic one")
             .purpose("purpose")
-            .step(new TacticStep("Only step", Optional.empty(), java.util.List.of()))
+            .step(new TacticStep("Only step", Optional.empty(), java.util.List.of(), java.util.List.of()))
             .build();
 
     private final ComponentResolver resolver = new CompositeComponentResolver(

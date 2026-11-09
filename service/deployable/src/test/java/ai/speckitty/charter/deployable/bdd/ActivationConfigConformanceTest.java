@@ -95,7 +95,6 @@ class ActivationConfigConformanceTest {
             case "pattern" -> violation.startsWith(at + " '") && violation.contains("' does not match ");
             case "minLength" -> violation.startsWith(at + " is shorter than ");
             case "minItems" -> violation.startsWith(at + " holds fewer than ");
-            case "minimum" -> violation.startsWith(at + " is below ");
             case "maximum" -> violation.startsWith(at + " is above ");
             default -> throw new AssertionError("no reason is known for the keyword " + reason.path("keyword"));
         };

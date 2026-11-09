@@ -5,15 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,23 +27,19 @@ class PresetTest {
     }
 
     private static Preset preset(String id, Map<ArtifactKind, List<PresetItem>> artifacts) {
-        return new Preset(id, "The house rules.", artifacts);
-    }
-
-    private static Map<ArtifactKind, List<PresetItem>> withMissionTypes(Preset preset, PresetItem... missionTypes) {
-        Map<ArtifactKind, List<PresetItem>> out = new LinkedHashMap<>(preset.artifacts());
-        out.put(ArtifactKind.MISSION_TYPE, List.of(missionTypes));
-        return out;
+        return new Preset(id, "The house rules.", List.of(), artifacts, List.of());
     }
 
     private static Preset houseRules() {
         Map<ArtifactKind, List<PresetItem>> artifacts = new LinkedHashMap<>();
         artifacts.put(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("GUARD"), PresetItem.of("STYLE")));
         artifacts.put(ArtifactKind.TACTIC, List.of(PresetItem.of("tdd")));
-        artifacts.put(ArtifactKind.SKILL, List.of(PresetItem.of("pr-review")));
-        artifacts.put(
-                ArtifactKind.MISSION_TYPE, List.of(PresetItem.of("research"), PresetItem.mustHave("software-dev")));
-        return new Preset("house-rules", "The house rules.", artifacts);
+        return new Preset(
+                "house-rules",
+                "The house rules.",
+                List.of(ArtifactKind.DIRECTIVE, ArtifactKind.TACTIC),
+                artifacts,
+                List.of(PresetItem.of("research"), PresetItem.mustHave("software-dev")));
     }
 
     @Test
@@ -54,10 +47,8 @@ class PresetTest {
     void mustHaveItemsAreTheRequiredSet() {
         Preset preset = houseRules();
 
-        assertThat(preset.required())
-                .containsExactly(
-                        Map.entry(ArtifactKind.DIRECTIVE, List.of("GUARD")),
-                        Map.entry(ArtifactKind.MISSION_TYPE, List.of("software-dev")));
+        assertThat(preset.required()).containsExactly(Map.entry(ArtifactKind.DIRECTIVE, List.of("GUARD")));
+        assertThat(preset.requiredMissionTypes()).containsExactly("software-dev");
         assertThat(preset.governing()).isTrue();
     }
 
@@ -67,43 +58,17 @@ class PresetTest {
         Preset preset = preset("defaults", lists(ArtifactKind.DIRECTIVE, PresetItem.of("A"), PresetItem.of("B")));
 
         assertThat(preset.required()).isEmpty();
+        assertThat(preset.requiredMissionTypes()).isEmpty();
         assertThat(preset.governing()).isFalse();
     }
 
     @Test
     @DisplayName("a must-have mission type alone makes a preset governing")
     void aMustHaveMissionTypeGoverns() {
-        Preset preset = preset("p", lists(ArtifactKind.MISSION_TYPE, PresetItem.mustHave("plan")));
+        Preset preset = new Preset("p", "d", List.of(), Map.of(), List.of(PresetItem.mustHave("plan")));
 
-        assertThat(preset.required()).containsExactly(Map.entry(ArtifactKind.MISSION_TYPE, List.of("plan")));
+        assertThat(preset.required()).isEmpty();
         assertThat(preset.governing()).isTrue();
-    }
-
-    @Test
-    @DisplayName("must-have items of every kind feed the required floor, a mission type and a skill included (T028)")
-    void mustHaveItemsOfEveryKindFeedTheFloor() {
-        Map<ArtifactKind, List<PresetItem>> artifacts =
-                new LinkedHashMap<>(houseRules().artifacts());
-        artifacts.put(ArtifactKind.SKILL, List.of(PresetItem.mustHave("pr-review")));
-        artifacts.put(ArtifactKind.GLOSSARY_PACK, List.of(PresetItem.of("core-terms")));
-
-        Set<Urn> held = Set.of(
-                new Urn(NodeKind.DIRECTIVE, "GUARD"),
-                new Urn(NodeKind.SKILL, "pr-review"),
-                Urn.missionType("software-dev"));
-
-        RequiredFloor floor =
-                RequiredFloor.of(List.of(Map.entry("org", List.of(preset("house-rules", artifacts)))), held);
-
-        assertThat(floor.requiredBy())
-                .containsOnlyKeys(
-                        new Urn(NodeKind.DIRECTIVE, "GUARD"),
-                        new Urn(NodeKind.SKILL, "pr-review"),
-                        Urn.missionType("software-dev"));
-        assertThat(floor.requiringPacks(Urn.missionType("software-dev"))).containsExactly("org");
-        assertThat(floor.isRequired(Urn.missionType("research"))).isFalse();
-        assertThat(floor.isRequired(new Urn(NodeKind.GLOSSARY_PACK, "core-terms")))
-                .isFalse();
     }
 
     @Test
@@ -115,7 +80,13 @@ class PresetTest {
                 .extracting(PresetItem::id)
                 .containsExactly("GUARD", "STYLE");
         assertThat(preset).isEqualTo(houseRules());
-        assertThat(preset).isNotEqualTo(preset("house-rules", withMissionTypes(preset, PresetItem.of("research"))));
+        assertThat(preset)
+                .isNotEqualTo(new Preset(
+                        "house-rules",
+                        "The house rules.",
+                        List.of(ArtifactKind.DIRECTIVE, ArtifactKind.TACTIC),
+                        preset.artifacts(),
+                        List.of(PresetItem.of("research"), PresetItem.of("software-dev"))));
     }
 
     @Test
@@ -124,22 +95,23 @@ class PresetTest {
         List<PresetItem> items = new ArrayList<>(List.of(PresetItem.of("A")));
         Map<ArtifactKind, List<PresetItem>> artifacts = new LinkedHashMap<>();
         artifacts.put(ArtifactKind.DIRECTIVE, items);
+        List<ArtifactKind> kinds = new ArrayList<>(List.of(ArtifactKind.DIRECTIVE));
         List<PresetItem> missionTypes = new ArrayList<>(List.of(PresetItem.mustHave("plan")));
-        artifacts.put(ArtifactKind.MISSION_TYPE, missionTypes);
-        Preset preset = new Preset("p", "d", artifacts);
+        Preset preset = new Preset("p", "d", kinds, artifacts, missionTypes);
 
         artifacts.put(ArtifactKind.TACTIC, List.of(PresetItem.of("t")));
         items.add(PresetItem.of("B"));
+        kinds.add(ArtifactKind.TACTIC);
         missionTypes.add(PresetItem.of("research"));
 
-        assertThat(preset.artifacts()).containsOnlyKeys(ArtifactKind.DIRECTIVE, ArtifactKind.MISSION_TYPE);
+        assertThat(preset.artifacts()).containsOnlyKeys(ArtifactKind.DIRECTIVE);
         assertThat(preset.artifacts().get(ArtifactKind.DIRECTIVE)).containsExactly(PresetItem.of("A"));
-        assertThat(preset.artifacts().get(ArtifactKind.MISSION_TYPE)).containsExactly(PresetItem.mustHave("plan"));
+        assertThat(preset.activatedKinds()).containsExactly(ArtifactKind.DIRECTIVE);
+        assertThat(preset.missionTypes()).containsExactly(PresetItem.mustHave("plan"));
         assertThatThrownBy(() -> preset.artifacts().put(ArtifactKind.TACTIC, List.of()))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> preset.required().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(
-                        () -> preset.required().get(ArtifactKind.MISSION_TYPE).clear())
+        assertThatThrownBy(() -> preset.requiredMissionTypes().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -163,34 +135,52 @@ class PresetTest {
     @Test
     @DisplayName("a blank description breaches, naming the preset; a written one does not")
     void blankDescriptionBreaches() {
-        assertThatCode(() -> new Preset("p", "d", Map.of())).doesNotThrowAnyException();
-        assertThatThrownBy(() -> new Preset("p", " ", Map.of()))
+        assertThatCode(() -> new Preset("p", "d", List.of(), Map.of(), List.of()))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> new Preset("p", " ", List.of(), Map.of(), List.of()))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("Preset 'p': the description must not be blank.");
+    }
+
+    @Test
+    @DisplayName("a kind named twice in the kind gate breaches, naming the kind; distinct kinds do not")
+    void kindGateNamesEachKindOnce() {
+        assertThatCode(() ->
+                        new Preset("p", "d", List.of(ArtifactKind.DIRECTIVE, ArtifactKind.TACTIC), Map.of(), List.of()))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> new Preset(
+                        "p", "d", List.of(ArtifactKind.DIRECTIVE, ArtifactKind.DIRECTIVE), Map.of(), List.of()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining(
+                        "Preset 'p': the kind gate must name each kind once; 'directives' is named twice.");
     }
 
     @ParameterizedTest
     @EnumSource(
             value = ArtifactKind.class,
-            names = {"ASSET", "TEMPLATE", "GUARD", "LIFECYCLE"})
-    @DisplayName("a list of a kind that is never activated breaches, naming the kind")
-    void neverActivatedKindsBreach(ArtifactKind kind) {
+            names = {"SKILL", "GLOSSARY_PACK", "ASSET", "TEMPLATE"})
+    @DisplayName("a list of a kind presets do not govern breaches, naming the kind")
+    void ungovernedKindsBreach(ArtifactKind kind) {
         assertThatCode(() -> preset("p", lists(ArtifactKind.DIRECTIVE, PresetItem.of("x"))))
                 .doesNotThrowAnyException();
         assertThatThrownBy(() -> preset("p", lists(kind, PresetItem.of("x"))))
                 .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining(
-                        "Preset 'p': " + kind.plural() + " are never activated, so a preset carries no list of them.");
+                .hasMessageContaining("Preset 'p': presets do not govern " + kind.plural());
     }
 
     @Test
-    @DisplayName("a preset may name any activatable kind, skills, glossary packs and mission types included (FR-041)")
-    void everyActivatableKindIsAccepted() {
+    @DisplayName("every kind presets govern can carry a list")
+    void everyGovernedKindIsAccepted() {
+        // A preset activates mission types in its own list (missionTypes, ADR-0042), not as an activated kind.
         assertThat(Preset.ACTIVATION_KINDS)
                 .isEqualTo(EnumSet.complementOf(EnumSet.of(
-                        ArtifactKind.ASSET, ArtifactKind.TEMPLATE, ArtifactKind.GUARD, ArtifactKind.LIFECYCLE)))
-                .contains(ArtifactKind.SKILL, ArtifactKind.GLOSSARY_PACK, ArtifactKind.MISSION_TYPE)
-                .allMatch(ArtifactKind::activatable);
+                        ArtifactKind.SKILL,
+                        ArtifactKind.GLOSSARY_PACK,
+                        ArtifactKind.ASSET,
+                        ArtifactKind.TEMPLATE,
+                        ArtifactKind.MISSION_TYPE,
+                        ArtifactKind.GUARD,
+                        ArtifactKind.LIFECYCLE)));
         for (ArtifactKind kind : Preset.ACTIVATION_KINDS) {
             assertThatCode(() -> preset("p", lists(kind, PresetItem.of("x")))).doesNotThrowAnyException();
         }
@@ -217,15 +207,13 @@ class PresetTest {
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining(
                         "Preset 'p': the activation list of directives must name each id once; 'A' is listed twice.");
-        assertThatCode(() ->
-                        preset("p", lists(ArtifactKind.MISSION_TYPE, PresetItem.of("plan"), PresetItem.of("research"))))
+        assertThatCode(() -> new Preset(
+                        "p", "d", List.of(), Map.of(), List.of(PresetItem.of("plan"), PresetItem.of("research"))))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() ->
-                        preset("p", lists(ArtifactKind.MISSION_TYPE, PresetItem.of("plan"), PresetItem.of("plan"))))
+        assertThatThrownBy(() -> new Preset(
+                        "p", "d", List.of(), Map.of(), List.of(PresetItem.of("plan"), PresetItem.of("plan"))))
                 .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining(
-                        "Preset 'p': the activation list of mission_types must name each id once; 'plan' is listed"
-                                + " twice.");
+                .hasMessageContaining("Preset 'p': the mission types must name each id once; 'plan' is listed twice.");
     }
 
     @Test

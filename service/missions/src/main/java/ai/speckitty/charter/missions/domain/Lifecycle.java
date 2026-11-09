@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -146,6 +147,16 @@ public final class Lifecycle implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return description;
+    }
+
+    /**
+     * A lifecycle mints no relationship: its guard entries are checked at load, not walked as edges.
+     *
+     * @return an empty list
+     */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
     }
 
     /**

@@ -2,8 +2,8 @@
 title: "ADR-0027: CRG relationship identity is a bounded, conditional unidirectional collapse"
 description: Why a relationship is one unidirectional edge per component pair as an upstream normalization with a revisit trigger, not a claim that relationships are intrinsically one-way.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27)'
+updated: 2026-10-27T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27)
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -33,17 +33,6 @@ conditional basis.
 Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): a `tension` relationship may exist beside one structural relationship between the same two artifacts (decisions 1 and 4).
 
 Clarified by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (accepted 2026-10-27): in decision 2, "round-trips losslessly" means equality of meaning, with edges compared as a set of directed `(source, target, relation)` triples. The one-per-pair rule stays a domain invariant, and a source that breaks it is still fixed upstream, never collapsed on read.
-
-### Amendment 2026-11-05
-
-The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
-([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). Identity (decision 1) is unchanged. The original text stands, and each changed point is
-annotated:
-
-- decision 2: "the canonical source" of an edge is the pack's graph documents; no artifact field is a
-  source ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 1 and 10);
-- Neutral: the provenance divergence dissolves, because the procedure's typed reference no longer mints
-  an edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 2 and 10).
 
 ## Context
 
@@ -77,8 +66,6 @@ and compute the reverse discovery behavior elsewhere rather than store it.
    a redundant reverse edge is a source-normalization task owned by the CLI / open-packs side
    (tracked as [spec-kitty/spec-kitty#6667](https://github.com/spec-kitty/spec-kitty/issues/6667),
    milestone 11 "4.0.0 release scope"), not a charter read-time rewrite.
-
-   *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 1 and 10): the source of an edge is the pack's graph documents alone. With one source, two edges on a pair can no longer come from two homes; a second structural edge in the graph documents is still fixed upstream.*
 3. **The reverse discovery behavior** — "you activated B, would you like to activate A?" — is **not**
    a stored relationship. It is computed by a discovery/activation domain service (application ring,
    within the charter's post-cutover remit per [ADR-0020](/adr/0020-offering-and-activations/) D5/D6)
@@ -113,7 +100,6 @@ and compute the reverse discovery behavior elsewhere rather than store it.
   typed reference would mint `SUGGESTS` — must be reconciled against core's extractor
   ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)) before the normalization
   lands.
-  *Amended 2026-11-05: decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), decisions 2 and 10. The procedure's typed reference is dropped and mints nothing; the fragment's `requires` is the edge, so the divergence is gone.*
 
 ## Alternatives considered
 

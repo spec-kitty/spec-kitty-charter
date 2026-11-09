@@ -2,13 +2,11 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: API
 kind: Reference
 related:
   - architecture/contract-and-dtos
-  - guides/compose-packs
-  - changelog/2026-11-07-a-pack-registration
   - adr/0002-contract-source-of-record
   - adr/0018-action-context-read-and-seam-access-surface
   - conformance/divergence-register
@@ -187,7 +185,7 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Not built |
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | Not built |
 | The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
-| SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. *Amended 2026-11-08: the blocks move into the opt-in `spdd` pack as prompt fragments of step enhancements, filling slots the built-in prompts declare ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The prompt read then returns the base text and the active fragments per slot; the contract change is made with R5 and R9, not here.* |
+| SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. |
 
 R1, R3, R5 and R18 are deferred to the minor that brings merge, activation and cascade
 ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
@@ -210,15 +208,12 @@ the conventions in [Development conventions](/development/).
 
 | Method | Path | Proposed operationId | Purpose | Inventory issue |
 |---|---|---|---|---|
-| `GET` | `/packs/{packId}` | `getPack` | One pack: its identity, version, level and revision, with the revision as the `ETag`. **Built** | — |
+| `GET` | `/packs/{packId}` | `getPack` | One pack: today's `PackSummary` fields | — |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
 | `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
 | `GET` | `/packs/{packId}/assets` | `listPackAssets` | The pack's asset paths | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
 | `GET` | `/packs/{packId}/assets/{path}` | `getPackAsset` | One asset file | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
-| `POST` | `/packs` | `registerPackFromSource` | Register a pack from an https archive, a git repository or a local path, replacing the pack held under the target `packId`. **Built**: `202` with a status and a `Location` | — |
-| `PUT` | `/packs/{packId}` | `registerPackFromArchive` | Register a whole pack from an archive, replacing the pack held. **Built**: `202` with a status and a `Location` | — |
-| `GET` | `/pack-registrations/{registrationId}` | `getPackRegistration` | The status of a registration: `pending`, `running`, `succeeded` or `refused`. **Built** | — |
-| `DELETE` | `/packs/{packId}/artifacts/{kind}/{artifactId}`, `/packs/{packId}/relationships` | `deletePackArtifact`, `deletePackRelationship` | Remove one artifact, or one registered edge, from a pack; `204` with the new revision as the `ETag`. **Built** | — |
+| `POST` | `/packs` | `registerPack` | Register a pack (ADR-0005); `201` with `Location` (needs the lint amendment of ADR-0020 D9) | — |
 | `GET` | `/packs/{packId}/resolution` | `getPackResolution` | Read-only resolution state (ADR-0007 decision 7) | — |
 | `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
 
@@ -251,7 +246,7 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
 | `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
-| `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` and `parent_pack` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
+| `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 

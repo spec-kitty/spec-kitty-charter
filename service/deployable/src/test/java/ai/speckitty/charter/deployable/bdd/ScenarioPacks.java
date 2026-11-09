@@ -45,15 +45,6 @@ public final class ScenarioPacks {
         return Optional.ofNullable(root).map(r -> r.resolve(CONFIG_DIR));
     }
 
-    /**
-     * The directory of the running scenario, which holds its fixed packs and its pack domain.
-     *
-     * @return the directory, or empty when no scenario is running
-     */
-    Optional<Path> rootDirectory() {
-        return Optional.ofNullable(root);
-    }
-
     /** Writes {@code content} exactly, with no added newline, to a file of the project configuration directory. */
     void writeConfigFile(String name, String content) {
         try {

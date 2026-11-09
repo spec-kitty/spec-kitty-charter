@@ -2,17 +2,20 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.DirectivesApi;
 import ai.speckitty.charter.api.model.Artifact;
+import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,10 +63,14 @@ public class DirectiveController implements DirectivesApi {
                 body.getIntent(),
                 body.getEnforcement(),
                 body.getScope(),
+                OptionalLists.orEmpty(body.getProcedures()),
                 OptionalLists.orEmpty(body.getIntegrityRules()),
                 OptionalLists.orEmpty(body.getValidationCriteria()),
-                OptionalLists.orEmpty(body.getExplicitAllowances()));
-        DirectiveRegistrationService.Registered result = registrations.registerDirective(pack, directive, false, null);
+                OptionalLists.orEmpty(body.getExplicitAllowances()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
+        DirectiveRegistrationService.Registered result =
+                registrations.registerDirective(pack, directive, relationships, false, null);
         Artifact written = ArtifactDtos.envelope(ArtifactKind.DIRECTIVE, pack, id, links)
                 .directive(ArtifactDtos.directive(directive));
         return ResponseEntity.created(ArtifactDtos.location(written))
@@ -83,11 +90,14 @@ public class DirectiveController implements DirectivesApi {
                 body.getIntent(),
                 body.getEnforcement(),
                 body.getScope(),
+                OptionalLists.orEmpty(body.getProcedures()),
                 OptionalLists.orEmpty(body.getIntegrityRules()),
                 OptionalLists.orEmpty(body.getValidationCriteria()),
-                OptionalLists.orEmpty(body.getExplicitAllowances()));
+                OptionalLists.orEmpty(body.getExplicitAllowances()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         DirectiveRegistrationService.Registered result =
-                registrations.registerDirective(pack, directive, true, ifMatch);
+                registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(ArtifactDtos.envelope(ArtifactKind.DIRECTIVE, pack, artifactId, links)
@@ -112,9 +122,11 @@ public class DirectiveController implements DirectivesApi {
             String intent,
             String enforcement,
             @Nullable String scope,
+            List<String> procedures,
             List<String> integrityRules,
             List<String> validationCriteria,
-            List<String> explicitAllowances) {
+            List<String> explicitAllowances,
+            List<DirectiveReference> references) {
         try {
             var builder = ai.speckitty.charter.packs.domain.Directive.builder()
                     .id(new DirectiveIdentifier(id))
@@ -126,9 +138,15 @@ public class DirectiveController implements DirectivesApi {
                             .orElseThrow(() -> new CharterRefusal(
                                     RefusalCode.VALIDATION_FAILED, "unknown enforcement: " + enforcement)))
                     .scope(scope);
+            procedures.forEach(builder::procedure);
             integrityRules.forEach(builder::integrityRule);
             validationCriteria.forEach(builder::validationCriterion);
             explicitAllowances.forEach(builder::explicitAllowance);
+            references.forEach(ref -> builder.reference(new ai.speckitty.charter.packs.domain.DirectiveReference(
+                    ref.getType(),
+                    ref.getId(),
+                    Optional.ofNullable(ref.getWhen()),
+                    Optional.ofNullable(ref.getReason()))));
             return builder.build();
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);

@@ -41,8 +41,8 @@ import tools.jackson.databind.json.JsonMapper;
  *       inlined, both with networknt on Draft 2020-12; an invalid one fails for exactly the reasons
  *       {@code invalid-reasons.json} gives it (#295): the errors of each schema are those keywords, at those instance
  *       locations and, where a reason names one, about that member;
- *   <li>{@code SelectedArtifacts} and {@code DeactivatedArtifacts} declare exactly the activatable artifact kinds,
- *       {@code mission_type} included (one kind model, IC-20);
+ *   <li>{@code SelectedArtifacts} and {@code DeactivatedArtifacts} declare exactly the activatable artifact kinds other
+ *       than {@code mission_type}, which {@code missionTypes} holds;
  *   <li>every {@code activated_<plural>} key of the charter schema but {@code activated_kinds} names one of them,
  *       through {@link ArtifactKind#plural()}: content alignment, not file shape (operator ruling 2026-10-20).
  * </ul>
@@ -137,9 +137,10 @@ class ActivationConfigSchemaParityTest {
     void theDocumentSelectsAndDeactivatesExactlyTheActivatableArtifactKinds() {
         Set<String> activatable = Arrays.stream(ArtifactKind.values())
                 .filter(ArtifactKind::activatable)
+                .filter(kind -> kind != ArtifactKind.MISSION_TYPE)
                 .map(ArtifactKind::token)
                 .collect(Collectors.toCollection(TreeSet::new));
-        assertThat(activatable).hasSize(13).contains("mission_type", "step_enhancement");
+        assertThat(activatable).hasSize(11);
         assertThat(properties("SelectedArtifacts.yaml")).isEqualTo(activatable);
         assertThat(properties("DeactivatedArtifacts.yaml")).isEqualTo(activatable);
     }

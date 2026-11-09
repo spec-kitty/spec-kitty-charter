@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -148,6 +149,17 @@ public final class GlossaryPack implements CharterArtifact {
      */
     public List<GlossaryTerm> terms() {
         return terms;
+    }
+
+    /**
+     * A glossary pack mints no relationships: its terms' cross-references ({@code see_also}) name surfaces, not
+     * artifacts, and the pinned shard has no glossary-pack edges.
+     *
+     * @return an empty list
+     */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */

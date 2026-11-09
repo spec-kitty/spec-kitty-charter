@@ -2,7 +2,7 @@ title: Tactic
 description: One tactic of a Charter Pack, as the pack declares it.
 type: object
 additionalProperties: false
-required: [id, schemaVersion, name, purpose, notes, steps, failureModes, appliesToLanguages]
+required: [id, schemaVersion, name, purpose, notes, steps, failureModes, appliesToLanguages, references]
 properties:
   id:
     type: string
@@ -58,6 +58,14 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
       symbol: Tactic.appliesToLanguages
+  references:
+    type: array
+    description: The artifacts the tactic points at; empty when none are declared.
+    items:
+      $ref: TacticReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.references
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
   symbol: Tactic

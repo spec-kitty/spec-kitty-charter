@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -50,7 +50,7 @@ class ParadigmControllerTest {
             .build();
 
     ParadigmControllerTest() {
-        store.put(paradigm("clean-architecture", "Clean Architecture"));
+        store.put(paradigm("clean-architecture", "Clean Architecture", "ALPHA"));
     }
 
     @Test
@@ -98,28 +98,30 @@ class ParadigmControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
-    // ---- ADR-0064: a paradigm body carries no relationship field; one still sent is refused, whatever its value ---
+    @Test
+    void aBodyRelationshipOfAnUnknownKindIsA422() throws Exception {
+        String bad = "{\"id\":\"hexagonal\",\"schemaVersion\":\"1.0\",\"name\":\"Hexagonal\",\"summary\":\"ports\","
+                + "\"relationships\":[{\"from\":\"paradigm:hexagonal\",\"to\":\"nonsense:x\",\"type\":\"requires\"}]}";
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+    }
 
-    @ParameterizedTest(name = "{0}: {1}")
-    @CsvSource(
-            delimiter = '|',
-            value = {
-                "directiveRefs|[\"ALPHA\"]",
-                "directiveRefs|null",
-                "references|[{\"type\":\"tactic\",\"id\":\"t\"}]",
-                "references|[null]",
-                "relationships|[{\"from\":\"paradigm:hexagonal\",\"to\":\"tactic:x\",\"type\":\"requires\"}]",
-                "relationships|[]"
-            })
-    void aRemovedRelationshipFieldIsA422OnPostAndPutAndWritesNothing(String member, String value) throws Exception {
-        String bad = body("hexagonal").replace("}", ",\"" + member + "\":" + value + "}");
+    // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"directiveRefs", "references", "relationships"})
+    void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = body("hexagonal").replace("}", ",\"" + list + "\":null}");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
                 .andExpect(status().is(422))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("validation_failed"))
-                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(member)));
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(list)));
         mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/hexagonal")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
@@ -128,28 +130,53 @@ class ParadigmControllerTest {
         assertThat(store.commits).as("a refused registration commits nothing").isZero();
     }
 
+    // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"directiveRefs", "references", "relationships"})
+    void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = body("hexagonal").replace("}", ",\"" + list + "\":[null]}");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/hexagonal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
     @Test
-    void theSameBodyWithoutTheFieldIsCreatedAndAnswersNoRelationship() throws Exception {
-        // The positive control of the matrix above.
+    void anAbsentListIsEmpty() throws Exception {
+        // The positive control of the matrix above: every list left out.
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("hexagonal")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paradigm.directiveRefs").doesNotExist())
-                .andExpect(jsonPath("$.paradigm.relationships").doesNotExist());
+                .andExpect(jsonPath("$.paradigm.directiveRefs").isArray())
+                .andExpect(jsonPath("$.paradigm.directiveRefs", org.hamcrest.Matchers.hasSize(0)));
     }
 
     private static String body(String id) {
         return "{\"id\":\"" + id + "\",\"schemaVersion\":\"1.0\",\"name\":\"Name\",\"summary\":\"Summary\"}";
     }
 
-    private static Paradigm paradigm(String id, String name) {
+    private static Paradigm paradigm(String id, String name, String directiveRef) {
         return Paradigm.builder()
                 .id(new ParadigmIdentifier(id))
                 .packId(PACK)
                 .schemaVersion("1.0")
                 .name(name)
                 .summary("Summary of " + id)
+                .directiveRef(directiveRef)
                 .build();
     }
 

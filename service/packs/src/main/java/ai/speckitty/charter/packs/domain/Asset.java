@@ -3,8 +3,10 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -106,6 +108,12 @@ public final class Asset implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return Optional.empty();
+    }
+
+    /** An asset mints no relationships: a guard's {@code implemented_by} edge is the guard's own. */
+    @Override
+    public List<Relationship> relationships() {
+        return List.of();
     }
 
     /**

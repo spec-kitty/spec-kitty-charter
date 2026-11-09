@@ -2,8 +2,8 @@
 title: "ADR-0063: A pack declares its mutability levels in policy.yaml"
 description: "The pack mutability policy file: the mutability_policy key, the closed policy schema, the highest level along the closure, and fail-closed reads."
 doc_status: active
-updated: 2026-11-07T00:00:00Z
-decision_status: Accepted, with Amendment 2026-11-07 (REMOVE and the staged closure, ADR-0065)
+updated: 2026-11-05T00:00:00Z
+decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR
@@ -127,21 +127,6 @@ The key exists from this version. No pack is required to ship a policy file, and
 registration or activation answer changes until a pack does. A pack that ships one should also declare
 `requires_core` (ADR-0012 decision 4), so that an older CLI refuses the pack instead of loading it without its locks;
 the service does not enforce that pairing.
-
-## Amendment 2026-11-06: repair writes
-
-The refusal in "Negative" above stands for now: a closure that cannot be composed refuses the write, even one that
-would repair it. The operator ruled on 2026-11-06 that repair writes are allowed, a write that makes a broken compose
-valid being let through. That is not built; it is tracked in
-[#404](https://github.com/spec-kitty/spec-kitty-charter/issues/404).
-
-## Amendment 2026-11-07: REMOVE and the staged closure
-
-[ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) adds a REMOVE operation to the write gate: allowed on `open` and `extendable`, refused on `locked`
-([ADR-0012](/adr/0012-pack-mutability-policy/) decision 1, [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)
-decision 3). The gate also runs over a closure composed with the written pack in place, since a registration writes
-a pack that is not yet in the live closure. Decision 3 stands. The 2026-11-06 repair-write amendment above is not
-applied in the registration work of that record, which stays strict.
 
 ## Open questions
 

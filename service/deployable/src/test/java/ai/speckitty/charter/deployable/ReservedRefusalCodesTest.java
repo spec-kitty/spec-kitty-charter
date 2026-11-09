@@ -193,8 +193,9 @@ class ReservedRefusalCodesTest {
         assertThat(raisedCodes()).contains("GOVERNANCE_POLICY_VIOLATION");
         assertThat(unraisedCodes()).contains("DRG_SCHEMA_ERROR");
         // #125, #291, #360: the activation register, its per-artifact writes and the preset write raise all six of
-        // the activation set's codes, and the select of a mission type raises mission_type_not_found. PR C built the
-        // last two effective reads (IC-11), so getEffectiveActionContext raises action_not_found too.
+        // the activation set's codes, and the select of a mission type raises mission_type_not_found. Only the four
+        // effective reads stay reserved (ADR-0020 D8), so the one code they will raise, action_not_found, stays
+        // unraised.
         assertThat(raisedCodes())
                 .contains(
                         "ACTIVATION_NOT_FOUND",
@@ -203,9 +204,8 @@ class ReservedRefusalCodesTest {
                         "ARTIFACT_LOCKED",
                         "ARTIFACT_NOT_FOUND",
                         "MISSION_TYPE_NOT_FOUND",
-                        "PRESET_NOT_FOUND",
-                        "ACTION_NOT_FOUND");
-        assertThat(unraisedCodes()).doesNotContain("PRESET_NOT_FOUND", "ACTION_NOT_FOUND");
+                        "PRESET_NOT_FOUND");
+        assertThat(unraisedCodes()).contains("ACTION_NOT_FOUND").doesNotContain("PRESET_NOT_FOUND");
     }
 
     @ParameterizedTest
@@ -324,25 +324,7 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PACK_SIBLING_CONFLICT,
                 RefusalCode.PACK_REFERENCE_UNQUALIFIED,
                 RefusalCode.PACK_REFERENCE_PACK_MISSING,
-                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
-                RefusalCode.PACK_VERSION_CONFLICT,
-                RefusalCode.ARTIFACT_REFERENCED,
-                RefusalCode.RELATIONSHIP_NOT_FOUND,
-                RefusalCode.RELATIONSHIP_NOT_REGISTERED,
-                RefusalCode.REGISTRATION_NOT_FOUND,
-                RefusalCode.PACK_SOURCE_REFUSED,
-                RefusalCode.PACK_SOURCE_UNAVAILABLE,
-                RefusalCode.OVERRIDE_NOT_PERMITTED,
-                RefusalCode.ENHANCES_CYCLE,
-                RefusalCode.CONFLICTING_RELATIONS,
-                RefusalCode.SELF_OVERRIDE,
-                RefusalCode.OVERRIDE_CYCLE,
-                RefusalCode.REGISTRATION_TIMED_OUT,
-                RefusalCode.PACK_STORAGE_FULL,
-                RefusalCode.PROMPT_SLOT_MALFORMED,
-                RefusalCode.PROMPT_SLOT_NOT_EMPTY,
-                RefusalCode.PROMPT_FRAGMENT_INVALID,
-                RefusalCode.PROMPT_SLOT_MISSING
+                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING
             };
         }
     }

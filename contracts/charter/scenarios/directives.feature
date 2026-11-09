@@ -1,12 +1,11 @@
 @contract @directives
 Feature: Directives are read and registered functionally
-  A client reads a pack's directives (FR-006) through the generic artifact item, and registers a directive (POST /packs/{packId}/artifacts/directive, PUT
+  A client reads a pack's directives with their relationships populated (FR-006) through the generic
+  artifact item, and registers a directive (POST /packs/{packId}/artifacts/directive, PUT
   /packs/{packId}/artifacts/directive/{artifactId}) or a relationship through functional registration
   (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012) and the
-  artifact in the envelope the item read answers. There is no DELETE or PATCH. A directive carries no relationship
-  field: a relationship is registered only through PUT /packs/{packId}/relationships and read through the
-  directive's references (ADR-0064), and a body that still sends one is refused.
+  artifact in the envelope the item read answers. There is no DELETE or PATCH.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -21,43 +20,18 @@ Feature: Directives are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered directive is read back value-equal, with no relationship field (FR-006, SC-001, ADR-0064)
+  Scenario: A registered directive is read back value-equal with its relationships (FR-006, SC-001)
     When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "integrityRules": ["The gate runs before the merge."]}
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "procedures": ["proc-1"]}
       """
     Then the response status is 201
     When I GET "/packs/qa/artifacts/directive/GUARD"
     Then the response status is 200
     And the field "id" of the response body is "GUARD"
     And the field at "/directive/title" is "Guard the gate"
-    And the field at "/directive/integrityRules/0" is "The gate runs before the merge."
-    And the field at "/directive/procedures" is absent
-    And the field at "/directive/relationships" is absent
-    And the field at "/directive/references" is absent
-
-  Scenario: A directive's relationship is registered through the relationship write and read through its references (ADR-0064)
-    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
-      """
-      {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
-      """
-    Then the response status is 201
-    When I GET "/packs/qa/artifacts/directive/GUARD/references"
-    Then the response status is 200
-    And the field at "/items/0" is absent
-    When I GET "/packs/qa/artifacts/directive/GUARD"
-    Then the response status is 200
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
-      """
-      {"from": "directive:GUARD", "to": "tactic:rehearse", "type": "suggests"}
-      """
-    Then the response status is 201
-    When I GET "/packs/qa/artifacts/directive/GUARD/references"
-    Then the response status is 200
-    And the field at "/items/0/reference" is "tactic:rehearse"
-    And the field at "/items/0/relation" is "suggests"
-    And the field at "/items/1" is absent
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "procedure:proc-1"
 
   Scenario: A duplicate id is a conflict on POST while a distinct id is created (FR-008)
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
@@ -73,7 +47,7 @@ Feature: Directives are read and registered functionally
         "kind": "directive",
         "id": "GUARD",
         "packId": "qa",
-        "directive": {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "scope": null, "integrityRules": [], "validationCriteria": [], "explicitAllowances": []},
+        "directive": {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "scope": null, "procedures": [], "integrityRules": [], "validationCriteria": [], "explicitAllowances": [], "references": [], "relationships": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/directive/GUARD"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=directive"}
@@ -92,28 +66,39 @@ Feature: Directives are read and registered functionally
       """
     Then the response status is 201
 
-  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0064)
-    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
+  Scenario: An unknown relationship endpoint kind is refused and a well-formed registration succeeds (FR-010, SC-003)
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
-      {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "<member>": <value>}
+      {"schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "relationships": [{"from": "directive:GUARD", "to": "nonsense:x", "type": "requires"}]}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
-    And the field "detail" of the response body is "A directive registration has no member <member>; a relationship is registered through PUT /packs/{packId}/relationships."
-    When I GET "/packs/qa/artifacts/directive/GUARD"
-    Then the response status is 404
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
+      """
+    Then the response status is 201
+
+  Scenario: A directive body may assert only its own edges; a cross-authored edge uses the relationship endpoint (dual-write contention)
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
+      """
+      {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "relationships": [{"from": "directive:OTHER", "to": "procedure:p", "type": "requires"}]}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
       """
     Then the response status is 201
-
-    Examples:
-      | member        | value                                                             |
-      | relationships | [{"from": "directive:GUARD", "to": "tactic:x", "type": "requires"}] |
-      | relationships | []                                                                |
-      | references    | [{"type": "tactic", "id": "x"}]                                   |
-      | procedures    | ["Run the gate before the merge."]                                |
+    When I GET "/packs/qa/artifacts/directive/GUARD"
+    Then the response status is 200
+    When I remember the ETag
+    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:GUARD", "to": "directive:OTHER", "type": "suggests"}
+      """
+    Then the response status is 201
 
   Scenario: A relationship is idempotent on the unordered pair (FR-009)
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
@@ -180,9 +165,9 @@ Feature: Directives are read and registered functionally
     Then the response status is 404
 
     Examples:
-      | case        | fields                               | detail                                                                                                                 |
-      | a null list | , "integrityRules": null             | The integrityRules list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
-      | a null item | , "integrityRules": ["rule-1", null] | Item 1 of the integrityRules list is null; a list holds no null item.                                                  |
+      | case        | fields                           | detail                                                                                                             |
+      | a null list | , "procedures": null             | The procedures list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item | , "procedures": ["proc-1", null] | Item 1 of the procedures list is null; a list holds no null item.                                                  |
 
   Scenario: A directive registration body over 1 MiB is refused before it is read (#310)
     When I PUT "/packs/qa/artifacts/directive/GUARD" with the body, its "intent" padded to 1048576 bytes:

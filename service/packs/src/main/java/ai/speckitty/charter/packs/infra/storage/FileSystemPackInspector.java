@@ -141,8 +141,7 @@ public final class FileSystemPackInspector implements PackInspector {
      */
     @Override
     public PackContents inspect(PackRoot root, Scope scope) {
-        // #319: normalize, not toRealPath: a linked root keeps its configured name (#284).
-        Path directory = Path.of(root.locator()).toAbsolutePath().normalize();
+        Path directory = Path.of(root.locator());
         String name = root.name();
         if (!Files.isDirectory(directory)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");
@@ -257,14 +256,12 @@ public final class FileSystemPackInspector implements PackInspector {
                 }
                 if (KindBindings.isCompanionStructure(mapped.kind())) {
                     readCompanion(path, file, mapped.kind());
-                } else if (KindBindings.isDeferredCompanionStructure(mapped.kind())) {
-                    readCompanion(path, file, mapped.kind());
                 } else if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
                     readDocument(path, file);
                 } else {
-                    // A Markdown kind with no store path must fail loud in validate mode too, as the store's
-                    // listing walk does (PackFileSet#loaded) — never silently skipped. No rule reaches
-                    // this today; it keeps load and validate symmetric by construction.
+                    // A future Markdown kind must fail loud in validate mode too, as the store's
+                    // listing walk does (PackFileSet#loaded) — never silently skipped. Unreachable
+                    // with today's markdown rules; keeps load and validate symmetric by construction.
                     throw PackFileSet.notStored(file, mapped.contentForm());
                 }
             }
@@ -404,9 +401,9 @@ public final class FileSystemPackInspector implements PackInspector {
                     yield new FileRead.Unreadable<>(file, null, violations);
                 }
                 try {
-                    // A deferred companion (#424) has no owning binding yet: its structure schema is all there is.
                     KindBindings.byCompanionStructure(structure)
-                            .ifPresent(binding -> binding.checkCompanion(structure, parsed.document()));
+                            .orElseThrow()
+                            .checkCompanion(structure, parsed.document());
                 } catch (IllegalArgumentException broken) {
                     yield new FileRead.Unreadable<>(
                             file, new ParseFailure(file, String.valueOf(broken.getMessage())), List.of());

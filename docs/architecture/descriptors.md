@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -16,7 +16,6 @@ related:
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
   - guides/compose-packs
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
-  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: pack-author
     guidance_text: Read this to find the file, fields and naming of each descriptor you author.
@@ -145,7 +144,7 @@ The single graph file of an org pack.
 | Field | Meaning |
 |---|---|
 | `nodes[]` | `id`, `kind` (the plural form, for example `directives`), `title`, `body_path` to the descriptor file |
-| `edges[]` | `source` and `target` (URNs), `relation`, optional `when` and `reason`; `impacts` on an `impacts` edge |
+| `edges[]` | `source` and `target` (URNs), `relation`, optional `reason`; `impacts` on an `impacts` edge |
 
 A fragment has no header fields: core overwrites `pack_name`, `source_kind`, `source_ref`,
 `layer_index` and `provenance_marker` from the operator's configuration, so a fragment that
@@ -212,21 +211,16 @@ tactics for `software-dev`).
 ## Artifact descriptors
 
 Each artifact descriptor is one file named `<name>.<suffix>`, placed in the kind's directory.
-Its `id` becomes the node URN `<kind>:<id>`; its relations to other artifacts live only in the
-graph (shards or fragment), never in the descriptor
-([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). A few fields name
-other artifacts as data, not as relations: an agent profile's `*-references`, a skill's `enhances`
-and `overrides`. A schema is closed, so a file that still carries a removed field, such as
-`references`, `procedures` or `directive_refs`, is refused as an unknown field.
+Its `id` becomes the node URN `<kind>:<id>`; its relations to other artifacts live in the
+graph (shards or fragment), not in the descriptor, except where noted.
 
 ### Directive — `*.directive.yaml`
 
 A binding rule. Schema: `directive.schema.yaml`.
 
 - **Required:** `id`, `schema_version`, `title`, `intent`, `enforcement`.
-- **Key fields:** `scope`, `integrity_rules`, `validation_criteria`,
-  `explicit_allowances`. Its steps are procedure artifacts, which it `requires` through graph
-  edges.
+- **Key fields:** `scope`, `procedures`, `integrity_rules`, `validation_criteria`,
+  `explicit_allowances`, `references`.
 - **Naming:** `NNN-<slug>.directive.yaml` for numbered built-ins (id `DIRECTIVE_NNN`); ids
   match `^[A-Z][A-Z0-9_-]*$`.
 - **CRG:** `directive:<ID>`; typically `requires` or `suggests` tactics.
@@ -236,8 +230,7 @@ A binding rule. Schema: `directive.schema.yaml`.
 A reusable technique as ordered steps. Schema: `tactic.schema.yaml`.
 
 - **Required:** `id`, `schema_version`, `name`, `steps`.
-- **Key fields:** `purpose`, `failure_modes`, `applies_to_languages`, `notes`. Neither the tactic
-  nor its steps carry `references`.
+- **Key fields:** `purpose`, `failure_modes`, `applies_to_languages`, `references`, `notes`.
 - **Naming:** `<kebab-id>.tactic.yaml`; built-ins may sit in topic subdirectories.
 - **CRG:** `tactic:<id>`; target of directive and action edges.
 
@@ -247,8 +240,7 @@ Conventions for a kind of work. Schema: `styleguide.schema.yaml`.
 
 - **Required:** `id`, `schema_version`, `title`, `scope`, `principles`.
 - **Key fields:** `patterns`, `anti_patterns`, `tooling`, `quality_test`,
-  `applies_to_languages`, `structural_lint_config`. A citation that names no pack artifact lives
-  in the text, as "(source: …)" or a closing "Sources: …" in the last principle.
+  `applies_to_languages`, `references`, `structural_lint_config`.
 - **CRG:** `styleguide:<id>`.
 
 ### Toolguide — `*.toolguide.yaml`
@@ -258,8 +250,8 @@ How to use one tool. Schema: `toolguide.schema.json`; the guide's shape is
 
 - **Required:** `id` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`), `schema_version`, `tool`, `title`,
   `guide_path`, `summary`.
-- **Key fields:** `commands`, `applies_to_languages`, `last_updated`. A citation that names no
-  pack artifact lives in the guide's text.
+- **Key fields:** `commands`, `applies_to_languages`, `last_updated`, `references` (plain
+  citation strings).
 - `guide_path` is `<id>.guide.md`, the toolguide's guide beside the descriptor. The guide is a
   structured Markdown companion (schema `toolguide-guide.schema.json`): no frontmatter, an H1
   equal to `title` (derived from it), no text before the first H2, a non-blank `## Overview`, then
@@ -274,7 +266,7 @@ How to use one tool. Schema: `toolguide.schema.json`; the guide's shape is
 A way of thinking about the work. Schema: `paradigm.schema.yaml`.
 
 - **Required:** `schema_version`, `id`, `name`, `summary`.
-- **Key fields:** none beyond the required ones; the directives it `requires` are graph edges.
+- **Key fields:** `directive_refs`, `references`.
 - **CRG:** `paradigm:<id>`; some built-in paradigm nodes are re-kinded as `anti_pattern`.
 
 ### Procedure — `*.procedure.yaml`
@@ -287,13 +279,14 @@ A multi-step operating procedure with entry and exit conditions. Schema:
   `entry_condition`, `exit_condition`, `steps` (at least one).
 - **Steps:** `{title, description?, role?, on_success?, on_failure?}`; `role` is an open role
   token such as `operator`, absent when any role may act.
-- **Key fields:** `anti_patterns` (`{title, content?, bad_example?, good_example?}`), `notes`,
+- **Key fields:** `anti_patterns` (`{title, content?, bad_example?, good_example?}`),
+  `references` (`{type, id, when?, reason?}`, kept but never minted as relationships), `notes`,
   `applies_to_languages`. An optional list holds at least one entry when present.
 - **CRG:** `procedure:<id>`.
 
 > **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
 > tightens the procedure definition and drops the inline `anti_patterns` of a procedure and a styleguide in favor
-> of authored anti-pattern files that a `rejects` graph edge targets. Today's schemas still carry them. The [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) draws the decided shape.
+> of authored anti-pattern files that `rejects` references. Today's schemas still carry them. The [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) draws the decided shape.
 
 ### Agent profile — `*.agent.yaml`
 
@@ -368,12 +361,12 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 - **Key fields:** `content` (standing context for every step's agent),
   `requires_substantive_spec` (only `true`; absent means not required), `path_conventions`
   (workspace directories: `workspace`, `tests`, `deliverables`, `documentation`, `data`),
-  `expected_output_artifacts` (the mission's postconditions), `on_demand_steps`.
+  `expected_output_artifacts` (the mission's postconditions), `references`, `on_demand_steps`.
   An optional list holds at least one entry when present.
 - **Steps:** `steps` is the one run order; `on_demand_steps` are invoked by a command, outside
   the sequence, and keep their authored order. Step ids are unique across both lists. A step is
   `{id, title, description?, role?, prompt_path?, guidelines_path?, expected_input_artifacts?,
-  expected_output_artifacts?}`. `description` is a one-line summary of at most 160
+  expected_output_artifacts?, references?}`. `description` is a one-line summary of at most 160
   characters; `role` is a role token, never a profile
   ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
 - **Expected artifacts:** a step's inputs are its preconditions and its outputs its
@@ -382,9 +375,9 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
   (relative to the mission-type file, for example `templates/spec-template.md`). `artifact_key`
   is an opaque dotted key, unique within one list; `path_pattern` is a glob in the mission's
   workspace, not a pack file; `blocking` is only `true`.
-- **Guidance:** neither the type nor a step carries `references`. The type's recipe ingredients
-  are the graph's `scope` edges from `mission_type:<id>`; a step's action-scoped guidance is the
-  graph edges from its `action:<id>/<step>` node.
+- **References:** `{type, id, when?, reason?}`, `type` one of `directive`, `tactic`, `paradigm`,
+  `styleguide`, `toolguide`, `procedure`. The type's references are its recipe ingredients; a
+  step's are its action-scoped guidance. They are kept but never minted as relationships (#189).
 - **Companions:** `prompt_path` is `steps/<id>.prompt.md` and `guidelines_path` is
   `steps/<id>.guidelines.md`, both derived from the step id: whether a step has one is authored,
   any other value is refused. Both are Markdown companions (schemas `mission-step-prompt` and
@@ -397,8 +390,8 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 - **Retired:** `mission_types/<t>.yaml`, `mission.yaml`, `mission-runtime.yaml`,
   `governance-profile.yaml`, `expected-artifacts.yaml`, `actions/<a>/index.yaml`,
   `mission-steps/**` and `command-templates/*` are refused by name (DIV-502).
-- **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node
-  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
+- **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node until
+  edge authority is ruled ([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)).
 
 > **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
 > the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`
@@ -415,8 +408,8 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
   `<type>/<path>`. Both are held as bytes and linked with `instantiates` edges.
 
 > **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
-> makes an anti-pattern an authored file with a `smell`, `severe` or `breaking` severity, which a `rejects`
-> graph edge targets. Its exact shape and layout still await a ruling; the [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) marks them pending.
+> makes an anti-pattern an authored file with a `smell`, `severe` or `breaking` severity, which `rejects`
+> references. Its exact shape and layout still await a ruling; the [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) marks them pending.
 
 ## Project-side configuration
 

@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain.markdown;
 
-import ai.speckitty.charter.kernel.markdown.MarkdownLines;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -22,10 +21,10 @@ import java.util.Optional;
  * <p>Construction invariants, refused with an {@link IllegalArgumentException} naming the field: the title and every
  * section title are a single line, not blank, without leading or trailing whitespace; the preamble and every section's
  * content have no leading or trailing blank line, contain no carriage return, and could stand inside a document
- * unchanged, judged by the kernel's line rules ({@link MarkdownLines}, built on the line scanner): no column-0 H1 or H2
- * outside a fence, no fence left open, nothing the scanner refuses as ambiguous. When there is neither frontmatter nor a
- * title, the preamble opens the written text, so it must not start with a {@code ---} line (it would read back as
- * frontmatter) or a byte order mark. The empty document is valid.
+ * unchanged, judged by the scanner's own line rules ({@link MarkdownScanner}): no column-0 H1 or H2 outside a fence,
+ * no fence left open, nothing the scanner refuses as ambiguous. When there is neither frontmatter nor a title, the
+ * preamble opens the written text, so it must not start with a {@code ---} line (it would read back as frontmatter)
+ * or a byte order mark. The empty document is valid.
  *
  * @param frontmatter the frontmatter mapping as loaded YAML, if the document has one; copied, unmodifiable at its top
  *     level
@@ -124,38 +123,72 @@ public record MarkdownDocument(
     }
 
     /**
-     * Why a text cannot be a title (the H1's or an H2's text), if it cannot. The rule is the kernel's
-     * ({@link MarkdownLines#headingProblem(String)}), shared with the missions domain's step texts (#299).
+     * Why a text cannot be a title (the H1's or an H2's text), if it cannot: it must be a single line, not blank,
+     * without leading or trailing whitespace, and read back as the heading's text (no closing {@code #} sequence).
+     * Every domain value that holds a heading of the form checks it with this rule (#271).
      *
      * @param title the text
      * @return the problem, worded to follow the field's name ({@code must be a single line}); empty when it can
      */
     public static Optional<String> headingProblem(String title) {
-        return MarkdownLines.headingProblem(title);
+        Objects.requireNonNull(title, "title");
+        if (title.indexOf('\n') >= 0 || title.indexOf('\r') >= 0) {
+            return Optional.of("must be a single line");
+        }
+        if (title.isBlank()) {
+            return Optional.of("must not be blank");
+        }
+        if (!title.strip().equals(title)) {
+            return Optional.of("must not have leading or trailing whitespace");
+        }
+        return MarkdownScanner.headingProblem(title).map(problem -> "cannot be a heading's text: " + problem);
     }
 
     /**
-     * Why a text cannot be a block (the preamble or a section's content), if it cannot. The rule is the kernel's
-     * ({@link MarkdownLines#blockProblem(String)}), shared with the missions domain's step texts (#299).
+     * Why a text cannot be a block (the preamble or a section's content), if it cannot: no carriage return, no leading
+     * or trailing blank line, and it could stand inside a document unchanged by the scanner's line rules (no column-0
+     * H1 or H2 outside a fence, no fence left open, nothing the scanner refuses as ambiguous). The empty block can.
+     * Every domain value that holds a block of the form checks it with this rule (#271).
      *
      * @param block the text
      * @return the problem, worded to follow the field's name ({@code must not start with a blank line}); empty when it
      *     can
      */
     public static Optional<String> blockProblem(String block) {
-        return MarkdownLines.blockProblem(block);
+        Objects.requireNonNull(block, "block");
+        if (block.isEmpty()) {
+            return Optional.empty();
+        }
+        if (block.indexOf('\r') >= 0) {
+            return Optional.of("must not contain a carriage return");
+        }
+        String[] lines = block.split("\n", -1);
+        if (lines[0].isBlank()) {
+            return Optional.of("must not start with a blank line");
+        }
+        if (lines[lines.length - 1].isBlank()) {
+            return Optional.of("must not end with a blank line");
+        }
+        return MarkdownScanner.blockProblem(block).map(problem -> "cannot stand inside a document: " + problem);
     }
 
     /**
-     * Why a preamble cannot open the written text, if it cannot (when a document has neither frontmatter nor a title).
-     * The rule is the kernel's ({@link MarkdownLines#openingProblem(String)}), shared with the missions domain's step
-     * texts (#299).
+     * Why a preamble cannot open the written text, if it cannot: when a document has neither frontmatter nor a title,
+     * its preamble must not start with a {@code ---} line (it would read back as frontmatter) or a byte order mark.
      *
      * @param preamble the preamble of a document with neither frontmatter nor a title
      * @return the problem, worded to follow the field's name; empty when it can
      */
     public static Optional<String> openingProblem(String preamble) {
-        return MarkdownLines.openingProblem(preamble);
+        Objects.requireNonNull(preamble, "preamble");
+        if (preamble.equals("---") || preamble.startsWith("---\n")) {
+            return Optional.of("must not start with a --- line when there is neither frontmatter nor a title:"
+                    + " it would read back as frontmatter");
+        }
+        if (!preamble.isEmpty() && preamble.charAt(0) == '\uFEFF') {
+            return Optional.of("must not start with a byte order mark when there is neither frontmatter nor a title");
+        }
+        return Optional.empty();
     }
 
     private static void require(String field, Optional<String> problem) {

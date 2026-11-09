@@ -1,9 +1,0 @@
-summary: A registration the service accepted and has not started, as the 202 answers it.
-value:
-  registrationId: 01M6TQ62HXYF362GAFS2BZ3PGF
-  state: pending
-  packId: acme-review-pack
-  acceptedAt: '2026-11-07T10:00:00Z'
-  _links:
-    self:
-      href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF

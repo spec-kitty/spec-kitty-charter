@@ -83,21 +83,6 @@ public final class CharterRefusal extends RuntimeException {
     }
 
     /**
-     * A refusal that names both the packs involved and the parts of the request it refuses, as a
-     * {@code 409 artifact_referenced} does: the referring packs, and every referring artifact.
-     *
-     * @param code what is refused
-     * @param detail a sentence for the reader that names what was refused and why
-     * @param packs the packs the refusal names, the violating pack first
-     * @param violations the refused parts
-     * @return the refusal
-     */
-    public static CharterRefusal withPacksAndViolations(
-            RefusalCode code, String detail, List<RefusalPack> packs, List<RefusalViolation> violations) {
-        return new CharterRefusal(code, detail, packs, violations, List.of());
-    }
-
-    /**
      * A refusal that names the packs requiring or locking an artifact, as a {@code 409 artifact_required} or
      * {@code artifact_locked} does (ADR-0020 D10).
      *

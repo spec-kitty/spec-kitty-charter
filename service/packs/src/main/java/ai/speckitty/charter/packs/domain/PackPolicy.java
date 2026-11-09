@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -710,6 +711,36 @@ public final class PackPolicy {
         return from.urn().equals(to.urn())
                 && from.packName().orElse(packName).equals(packName)
                 && to.packName().orElse(packName).equals(packName);
+    }
+
+    /**
+     * The reason an artifact cannot be read for what it writes, or empty when its references are sound. A reference
+     * that names the artifact itself is a self-reference ({@link #joinsItself}), refused as a graph edge to itself is
+     * (see {@code endpoints}); a reference qualified with another pack names that pack's artifact of the same id and
+     * stands. A reference the artifact writes malformed is refused the same way, so a file whose references cannot be
+     * parsed is an unreadable file, never an exception the reads escape. The check covers every field
+     * {@link CharterArtifact#writtenReferences()} covers: typed references, bare procedures and directive refs,
+     * procedure references and tactic step references.
+     *
+     * @param packName the descriptor name of the pack the artifact is read from
+     * @param artifact the artifact, bound by its kind's mapper
+     * @return the reason, worded after the artifact's URN; empty when the references are sound
+     */
+    public static Optional<String> referenceProblem(String packName, CharterArtifact artifact) {
+        List<PackQualifiedReference> written;
+        try {
+            written = artifact.writtenReferences();
+        } catch (IllegalArgumentException malformed) {
+            return Optional.of(artifact.urn() + ": " + malformed.getMessage());
+        }
+        PackQualifiedReference self =
+                new PackQualifiedReference(Optional.empty(), artifact.urn().toString());
+        for (PackQualifiedReference reference : written) {
+            if (joinsItself(packName, self, reference)) {
+                return Optional.of(artifact.urn() + ": a reference cannot join '" + artifact.urn() + "' to itself");
+            }
+        }
+        return Optional.empty();
     }
 
     // ---- schema and parse findings -------------------------------------------------------------

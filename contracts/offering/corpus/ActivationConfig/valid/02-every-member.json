@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "packs": [
     {
       "packId": "spec-kitty-internal",
@@ -9,6 +9,13 @@
       "packId": "event-driven"
     }
   ],
+  "activatedKinds": [
+    "directive",
+    "tactic"
+  ],
+  "missionTypes": [
+    "software-dev"
+  ],
   "selected": {
     "directive": [
       "DIRECTIVE_001",
@@ -16,20 +23,11 @@
     ],
     "tactic": [
       "domain-event-capture"
-    ],
-    "mission_type": [
-      "software-dev"
-    ],
-    "step_enhancement": [
-      "spdd-specify"
     ]
   },
   "deactivated": {
     "directive": [
       "EVD_004"
-    ],
-    "mission_type": [
-      "research"
     ]
   },
   "languages": [

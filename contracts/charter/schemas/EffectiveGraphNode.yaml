@@ -1,7 +1,5 @@
 title: EffectiveGraphNode
-description: >-
-  A node of the graph of the merged closure under an activation: an artifact in force, or a step of a mission type
-  (kind action) that the closure holds while its mission type is in force.
+description: A node of the activation-filtered graph.
 type: object
 additionalProperties: false
 required:

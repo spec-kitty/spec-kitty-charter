@@ -26,7 +26,7 @@ The first half of [#291](https://github.com/spec-kitty/spec-kitty-charter/issues
 [ADR-0020](/adr/0020-offering-and-activations/) under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/):
 
 - **Built:** core can store (`POST`, `PUT`), read (`GET`, with `304`), replace and delete an activation document, and
-  read its closure, `GET /activations/{activationId}/packs`: the `depends_on` and `parent_pack` closure of its `packs`, in dependency
+  read its closure, `GET /activations/{activationId}/packs`: the `depends_on` closure of its `packs`, in dependency
   order. Writes are checked against that closure alone (`422`, and `409` for a deny entry on a required or locked
   artifact). The `Activation` answer drops `summary` and `governanceFingerprint`.
 - **Still `501`:** the five per-artifact writes (the second pull request of this mission) and the four effective reads

@@ -114,7 +114,7 @@ class StyleguideControllerTest {
     // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
+    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages", "references"})
     void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
                 + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":null}";
@@ -139,7 +139,7 @@ class StyleguideControllerTest {
     // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
+    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages", "references"})
     void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
                 + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":[null]}";

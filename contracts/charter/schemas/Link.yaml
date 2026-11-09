@@ -2,9 +2,8 @@ title: Link
 description: >-
   One hypermedia link (ADR-0019 D3). href is an absolute path under /api/v1 or an RFC 6570 template
   (templated true). method is GET, POST, PUT or DELETE and defaults to GET. ADR-0026 D2 rules out
-  DELETE and PATCH for pack and artifact writes; ADR-0020 defines DELETE for activations, and
-  ADR-0065 D4 adds the two removals of a pack, deletePackArtifact and deletePackRelationship. No
-  other pack write is a DELETE. No link uses PATCH.
+  DELETE and PATCH for pack and artifact writes; ADR-0020 defines DELETE for activations. No link
+  uses PATCH.
 type: object
 additionalProperties: false
 required:
@@ -34,8 +33,7 @@ properties:
     pattern: '^(GET|POST|PUT|DELETE)$'
     description: >-
       The method to follow the link with, GET, POST, PUT or DELETE; absent means GET. DELETE is for
-      activations (ADR-0020) and for the two removals of a pack, deletePackArtifact and
-      deletePackRelationship (ADR-0065 D4); no other pack or artifact write is a DELETE (ADR-0026 D2),
+      activations only (ADR-0020); a pack or artifact write is never DELETE or PATCH (ADR-0026 D2),
       and no link uses PATCH.
     x-derived:
       rule: The method of the operation the relation names, omitted when it is GET.

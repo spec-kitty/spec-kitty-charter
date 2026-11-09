@@ -103,26 +103,6 @@ class CascadeRulesLineageTest {
         assertInNoBucket(change.skipped(), ref("agent_profile:Q"));
     }
 
-    @Test
-    void includeDeactivatedPassesADeniedAncestorInScopeButNeverClearsIt() {
-        // B5 (rule W22, invariant I12): the in-scope denied Q is no stop, so the lineage passes it to R; Q is passed,
-        // never selected, and keeps its deny entry.
-        ActivationDocument qDenied = EMPTY.withDeny(AGENT_PROFILE, "Q");
-        Reach reach = reach().start("agent_profile:P")
-                .ancestor("agent_profile:Q", "agent_profile:P")
-                .reached("directive:R", "agent_profile:Q", REQUIRES)
-                .build();
-
-        ReachPlan plan = CascadeRules.planSelect(qDenied, P, CascadeScope.all(), true);
-        ActivationChange change = CascadeRules.applySelect(qDenied, P, CascadeScope.all(), true, reach);
-
-        assertThat(plan.stopAt()).isEmpty();
-        assertThat(change.cleared()).isEmpty();
-        assertThat(change.after().deactivated(AGENT_PROFILE)).containsExactly("Q");
-        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("R");
-        assertInNoBucket(change.skipped(), ref("agent_profile:Q"));
-    }
-
     // unreachedBehindDeactivated
 
     @Test

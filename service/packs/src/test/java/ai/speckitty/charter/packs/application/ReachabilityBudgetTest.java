@@ -73,7 +73,7 @@ class ReachabilityBudgetTest {
                 p95Millis, MEASURED, ARTIFACTS, STARTS);
     }
 
-    /** The cascade's relations: the five, and {@code enhances} in its declared direction (ADR-0059 D2, A4). */
+    /** The cascade's relations: the five, and {@code enhances} in its declared direction (ADR-0059 D2, R4). */
     private static Set<RelationType> cascadeRelations() {
         Set<RelationType> relations = EnumSet.copyOf(Arrays.asList(FIVE));
         relations.add(RelationType.ENHANCES);

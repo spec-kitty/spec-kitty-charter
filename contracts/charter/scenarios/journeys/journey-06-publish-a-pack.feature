@@ -3,8 +3,7 @@
 Feature: Journey 06 — a pack author publishes a pack
   A pack author registers a paradigm with its principles, the directives that carry its rules, a
   procedure, and a companion asset that supports a rule. Registering paradigms, directives and
-  relationships works today; a relationship is registered only through the relationship write (ADR-0064).
-  Companion assets and publishing a pack version are not in the contract yet.
+  relationships works today; companion assets and publishing a pack version are not in the contract yet.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -19,39 +18,27 @@ Feature: Journey 06 — a pack author publishes a pack
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A paradigm is registered, then related to the directives that carry its rules
+  Scenario: A paradigm is registered with the directives that carry its rules
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
-      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward", "directiveRefs": ["ALPHA"]}
       """
     Then the response status is 201
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
-      """
-      {"from": "paradigm:clean-architecture", "to": "directive:ALPHA", "type": "requires"}
-      """
-    Then the response status is 201
-    When I GET "/packs/qa/artifacts/paradigm/clean-architecture/references"
+    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
     Then the response status is 200
-    And the field at "/items/0/reference" is "directive:ALPHA"
-    And the field at "/items/0/relation" is "requires"
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "directive:ALPHA"
 
-  Scenario: A rule's directive is related to the procedure that carries it out
+  Scenario: A rule's directive names the procedure that carries it out
     When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "integrityRules": ["The gate runs before the merge."]}
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "procedures": ["proc-1"]}
       """
     Then the response status is 201
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
-      """
-      {"from": "directive:GUARD", "to": "procedure:proc-1", "type": "requires"}
-      """
-    Then the response status is 201
-    When I GET "/packs/qa/artifacts/directive/GUARD/references"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
     Then the response status is 200
-    And the field at "/items/0/reference" is "procedure:proc-1"
-    And the field at "/items/0/relation" is "requires"
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "procedure:proc-1"
 
   Scenario: A relationship between two artifacts is registered once
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:

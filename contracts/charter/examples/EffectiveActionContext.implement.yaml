@@ -1,7 +1,6 @@
 summary: >-
-  The effective context of one action: the directive in force that the step scopes, the enhancer in force of the step
-  itself, and a tactic the directive suggests that the activation does not select, listed as a suggestion with the
-  edge's when and reason. self is the context.
+  The effective context of one action, as the operation answers once it is built (reserved until then,
+  ADR-0020 D8). self is the context.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -11,45 +10,15 @@ value:
   artifacts:
     - kind: directive
       artifactId: DIRECTIVE_010
-      packId: main
-      level: org
       state: active
       required: false
       policy: open
       reason: selected
-    - kind: tactic
-      artifactId: acceptance-test-first
-      packId: main
-      level: org
-      state: inactive
-      required: false
-      policy: open
-      reason: not_selected
-      suggestion:
-        when: the change has no test yet
-        reason: a failing test shows the change is needed
-  enhancements:
-    - target:
-        kind: action
-        id: software-dev/implement
-      enhancedBy:
-        - kind: step_enhancement
-          artifactId: spdd-implement
   skipped:
     skippedByScope: []
     skippedDeactivated: []
     unreachedBehindDeactivated: []
     skippedShared: []
-    staleIds: []
-    denyNotApplied: []
-    languageFiltered: []
-    overridden: []
-    missionTypeNotInForce: []
-    overrideNotApplied: []
-    enhancedTargetNotInForce: []
-    pinNotHeld: []
-    requiredNotHeld: []
-    requiredNotInForce: []
   _links:
     self:
       href: /api/v1/activations/a-1/mission-types/software-dev/actions/implement/context

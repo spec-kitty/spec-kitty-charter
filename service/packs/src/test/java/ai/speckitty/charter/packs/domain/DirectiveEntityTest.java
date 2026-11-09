@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +50,13 @@ class DirectiveEntityTest {
     }
 
     @Test
+    @DisplayName("a blank procedures item is rejected")
+    void blankProcedureRejected() {
+        assertThatThrownBy(() -> valid("DIRECTIVE_003").procedure(" ").build())
+                .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
     @DisplayName("same identity with different fields is equal")
     void identityEquality() {
         Directive one = valid("DIRECTIVE_004").title("one").build();
@@ -57,10 +67,15 @@ class DirectiveEntityTest {
     }
 
     @Test
-    @DisplayName("a directive derives no relationship: its procedures are reached through graph edges (ADR-0064)")
-    void aDirectiveDerivesNoRelationship() {
-        Directive directive = valid("DIRECTIVE_006").build();
+    @DisplayName("relationships: a suggests per typed reference, then a requires per procedure")
+    void relationshipsFromProceduresAndReferences() {
+        Directive directive = valid("DIRECTIVE_006")
+                .procedure("deploy")
+                .reference(new DirectiveReference("tactic", "tdd", Optional.empty(), Optional.of("how")))
+                .build();
 
-        assertThat(directive.derivedRelationships()).isEmpty();
+        assertThat(directive.relationships())
+                .extracting(Relationship::type)
+                .containsExactly(RelationType.SUGGESTS, RelationType.REQUIRES);
     }
 }

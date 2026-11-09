@@ -13,9 +13,15 @@ import java.util.Objects;
  * @param schemaVersion the {@code schema_version}, {@code "1.0"}
  * @param id the {@code id}, the file stem
  * @param description the {@code description}
- * @param lists each {@code activated_<plural>} list present, keyed by its YAML key, in the kind registry's order
+ * @param activatedKinds the {@code activated_kinds} plurals as written; empty when the key is absent
+ * @param lists each {@code activated_<plural>} list present, keyed by its YAML key, in the schema's key order
  */
-record PresetDso(String schemaVersion, String id, String description, Map<String, List<Item>> lists) {
+record PresetDso(
+        String schemaVersion,
+        String id,
+        String description,
+        List<String> activatedKinds,
+        Map<String, List<Item>> lists) {
 
     /**
      * One item of an activation list.
@@ -41,12 +47,14 @@ record PresetDso(String schemaVersion, String id, String description, Map<String
      * @param schemaVersion the schema version
      * @param id the id
      * @param description the description
+     * @param activatedKinds the kind gate
      * @param lists the activation lists
      */
     PresetDso {
         Objects.requireNonNull(schemaVersion, "schemaVersion");
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(description, "description");
+        activatedKinds = List.copyOf(activatedKinds);
         Map<String, List<Item>> copy = new LinkedHashMap<>();
         lists.forEach((key, items) -> copy.put(key, List.copyOf(items)));
         lists = Collections.unmodifiableMap(copy);

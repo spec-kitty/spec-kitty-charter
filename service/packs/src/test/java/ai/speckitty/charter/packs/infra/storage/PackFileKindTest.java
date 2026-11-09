@@ -43,8 +43,6 @@ class PackFileKindTest {
             Map.entry("core/lifecycles/work-package.lifecycle.yaml", "lifecycle"),
             Map.entry("core/missions/plan/steps/specify.prompt.md", "mission-step-prompt"),
             Map.entry("core/missions/plan/steps/specify.guidelines.md", "mission-step-guidelines"),
-            Map.entry("core/missions/plan/enhancements/spdd.step-enhancement.yaml", "step-enhancement"),
-            Map.entry("core/missions/plan/enhancements/spdd.prompt-fragment.md", "prompt-fragment"),
             Map.entry("core/paradigms/a.paradigm.yaml", "paradigm"),
             Map.entry("core/procedures/a.procedure.yaml", "procedure"),
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
@@ -228,25 +226,19 @@ class PackFileKindTest {
 
     @Test
     void theVocabularyListsAreExposed() {
-        assertThat(KINDS.nodeKinds())
-                .hasSize(18)
-                .contains("directive", "mission_type", "action", "guard", "lifecycle", "step_enhancement");
+        assertThat(KINDS.nodeKinds()).hasSize(17).contains("directive", "mission_type", "action", "guard", "lifecycle");
         assertThat(KINDS.fragmentKinds())
                 .as("a fragment does not admit a guard or a lifecycle node yet (#156)")
-                .hasSize(16)
+                .hasSize(15)
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(28);
+        assertThat(KINDS.fileRules()).hasSize(26);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " pack.md's (#260)")
                 .filteredOn(rule -> !Set.of(
-                                "toolguide-guide",
-                                "pack-document",
-                                "mission-step-prompt",
-                                "mission-step-guidelines",
-                                "prompt-fragment")
+                                "toolguide-guide", "pack-document", "mission-step-prompt", "mission-step-guidelines")
                         .contains(rule.schema()))
                 .extracting(PackFileKind.FileRule::contentForm)
                 .containsOnly(ContentForm.YAML);

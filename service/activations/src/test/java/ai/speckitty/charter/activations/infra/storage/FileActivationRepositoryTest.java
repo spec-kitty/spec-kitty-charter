@@ -10,13 +10,10 @@ import ai.speckitty.charter.activations.domain.Jcs;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -35,25 +32,6 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
     @Override
     ActivationRepository repository() {
         return new FileActivationRepository(root());
-    }
-
-    @Override
-    void storeBytes(ActivationRepository repository, ActivationId id, byte[] bytes) {
-        try {
-            Files.createDirectories(file(id).getParent());
-            Files.write(file(id), bytes);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @Override
-    byte[] storedBytes(ActivationRepository repository, ActivationId id) {
-        try {
-            return Files.readAllBytes(file(id));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private Path file(ActivationId id) {
@@ -116,7 +94,7 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
     @Test
     void aCorruptFileIsAStoreFaultNamingTheId() throws IOException {
         Files.createDirectories(file(ID).getParent());
-        Files.write(file(ID), "{\"schemaVersion\":2,".getBytes(StandardCharsets.UTF_8));
+        Files.write(file(ID), "{\"schemaVersion\":1,".getBytes(StandardCharsets.UTF_8));
         FileActivationRepository store = new FileActivationRepository(root());
 
         assertThatThrownBy(() -> store.find(ID))
@@ -124,25 +102,6 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
                 .hasMessageContaining(ID.value());
         assertThatThrownBy(() -> store.replace(ID, Optional.empty(), document(2)))
                 .isInstanceOf(ActivationStorageException.class);
-    }
-
-    @Test
-    void readingAVersionOneFileLeavesItsBytesAndModificationTimeAlone() throws IOException {
-        byte[] versionOne =
-                "{\"missionTypes\":[\"software-dev\"],\"schemaVersion\":1}".getBytes(StandardCharsets.UTF_8);
-        storeBytes(repository(), ID, versionOne);
-        FileTime written = FileTime.fromMillis(1_000_000_000L);
-        Files.setLastModifiedTime(file(ID), written);
-        FileActivationRepository store = new FileActivationRepository(root());
-
-        store.find(ID);
-        store.find(ID);
-
-        assertThat(Files.readAllBytes(file(ID))).isEqualTo(versionOne);
-        assertThat(Files.getLastModifiedTime(file(ID))).isEqualTo(written);
-        try (Stream<Path> files = Files.list(file(ID).getParent())) {
-            assertThat(files).containsExactly(file(ID));
-        }
     }
 
     @Test
@@ -154,15 +113,5 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
         assertThatThrownBy(() -> store.create(ID, document(1)))
                 .isInstanceOf(ActivationStorageException.class)
                 .hasMessageContaining(ID.value());
-    }
-
-    @Test
-    void anEntryOfTheRootThatIsNoActivationIsNotListed() throws IOException {
-        repository().create(ID, document(1));
-        Files.createDirectories(root().resolve("notes"));
-        Files.writeString(root().resolve("notes").resolve("activation.json"), "{}");
-        Files.writeString(root().resolve("stray-file"), "x");
-
-        assertThat(repository().list()).extracting(StoredActivation::id).containsExactly(ID);
     }
 }

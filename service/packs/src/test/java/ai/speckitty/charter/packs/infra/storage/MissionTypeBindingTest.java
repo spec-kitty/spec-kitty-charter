@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
+import ai.speckitty.charter.missions.domain.MissionReference;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.StepDocument;
@@ -114,8 +115,11 @@ class MissionTypeBindingTest {
                 .as("a prompt without an H1")
                 .isEmpty();
         assertThat(type.steps().get(1).guidelines()).isEmpty();
+        assertThat(scoping.references())
+                .extracting(MissionReference::id)
+                .containsExactly("requirements-validation-workflow", "DIRECTIVE_003");
         assertThat(loaded.artifacts())
-                .flatExtracting(CharterArtifact::derivedRelationships)
+                .flatExtracting(CharterArtifact::relationships)
                 .isEmpty();
     }
 
@@ -154,6 +158,7 @@ class MissionTypeBindingTest {
                 false,
                 Map.of(),
                 List.of(),
+                List.of(),
                 fixture.steps(),
                 List.of());
 
@@ -172,7 +177,7 @@ class MissionTypeBindingTest {
         PackFixtures.copyOf(PACK, host);
         MissionTypeDso fixture = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
         MissionTypeDso escaping = new MissionTypeDso(
-                id, "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), List.of(), List.of());
+                id, "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), List.of(), List.of(), List.of());
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
         assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, escaping))
@@ -181,7 +186,17 @@ class MissionTypeBindingTest {
 
         // The accepted neighbour: the same shape under a valid new id is written at its place and reads back.
         MissionTypeDso neighbour = new MissionTypeDso(
-                "neighbour", "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), fixture.steps(), List.of());
+                "neighbour",
+                "1.0",
+                "T",
+                "D",
+                Optional.empty(),
+                false,
+                Map.of(),
+                List.of(),
+                List.of(),
+                fixture.steps(),
+                List.of());
         store.write(PACK_ID, MissionTypeBinding.INSTANCE, neighbour);
         assertThat(read().dsos(MissionTypeBinding.INSTANCE))
                 .extracting(MissionTypeDso::id)
@@ -726,13 +741,43 @@ class MissionTypeBindingTest {
                                             prompt.title(), prompt.description(), prompt.preamble(), sections)),
                                     first.guidelines(),
                                     first.expectedInputArtifacts(),
-                                    first.expectedOutputArtifacts()));
+                                    first.expectedOutputArtifacts(),
+                                    first.references()));
                     return rebuilt(type, steps, type.onDemandSteps());
                 })));
 
         assertThat(changed.observed().get(PROMPT))
                 .hasValueSatisfying(red -> assertThat(red).startsWith("sections[0].content: "));
         assertThat(changed.observed().get(FILE)).as("the mission-type file").isEmpty();
+    }
+
+    @Test
+    @DisplayName("positive control: reordered references are a difference")
+    void reorderedReferencesAreReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "references",
+                pack -> pack.with(edit(pack, type -> {
+                    List<MissionStep> steps = new ArrayList<>(type.steps());
+                    MissionStep first = steps.getFirst();
+                    steps.set(
+                            0,
+                            new MissionStep(
+                                    first.id(),
+                                    first.title(),
+                                    first.description(),
+                                    first.role(),
+                                    first.prompt(),
+                                    first.guidelines(),
+                                    first.expectedInputArtifacts(),
+                                    first.expectedOutputArtifacts(),
+                                    List.of(
+                                            first.references().get(1),
+                                            first.references().get(0))));
+                    return rebuilt(type, steps, type.onDemandSteps());
+                })));
+
+        assertThat(changed.observed().get(FILE)).isPresent();
     }
 
     // ---- helpers --------------------------------------------------------------------------------------------------
@@ -776,7 +821,8 @@ class MissionTypeBindingTest {
                 step.prompt(),
                 step.guidelines(),
                 step.expectedInputArtifacts(),
-                step.expectedOutputArtifacts());
+                step.expectedOutputArtifacts(),
+                step.references());
     }
 
     private static MissionType rebuilt(MissionType type, List<MissionStep> steps, List<MissionStep> onDemand) {
@@ -790,6 +836,7 @@ class MissionTypeBindingTest {
                 .requiresSubstantiveSpec(type.requiresSubstantiveSpec())
                 .pathConventions(type.pathConventions().orElse(null));
         type.expectedOutputArtifacts().forEach(builder::expectedOutputArtifact);
+        type.references().forEach(builder::reference);
         steps.forEach(builder::step);
         onDemand.forEach(builder::onDemandStep);
         return builder.build();

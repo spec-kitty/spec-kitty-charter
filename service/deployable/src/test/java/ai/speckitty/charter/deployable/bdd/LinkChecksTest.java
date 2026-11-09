@@ -2,14 +2,10 @@ package ai.speckitty.charter.deployable.bdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -55,54 +51,22 @@ class LinkChecksTest {
         assertThat(get(ITEM, null, """
                         {"_links": {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
-                          "up": {"href": "/api/v1/packs/{packId}/assets", "templated": true}
+                          "up": {"href": "/api/v1/packs/{packId}", "templated": true}
                         }}"""))
-                .anySatisfy(violation -> assertThat(violation)
-                        .contains("/api/v1/packs/{packId}/assets")
-                        .contains("no GET operation"));
+                .anySatisfy(violation ->
+                        assertThat(violation).contains("/api/v1/packs/{packId}").contains("no GET operation"));
     }
 
     @Test
-    void aLinkToAReservedOperationIsReportedAsUnbuilt(@TempDir Path root) throws IOException {
-        // No operation of the shipped contract is reserved any more (PR C built the last two, IC-11), so the rule is
-        // shown
-        // on a planted contract that still reserves two: a link to either is reported, a link to the built item is not.
-        write(root, "charter/openapi.yaml", """
-                openapi: 3.1.0
-                paths:
-                  /packs/{packId}/artifacts/{kind}/{artifactId}:
-                    $ref: paths/item.yaml
-                  /activations/{activationId}/graph:
-                    $ref: paths/graph.yaml
-                  /activations/{activationId}/mission-types/{missionType}/actions/{action}/context:
-                    $ref: paths/context.yaml
-                """);
-        write(root, "charter/paths/item.yaml", """
-                get:
-                  responses:
-                    '200': {description: d}
-                """);
-        String reserved = """
-                get:
-                  x-reserved: {contractSet: activation, issue: '#1'}
-                  responses:
-                    '501': {description: d}
-                """;
-        write(root, "charter/paths/graph.yaml", reserved);
-        write(root, "charter/paths/context.yaml", reserved);
-        LinkChecks planted = new LinkChecks(new ContractConformance(root), RelationTable.keys());
-
-        List<String> violations =
-                planted.violations(new LinkChecks.Answer("get", ITEM, null, 200, null, JSON.readTree("""
+    void aLinkToAReservedOperationIsReportedAsUnbuilt() {
+        assertThat(get(ITEM, null, """
                         {"_links": {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
                           "effective-context": {
                             "href": "/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context"
                           },
-                          "graph": {"href": "/api/v1/activations/a-1/graph"}
-                        }}""")));
-
-        assertThat(violations)
+                          "skipped": {"href": "/api/v1/activations/a-1/skipped"}
+                        }}"""))
                 .as("ADR-0020 D8: a reserved operation answers 501, so no link may point to it")
                 .hasSize(2)
                 .allSatisfy(
@@ -110,25 +74,7 @@ class LinkChecksTest {
                 .anySatisfy(violation -> assertThat(violation)
                         .contains(
                                 "GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/context"))
-                .anySatisfy(violation -> assertThat(violation).contains("GET /activations/{activationId}/graph"));
-    }
-
-    @Test
-    void theShippedContractsEffectiveGraphAndContextAreBuiltSoALinkToThemPasses() {
-        assertThat(get(ITEM, null, """
-                        {"_links": {
-                          "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
-                          "effective-context": {
-                            "href": "/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context"
-                          },
-                          "graph": {"href": "/api/v1/activations/a-1/graph"}
-                        }}""")).isEmpty();
-    }
-
-    private static void write(Path root, String relativePath, String content) throws IOException {
-        Path file = root.resolve(relativePath);
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, content);
+                .anySatisfy(violation -> assertThat(violation).contains("GET /activations/{activationId}/skipped"));
     }
 
     @Test
@@ -227,31 +173,6 @@ class LinkChecksTest {
                         201,
                         "http://localhost/api/v1/packs/qa/artifacts/directive/OTHER",
                         created))
-                .anySatisfy(violation -> assertThat(violation).contains("Location"));
-    }
-
-    @Test
-    void theLocationOfA202IsItsSelfAndNotThePathOfTheRequest() {
-        String accepted = "{\"registrationId\": \"01M6TQ62HXYF362GAFS2BZ3PGF\", \"state\": \"pending\","
-                + " \"packId\": \"qa\", \"acceptedAt\": \"2026-11-07T10:00:00Z\", \"_links\": {"
-                + "\"self\": {\"href\": \"/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF\"}}}";
-        assertThat(check(
-                        "put",
-                        "/packs/qa",
-                        null,
-                        202,
-                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF",
-                        accepted))
-                .as("the status is the resource a 202 answers, so the Location is its self")
-                .isEmpty();
-        assertThat(check(
-                        "put",
-                        "/packs/qa",
-                        null,
-                        202,
-                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGG",
-                        accepted))
-                .as("a Location that is not the self is reported")
                 .anySatisfy(violation -> assertThat(violation).contains("Location"));
     }
 

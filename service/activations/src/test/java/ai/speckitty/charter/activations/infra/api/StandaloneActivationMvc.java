@@ -7,7 +7,6 @@ import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.AvailablePacks;
-import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
@@ -29,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
  * {@link ActivationProblems}) and the shared web transport's ({@link RefusalHandler}, {@link ProblemHandler}), and
  * writing JSON with the activation and problem mix-ins. The packs hold {@link #IDS} of every kind.
  */
-public final class StandaloneActivationMvc {
+final class StandaloneActivationMvc {
 
     /** The ids the fixture packs hold of each kind. */
     static final String[] IDS = {"a-1", "b-2", "c-3", "d-4"};
@@ -42,23 +41,12 @@ public final class StandaloneActivationMvc {
      * @param repository the register's store
      * @return the MockMvc
      */
-    public static MockMvc over(InMemoryActivationRepository repository) {
+    static MockMvc over(InMemoryActivationRepository repository) {
         ClosureSnapshots closure = ClosureSnapshots.snapshot().pack("fixture", "1.0.0");
         for (ArtifactKind kind : ArtifactKind.values()) {
             closure.held(kind, IDS);
         }
-        return over(repository, new FakeAvailablePacks(closure.build()));
-    }
-
-    /**
-     * The MockMvc over a controller backed by the given register and packs.
-     *
-     * @param repository the register's store
-     * @param packs the packs, which a test answers as it needs
-     * @return the MockMvc
-     */
-    public static MockMvc over(InMemoryActivationRepository repository, AvailablePacks packs) {
-        ActivationController controller = controller(repository, packs);
+        ActivationController controller = controller(repository, new FakeAvailablePacks(closure.build()));
         RefusalHandler refusals = new RefusalHandler();
         JsonMapper json = JsonMapper.builder()
                 .addModule(new ActivationJson().activationJsonModule())
@@ -90,9 +78,7 @@ public final class StandaloneActivationMvc {
                 new ActivationExclusionService(writes),
                 new ActivationPresetService(writes),
                 mapper,
-                new ActivationChangeMapper(mapper),
-                new EffectiveReadService(repository, packs),
-                new EffectiveReadMapper(mapper));
+                new ActivationChangeMapper(mapper));
     }
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */

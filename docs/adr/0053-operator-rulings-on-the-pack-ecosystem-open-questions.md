@@ -2,8 +2,8 @@
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
-decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064); Amendment 2026-11-08 (ADR-0066, prompt fragments and sibling enhancers)
+updated: 2026-11-03T00:00:00Z
+decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04)
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -16,7 +16,6 @@ related:
   - adr/0054-guards-are-enforced-checks-implemented-by-executable-assets
   - adr/0020-offering-and-activations
   - adr/0033-local-active-charter-is-source-of-truth
-  - adr/0066-a-step-enhancement-may-contribute-prompt-fragments
   - plans/pack-ecosystem-work-breakdown
 audience:
   - profile: governance-lead
@@ -42,24 +41,6 @@ record, [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executabl
 
 *2026-11-05: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) settles the grain of d6's
 layer override (decision 3) and the edges the cascade follows (decision 2).*
-
-### Amendment 2026-11-05
-
-The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
-([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). One point of this record changes; the original text stands and it is annotated:
-
-- decision 22: a step enhancement's additions are guards and emits; it holds no `references`, and guidance it adds
-  to a step is a graph edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
-
-### Amendment 2026-11-08
-
-The operator ruled on 2026-11-08 ([spec-kitty-open-packs#73](https://github.com/spec-kitty/spec-kitty-open-packs/issues/73);
-review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)) on two points. The original text stands and
-each is annotated:
-
-- decision 22: a step enhancement may also contribute prompt fragments to slots the step's prompt declares, the text of
-  the `spdd:reasons-block` moving into the `spdd` pack. The rules are a new record, [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).
-- decision 21: sibling step overrides are refused; sibling step enhancers compose (composition rule C14).
 
 ## Context
 
@@ -95,7 +76,6 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 5. **A sibling conflict is settled by the distribution pack's own `overrides` edge** (question 5) on the contested
    artifact, naming the member whose version wins. No new edge type.
    *Amended 2026-11-03 (operator, #145 pre-PR review): a sibling conflict also covers two packs at one level that both define the same artifact id, not only two that both change it, and is refused as `pack_sibling_conflict`. Until [#358](https://github.com/spec-kitty/spec-kitty-charter/issues/358) any pack of the compose may declare the edge, not only the distribution pack. Until [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) settling only clears the refusal; the named member's version is not yet put in force.*
-   *2026-11-08 (layer-merge mission, PR B): #357 is built. The layer merge puts the named member's version in force at that level, a step shares its mission type's settlement, and a step contest no entry settles is refused at read as `pack_sibling_conflict`, which the compose lets through. #358 is still open: any pack of the compose may declare the entry, and a settlement is not gated by level. The divergence register records both (DIV-218, DIV-219).*
 6. **A compose is one `depends_on` closure at one level** (question 6). An id is unique within it, except where an
    explicit `overrides` replaces it. Across levels the layer merge applies (project over org over built-in).
    *Amended 2026-11-03 (operator, #145 pre-PR review): the closure is rooted at one level's configured packs and includes dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360). Pack ids and pack names are unique across a compose without exception. An artifact id is unique within a level except where an `overrides` edge settles it; across levels the same id is a legitimate layer override.*
@@ -155,16 +135,13 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 20. **`force` is not declared in this cut** (question 6); core keeps its rules.
 21. **Sibling step enhancements are refused unless the distribution pack settles them** (question 7).
     ADR-0048 decision 9 stands as written, for steps as for every artifact.
-    *Amended 2026-11-08 (operator ruling, review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)): sibling step overrides are refused; sibling step enhancers compose (C14). An enhancement changes nothing, so two of them on one step are no conflict. The refusal above stands for overrides.*
 22. **A step enhancement uses the same mechanism as every other augmentation** (question 8). It is an artifact in
-    the enhancing pack that holds only the additions (references, guards, emits *[amended: guards and emits from 2026-11-05, and prompt fragments from 2026-11-08, see below]*), plus a CRG `enhances` edge from it
+    the enhancing pack that holds only the additions (references, guards, emits), plus a CRG `enhances` edge from it
     to the target step, `action:<type>/<step>`, pack-qualified as `<pack>::action:<type>/<step>` when the step is in
     another pack (decision 7). This is how an agent profile is augmented today. The edge
     and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a
     mechanism of its own, and a step-enhancement file with a `target:` field). The enhancing artifact's file layout
     is left to the schema work.
-    *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12): the additions lose `references`. An enhancement holds guards and emits; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
-    *Amended 2026-11-08 (operator, [open-packs#73](https://github.com/spec-kitty/spec-kitty-open-packs/issues/73)): the additions gain prompt fragments, text the enhancement inserts into slots the step's prompt declares. An enhancement now holds guards, emits and prompt fragments; the slot, activation, ordering and refusal rules are [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).*
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,
     `event-registry`, `anti-pattern`, and the same in `selections/{kind}` and `exclusions/{kind}`.
     - This is a breaking change on the 0.x line, with a `### Breaking` entry (ADR-0022): every multi-word `{kind}`
@@ -265,4 +242,3 @@ ADR-0052.
 - ADR-0048 to ADR-0052, open questions; [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/).
 - Epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142); #153; #157; #161; #164.
 - [Pack ecosystem work breakdown](/plans/pack-ecosystem-work-breakdown/).
-- Amendment 2026-11-08: [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).

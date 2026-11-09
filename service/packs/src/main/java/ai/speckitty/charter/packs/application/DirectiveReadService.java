@@ -17,8 +17,11 @@ import org.springframework.stereotype.Service;
  * mirrors {@link TacticReadService}: both reads are verified by {@link ConsistentRead}, the inputs are digested before
  * and after the load, and the answer carries the digest both agree on.
  *
- * <p>A directive carries no relationship: its relationships are authored in the pack's graph documents and read through
- * the references read ({@link ArtifactReadService#references}), ADR-0064.
+ * <p>Each returned {@link Directive} carries its {@link Directive#relationships() relationships} populated: the
+ * directive entity is its own effective origin and derives those edges from its authored {@code references} and
+ * {@code procedures} fields (ADR-0025 Decision 3/4; the storage adapter assembles the entity, and the entity assembles
+ * its relationships). Standalone registered edges live in the pack's relationship shard and are reached by the walk,
+ * not by this read.
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its directives (the prompt's
  * sanctioned list path; it adds no method to the persistence service), while the single read is a point read through
@@ -53,7 +56,8 @@ public final class DirectiveReadService {
     }
 
     /**
-     * The readable directives of a pack, with the digest of the inputs they were read from (FR-006).
+     * The readable directives of a pack, with the digest of the inputs they were read from. Each carries its
+     * relationships populated (FR-006).
      *
      * @param pack the pack's identity
      * @return the pack's directives, in the aggregate's stable order, and the verified fingerprint
@@ -73,7 +77,7 @@ public final class DirectiveReadService {
     }
 
     /**
-     * One directive of a pack, with the digest of the inputs it was read from (FR-006).
+     * One directive of a pack, with the digest of the inputs it was read from, its relationships populated (FR-006).
      *
      * @param pack the pack's identity
      * @param directive the directive's identity

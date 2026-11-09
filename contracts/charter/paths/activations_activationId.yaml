@@ -2,20 +2,12 @@ get:
   operationId: getActivation
   summary: Read an activation.
   description: >-
-    The stored document, as stored (ADR-0020 D4, ADR-0059 D4): a document an offering change made stale (an id the
-    offering no longer has, a deny entry on an id now required or locked) is served unchanged while its closure can be
-    read, and a deny entry the required floor or a lock overrides is listed in denyNotApplied (B4, FR-027). When the
-    closure cannot be read the document is not served: the answer is 500 for a document that names a pack that is no
-    longer configured (pack_unreadable), for a layer merge the closure refuses (an override the mutability level
-    forbids, an overrides cycle, an unstable answer, an override of itself, or pack_sibling_conflict) and for an
-    in-force refusal. That member is judged against the
-    packs of the activation's closure, so the strong ETag covers the activation's revision and the closure's
-    governanceFingerprint, as the effective reads' tags do: it changes when the document or a pack of the closure
-    changes, and not when a pack outside the closure does. A request whose If-None-Match matches the ETag is answered
-    304 without a body. An unknown id is 404 activation_not_found. An id outside the declared pattern is 400. A closure
-    that cannot compose is 500 with its code (pack_unreadable among them), as the effective reads document it;
-    stale_input and internal_error may be retried. Only this read answers the closure tag and denyNotApplied: the
-    writes answer the revision (If-Match on a write takes either, see If-Match).
+    The stored document, as stored, with its quoted revision as the ETag (ADR-0020 D4, ADR-0059 D5): the answer
+    depends only on the document, never on the offering, so a document an offering change made stale (an id the
+    offering no longer has, a deny entry on an id now required or locked) is served unchanged (ADR-0059 D4). A
+    request whose If-None-Match matches the ETag is answered 304 without a body. An unknown id is 404
+    activation_not_found. The read takes no snapshot of the packs, so its only 500 is internal_error, a failure of
+    the storage.
   tags:
   - Activation
   parameters:
@@ -29,8 +21,8 @@ get:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree: &id002
           $ref: ../headers/CharterWorktree.yaml
-        ETag:
-          $ref: ../headers/EffectiveETag.yaml
+        ETag: &id004
+          $ref: ../headers/ActivationETag.yaml
       content:
         application/json:
           schema:
@@ -40,8 +32,6 @@ get:
               $ref: ../examples/Activation.minimal.yaml
     '304':
       $ref: ../responses/NotModified.yaml
-    '400':
-      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -49,7 +39,7 @@ get:
     '404':
       $ref: ../responses/UnknownActivation.yaml
     '500':
-      $ref: ../responses/OfferingUnreadable.yaml
+      $ref: ../../_shared/responses/Problem.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 put:
@@ -57,29 +47,17 @@ put:
   summary: Register an activation document under a client-chosen id.
   description: >-
     Mode 1, register (ADR-0020 D6): stores the document in canonical form. 201 with Location and ETag when it created
-    the activation, 200 when it replaced one; a PUT of a fetched config answers 200 with the same revision as its ETag, and it may carry the fetched getActivation tag as If-Match. If-None-Match:
-    * creates only; If-Match makes the write conditional, takes the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412), and without it the write is last-writer-wins. An If-Match on
+    the activation, 200 when it replaced one; a PUT of a fetched config answers 200 with the same ETag. If-None-Match:
+    * creates only; If-Match makes the write conditional, and without it the write is last-writer-wins. An If-Match on
     an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section 13.1.1). A document
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
     is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
-    than * (a malformed precondition); so is an If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the
-    declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends
-    activatedKinds or missionTypes is 422 validation_failed, with one violation per member at its pointer naming its
-    replacement (selected.mission_type for missionTypes; selected.<kind> for activatedKinds): the two members are not
-    part of the document since the one kind model (IC-20), and no deprecation window applies. A deny entry
-    on a mission type is judged as on any kind: on a required or locked one it is 409. A pack pinned to a version no
-    pack of the closure holds is not refused: the pin is dropped (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J) and
-    listed in the answer's droppedPins, and the answer's config is the stored document without it. The body is
-    judged against the document it replaces (A4, decision DM-01M6RA7XC5HC8915GZT2R3H83W), so a GET then PUT of the
-    same body never fails without a pack change: an id the closure no longer holds that the replaced document named
-    is dropped, not refused, and listed in the answer's dropped (an unknown id the replaced document did not name is
-    still 422); and the floor is judged on the deny entries the body adds only, so a deny entry the replaced document
-    already held is kept even when a pack now requires or locks it, while a new one is 409. A stored document an
-    offering change made stale is served as stored on read (ADR-0059 D4). Without If-Match the write is judged
-    against the document it replaces, read just before the write and compared on write; when another writer changes
-    the activation in between, it is judged again from a fresh read, up to eight times, and when every attempt loses
-    to another writer the answer is 412 and nothing is stored. A storage 500 may follow a committed change; read
-    before retrying.
+    than * (a malformed precondition). A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A
+    stored document an offering change made stale is served on read and refused on write (ADR-0059 D4): a write
+    that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
+    409, whatever the stored document held. A per-artifact or preset write instead drops the stored ids the closure
+    no longer holds and reports them in its dropped (ADR-0059 amendment of 2026-11-06); this write never drops an
+    id the client sent.
   tags:
   - Activation
   parameters:
@@ -98,8 +76,7 @@ put:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        ETag: &id004
-          $ref: ../headers/ActivationETag.yaml
+        ETag: *id004
       content:
         application/json:
           schema:
@@ -122,8 +99,6 @@ put:
           examples:
             minimal:
               $ref: ../examples/Activation.minimal.yaml
-    '400':
-      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -138,22 +113,15 @@ put:
       $ref: ../responses/ActivationInvalid.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '503':
-      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
   operationId: deleteActivation
   summary: Remove an activation.
   description: >-
-    Removes the document: 204, honouring If-Match (the quoted revision or the current getActivation tag; a stale closure tag is 412). A second DELETE is 404 activation_not_found (ADR-0020 D6). With
+    Removes the document: 204, honouring If-Match. A second DELETE is 404 activation_not_found (ADR-0020 D6). With
     If-Match, an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section
-    13.1.1). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the declared pattern, are 400. The
-    delete reads no packs for a quoted revision or *, so then its only 500 is internal_error, a failure of the
-    storage. An If-Match that is a getActivation tag costs one verified read of the packs of the stored document's
-    closure to compute the current tag; a closure that cannot be read, or that names a pack no longer configured, has no
-    current tag, so the header names nothing and the delete is 412. A storage 500 may follow a committed change (the
-    document is gone), so read before retrying.
+    13.1.1). The delete takes no snapshot of the packs, so its only 500 is internal_error, a failure of the storage.
   tags:
   - Activation
   parameters:
@@ -165,8 +133,6 @@ delete:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-    '400':
-      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -177,7 +143,5 @@ delete:
       $ref: ../responses/PreconditionFailed.yaml
     '500':
       $ref: ../../_shared/responses/Problem.yaml
-    '503':
-      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

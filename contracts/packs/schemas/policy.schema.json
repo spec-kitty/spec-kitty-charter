@@ -73,9 +73,6 @@
         },
         "lifecycle": {
           "$ref": "#/$defs/level"
-        },
-        "step_enhancement": {
-          "$ref": "#/$defs/level"
         }
       },
       "title": "Kind Defaults",
@@ -85,7 +82,7 @@
       "additionalProperties": false,
       "description": "The level per artifact, keyed by bare URN (<kind>:<id> of an artifact kind, no pack qualifier); an entry wins over its kind's default.",
       "patternProperties": {
-        "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|mission_type|guard|lifecycle|step_enhancement):[A-Za-z0-9_/.-]+$": {
+        "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|mission_type|guard|lifecycle):[A-Za-z0-9_/.-]+$": {
           "$ref": "#/$defs/level"
         }
       },

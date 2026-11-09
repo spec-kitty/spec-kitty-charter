@@ -9,12 +9,12 @@
         "source": {
           "title": "Source",
           "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
         },
         "target": {
           "title": "Target",
           "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
         },
         "relation": {
           "$ref": "#/$defs/Relation"
@@ -64,7 +64,7 @@
         "urn": {
           "title": "Urn",
           "type": "string",
-          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
         },
         "kind": {
           "title": "Kind",
@@ -84,8 +84,7 @@
             "asset",
             "template",
             "action",
-            "mission_type",
-            "step_enhancement"
+            "mission_type"
           ]
         },
         "label": {
@@ -408,25 +407,6 @@
             "properties": {
               "urn": {
                 "pattern": "^mission_type:"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "kind": {
-                "const": "step_enhancement"
-              }
-            },
-            "required": [
-              "kind"
-            ]
-          },
-          "then": {
-            "properties": {
-              "urn": {
-                "pattern": "^step_enhancement:"
               }
             }
           }

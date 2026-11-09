@@ -41,6 +41,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * The domain ports realized by {@link DomainRepositoryService}, driven at entity level over a fixture pack. The pack
@@ -71,7 +73,8 @@ class DomainRepositoryServiceTest {
         assertThat(alpha.packId()).isEqualTo(BY_ID);
         assertThat(alpha.name()).isEqualTo("Alpha tactic");
         assertThat(alpha.steps()).hasSize(2);
-        assertThat(alpha.steps().get(0).examples()).containsExactly("first example", "second example");
+        assertThat(alpha.steps().get(0).references()).hasSize(1);
+        assertThat(alpha.references()).extracting("name").containsExactly("Gamma", "Delta", "Gamma again");
         assertThat(alpha.purpose()).contains("Prove that every field survives.");
     }
 
@@ -117,6 +120,7 @@ class DomainRepositoryServiceTest {
         assertThat(reloaded.notes()).isEqualTo(original.notes());
         assertThat(reloaded.failureModes()).isEqualTo(original.failureModes());
         assertThat(reloaded.appliesToLanguages()).isEqualTo(original.appliesToLanguages());
+        assertThat(reloaded.references()).isEqualTo(original.references());
     }
 
     /** Mutation control: a change written through the port is visible on reload, so the round-trip is not vacuous. */
@@ -451,21 +455,17 @@ class DomainRepositoryServiceTest {
     // ---- PackArtifactRepository ---------------------------------------------------------------------
 
     /**
-     * FR-012, A14 (FR-035, DM-01M6RA92BS6GGCYTRCFQDYYY5S, rule C14): the changed artifacts a sibling contest counts are
-     * the distinct targets of a pack's {@code overrides} relations, in first-seen order; an {@code enhances} relation is
-     * additive and changes nothing, so two sibling enhancers of one target are no conflict, and a {@code requires}
-     * relation changes nothing either.
+     * FR-012: the refined artifacts are the distinct targets of a pack's {@code enhances} and {@code overrides}
+     * relations, in first-seen order; a {@code requires} relation refines nothing.
      */
     @Test
-    void a14ChangedArtifactsAreTheDistinctTargetsOfOverridesEdgesAndAnEnhancesEdgeChangesNothing(@TempDir Path host)
-            throws IOException {
+    void changedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), """
                 schema_version: '1.0'
                 generated_at: STATIC
                 nodes: []
                 edges:
-                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_010, relation: enhances}
                 - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: enhances}
                 - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: overrides}
                 - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
@@ -502,11 +502,12 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * The references a pack writes are both endpoints of its graph edges (ADR-0064): a qualified edge source is checked
-     * beside its target, and no artifact field writes one.
+     * The references a pack writes are the ones its artifacts' relationships follow, and both endpoints of its graph
+     * edges: the bare references of a directive's procedures and a paradigm's directive refs carry a qualifier like
+     * every typed reference, and a qualified edge source is checked beside its target.
      */
     @Test
-    void theReferencesAPackWritesAreBothEndpointsOfItsGraphEdgesOnly(@TempDir Path host) throws IOException {
+    void referencesOfCoversEveryFieldTheWalkFollowsAndBothEdgeEndpoints(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         Files.writeString(pack.resolve("D1.directive.yaml"), """
                 id: D1
@@ -514,12 +515,14 @@ class DomainRepositoryServiceTest {
                 title: One
                 intent: one
                 enforcement: required
+                procedures: [ops::release, local-release]
                 """);
         Files.writeString(pack.resolve("p1.paradigm.yaml"), """
                 id: p1
                 schema_version: '1.0'
                 name: One
                 summary: one
+                directive_refs: [rules::D9]
                 """);
         Files.writeString(pack.resolve("edges.graph.yaml"), """
                 schema_version: '1.0'
@@ -532,7 +535,46 @@ class DomainRepositoryServiceTest {
         assertThat(overOne("pack-descriptor-only", pack)
                         .compositionFacts(new PackIdentifier("pack-descriptor-only"))
                         .references())
-                .containsExactly("other::tactic:t", "directive:D1");
+                .containsExactlyInAnyOrder(
+                        "other::tactic:t",
+                        "directive:D1",
+                        "ops::procedure:release",
+                        "procedure:local-release",
+                        "rules::directive:D9");
+    }
+
+    /**
+     * A reference that names its own artifact, bare or qualified with the pack's own name, whichever field writes it,
+     * makes its file unreadable, never an exception the offering escapes as a 500. The schemas already refuse a
+     * qualifier with no URN after it ({@code PackSchemasTest}), so only the self-reference reaches this backstop.
+     * The reason must say so (the kernel's own self-loop guard or the backstop's): a schema refusal of the fixture would pass a bare file-name check. A qualified same-id
+     * reference to another pack names another pack's artifact and stands.
+     */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            quoteCharacter = '"',
+            value = {
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: D1}]|self-loop",
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: 'roundtrip-descriptor-only::D1'}]|itself",
+                "t1.tactic.yaml|name: n\\nsteps: [{title: s, description: d}]\\nreferences: [{name: n, type: tactic, id: t1, when: w}]|self-loop",
+                "t1.tactic.yaml|name: n\\nsteps: [{title: s, description: d, references: [{name: n, type: tactic, id: t1, when: w}]}]|itself",
+                "r1.procedure.yaml|title: t\\ndescription: d\\nentry_condition: a\\nexit_condition: b\\n"
+                        + "steps: [{title: s, description: d}]\\nreferences: [{type: procedure, id: r1}]|itself"
+            })
+    void aReferenceThatNamesItsOwnArtifactMakesItsFileUnreadable(
+            String file, String fields, String reason, @TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        String id = file.substring(0, file.indexOf('.'));
+        Files.writeString(
+                pack.resolve(file), "id: " + id + "\nschema_version: '1.0'\n" + fields.replace("\\n", "\n") + "\n");
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+
+        assertThatThrownBy(() -> over.compositionFacts(new PackIdentifier("pack-descriptor-only")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refused.getMessage()).contains(file).contains(reason);
+                });
     }
 
     /**
@@ -647,13 +689,20 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * The edges come from every source in a stable order: graph documents in file order, then each component's derived
-     * relationships (ADR-0064: no artifact field authors one), then the registered relationship shard; a repeat of one
-     * (from, relation, to, qualifiers) is kept once, where it was first seen.
+     * The edges come from every source in a stable order: graph documents in file order, then each component's
+     * relationships (its typed references, {@code ArtifactEdges.build}), then the registered relationship shard; a
+     * repeat of one (from, relation, to, qualifiers) is kept once, where it was first seen.
      */
     @Test
-    void theEdgesHoldGraphAndRegisteredShardEdgesInOrderWithoutRepeats(@TempDir Path host) throws IOException {
+    void theEdgesHoldComponentAndRegisteredShardEdgesInOrderWithoutRepeats(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("t1.tactic.yaml"), """
+                id: t1
+                schema_version: '1.0'
+                name: One
+                steps: [{title: s, description: d}]
+                references: [{name: n, type: styleguide, id: s1, when: w}]
+                """);
         Files.writeString(pack.resolve("edges.graph.yaml"), """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -716,6 +765,23 @@ class DomainRepositoryServiceTest {
                         "directive:D requires other::tactic:t1",
                         "other::directive:D requires tactic:t1",
                         "directive:D scope tactic:t1");
+    }
+
+    /** A typed reference with no graph edge beside it is still an edge of the facts. */
+    @Test
+    void aComponentsTypedReferenceIsAnEdgeOnItsOwn(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("t1.tactic.yaml"), """
+                id: t1
+                schema_version: '1.0'
+                name: One
+                steps: [{title: s, description: d}]
+                references: [{name: n, type: styleguide, id: 'other::s1', when: w}]
+                """);
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly("tactic:t1 suggests other::styleguide:s1");
     }
 
     /** A registered relationship shard alone gives its edges. */
@@ -847,7 +913,7 @@ class DomainRepositoryServiceTest {
 
     /**
      * The real stack (ADR-0063 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
-     * {@code directive:X}, which {@code q} holds. The production gate composes {@code p}'s closure through the offering and refuses the write,
+     * {@code directive:X}. The production gate composes {@code p}'s closure through the offering and refuses the write,
      * naming {@code q}, whether {@code p} is addressed by its configured name or its {@code pack_id}. With {@code q}'s
      * named file gone, the offering and the gate both refuse {@code pack_unreadable} naming {@code q}.
      */
@@ -865,14 +931,6 @@ class DomainRepositoryServiceTest {
                 mutability_policy: policy.yaml
                 """.formatted(qId));
         Files.writeString(q.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:X: locked}\n");
-        // q holds directive:X: a pack's lock reaches only what it or a pack it builds on holds (A15, rule C22).
-        Files.writeString(q.resolve("X.directive.yaml"), """
-                id: X
-                schema_version: '1.0'
-                title: X
-                intent: x
-                enforcement: required
-                """);
         Path p = Files.createDirectories(host.resolve("p"));
         Files.writeString(p.resolve("pack.yaml"), """
                 pack_id: %s

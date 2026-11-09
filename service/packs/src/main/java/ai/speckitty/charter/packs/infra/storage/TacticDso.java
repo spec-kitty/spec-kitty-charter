@@ -17,6 +17,7 @@ import java.util.Optional;
  * @param notes the {@code notes}, when stated
  * @param failureModes the {@code failure_modes}, in authored order
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
+ * @param references the tactic-level {@code references}, in authored order with duplicates kept
  */
 record TacticDso(
         String id,
@@ -26,7 +27,8 @@ record TacticDso(
         Optional<String> purpose,
         Optional<String> notes,
         List<String> failureModes,
-        List<String> appliesToLanguages) {
+        List<String> appliesToLanguages,
+        List<Reference> references) {
 
     /**
      * Checks that the required fields are present and copies the lists.
@@ -39,6 +41,7 @@ record TacticDso(
      * @param notes the notes
      * @param failureModes the failure modes
      * @param appliesToLanguages the languages
+     * @param references the references
      */
     TacticDso {
         Objects.requireNonNull(id, "id");
@@ -49,6 +52,7 @@ record TacticDso(
         steps = List.copyOf(steps);
         failureModes = List.copyOf(failureModes);
         appliesToLanguages = List.copyOf(appliesToLanguages);
+        references = List.copyOf(references);
     }
 
     /**
@@ -57,19 +61,47 @@ record TacticDso(
      * @param title the step's title
      * @param description the step's description, when stated
      * @param examples the examples, in authored order
+     * @param references the step's references, in authored order with duplicates kept
      */
-    record Step(String title, Optional<String> description, List<String> examples) {
+    record Step(String title, Optional<String> description, List<String> examples, List<Reference> references) {
         /**
          * Checks the fields and copies the lists.
          *
          * @param title the title
          * @param description the description
          * @param examples the examples
+         * @param references the references
          */
         Step {
             Objects.requireNonNull(title, "title");
             Objects.requireNonNull(description, "description");
             examples = List.copyOf(examples);
+            references = List.copyOf(references);
+        }
+    }
+
+    /**
+     * One reference, carried verbatim.
+     *
+     * @param name the reference's name
+     * @param type the artifact-kind token, as plain text
+     * @param id the referenced id
+     * @param when the when text
+     */
+    record Reference(String name, String type, String id, String when) {
+        /**
+         * Checks that every field is present.
+         *
+         * @param name the name
+         * @param type the type
+         * @param id the id
+         * @param when the when text
+         */
+        Reference {
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(type, "type");
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(when, "when");
         }
     }
 }

@@ -35,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
  * id's lock, as every writer does, so no reader ever ran during a write and that test passed with a non-atomic write.
  *
  * <p>Option (b) of the work package is the proof, chosen because it is deterministic: a probing {@link
- * FileActivationRepository.Durability} records, at the moment of each move, the file the target is before and after it.
+ * FileActivationRepository.Rename} records, at the moment of each move, the file the target is before and after it.
  * An atomic move leaves the target as the temporary file itself (its file key is the temporary file's), and the bytes
  * it held up to the move are the old document, untouched. A planted non-atomic move (copy the bytes into the target,
  * then delete the temporary file) keeps the target's old file key, and the probe fails it; {@link
@@ -51,7 +51,7 @@ class FileActivationRepositoryAtomicityTest {
     Path root;
 
     /** A non-atomic move: the target's own file is truncated and written over, then the temporary file deleted. */
-    private static final FileActivationRepository.Durability IN_PLACE = (temp, target) -> {
+    private static final FileActivationRepository.Rename IN_PLACE = (temp, target) -> {
         Files.write(
                 target,
                 Files.readAllBytes(temp),
@@ -62,13 +62,13 @@ class FileActivationRepositoryAtomicityTest {
     };
 
     /** A move that records whether the target became the temporary file, and whether it was written before the move. */
-    private static final class Probe implements FileActivationRepository.Durability {
+    private static final class Probe implements FileActivationRepository.Rename {
 
-        private final FileActivationRepository.Durability delegate;
+        private final FileActivationRepository.Rename delegate;
         private final List<String> faults = new ArrayList<>();
         private byte @Nullable [] lastWritten;
 
-        Probe(FileActivationRepository.Durability delegate) {
+        Probe(FileActivationRepository.Rename delegate) {
             this.delegate = delegate;
         }
 
@@ -116,7 +116,7 @@ class FileActivationRepositoryAtomicityTest {
 
     @Test
     void everyWriteReplacesTheTargetByTheWrittenTemporaryFile() {
-        Probe probe = new Probe(FileActivationRepository.DISK);
+        Probe probe = new Probe(FileActivationRepository.ATOMIC);
 
         writeEveryRound(new FileActivationRepository(root, probe));
 

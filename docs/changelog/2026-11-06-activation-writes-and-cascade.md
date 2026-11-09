@@ -36,8 +36,6 @@ writes of [ADR-0020](/adr/0020-offering-and-activations/) D6 under
   or read. `includeDeactivated` clears only the deny entries the walk passes through within the `cascade` scope.
 - **Presets:** each key the preset lists replaces that key; `force` clears its members' deny entries. A member
   the closure no longer holds is `422`.
-- **Id spellings:** a path id may be the declared id, its full URN or another case, as in a document; the write
-  stores and reports the declared id. A mission type's path id is matched exactly, as `missionTypes` is.
 - **Still `501`:** the four effective reads.
 - **Differences from core:** DIV-206 and DIV-207 ([divergence register](/conformance/divergence-register/)).
 - **Stale ids:** a per-artifact or preset write drops the stored ids a pack upgrade removed and lists them in

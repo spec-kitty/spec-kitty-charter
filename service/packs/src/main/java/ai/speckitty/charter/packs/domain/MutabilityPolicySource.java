@@ -29,15 +29,6 @@ public final class MutabilityPolicySource {
     }
 
     /**
-     * The targets the file names one by one, with their levels; a kind default names no target.
-     *
-     * @return an unmodifiable map
-     */
-    public Map<Urn, MutabilityLevel> urnEntries() {
-        return urnEntries;
-    }
-
-    /**
      * A source that declares nothing, so every target resolves to {@link MutabilityLevel#OPEN}.
      *
      * @return the empty source

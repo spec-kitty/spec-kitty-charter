@@ -82,7 +82,7 @@ class MissionStepContractTest {
         assertThat(contract.description()).isEmpty();
         assertThat(contract.schemaVersion()).contains("1.0");
         assertThat(contract.packId()).isEqualTo(PACK);
-        assertThat(contract.derivedRelationships()).isEmpty();
+        assertThat(contract.relationships()).isEmpty();
         assertThat(contract).hasToString("MissionStepContract[implement of pack 01PACK]");
     }
 

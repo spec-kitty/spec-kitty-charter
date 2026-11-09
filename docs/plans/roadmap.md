@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -98,8 +98,7 @@ design, and the resolver (3a) comes before step 4. The notes below are as of 202
     ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26), while the
     storage and aggregate plumbing is keyed by kind first, with the whole-pack seam (#189,
     [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), accepted 2026-10-27). Then the
-    offering reads under `/offering` (#126). *Done 2026-11-05:* the epic closes with #299 and #319 fixed,
-    and the whole-pack round trip is a required check under `CI gate / gate`.
+    offering reads under `/offering` (#126).
 
   ~~Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),
   needs the reads #126 brings back.~~ Superseded 2026-11-03: step 3 is now authoring the packs to the design

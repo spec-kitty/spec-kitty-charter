@@ -53,6 +53,7 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
                 .forEach(a -> builder.antiPattern(
                         new StyleguideAntiPattern(a.name(), a.description(), a.badExample(), a.goodExample())));
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
+        dso.references().forEach(builder::reference);
         return builder.build();
     }
 
@@ -74,6 +75,7 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
                 styleguide.tooling(),
                 styleguide.qualityTest(),
                 styleguide.structuralLintConfig(),
-                styleguide.appliesToLanguages());
+                styleguide.appliesToLanguages(),
+                styleguide.references());
     }
 }

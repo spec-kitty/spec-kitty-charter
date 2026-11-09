@@ -137,7 +137,8 @@ class ReadOnlyPackSaveTest {
                         service -> service.writeAssetFile(PACK, new AssetFile("logo.png", Payload.of(new byte[] {1})))),
                 write(
                         "writePreset",
-                        service -> service.writePreset(PACK, new Preset("house-rules", "The house rules.", Map.of()))),
+                        service -> service.writePreset(
+                                PACK, new Preset("house-rules", "The house rules.", List.of(), Map.of(), List.of()))),
                 write(
                         "writePackDocument",
                         service -> service.writePackDocument(

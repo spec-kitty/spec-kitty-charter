@@ -37,8 +37,6 @@ class ActivationSelectionServiceTest {
     private static final ArtifactRef D = new ArtifactRef(ArtifactKind.DIRECTIVE, "D");
     private static final ArtifactRef T = new ArtifactRef(ArtifactKind.TACTIC, "t");
     private static final ArtifactRef X = new ArtifactRef(ArtifactKind.TACTIC, "x");
-    private static final ArtifactRef D2 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D2");
-    private static final ArtifactRef RESEARCH = new ArtifactRef(ArtifactKind.MISSION_TYPE, "research");
     private static final Optional<List<String>> ALL = Optional.of(List.of("all"));
 
     private final CountingRepository repository = new CountingRepository();
@@ -52,18 +50,8 @@ class ActivationSelectionServiceTest {
         packs.walks(ActivationSelectionServiceTest::walk);
     }
 
-    /**
-     * D requires t and x: x is stopped at when the plan stops at it, and reached otherwise; e is not reached. The
-     * mission type research holds a step that requires D2: the step, an action, is left out of the answer as the packs
-     * adapter leaves it out, and D2 is reached from research.
-     */
+    /** D requires t and x: x is stopped at when the plan stops at it, and reached otherwise; e is not reached. */
     private static Reach walk(ReachPlan plan) {
-        if (plan.starts().contains(RESEARCH)) {
-            Map<ArtifactRef, List<Reach.Via>> reached = new LinkedHashMap<>();
-            reached.put(RESEARCH, List.of());
-            reached.put(D2, List.of(new Reach.Via(RESEARCH, RelationType.REQUIRES)));
-            return new Reach(reached, Map.of(), Set.of(), Set.of(), Map.of());
-        }
         if (!plan.starts().contains(D)) {
             return Reach.empty();
         }
@@ -81,7 +69,7 @@ class ActivationSelectionServiceTest {
                 .pack("main", "1.0.0")
                 .held(ArtifactKind.DIRECTIVE, "D", "D2")
                 .held(ArtifactKind.TACTIC, "t", "x", "e")
-                .held(ArtifactKind.MISSION_TYPE, "research");
+                .missionTypes("research");
     }
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
@@ -120,8 +108,9 @@ class ActivationSelectionServiceTest {
     void includeDeactivatedNeverClearsTheDenyEntryOfAnEnhancerTheWalkDoesNotReach() {
         // ADR-0059 D2 (operator ruling of 2026-11-06): e enhances t runs from e to t, so the walk from D never reaches
         // e, and no enhances pull runs at write time.
-        StoredActivation before =
-                stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
+        StoredActivation before = stored(ActivationDocument.builder()
+                .activatedKinds(List.of(ArtifactKind.TACTIC))
+                .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
 
         ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, List.of(), quoted(before));
 
@@ -148,44 +137,15 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void aCascadingSelectOfAMissionTypeSelectsWhatItsStepsReach() {
-        // A7 Q1 (rule W20, W32 withdrawn): the walk from research crosses to its steps like requires.
+    void aMissionTypeJoinsMissionTypesAndNeverCascades() {
         StoredActivation before = stored(ActivationDocument.builder());
-
-        ActivationWrites.Outcome outcome =
-                service.select(ID, "mission_type", "research", ALL, false, List.of(), quoted(before));
-
-        assertThat(outcome.change().applied()).containsExactly(D2, RESEARCH);
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("research");
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D2");
-        assertThat(packs.walked())
-                .singleElement()
-                .satisfies(plan -> assertThat(plan.starts()).containsExactly(RESEARCH));
-    }
-
-    @Test
-    void aMissionTypeSelectWithoutACascadeSelectsTheMissionTypeOnly() {
-        StoredActivation before = stored(ActivationDocument.builder());
-
-        ActivationWrites.Outcome outcome =
-                service.select(ID, "mission_type", "research", Optional.empty(), false, List.of(), quoted(before));
-
-        assertThat(outcome.change().applied()).containsExactly(RESEARCH);
-        assertThat(now().selected()).containsOnlyKeys(ArtifactKind.MISSION_TYPE);
-        assertThat(packs.walked()).isEmpty();
-    }
-
-    @Test
-    void includeDeactivatedOnAMissionTypeSelectClearsWhatItsWalkSelects() {
-        StoredActivation before = stored(ActivationDocument.builder()
-                .deactivated(ArtifactKind.DIRECTIVE, List.of("D2"))
-                .deactivated(ArtifactKind.MISSION_TYPE, List.of("research")));
 
         ActivationWrites.Outcome outcome =
                 service.select(ID, "mission_type", "research", ALL, true, List.of(), quoted(before));
 
-        assertThat(outcome.change().cleared()).containsExactly(D2, RESEARCH);
-        assertThat(now().deactivated()).isEmpty();
+        assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
+        assertThat(now().missionTypes().orElseThrow()).containsExactly("research");
+        assertThat(packs.walked()).isEmpty();
     }
 
     @Test
@@ -202,26 +162,27 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void unselectingRemovesTheIdLeavesNoneOfTheKindAndClearsNothing() {
+    void unselectingRemovesTheIdKeepsTheEmptiedListAndClearsNothing() {
         StoredActivation before = stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("D")));
 
         ActivationWrites.Outcome outcome = service.unselect(ID, "directive", "D", quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(D);
         assertThat(outcome.change().cleared()).isEmpty();
-        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE))
+                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
         assertThat(packs.calls()).isEqualTo(1);
     }
 
     @Test
-    void unselectingAMissionTypeRemovesItFromItsAllowList() {
-        StoredActivation before =
-                stored(ActivationDocument.builder().selected(ArtifactKind.MISSION_TYPE, List.of("research")));
+    void unselectingAMissionTypeRemovesItFromMissionTypes() {
+        StoredActivation before = stored(ActivationDocument.builder().missionTypes(List.of("research")));
 
         ActivationWrites.Outcome outcome = service.unselect(ID, "mission_type", "research", quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
+        assertThat(now().missionTypes())
+                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
     }
 
     @Test
@@ -257,9 +218,7 @@ class ActivationSelectionServiceTest {
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
-        assertThat(packs.calls())
-                .as("the one read that sees whether the tag-shaped header is the closure tag; the path is not judged")
-                .isEqualTo(1);
+        assertThat(packs.calls()).isZero();
     }
 
     @Test
@@ -317,90 +276,6 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void aPathIdInAnyKnownSpellingSelectsAndUnselectsTheDeclaredId() {
-        // ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is.
-        StoredActivation before = stored(ActivationDocument.builder());
-
-        ActivationWrites.Outcome selected =
-                service.select(ID, "directive", "directive:d", Optional.empty(), false, List.of(), quoted(before));
-        ActivationWrites.Outcome again =
-                service.select(ID, "directive", "d", Optional.empty(), false, List.of(), quoted(selected.stored()));
-
-        assertThat(selected.change().applied()).containsExactly(D);
-        assertThat(again.stored().revision())
-                .as("another spelling is a no-op")
-                .isEqualTo(selected.stored().revision());
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
-
-        ActivationWrites.Outcome unselected = service.unselect(ID, "directive", "directive:d", quoted(again.stored()));
-
-        assertThat(unselected.change().applied()).containsExactly(D);
-        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
-    }
-
-    @Test
-    void aMissionTypePathIdIsReadInAnyKnownSpellingAsAnyKindIs() {
-        // A7: a mission type is an ordinary kind, so its path id is normalized as the document's ids are.
-        StoredActivation before =
-                stored(ActivationDocument.builder().selected(ArtifactKind.MISSION_TYPE, List.of("gone-type")));
-
-        ActivationWrites.Outcome selected = service.select(
-                ID, "mission_type", "mission_type:RESEARCH", Optional.empty(), false, List.of(), quoted(before));
-
-        assertThat(selected.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("research");
-        assertThatThrownBy(() -> service.select(
-                        ID, "mission_type", "nope", Optional.empty(), false, List.of(), quoted(selected.stored())))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
-
-        ActivationWrites.Outcome unselected =
-                service.unselect(ID, "mission_type", "RESEARCH", quoted(selected.stored()));
-
-        assertThat(unselected.change().applied())
-                .containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
-    }
-
-    @Test
-    void aUrnOfAnotherKindIs404AndASpellingOfTwoDeclaredIdsIs422AtThePath() {
-        packs = new FakeAvailablePacks(
-                closure().held(ArtifactKind.DIRECTIVE, "Ab", "AB").build());
-        service = new ActivationSelectionService(new ActivationWrites(repository, packs));
-        StoredActivation before = stored(ActivationDocument.builder());
-
-        assertThatThrownBy(() ->
-                        service.select(ID, "directive", "tactic:D", Optional.empty(), false, List.of(), quoted(before)))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
-        assertThatThrownBy(
-                        () -> service.select(ID, "directive", "ab", Optional.empty(), false, List.of(), quoted(before)))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
-                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
-                        assertThat(violation.pointer()).isEqualTo("/artifactId");
-                        assertThat(violation.code()).isEqualTo("ambiguous_artifact");
-                    });
-                });
-        ActivationWrites.Outcome exact =
-                service.select(ID, "directive", "AB", Optional.empty(), false, List.of(), quoted(before));
-        assertThat(exact.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "AB"));
-    }
-
-    @Test
-    void anUnselectOfAStaleIdInAnotherSpellingDropsIt() {
-        StoredActivation before =
-                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
-
-        ActivationWrites.Outcome outcome = service.unselect(ID, "directive", "directive:gone", quoted(before));
-
-        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"));
-        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
-    }
-
-    @Test
     void aPackNoLongerConfiguredIs422AtTheWholeRequest() {
         StoredActivation before = stored(ActivationDocument.builder());
         packs.answer(ClosureSnapshot.unresolved(Set.of("main")));
@@ -444,12 +319,12 @@ class ActivationSelectionServiceTest {
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
     }
 
-    // Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
+    // Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
 
     @Test
     void aSelectDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {
         StoredActivation before = stored(ActivationDocument.builder()
-                .selected(ArtifactKind.MISSION_TYPE, List.of("gone-type"))
+                .missionTypes(List.of("gone-type"))
                 .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
                 .deactivated(ArtifactKind.TACTIC, List.of("old")));
 
@@ -464,7 +339,7 @@ class ActivationSelectionServiceTest {
         assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2"));
         assertThat(outcome.change().cleared()).isEmpty();
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D2");
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
+        assertThat(now().missionTypes().orElseThrow()).isEmpty();
         assertThat(now().deactivated()).isEmpty();
         assertThat(packs.calls()).isEqualTo(1);
     }
@@ -514,20 +389,20 @@ class ActivationSelectionServiceTest {
 
     @Test
     void anUnselectOfAStaleMissionTypeTheDocumentNamesDropsIt() {
-        StoredActivation before =
-                stored(ActivationDocument.builder().selected(ArtifactKind.MISSION_TYPE, List.of("gone-type")));
+        StoredActivation before = stored(ActivationDocument.builder().missionTypes(List.of("gone-type")));
 
         ActivationWrites.Outcome outcome = service.unselect(ID, "mission_type", "gone-type", quoted(before));
 
         assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "gone-type"));
         assertThat(outcome.change().applied()).isEmpty();
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
+        assertThat(now().missionTypes())
+                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
     }
 
     @Test
     void anUnselectOfAnIdNeitherTheClosureNorTheDocumentNamesIsStill404AndDropsNothing() {
         StoredActivation before = stored(ActivationDocument.builder()
-                .selected(ArtifactKind.MISSION_TYPE, List.of("gone-type"))
+                .missionTypes(List.of("gone-type"))
                 .selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
 
         assertThatThrownBy(() -> service.unselect(ID, "directive", "NO_SUCH", quoted(before)))
@@ -578,7 +453,7 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void b1APinnedVersionTheClosureDoesNotHoldIsDroppedAndReported() {
+    void aPinnedVersionTheClosureDoesNotHoldIsStill422AndNotDropped() {
         StoredActivation before = repository
                 .create(
                         ID,
@@ -588,32 +463,14 @@ class ActivationSelectionServiceTest {
                                 .document())
                 .orElseThrow();
 
-        ActivationWrites.Outcome outcome =
-                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
-
-        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned("main", "9.9.9"));
-        assertThat(now().packs()).contains(List.of(PackRef.of("main")));
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
-    }
-
-    @Test
-    void b1AWriteThatDropsOnlyAPinIsNoNoOp() {
-        StoredActivation before = repository
-                .create(
-                        ID,
-                        ActivationDocument.builder()
-                                .packs(List.of(PackRef.pinned("main", "9.9.9")))
-                                .selected(ArtifactKind.DIRECTIVE, List.of("D"))
-                                .build()
-                                .document())
-                .orElseThrow();
-
-        ActivationWrites.Outcome outcome =
-                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
-
-        assertThat(outcome.change().applied()).isEmpty();
-        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned("main", "9.9.9"));
-        assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
-        assertThat(repository.replaces()).isOne();
+        assertThatThrownBy(
+                        () -> service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(violation -> assertThat(violation.code()).isEqualTo("version_not_held"));
+                });
+        assertThat(repository.replaces()).isZero();
     }
 }

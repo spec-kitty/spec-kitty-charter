@@ -368,54 +368,6 @@ class FileSystemPackInspectorTest {
                 .isEmpty();
     }
 
-    private static final String ENHANCEMENT_DIR = "missions/software-dev/enhancements/";
-    private static final String SPDD_ENHANCEMENT = """
-            schema_version: "1.0"
-            id: spdd-specify
-            prompt_fragments:
-              - slot: spdd:reasons-block
-                path: spdd-specify.prompt-fragment.md
-            """;
-
-    /**
-     * The shape of open-packs#175: a step enhancement and its prompt fragment. Neither has a store binding until #424,
-     * so load skips both (the enhancement yaml is classified, validated and not held), and validate reads the fragment
-     * against its structure schema as it reads the yaml against its own. Neither is a 500.
-     */
-    @Test
-    void anEnhancementAndItsPromptFragmentAreLoadedAndValidatedWithoutAFailureAndHeldByNoStore(@TempDir Path dir)
-            throws IOException {
-        write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
-        write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "## REASONS guidance\n\nState the reasons.\n");
-
-        PackFileSet.Listing listing = PackFileSet.listing(dir);
-        PackContents contents = full(dir);
-
-        assertThat(listing.byKind().values().stream().flatMap(List::stream))
-                .as("no store holds the enhancement yaml or its fragment yet (#424)")
-                .noneMatch(file -> file.startsWith(ENHANCEMENT_DIR));
-        assertThat(contents.unreadableFiles()).isEmpty();
-        assertThat(contents.files())
-                .extracting(PackContents.ClassifiedFile::file)
-                .contains(ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml");
-    }
-
-    @Test
-    void aPromptFragmentThatBreaksItsStructureIsUnreadableInValidateAndNotAFailureOnLoad(@TempDir Path dir)
-            throws IOException {
-        write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
-        write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "---\ntitle: x\n---\n\nText.\n");
-        write(dir, ENHANCEMENT_DIR + "blank.prompt-fragment.md", "\n");
-
-        PackFileSet.listing(dir);
-
-        assertThat(full(dir).unreadableFiles())
-                .extracting(FileRead::file)
-                .containsExactlyInAnyOrder(
-                        ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
-                        ENHANCEMENT_DIR + "blank.prompt-fragment.md");
-    }
-
     private static final String PROCEDURE = """
             schema_version: '1.0'
             id: %s
@@ -678,13 +630,12 @@ class FileSystemPackInspectorTest {
         // store reads (ADR-0042, ADR-0040 decision 6), so main at 90de8f9's "no findings" is back.
         assertThat(verdict.findings()).isEmpty();
 
-        // 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
+        // Unchanged from the previous pin: 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
         // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever
         // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
         // this walk listed already). The pin f85cf23 adds four mission step prompts (open-packs 7963b62), all under
-        // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified. The
-        // #240 migration adds the 43 built-in procedures its directives' steps became.
-        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43);
+        // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified.
+        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1));
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));

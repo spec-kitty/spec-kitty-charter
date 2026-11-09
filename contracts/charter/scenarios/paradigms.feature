@@ -1,13 +1,13 @@
 @contract @paradigms
 Feature: Paradigms are read and registered functionally
-  A client reads a pack's paradigms (FR-014) through the generic artifact item and registers a paradigm (POST /packs/{packId}/artifacts/paradigm, PUT
+  A client reads a pack's paradigms with their relationships populated (FR-014) through the generic
+  artifact item and registers a paradigm (POST /packs/{packId}/artifacts/paradigm, PUT
   /packs/{packId}/artifacts/paradigm/{artifactId}), each write answering the artifact in the envelope the
   item read answers, through functional registration (ADR-0026): the whole pack aggregate is revalidated and
   committed atomically, a refusal leaves the pack unchanged (NFR-002), and every write answers an ETag
-  revision for optimistic concurrency (FR-012). A paradigm carries no relationship field: its relationships
-  to directives and other artifacts are registered through PUT /packs/{packId}/relationships and read
-  through the paradigm's references (ADR-0064), and a body that still sends one is refused. There is no
-  DELETE or PATCH.
+  revision for optimistic concurrency (FR-012). A paradigm originates relationships — its directive refs
+  are minted as requires edges to directives and its typed references as suggests — so a read carries
+  them and a walk resolves the referenced directives on demand (US2, SC-002). There is no DELETE or PATCH.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -22,10 +22,10 @@ Feature: Paradigms are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered paradigm is read back value-equal, with no relationship field (FR-014, SC-001, ADR-0064)
+  Scenario: A registered paradigm is read back value-equal with its directive relationships (FR-014, SC-001)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
-      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward", "directiveRefs": ["ALPHA"]}
       """
     Then the response status is 201
     When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
@@ -33,33 +33,20 @@ Feature: Paradigms are read and registered functionally
     And the field "id" of the response body is "clean-architecture"
     And the field at "/paradigm/name" is "Clean Architecture"
     And the field at "/paradigm/summary" is "Dependencies point inward"
-    And the field at "/paradigm/directiveRefs" is absent
-    And the field at "/paradigm/relationships" is absent
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "directive:ALPHA"
 
-  Scenario: A paradigm's directives are related through the relationship write and read through its references (US2, ADR-0064)
+  Scenario: Read and walk resolve the paradigm's referenced directives on demand (US2, SC-002)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
-      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward", "directiveRefs": ["ALPHA", "BETA"]}
       """
     Then the response status is 201
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
-      """
-      {"from": "paradigm:clean-architecture", "to": "directive:ALPHA", "type": "requires"}
-      """
-    Then the response status is 201
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
-      """
-      {"from": "paradigm:clean-architecture", "to": "directive:BETA", "type": "requires"}
-      """
-    Then the response status is 201
-    When I GET "/packs/qa/artifacts/paradigm/clean-architecture/references"
+    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
     Then the response status is 200
-    And the field at "/items/0/reference" is "directive:ALPHA"
-    And the field at "/items/0/relation" is "requires"
-    And the field at "/items/1/reference" is "directive:BETA"
-    And the field at "/items/2" is absent
+    And the artifact in the response body has 2 relationships
+    And a relationship of the artifact in the response body points to "directive:ALPHA"
+    And a relationship of the artifact in the response body points to "directive:BETA"
 
   Scenario: A duplicate id is a conflict on POST while a distinct id is created (FR-014, SC-003)
     When I POST "/packs/qa/artifacts/paradigm" as JSON with the body:
@@ -75,7 +62,7 @@ Feature: Paradigms are read and registered functionally
         "kind": "paradigm",
         "id": "clean-architecture",
         "packId": "qa",
-        "paradigm": {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward"},
+        "paradigm": {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward", "directiveRefs": [], "references": [], "relationships": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/paradigm/clean-architecture"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=paradigm"}
@@ -94,28 +81,31 @@ Feature: Paradigms are read and registered functionally
       """
     Then the response status is 201
 
-  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0064)
+  Scenario: An unknown relationship endpoint kind is refused and a well-formed registration succeeds (FR-014, SC-003)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
-      {"schemaVersion": "1.0", "name": "Clean", "summary": "inward", "<member>": <value>}
+      {"schemaVersion": "1.0", "name": "Clean", "summary": "inward", "relationships": [{"from": "paradigm:clean-architecture", "to": "nonsense:x", "type": "requires"}]}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
-    And the field "detail" of the response body is "A paradigm registration has no member <member>; a relationship is registered through PUT /packs/{packId}/relationships."
-    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
-    Then the response status is 404
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
       {"schemaVersion": "1.0", "name": "Clean", "summary": "inward"}
       """
     Then the response status is 201
 
-    Examples:
-      | member        | value                                                                            |
-      | directiveRefs | ["ALPHA"]                                                                        |
-      | directiveRefs | null                                                                             |
-      | references    | [{"type": "tactic", "id": "x"}]                                                  |
-      | relationships | [{"from": "paradigm:clean-architecture", "to": "directive:ALPHA", "type": "requires"}] |
+  Scenario: A paradigm body may assert only its own edges; a cross-authored edge is refused (dual-write contention)
+    When I POST "/packs/qa/artifacts/paradigm" as JSON with the body:
+      """
+      {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward", "relationships": [{"from": "paradigm:other", "to": "directive:ALPHA", "type": "requires"}]}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I POST "/packs/qa/artifacts/paradigm" as JSON with the body:
+      """
+      {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward"}
+      """
+    Then the response status is 201
 
   Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)
     When I POST "/packs/qa/artifacts/paradigm" as JSON with the body:
@@ -136,6 +126,22 @@ Feature: Paradigms are read and registered functionally
       {"schemaVersion": "1.0", "name": "Clean replaced", "summary": "inward"}
       """
     Then the response status is 200
+
+  Scenario Outline: A null list, or a null item in a list, is refused before the body is bound (#292, #309: <case>)
+    When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"<fields>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "<detail>"
+    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
+    Then the response status is 404
+
+    Examples:
+      | case        | fields                             | detail                                                                                                                |
+      | a null list | , "directiveRefs": null            | The directiveRefs list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item | , "directiveRefs": ["ALPHA", null] | Item 1 of the directiveRefs list is null; a list holds no null item.                                                  |
 
   Scenario: A paradigm registration body over 1 MiB is refused before it is read (#310)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body, its "summary" padded to 1048576 bytes:

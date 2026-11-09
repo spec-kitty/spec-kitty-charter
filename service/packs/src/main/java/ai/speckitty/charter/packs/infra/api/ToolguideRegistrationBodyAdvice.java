@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,13 +36,12 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
  *       {@code {"guide": null, "guideUri": "https://..."}} would otherwise pass as a registration by URI, although
  *       {@code guide} is typed {@code string} in the contract. A registration leaves out the guide field it does not
  *       carry; an explicit {@code null} for {@code guide} or {@code guideUri} is refused. So is one for a list
- *       ({@code commands}, {@code appliesToLanguages}), or a {@code null} item in one: an absent
+ *       ({@code commands}, {@code appliesToLanguages}, {@code references}), or a {@code null} item in one: an absent
  *       list is empty, and {@code null} is never a value (#292, #309, as {@link RegistrationBodyAdvice} does for the
  *       other registrations).
- *   <li><b>Closed.</b> A member the registration's schema does not declare is refused (ADR-0064).
  * </ul>
  *
- * <p>All three are {@code 422 validation_failed}. The body is handed on unchanged. A body that is not JSON is passed
+ * <p>Both are {@code 422 validation_failed}. The body is handed on unchanged. A body that is not JSON is passed
  * through, so the message converter answers it as it answers any unreadable body. Only the two toolguide
  * registrations are guarded; every other body is left to the converter.
  */
@@ -55,9 +53,6 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
 
     /** The registration's list members, looked at for a {@code null} after the guide fields. */
     private static final List<String> LISTS = RegistrationLists.of(ToolguideRegistration.class);
-
-    /** The members a toolguide registration may send; any other is refused (ADR-0064). */
-    private static final Set<String> MEMBERS = RegistrationLists.members(ToolguideRegistration.class);
 
     /** JSON bytes allowed per byte of guide: a JSON escape of one character is six. */
     private static final int ESCAPE_FACTOR = 6;
@@ -115,10 +110,6 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
             throws IOException {
         HttpHeaders headers = inputMessage.getHeaders();
         byte[] body = JsonBodyGuard.readBounded(inputMessage, bodyLimit, REFUSAL);
-        RegistrationLists.firstUnknown(body, headers.getContentType(), MEMBERS).ifPresent(member -> {
-            throw new CharterRefusal(
-                    RefusalCode.VALIDATION_FAILED, RegistrationLists.unknownMemberDetail("toolguide", member));
-        });
         explicitNull(body, headers.getContentType()).ifPresent(nul -> {
             throw GUIDE_FIELDS.contains(nul.member())
                     ? new CharterRefusal(

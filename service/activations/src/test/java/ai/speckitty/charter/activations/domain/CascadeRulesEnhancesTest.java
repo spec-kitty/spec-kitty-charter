@@ -11,7 +11,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * ADR-0059 D2 as amended on 2026-11-06 (A4): {@code enhances} is a cascade relation like the others, walked in its
+ * ADR-0059 D2 as amended on 2026-11-06 (R4): {@code enhances} is a cascade relation like the others, walked in its
  * declared direction, from the enhancer to its target. Selecting E with a cascade selects T, selecting T selects
  * nothing more, and deactivating E with a cascade unselects T unless another active artifact needs it.
  */
@@ -78,7 +78,7 @@ class CascadeRulesEnhancesTest {
         ActivationChange change = deactivate(selecting("tactic:E", "tactic:T"), E);
 
         assertThat(change.applied()).containsExactly(E, T);
-        assertThat(change.after().selected(TACTIC)).isEmpty();
+        assertThat(change.after().selected(TACTIC).orElseThrow()).isEmpty();
         assertThat(change.after().deactivated(TACTIC)).containsExactly("E");
     }
 

@@ -17,8 +17,9 @@ import org.springframework.stereotype.Service;
  * {@link DirectiveReadService}: both reads are verified by {@link ConsistentRead}, the inputs are digested before and
  * after the load, and the answer carries the digest both agree on.
  *
- * <p>A toolguide carries no relationship: its relationships are authored in the pack's graph documents and read through
- * the references read ({@link ArtifactReadService#references}), ADR-0064.
+ * <p>Unlike a directive, a toolguide mints no relationships: its {@code references} are bare citation strings, not
+ * typed edges, so {@link Toolguide#relationships()} is always empty and the read carries no originating edges. There is
+ * no walk half for this kind.
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its toolguides (the sanctioned list
  * path; it adds no method to the persistence service), while the single read is a point read through

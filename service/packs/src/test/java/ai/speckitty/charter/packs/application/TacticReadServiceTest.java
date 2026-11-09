@@ -147,7 +147,7 @@ class TacticReadServiceTest {
                 .packId(pack)
                 .schemaVersion("1.0")
                 .name(id)
-                .step(new TacticStep(id + " step", Optional.empty(), List.of()))
+                .step(new TacticStep(id + " step", Optional.empty(), List.of(), List.of()))
                 .build();
     }
 

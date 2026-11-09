@@ -46,7 +46,7 @@ class AssetEntityTest {
         assertThat(asset.label()).isEqualTo("Debrief logo");
         assertThat(asset.description()).isEmpty();
         assertThat(asset.schemaVersion()).isEmpty();
-        assertThat(asset.derivedRelationships()).isEmpty();
+        assertThat(asset.relationships()).isEmpty();
         assertThat(asset.urn().toString()).isEqualTo("asset:debrief-logo");
     }
 

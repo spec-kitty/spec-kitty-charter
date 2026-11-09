@@ -5,10 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -35,67 +38,93 @@ class ParadigmRegistrationServiceTest {
     private final WritePolicyGate policy = new PermissiveWritePolicyGate();
     private final ParadigmRegistrationService service = new ParadigmRegistrationService(store, store, policy);
 
-    // ---- FR-014 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0064) -----------
+    // ---- FR-014 / SC-001: register with relationships, read back value-equal ------------------------------------
 
     @Test
     void registersAParadigmWithItsFieldsAndReadsItBackValueEqual() {
-        Paradigm submitted = paradigm("clean-architecture", "Clean");
+        Paradigm submitted = paradigm("clean-architecture", "Clean", "ALPHA");
+        Relationship bodyEdge =
+                Relationship.of(submitted.urn(), new Urn(NodeKind.DIRECTIVE, "ALPHA"), RelationType.REQUIRES);
 
-        ParadigmRegistrationService.Registered result = service.registerParadigm(PACK, submitted, false, null);
+        ParadigmRegistrationService.Registered result =
+                service.registerParadigm(PACK, submitted, List.of(bodyEdge), false, null);
 
         assertThat(result.created()).isTrue();
         assertThat(result.target()).isEqualTo(submitted.urn());
         Paradigm persisted = paradigmIn(PACK, "clean-architecture");
         assertThat(persisted.name()).isEqualTo(submitted.name());
         assertThat(persisted.summary()).isEqualTo(submitted.summary());
-        assertThat(store.relationshipChanges)
-                .as(
-                        "a paradigm registration never writes the relationship shard: putPackRelationship is the only edge write")
-                .isZero();
+        assertThat(persisted.directiveRefs()).isEqualTo(submitted.directiveRefs());
+        assertThat(persisted.relationships()).isEqualTo(submitted.relationships());
+        assertThat(store.relationships(PACK)).contains(bodyEdge);
     }
 
     // ---- duplicate-id POST refused, distinct id accepted on the same fixture ------------------------------------
 
     @Test
     void aDuplicateIdPostIsAConflictWhileADistinctIdPostSucceedsOnTheSameFixture() {
-        service.registerParadigm(PACK, paradigm("clean-architecture", "first"), false, null);
+        service.registerParadigm(PACK, paradigm("clean-architecture", "first", null), List.of(), false, null);
         int commitsAfterFirst = store.commits;
 
-        assertThatThrownBy(() -> service.registerParadigm(PACK, paradigm("clean-architecture", "again"), false, null))
+        assertThatThrownBy(() -> service.registerParadigm(
+                        PACK, paradigm("clean-architecture", "again", null), List.of(), false, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
         assertThat(store.commits).as("the refused POST committed nothing").isEqualTo(commitsAfterFirst);
 
         // Same fixture, distinct id: accepted.
-        assertThatCode(() -> service.registerParadigm(PACK, paradigm("hexagonal", "ok"), false, null))
+        assertThatCode(() -> service.registerParadigm(PACK, paradigm("hexagonal", "ok", null), List.of(), false, null))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(commitsAfterFirst + 1);
     }
 
     @Test
     void aPutReplacesIdempotentlyRatherThanConflicting() {
-        service.registerParadigm(PACK, paradigm("clean-architecture", "first"), true, null);
+        service.registerParadigm(PACK, paradigm("clean-architecture", "first", null), List.of(), true, null);
         ParadigmRegistrationService.Registered replaced =
-                service.registerParadigm(PACK, paradigm("clean-architecture", "second"), true, null);
+                service.registerParadigm(PACK, paradigm("clean-architecture", "second", null), List.of(), true, null);
         assertThat(replaced.created()).isFalse();
         assertThat(paradigmIn(PACK, "clean-architecture").name()).isEqualTo("second");
+    }
+
+    // ---- SC-003 control: dual-write violation refused (422), pack unchanged, well-formed succeeds ---------------
+
+    @Test
+    void aBodyRelationshipNotAuthoredFromTheParadigmIsRefusedAndTheWellFormedOneSucceeds() {
+        Paradigm paradigm = paradigm("clean-architecture", "Clean", null);
+        Relationship foreign = Relationship.of(
+                new Urn(NodeKind.PARADIGM, "other"), new Urn(NodeKind.DIRECTIVE, "ALPHA"), RelationType.REQUIRES);
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerParadigm(PACK, paradigm, List.of(foreign), true, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
+        assertThat(store.commits)
+                .as("a refused registration commits nothing (NFR-002)")
+                .isEqualTo(before);
+
+        Relationship own = Relationship.of(paradigm.urn(), new Urn(NodeKind.DIRECTIVE, "ALPHA"), RelationType.REQUIRES);
+        assertThatCode(() -> service.registerParadigm(PACK, paradigm, List.of(own), true, null))
+                .doesNotThrowAnyException();
+        assertThat(store.commits).isEqualTo(before + 1);
     }
 
     // ---- FR-012: optimistic concurrency, stale refused, fresh accepted ------------------------------------------
 
     @Test
     void aParadigmWriteWithAStaleIfMatchIsRefusedWhileAFreshOneSucceeds() {
-        service.registerParadigm(PACK, paradigm("clean-architecture", "x"), true, null);
+        service.registerParadigm(PACK, paradigm("clean-architecture", "x", null), List.of(), true, null);
 
         assertThatThrownBy(() -> service.registerParadigm(
-                        PACK, paradigm("clean-architecture", "y"), true, "sha256:" + "0".repeat(64)))
+                        PACK, paradigm("clean-architecture", "y", null), List.of(), true, "sha256:" + "0".repeat(64)))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
 
         assertThatCode(() -> service.registerParadigm(
                         PACK,
-                        paradigm("clean-architecture", "z"),
+                        paradigm("clean-architecture", "z", null),
+                        List.of(),
                         true,
                         store.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
@@ -104,7 +133,7 @@ class ParadigmRegistrationServiceTest {
     @Test
     void anUnknownPackIsANotFound() {
         assertThatThrownBy(() -> service.registerParadigm(
-                        new PackIdentifier("ghost"), paradigm("clean-architecture", "x"), true, null))
+                        new PackIdentifier("ghost"), paradigm("clean-architecture", "x", null), List.of(), true, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
@@ -116,14 +145,17 @@ class ParadigmRegistrationServiceTest {
                 PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty());
     }
 
-    private static Paradigm paradigm(String id, String name) {
-        return Paradigm.builder()
+    private static Paradigm paradigm(String id, String name, String directiveRef) {
+        Paradigm.Builder builder = Paradigm.builder()
                 .id(new ParadigmIdentifier(id))
                 .packId(PACK)
                 .schemaVersion("1.0")
                 .name(name)
-                .summary("Summary of " + id)
-                .build();
+                .summary("Summary of " + id);
+        if (directiveRef != null) {
+            builder.directiveRef(directiveRef);
+        }
+        return builder.build();
     }
 
     private Paradigm paradigmIn(PackIdentifier pack, String id) {
@@ -139,7 +171,6 @@ class ParadigmRegistrationServiceTest {
                 Map.of(PACK, Pack.builder().id(PACK).descriptor(descriptor()).build()));
         private final Map<PackIdentifier, List<Relationship>> edges = new HashMap<>();
         private int commits;
-        private int relationshipChanges;
 
         @Override
         public Pack load(PackIdentifier pack) {
@@ -171,12 +202,13 @@ class ParadigmRegistrationServiceTest {
         @Override
         public PackRevision commit(PackIdentifier pack, String ifMatch, PackWriteStore.Change change) {
             packs.put(pack, change.revalidated());
-            change.relationships().ifPresent(persisted -> {
-                edges.put(pack, new ArrayList<>(persisted));
-                relationshipChanges++;
-            });
+            change.relationships().ifPresent(persisted -> edges.put(pack, new ArrayList<>(persisted)));
             commits++;
             return currentRevision(pack);
+        }
+
+        List<Relationship> relationships(PackIdentifier pack) {
+            return List.copyOf(edges.getOrDefault(pack, List.of()));
         }
     }
 }

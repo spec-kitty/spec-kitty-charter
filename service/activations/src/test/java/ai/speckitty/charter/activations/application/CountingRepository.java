@@ -6,7 +6,6 @@ import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,11 +17,6 @@ final class CountingRepository implements ActivationRepository {
     private final InMemoryActivationRepository delegate = new InMemoryActivationRepository();
     private int replaces;
     private boolean loseNext;
-
-    @Override
-    public List<StoredActivation> list() {
-        return delegate.list();
-    }
 
     @Override
     public Optional<StoredActivation> find(ActivationId id) {

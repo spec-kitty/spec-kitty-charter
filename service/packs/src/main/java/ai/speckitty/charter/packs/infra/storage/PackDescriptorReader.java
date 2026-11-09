@@ -70,8 +70,7 @@ final class PackDescriptorReader {
                                 optional(root, "pack_drg"),
                                 optional(root, "mutability_policy")),
                         dependencies(root),
-                        overrides,
-                        optional(root, "schema_version")));
+                        overrides));
     }
 
     /** The declared dependencies; the schema has already closed every entry. */

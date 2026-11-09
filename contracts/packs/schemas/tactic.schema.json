@@ -2,6 +2,56 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/tactic.schema.json",
   "$defs": {
+    "ArtifactKind": {
+      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "template",
+        "asset",
+        "glossary_pack",
+        "anti_pattern",
+        "skill"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "TacticReference": {
+      "additionalProperties": false,
+      "description": "Cross-artifact reference within a tactic or step.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "id": {
+          "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z][A-Za-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "title": "When",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "id",
+        "when"
+      ],
+      "title": "TacticReference",
+      "type": "object"
+    },
     "TacticStep": {
       "additionalProperties": false,
       "description": "A single step within a tactic.",
@@ -27,6 +77,13 @@
             "type": "string"
           },
           "title": "Examples",
+          "type": "array"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/TacticReference"
+          },
+          "title": "References",
           "type": "array"
         }
       },
@@ -86,6 +143,13 @@
         "type": "string"
       },
       "title": "Applies To Languages",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/TacticReference"
+      },
+      "title": "References",
       "type": "array"
     },
     "notes": {

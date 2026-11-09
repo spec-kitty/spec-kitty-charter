@@ -38,6 +38,7 @@ enum ToolguideYaml implements YamlFormat<ToolguideDso> {
                 strings(root, "commands"),
                 strings(root, "applies_to_languages"),
                 optional(root, "last_updated"),
+                strings(root, "references"),
                 Optional.empty());
     }
 
@@ -53,6 +54,7 @@ enum ToolguideYaml implements YamlFormat<ToolguideDso> {
                 .strings("commands", toolguide.commands())
                 .strings("applies_to_languages", toolguide.appliesToLanguages())
                 .scalar("last_updated", toolguide.lastUpdated())
+                .strings("references", toolguide.references())
                 .dump();
     }
 }

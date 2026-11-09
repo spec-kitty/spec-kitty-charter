@@ -2,14 +2,12 @@ package ai.speckitty.charter.deployable.bdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,11 +23,8 @@ import tools.jackson.databind.ObjectMapper;
  * The step vocabulary of the activation register, its closure read and its per-artifact writes
  * (activation-register.feature, activation-selections.feature, ADR-0020 D3-D6, ADR-0059 D4-D5): storing an activation as
  * a precondition, the conditional requests a register answers, a write conditional on the stored {@code ETag}, and the
- * assertions on a list's size or ids, on a missing member and on an {@code ETag}. The stored-file steps of
- * activation-kind-model.feature reach the register's bytes past the API: a document is seeded as the store keeps it (a
- * {@code schemaVersion: 1} one included), and the bytes are remembered and compared, so a read is seen to write nothing
- * and a write to store version 2. Every scenario shares one Spring context, so the in-memory register is emptied before
- * each one.
+ * assertions on a list's size or ids, on a missing member and on an {@code ETag}. Every scenario shares one Spring
+ * context, so the in-memory register is emptied before each one.
  */
 public class ActivationSteps {
 
@@ -40,7 +35,6 @@ public class ActivationSteps {
     private final ScenarioHttp http;
     private final ActivationRepository repository;
     private @Nullable String storedETag;
-    private byte @Nullable [] rememberedFile;
 
     /**
      * The steps over the scenario's HTTP seam and the service's activation register.
@@ -64,67 +58,18 @@ public class ActivationSteps {
         }
     }
 
-    /**
-     * The {@code ETag} the last stored activation was stored with, which is its revision, quoted.
-     *
-     * @return the quoted tag
-     */
-    public String storedETag() {
-        return stored();
-    }
-
     @Given("the project activates the pack(s) {string}")
     public void projectActivates(String packIds) throws Exception {
         String packs = Arrays.stream(packIds.split(","))
                 .map(String::strip)
                 .map(id -> "{\"packId\":\"" + id + "\"}")
                 .collect(Collectors.joining(","));
-        store(PROJECT, "{\"schemaVersion\":2,\"packs\":[" + packs + "]}");
+        store(PROJECT, "{\"schemaVersion\":1,\"packs\":[" + packs + "]}");
     }
 
     @Given("the activation {string} holds:")
     public void activationHolds(String activationId, String body) throws Exception {
         store("/activations/" + activationId, body);
-    }
-
-    /** Holds the bytes as the store keeps them, bypassing the API, so a version 1 document can be seeded. */
-    @Given("the stored file of the activation {string} holds:")
-    public void storedFileHolds(String activationId, String bytes) {
-        register().putStoredBytes(new ActivationId(activationId), bytes.getBytes(StandardCharsets.UTF_8));
-    }
-
-    @When("I remember the stored file of the activation {string}")
-    public void rememberStoredFile(String activationId) {
-        rememberedFile = storedFile(activationId);
-    }
-
-    @Then("the stored file of the activation {string} is the remembered one")
-    public void storedFileIsRemembered(String activationId) {
-        assertThat(new String(storedFile(activationId), StandardCharsets.UTF_8))
-                .isEqualTo(new String(remembered(), StandardCharsets.UTF_8));
-    }
-
-    @Then("the stored file of the activation {string} differs from the remembered one")
-    public void storedFileDiffers(String activationId) {
-        assertThat(new String(storedFile(activationId), StandardCharsets.UTF_8))
-                .isNotEqualTo(new String(remembered(), StandardCharsets.UTF_8));
-    }
-
-    @Then("the stored file of the activation {string} has the field {string} equal to {int}")
-    public void storedFileField(String activationId, String pointer, int value) {
-        JsonNode field = JSON.readTree(storedFile(activationId)).at(pointer);
-        assertThat(field.isInt()).as("%s is an integer", pointer).isTrue();
-        assertThat(field.asInt()).isEqualTo(value);
-    }
-
-    /** A substring of a string field, such as the replacement a violation's detail names. */
-    @Then("the field at {string} contains {string}")
-    public void fieldContains(String pointer, String text) throws Exception {
-        JsonNode field = JSON.readTree(http.body()).at(pointer);
-        assertThat(field.isString())
-                .as("%s is a string: %s", pointer, http.body())
-                .isTrue();
-        assertThat(field.asString()).contains(text);
     }
 
     @When("I GET {string} with If-None-Match the stored ETag")
@@ -184,8 +129,7 @@ public class ActivationSteps {
                     item.isString()
                             ? item.asString()
                             : item.path("kind").asString() + ":"
-                                    + item.path(item.has("id") ? "id" : "artifactId")
-                                            .asString());
+                                    + item.path("artifactId").asString());
         }
         assertThat(held)
                 .as("the ids of %s", pointer)
@@ -220,26 +164,6 @@ public class ActivationSteps {
                 .as("%s is a string: %s", pointer, http.body())
                 .isTrue();
         assertThat(http.response().getHeader(name)).isEqualTo("\"" + field.asString() + "\"");
-    }
-
-    private InMemoryActivationRepository register() {
-        if (repository instanceof InMemoryActivationRepository inMemory) {
-            return inMemory;
-        }
-        throw new IllegalStateException("the scenarios store activations in memory, not in " + repository);
-    }
-
-    private byte[] storedFile(String activationId) {
-        return register()
-                .storedBytes(new ActivationId(activationId))
-                .orElseThrow(() -> new AssertionError("no file is stored for the activation " + activationId));
-    }
-
-    private byte[] remembered() {
-        if (rememberedFile == null) {
-            throw new IllegalStateException("no stored file has been remembered yet");
-        }
-        return rememberedFile;
     }
 
     private String stored() {

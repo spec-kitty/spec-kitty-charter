@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,16 +27,5 @@ public final class PermissiveWritePolicyGate implements WritePolicyGate {
     @Override
     public void authorize(Pack pack, Operation operation, Urn target) {
         // Permissive default: every write is allowed. WP06 replaces this with the ADR-0012 policy as @Primary.
-    }
-
-    /**
-     * Authorizes every write of a whole-pack registration unconditionally.
-     *
-     * @param staged the staged pack
-     * @param writes the writes of the registration
-     */
-    @Override
-    public void authorizeStaged(Pack staged, List<Write> writes) {
-        // Permissive default: every write is allowed.
     }
 }

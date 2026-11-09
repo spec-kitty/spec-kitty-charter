@@ -17,8 +17,9 @@ import org.springframework.stereotype.Service;
  * slice. It mirrors {@link DirectiveReadService}: both reads are verified by {@link ConsistentRead}, the inputs are
  * digested before and after the load, and the answer carries the digest both agree on.
  *
- * <p>A styleguide carries no relationship: its relationships are authored in the pack's graph documents and read through
- * the references read ({@link ArtifactReadService#references}), ADR-0064.
+ * <p>Each returned {@link Styleguide} carries its {@link Styleguide#relationships() relationships} — but a styleguide
+ * mints none (its references are bare citation strings, ADR-0024/0025), so the list is always empty. There is no walk
+ * half for this kind: the read is value-equality only.
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its styleguides (the prompt's
  * sanctioned list path; it adds no method to the persistence service), while the single read is a point read through
@@ -73,7 +74,8 @@ public final class StyleguideReadService {
     }
 
     /**
-     * One styleguide of a pack, with the digest of the inputs it was read from (FR-013).
+     * One styleguide of a pack, with the digest of the inputs it was read from, its relationships (always empty for a
+     * styleguide, FR-013).
      *
      * @param pack the pack's identity
      * @param styleguide the styleguide's identity

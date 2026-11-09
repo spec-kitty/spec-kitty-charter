@@ -53,26 +53,26 @@ public interface CharterArtifact {
     Optional<String> description();
 
     /**
-     * The relationships this artefact derives from its own runtime data: never authored, refused on write, and never
-     * compared by the round trip. No artifact field authors a relationship: a pack's relationships are authored only
-     * in its graph documents (ADR-0064). Today only a guard derives one, {@code implemented_by} its in-pack asset; every
-     * returned relation is {@linkplain RelationType#derived() derived}.
+     * The relationships this artefact is the <em>effective origin</em> of (ADR-0025 Decision 3): every relationship
+     * whose {@code from} is this artefact, plus every {@link ai.speckitty.charter.kernel.domain.Directionality#BIDIRECTIONAL}
+     * relationship whose {@code to} is this artefact. A purely directed relationship with this artefact as {@code to}
+     * is <strong>not</strong> returned, so a walk never climbs back up a {@code requires}. The relations are the interim
+     * mapping (see {@code ArtifactEdges}): typed references mint {@code suggests}, bare references mint {@code requires}.
      *
-     * @return the derived relationships; empty for every kind but a guard
+     * @return the relationships; empty when the kind mints none, as for a styleguide
      */
-    default List<Relationship> derivedRelationships() {
-        return List.of();
-    }
+    List<Relationship> relationships();
 
     /**
-     * Every reference this artefact writes outside its pack's graph documents: the target of each
-     * {@linkplain #derivedRelationships() derived relationship}, so the compose's reference check covers it as it covers
-     * every graph-document edge.
+     * Every reference this artefact writes, bare or pack-qualified: the one list the compose's reference check reads.
+     * It is the target of each {@linkplain #relationships() relationship} the walk follows, so by default the check and
+     * the walk cannot disagree; a kind that keeps references it mints no relationship for (a procedure or a mission
+     * type, pending #189) adds them here, and the check then covers them too.
      *
      * @return the references, in the artefact's order; empty when it writes none
      */
     default List<PackQualifiedReference> writtenReferences() {
-        return derivedRelationships().stream()
+        return relationships().stream()
                 .map(Relationship::toReference)
                 .distinct()
                 .toList();

@@ -2,7 +2,7 @@
 title: "Test suite assessment, 2026-11-03"
 description: How good the charter's test suite is, measured against the pack testing rubric, and whether to add SonarCloud, with ranked weaknesses and follow-up issues.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -128,9 +128,7 @@ are counted as they run, and the times are summed per suite, not wall clock.
   - in `openPacksRoundTrip` (part of `check`), through the 16 classes tagged `open-packs`, against
     the pinned open-packs corpus.
 - **The whole-pack gate** is `wholePackRoundTrip`, tagged `whole-pack`. It runs in
-  `whole-pack.yml`, outside `check` ~~and outside the required gate, by design~~. *Clarified 2026-11-05:*
-  the operator ruled on epic #186 that it is required; `CI gate / gate` now calls `whole-pack.yml`
-  for its `wholepack` group, still outside `check`. Its expected-red lists
+  `whole-pack.yml`, outside `check` and outside the required gate, by design. Its expected-red lists
   ratchet in both directions:
   - `WholePackExpectation.java:291-381` fails on an unlisted red;
   - it fails `UNEXPECTEDLY_GREEN` on a listed entry that passes;
@@ -252,8 +250,7 @@ It fails closed, it honors `pr:pause-ci`, and per
 report as the `coverage` artifact. A `verify` run on `main` takes about 5 minutes.
 
 *Clarified 2026-11-04:* since 2026-11-04 ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/))
-the `timingBudgets` step is report-only and runs each budget in its own JVM. *Clarified 2026-11-07:* the budgets moved
-to the nightly `timing-nightly.yml` workflow; `service.yml` now proceeds from `verifyAll` to its artifact uploads.
+the `timingBudgets` step is report-only and runs each budget in its own JVM.
 
 | Gate family | Present today | Blocking |
 | --- | --- | --- |

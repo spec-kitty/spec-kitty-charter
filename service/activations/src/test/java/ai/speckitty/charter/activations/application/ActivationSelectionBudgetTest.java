@@ -95,6 +95,7 @@ class ActivationSelectionBudgetTest {
             denied.add("t" + i);
         }
         ActivationDocument document = ActivationDocument.builder()
+                .activatedKinds(List.of(ArtifactKind.TACTIC))
                 .deactivated(ArtifactKind.TACTIC, denied)
                 .build()
                 .document();

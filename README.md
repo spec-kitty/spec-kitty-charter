@@ -72,15 +72,6 @@ needs Java 25, the full Git history and a `spec-kitty-open-packs` checkout besid
 (or `-PopenPacksDir=<path>`, absolute or relative to the repository root). `packs/internal` and `packs/qa` are not
 committed: run `./gradlew syncPacks` once per worktree to fetch them from the pinned open-packs commit. Details: [Building the service](docs/guides/service-build.md).
 
-### Host requirement: git 2.50.1 or later
-
-Registering a pack from a git repository (`POST /packs` with a git source) runs the system `git` as a host binary. It
-must be version 2.50.1 or later, on the `PATH` or at `charter.pack-sources.git.executable`. The service never uses JGit
-and never checks out a work tree. Without such a git, the git source answers `503 pack_source_unavailable` and the other
-sources work. A container image must carry git ([Run the service in a container](docs/guides/run-in-a-container.md)).
-Registration itself is off by default (`charter.registration.enabled`). Contributors: the `git-host` tests run only with
-such a git, in the `git-source` CI job; `check` and `verifyAll` use a shim.
-
 ## Documentation
 
 The [`docs/`](docs/README.md) tree follows the

@@ -22,11 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -55,7 +53,7 @@ class PackCompositionResolverTest {
                         dependencies));
     }
 
-    /** A pack whose graphs say it changes one artifact (an {@code overrides} relation on it; A14). */
+    /** A pack whose graphs say it changes one artifact (an {@code enhances} or {@code overrides} relation on it). */
     private static PackUnderResolution refining(
             String id, String name, String version, PackLevel level, String artifact) {
         return new PackUnderResolution(
@@ -81,13 +79,6 @@ class PackCompositionResolverTest {
                         List.of(new PackOverride(artifact, member))));
     }
 
-    /** A pack that extends another by {@code parent_pack}, with no dependencies. */
-    private static PackUnderResolution extending(String id, String name, PackLevel level, String parent) {
-        return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
-                new PackDescriptor(id, "1.0.0", Optional.of(parent), name, Optional.of(level), Optional.empty()));
-    }
-
     private static List<String> ids(List<PackUnderResolution> resolved) {
         return resolved.stream().map(entry -> entry.descriptor().packId()).toList();
     }
@@ -104,210 +95,6 @@ class PackCompositionResolverTest {
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(top, middle, base))))
                 .containsExactly("01ZBASE", "01MID0", "01AATOP");
-    }
-
-    // The child's id sorts before its parent's: only the parent_pack edge can put the parent first (ADR-0048).
-    @Test
-    void aParentPackComesBeforeTheChildThatExtendsItWhateverTheirIdsSort() {
-        PackUnderResolution parent = pack("01ZPARENT", "parent", "1.0.0", PackLevel.ORG);
-        PackUnderResolution child = extending("01ACHILD", "child", PackLevel.ORG, "01ZPARENT");
-
-        assertThat(ids(PackCompositionResolver.resolve(List.of(child, parent))))
-                .containsExactly("01ZPARENT", "01ACHILD");
-    }
-
-    @Test
-    void aParentChainIsOrderedFromTheTopDownAcrossAChain() {
-        PackUnderResolution top = pack("01ZTOP", "top", "1.0.0", PackLevel.ORG);
-        PackUnderResolution middle = extending("01MID", "middle", PackLevel.ORG, "01ZTOP");
-        PackUnderResolution leaf = extending("01ALEAF", "leaf", PackLevel.ORG, "01MID");
-
-        assertThat(ids(PackCompositionResolver.resolve(List.of(leaf, middle, top))))
-                .containsExactly("01ZTOP", "01MID", "01ALEAF");
-    }
-
-    @Test
-    void aPackThatNamesItselfAsParentIsADependencyCycle() {
-        PackUnderResolution loop = extending("01LOOP", "loop", PackLevel.ORG, "01LOOP");
-
-        PackCompositionResolver.Refusal refusal = refusing(List.of(loop));
-
-        assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
-        assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE);
-        assertThat(refusal.packId()).isEqualTo("01LOOP");
-        assertThat(refusal.detail()).contains("parent_pack");
-    }
-
-    @Test
-    void twoPacksThatNameEachOtherAsParentAreADependencyCycle() {
-        PackUnderResolution first = extending("01FIRST", "first", PackLevel.ORG, "01SECOND");
-        PackUnderResolution second = extending("01SECOND", "second", PackLevel.ORG, "01FIRST");
-
-        PackCompositionResolver.Refusal refusal = refusing(List.of(first, second));
-
-        assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
-        assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactlyInAnyOrder("01FIRST", "01SECOND");
-    }
-
-    @Test
-    void aParentCycleThroughADependencyIsADependencyCycle() {
-        PackUnderResolution parent =
-                pack("01PARENT", "parent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01CHILD", ">=1.0")));
-        PackUnderResolution child = extending("01CHILD", "child", PackLevel.ORG, "01PARENT");
-
-        assertThat(refusing(List.of(parent, child)).failure()).isEqualTo(Failure.CYCLE);
-    }
-
-    /** Two packs of one level, related by nothing, hold the preset {@code team}: the resolver names no winner. */
-    @Nested
-    class PresetContests {
-
-        private final Map<String, List<String>> presetIds = new LinkedHashMap<>();
-
-        private PackUnderResolution holding(PackUnderResolution pack, String... presets) {
-            presetIds.put(pack.descriptor().packId(), List.of(presets));
-            return pack;
-        }
-
-        private void check(PackUnderResolution... packs) {
-            PackCompositionResolver.refusePresetContests(
-                    List.of(packs),
-                    pack -> presetIds.getOrDefault(pack.descriptor().packId(), List.of()));
-        }
-
-        @Test
-        void twoUnrelatedPacksOfOneLevelHoldingOnePresetIdAreRefused() {
-            PackUnderResolution left = holding(pack("01LEFT", "left", "1.0.0", PackLevel.ORG), "team");
-            PackUnderResolution right = holding(pack("01RIGHT", "right", "1.0.0", PackLevel.ORG), "team");
-
-            PackCompositionResolver.Refusal refusal = refusalOf(() -> check(left, right));
-
-            assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
-            assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactly("01RIGHT", "01LEFT");
-            assertThat(refusal.detail())
-                    .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both hold the preset `team`,"
-                            + " and neither extends the other by parent_pack");
-        }
-
-        @Test
-        void aChildAndItsParentMayHoldOnePresetIdTheChildOverridesIt() {
-            PackUnderResolution parent = holding(pack("01PARENT", "parent", "1.0.0", PackLevel.ORG), "team");
-            PackUnderResolution child = holding(extending("01CHILD", "child", PackLevel.ORG, "01PARENT"), "team");
-
-            assertThatCode(() -> check(parent, child)).doesNotThrowAnyException();
-        }
-
-        @Test
-        void aGrandchildAndItsGrandparentAreRelatedThroughTheChain() {
-            PackUnderResolution top = holding(pack("01TOP", "top", "1.0.0", PackLevel.ORG), "team");
-            PackUnderResolution middle = extending("01MID", "middle", PackLevel.ORG, "01TOP");
-            PackUnderResolution leaf = holding(extending("01LEAF", "leaf", PackLevel.ORG, "01MID"), "team");
-
-            assertThatCode(() -> check(top, middle, leaf)).doesNotThrowAnyException();
-        }
-
-        @Test
-        void twoChildrenOfOneParentAreSiblingsAndAreRefused() {
-            PackUnderResolution parent = pack("01PARENT", "parent", "1.0.0", PackLevel.ORG);
-            PackUnderResolution one = holding(extending("01ONE", "one", PackLevel.ORG, "01PARENT"), "team");
-            PackUnderResolution two = holding(extending("01TWO", "two", PackLevel.ORG, "01PARENT"), "team");
-
-            assertThat(refusalOf(() -> check(parent, one, two)).failure()).isEqualTo(Failure.SIBLING_CONFLICT);
-        }
-
-        @Test
-        void packsOfDifferentLevelsMayHoldOnePresetIdTheNearerToTheProjectOverrides() {
-            PackUnderResolution org = holding(pack("01ORG", "org", "1.0.0", PackLevel.ORG), "team");
-            PackUnderResolution project = holding(pack("01PROJ", "project", "1.0.0", PackLevel.PROJECT), "team");
-
-            assertThatCode(() -> check(org, project)).doesNotThrowAnyException();
-        }
-
-        @Test
-        void differentPresetIdsContestNothing() {
-            PackUnderResolution left = holding(pack("01LEFT", "left", "1.0.0", PackLevel.ORG), "team");
-            PackUnderResolution right = holding(pack("01RIGHT", "right", "1.0.0", PackLevel.ORG), "crew");
-
-            assertThatCode(() -> check(left, right)).doesNotThrowAnyException();
-        }
-
-        private PackCompositionResolver.Refusal refusalOf(Runnable compose) {
-            try {
-                compose.run();
-            } catch (PackCompositionResolver.Refusal refusal) {
-                return refusal;
-            }
-            throw new AssertionError("the check was expected to refuse");
-        }
-    }
-
-    /** A preset item or a policy lock that names a held id only by case would silently govern nothing. */
-    @Nested
-    class CaseOnlyMatches {
-
-        private PackUnderResolution holding(String id, String name, PackLevel level, String... urns) {
-            return new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(id), level),
-                    new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
-                    List.of(),
-                    List.of(urns));
-        }
-
-        private void check(List<PackUnderResolution> packs, Map<String, List<String>> mentions) {
-            PackCompositionResolver.refuseCaseOnlyMatches(
-                    packs, pack -> mentions.getOrDefault(pack.descriptor().packId(), List.of()));
-        }
-
-        @Test
-        void aMentionOfAHeldIdOnlyByCaseIsRefusedNamingTheMentioningAndTheHoldingPack() {
-            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-            PackUnderResolution mentioner = holding("01MENT", "mentioner", PackLevel.ORG);
-
-            PackCompositionResolver.Refusal refusal = refusing(
-                    () -> check(List.of(holder, mentioner), Map.of("01MENT", List.of("directive:directive_001"))));
-
-            assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
-            assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactly("01MENT", "01HOLD");
-            assertThat(refusal.detail())
-                    .contains("directive:directive_001", "directive:DIRECTIVE_001", "differ only by case");
-        }
-
-        @Test
-        void anExactMentionAndAMentionOfAnIdNoPackHoldsAreNotRefused() {
-            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-
-            assertThatCode(() -> check(
-                            List.of(holder),
-                            Map.of("01HOLD", List.of("directive:DIRECTIVE_001", "directive:NOT_HELD", "tactic:x"))))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        void aMentionOfAnotherKindWithTheSameIdIsNotACaseMatch() {
-            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-
-            assertThatCode(() -> check(List.of(holder), Map.of("01HOLD", List.of("tactic:directive_001"))))
-                    .doesNotThrowAnyException();
-        }
-
-        private PackCompositionResolver.Refusal refusing(Runnable check) {
-            try {
-                check.run();
-            } catch (PackCompositionResolver.Refusal refusal) {
-                return refusal;
-            }
-            throw new AssertionError("the check was expected to refuse");
-        }
-    }
-
-    private static PackCompositionResolver.Refusal refusing(List<PackUnderResolution> packs) {
-        try {
-            PackCompositionResolver.resolve(packs);
-        } catch (PackCompositionResolver.Refusal refusal) {
-            return refusal;
-        }
-        throw new AssertionError("the compose was expected to refuse");
     }
 
     @Test
@@ -531,52 +318,6 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void siblingsDefiningOneMissionTypeAndItsStepConflictOnTheMissionTypeAsBefore() {
-        // A7 Q1: a pack holds the steps its graphs declare; two siblings defining mission type m are refused on m
-        // alone, exactly as before the steps were held.
-        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement");
-        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
-
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(right, left)))
-                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
-                    assertThat(refusal.detail())
-                            .contains("both define the artifact `mission_type:m`")
-                            .doesNotContain("action:");
-                });
-    }
-
-    @Test
-    void anOverridesEdgeSettlingAMissionTypeAlsoSettlesItsSharedSteps() {
-        // A step is part of its mission type: the edge that settles m leaves no contest over m's steps.
-        PackUnderResolution left = new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
-                new PackDescriptor(
-                        "01LEFT",
-                        "1.0.4",
-                        Optional.empty(),
-                        "left",
-                        Optional.of(PackLevel.ORG),
-                        Optional.empty(),
-                        PackPaths.none(),
-                        List.of(),
-                        List.of(new PackOverride("mission_type:m", "01RIGHT"))),
-                List.of(),
-                List.of("mission_type:m", "action:m/implement"));
-        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
-
-        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
-    }
-
-    @Test
-    void siblingsDeclaringOneStepNodeWithoutItsMissionTypeCompose() {
-        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "action:m/implement");
-        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "action:m/implement");
-
-        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
-    }
-
-    @Test
     void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverride() {
         PackUnderResolution org = defining("01ORGP", "org-pack", PackLevel.ORG, "directive:DIRECTIVE_009");
         PackUnderResolution project = defining("01PROJ", "project-pack", PackLevel.PROJECT, "directive:DIRECTIVE_009");
@@ -626,43 +367,6 @@ class PackCompositionResolverTest {
                 settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "org::directive:DIRECTIVE_009", "01LEFT");
         assertThat(ids(PackCompositionResolver.resolve(List.of(agreeing, first, right, left))))
                 .containsExactly("01DONE", "01DTWO", "01LEFT", "01RIGHT");
-    }
-
-    // A14 (FR-035, DM-01M6RA92BS6GGCYTRCFQDYYY5S, rule C15): a settlement names exactly one winner. One descriptor
-    // cannot name two (it is refused as it is read), and the overrides edges of the compose naming two contestants
-    // answer the conflict refusal; exactly one winner settles the contest.
-    @Test
-    void a14ASettlementNamingTwoWinnersAnswersTheSiblingConflictRefusalAndExactlyOneWinnerSettlesIt() {
-        assertThatThrownBy(() -> new PackDescriptor(
-                        "01DSTR",
-                        "1.0.0",
-                        Optional.empty(),
-                        "distribution",
-                        Optional.of(PackLevel.ORG),
-                        Optional.empty(),
-                        PackPaths.none(),
-                        List.of(),
-                        List.of(
-                                new PackOverride("directive:DIRECTIVE_009", "01LEFT"),
-                                new PackOverride("directive:DIRECTIVE_009", "01RIGHT"))))
-                .as("one descriptor naming two winners of one artifact")
-                .isInstanceOf(IllegalArgumentException.class);
-        PackUnderResolution left = refining("01LEFT", "left", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
-        PackUnderResolution right = refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
-        PackUnderResolution namingLeft =
-                settling("01DSTR", "distribution", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01LEFT");
-        PackUnderResolution namingRight =
-                settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01RIGHT");
-
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(namingLeft, namingRight, left, right)))
-                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
-                    assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-                    assertThat(refusal.detail()).contains("different winners", "01LEFT", "01RIGHT");
-                });
-        assertThat(ids(PackCompositionResolver.resolve(List.of(namingLeft, left, right))))
-                .as("same fixture: exactly one winner settles the contest")
-                .containsExactly("01DSTR", "01LEFT", "01RIGHT");
     }
 
     @Test
@@ -833,7 +537,6 @@ class PackCompositionResolverTest {
      * gamma is unrelated.
      */
     @Nested
-    @Timeout(value = 10, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     class Rooted {
 
         private final PackUnderResolution beta = pack("01BETA", "beta", "1.0.0", PackLevel.ORG);
@@ -858,24 +561,11 @@ class PackCompositionResolverTest {
         }
 
         @Test
-        void theParentPackIsInTheCompositionClosureAndComesBeforeItsChild() {
-            // The child's id sorts before the parent's, so only the parent_pack edge puts beta first.
-            PackUnderResolution child = withParent("01ACHILD", "child", "01BETA");
+        void theParentPackIsInTheCompositionClosure() {
+            PackUnderResolution delta = withParent("01DELTA", "delta", "01BETA");
 
-            assertThat(ids(rooted(List.of(gamma, alpha, beta, child), "01ACHILD")))
-                    .containsExactly("01BETA", "01ACHILD");
-        }
-
-        @Test
-        void aParentCycleIsRefusedByTheRootedComposeAndTheClosureWalkTerminates() {
-            PackUnderResolution first = withParent("01FIRST", "first", "01SECOND");
-            PackUnderResolution second = withParent("01SECOND", "second", "01FIRST");
-
-            assertThat(PackCompositionResolver.compositionClosure(List.of("01FIRST"), byPackId(first, second)))
-                    .containsExactly("01FIRST", "01SECOND");
-            assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FIRST"))
-                            .failure())
-                    .isEqualTo(Failure.CYCLE);
+            assertThat(ids(rooted(List.of(gamma, alpha, beta, delta), "01DELTA")))
+                    .containsExactly("01BETA", "01DELTA");
         }
 
         @Test

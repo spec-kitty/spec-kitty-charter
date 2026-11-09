@@ -20,6 +20,7 @@ import java.util.Optional;
  * @param requiresSubstantiveSpec whether {@code requires_substantive_spec: true} is written
  * @param pathConventions the {@code path_conventions} in written order, empty when absent
  * @param expectedOutputArtifacts the type's {@code expected_output_artifacts}
+ * @param references the type's {@code references}
  * @param steps the {@code steps}, in order
  * @param onDemandSteps the {@code on_demand_steps}, in written order
  */
@@ -32,6 +33,7 @@ record MissionTypeDso(
         boolean requiresSubstantiveSpec,
         Map<String, String> pathConventions,
         List<Artifact> expectedOutputArtifacts,
+        List<Reference> references,
         List<Step> steps,
         List<Step> onDemandSteps) {
 
@@ -46,6 +48,7 @@ record MissionTypeDso(
      * @param requiresSubstantiveSpec the flag
      * @param pathConventions the conventions, possibly empty
      * @param expectedOutputArtifacts the type's outputs
+     * @param references the type's references
      * @param steps the steps
      * @param onDemandSteps the on-demand steps
      */
@@ -57,6 +60,7 @@ record MissionTypeDso(
         Objects.requireNonNull(content, "content");
         pathConventions = Collections.unmodifiableMap(new LinkedHashMap<>(pathConventions));
         expectedOutputArtifacts = List.copyOf(expectedOutputArtifacts);
+        references = List.copyOf(references);
         steps = List.copyOf(steps);
         onDemandSteps = List.copyOf(onDemandSteps);
     }
@@ -78,6 +82,7 @@ record MissionTypeDso(
                 requiresSubstantiveSpec,
                 pathConventions,
                 expectedOutputArtifacts,
+                references,
                 newSteps,
                 newOnDemandSteps);
     }
@@ -93,6 +98,7 @@ record MissionTypeDso(
      * @param guidelinesPath the {@code guidelines_path}, when present
      * @param expectedInputArtifacts the {@code expected_input_artifacts}
      * @param expectedOutputArtifacts the {@code expected_output_artifacts}
+     * @param references the {@code references}
      * @param prompt the prompt document, once read
      * @param guidelines the guidelines document, once read
      */
@@ -105,6 +111,7 @@ record MissionTypeDso(
             Optional<String> guidelinesPath,
             List<Artifact> expectedInputArtifacts,
             List<Artifact> expectedOutputArtifacts,
+            List<Reference> references,
             Optional<MarkdownDocument> prompt,
             Optional<MarkdownDocument> guidelines) {
 
@@ -119,6 +126,7 @@ record MissionTypeDso(
          * @param guidelinesPath the guidelines path, possibly empty
          * @param expectedInputArtifacts the inputs
          * @param expectedOutputArtifacts the outputs
+         * @param references the references
          * @param prompt the prompt document, possibly empty
          * @param guidelines the guidelines document, possibly empty
          */
@@ -131,6 +139,7 @@ record MissionTypeDso(
             Objects.requireNonNull(guidelinesPath, "guidelinesPath");
             expectedInputArtifacts = List.copyOf(expectedInputArtifacts);
             expectedOutputArtifacts = List.copyOf(expectedOutputArtifacts);
+            references = List.copyOf(references);
             Objects.requireNonNull(prompt, "prompt");
             Objects.requireNonNull(guidelines, "guidelines");
         }
@@ -152,6 +161,7 @@ record MissionTypeDso(
                     guidelinesPath,
                     expectedInputArtifacts,
                     expectedOutputArtifacts,
+                    references,
                     newPrompt,
                     newGuidelines);
         }
@@ -187,6 +197,32 @@ record MissionTypeDso(
             Objects.requireNonNull(artifactClass, "artifactClass");
             Objects.requireNonNull(pathPattern, "pathPattern");
             Objects.requireNonNull(templatePath, "templatePath");
+        }
+    }
+
+    /**
+     * A reference entry.
+     *
+     * @param type the {@code type} token
+     * @param id the {@code id}
+     * @param when the {@code when}, when present
+     * @param reason the {@code reason}, when present
+     */
+    record Reference(String type, String id, Optional<String> when, Optional<String> reason) {
+
+        /**
+         * Checks that every component is present.
+         *
+         * @param type the kind token
+         * @param id the id
+         * @param when the when text, possibly empty
+         * @param reason the reason text, possibly empty
+         */
+        Reference {
+            Objects.requireNonNull(type, "type");
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(when, "when");
+            Objects.requireNonNull(reason, "reason");
         }
     }
 }

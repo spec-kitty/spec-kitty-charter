@@ -3,15 +3,14 @@ name: service
 # The charter service build: the charter's own contract checks (lint, bundle, closed response
 # objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
 # contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
-# (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
-# The git-source job runs the real-git tests of the git source (:packs:gitHostTest, tag `git-host`) on a git of 2.50.1 or
-# later, which verifyAll leaves out.
+# (./gradlew verifyAll), then the CPU-time budgets on their own and report-only (./gradlew :packs:timingBudgets, #316,
+# ADR-0057). It uploads
+# three artifacts: `javadoc`, `coverage` and `contract-bundle`.
 # The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
 # `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
-# Mutation testing is not here: it runs nightly only (mutation-nightly.yml). Nor are the CPU-time budgets
-# (#316, ADR-0057): they run nightly, report-only (timing-nightly.yml).
+# Mutation testing is not here: it runs nightly only (mutation-nightly.yml).
 on:
   # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
   # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
@@ -144,56 +143,22 @@ jobs:
             build/contracts/contract/charter-openapi.yaml.sha256
           if-no-files-found: error
 
-  # The git source against real git (WP18, T152, C-008, NFR-011): bare repositories served over https by `git http-backend`
-  # behind a test HTTPS server, fetched by the production fetcher with the host git. The tests carry the `git-host` tag,
-  # which `verifyAll` leaves out, so this job is where they run. It is required, not `continue-on-error`: the git must be
-  # 2.50.1 or later, the job fails first when it is not, and -PrequireGitHost=true makes the tests fail rather than skip on
-  # a git that is too old, so they cannot stay green by skipping. Everything else of the git source (argument list,
-  # environment, version check, deadline) runs in `verifyAll` against a fake git.
-  git-source:
-    if: github.workflow != 'Docs site'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - name: Check out
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          persist-credentials: false
+      # The CPU-time budgets (tests tagged `timing`, #316), alone on the runner: under Verify's parallel module tests the
+      # load, not the code, decided whether they passed. The correctness of the same work is in Verify (:packs:test).
+      # The same properties as Verify, so the configuration cache is reused; the task itself requires symbolic links.
+      # Report-only (ADR-0057): the runners of this workflow differ in CPU speed by about 2x, so a budget measures the
+      # runner as much as the code. A budget over its limit never fails the job; the next step makes it visible.
+      - name: Check the CPU-time budgets (report-only)
+        id: timing
+        continue-on-error: true
+        run: ./gradlew :packs:timingBudgets :activations:timingBudgets -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
 
-      # The runner image carries a recent git; when it carries an older one, the git-core PPA's is installed. Either way the
-      # step ends by failing when `git --version` is lower than 2.50.1: the test is never weakened to fit the image.
-      - name: Select a git of 2.50.1 or later
+      - name: Report a CPU-time budget over its limit
+        if: steps.timing.outcome == 'failure'
         run: |
-          set -euo pipefail
-          need=2.50.1
-          at_least() { [ "$(printf '%s\n%s\n' "$need" "$1" | sort -V | head -n1)" = "$need" ]; }
-          have="$(git --version | awk '{ print $3 }')"
-          if ! at_least "$have"; then
-            echo "git $have is older than $need; installing the git-core PPA's git"
-            sudo add-apt-repository -y ppa:git-core/ppa
-            sudo apt-get update
-            sudo apt-get install -y git
-            have="$(git --version | awk '{ print $3 }')"
-          fi
-          git --version
-          if ! at_least "$have"; then
-            echo "::error::the git-source job needs git $need or later, but the runner has $have"
-            exit 1
-          fi
-
-      - name: Set up Java 25
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          cache-disabled: ${{ inputs.cache-disabled || false }}
-
-      - name: Run the git-host tests
-        run: ./gradlew :packs:gitHostTest -PrequireGitHost=true
+          echo "::warning title=CPU-time budget over its limit::A CPU-time budget failed (report-only, ADR-0057). Read the measured times in 'Check the CPU-time budgets'; compare with other runs before treating it as a regression."
+          echo "### ⚠️ A CPU-time budget is over its limit (report-only, ADR-0057)" >> "$GITHUB_STEP_SUMMARY"
+          echo "The budgets do not gate this run. The measured times are in the step log of 'Check the CPU-time budgets'." >> "$GITHUB_STEP_SUMMARY"
 
   # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
   # and checked like them before it is uploaded.

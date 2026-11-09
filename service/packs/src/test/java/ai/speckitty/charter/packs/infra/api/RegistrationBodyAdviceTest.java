@@ -82,7 +82,7 @@ class RegistrationBodyAdviceTest {
         "ai.speckitty.charter.api.model.RelationshipRegistration"
     })
     void aBodyAtTheLimitIsHandedOnUnchanged(Class<?> registration) throws IOException {
-        byte[] json = "{}".getBytes(StandardCharsets.UTF_8);
+        byte[] json = "{\"id\":\"a\",\"references\":[]}".getBytes(StandardCharsets.UTF_8);
         byte[] exact = Arrays.copyOf(json, Math.toIntExact(LIMIT));
         Arrays.fill(exact, json.length, exact.length, (byte) ' ');
         HttpHeaders headers = new HttpHeaders();
@@ -94,57 +94,21 @@ class RegistrationBodyAdviceTest {
                 .isEqualTo(exact);
     }
 
-    @ParameterizedTest(name = "{0} {1}")
+    @ParameterizedTest(name = "{0}")
     @CsvSource({
-        "ai.speckitty.charter.api.model.DirectiveRegistration, integrityRules",
-        "ai.speckitty.charter.api.model.StyleguideRegistration, principles"
+        "ai.speckitty.charter.api.model.DirectiveRegistration",
+        "ai.speckitty.charter.api.model.ParadigmRegistration",
+        "ai.speckitty.charter.api.model.StyleguideRegistration"
     })
-    void aNullItemIsRefusedNamingTheList(Class<?> registration, String list) {
-        byte[] json = ("{\"id\":\"a\",\"" + list + "\":[null]}").getBytes(StandardCharsets.UTF_8);
+    void aNullItemIsRefusedNamingTheList(Class<?> registration) {
+        byte[] json = "{\"id\":\"a\",\"references\":[null]}".getBytes(StandardCharsets.UTF_8);
 
         assertThatThrownBy(() -> read(message(new CountingStream(json), new HttpHeaders()), registration))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(r.getMessage())
-                            .isEqualTo("Item 0 of the " + list + " list is null; a list holds no null item.");
+                            .isEqualTo("Item 0 of the references list is null; a list holds no null item.");
                 });
-    }
-
-    /**
-     * ADR-0064: a registration body is closed. A member its schema does not declare, a removed relationship field
-     * among them, is refused before the converter reads the body, so a client still sending one is never answered as
-     * though what it asserted was written; the same body without the member is handed on (the positive control).
-     */
-    @ParameterizedTest(name = "{1}: {2}")
-    @CsvSource({
-        "ai.speckitty.charter.api.model.DirectiveRegistration, directive, references, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.DirectiveRegistration, directive, relationships, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.ParadigmRegistration, paradigm, directiveRefs, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.ParadigmRegistration, paradigm, references, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.ParadigmRegistration, paradigm, relationships, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.StyleguideRegistration, styleguide, references, '{\"id\":\"a\"}'",
-        "ai.speckitty.charter.api.model.RelationshipRegistration, relationship, when2, '{\"type\":\"requires\"}'"
-    })
-    void anUndeclaredMemberIsRefusedNamingIt(Class<?> registration, String kind, String member, String clean)
-            throws IOException {
-        assertThat(read(message(new CountingStream(bytes(clean)), new HttpHeaders()), registration)
-                        .getBody()
-                        .readAllBytes())
-                .as("the body without the member is handed on")
-                .isEqualTo(bytes(clean));
-
-        String withMember = clean.substring(0, clean.length() - 1) + ",\"" + member + "\":[]}";
-        assertThatThrownBy(() -> read(message(new CountingStream(bytes(withMember)), new HttpHeaders()), registration))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
-                    assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                    assertThat(r.getMessage())
-                            .isEqualTo(RegistrationLists.unknownMemberDetail(kind, member))
-                            .contains(member);
-                });
-    }
-
-    private static byte[] bytes(String json) {
-        return json.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
