@@ -1,7 +1,7 @@
 {
-  "event_count": 311,
-  "last_event_id": "01M70JGZEXSAX81KN0VRK3HQHE",
-  "materialized_at": "2026-11-09T16:33:38.781547+00:00",
+  "event_count": 313,
+  "last_event_id": "01M70JMPMGMPRV3950WFMM8YW0",
+  "materialized_at": "2026-11-09T16:35:40.807328+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -1018,13 +1018,13 @@
     "WP29": {
       "actor": "claude",
       "agent": null,
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M70JGZEXSAX81KN0VRK3HQHE",
-      "last_transition_at": "2026-11-09T16:33:38.781547+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M70JMPMGMPRV3950WFMM8YW0",
+      "last_transition_at": "2026-11-09T16:35:40.807328+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)"
@@ -1037,7 +1037,7 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
