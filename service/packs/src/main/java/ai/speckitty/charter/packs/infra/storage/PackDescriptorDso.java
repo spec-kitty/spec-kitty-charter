@@ -28,6 +28,7 @@ import java.util.Optional;
  * @param mutabilityPolicy the {@code mutability_policy} path, when stated (ADR-0063)
  * @param dependencies the {@code depends_on} entries, in file order
  * @param overrides the {@code overrides} entries, in file order
+ * @param schemaVersion the {@code schema_version} as written, when stated; empty for an unversioned descriptor
  */
 record PackDescriptorDso(
         String packId,
@@ -40,7 +41,8 @@ record PackDescriptorDso(
         Optional<String> packDrg,
         Optional<String> mutabilityPolicy,
         List<PackDependency> dependencies,
-        List<PackOverride> overrides) {
+        List<PackOverride> overrides,
+        Optional<String> schemaVersion) {
 
     /**
      * Checks the fields.
@@ -56,6 +58,7 @@ record PackDescriptorDso(
      * @param mutabilityPolicy the mutability policy path
      * @param dependencies the declared dependencies
      * @param overrides the declared sibling conflicts this pack settles
+     * @param schemaVersion the schema version
      */
     PackDescriptorDso {
         Objects.requireNonNull(packId, "packId");
@@ -69,6 +72,7 @@ record PackDescriptorDso(
         Objects.requireNonNull(mutabilityPolicy, "mutabilityPolicy");
         Objects.requireNonNull(dependencies, "dependencies");
         Objects.requireNonNull(overrides, "overrides");
+        Objects.requireNonNull(schemaVersion, "schemaVersion");
         dependencies = List.copyOf(dependencies);
         overrides = List.copyOf(overrides);
     }
@@ -91,7 +95,8 @@ record PackDescriptorDso(
                 descriptor.paths().packDrg(),
                 descriptor.paths().mutabilityPolicy(),
                 descriptor.dependencies(),
-                descriptor.overrides());
+                descriptor.overrides(),
+                descriptor.schemaVersion());
     }
 
     /**
@@ -109,6 +114,7 @@ record PackDescriptorDso(
                 requiresCore,
                 new PackPaths(activeCharter, packDrg, mutabilityPolicy),
                 dependencies,
-                overrides);
+                overrides,
+                schemaVersion);
     }
 }
