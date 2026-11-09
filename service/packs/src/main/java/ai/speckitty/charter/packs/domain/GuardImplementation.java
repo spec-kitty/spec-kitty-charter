@@ -23,9 +23,16 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
      *
      * @param text the {@code implemented_by} value
      * @return the implementation
-     * @throws IllegalArgumentException when the text is neither spelling, or names a built-in not on the list
+     * @throws IllegalArgumentException when the text is neither spelling, names a built-in not on the list, or qualifies
+     *     with a pack name over 64 characters
      */
     static GuardImplementation parse(String text) {
+        // The qualifier ends at the first "::" (an asset id holds no colon), so its length is known before matching;
+        // the refusal does not echo the text, which is unbounded.
+        if (text.indexOf("::") > MAX_PACK_LENGTH) {
+            throw new IllegalArgumentException(
+                    "implemented_by names a pack longer than " + MAX_PACK_LENGTH + " characters");
+        }
         Matcher m = SPELLING.matcher(text);
         if (!m.matches()) {
             throw new IllegalArgumentException("implemented_by '" + text + "' is neither builtin:<id> nor asset:<id>");
@@ -36,10 +43,6 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
                     .orElseThrow(() -> new IllegalArgumentException("builtin:" + id + " is not a built-in guard")));
         }
         String pack = m.group(2);
-        if (pack != null && pack.length() > MAX_PACK_LENGTH) {
-            throw new IllegalArgumentException(
-                    "implemented_by '" + text + "' names a pack longer than " + MAX_PACK_LENGTH + " characters");
-        }
         return new AssetBacked(Optional.ofNullable(pack), m.group(3));
     }
 
