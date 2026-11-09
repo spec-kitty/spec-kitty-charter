@@ -46,8 +46,8 @@ that definition:
 
 1. Check the three refusals in the table against what you mean to write. If one applies, write a directive, a
    lifecycle, a mission type or a step instead.
-2. Create `procedures/<id>.procedure.yaml` in the pack. `id` is kebab-case and equal to the file stem. The
-   [descriptors](/architecture/descriptors/#procedure--procedureyaml) page lists the fields.
+2. Create `procedures/<id>.procedure.yaml` in the pack. `id` is kebab-case, equal to the file stem, and at most 64
+   characters. The [descriptors](/architecture/descriptors/#procedure--procedureyaml) page lists the fields.
 3. Fix anything loading refuses (next section).
 4. Walk the [review checklist](#the-review-checklist), as the author, and again as the reviewer of the pack pull
    request.
@@ -67,8 +67,8 @@ Review does not need to look for any of the following, because loading the pack 
   `steps` needs at least one step, and each step needs a non-empty `title`.
 - **A reference of type `action`.** A reference's `type` must be one of the artifact kinds the schema lists, and
   `action` and `mission_type` are not among them.
-- **An id that is not the file stem.** The schema checks the kebab-case pattern. The loader also checks that the
-  id equals the file stem.
+- **An id that is not the file stem.** The schema checks the kebab-case pattern and the 64-character cap. The
+  loader also checks that the id equals the file stem.
 
 A load skips a file that breaks any of these and records a violation, so the rest of the pack still loads. In
 validate mode (`FileSystemPackInspector`, the seam for the pack doctor) the finding is `artifact_schema_error`. In
