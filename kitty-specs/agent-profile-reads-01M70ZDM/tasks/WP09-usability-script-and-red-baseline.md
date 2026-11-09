@@ -9,13 +9,12 @@ requirement_refs:
 - NFR-003
 planning_base_branch: issue-407-agent-profile-reads
 merge_target_branch: issue-407-agent-profile-reads
-branch_strategy: Planning artifacts for this mission were generated on kitty/mission-agent-profile-reads-01M70ZDM (the mission branch that lands on issue-407-agent-profile-reads). Execution worktrees are allocated per computed lane from lanes.json; completed changes merge back into issue-407-agent-profile-reads unless the operator redirects the landing branch.
+branch_strategy: Planning artifacts for this mission were generated on issue-407-agent-profile-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-407-agent-profile-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T045
 - T046
 - T047
 - T048
-agent: claude
 history:
 - timestamp: '2026-11-09T21:00:00Z'
   agent: system
