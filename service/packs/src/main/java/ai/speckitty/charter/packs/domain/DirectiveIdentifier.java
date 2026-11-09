@@ -14,10 +14,15 @@ public record DirectiveIdentifier(String value) {
 
     private static final Pattern PATTERN = Pattern.compile("^[A-Z][A-Z0-9_-]*$");
 
+    /** The longest identifier accepted, checked before the pattern (#440). */
+    private static final int MAX_LENGTH = 64;
+
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A directive identifier must match ^[A-Z][A-Z0-9_-]*$.",
-                    text -> text != null && PATTERN.matcher(text).matches()));
+                    "A directive identifier must match ^[A-Z][A-Z0-9_-]*$ and be at most 64 characters.",
+                    text -> text != null
+                            && text.length() <= MAX_LENGTH
+                            && PATTERN.matcher(text).matches()));
 
     /**
      * Checks that the identifier matches the schema pattern.
