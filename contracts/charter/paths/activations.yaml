@@ -19,7 +19,9 @@ post:
     closure holds is 422 activation_invalid (version_not_held): the create keeps the refusal for a pin in its own
     body, while the other writes drop such a pin (ActivationChange.droppedPins). A deny entry on a mission type is
     judged as on any kind: on a locked one it is 409, and on a required one it is 409 unless an override satisfies it.
-    Nothing is stored on a refusal.
+    A closure whose layer merge refuses reaches this write as 500 pack_unreadable when the body denies a required
+    artifact, which asks the merge (DIV-230); a deny entry on an artifact nothing requires never does. Nothing is
+    stored on a refusal.
   tags:
   - Activation
   requestBody:

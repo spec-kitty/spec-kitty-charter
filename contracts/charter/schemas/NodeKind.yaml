@@ -3,7 +3,8 @@ description: >-
   The kind of a DRG node: every artifact kind plus action and mission_type. The retiring
   glossary node kinds are not part of this contract. It lists the authored kinds only: a guard and a lifecycle are
   nodes of the graph that no read of this contract names, so no schema typed by NodeKind (EffectiveGraphNode,
-  NodeReference) can carry one.
+  NodeReference) can carry one. Adding guard or lifecycle later is a Breaking change for EffectiveGraphNode,
+  NodeReference and every SkippedReport carrier.
 type: string
 enum:
   - directive

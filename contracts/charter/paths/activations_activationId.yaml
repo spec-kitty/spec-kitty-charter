@@ -81,7 +81,9 @@ put:
     still 422); and the floor is judged on the deny entries the body adds only, so a deny entry the replaced document
     already held is kept even when a pack now requires or locks it, while a new one is 409 as above. A later write
     that removes the satisfying override is not refused: the stored deny entry is then read as not applied and listed
-    in denyNotApplied. A stored document an
+    in denyNotApplied. A closure whose layer merge refuses reaches this write as 500 pack_unreadable when the body adds
+    a deny entry on a required artifact, which asks the merge (DIV-230); a deny entry on an artifact nothing requires
+    never does. A stored document an
     offering change made stale is served as stored on read (ADR-0059 D4). Without If-Match the write is judged
     against the document it replaces, read just before the write and compared on write; when another writer changes
     the activation in between, it is judged again from a fresh read, up to eight times, and when every attempt loses

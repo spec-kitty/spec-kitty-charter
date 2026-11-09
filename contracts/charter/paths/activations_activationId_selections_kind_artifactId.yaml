@@ -8,7 +8,9 @@ put:
   description: >-
     Adds the artifact to selected and clears its own exclusion, as charter activate does (ADR-0013 D3); kind
     mission_type is a kind like any other (one kind model, IC-20): the mission type joins selected.mission_type, and a
-    cascade from it reaches the steps it holds, crossed like requires (Q1, decision DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S;
+    cascade from it reaches the steps it holds (a mission type M holds the step action:M/s when a pack of the closure
+    defines mission_type:M and declares action:M/s; an action declared where no pack defines its mission type is
+    held by none), crossed like requires (Q1, decision DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S;
     rule W20), so what those steps reach within the cascade's kinds is selected. With cascade, walks the graph into
     the named kinds from it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is
     true, which walks through the deactivated artifacts of the cascade's kinds and clears the exclusions of what the

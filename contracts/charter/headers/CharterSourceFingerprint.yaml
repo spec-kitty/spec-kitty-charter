@@ -14,10 +14,9 @@ description: >-
   digest. getOpenApiDocument never sends it: it reads no pack file. Two reads of the activation set never
   send it either: getActivation reports a change through its ETag, which covers the activation's revision and the
   closure's own digest (it judges denyNotApplied against the closure's packs), and listActivationPacks the same way. The
-  effective artifact list and the skipped report (listEffectiveArtifacts, getActivationSkippedReport) are verified reads
-  and send it on their 200. The reserved effective graph and action context (getEffectiveGraph and
-  getEffectiveActionContext) declare it on their 200 as the verified reads they will be once built; while reserved
-  (ADR-0020 D8) they answer 501, which reads nothing, so they never send it. Set once. The
+  effective artifact list, the skipped report, the effective graph and the effective action context
+  (listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph and getEffectiveActionContext) are verified
+  reads and send it on their 200. Set once. The
   freshness work (#73) compares it; this version only reports it (ADR-0011).
 required: true
 schema:

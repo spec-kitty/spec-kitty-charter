@@ -644,8 +644,14 @@
     resolution only for a deny entry on a required artifact; the per-artifact writes ask it
     whenever they apply anything (DIV-230). A layer merge that refuses (DIV-217, DIV-218)
     therefore reaches a write as 500 pack_unreadable, where it answered 409 before PR C. The
-    requirement follows A1 (DIV-205). The
-    requirement of a governing preset id is the union, across the levels (built-in, org, project),
+    requirement follows A1 (DIV-205). Where the write and the read can disagree, each
+    failing closed on the write except the last (#447): an overrider of a non-activatable kind (a
+    template, a guard, a lifecycle) hides a required artifact in the read but satisfies nothing on
+    the write, so the deny entry is refused; a deny entry on a required artifact that pruning
+    already removed from force is refused by the write, while the read applies it silently; and a
+    deny entry stored over a closure whose layer merge refuses is accepted (201), while every
+    effective read of it is 500 (the merge-refusal control of activation-deny-satisfied.feature).
+    The requirement of a governing preset id is the union, across the levels (built-in, org, project),
     of the must-have items of the copy in force at each level. Within one level the copy of the
     pack last in closure order replaces the others, a child pack's copy its parent's, and a
     replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires,

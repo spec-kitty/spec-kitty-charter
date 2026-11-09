@@ -116,8 +116,10 @@ properties:
     items:
       $ref: ArtifactReference.yaml
     description: >-
-      The selected artifacts bound to a mission type that is not in force. In an action context, the mission type
-      itself (kind mission_type).
+      The selected artifacts bound to a mission type that is not in force. In an action context this bucket is replaced:
+      it holds the requested mission type itself (kind mission_type) when that is not in force, and is empty when it
+      is, so an artifact bound to another mission type that is not in force is absent there, unlike the activation-wide
+      report.
     x-derived:
       rule: The selected artifacts whose mission type is not in force.
       inputs:
@@ -141,7 +143,8 @@ properties:
       The selected enhancers none of whose targets is in force, each with its targets. An enhancer does not stand on its
       own. A target is a NodeReference: it may be a step of a mission type (kind action, id <missionType>/<step>), which
       is never in force as an artifact, so an enhancer of a step the closure does not hold names it here; an enhancer of
-      a step of a mission type that is not in force is listed in missionTypeNotInForce instead.
+      a step of a mission type that is not in force is listed in missionTypeNotInForce instead (in an action context that
+      bucket holds the requested mission type only, so such an enhancer is listed in neither there).
     x-derived:
       rule: The selected enhancers whose enhances targets are all out of force.
       inputs:

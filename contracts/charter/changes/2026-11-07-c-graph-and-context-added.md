@@ -22,3 +22,13 @@
   lists. A step enhancer enhances the step, which is no artifact, so `enhancements` is the one member that carries it.
 - Examples: `EffectiveGraph.one-edge` gains `layerOverrides: []`, `EffectiveGraph.layer-override` is new, and
   `EffectiveActionContext.implement` carries a suggestion and an enhancement.
+- `getEffectiveGraph` and `getEffectiveActionContext` declare `400` as the shared `Problem` response, as the other
+  activation reads do (`2026-11-06-activation-reads-and-writes-declare-400.md`). The service answers it for a
+  malformed query: a `depth` outside 0 to 1 on the context, pinned in `effective-graph-and-context.feature`. The context
+  and the graph also say that an unknown mission type or action is `404`, and a closure that cannot merge is `500`,
+  before any `304`.
+- The context's `skipped.missionTypeNotInForce` is the one exception to the `SkippedReport` carrier rule: it holds the
+  requested mission type when that is not in force and is empty otherwise, so an artifact bound to another mission type
+  that is not in force is absent from it. `createActivation` and `replaceActivation` describe the `500
+  pack_unreadable` of a closure that cannot merge, as the deactivate does (DIV-230). The headers
+  `Charter-Source-Fingerprint` and `ETag` no longer call the graph and the context reserved.
