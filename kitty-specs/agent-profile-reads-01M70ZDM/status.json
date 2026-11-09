@@ -54,7 +54,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude:sonnet:architect-alphonso",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -67,7 +67,8 @@
         "Ready for review. Commits 7f8159ca (ADR-0037/0006 amendments, module table), 599fd715 (kernel HeaderNames), f0e34e89 (:profiles-edge skeleton, registrations, ArchUnit rules with bite fixtures, wiring test). Mission-types session: mirror :missions-edge from f0e34e89.",
         "Implementer hand-off (architect-alphonso); f0e34e89 unchanged",
         "Re-record the implementer of record with its full identity; no code change",
-        "Implementer hand-off (architect-alphonso); f0e34e89 unchanged"
+        "Implementer hand-off (architect-alphonso); f0e34e89 unchanged",
+        "Review passed (reviewer-renata): rules (a)-(e) each bite on their fixture, no rule weakened, ring-presence guard, registrations complete, HeaderNames pure refactor, ADR-0037/0006 amendments accurate; HexagonalArchitectureTest 67/67, wiring 2/2, aggregateJavadoc, check_docs all green. Routed: nightly mutation floor needs profiles-edge code (WP04+); stale service-build.md and mutation-nightly comment; ADR-0006 updated date."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
