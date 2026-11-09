@@ -49,8 +49,10 @@ import java.util.stream.Collectors;
  * an artifact it reports as satisfied by an artifact in force), never a rule of this class, so a deny entry accepted on
  * write is one the next read applies; an enhancement never satisfies. The facts are asked only when a write adds a
  * deny entry on a required artifact no pack locks, and a refusal of the closure's merge ({@code pack_unreadable})
- * reaches that write. Removing the override later is not refused: no write judges a stored deny entry, and the read
- * lists it in {@code denyNotApplied}. Each
+ * reaches that write. Which entries a write judges: a create judges every deny entry of the body; a deactivate judges
+ * the named target whether or not its deny entry is already stored; a replace and the other writes judge only the deny
+ * entries they add. Removing the override later is not refused (no write judges a stored deny entry it does not add),
+ * and the read lists it in {@code denyNotApplied}. Each
  * {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
  * ({@link ClosureSnapshot#extendsChain}) from the first pack the document names, in its order, whose
  * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without

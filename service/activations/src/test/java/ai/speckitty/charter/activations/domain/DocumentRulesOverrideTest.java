@@ -24,8 +24,9 @@ import org.junit.jupiter.api.Test;
 /**
  * IC-13 (operator ruling Q9, research R12): a deny entry on a required artifact is accepted when an active override of
  * it satisfies the requirement in the document as it will be stored, and the rule reads the in-force resolution through
- * {@link InForceFacts}, never a copy of it. The scope is DIV-204's: a create judges every deny entry; a replace, a
- * deactivate, a preset applied with force and a select with includeDeactivated judge only the deny entries they add.
+ * {@link InForceFacts}, never a copy of it. The scope is DIV-204's: a create judges every deny entry; a deactivate
+ * judges the named target whether or not its deny entry is already stored; a replace and the other writes judge only
+ * the deny entries they add (a preset and a select add none).
  * The facts are asked only when a deny entry is added on a required artifact that no pack locks.
  */
 class DocumentRulesOverrideTest {
