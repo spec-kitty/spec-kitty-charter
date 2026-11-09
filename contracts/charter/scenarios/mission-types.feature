@@ -107,6 +107,10 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
       ## User Scenarios & Testing
       """
+    And the org pack "main" with the file "missions/software-dev/templates/a~1b.md":
+      """
+      # A skeleton whose file name holds a tilde and a one
+      """
     And the org pack "main" with the file "missions/documentation/documentation.mission-type.yaml":
       """
       schema_version: '1.0'
@@ -152,7 +156,24 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
             kind: directive
             candidates:
               - GUARD
+              - NOPE
           guidance: Ask before you write.
+        - id: map_examples
+          description: Capture concrete rules and examples
+          delegates_to:
+            kind: procedure
+            candidates:
+              - example-mapping-workshop
+      """
+    And the org pack "main" with the file "mission_step_contracts/orphan.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: orphan
+      action: gather
+      mission: research
+      steps:
+        - id: first
+          description: The first step
       """
     And the org pack "main" with the file "directives/guard.directive.yaml":
       """
@@ -180,6 +201,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     FR-002, US1 AS1. The directive read is the control that the fixture pack loads. The missionType member holds the
     stored fields; a field the file does not declare (path conventions it does not name, a blocking it does not say) is
     absent or false, never invented. Each step and each skeleton links to its own read, and every link answers 200.
+    Skeletons are ordered by name in code-point order. D9: the file templates/a~1b.md, whose name holds a literal
+    "~1", is named a~01b.md ('~' escaped to '~0' first), which pins the order of the escaping and of the decoding.
     When I GET "/packs/main/artifacts/directive/GUARD"
     Then the response status is 200
     When I GET "/packs/main/artifacts/mission_type/software-dev"
@@ -209,6 +232,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
             {"id": "retrospect", "title": "Retrospective", "onDemand": true, "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_type/software-dev/steps/retrospect"}}}
           ],
           "skeletons": [
+            {"name": "a~01b.md", "path": "templates/a~1b.md", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/a~01b.md"}}},
             {"name": "spec-template.md", "path": "templates/spec-template.md", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"}}}
           ]
         },
@@ -218,6 +242,26 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
         }
       }
       """
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
+    Then the response status is 200
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/plan"
+    Then the response status is 200
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/retrospect"
+    Then the response status is 200
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
+    Then the response status is 200
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/a~01b.md"
+    Then the response status is 200
+    And the field at "/name" is "a~01b.md"
+    And the field at "/path" is "templates/a~1b.md"
+    And the field at "/content" is the lines:
+      """
+      # A skeleton whose file name holds a tilde and a one
+      """
+    And the field at "/sha256" is "sha256:779294cb464502d4d2cb24424ea41761f998cad15ca7c1e447b753f9f1326683"
+    And the field at "/size" is 53
+    When I GET "/packs/main/artifacts/mission_type/software-dev"
+    Then the response status is 200
     When I follow the link "collection"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
@@ -261,7 +305,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
       - Focus on **WHAT** users need and **WHY**.
       """
-    And the field at "/expectedInputArtifacts" is absent
+    And the field at "/expectedInputArtifacts" holds exactly 0 items
     And the field at "/expectedOutputArtifacts" holds exactly 1 item
     And the field at "/expectedOutputArtifacts/0/artifactKey" is "input.spec.main"
     And the field at "/expectedOutputArtifacts/0/templatePath" is "templates/spec-template.md"
@@ -368,8 +412,10 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       """
 
   Scenario: A step contract is read through the generic item read, linked to its mission type, its step and its delegates
-    FR-001, FR-004, US2 AS1. A delegation candidate of a served kind links to its pack-scoped read. No ETag: the kind
-    has no write.
+    FR-001, FR-004, US2 AS1. A delegation candidate of a served kind that the pack holds links to its pack-scoped read;
+    one the pack does not hold (NOPE), or one of a kind the service does not serve (a procedure), has no link. A step
+    without inputs answers an empty list. No ETag: the kind has no write. A step contract whose mission names a mission
+    type the pack does not hold still reads, without mission-type and step links.
     When I GET "/packs/main/artifacts/mission_step_contract/specify"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
@@ -395,13 +441,26 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
             {
               "id": "capture_intent",
               "description": "Capture confirmed user intent",
+              "inputs": [],
               "delegatesTo": {
                 "kind": "directive",
                 "candidates": [
-                  {"id": "GUARD", "_links": {"artifact": {"href": "/api/v1/packs/main/artifacts/directive/GUARD"}}}
+                  {"id": "GUARD", "_links": {"artifact": {"href": "/api/v1/packs/main/artifacts/directive/GUARD"}}},
+                  {"id": "NOPE", "_links": {}}
                 ]
               },
               "guidance": "Ask before you write."
+            },
+            {
+              "id": "map_examples",
+              "description": "Capture concrete rules and examples",
+              "inputs": [],
+              "delegatesTo": {
+                "kind": "procedure",
+                "candidates": [
+                  {"id": "example-mapping-workshop", "_links": {}}
+                ]
+              }
             }
           ],
           "gates": [
@@ -426,6 +485,13 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I follow the link "step"
     Then the response status is 200
     And the field at "/id" is "specify"
+    When I GET "/packs/main/artifacts/mission_step_contract/orphan"
+    Then the response status is 200
+    And the field at "/missionStepContract/mission" is "research"
+    And the field at "/missionStepContract/steps/0/inputs" holds exactly 0 items
+    And the field at "/_links/self/href" is "/api/v1/packs/main/artifacts/mission_step_contract/orphan"
+    And the answer has no link "mission-type"
+    And the answer has no link "step"
 
   Scenario: The list filtered by mission_type and by mission_step_contract names the pack's items, each linked to its read
     FR-001, US1 AS2, US2 AS3. Ids in code-point order; a mission type's title is its title, a step contract's its action.
@@ -452,6 +518,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       """
       {
         "items": [
+          {"kind": "mission_step_contract", "id": "orphan", "title": "gather", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/orphan"}}},
           {"kind": "mission_step_contract", "id": "specify", "title": "specify", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/specify"}}}
         ],
         "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
@@ -487,8 +554,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     FR-009, US1 AS4, US2 AS2, US3 AS3. An unknown pack is pack_not_found whatever the rest of the path names; an unknown
     mission type of a known pack is mission_type_not_found, also under a step or a skeleton; an unknown step is
     action_not_found (a step is the action action:<type>/<step>); a name that does not decode to a skeleton of the type
-    is skeleton_not_found, and a nested path spelled with a real slash is not one; an unknown step contract is
-    mission_step_contract_not_found.
+    is skeleton_not_found; a nested path spelled with a real slash after skeletons/ names no operation, so it is a 404
+    without a code; an unknown step contract is mission_step_contract_not_found.
     When I GET "/packs/nope/artifacts/mission_type/software-dev/steps/specify"
     Then the response status is 404
     And the problem code is "pack_not_found"
@@ -526,6 +593,9 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1howto-template.md"
     Then the response status is 404
     And the problem code is "skeleton_not_found"
+    When I GET "/packs/main/artifacts/mission_type/documentation/skeletons/divio/howto-template.md"
+    Then the response status is 404
+    And the problem has no code
     When I GET "/packs/main/artifacts/mission_step_contract/nope"
     Then the response status is 404
     And the response body is:

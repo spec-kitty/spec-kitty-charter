@@ -29,4 +29,4 @@ content:
           title: Action not found
           status: 404
           code: action_not_found
-          detail: Mission type software-dev of pack open-packs has no step deploy.
+          detail: Mission type software-dev of pack core has no step deploy.
