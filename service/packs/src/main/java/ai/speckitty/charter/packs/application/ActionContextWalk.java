@@ -41,7 +41,8 @@ import java.util.function.Supplier;
  *
  * <p>The predicate is the effective set: a node it refuses is neither listed nor walked through, so a step (no artifact
  * of an activatable kind) is never an entry and never changes a hop count. The one exception is the start node, the held
- * step the action names: the walk starts there when the mission type is in force. Each entry brings the enhancers in
+ * step the action names: the walk starts there when the mission type is in force, and the context carries its own enhancers
+ * in force and what it enhances ({@link Context#actionEnhancedBy()}, {@link Context#actionEnhances()}). Each entry brings the enhancers in
  * force that enhance it and the artifacts in force it enhances, and pulls none of them into the answer (rule E12). An
  * entry the {@code suggests} step lists carries the {@code when} and the {@code reason} of the edge that reached it.
  *
@@ -274,7 +275,8 @@ public final class ActionContextWalk {
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
         run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         run.expand(run.listedUrns(), Step.VOCABULARY, 1);
-        return new Context(start, true, run.entries(), run.suggestions(), List.of(), List.of());
+        return new Context(
+                start, true, run.entries(), run.suggestions(), run.enhancersOf(start), run.enhancedTargetsOf(start));
     }
 
     /** The mission type's URN, once the names are judged on the merged closure (OD-9, closure form). */
@@ -443,7 +445,7 @@ public final class ActionContextWalk {
                     enhancedTargetsOf(item.urn()));
         }
 
-        private List<Urn> enhancersOf(Urn target) {
+        List<Urn> enhancersOf(Urn target) {
             Set<Urn> enhancers = new TreeSet<>();
             enhancing.getOrDefault(target, List.of()).stream()
                     .map(Link::source)
@@ -452,7 +454,7 @@ public final class ActionContextWalk {
             return List.copyOf(enhancers);
         }
 
-        private List<Urn> enhancedTargetsOf(Urn enhancer) {
+        List<Urn> enhancedTargetsOf(Urn enhancer) {
             Set<Urn> targets = new TreeSet<>();
             outgoing.getOrDefault(enhancer, List.of()).stream()
                     .filter(link -> link.relation() == RelationType.ENHANCES)
