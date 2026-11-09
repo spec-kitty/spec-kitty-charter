@@ -41,12 +41,14 @@ being ready for core? The test plays a client's part end to end. It changes no c
 ## Verdict
 
 **Not yet ready for core.** These parts work end to end:
+
 - pack registration;
 - composition;
 - the activation document and its validation;
 - the effective reads.
 
 A client still cannot read what it needs to act:
+
 - profiles, mission types, steps and prompts have no read;
 - the action context is a list of ids, with no text or links;
 - real packs need editing by hand before they register;
