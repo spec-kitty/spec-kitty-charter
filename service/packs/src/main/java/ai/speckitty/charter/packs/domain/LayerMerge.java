@@ -385,11 +385,7 @@ public final class LayerMerge {
      * {@code M}, whose contest the step shares.
      */
     private static String settlementKey(Urn urn) {
-        int slash = urn.id().indexOf('/');
-        if (urn.kind() == NodeKind.ACTION && slash > 0) {
-            return Urn.missionType(urn.id().substring(0, slash)).toString();
-        }
-        return urn.toString();
+        return StepHolding.missionTypeOf(urn).orElse(urn).toString();
     }
 
     /** The bare URN an {@code overrides.artifact} names: a {@code <pack>::} qualifier says where it is read, not which. */

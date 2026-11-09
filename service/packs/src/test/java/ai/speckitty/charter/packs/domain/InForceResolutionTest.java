@@ -693,6 +693,14 @@ class InForceResolutionTest {
     }
 
     @Test
+    void anActionThatNamesNoStepHasNoMissionTypeToBeBoundTo() {
+        InForceStates states =
+                new Closure().open("mission_type:m", "action:m/").select("action:m/");
+
+        expect(states, "action:m/", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
     void aStepStaysWhileItsMissionTypeIsInForce() {
         InForceStates states =
                 new Closure().open("mission_type:m", "action:m/s", "action:m/t").select("mission_type:m", "action:m/s");

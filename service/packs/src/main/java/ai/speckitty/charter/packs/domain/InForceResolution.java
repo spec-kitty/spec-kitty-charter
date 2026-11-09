@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
@@ -344,11 +343,7 @@ public final class InForceResolution {
 
         /** The mission type an artifact is bound to: a step by its URN, any other by the closure's bindings. */
         private Optional<Urn> bindingOf(Urn urn) {
-            int slash = urn.id().indexOf('/');
-            if (urn.kind() == NodeKind.ACTION && slash > 0) {
-                return Optional.of(Urn.missionType(urn.id().substring(0, slash)));
-            }
-            return Optional.ofNullable(edges.bindings().get(urn));
+            return StepHolding.missionTypeOf(urn).or(() -> Optional.ofNullable(edges.bindings().get(urn)));
         }
 
         /** One step of the requirement (E5): add what no artifact in force satisfies, then hide what that hides. */
