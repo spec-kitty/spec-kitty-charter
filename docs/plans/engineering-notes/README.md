@@ -23,3 +23,6 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/) —
   how good the test suite is against the packs' testing rubric, and the five weaknesses ranked by
   risk. It also gives the SonarCloud recommendation (nightly, report-only) and the operator's rulings.
+- [Service usability run, 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/) — how
+  ready the service is for core. It registers the open-packs, activates this repository's charter, and reads a profile, its
+  guidance and a mission. It gives the gaps with their issues and the recommended order of the next work.
