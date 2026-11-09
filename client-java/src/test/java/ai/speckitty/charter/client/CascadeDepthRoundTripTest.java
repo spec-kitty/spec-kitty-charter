@@ -153,4 +153,28 @@ class CascadeDepthRoundTripTest {
         assertThat(body()).isEqualTo(JsonParser.parseString("{\"cascade\": [\"all\"]}"));
         assertThat(unbounded.getSkipped().getSkippedByDepth()).isNull();
     }
+
+    @Test
+    void anEnhancerWhoseTargetIsAStepReadsBackWithItsNodeReference() throws Exception {
+        reply.set(UNBOUNDED.replace(
+                "\"enhancedTargetNotInForce\": []",
+                "\"enhancedTargetNotInForce\": [{\"kind\": \"tactic\", \"artifactId\": \"X\","
+                        + " \"targets\": [{\"kind\": \"action\", \"id\": \"M/s\"}]}]"));
+
+        ActivationChange change = activations.selectActivationArtifact(
+                "r-1",
+                ActivatableKind.AGENT_PROFILE,
+                "lead",
+                new SelectionRequest().addCascadeItem(CascadeKind.ALL),
+                null);
+
+        assertThat(change.getSkipped().getEnhancedTargetNotInForce()).hasSize(1);
+        assertThat(change.getSkipped().getEnhancedTargetNotInForce().get(0).getTargets())
+                .as("a step target is a node reference: kind action and an id that holds a slash")
+                .singleElement()
+                .satisfies(target -> {
+                    assertThat(target.getKind().getValue()).isEqualTo("action");
+                    assertThat(target.getId()).isEqualTo("M/s");
+                });
+    }
 }
