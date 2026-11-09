@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
@@ -47,6 +49,18 @@ public final class ClosureQueries {
     private final OfferingReadService offering;
     private final PackCatalogRepository catalog;
     private final ConsistentRead read;
+    private final Optional<PackRepository> packs;
+
+    /**
+     * Queries over the offering's compose, whose views read no winner entity.
+     *
+     * @param offering the service that composes a closure and maps it to the offering's shape
+     * @param catalog the configured packs, the roots are checked against before the compose
+     * @param read the verifier that digests the inputs before and after the read
+     */
+    public ClosureQueries(OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read) {
+        this(offering, catalog, read, Optional.empty());
+    }
 
     /**
      * Queries over the offering's compose.
@@ -54,12 +68,23 @@ public final class ClosureQueries {
      * @param offering the service that composes a closure and maps it to the offering's shape
      * @param catalog the configured packs, the roots are checked against before the compose
      * @param read the verifier that digests the inputs before and after the read
+     * @param packs the port a view reads the entity of a winning artifact through ({@link ClosureView#effectiveArtifact})
      */
     @Autowired
-    public ClosureQueries(OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read) {
+    public ClosureQueries(
+            OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read, PackRepository packs) {
+        this(offering, catalog, read, Optional.of(packs));
+    }
+
+    private ClosureQueries(
+            OfferingReadService offering,
+            PackCatalogRepository catalog,
+            ConsistentRead read,
+            Optional<PackRepository> packs) {
         this.offering = Objects.requireNonNull(offering, "offering");
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.read = Objects.requireNonNull(read, "read");
+        this.packs = Objects.requireNonNull(packs, "packs");
     }
 
     /**
@@ -85,6 +110,24 @@ public final class ClosureQueries {
                 read.awaitWrites(SWAP_WAIT);
             }
         }
+    }
+
+    /**
+     * The closure of the roots composed inside a verified read the CALLER holds: the same compose and the same view as
+     * {@link #snapshot}, with no {@link ConsistentRead} of its own and no retry. Call it in the supplier of a
+     * {@link ConsistentRead#read}, whose two digests then judge the compose with whatever else the supplier read, and a
+     * change is the caller's {@code stale_input}. The view's {@link ClosureView#fingerprint()} is the digest of the
+     * closure's own packs, taken in this call; the caller's verified digest is the whole-source one.
+     *
+     * @param roots the configured identifiers the closure is rooted at; empty for every configured pack
+     * @return the closure's view
+     * @throws CharterRefusal as {@link #snapshot} refuses, except that a stale input is the caller's to find
+     * @throws UnknownRootException when a root names no configured pack
+     */
+    public ClosureView snapshotWithin(Optional<List<PackIdentifier>> roots) {
+        Objects.requireNonNull(roots, "roots");
+        Loaded loaded = loaded(roots);
+        return viewOf(loaded.composed(), loaded.closureFingerprint(), loaded.closureFingerprint());
     }
 
     /** One verified read of the closure. */
@@ -142,7 +185,7 @@ public final class ClosureQueries {
         return snapshot(Optional.empty());
     }
 
-    private static ClosureView viewOf(
+    private ClosureView viewOf(
             OfferingReadService.ComposedClosure composed, String fingerprint, String closureFingerprint) {
         List<PackUnderResolution> packs = composed.packs();
         Map<ArtifactKind, Set<String>> heldIds = new EnumMap<>(ArtifactKind.class);
@@ -162,8 +205,26 @@ public final class ClosureQueries {
                 parentsOf(packs),
                 fingerprint,
                 EdgeIndex.of(packs, composed.facts()),
-                new ClosureView.MergeInputs(packs, composed.facts()),
+                new ClosureView.MergeInputs(packs, composed.facts(), winnerSource(packs, closureFingerprint)),
                 closureFingerprint);
+    }
+
+    /**
+     * Where a view reads the entity of a winner from: the pack store, each read checked against the digest of the
+     * closure's own packs the view was verified at, so an entity of a pack that moved since is {@code stale_input} and
+     * never part of a mixed answer.
+     */
+    private ClosureView.WinnerSource winnerSource(List<PackUnderResolution> closure, String closureFingerprint) {
+        return packs.<ClosureView.WinnerSource>map(repository -> (pack, kind, id) -> {
+                    Optional<CharterArtifact> found = repository.load(pack).artifacts(kind).stream()
+                            .filter(artifact -> artifact.localId().equals(id))
+                            .findFirst();
+                    if (!closureFingerprint(closure).equals(closureFingerprint)) {
+                        throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+                    }
+                    return found;
+                })
+                .orElseGet(ClosureView.WinnerSource::none);
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
