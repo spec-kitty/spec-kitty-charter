@@ -318,6 +318,52 @@ Feature: A deny entry on a required artifact is accepted when an active override
       """
     And the field at "/report/denyNotApplied/0/reason" is "required"
 
+  Scenario: IC-13 - deactivating a locked LK whose deny entry is already stored is 409 artifact_locked
+    The floor judges the named target, not only the entry the write adds: a stored document that already denies the
+    locked LK (a pack upgrade locked it after the deny entry was stored) is refused as an empty one is, and nothing
+    changes.
+    Given the stored file of the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive"], "deactivated": {"directive": ["LK"]}}
+      """
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    When I remember the ETag
+    And I PUT "/activations/a-1/exclusions/directive/LK" with the remembered ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_locked"
+    And the field at "/requiredBy/0/packId" is "main"
+    When I GET "/activations/a-1"
+    Then the field at "/revision" is the stored revision
+
+  Scenario: IC-13 - deactivating T again after the override was unselected is 409 artifact_required
+    R12, F1: T's deny entry was accepted for F's sake and stays stored when F is unselected. Deactivating T once more
+    judges T as the first write did: F no longer satisfies it, so the answer is 409 artifact_required naming main,
+    although the entry is already stored.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F"]}}
+      """
+    When I PUT "/activations/a-1/exclusions/directive/T" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    When I remember the ETag
+    And I DELETE "/activations/a-1/selections/directive/F" with the remembered ETag
+    Then the response status is 200
+    When I remember the ETag
+    And I PUT "/activations/a-1/exclusions/directive/T" with the remembered ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "main"
+
   Scenario: IC-13 - a merge refusal reaches a write that adds a deny entry on a required artifact
     ADR-0063 D3, C21; the write consults the merged closure for a deny entry on a required artifact only. core
     (built-in) locks LK, leaves OP open and has a governing preset requiring OP. The project pack proj replaces LK,
