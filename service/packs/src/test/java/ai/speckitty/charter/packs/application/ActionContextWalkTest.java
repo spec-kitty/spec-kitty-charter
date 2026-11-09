@@ -104,9 +104,9 @@ class ActionContextWalkTest {
         assertThat(context.entries())
                 .extracting(Entry::urn, Entry::step, Entry::via, Entry::hops)
                 .containsExactly(
-                        tuple(urn("tactic:T1"), Step.SCOPE, urn(START), 1),
                         tuple(urn("directive:R2"), Step.REQUIRES, urn("tactic:T1"), 2),
-                        tuple(urn("directive:R3"), Step.REQUIRES, urn("directive:R2"), 3));
+                        tuple(urn("directive:R3"), Step.REQUIRES, urn("directive:R2"), 3),
+                        tuple(urn("tactic:T1"), Step.SCOPE, urn(START), 1));
     }
 
     // ---- step 3, suggests: the scoped artifacts, depth suggests-steps ----------------------------------------------
@@ -127,7 +127,7 @@ class ActionContextWalkTest {
 
         assertThat(listed(context))
                 .as("S2 is suggested by a required artifact and S3 by a suggestion: neither is followed")
-                .containsExactly("tactic:T1", "directive:R2", "tactic:S1");
+                .containsExactly("directive:R2", "tactic:S1", "tactic:T1");
         assertThat(entry(context, "tactic:S1"))
                 .extracting(Entry::step, Entry::via, Entry::hops)
                 .containsExactly(Step.SUGGESTS, urn("tactic:T1"), 2);
@@ -136,7 +136,7 @@ class ActionContextWalkTest {
     @Test
     void depthZeroFollowsNoSuggestsEdge() {
         assertThat(listed(walk(suggesting(), 0, ActionContextWalkTest::everything)))
-                .containsExactly("tactic:T1", "directive:R2");
+                .containsExactly("directive:R2", "tactic:T1");
     }
 
     @Test
@@ -183,10 +183,10 @@ class ActionContextWalkTest {
         assertThat(withSuggestions.entries())
                 .extracting(Entry::urn, Entry::step, Entry::via, Entry::hops)
                 .containsExactly(
-                        tuple(urn("tactic:T1"), Step.SCOPE, urn(START), 1),
-                        tuple(urn("tactic:S1"), Step.SUGGESTS, urn("tactic:T1"), 2),
                         tuple(urn("directive:Q1"), Step.REQUIRES_OF_SUGGESTED, urn("tactic:S1"), 3),
-                        tuple(urn("directive:Q2"), Step.REQUIRES_OF_SUGGESTED, urn("directive:Q1"), 4));
+                        tuple(urn("directive:Q2"), Step.REQUIRES_OF_SUGGESTED, urn("directive:Q1"), 4),
+                        tuple(urn("tactic:S1"), Step.SUGGESTS, urn("tactic:T1"), 2),
+                        tuple(urn("tactic:T1"), Step.SCOPE, urn(START), 1));
         assertThat(listed(without)).as("no suggestion, so nothing to require").containsExactly("tactic:T1");
     }
 
@@ -257,7 +257,7 @@ class ActionContextWalkTest {
 
         Context context = walk(closure, 1, ActionContextWalkTest::everything);
 
-        assertThat(listed(context)).containsExactly("tactic:T1", "tactic:T2", "glossary_pack:G");
+        assertThat(listed(context)).containsExactly("glossary_pack:G", "tactic:T1", "tactic:T2");
         assertThat(entry(context, "tactic:T2").step()).isEqualTo(Step.SCOPE);
         assertThat(entry(context, "glossary_pack:G").via()).isEqualTo(urn("tactic:T2"));
     }
@@ -311,7 +311,7 @@ class ActionContextWalkTest {
 
         assertThat(listed(context))
                 .as("Out is refused, so Behind is not reached through it; Behind is reached only as a suggestion")
-                .containsExactly("tactic:T1", "directive:Behind");
+                .containsExactly("directive:Behind", "tactic:T1");
         assertThat(entry(context, "directive:Behind").step()).isEqualTo(Step.SUGGESTS);
     }
 
@@ -502,7 +502,7 @@ class ActionContextWalkTest {
         Context context = walk(suggestingOutOfForce(), 1, withS);
 
         assertThat(context.suggestionCandidates()).isEmpty();
-        assertThat(listed(context)).containsExactly("tactic:T1", "tactic:S", "directive:R", "glossary_pack:G");
+        assertThat(listed(context)).containsExactly("directive:R", "glossary_pack:G", "tactic:S", "tactic:T1");
     }
 
     @Test

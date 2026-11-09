@@ -45,8 +45,8 @@ import java.util.function.Supplier;
  * force that enhance it and the artifacts in force it enhances, and pulls none of them into the answer (rule E12). An
  * entry the {@code suggests} step lists carries the {@code when} and the {@code reason} of the edge that reached it.
  *
- * <p>The walk reads the merged index it was built over and nothing else (NFR-007). Entries are in step order, then URN
- * order, and no answer depends on the order of the closure, the iteration or the writing of an edge.
+ * <p>The walk reads the merged index it was built over and nothing else (NFR-007). Entries are sorted by full URN string (ADR-0018 D3), whatever
+ * step listed them, and no answer depends on the order of the closure, the iteration or the writing of an edge.
  */
 public final class ActionContextWalk {
 
@@ -170,7 +170,7 @@ public final class ActionContextWalk {
      *
      * @param action the action node
      * @param missionTypeInForce whether the mission type is in force; when it is not, there is no entry
-     * @param entries the entries, in step order then URN order
+     * @param entries the entries, sorted by full URN string (ADR-0018 D3)
      * @param suggestionCandidates the out-of-force candidates step 3 reached, in URN order; see
      *     {@link ActionContextWalk#walk}
      */
@@ -414,10 +414,10 @@ public final class ActionContextWalk {
                             suggested ? parent.reason() : Optional.empty()));
         }
 
-        /** The entries in step order then URN order, each with its enhancers in force at either end (rule E12). */
+        /** The entries in URN order (ADR-0018 D3), each with its enhancers in force at either end (rule E12). */
         List<Entry> entries() {
             return listed.values().stream()
-                    .sorted(Comparator.comparing(Listed::step).thenComparing(Listed::urn))
+                    .sorted(Comparator.comparing(Listed::urn))
                     .map(this::entry)
                     .toList();
         }
