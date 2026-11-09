@@ -76,13 +76,13 @@
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "An accepted ADR records that registering a whole pack replaces the known pack (removals included), per-artifact writes are helpers and removal is by DELETE, superseding ADR-0026 decision 2 and leaving ADR-0030's derived-pack removal untouched.",
+      "proof_type": "code_review",
+      "evidence": "docs/adr/0065-pack-registration-replaces-the-whole-pack.md; docs/adr/0026-write-surface-is-functional-registration.md",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:42.184729+00:00",
+      "notes": "PR A (#419, WP10). ADR-0065 section 'ADR-0030: derived-pack removal is untouched'; ADR-0026 decision_status names the supersession. Verified by reading the ADRs on origin/main."
     },
     {
       "criterion_id": "FR-009",
