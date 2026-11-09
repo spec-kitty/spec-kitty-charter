@@ -1,4 +1,5 @@
 {
+  "coordination_branch": "kitty/mission-agent-profile-reads-01M70ZDM",
   "create_return_branch": "issue-407-agent-profile-reads",
   "created_at": "2026-11-09T20:19:02.482698+00:00",
   "flattened": false,
@@ -14,7 +15,15 @@
   "purpose_tldr": "Let a client read agent profiles and the governance they carry through the charter service API, pack-scoped and under an activation.",
   "slug": "agent-profile-reads-01M70ZDM",
   "target_branch": "issue-407-agent-profile-reads",
-  "topology": "single_branch",
-  "topology_settled": false,
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 9,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 10
+  },
+  "topology_settled": true,
   "topology_source": "default"
 }

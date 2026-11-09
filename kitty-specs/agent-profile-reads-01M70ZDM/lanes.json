@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "mission_slug": "agent-profile-reads-01M70ZDM",
+  "mission_id": "01M70ZDMZXTYSB91J7BQ7SKPN8",
+  "mission_branch": "kitty/mission-agent-profile-reads-01M70ZDM",
+  "target_branch": "issue-407-agent-profile-reads",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "gradle.properties",
+        "packs/open-packs.lock.yaml",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompanionDigestTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackManifestParityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackOpenPacksRoundTripTest.java",
+        "service/packs/src/test/resources/whole-pack/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        ".github/workflows/sonar.yml",
+        "docs/adr/0006-onion-vertical-slices-archunit.md",
+        "docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md",
+        "docs/architecture/hexagonal-service.md",
+        "scripts/ci/mutation_summary.py",
+        "service/charter-reports/build.gradle.kts",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/DeployableConfiguration.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/profiles/**",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/transport/**",
+        "service/profiles-edge/build.gradle.kts",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/config/**",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/package-info.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/config/**",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/package-info.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/config/**",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/package-info.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/packs/config/**",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/packs/package-info.java",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ActionContextWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/GovernanceWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ProfileGovernance.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ActionContextWalkTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewGovernanceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/GovernanceWalkTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tests"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "scripts/usability/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-agent-profile-read.md",
+        "contracts/charter/examples/Artifact.agent_profile.yaml",
+        "contracts/charter/examples/_index.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_agent_profile_artifactId.yaml",
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/agent-profile-reads.feature",
+        "contracts/charter/schemas/AgentProfile.yaml",
+        "contracts/charter/schemas/AgentProfileExcluding.yaml",
+        "contracts/charter/schemas/Artifact.yaml",
+        "contracts/charter/schemas/GovernanceStep.yaml",
+        "contracts/charter/schemas/PackGovernanceEntry.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileRoutingTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ProfileSteps.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ForeignArtifactRead.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ForeignArtifactReadTest.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/GovernanceEntry.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileRead.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileReadService.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileSource.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/AgentProfilesController.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileDtos.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/packs/PacksProfileSource.java",
+        "service/profiles-edge/src/test/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-agent-profile-read-changes.md",
+        "contracts/charter/parameters/ArtifactKind.yaml",
+        "contracts/charter/paths/packs_packId_artifacts.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_kind_artifactId.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_kind_artifactId_references.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/pack-removal.feature",
+        "contracts/charter/schemas/ArtifactKindToken.yaml",
+        "contracts/charter/schemas/ArtifactSummary.yaml",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactPosition.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactRemovalService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactDtos.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactRemovalServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArtifactControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WireTokenParityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-effective-artifact-read.md",
+        "contracts/charter/examples/EffectiveArtifactRead.directive.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_kind_artifactId.yaml",
+        "contracts/charter/scenarios/effective-artifact.feature",
+        "contracts/charter/schemas/EffectiveArtifactRead.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveArtifactAnswer.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/PacksSession.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveArtifactRead.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/GovernanceFacts.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationController.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveArtifactMapper.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSession.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceArtifactTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionArtifactTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveReadSteps.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-e"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-effective-agent-profile-read.md",
+        "contracts/charter/examples/EffectiveAgentProfileRead.java-jenny.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_agent_profile_artifactId.yaml",
+        "contracts/charter/scenarios/effective-agent-profile.feature",
+        "contracts/charter/schemas/EffectiveAgentProfileRead.yaml",
+        "contracts/charter/schemas/EffectiveGovernanceEntry.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileProblemParityTest.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfiles.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveAgentProfilesController.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileRuntimeHints.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-f"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-effective-item-links.md",
+        "contracts/charter/examples/ApiRoot.links.yaml",
+        "contracts/charter/examples/EffectiveActionContext.implement.yaml",
+        "contracts/charter/examples/EffectiveArtifactList.first-page.yaml",
+        "contracts/charter/examples/EffectiveGraph.layer-override.yaml",
+        "contracts/charter/examples/EffectiveGraph.one-edge.yaml",
+        "contracts/charter/scenarios/effective-reads.feature",
+        "contracts/charter/scenarios/root.feature",
+        "contracts/charter/schemas/ApiRoot.yaml",
+        "contracts/charter/schemas/EffectiveArtifact.yaml",
+        "contracts/charter/schemas/EffectiveGraphNode.yaml",
+        "contracts/lint/ruleset.yaml",
+        "docs/development/hypermedia-hateoas.md",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapperTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/RelationTable.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/InfoController.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/InfoControllerTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-f"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "docs/api/service-contract.md",
+        "docs/changelog/CHANGELOG.md",
+        "docs/guides/compose-packs.md",
+        "docs/plans/engineering-notes/**",
+        "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-baseline.md",
+        "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-green.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-g",
+        "lane-h",
+        "lane-i"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-09T20:58:22.260408+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP10"
+  ],
+  "planning_commit_sha": "e80a9366f83cce77fd2236086a9b7ab8c7bb3b6f"
+}
