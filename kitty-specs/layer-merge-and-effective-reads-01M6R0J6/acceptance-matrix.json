@@ -336,13 +336,13 @@
     },
     {
       "criterion_id": "FR-034",
-      "description": "Verify FR-034 is satisfied",
+      "description": "A select with includeDeactivated clears deny entries only on artifacts its walk reaches and selects, never on lineage ancestors it only passes through.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-ruling-changes.feature: \"B5 - includeDeactivated clears the deny entry of a reached artifact and keeps a passed ancestor's\"; service/activations/src/test/java/ai/speckitty/charter/activations/domain/CascadeRulesClearingTest.java#onlyWhatTheWalkReachesAndSelectsIsClearedNeverAnAncestorItOnlyPasses",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:01.071455+00:00",
+      "notes": "PR A0 (#414); IC-19, DM-01M6RA9XQSH3E07C7VCPCVD6R4."
     },
     {
       "criterion_id": "FR-035",
