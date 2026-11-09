@@ -179,12 +179,16 @@ public record ClosureView(
         Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id);
 
         /**
-         * A source that reads nothing, for a view built without the closure's packs.
+         * A source for a view built without the closure's packs: it has nothing to read from, so a read is a wiring fault
+         * ({@link IllegalStateException}), never an unreadable pack.
          *
-         * @return the empty source
+         * @return the source that refuses every read
          */
         static WinnerSource none() {
-            return (pack, kind, id) -> Optional.empty();
+            return (pack, kind, id) -> {
+                throw new IllegalStateException(
+                        "this view was built without a pack store and cannot read the winner of " + kind + " " + id);
+            };
         }
     }
 
