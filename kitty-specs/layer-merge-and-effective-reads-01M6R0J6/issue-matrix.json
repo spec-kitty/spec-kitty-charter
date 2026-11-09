@@ -371,6 +371,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#438": {
+      "evidence_ref": "Phase 2 of the step-enhancements mission; consumer of PR C symbols (StepHolding, NodeRef, the walk); notified at PR C merge",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
