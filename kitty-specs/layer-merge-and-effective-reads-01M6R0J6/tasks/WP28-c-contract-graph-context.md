@@ -12,6 +12,7 @@ requirement_refs:
 - NFR-002
 - SC-001
 - SC-002
+- FR-017
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
@@ -21,6 +22,9 @@ subtasks:
 - T140
 - T141
 - T142
+- T162
+- T163
+- T164
 phase: PR C
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -33,6 +37,9 @@ create_intent:
 - contracts/charter/changes/2026-11-07-c-graph-and-context.md
 - contracts/charter/scenarios/effective-graph-and-context.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java
+- contracts/charter/schemas/NodeReference.yaml
+- contracts/charter/changes/2026-11-09-c-node-reference-step-targets.md
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionStepRefsTest.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -46,6 +53,9 @@ owned_files:
 - contracts/charter/changes/2026-11-07-c-graph-and-context.md
 - contracts/charter/scenarios/effective-graph-and-context.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java
+- contracts/charter/schemas/NodeReference.yaml
+- contracts/charter/changes/2026-11-09-c-node-reference-step-targets.md
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionStepRefsTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -73,6 +83,32 @@ bad-fixture control).
 Implementation command:
 `spec-kitty agent action implement WP28 --agent claude --mission layer-merge-and-effective-reads-01M6R0J6`
 
+## Scope added by operator rulings (2026-11-09)
+
+#429 is part of PR C (ruling D3 of the step-enhancements mission, relayed on #429), with its scope rulings D4(a),
+D15 and D16, plus the activations half of D4b. Keep `NodeReference` stable once reviewed: the step-enhancements
+mission reuses it and never defines a second copy.
+
+- **`NodeReference` (T162; D15).** A new closed schema `{kind: NodeKind, id}` whose `id` admits `/`
+  (`^[A-Za-z0-9][A-Za-z0-9_./-]*$`), introduced once. `EnhancerWithoutTarget.targets` items become `NodeReference`
+  with `minItems: 1` (C36 guarantees a target). `### Breaking`: a documented response of `getActivationSkippedReport`
+  (and of every read carrying `SkippedReport`) changes. `ArtifactReference` stays activatable-only.
+- **Step references carried through (T163; #429 item 1, D4(a)).** `ClosureViewSession` maps an enhancer's `action:`
+  targets instead of filtering them through `activatable()`. Every part of the skipped report that drops a step
+  reference gets a unit test that states its answer (`ClosureViewSessionStepRefsTest`); only the step-target field
+  changes on the wire.
+- **`requiredNotInForce` covers activatable kinds (T163; #429 item 2, D16).** No policy or preset can name a step
+  (the policy and preset schemas exclude `action`), so the floor holds activatable kinds only by construction. A
+  test pins that `requiredNotInForce` never carries a step; WP29 writes the sentence into E14 and C31 and the
+  divergence entry.
+- **D4b, the activations half (T164).** `EffectiveSkippedReport.RequiredNotInForce.reason` is narrowed to the
+  two-value type WP27 introduces (mapped, not by name); `ActivationWireTokenParityTest`'s `RequiredNotInForce.reason`
+  row pins the contract against that type instead of the `PRUNING_REASONS` copy of `InForceResolution`'s condition.
+- **`LayerOverride` (T138).** `artifact` is a `Urn`, so any kind can be named; the records follow the node predicate
+  (WP27): a held step's override under an in-force `M` is listed, while template, asset, guard and lifecycle
+  overrides are not (they are never in force). `ClosureViewSession.overridesOf` keeps step overrides for the graph;
+  WP29 records the drop of the other kinds as a divergence.
+
 ## Context
 
 - **Delivery:** PR C (stacked on PR B).
@@ -98,6 +134,11 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` — `ACTION_NOT_FOUND` moves from the unraised to the raised set (owned by WP11)
 - `contracts/charter/examples/EffectiveActionContext.implement.yaml` — the `skipped` member of the context (owned by WP22)
 
+- `contracts/charter/schemas/EnhancerWithoutTarget.yaml` — `targets` items become `NodeReference`, `minItems: 1` (#429, D15) (owned by WP22)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveSkippedReport.java` — enhancer targets as node references; `RequiredNotInForce.reason` narrowed (D4b) (owned by WP24)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java` — map `NodeReference` (owned by WP25)
+- `service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationWireTokenParityTest.java` — the `RequiredNotInForce.reason` row against the narrowed type (D4b; from #436, not owned by a WP)
+- `client-java` fixtures and the generated-model tests that pin `EnhancerWithoutTarget` — follow the schema change
 
 ## Project constraints (apply to every subtask)
 
@@ -148,9 +189,23 @@ Service + controller + mapper, unknown-name refusals, mission type not in force.
 
 `ReservedOperationCoverageTest` at 0 with its bad-fixture control; scenarios green.
 
+### T162: `NodeReference` (D15)
+
+Schema, `EnhancerWithoutTarget.targets` retyped with `minItems: 1`, a `### Breaking` fragment
+(`2026-11-09-c-node-reference-step-targets.md`), example and lint updates.
+
+### T163: Step references in the skipped report (#429)
+
+Red unit tests per skipped-report part first (D4(a)); then carry step targets through `ClosureViewSession`; pin that
+`requiredNotInForce` holds no step (D16).
+
+### T164: Narrow the pruned reason (D4b, activations)
+
+The activations record and mapper use WP27's type; the parity row pins the contract to it.
+
 ## Test strategy
 
-Contract lint, the new feature file, `ReservedOperationCoverageTest`, controller tests.
+Contract lint, the new feature file, `ReservedOperationCoverageTest`, controller tests, `ClosureViewSessionStepRefsTest`, `ActivationWireTokenParityTest`.
 
 ## Risks
 

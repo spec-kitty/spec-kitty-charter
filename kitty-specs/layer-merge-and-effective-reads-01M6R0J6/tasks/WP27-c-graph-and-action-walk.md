@@ -16,6 +16,9 @@ subtasks:
 - T135
 - T136
 - T137
+- T159
+- T160
+- T161
 phase: PR C
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -28,6 +31,8 @@ create_intent:
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/GraphProjection.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ActionContextWalkTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphProjectionTest.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepHolding.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/StepHoldingTest.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -37,6 +42,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ActionContextWalkTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphWalkTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphProjectionTest.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepHolding.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/StepHoldingTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -67,6 +74,34 @@ in-force state from the effective set, not a stored mission-type list).
 Implementation command:
 `spec-kitty agent action implement WP27 --agent claude --mission layer-merge-and-effective-reads-01M6R0J6`
 
+## Scope added by operator rulings (2026-11-09)
+
+Binding rulings from the step-enhancements mission's plan point (`adr-0066-step-enhancement-service-alignment-01M6ZRYK`,
+plan "Operator decisions (plan point, 2026-11-09): ruled", OD-6, OD-9, D4b) put three more items in this WP. That
+mission consumes them after PR C merges (its `PrCSignaturesTest`); keep the names below stable once the lane is
+reviewed.
+
+- **OD-9, one predicate for "pack P holds step M/s" (T159).** `StepHolding` in `packs.domain`, over composition facts:
+  P defines `mission_type:M` and declares `action:M/s`. `EdgeIndex.stepsOf`, `ActionContextWalk`'s `action_not_found`
+  and the walk's start node all use it; the step-enhancements mission's FR-009 calls it. A pack that declares
+  `action:M/s` without defining `mission_type:M` does not hold the step.
+- **OD-6, the E6 amendment (T160).** A selected step enhancer is in force exactly when the mission type of its single
+  `enhances` target is in force. In `InForceResolution` (`packs.domain`): `enhancerOut` skips `action:` targets, and
+  `bindingOf` derives `M` from the step enhancement's `enhances` edge to `action:M/s` in the merged edges. The pruned
+  reason is the existing `MISSION_TYPE_NOT_IN_FORCE` (bucket `missionTypeNotInForce`); the refusal code
+  `mission_type_not_in_force` (OD-5) belongs to the step-enhancements mission's prompt read and is not added here.
+  Red test, production-shaped: select `step_enhancement:x` and `mission_type:M`, never the `action:`, and expect
+  ACTIVE; with `M` deselected expect INACTIVE with `MISSION_TYPE_NOT_IN_FORCE`. A step enhancement with an `enhances`
+  edge to anything but one `action:` keeps E6 as built (C36 and ADR-0066 guarantee one target).
+- **D4b, the packs half (T161).** `InForceStates.RequiredNotInForce.reason` is narrowed to the two pruning reasons
+  (`MISSION_TYPE_NOT_IN_FORCE`, `ENHANCED_TARGET_NOT_IN_FORCE`) by type, so a third reason cannot reach the bucket
+  (WP28 narrows the activations half and the parity row).
+- **The node predicate (runner decision, recorded with the plan-point re-analysis).** E15 and E16 restrict the graph
+  and the walk to `Eff`, which never holds a step. The predicate is `Eff` plus every step `action:M/s` that a closure
+  pack holds (T159) and whose `M` is in `Eff`, as E6 already binds a step to its mission type. Kinds with no
+  activation state (template, asset, guard, lifecycle) are not in force and are neither listed nor walked through;
+  WP29 records the divergence.
+
 ## Context
 
 - **Delivery:** PR C (stacked on PR B).
@@ -86,6 +121,9 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java` — expose `mergedGraph(Predicate<Urn>)` and `actionContext(...)` (owned by WP21)
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java` — any accessor the walk needs over the merged index (owned by WP21)
 
+- `service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java` — the E6 amendment (OD-6): `enhancerOut` skips `action:` targets, `bindingOf` reads the step enhancement's `enhances` edge (owned by WP23)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceStates.java` — `RequiredNotInForce.reason` narrowed to the two pruning reasons (D4b) (owned by WP23)
+- `service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java` — the OD-6 red tests and the narrowed reason (owned by WP23)
 
 ## Project constraints (apply to every subtask)
 
@@ -130,9 +168,23 @@ The five ADR-0018 steps, depth 0/1, predicate filtering, enhancers both ways; te
 
 Both run on the session's verified read (NFR-007); a counting test.
 
+### T159: One step predicate (OD-9)
+
+`StepHolding` in `packs.domain`; `EdgeIndex.stepsOf`, `action_not_found` and the walk's start node use it; tests
+including a pack that declares the action without defining the mission type.
+
+### T160: E6 amendment (OD-6)
+
+Production-shaped red test first (select the step enhancement and the mission type, never the action), then the
+`enhancerOut` and `bindingOf` change; the deselected-`M` twin answers `MISSION_TYPE_NOT_IN_FORCE`.
+
+### T161: Narrow the pruned reason (D4b, packs)
+
+A two-value type behind `InForceStates.RequiredNotInForce.reason`; the existing tests keep their assertions.
+
 ## Test strategy
 
-`GraphProjectionTest`, `ActionContextWalkTest`, `GraphWalkTest` unchanged.
+`GraphProjectionTest`, `ActionContextWalkTest`, `StepHoldingTest`, the OD-6 cases in `InForceResolutionTest`; `GraphWalkTest` unchanged.
 
 ## Risks
 
