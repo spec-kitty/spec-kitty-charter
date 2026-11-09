@@ -1028,7 +1028,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)",
-        "Fix cycle 1: MAJOR-1 fixed red-first, MINOR-1..4 and NIT rewrap"
+        "Fix cycle 1: MAJOR-1 fixed red-first, MINOR-1..4 and NIT rewrap",
+        "Review cycle 2 passed: MAJOR-1 fixed red-first; MINOR-5/6 and NIT-1/2 folded at the PR C closeout; issue matrix complete"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
