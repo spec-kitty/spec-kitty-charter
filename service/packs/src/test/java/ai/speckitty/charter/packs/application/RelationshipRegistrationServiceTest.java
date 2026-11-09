@@ -573,6 +573,30 @@ class RelationshipRegistrationServiceTest {
     }
 
     @Test
+    void aSuggestsEdgeOverTheEnhancesPairOfAHeldEnhancementAndItsStepWouldReplaceItAndIsRefused() {
+        seedEnhancementAndDirectives();
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
+
+        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, STEP, RelationType.SUGGESTS), "enhances");
+    }
+
+    @Test
+    void aStepEnhancementUrnThePackDoesNotHoldIsNotJudgedByTheEnhancementRulesAndIsRefusedAsUnresolved() {
+        seedEnhancementAndDirectives();
+        Urn notHeld = new Urn(NodeKind.STEP_ENHANCEMENT, "not-held");
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(notHeld, STEP, RelationType.SUGGESTS),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
+        assertThat(store.commits).isEqualTo(before);
+    }
+
+    @Test
     void theTwinOfTheReplaceRefusalIsTheSameTypeBetweenTwoDirectivesAndItIsRegistered() {
         seedEnhancementAndDirectives();
         Urn a = new Urn(NodeKind.DIRECTIVE, "A");
