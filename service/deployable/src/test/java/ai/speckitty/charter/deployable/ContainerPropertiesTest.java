@@ -232,12 +232,13 @@ class ContainerPropertiesTest {
 
     @Test
     void underTheContainerProfileALongBracketedEntryIsJudgedWithoutOverflowingTheStack() {
-        // #440: a backtracking (?:0*:)* recursed once per segment, so this entry threw StackOverflowError at binding.
-        String entry = "[" + "0:".repeat(10_000) + "1]";
-        runner.withPropertyValues(CONTAINER, PROPERTY + "=" + entry)
-                .run(context -> assertThat(
-                                context.getBean(ContainerWiring.class).properties())
-                        .map(ContainerProperties::allowedHosts)
-                        .hasValue(List.of(entry)));
+        // #440: a backtracking (?:0*:)* recursed once per segment. This entry reaches the ffff lookahead at full
+        // depth, and is refused as the unspecified IPv4-mapped address it spells, not a StackOverflowError.
+        String entry = "[" + "0:".repeat(10_000) + "ffff:0:0]";
+        runner.withPropertyValues(CONTAINER, PROPERTY + "=charter.internal," + entry)
+                .run(context -> assertThat(context)
+                        .hasFailed()
+                        .getFailure()
+                        .hasStackTraceContaining(PROPERTY + " entries must each be a host name"));
     }
 }

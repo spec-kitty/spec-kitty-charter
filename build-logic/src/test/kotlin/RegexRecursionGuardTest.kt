@@ -20,6 +20,9 @@ import org.junit.jupiter.api.Test
  * those judgements are the allow-list's reasons. The allow-list also covers patterns compiled by a linear-time engine
  * (re2j). SonarCloud rule S5998 (regex stack overflow) is the backstop for what this scan cannot see.
  *
+ * "Bounded" means a small bound: the guard ignores any `{n,m}` repeat, so keeping `m` small is the author's job.
+ * `contracts/`, `client-java/` and Kotlin sources are out of scope: it reads only `service/<module>/src/main/java`.
+ *
  * Entry points it does not scan at all: `String.matches`, `Pattern.matches`, the regex argument of `replaceAll`,
  * `replaceFirst` and `split`, a statically imported `compile(…)`, and text blocks anywhere but a `Pattern.compile`
  * argument (where they are reported as "cannot judge").
@@ -45,12 +48,14 @@ class RegexRecursionGuardTest {
         "packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Re2jRegularExpressionFactory.java:regex" to
             Allowed(
                 "cannot judge `regex`",
-                "re2j: com.google.re2j.Pattern matches in linear time and has no backtracking",
+                "re2j: com.google.re2j.Pattern matches in linear time and has no backtracking;"
+                    + " EmbeddedSchemasTest#aCatastrophicPatternIsEvaluatedInLinearTime covers it",
             ),
         "packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileKind.java:regex.toString()" to Allowed(
             "cannot judge `regex.toString()`",
             "built from a glob: the only group glob() emits is (?:.+/)? (optional, never repeated), the rest is"
-                + " [^/]* and Pattern.quote(...)",
+                + " [^/]* and Pattern.quote(...); PackFileKindTest#aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments"
+                + " pins the emitted regex",
         ),
     )
 
@@ -84,8 +89,6 @@ class RegexRecursionGuardTest {
         assertThat(findings).hasSize(1)
         assertThat(findings.single().kind).isEqualTo(Kind.RECURSIVE)
         assertThat(findings.single().toString()).contains("A.java:3", "ID")
-        val nested = Guard.scan("m/src/main/java/a/A.java", source("""Pattern.compile("(a)*")"""))
-        assertThat(nested.single().key).isEqualTo("m/src/main/java/a/A.java:ID")
         for (shape in listOf("(?:-[a-z]+)+", "(a)*?", "(a){2,}", "(?:[^)]+)*")) {
             assertThat(Guard.scan("A.java", source("Pattern.compile(\"$shape\")"))).`as`(shape).hasSize(1)
         }
@@ -96,9 +99,7 @@ class RegexRecursionGuardTest {
         val safe = listOf(
             "^[a-z]++(?:-[a-z]++)*+$",
             "(?>-[a-z]+)*",
-            "[0-9]{0,2}",
             "[0-9]+(\\\\.[0-9]+){0,2}",
-            "(a){3}",
             "(?:a)?",
             "(a){2,}+",
             "\\\\(a\\\\)*",

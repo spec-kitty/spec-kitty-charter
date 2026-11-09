@@ -17,19 +17,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Pack identifiers of any length are judged, never overflow the stack, and are capped (#440).
- *
- * <p>A repeated group such as {@code (-[a-z0-9]+)*} makes the regex engine recurse once per repetition, so an id of
- * about 10 000 characters threw {@link StackOverflowError}, which escaped every refusal path. Each type now matches
- * with possessive quantifiers and checks a length cap first: 64 for kebab ids, 255 for an executable entry.
+ * Pack identifiers are capped before they are matched (#440): 64 for kebab ids, 255 for an executable entry. That they
+ * match possessively, so no length overflows the stack, is pinned by {@code RegexRecursionGuardTest} in build-logic.
  */
-@DisplayName("Pack identifiers are bounded: no overflow on long input, capped at 64 (255 for an executable entry)")
+@DisplayName("Pack identifiers are capped at 64 (255 for an executable entry)")
 class IdentifierBoundsTest {
 
-    private static final int SEGMENTS = 10_000;
-
-    /** A valid kebab id of 1 + 2 × {@value #SEGMENTS} characters: far over any cap and deep enough to overflow. */
-    private static final String LONG_KEBAB = "a" + "-a".repeat(SEGMENTS);
+    /** A valid kebab id of 20 001 characters: far over any cap and deep enough to overflow a recursive match. */
+    private static final String LONG_KEBAB = "a" + "-a".repeat(10_000);
 
     private static void newPreset(String id) {
         new Preset(id, "a preset", Map.of());
@@ -50,25 +45,11 @@ class IdentifierBoundsTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("kebabTypes")
-    @DisplayName("a 20 001-character kebab id is refused as a constraint breach, not a StackOverflowError")
-    void aVeryLongKebabIdIsRefused(String type, Consumer<String> construct) {
-        assertThatThrownBy(() -> construct.accept(LONG_KEBAB)).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("kebabTypes")
     @DisplayName("a kebab id of exactly 64 characters is accepted and one of 65 is refused")
     void aKebabIdIsCappedAt64(String type, Consumer<String> construct) {
         String atCap = "a" + "b".repeat(63);
         assertThatCode(() -> construct.accept(atCap)).doesNotThrowAnyException();
         assertThatThrownBy(() -> construct.accept(atCap + "c")).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @Test
-    @DisplayName("an executable entry of 20 001 path characters is refused, not a StackOverflowError")
-    void aVeryLongExecutableEntryIsRefused() {
-        assertThatThrownBy(() -> newExecutable("a" + "/a".repeat(SEGMENTS)))
-                .isInstanceOf(ConstraintBreachException.class);
     }
 
     @Test
@@ -78,13 +59,6 @@ class IdentifierBoundsTest {
         assertThat(atCap).hasSize(255);
         assertThatCode(() -> newExecutable(atCap)).doesNotThrowAnyException();
         assertThatThrownBy(() -> newExecutable(atCap + "x")).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @Test
-    @DisplayName("an asset-backed guard with a 20 001-character pack name is refused, not a StackOverflowError")
-    void aVeryLongGuardImplementationPackIsRefused() {
-        assertThatThrownBy(() -> GuardImplementation.parse(LONG_KEBAB + "::asset:lint"))
-                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -103,6 +77,9 @@ class IdentifierBoundsTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("longer than 64")
                 .hasMessageNotContaining(pack);
+        assertThatThrownBy(() -> GuardImplementation.parse(LONG_KEBAB + "::asset:lint"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("longer than 64");
     }
 
     static Stream<Arguments> kebabVerdicts() {
