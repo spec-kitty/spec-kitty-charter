@@ -17,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.LayerMerge;
+import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -97,7 +98,12 @@ class EdgeIndexTest {
 
         /** The index under the layer merge of the closure, whose packs were added in merge order. */
         EdgeIndex merged() {
-            return index().merged(LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of())));
+            return index().merged(mergedClosure());
+        }
+
+        /** The layer merge of the closure, whose packs were added in merge order. */
+        MergedClosure mergedClosure() {
+            return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
         }
     }
 
@@ -368,6 +374,42 @@ class EdgeIndexTest {
         assertThat(closure.index().stepsOf(urn("mission_type:M")))
                 .extracting(EdgeIndex.Place::urn)
                 .containsExactly(urn("action:M/one"), urn("action:M/two"), urn("action:M/one"));
+        assertThat(closure.merged().stepsOf(urn("mission_type:M")))
+                .containsExactly(
+                        new EdgeIndex.Place(pack("org"), urn("action:M/two")),
+                        new EdgeIndex.Place(pack("project"), urn("action:M/one")));
+    }
+
+    // ---- OD-9, the closure form of StepHolding (decision 01M7037V93Y077H8M4W9V8Y6B3)
+    // ---------------------------------
+
+    @Test
+    void anActionDeclaredWithoutItsMissionTypeInAnyPackIsNotAStepOfThatMissionType() {
+        Closure closure = new Closure()
+                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one"))
+                .pack("project", PackLevel.PROJECT, List.of("action:M/two"));
+
+        assertThat(closure.merged().stepsOf(urn("mission_type:M")))
+                .as("no closure pack defines M and declares M/two, so the closure holds no such step")
+                .containsExactly(new EdgeIndex.Place(pack("org"), urn("action:M/one")));
+    }
+
+    @Test
+    void theStepsOfAMissionTypeComeFromAPackThatDefinesItNotFromAPackThatOnlyDeclaresTheAction() {
+        Closure closure = new Closure()
+                .pack("alpha", PackLevel.ORG, List.of("mission_type:M"))
+                .pack("beta", PackLevel.PROJECT, List.of("action:M/s"));
+
+        assertThat(closure.merged().stepsOf(urn("mission_type:M"))).isEmpty();
+        assertThat(closure.index().stepsOf(urn("mission_type:M"))).isEmpty();
+    }
+
+    @Test
+    void aWinningMissionTypeKeepsTheUniqueStepsOfTheVersionItReplaced() {
+        Closure closure = new Closure()
+                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one", "action:M/two"))
+                .pack("project", PackLevel.PROJECT, List.of("mission_type:M", "action:M/one"));
+
         assertThat(closure.merged().stepsOf(urn("mission_type:M")))
                 .containsExactly(
                         new EdgeIndex.Place(pack("org"), urn("action:M/two")),

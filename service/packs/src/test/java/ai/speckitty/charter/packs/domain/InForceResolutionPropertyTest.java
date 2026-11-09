@@ -200,17 +200,19 @@ class InForceResolutionPropertyTest {
             String what) {
         Urn urn = entry.urn();
         ArtifactState state = states.stateOf(urn).orElseThrow();
-        assertThat(entry.reason())
+        assertThat(entry.reason().name())
                 .as(what + " " + urn + " reported as required but not in force")
-                .isIn(Reason.ENHANCED_TARGET_NOT_IN_FORCE, Reason.MISSION_TYPE_NOT_IN_FORCE);
-        assertThat(state.reason()).as(what + " " + urn + " reason").isEqualTo(entry.reason());
+                .isIn(Reason.ENHANCED_TARGET_NOT_IN_FORCE.name(), Reason.MISSION_TYPE_NOT_IN_FORCE.name());
+        assertThat(state.reason().name())
+                .as(what + " " + urn + " reason")
+                .isEqualTo(entry.reason().name());
         assertThat(state.active())
                 .as(what + " " + urn + " reported, so not in force")
                 .isFalse();
         assertThat(state.required())
                 .as(what + " " + urn + " is required or locked")
                 .isTrue();
-        if (entry.reason() == Reason.ENHANCED_TARGET_NOT_IN_FORCE) {
+        if (entry.reason() == InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE) {
             Set<Urn> targets = generated.edges().enhances().getOrDefault(urn, Set.of());
             assertThat(targets).as(what + " " + urn + " enhances something").isNotEmpty();
             assertThat(targets.stream().noneMatch(inForce::contains))

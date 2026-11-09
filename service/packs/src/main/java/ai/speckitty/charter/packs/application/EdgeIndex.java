@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReference;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -245,17 +247,62 @@ public final class EdgeIndex implements ComposeResolver {
 
     /**
      * The places of a mission type's steps (A7 Q1, rule W20's {@code steps(M)}): every place of the closure, in closure
-     * order, that holds an {@code action:<M>/<step>} node.
+     * order, that holds an {@code action:<M>/<step>} node the closure holds as a step ({@link StepHolding}, OD-9, closure
+     * form). A layer override of a held step is a place of it; an action declared where no pack defines its mission type
+     * is none.
      */
     List<Place> stepsOf(Urn missionType) {
+        Set<Urn> held = heldSteps();
         String prefix = missionType.id() + "/";
         return closure.stream()
                 .flatMap(pack -> pack.definedArtifacts().stream()
                         .flatMap(defined -> Urn.parse(defined).stream())
                         .filter(urn -> urn.kind() == NodeKind.ACTION && urn.id().startsWith(prefix))
+                        .filter(held::contains)
                         .map(urn -> new Place(idOf(pack), urn)))
                 .filter(this::wins)
                 .toList();
+    }
+
+    /** The steps the closure holds ({@link StepHolding#stepsHeldByClosure}), from the artifacts each pack defines. */
+    Set<Urn> heldSteps() {
+        return StepHolding.stepsHeldByClosure(
+                closure.stream().map(PackUnderResolution::definedArtifacts).toList());
+    }
+
+    /** Whether the closure holds the step ({@link StepHolding#heldByClosure}). */
+    boolean holdsStep(Urn step) {
+        return StepHolding.heldByClosure(
+                closure.stream().map(PackUnderResolution::definedArtifacts).toList(), step);
+    }
+
+    /**
+     * A typed edge as the effective reads see it: from an artifact held at its place in force to the place it ends at.
+     *
+     * @param source the source artifact
+     * @param relation the relation
+     * @param target the target artifact, at the place the edge leads to
+     * @param when the authored condition of the edge
+     * @param reason the authored reason of the edge
+     */
+    record Link(Urn source, RelationType relation, Urn target, Optional<String> when, Optional<String> reason) {}
+
+    /**
+     * Every edge between two held places, one per written edge, in no promised order: the callers sort. An edge from a
+     * place that does not hold its source, or to a place that holds nothing (a target no pack of the closure holds, or a
+     * version a later level replaced), is not among them.
+     */
+    List<Link> links() {
+        List<Link> links = new ArrayList<>();
+        outgoing.forEach((place, edges) -> {
+            if (holds(place)) {
+                edges.forEach(edge -> neighbour(edge)
+                        .filter(this::holds)
+                        .ifPresent(target -> links.add(
+                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale()))));
+            }
+        });
+        return links;
     }
 
     /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */

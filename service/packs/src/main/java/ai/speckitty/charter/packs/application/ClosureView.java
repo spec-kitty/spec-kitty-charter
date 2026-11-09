@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -16,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -181,33 +184,52 @@ public record ClosureView(
 
         /**
          * The {@code overrides} and {@code enhances} edges among the winners, as the in-force resolution reads them
-         * (FR-013 to FR-016): from the merged index, so an edge a losing version declared is not among them.
+         * (FR-013 to FR-016): from the merged index, so an edge a losing version declared is not among them. The binding
+         * of a step enhancer is derived here, from the merged edges and before an edge to a non-winner is dropped (OD-6,
+         * rule E6 as amended): a {@code step_enhancement} with exactly one {@code enhances} target, an {@code action:},
+         * is bound to the mission type of the step when the closure holds the step ({@link StepHolding}), and the edge is
+         * not counted; when it does not, the edge is kept though its target is no winner, so the enhancer is pruned for
+         * its target. Every other shape keeps rule E6 as built.
          *
-         * @return each overrider and enhancer with the winning artifacts it names
+         * @return each overrider and enhancer with the winning artifacts it names, and the bindings
          */
         InForceResolution.Edges resolutionEdges() {
             Map<Urn, Set<Urn>> overrides = new LinkedHashMap<>();
             Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
-            closure.winners()
-                    .forEach((urn, winner) -> edges.inPack(new PackIdentifier(winner.descriptorPackId()))
-                            .resolve(urn)
-                            .ifPresent(node -> node.derivedRelationships()
-                                    .forEach(edge -> record(urn, edge, overrides, enhances))));
-            return new InForceResolution.Edges(overrides, enhances, bindings);
+            Map<Urn, Urn> derived = new LinkedHashMap<>(bindings);
+            closure.winners().forEach((urn, winner) -> {
+                List<Relationship> written = edges.inPack(new PackIdentifier(winner.descriptorPackId()))
+                        .resolve(urn)
+                        .map(CharterArtifact::derivedRelationships)
+                        .orElse(List.of());
+                written.stream()
+                        .filter(edge -> edge.type() == RelationType.OVERRIDES)
+                        .filter(edge -> closure.winners().containsKey(edge.to()))
+                        .forEach(edge -> overrides
+                                .computeIfAbsent(urn, ignored -> new LinkedHashSet<>())
+                                .add(edge.to()));
+                enhancements(urn, written, enhances, derived);
+            });
+            return new InForceResolution.Edges(overrides, enhances, derived);
         }
 
-        /** Files an {@code overrides} or {@code enhances} edge to a winner under its source; any other edge is not read. */
-        private void record(Urn source, Relationship edge, Map<Urn, Set<Urn>> overrides, Map<Urn, Set<Urn>> enhances) {
-            if (!closure.winners().containsKey(edge.to())) {
-                return;
-            }
-            if (edge.type() == RelationType.OVERRIDES) {
-                overrides
-                        .computeIfAbsent(source, ignored -> new LinkedHashSet<>())
-                        .add(edge.to());
-            } else if (edge.type() == RelationType.ENHANCES) {
-                enhances.computeIfAbsent(source, ignored -> new LinkedHashSet<>())
-                        .add(edge.to());
+        /** Files the {@code enhances} edges of one winner, or the binding that stands for them (OD-6). */
+        private void enhancements(
+                Urn source, List<Relationship> written, Map<Urn, Set<Urn>> enhances, Map<Urn, Urn> derived) {
+            Set<Urn> targets = new LinkedHashSet<>();
+            written.stream()
+                    .filter(edge -> edge.type() == RelationType.ENHANCES)
+                    .forEach(edge -> targets.add(edge.to()));
+            Optional<Urn> step = StepHolding.soleActionTarget(source, targets);
+            if (step.isPresent() && edges.holdsStep(step.get())) {
+                StepHolding.missionTypeOf(step.get()).ifPresent(missionType -> derived.put(source, missionType));
+            } else if (step.isPresent()) {
+                enhances.put(source, Set.of(step.get()));
+            } else {
+                targets.stream()
+                        .filter(closure.winners()::containsKey)
+                        .forEach(target -> enhances.computeIfAbsent(source, ignored -> new LinkedHashSet<>())
+                                .add(target));
             }
         }
     }
@@ -430,6 +452,52 @@ public record ClosureView(
     public InForceStates inForce(InForceRequest request) {
         MergedView view = merged();
         return InForceResolution.resolve(view.closure(), view.resolutionEdges(), request);
+    }
+
+    /**
+     * The effective graph over the merged closure (FR-018, rule E15): the artifacts in force plus each held step whose
+     * mission type is in force, the merged edges among them, and the layer overrides of those nodes. The node predicate
+     * is built here from the in-force states, never handed in (decision {@code 01M7037ZNKJ6JTRKGD7G695ZV1}); it reads
+     * nothing more than this view (NFR-007).
+     *
+     * @param states what {@link #inForce} answered for the request
+     * @return the graph
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
+     */
+    public GraphProjection mergedGraph(InForceStates states) {
+        MergedView view = merged();
+        return GraphProjection.of(view.edges(), view.closure(), effective(states));
+    }
+
+    /**
+     * The action context over the merged closure (FR-015, FR-019, rule E16): ADR-0018's five-step walk from the held step
+     * {@code action:<missionType>/<action>} over the artifacts in force, with their enhancers, {@code depth} counting
+     * {@code suggests} hops.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param depth the number of {@code suggests} hops, at least 0
+     * @param states what {@link #inForce} answered for the request
+     * @return what the action reaches; no entry, and {@code missionTypeInForce} false, for a mission type not in force
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} or
+     *     {@code ACTION_NOT_FOUND}, judged on the merged closure, or as {@link #merged()} does
+     */
+    public ActionContextWalk.Context actionContext(String missionType, String action, int depth, InForceStates states) {
+        return new ActionContextWalk(merged().edges()).walk(missionType, action, depth, effective(states));
+    }
+
+    /**
+     * The effective set as a predicate over URNs: the artifacts of an activatable kind in force. A step is none, and
+     * neither is a template, an asset, a guard or a lifecycle, even when a lock puts it in force inside packs: the
+     * effective reads never list them (decision {@code 01M702A71YF7WNDTG2AA89K8ZA}).
+     */
+    private static Predicate<Urn> effective(InForceStates states) {
+        Objects.requireNonNull(states, "states");
+        return urn ->
+                urn.kind().artifactKind().filter(ArtifactKind::activatable).isPresent()
+                        && states.stateOf(urn)
+                                .filter(InForceStates.ArtifactState::active)
+                                .isPresent();
     }
 
     /**

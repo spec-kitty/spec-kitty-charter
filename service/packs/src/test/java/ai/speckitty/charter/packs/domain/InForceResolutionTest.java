@@ -665,8 +665,8 @@ class InForceResolutionTest {
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().required()).isTrue();
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     @Test
@@ -679,8 +679,8 @@ class InForceResolutionTest {
 
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     @Test
@@ -718,8 +718,8 @@ class InForceResolutionTest {
 
         expect(states, "action:m/s", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("action:m/s"), InForceStates.PruningReason.MISSION_TYPE_NOT_IN_FORCE));
     }
 
     @Test
@@ -855,8 +855,8 @@ class InForceResolutionTest {
 
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket())
                 .as("listed once: in requiredNotInForce, not in the enhanced-target bucket as well")
                 .isEmpty();
@@ -871,8 +871,8 @@ class InForceResolutionTest {
                 .select("tactic:X");
 
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket()).isEmpty();
     }
 
@@ -884,8 +884,8 @@ class InForceResolutionTest {
                 .select("action:m/s");
 
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("action:m/s"), InForceStates.PruningReason.MISSION_TYPE_NOT_IN_FORCE));
         assertThat(states.stateOf(u("action:m/s")).orElseThrow().bucket()).isEmpty();
     }
 
@@ -953,5 +953,50 @@ class InForceResolutionTest {
         expect(states, "tactic:A", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         expect(states, "tactic:B", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         expect(states, "tactic:C", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void theReasonOfARequiredNotInForceEntryIsATypeOfExactlyTheTwoPruningReasons() {
+        // D4b (#436): the Java type behind RequiredNotInForce.reason holds the two reasons the pruning gives, no other.
+        Class<?> type = Arrays.stream(InForceStates.RequiredNotInForce.class.getRecordComponents())
+                .filter(component -> component.getName().equals("reason"))
+                .findFirst()
+                .orElseThrow()
+                .getType();
+
+        assertThat(type.isEnum()).as("the reason type is an enum").isTrue();
+        assertThat(Arrays.stream(type.getEnumConstants()).map(constant -> ((Enum<?>) constant).name()))
+                .containsExactlyInAnyOrder("MISSION_TYPE_NOT_IN_FORCE", "ENHANCED_TARGET_NOT_IN_FORCE");
+    }
+
+    @Test
+    void aStepEnhancerBoundToItsMissionTypeWithNoEnhancesEdgeIsInForceOnlyWhileTheMissionTypeIs() {
+        // OD-6: the merged-edge derivation hands the resolution the binding and no enhances edge for a step enhancer
+        // whose single target is a held step.
+        Closure closure = new Closure()
+                .open("mission_type:m", "step_enhancement:x")
+                .bound("step_enhancement:x", "mission_type:m");
+
+        expect(
+                closure.select("step_enhancement:x", "mission_type:m"),
+                "step_enhancement:x",
+                State.ACTIVE,
+                Reason.SELECTED);
+        InForceStates without = closure.select("step_enhancement:x");
+        expect(without, "step_enhancement:x", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(without.stateOf(u("step_enhancement:x")).orElseThrow().bucket())
+                .contains(Bucket.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aStepEnhancerWhoseKeptEnhancesEdgeEndsAtNoWinnerIsPrunedForItsTarget() {
+        // OD-6, an unheld target: the derivation keeps the edge though its target is no winner, so I11 holds.
+        InForceStates states = new Closure()
+                .open("mission_type:m", "step_enhancement:x")
+                .enhances("step_enhancement:x", "action:m/missing")
+                .select("step_enhancement:x", "mission_type:m");
+
+        expect(states, "step_enhancement:x", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.enhancedTargets()).containsEntry(u("step_enhancement:x"), List.of(u("action:m/missing")));
     }
 }

@@ -21,10 +21,24 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.Winner;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
+import ai.speckitty.charter.activations.infra.packs.PacksAvailability;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackDependency;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ClosureQueries;
+import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.application.OfferingReadService;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -580,5 +594,88 @@ class EffectiveSetTest {
         assertThat(query.languages()).isEmpty();
         assertThat(query.selected()).isEmpty();
         assertThat(query.pins()).isEmpty();
+    }
+
+    // ---- OD-6: the effective set of a step enhancer, through the session over a real closure -----------------------
+
+    /**
+     * The effective set of a document over a real closure: one pack holding mission type {@code M}, its step
+     * {@code action:M/s} and the step enhancement {@code x}, which enhances the step. The pack declares no binding for
+     * the step enhancement, so only the amended rule E6 can bind it to {@code M}.
+     */
+    private static EffectiveSet effectiveSetOverAStepEnhancer(List<String> selectedMissionTypes) {
+        ConfiguredPack configured = new ConfiguredPack(new PackIdentifier("alpha"), PackLevel.ORG);
+        PackDescriptor descriptor = new PackDescriptor(
+                "id-alpha",
+                "1.0.0",
+                Optional.empty(),
+                "alpha",
+                Optional.empty(),
+                Optional.empty(),
+                PackPaths.none(),
+                List.<PackDependency>of());
+        PackDescriptorRepository repository = new PackDescriptorRepository() {
+            @Override
+            public PackDescriptor get(PackIdentifier pack) {
+                return descriptor;
+            }
+
+            @Override
+            public Optional<PackDescriptor> find(PackIdentifier pack) {
+                return Optional.of(descriptor);
+            }
+
+            @Override
+            public void save(PackIdentifier pack, PackDescriptor changed) {
+                throw new UnsupportedOperationException("the closure never writes");
+            }
+        };
+        Relationship enhances = new Relationship(
+                Urn.parse("step_enhancement:x").orElseThrow(),
+                Urn.parse("action:M/s").orElseThrow(),
+                RelationType.ENHANCES,
+                Optional.empty(),
+                Optional.empty());
+        PackCompositionFacts facts = new PackCompositionFacts(
+                List.of(),
+                List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                List.of(),
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(enhances),
+                Map.of());
+        PackCatalogRepository catalog = () -> List.of(configured);
+        ConsistentRead read = new ConsistentRead(() -> "sha256:" + "1".repeat(64));
+        OfferingReadService offering = new OfferingReadService(catalog, repository, pack -> facts, read);
+        var session = new PacksAvailability(new ClosureQueries(offering, catalog, read)).session(Optional.empty());
+        ActivationDocument document = ActivationDocument.builder()
+                .selected(ArtifactKind.STEP_ENHANCEMENT, List.of("x"))
+                .selected(ArtifactKind.MISSION_TYPE, selectedMissionTypes)
+                .build()
+                .document();
+        return EffectiveSet.of(
+                document, session.snapshot(), session.merged(), session.inForce(EffectiveSet.queryOf(document)));
+    }
+
+    @Test
+    void aSelectedStepEnhancerIsInForceWhileTheMissionTypeOfItsStepIsAndNeitherListsNorWarnsAboutIt() {
+        EffectiveSet set = effectiveSetOverAStepEnhancer(List.of("M"));
+
+        assertThat(only(set, "step_enhancement:x").state()).isEqualTo(State.ACTIVE);
+        assertThat(only(set, "step_enhancement:x").reason()).isEqualTo(Reason.SELECTED);
+        assertThat(set.skipped().enhancedTargetNotInForce())
+                .as("the bucket no longer carries a step enhancer whose mission type is in force")
+                .isEmpty();
+        assertThat(set.skipped().missionTypeNotInForce()).isEmpty();
+    }
+
+    @Test
+    void aSelectedStepEnhancerWhoseMissionTypeIsNotSelectedIsListedUnderTheMissionTypeBucket() {
+        EffectiveSet set = effectiveSetOverAStepEnhancer(List.of());
+
+        assertThat(only(set, "step_enhancement:x").state()).isEqualTo(State.INACTIVE);
+        assertThat(only(set, "step_enhancement:x").reason()).isEqualTo(Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(set.skipped().missionTypeNotInForce()).containsExactly(ref("step_enhancement:x"));
+        assertThat(set.skipped().enhancedTargetNotInForce()).isEmpty();
     }
 }
