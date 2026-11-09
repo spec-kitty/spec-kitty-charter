@@ -1,0 +1,45 @@
+title: MissionStepContractStep
+description: One step of a mission step contract.
+type: object
+additionalProperties: false
+required:
+  - id
+  - description
+properties:
+  id:
+    type: string
+    description: The step's id within the contract.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+      symbol: ContractStep.id
+  description:
+    type: string
+    description: What the step does.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+      symbol: ContractStep.description
+  command:
+    type: string
+    description: The command the step runs, as stored; absent when it names none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+      symbol: ContractStep.command
+  inputs:
+    type: array
+    description: The inputs the step's command takes, in stored order; absent when it declares none.
+    items:
+      $ref: MissionStepContractInput.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+      symbol: ContractStep.inputs
+  delegatesTo:
+    $ref: MissionStepDelegation.yaml
+  guidance:
+    type: string
+    description: The step's guidance text, as stored; absent when it declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+      symbol: ContractStep.guidance
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
+  symbol: ContractStep

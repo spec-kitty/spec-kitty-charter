@@ -1,4 +1,3 @@
-# No operation references this response now; it is kept for a reservation to come.
 description: >-
   The operation is reserved: declared in full and not built yet (ADR-0020 D8). It answers 501, a Problem with no
   code, before it reads the request, whatever the request holds. The answer disappears, with the operation's x-reserved,

@@ -86,3 +86,17 @@ files:
   - EffectiveAgentProfileRead.yaml
   - EffectiveArtifactRead.yaml
   - EffectiveGovernanceEntry.yaml
+  - MissionExpectedArtifact.yaml
+  - MissionExpectedInput.yaml
+  - MissionPathConventions.yaml
+  - MissionSkeleton.yaml
+  - MissionSkeletonSummary.yaml
+  - MissionStep.yaml
+  - MissionStepContract.yaml
+  - MissionStepContractGate.yaml
+  - MissionStepContractInput.yaml
+  - MissionStepContractStep.yaml
+  - MissionStepDelegation.yaml
+  - MissionStepDelegationCandidate.yaml
+  - MissionStepSummary.yaml
+  - MissionType.yaml

@@ -1,0 +1,9 @@
+name: missionTypeId
+in: path
+required: true
+description: >-
+  The mission type, by its id within the pack (or the activation's merged closure). A value that is not a slug is a
+  400 Problem without a code, before the pack is judged; a slug that names no mission type is a 404
+  mission_type_not_found, after the pack is found.
+schema:
+  $ref: ../schemas/Slug.yaml

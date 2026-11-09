@@ -1,0 +1,32 @@
+title: MissionStepDelegation
+description: >-
+  The artifacts a step contract step delegates to: one kind and its candidates, in stored order. Absent from the step
+  when it delegates to none.
+type: object
+additionalProperties: false
+required:
+  - kind
+  - candidates
+properties:
+  kind:
+    type: string
+    pattern: '^[a-z0-9][a-z0-9_-]*$'
+    maxLength: 64
+    description: >-
+      The kind token of the candidates, for example directive or procedure. An open token: a client tolerates a kind it
+      does not know.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepDelegation.java
+      symbol: StepDelegation.kind
+  candidates:
+    type: array
+    minItems: 1
+    description: The candidates, in stored order.
+    items:
+      $ref: MissionStepDelegationCandidate.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepDelegation.java
+      symbol: StepDelegation.candidates
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepDelegation.java
+  symbol: StepDelegation

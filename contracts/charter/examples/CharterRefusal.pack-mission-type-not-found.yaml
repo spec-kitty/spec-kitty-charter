@@ -1,0 +1,6 @@
+summary: The pack holds no such mission type.
+value:
+  title: Mission type not found
+  status: 404
+  code: mission_type_not_found
+  detail: Pack core has no mission type research-x.

@@ -1,0 +1,89 @@
+title: MissionType
+description: >-
+  One mission type of a Charter Pack, as its *.mission-type.yaml declares it (mission_type:<id>): its stored fields,
+  then its steps in stored order followed by its on-demand steps, each marked and linked to its step read, then the
+  skeletons of the type, each linked to its skeleton read. It is the missionType member of the Artifact envelope that
+  getPackMissionType answers. A step's prompt and guidelines are read on the step, not here.
+type: object
+additionalProperties: false
+required:
+  - id
+  - schemaVersion
+  - title
+  - description
+  - requiresSubstantiveSpec
+  - expectedOutputArtifacts
+  - steps
+  - skeletons
+properties:
+  id:
+    type: string
+    description: The mission type's identity within its pack, a letter-first kebab slug of at most 64 characters.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.id
+  schemaVersion:
+    type: string
+    description: The schema version the mission-type file declares.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.schemaVersion
+  title:
+    type: string
+    description: The mission type's title.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.title
+  description:
+    type: string
+    description: The mission type's one-line description.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.description
+  content:
+    type: string
+    description: The mission type's agent-facing text, as stored; absent when the file declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.content
+  requiresSubstantiveSpec:
+    type: boolean
+    description: Whether the mission type asks for a substantive specification; false when the file declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.requiresSubstantiveSpec
+  pathConventions:
+    $ref: MissionPathConventions.yaml
+  expectedOutputArtifacts:
+    type: array
+    description: The artifacts the mission as a whole is expected to produce, in stored order; empty when it names none.
+    items:
+      $ref: MissionExpectedArtifact.yaml
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+      symbol: MissionType.expectedOutputArtifacts
+  steps:
+    type: array
+    description: >-
+      Every step of the mission type: the steps in stored order, then the on-demand steps in stored order, each with
+      onDemand saying which list it came from and a self link to its step read.
+    items:
+      $ref: MissionStepSummary.yaml
+    x-derived:
+      rule: MissionType.steps, each with onDemand false, followed by MissionType.onDemandSteps, each with onDemand true.
+      inputs:
+        - schemas/MissionStepSummary.yaml
+  skeletons:
+    type: array
+    description: >-
+      Every skeleton of the mission type: each stored file under the type's templates/ directory, ordered by name in
+      code-point order, with a self link to its skeleton read. Empty when the type has none.
+    items:
+      $ref: MissionSkeletonSummary.yaml
+    x-derived:
+      rule: The templates of the pack whose missionType is the type's id, ordered by name.
+      inputs:
+        - schemas/MissionSkeletonSummary.yaml
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionType.java
+  symbol: MissionType

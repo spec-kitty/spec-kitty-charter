@@ -1,0 +1,52 @@
+title: MissionExpectedArtifact
+description: >-
+  An artifact a mission type or one of its steps is expected to produce, as its expected_output_artifacts entry
+  declares it. On a step, an entry whose templatePath names a stored skeleton of the type links it as skeleton; an
+  entry without one, or whose skeleton is not stored, has no skeleton link (never a broken one).
+type: object
+additionalProperties: false
+required:
+  - artifactKey
+  - artifactClass
+  - pathPattern
+  - blocking
+properties:
+  artifactKey:
+    type: string
+    description: The artifact's dotted key, for example input.spec.main.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java
+      symbol: ExpectedArtifact.artifactKey
+  artifactClass:
+    type: string
+    description: >-
+      What the artifact is to the mission, as the schema's artifact_class token (input, output, evidence, workflow or
+      runtime). An open token: a client tolerates one it does not know.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ArtifactClass.java
+      symbol: ArtifactClass.token
+  pathPattern:
+    type: string
+    description: Where the artifact is written, relative to the mission's workspace; it may hold a glob, as tasks/WP*.md.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java
+      symbol: ExpectedArtifact.pathPattern
+  blocking:
+    type: boolean
+    description: Whether the mission cannot go on without the artifact; false when the entry declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java
+      symbol: ExpectedArtifact.blocking
+  templatePath:
+    type: string
+    description: >-
+      The skeleton the artifact starts from, as stored: templates/ followed by the skeleton's path under the type's
+      templates directory. Absent when the entry names none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java
+      symbol: ExpectedArtifact.templatePath
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java
+  symbol: ExpectedArtifact

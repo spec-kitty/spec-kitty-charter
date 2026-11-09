@@ -2,9 +2,12 @@ title: Artifact
 description: >-
   One artifact of a pack in the common envelope: its kind, its id, the pack, its links, and exactly
   one kind-named member holding the artifact in its kind's own representation, the member kind
-  names. The other five members are absent. The oneOf below documents the exactly-one rule; the
+  names. The other members are absent. The oneOf below documents the exactly-one rule; the
   service fills the one member itself, whatever a generated client enforces of it. An agent profile also carries
-  governance, the entries its pack-scoped walk lists; no other kind does.
+  governance, the entries its pack-scoped walk lists; no other kind does. A mission_step_contract is
+  answered by the generic item read (getPackArtifact) in member missionStepContract. A mission_type is answered in
+  member missionType by its own read, getPackMissionType, whose literal path the service prefers over the generic
+  one. Neither of the two answers an ETag: neither kind has a write.
 type: object
 additionalProperties: false
 required:
@@ -25,15 +28,20 @@ oneOf:
       - toolguide
   - required:
       - agentProfile
+  - required:
+      - missionType
+  - required:
+      - missionStepContract
 properties:
   kind:
     type: string
     pattern: '^[a-z0-9][a-z0-9_-]*$'
     maxLength: 64
     description: >-
-      The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide and agent_profile; a
-      client tolerates a kind it does not know (skips the item). It names the one member that holds
-      the artifact: agent_profile names agentProfile.
+      The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide,
+      agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know (skips the
+      item). It names the one member that holds the artifact: agent_profile names agentProfile, the member of
+      mission_type is missionType and the member of mission_step_contract is missionStepContract.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -63,6 +71,10 @@ properties:
     $ref: Toolguide.yaml
   agentProfile:
     $ref: AgentProfile.yaml
+  missionType:
+    $ref: MissionType.yaml
+  missionStepContract:
+    $ref: MissionStepContract.yaml
   governance:
     type: array
     description: >-

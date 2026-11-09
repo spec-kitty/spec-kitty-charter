@@ -1,0 +1,6 @@
+summary: The name does not decode to a skeleton of the mission type.
+value:
+  title: Skeleton not found
+  status: 404
+  code: skeleton_not_found
+  detail: Mission type software-dev of pack core has no skeleton nope.md.

@@ -303,6 +303,10 @@ rules:
               - artifact
               - references
               - effective-artifact
+              - mission-type
+              - step
+              - step-contract
+              - skeleton
 
   # R-03 (revised): the relation-key rule reads examples, so every 2xx JSON response carries one, and every example
   # it carries has _links at its top level; the key check is then never vacuous.

@@ -1,0 +1,49 @@
+get:
+  operationId: getPackMissionSkeleton
+  summary: Get one skeleton of a mission type of a Charter Pack.
+  description: >-
+    One skeleton of a mission type: a stored file under missions/<type>/templates/, the starting shape of a document a
+    step produces (stored as kind template, D7). skeletonName is one path segment (D9): the path under the type's
+    templates/ directory, escaped as in RFC 6901 ('~' as '~0', then '/' as '~1'), so templates/divio/howto-template.md
+    is divio~1howto-template.md. The content is the stored bytes, never altered: as text when they are valid UTF-8,
+    else base64, as encoding says, with their sha256 and size. _links holds self and mission-type. A packId or
+    missionTypeId that breaks its parameter's schema is a 400 Problem without a code, before anything is read. Then, in
+    this order: an unknown pack is a 404 pack_not_found, an unreadable pack a 500 pack_unreadable, an unknown mission
+    type a 404 mission_type_not_found, and a name that does not decode to a skeleton of the type a 404
+    skeleton_not_found; nothing outside the type's templates/ directory is ever read. The answer is one verified read
+    and carries the source fingerprint it verified; inputs that change while it is read are stale_input. No ETag.
+  tags:
+    - MissionTypes
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/MissionTypeId.yaml
+    - $ref: ../parameters/SkeletonName.yaml
+  responses:
+    '200':
+      description: The skeleton.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/MissionSkeleton.yaml
+          examples:
+            spec-template:
+              $ref: ../examples/MissionSkeleton.spec-template.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/MissionSkeletonNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

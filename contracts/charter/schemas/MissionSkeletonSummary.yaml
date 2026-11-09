@@ -1,0 +1,32 @@
+title: MissionSkeletonSummary
+description: One skeleton as its mission type lists it, with the self link to its skeleton read.
+type: object
+additionalProperties: false
+required:
+  - name
+  - path
+  - _links
+properties:
+  name:
+    type: string
+    description: >-
+      The skeleton's one-segment name (D9): its template id without the <type>/ prefix, escaped as in RFC 6901 ('~'
+      becomes '~0', then '/' becomes '~1'), as the skeletonName path parameter takes it.
+    x-derived:
+      rule: Template.id without its '<missionType>/' prefix, with '~' replaced by '~0' and then '/' by '~1'.
+      inputs:
+        - schemas/MissionSkeletonSummary.yaml#/properties/path
+  path:
+    type: string
+    description: >-
+      The skeleton's path beside its mission type, spelled as a step's templatePath names it: templates/ followed by
+      the template id without its <type>/ prefix, for example templates/divio/howto-template.md.
+    x-derived:
+      rule: templates/ followed by Template.id without its '<missionType>/' prefix.
+      inputs:
+        - schemas/MissionExpectedArtifact.yaml#/properties/templatePath
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java
+  symbol: Template

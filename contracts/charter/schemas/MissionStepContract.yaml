@@ -1,0 +1,60 @@
+title: MissionStepContract
+description: >-
+  One mission step contract of a Charter Pack (mission_step_contract:<id>), as its *.step-contract.yaml declares it:
+  the action and mission it is bound to, its steps in stored order and its gates. It is the missionStepContract member
+  of the Artifact envelope, whose _links holds self, collection and, when its scope (the pack, or an activation's
+  merged closure) holds them, mission-type (the type its mission names) and step (the step its action names under
+  that type). A step contract whose mission names a type the scope does not hold still reads, without those links.
+type: object
+additionalProperties: false
+required:
+  - id
+  - schemaVersion
+  - action
+  - mission
+  - steps
+  - gates
+properties:
+  id:
+    type: string
+    description: The step contract's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.id
+  schemaVersion:
+    type: string
+    description: The schema version the step-contract file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.schemaVersion
+  action:
+    type: string
+    description: The step of the mission type the contract governs, by id.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.action
+  mission:
+    type: string
+    description: The mission type the contract belongs to, by id.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.mission
+  steps:
+    type: array
+    description: The contract's steps, in stored order.
+    items:
+      $ref: MissionStepContractStep.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.steps
+  gates:
+    type: array
+    description: The gates the contract binds to lane transitions, in stored order; empty when it declares none.
+    items:
+      $ref: MissionStepContractGate.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+      symbol: MissionStepContract.gates
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java
+  symbol: MissionStepContract
