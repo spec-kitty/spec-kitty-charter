@@ -266,13 +266,13 @@
     },
     {
       "criterion_id": "FR-027",
-      "description": "Verify FR-027 is satisfied",
+      "description": "A successful registration's status lists the must-have items and locks it added or removed and the activations whose in-force set changes, and GET /activations/{id} lists its deny entries that are not applied.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A registration that removes a must-have item reports it in the notices\"; contracts/charter/scenarios/effective-reads.feature: \"B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one\"; contracts/charter/scenarios/effective-reads.feature: \"B4 - GET /activations/{id} lists a deny entry the floor overrides in denyNotApplied, and not an applied one\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:39.786926+00:00",
+      "notes": "PR A (#419) floor/lock notices; PR B (#427, WP25) activationsAffected and denyNotApplied. DM-01M6RA9SAKCBSKGX165JM3CAGS. Notice kinds stay activatable-only (#417)."
     },
     {
       "criterion_id": "FR-028",
