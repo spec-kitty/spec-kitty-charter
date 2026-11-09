@@ -1,7 +1,9 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Enhancement;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Entry;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault.Finding;
@@ -12,6 +14,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Judges one pack's step enhancements, their companions and its graph edges (FR-004, FR-005, FR-006). Pure: it reads
@@ -29,8 +33,19 @@ import java.util.Set;
  * slot id's grammar is not judged here: a bad id is a schema violation the store refuses first, never a rule fault and
  * never {@code prompt_fragment_invalid}, so {@link StepEnhancementFault} has no grammar member. Path order is
  * {@code PackPolicy.comparePaths} whatever order the caller passes.
+ *
+ * <p>Identity and target (FR-006, D8, D9, D12, R-OVR, C-003): exactly one {@code enhances} edge, to an {@code
+ * action:<type>/<step>}, bare or qualified; no {@code overrides} edge from the enhancement at all (an enhancement only
+ * adds); the file's {@code <type>} directory equals the edge's, checked against the edge and never used as the
+ * target; the id is unique across type directories; at least one entry. The edges key on the URN, so the files of one
+ * id share them: the edge rules are judged once per id, at its first file in path order, a repeated file gets only
+ * {@link StepEnhancementFault#STEM_REPEATED} for its identity, and when the {@code enhances} count is not one the
+ * target and directory rules are skipped (the {@code overrides} rule is judged on its own). Whether the target step
+ * exists is not judged here: target resolution across packs is a later mission's.
  */
 public final class StepEnhancementRules {
+
+    private static final Pattern STEP_TARGET = Pattern.compile("^action:([^/\\s]+)/([^/\\s]+)$");
 
     private static final Comparator<Finding> ORDER = Comparator.comparing(Finding::path, PackPolicy::comparePaths)
             .thenComparing(Finding::rule)
@@ -52,6 +67,7 @@ public final class StepEnhancementRules {
             content(companion, found);
         }
         structure(facts, ordered, found);
+        identity(facts, ordered, found);
         return found.stream().distinct().sorted(ORDER).toList();
     }
 
@@ -131,5 +147,71 @@ public final class StepEnhancementRules {
 
     private static String directoryOf(String path) {
         return path.substring(0, path.lastIndexOf('/') + 1);
+    }
+
+    private static void identity(StepEnhancementFacts facts, List<Enhancement> ordered, List<Finding> found) {
+        Set<String> seen = new HashSet<>();
+        for (Enhancement enhancement : ordered) {
+            if (enhancement.entries().isEmpty()) {
+                found.add(new Finding(
+                        StepEnhancementFault.NO_FRAGMENTS,
+                        enhancement.path(),
+                        "the enhancement has no prompt_fragments entry"));
+            }
+            if (seen.add(enhancement.id())) {
+                edges(enhancement, facts.edges(), found);
+            } else {
+                found.add(new Finding(
+                        StepEnhancementFault.STEM_REPEATED,
+                        enhancement.path(),
+                        "the id " + enhancement.id() + " is already used by an earlier enhancement of the pack"));
+            }
+        }
+    }
+
+    private static void edges(Enhancement enhancement, List<Edge> all, List<Finding> found) {
+        String urn = StepEnhancementFacts.URN_PREFIX + enhancement.id();
+        List<Edge> enhances = new ArrayList<>();
+        for (Edge edge : all) {
+            if (!edge.source().equals(urn)) {
+                continue;
+            }
+            if (edge.relation() == RelationType.ENHANCES) {
+                enhances.add(edge);
+            } else if (edge.relation() == RelationType.OVERRIDES) {
+                found.add(new Finding(
+                        StepEnhancementFault.OVERRIDES_EDGE,
+                        enhancement.path(),
+                        "the enhancement overrides " + written(edge) + "; an enhancement only adds"));
+            }
+        }
+        if (enhances.size() == 1) {
+            target(enhancement, enhances.getFirst(), found);
+        } else {
+            found.add(new Finding(
+                    StepEnhancementFault.EDGE_COUNT,
+                    enhancement.path(),
+                    "the enhancement has " + enhances.size() + " enhances edges, but needs exactly one"));
+        }
+    }
+
+    private static void target(Enhancement enhancement, Edge edge, List<Finding> found) {
+        Matcher step = STEP_TARGET.matcher(edge.target());
+        if (!step.matches()) {
+            found.add(new Finding(
+                    StepEnhancementFault.EDGE_TARGET_NOT_STEP,
+                    enhancement.path(),
+                    "the enhances target " + written(edge) + " is not an action:<type>/<step>"));
+        } else if (!step.group(1).equals(enhancement.typeDirectory())) {
+            found.add(new Finding(
+                    StepEnhancementFault.DIRECTORY_MISMATCH,
+                    enhancement.path(),
+                    "the file sits in the " + enhancement.typeDirectory() + " directory, but the enhances target "
+                            + written(edge) + " is of type " + step.group(1)));
+        }
+    }
+
+    private static String written(Edge edge) {
+        return edge.qualifier().map(pack -> pack + "::").orElse("") + edge.target();
     }
 }

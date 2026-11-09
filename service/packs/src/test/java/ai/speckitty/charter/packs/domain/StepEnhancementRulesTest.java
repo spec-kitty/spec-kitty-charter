@@ -3,11 +3,18 @@ package ai.speckitty.charter.packs.domain;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.COMPANION_MISSING;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.COMPANION_ORPHAN;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.COMPANION_SHARED;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.DIRECTORY_MISMATCH;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.EDGE_COUNT;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.EDGE_TARGET_NOT_STEP;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.FRAGMENT_BLANK;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.FRAGMENT_FRONTMATTER;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.FRAGMENT_HAS_MARKER;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.NO_FRAGMENTS;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.OVERRIDES_EDGE;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.SLOT_REPEATED;
+import static ai.speckitty.charter.packs.domain.StepEnhancementFault.STEM_REPEATED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
@@ -82,6 +89,16 @@ class StepEnhancementRulesTest {
 
         PackFixture unparsed(String type, String id) {
             unparsed.add(path(type, id));
+            return this;
+        }
+
+        PackFixture overrides(String id, String target) {
+            edges.add(new Edge(RelationType.OVERRIDES, StepEnhancementFacts.URN_PREFIX + id, target, Optional.empty()));
+            return this;
+        }
+
+        PackFixture edge(Edge edge) {
+            edges.add(edge);
             return this;
         }
 
@@ -295,6 +312,185 @@ class StepEnhancementRulesTest {
 
             assertThat(judge(unreadable)).isEmpty();
             assertOnly(judge(missing), COMPANION_MISSING, BRIEF);
+        }
+    }
+
+    @Nested
+    class IdentityAndTarget {
+
+        private static final String BRIEF = PackFixture.path(PLAN, "brief");
+        private static final String STEP = "action:software-dev/plan";
+
+        /** An enhancement {@code brief} with its companion and no edge yet. */
+        private PackFixture noEdge() {
+            return new PackFixture()
+                    .enhancement(PLAN, "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment(PLAN, "brief.prompt-fragment.md", "Be brief.\n");
+        }
+
+        @Test
+        void noEnhancesEdgeIsRefusedAndOneEdgeIsNot() {
+            assertOnly(judge(noEdge()), EDGE_COUNT, BRIEF);
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+        }
+
+        @Test
+        void twoEnhancesEdgesAreRefusedOnceAndOneEdgeIsNot() {
+            PackFixture two =
+                    noEdge().enhances("brief", "base", STEP).enhances("brief", "base", "action:software-dev/tasks");
+
+            assertOnly(judge(two), EDGE_COUNT, BRIEF);
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+        }
+
+        @Test
+        void aTargetThatIsNotAnActionIsRefusedAndAnActionTargetIsNot() {
+            assertOnly(judge(noEdge().enhances("brief", "base", "tactic:x")), EDGE_TARGET_NOT_STEP, BRIEF);
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+        }
+
+        @Test
+        void anActionWithoutAStepIsNotAStep() {
+            assertOnly(judge(noEdge().enhances("brief", "base", "action:software-dev")), EDGE_TARGET_NOT_STEP, BRIEF);
+        }
+
+        @Test
+        void aTargetOfAnotherTypeThanTheDirectoryIsRefusedAndTheMatchingTypeIsNot() {
+            assertOnly(judge(noEdge().enhances("brief", "base", "action:other/plan")), DIRECTORY_MISMATCH, BRIEF);
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+        }
+
+        @Test
+        void theTargetIsReadFromTheEdgeNeverFromTheDirectory() {
+            // C-003: a directory named after another type does not become the target; the edge is checked against it.
+            PackFixture pack = new PackFixture()
+                    .enhancement("other", "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment("other", "brief.prompt-fragment.md", "Be brief.\n")
+                    .enhances("brief", "base", STEP);
+
+            assertOnly(judge(pack), DIRECTORY_MISMATCH, PackFixture.path("other", "brief"));
+        }
+
+        @Test
+        void aQualifiedAndABareStepTargetAreBothValid() {
+            // The only test in the mission that uses the bare form; every composing fixture qualifies the target.
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+            assertThat(judge(noEdge().enhances("brief", "", STEP))).isEmpty();
+        }
+
+        @Test
+        void anOverridesEdgeFromAnEnhancementIsRefusedWhateverItsTarget() {
+            PackFixture twin = noEdge().enhances("brief", "base", STEP);
+
+            assertThat(judge(twin)).isEmpty();
+            for (String target : List.of("mission_type:software-dev", "tactic:x")) {
+                List<Finding> found =
+                        judge(noEdge().enhances("brief", "base", STEP).overrides("brief", target));
+
+                assertOnly(found, OVERRIDES_EDGE, BRIEF);
+                assertThat(found.getFirst().reason()).contains(target);
+            }
+        }
+
+        @Test
+        void anOverridesEdgeOfAnotherSourceKindIsNoStepEnhancementFault() {
+            // Positive control for R-OVR: the rule keys on the source being a step enhancement.
+            PackFixture pack = noEdge().enhances("brief", "base", STEP)
+                    .edge(new Edge(RelationType.OVERRIDES, "tactic:a", "tactic:b", Optional.empty()));
+
+            assertThat(judge(pack)).isEmpty();
+        }
+
+        @Test
+        void anOverridesEdgeIsJudgedOnItsOwnBesideABadEdgeCount() {
+            List<Finding> found = judge(noEdge().overrides("brief", "tactic:x"));
+
+            assertThat(found).extracting(Finding::rule).containsExactly(EDGE_COUNT, OVERRIDES_EDGE);
+        }
+
+        @Test
+        void twoEnhancesEdgesAnswerOnlyTheCountEvenWhenTheyAlsoBreakTheTargetAndDirectoryRules() {
+            PackFixture pack =
+                    noEdge().enhances("brief", "base", "tactic:x").enhances("brief", "base", "action:other/plan");
+
+            assertOnly(judge(pack), EDGE_COUNT, BRIEF);
+        }
+
+        @Test
+        void aRepeatedIdAcrossTypeDirectoriesIsRefusedOnceAtTheSecondFileInPathOrder() {
+            PackFixture repeated = new PackFixture()
+                    .valid("a", "brief", "plan")
+                    .enhancement("b", "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment("b", "brief.prompt-fragment.md", "Be brief.\n");
+            PackFixture renamed = new PackFixture().valid("a", "brief", "plan").valid("b", "other", "plan");
+
+            assertOnly(judge(repeated), STEM_REPEATED, PackFixture.path("b", "brief"));
+            assertThat(judge(renamed)).isEmpty();
+        }
+
+        @Test
+        void thePathOrderIsTheComparatorsNotTheInputOrNotStringOrder() {
+            // 'plan-x/' sorts below 'plan/' as a String, so a caller listing by String order passes it first.
+            // PackPolicy.comparePaths puts the shorter 'plan' segment first, so 'plan-x' is the second file.
+            PackFixture stringOrder = new PackFixture()
+                    .enhancement("plan-x", "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment("plan-x", "brief.prompt-fragment.md", "Be brief.\n")
+                    .enhancement("plan", "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment("plan", "brief.prompt-fragment.md", "Be brief.\n")
+                    .enhances("brief", "base", "action:plan/specify");
+
+            assertOnly(judge(stringOrder), STEM_REPEATED, PackFixture.path("plan-x", "brief"));
+        }
+
+        /** D12. The schema alone keeps "an enhancement without fragments stays valid": see PromptFragmentContractsTest:53-55. */
+        @Test
+        void anEnhancementWithoutAnyEntryIsRefusedAndOneWithAnEntryIsNot() {
+            PackFixture empty = new PackFixture().enhancement(PLAN, "brief").enhances("brief", "base", STEP);
+
+            assertOnly(judge(empty), NO_FRAGMENTS, BRIEF);
+            assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
+        }
+    }
+
+    @Nested
+    class Order {
+
+        private PackFixture fourFaults(boolean reversed) {
+            PackFixture pack = new PackFixture();
+            List<Runnable> steps = List.of(
+                    () -> pack.valid(PLAN, "b", "plan").enhances("b", "base", "action:software-dev/tasks"),
+                    () -> pack.valid(PLAN, "c", "plan").overrides("c", "mission_type:software-dev"),
+                    () -> pack.enhancement(PLAN, "d", new Entry("tone:style", "d.prompt-fragment.md"))
+                            .fragment(PLAN, "d.prompt-fragment.md", "Be brief.\n")
+                            .enhances("d", "base", "action:other/plan"),
+                    () -> pack.enhancement(PLAN, "a", new Entry("tone:style", "a.prompt-fragment.md"))
+                            .fragment(PLAN, "a.prompt-fragment.md", "Be <!-- x:y:start --> brief.\n")
+                            .enhances("a", "base", "action:software-dev/plan"));
+            List<Runnable> ordered = reversed ? steps.reversed() : steps;
+            ordered.forEach(Runnable::run);
+            return pack;
+        }
+
+        @Test
+        void fourFaultsInOnePackAreAllReportedAtTheirFilesInPathThenRuleOrder() {
+            List<Finding> found = judge(fourFaults(false));
+
+            assertThat(found)
+                    .extracting(Finding::rule, Finding::path)
+                    .containsExactly(
+                            tuple(FRAGMENT_HAS_MARKER, PackFixture.fragmentPath(PLAN, "a.prompt-fragment.md")),
+                            tuple(EDGE_COUNT, PackFixture.path(PLAN, "b")),
+                            tuple(OVERRIDES_EDGE, PackFixture.path(PLAN, "c")),
+                            tuple(DIRECTORY_MISMATCH, PackFixture.path(PLAN, "d")));
+        }
+
+        @Test
+        void theAnswerDoesNotFollowTheOrderOfTheFactsAndRepeats() {
+            List<Finding> once = judge(fourFaults(false));
+
+            assertThat(once).hasSize(4);
+            assertThat(judge(fourFaults(true))).isEqualTo(once);
+            assertThat(judge(fourFaults(false))).isEqualTo(once);
         }
     }
 }
