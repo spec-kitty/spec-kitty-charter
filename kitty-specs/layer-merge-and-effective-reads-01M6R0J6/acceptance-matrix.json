@@ -296,13 +296,13 @@
     },
     {
       "criterion_id": "FR-030",
-      "description": "Verify FR-030 is satisfied",
+      "description": "An enhancer is in force only when its support reaches a non-enhancer in force (least fixed point), so a ring of enhancers is reported enhanced_target_not_in_force rather than holding itself up.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"A8 - an enhancer ring is not in force, and an enhancer of a target in force is\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java#aRingOfEnhancersHoldsNothingUp",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:48.901753+00:00",
+      "notes": "PR B (#427, WP23); DM-01M6RA8G0RGRWSFW4DERH8W319, DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ."
     },
     {
       "criterion_id": "FR-031",
