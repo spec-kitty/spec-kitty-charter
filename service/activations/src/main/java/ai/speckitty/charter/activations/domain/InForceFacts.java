@@ -14,7 +14,10 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 @FunctionalInterface
 public interface InForceFacts {
 
-    /** No facts: the answer is empty, so no requirement is satisfied by an override. */
+    /**
+     * The no-override form, for tests only: the answer is empty, so no requirement is satisfied by an override. Main
+     * code always passes the facts of the verified read ({@code PacksSession::inForce}).
+     */
     InForceFacts NONE = query -> InForceAnswer.empty();
 
     /**

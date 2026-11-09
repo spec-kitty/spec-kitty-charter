@@ -80,7 +80,8 @@ public final class DocumentRules {
     private DocumentRules() {}
 
     /**
-     * Checks a document, with the in-force facts that decide a deny entry on a required artifact (IC-13).
+     * Checks a document, with the in-force facts that decide a deny entry on a required artifact (IC-13). This form is
+     * used by tests; main code checks the {@link ActivationDocument.Built} form.
      *
      * @param document the document
      * @param snapshot the closure the document names
