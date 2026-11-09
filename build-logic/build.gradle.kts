@@ -38,6 +38,10 @@ tasks.test {
     inputs.dir(layout.projectDirectory.dir("../.github/workflows"))
         .withPathSensitivity(PathSensitivity.RELATIVE)
         .withPropertyName("workflows")
+    // RegexRecursionGuardTest reads the hand-written main sources; without them as inputs a new pattern gets a cached pass.
+    inputs.files(fileTree(layout.projectDirectory.dir("../service")) { include("*/src/main/java/**/*.java") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("serviceMainSources")
     // MutationFloorsTest holds this fixture, read by scripts/ci/test_mutation_summary.py, to what
     // MutationFloors.toJson writes; -PupdateMutationFixture=true rewrites it.
     val fixture = layout.projectDirectory.file("../scripts/ci/fixtures/floors.json").asFile
