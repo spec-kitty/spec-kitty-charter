@@ -26,7 +26,10 @@ public record Executable(ExecutableRuntime runtime, Optional<String> minVersion,
 
     /** A relative path of plain segments: no leading slash, no {@code ..} or hidden segment, no space or backslash. */
     private static final Pattern RELATIVE_PATH =
-            Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*");
+            Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_.-]*+(?:/[A-Za-z0-9_][A-Za-z0-9_.-]*+)*+");
+
+    /** The longest entry accepted, checked before the pattern (#440). */
+    private static final int MAX_ENTRY_LENGTH = 255;
 
     private static final ModularRuleset<Executable> RULES = ModularRuleset.<Executable>emptyRules()
             .must(Constraints.of(
@@ -34,8 +37,9 @@ public record Executable(ExecutableRuntime runtime, Optional<String> minVersion,
                     e -> e.minVersion.map(v -> VERSION.matcher(v).matches()).orElse(true)))
             .must(Constraints.of(
                     "An executable's entry is a relative path inside the pack's assets: no absolute path, no .. or"
-                            + " hidden segment, no whitespace.",
-                    e -> RELATIVE_PATH.matcher(e.entry).matches()))
+                            + " hidden segment, no whitespace, at most 255 characters.",
+                    e -> e.entry.length() <= MAX_ENTRY_LENGTH
+                            && RELATIVE_PATH.matcher(e.entry).matches()))
             .must(Constraints.of(
                     "An executable's entry is exactly one argv element: its args do not repeat it.",
                     e -> !e.args.contains(e.entry)))

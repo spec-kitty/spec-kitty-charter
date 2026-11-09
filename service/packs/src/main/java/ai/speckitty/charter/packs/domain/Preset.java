@@ -44,7 +44,7 @@ public record Preset(String id, String description, Map<ArtifactKind, List<Prese
                     .collect(Collectors.toCollection(() -> EnumSet.noneOf(ArtifactKind.class))));
 
     /** The id grammar of a preset, as the {@code preset} schema has it. */
-    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*(-[a-z0-9]+)*");
+    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+");
 
     private static final int MAX_ID_LENGTH = 64;
 
