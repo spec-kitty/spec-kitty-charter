@@ -31,8 +31,8 @@ description: >-
   action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
   the merged closure does not hold for that mission type. pack_level_mismatch is no longer raised: no operation
   loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
-  registration (validation_failed), as the definition of raised below counts it. All four values stay in the enum so that the contract
-  keeps accepting them.
+  registration (validation_failed), as the definition of raised below counts it. pack_level_mismatch stays in the enum
+  so that the contract keeps accepting it.
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
   the pack that owns its target does not permit is refused with it (ADR-0012, the mutability-policy epic
@@ -67,9 +67,10 @@ description: >-
   deletePackArtifact, deletePackRelationship, putPackRelationship and the eight per-artifact writes (registerPack and
   putPack of a directive, a paradigm, a styleguide and a toolguide). A code is raised when an operation of this version
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
-  (governance_policy_violation), or when it is raised as a violation code of a 422 validation_failed: a refused
-  registration lists every fault of the pack as a violation whose pointer is the pack-relative file and whose code is
-  the code (drg_schema_error, prompt_fragment_invalid), so the problem that carries such a code is 422 at
+  (governance_policy_violation), or when an operation of this version lists it as the code of a violation inside a 422
+  validation_failed: a refused registration lists every fault of the pack as a violation whose pointer is the
+  pack-relative file and whose code is the code (drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed,
+  prompt_slot_not_empty). So the problem that carries such a code is 422 at
   registration and a composing read answers 500 pack_unreadable naming the file. The declared status of such a code
   is kept and read as the status of the read that meets the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
@@ -167,8 +168,8 @@ description: >-
   enhancement or prompt fragment (a repeated slot, a missing, shared or orphan companion, a blank or
   frontmatter-bearing fragment, a slot marker, an enhancement without exactly one enhances edge to an
   action:<type>/<step>, an overrides edge from an enhancement, a directory that differs from the edge's type, a
-  repeated id) is listed at its file inside 422 validation_failed, and a composing read answers 500 pack_unreadable
-  naming the file.
+  repeated id, or an absent prompt_fragments key) is listed at its file inside 422 validation_failed, and a composing
+  read answers 500 pack_unreadable naming the file.
   prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration) and prompt_slot_not_empty
   (non-whitespace between paired markers at descriptor schema_version "1.0") are raised the same way, at the prompt
   file. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
@@ -749,7 +750,7 @@ x-refusal:
     status: 500
     retryable: false
     raised: false
-    description: the prompt in force declares no slot an enhancement names (ADR-0066, reserved for #424)
+    description: the prompt in force declares no slot an enhancement names (ADR-0066, reserved for the phase-2 mission, #438)
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

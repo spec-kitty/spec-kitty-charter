@@ -276,6 +276,15 @@ that calls it. A run that selects only some scenarios reports the others' operat
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
   what changes when they are bound. Their fixtures stay in `src/test/resources/fixtures/`.
+- `step-enhancements.feature`: a held step enhancement (ADR-0066, #428): its file and Markdown companions register with
+  the pack, it is selectable directly and through a preset, two packs of one level that define one id are refused
+  `pack_sibling_conflict`, and two enhancers of one step with different ids compose.
+- `prompt-fragment-refusals.feature`: a malformed step enhancement or prompt fragment, refused `prompt_fragment_invalid`
+  at its file (a violation of a `422 validation_failed` registration, `500 pack_unreadable` on a read, and the top-level
+  code of `putPackRelationship`'s `422`), each refusal beside its passing twin.
+- `prompt-slots.feature`: the slots a step prompt declares (ADR-0066, #424): `prompt_slot_malformed` whatever the
+  descriptor declares, `prompt_slot_not_empty` only behind the descriptor's `schema_version: "1.0"` gate, each at the
+  prompt file and beside its passing twin.
 - `profiles.feature`: the refusal of an agent profile enhancement that would drop fields of the profile it enhances
   (`PR-CHARTER-REFUSAL-001`), `@WIP` until the effective profile is built (#380); its header states the provisional
   target answer.

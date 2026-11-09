@@ -12,11 +12,13 @@ properties:
     description: >-
       An RFC 6901 JSON Pointer into the request body, for example /deactivated/tactic/0; empty for the whole body. On a
       violation of a registration it is the pack-relative path of the file at fault, for example
-      missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml.
+      missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml, or pack when the fault is the pack's as a
+      whole.
     x-derived:
-      rule: The JSON Pointer of the refused part of the request body.
+      rule: The JSON Pointer of the refused part of the request body; on a registration, a file path of the pack or pack.
       inputs:
         - the request body and the packs the activation names
+        - the staged pack of a registration
   code:
     type: string
     pattern: '^[a-z][a-z0-9_]*$'

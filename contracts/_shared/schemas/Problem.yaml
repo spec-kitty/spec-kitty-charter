@@ -39,9 +39,9 @@ properties:
   violations:
     type: array
     description: >-
-      Only on a 422 activation_invalid, one entry per part of the request body the service refuses, and on the 422
-      validation_failed of a registration, one entry per fault of the pack, so a client need not parse detail
-      (ADR-0020 D10). At most 100 are listed: when more parts are refused, the first 100 are, and detail ends with the
+      On a 422 activation_invalid, one entry per refused part of the request body; on the 422 validation_failed of a
+      registration, one entry per fault of the pack; on a 409 artifact_referenced, one per referring artifact, so a
+      client need not parse detail (ADR-0020 D10). At most 100 are listed: when more parts are refused, the first 100 are, and detail ends with the
       count of those left out.
     maxItems: 100
     items:
