@@ -97,7 +97,7 @@
       "wp": "WP08"
     },
     "#454": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP08 adds the root activations link; Follow-up: #454 keeps the bare-404 and token-error items",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,8 +105,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "deferred-with-followup",
+      "wp": "WP08"
     },
     "#96": {
       "evidence_ref": "<auto-classified: no action required>",
