@@ -17,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.LayerMerge;
+import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -97,7 +98,12 @@ class EdgeIndexTest {
 
         /** The index under the layer merge of the closure, whose packs were added in merge order. */
         EdgeIndex merged() {
-            return index().merged(LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of())));
+            return index().merged(mergedClosure());
+        }
+
+        /** The layer merge of the closure, whose packs were added in merge order. */
+        MergedClosure mergedClosure() {
+            return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
         }
     }
 

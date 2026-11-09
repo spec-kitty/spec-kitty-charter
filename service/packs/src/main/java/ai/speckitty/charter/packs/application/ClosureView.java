@@ -454,6 +454,29 @@ public record ClosureView(
     }
 
     /**
+     * Stub: the red tests of T134 fail on their assertions.
+     *
+     * @param states the states
+     * @return nothing yet
+     */
+    public GraphProjection mergedGraph(InForceStates states) {
+        return new GraphProjection(List.of(), List.of(), List.of());
+    }
+
+    /**
+     * Stub: the red tests of T135 fail on their assertions.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param depth the depth
+     * @param states the states
+     * @return nothing yet
+     */
+    public ActionContextWalk.Context actionContext(String missionType, String action, int depth, InForceStates states) {
+        return new ActionContextWalk.Context(Urn.action(missionType, action), true, List.of());
+    }
+
+    /**
      * The closure's presets by id: a view over {@link #heldPresets()}, in its order.
      *
      * @return each preset id with the winning copy and its holding pack

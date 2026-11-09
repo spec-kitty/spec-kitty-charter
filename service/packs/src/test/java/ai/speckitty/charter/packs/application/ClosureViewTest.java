@@ -1,13 +1,16 @@
 package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -17,6 +20,8 @@ import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.InForceStates.Bucket;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
+import ai.speckitty.charter.packs.domain.LayerOverride;
+import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -40,6 +45,7 @@ class ClosureViewTest {
     private final List<ConfiguredPack> configured = new ArrayList<>();
     private final Map<String, PackDescriptor> descriptors = new HashMap<>();
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
+    private final List<String> factsRead = new ArrayList<>();
 
     private static Urn u(String urn) {
         return Urn.parse(urn).orElseThrow();
@@ -64,6 +70,16 @@ class ClosureViewTest {
 
     /** A pack of the closure holding the artifacts and writing the edges, with no facts binding. */
     private void pack(String name, PackLevel level, List<String> dependsOn, List<String> held, Relationship... edges) {
+        pack(name, level, dependsOn, MutabilityPolicySource.empty(), held, edges);
+    }
+
+    private void pack(
+            String name,
+            PackLevel level,
+            List<String> dependsOn,
+            MutabilityPolicySource policy,
+            List<String> held,
+            Relationship... edges) {
         configured.add(new ConfiguredPack(new PackIdentifier(name), level));
         descriptors.put(
                 name,
@@ -80,14 +96,7 @@ class ClosureViewTest {
                                 .toList()));
         facts.put(
                 name,
-                new PackCompositionFacts(
-                        List.of(),
-                        held,
-                        List.of(),
-                        MutabilityPolicySource.empty(),
-                        List.of(),
-                        List.of(edges),
-                        Map.of()));
+                new PackCompositionFacts(List.of(), held, List.of(), policy, List.of(), List.of(edges), Map.of()));
     }
 
     private void pack(String name, List<String> held, Relationship... edges) {
@@ -113,8 +122,14 @@ class ClosureViewTest {
         };
         ConsistentRead read = new ConsistentRead(() -> "sha256:" + "1".repeat(64));
         PackCatalogRepository catalog = () -> List.copyOf(configured);
-        OfferingReadService offering =
-                new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
+        OfferingReadService offering = new OfferingReadService(
+                catalog,
+                repository,
+                pack -> {
+                    factsRead.add(pack.value());
+                    return facts.get(pack.value());
+                },
+                read);
         return new ClosureQueries(offering, catalog, read).allConfigured();
     }
 
@@ -261,5 +276,173 @@ class ClosureViewTest {
                 edge("tactic:Y", RelationType.ENHANCES, "action:M/s"));
 
         expect(select("tactic:Y", "mission_type:M"), "tactic:Y", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+    }
+
+    // ---- the node predicate, built from the in-force states (decisions 01M702A71YF7WNDTG2AA89K8ZA,
+    // 01M7037ZNKJ6JTRKGD7G695ZV1)
+
+    /** One pack: mission type {@code M}, steps {@code a} and {@code b}, artifacts {@code T}, {@code U}, {@code D}. */
+    private void aMissionTypeWithAnAction() {
+        pack(
+                "alpha",
+                List.of("mission_type:M", "action:M/a", "action:M/b", "tactic:T", "tactic:U", "directive:D", "skill:E"),
+                edge("action:M/a", RelationType.SCOPE, "tactic:T"),
+                edge("action:M/a", RelationType.SCOPE, "action:M/b"),
+                edge("tactic:T", RelationType.REQUIRES, "directive:D"),
+                edge("tactic:T", RelationType.SUGGESTS, "tactic:U"),
+                edge("skill:E", RelationType.ENHANCES, "tactic:T"));
+    }
+
+    private static List<String> names(Iterable<Urn> urns) {
+        List<String> names = new ArrayList<>();
+        urns.forEach(urn -> names.add(urn.toString()));
+        return names;
+    }
+
+    @Test
+    void theGraphHoldsTheArtifactsInForceAndTheHeldStepsOfAMissionTypeInForceAndNothingElse() {
+        aMissionTypeWithAnAction();
+        ClosureView view = view();
+
+        GraphProjection graph =
+                view.mergedGraph(view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T"))));
+
+        assertThat(names(graph.nodes())).containsExactly("action:M/a", "action:M/b", "mission_type:M", "tactic:T");
+        assertThat(graph.edges())
+                .extracting(edge -> edge.source() + " " + edge.relation().token() + " " + edge.target())
+                .containsExactly("action:M/a scope action:M/b", "action:M/a scope tactic:T");
+    }
+
+    @Test
+    void theGraphHoldsNoStepWhileTheMissionTypeIsOutOfForce() {
+        aMissionTypeWithAnAction();
+        ClosureView view = view();
+
+        GraphProjection graph = view.mergedGraph(view.inForce(InForceRequest.selecting(urns("tactic:T"))));
+
+        assertThat(names(graph.nodes())).containsExactly("tactic:T");
+        assertThat(graph.edges()).isEmpty();
+    }
+
+    @Test
+    void aKindWithNoActivationStateIsAbsentFromTheGraphAndTheWalkEvenWhenALockPutsItInForceInsidePacks() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                MutabilityPolicySource.builder()
+                        .entry(u("template:Tpl"), MutabilityLevel.LOCKED)
+                        .build(),
+                List.of("mission_type:M", "action:M/a", "template:Tpl", "tactic:T"),
+                edge("action:M/a", RelationType.SCOPE, "template:Tpl"),
+                edge("action:M/a", RelationType.SCOPE, "tactic:T"));
+        ClosureView view = view();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T")));
+
+        assertThat(states.stateOf(u("template:Tpl")))
+                .as("inside packs the lock puts it in force")
+                .hasValueSatisfying(state -> assertThat(state.active()).isTrue());
+        assertThat(names(view.mergedGraph(states).nodes())).doesNotContain("template:Tpl");
+        assertThat(view.mergedGraph(states).edges())
+                .extracting(edge -> edge.target().toString())
+                .doesNotContain("template:Tpl");
+        assertThat(names(view.actionContext("M", "a", 0, states).entries().stream()
+                        .map(ActionContextWalk.Entry::urn)
+                        .toList()))
+                .containsExactly("tactic:T");
+    }
+
+    @Test
+    void theLayerOverridesFollowTheNodesOfTheGraph() {
+        pack("org", PackLevel.ORG, List.of(), List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:Out"));
+        pack("project", PackLevel.PROJECT, List.of("org"), List.of("action:M/a", "tactic:T", "tactic:Out"));
+        ClosureView view = view();
+
+        GraphProjection graph =
+                view.mergedGraph(view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T"))));
+
+        assertThat(graph.layerOverrides())
+                .extracting(LayerOverride::urn)
+                .containsExactly(u("action:M/a"), u("tactic:T"));
+    }
+
+    @Test
+    void theWalkStartsAtTheHeldStepOfAMissionTypeInForceAndListsOnlyArtifactsInForce() {
+        aMissionTypeWithAnAction();
+        ClosureView view = view();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T", "skill:E")));
+
+        ActionContextWalk.Context context = view.actionContext("M", "a", 1, states);
+
+        assertThat(context.missionTypeInForce()).isTrue();
+        assertThat(context.entries())
+                .as("action:M/b is a held step, never an entry; D is not selected and U is not in force")
+                .extracting(entry -> entry.urn().toString())
+                .containsExactly("tactic:T");
+        assertThat(context.entries().getFirst().enhancedBy()).containsExactly(u("skill:E"));
+    }
+
+    @Test
+    void aSuggestedArtifactInForceCarriesTheWhenAndTheReasonOfTheEdge() {
+        pack(
+                "alpha",
+                List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:U"),
+                edge("action:M/a", RelationType.SCOPE, "tactic:T"),
+                new Relationship(
+                        u("tactic:T"),
+                        u("tactic:U"),
+                        RelationType.SUGGESTS,
+                        Optional.of("the change is large"),
+                        Optional.of("U checks it")));
+        ClosureView view = view();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T", "tactic:U")));
+
+        ActionContextWalk.Context context = view.actionContext("M", "a", 1, states);
+
+        assertThat(context.entries())
+                .filteredOn(entry -> entry.urn().equals(u("tactic:U")))
+                .singleElement()
+                .satisfies(entry -> {
+                    assertThat(entry.when()).contains("the change is large");
+                    assertThat(entry.reason()).contains("U checks it");
+                });
+    }
+
+    @Test
+    void aMissionTypeNotInForceAnswersNoEntryAndTheNamesAreJudgedOnTheClosure() {
+        aMissionTypeWithAnAction();
+        ClosureView view = view();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("tactic:T")));
+
+        ActionContextWalk.Context context = view.actionContext("M", "a", 1, states);
+
+        assertThat(context.missionTypeInForce()).isFalse();
+        assertThat(context.entries()).isEmpty();
+        assertThatThrownBy(() -> view.actionContext("Nope", "a", 1, states))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThatThrownBy(() -> view.actionContext("M", "nope", 1, states))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+    }
+
+    @Test
+    void theInForceStatesTheGraphAndEveryWalkAnswerFromTheOneVerifiedRead() {
+        // NFR-007: building the view reads the packs; the resolution, the graph, the walks and StepHolding read
+        // nothing.
+        aMissionTypeWithAnAction();
+        ClosureView view = view();
+        List<String> readOnce = List.copyOf(factsRead);
+        assertThat(readOnce).isNotEmpty();
+
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T")));
+        view.mergedGraph(states);
+        view.actionContext("M", "a", 0, states);
+        view.actionContext("M", "a", 1, states);
+        view.merged().edges().holdsStep(u("action:M/a"));
+
+        assertThat(factsRead).as("no pack was read again").isEqualTo(readOnce);
     }
 }
