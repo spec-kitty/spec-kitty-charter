@@ -306,13 +306,13 @@
     },
     {
       "criterion_id": "FR-031",
-      "description": "Verify FR-031 is satisfied",
+      "description": "PUT /activations/{id} judges the floor only on the deny entries it adds and drops ids the packs no longer hold (listed in dropped), so a GET then PUT of the same body never fails without a pack change.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-ruling-changes.feature: \"A4 - a GET then PUT of a body whose deny entry a pack now requires is 200 with the same ETag\"; contracts/charter/scenarios/activation-ruling-changes.feature: \"A4 - a PUT of the body read before a pack upgrade removed an id drops the id and lists it in dropped\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:51.948793+00:00",
+      "notes": "PR A0 (#414); IC-19, DM-01M6RA7XC5HC8915GZT2R3H83W."
     },
     {
       "criterion_id": "FR-032",
