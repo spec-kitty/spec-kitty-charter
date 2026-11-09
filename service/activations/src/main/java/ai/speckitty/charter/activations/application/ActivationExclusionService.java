@@ -146,14 +146,20 @@ public class ActivationExclusionService {
     }
 
     /**
-     * The {@code 409} of a target on the floor, before the walk: the deny entry the write adds, judged as
-     * {@link DocumentRules#checkWrite} judges it, so the refusal names exactly the packs that require or lock it. A
-     * required target is accepted when an active override of it satisfies the requirement (IC-13); the document
-     * the write stores, with its cascade, is judged again by {@link ActivationWrites#commit}.
+     * The {@code 409} of a target on the floor, before the walk: the named target is judged whether or not its deny
+     * entry is already stored, as {@link DocumentRules#checkWrite} judges an entry the write adds (the stored document
+     * with the entry removed is the {@code before}), so the refusal names exactly the packs that lock or require it.
+     * A deny entry stored earlier, for an override that is gone or for an artifact a pack upgrade has since locked,
+     * is therefore refused again. A required target is accepted when an active override of it satisfies the
+     * requirement (IC-13); the document the write stores, with its cascade, is judged again by
+     * {@link ActivationWrites#commit}.
      */
     private static void refuseFloor(ActivationDocument before, ArtifactRef target, PacksSession session) {
         DocumentRules.checkWrite(
-                        before, before.withDeny(target.kind(), target.id()), session.snapshot(), session::inForce)
+                        before.withoutDeny(target.kind(), target.id()),
+                        before.withDeny(target.kind(), target.id()),
+                        session.snapshot(),
+                        session::inForce)
                 .filter(refusal -> refusal.violations().isEmpty())
                 .ifPresent(refusal -> {
                     throw refusal;
