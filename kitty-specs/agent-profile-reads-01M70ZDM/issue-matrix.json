@@ -144,6 +144,18 @@
       "verdict": "deferred-with-followup",
       "wp": "WP08"
     },
+    "#451": {
+      "evidence_ref": "Context only: registration refusal of documentation files; the usability script names the workaround",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#454": {
       "evidence_ref": "WP08 adds the root activations link; Follow-up: #454 keeps the bare-404 and token-error items",
       "fr": null,
