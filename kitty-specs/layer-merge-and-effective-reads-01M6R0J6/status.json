@@ -980,7 +980,7 @@
     },
     "WP28": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -993,6 +993,7 @@
         "Ready for review: T138-T142, T162-T164; hand-off /tmp/claude-0/wp28-handoff.md; decision 01M70C42KC78KB9H6KB7TK9224 (enhancements member)"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP28-c-contract-graph-context/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP28-c-contract-graph-context/review-cycle-1.md",
@@ -1000,17 +1001,17 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 7179,
-      "shell_pid_created_at": "1794231379.93",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T138": "done",
-        "T139": "done",
-        "T140": "done",
-        "T141": "done",
-        "T142": "done",
-        "T162": "done",
-        "T163": "done",
-        "T164": "done"
+        "T138": "planned",
+        "T139": "planned",
+        "T140": "planned",
+        "T141": "planned",
+        "T142": "planned",
+        "T162": "planned",
+        "T163": "planned",
+        "T164": "planned"
       }
     },
     "WP29": {
