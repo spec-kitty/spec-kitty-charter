@@ -1998,6 +1998,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T14:54:15.239065Z",
+      "decision_id": "01M70CTZP7P2EHSCK2G0RET74B",
+      "final_answer": "the listing rule: a context suggestion is an artifact the listing gives a suggestion, reached through suggests from a listed context entry (so context suggestions are a subset of listing suggestions)",
+      "input_key": "pr-c-context-suggestion-scope",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "the listing rule: a context suggestion is an artifact the listing gives a suggestion, reached through suggests from a listed context entry (so context suggestions are a subset of listing suggestions)",
+        "context-local hard reach"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "The context judges 'reached only through suggests' within the walk; the listing judges it over every artifact in force. Which scope does the action context use (one definition, 01M6Y6VE6VZQ4MXD98N93JB3GJ)?",
+      "rationale": "Runner after the WP28 review (MINOR-2): decision 01M6Y6VE6VZQ4MXD98N93JB3GJ rules one suggestion definition for the listing and the context. An artifact that some in-force artifact reaches through a hard relation is no suggestion anywhere, so the context may not call it one. The edge data (when, reason) is the suggests edge from the context entry (ADR-0018 D3 tie rule).",
+      "resolved_at": "2026-11-09T14:54:17.157188Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-c-context-suggestion-scope",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
