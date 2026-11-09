@@ -13,12 +13,17 @@ import java.util.regex.Pattern;
 public record MissionTypeIdentifier(String value) {
 
     /** The id grammar of a mission type and of a step, as the {@code mission-type} schema has it. */
-    static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*(-[a-z0-9]+)*");
+    static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+");
+
+    /** The longest mission type or step id accepted, checked before the pattern (#440). */
+    static final int MAX_LENGTH = 64;
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A mission type identifier is a letter-first kebab slug.",
-                    text -> text != null && ID.matcher(text).matches()));
+                    "A mission type identifier is a letter-first kebab slug of at most 64 characters.",
+                    text -> text != null
+                            && text.length() <= MAX_LENGTH
+                            && ID.matcher(text).matches()));
 
     /**
      * Checks the identifier's grammar.
