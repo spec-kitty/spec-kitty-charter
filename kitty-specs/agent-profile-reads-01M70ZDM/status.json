@@ -241,7 +241,8 @@
         "Ready for review",
         "Cycle 2: B1 example corrected, B2 in-force suggestion words carried",
         "Cycle 3: generic edge words per DM-01M7232ZMR4EWNDA1P2VF455Y1; B3 resolved",
-        "Cycle 4: B4 example from service output, example-vs-graph guard, suggestsOnly pinned"
+        "Cycle 4: B4 example from service output, example-vs-graph guard, suggestsOnly pinned",
+        "Cycle 4 approved: B4 resolved, example guard bites, suggestsOnly pinned"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
