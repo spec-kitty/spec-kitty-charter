@@ -2,7 +2,7 @@
 title: "Service usability run, 2026-11-09"
 description: How ready the charter service is for core, from registering the open-packs, activating this charter and reading a profile and a mission.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -83,6 +83,13 @@ A client still cannot read what it needs to act:
 | 6 | **Selections are spelled differently.** `charter.yaml` names directives by slug (`001-project-intent-directive`, `qa-003-no-fake-green`); the service needs `PROJECT_001` and `QA_003`. Core has to translate them at the seam. | #13 |
 | 7 | **Language tags don't match.** `java-supply-chain` declares `jvm`, so a project with `languages: [java]` loses it to the language filter. | #453 |
 | 8 | **Usability:** a bare `404` at `/` gives no pointer to `/api/v1`; the root does not link to activations; a refused token source is reported inside a stack trace of about 60 lines. | #454, #409 |
+
+**Follow-up, 2026-11-10.** Gap 1: agent profiles are read pack-scoped and under an activation with their
+governance (#407, #96), and mission types are taken up by the parallel mission-type reads (#99). Gap 3: the items of
+the action context, the effective list and the effective graph link their reads under the activation
+(`effective-artifact`) and, where the pack is known, their pack-scoped reads (`artifact`), the item-link part of #450;
+the scoping rule stays open there. Gap 8: the root now links `activations`. The rerunnable walk is
+`scripts/usability/service-usability-run.sh`.
 
 ## Tickets after the run
 
