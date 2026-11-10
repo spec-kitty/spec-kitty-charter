@@ -15,11 +15,11 @@ The mission is accepted without its end-to-end criterion.
 
 - **Script:** `scripts/usability/service-usability-run.sh --open-packs /home/user/spec-kitty-open-packs`, run from the
   repository root without `--jar` (it builds `:deployable:bootJar`).
-- **Service under test:** commit `f0f60ae3` of `issue-407-agent-profile-reads`, with WP01 to WP09 integrated. This is a
-  pre-rebase tree: the packs code from `main` is not in it. The commit named here and in the `RESULT` line is the one the
-  run is of.
+- **Service under test:** commit `9f6c33ae` of `issue-407-agent-profile-reads`, the pull request's head after the
+  pre-PR review folds, rebased on `main`. The jar was built from that tree (sha256 `713574b62931…`); the `RESULT` line
+  names the client commit and the jar.
 - **Open-packs pin:** `a2a93794f2d8c9f3f549e94ad024ea0e386d5df4`.
-- **Result (SC-001 deferred, see above):** `RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=323/341ms`, exit code 0.
+- **Result (SC-001 deferred, see above):** `RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=388/457ms`, exit code 0.
 
 The pass is qualified: it passes, with a count of what it could not reach, and the script prints that count rather than
 hiding it. The baseline it replaces is in `usability-baseline.md`.
@@ -65,8 +65,9 @@ service reads. Under the activation, 0 relations are unlinked.
 
 ## Timing (NFR-003)
 
-p95 of 20 reads, limit 500 ms: pack-scoped 323 ms, under an activation 341 ms. An earlier run on `c160c960` gave
-338 and 362 ms; the figures move by tens of milliseconds between runs. Both were measured in a dev container, not on the CI runner that
+p95 of 20 reads, limit 500 ms: pack-scoped 388 ms, under an activation 457 ms. Earlier runs gave 323 and 341 ms
+(`f0f60ae3`) and 338 and 362 ms (`c160c960`); the figures move by tens of milliseconds between runs, and this one ran
+straight after a full Gradle gate on the same machine. Both were measured in a dev container, not on the CI runner that
 NFR-003 names.
 
 ## The output
@@ -76,7 +77,7 @@ NFR-003 names.
    built-in copied into <config-root>/packs/, git tree c64382465ee07806d2137fa104591aa59fb8aeae = HEAD:packs/built-in
 == build :deployable:bootJar
 == start the service (/home/user/spec-kitty-charter/service/deployable/build/libs/deployable-0.1.0-SNAPSHOT.jar)
-   listening on http://127.0.0.1:35961 (pid 2499)
+   listening on http://127.0.0.1:34377 (pid 21624)
 == register packs
   pack packs/internal declares name 'spec-kitty-internal'; the registration's packId must equal it
     refused: 422 validation_failed The pack cannot be registered: 3 fault(s), the first at PROVENANCE.md.
@@ -109,8 +110,8 @@ NFR-003 names.
   kind 'procedure' is not served: GET /api/v1/packs/built-in/artifacts?kind=procedure -> 400
   (P7: 35 held entries of the pack-scoped read walked; 0 with held=false have no pack to link to; 15 relation(s) not linked because their kind is not served; not linked, kind not served: artifact procedure x15; 0 failed)
   timing 20 pack-scoped reads of /api/v1/packs/built-in/artifacts/agent_profile/java-jenny
-  [ ok ] TP   NFR-003: p95 of 20 pack-scoped profile reads is 323 ms (limit 500 ms)
-== walk 2: under an activation (root -> activations -> activation -> artifacts -> java-jenny -> governance)
+  [ ok ] TP   NFR-003: p95 of 20 pack-scoped profile reads is 388 ms (limit 500 ms)
+== walk 2: under an activation (root -> activations -> activation -> self -> artifacts -> java-jenny -> governance)
   [ ok ] A1   relation 'activations' of the API root, method POST, /api/v1/activations
   the service refused the document: 422 | activation_invalid | Activation invalid | The activation document names 7 thing(s) its packs do not hold.
     - /selected/directive/11 [unknown_artifact] The activation's packs hold no directive 'PROJECT_001'.
@@ -121,19 +122,20 @@ NFR-003 names.
     - /selected/styleguide/5 [unknown_artifact] The activation's packs hold no styleguide 'quality-gates-style-guide'.
     - /selected/styleguide/8 [unknown_artifact] The activation's packs hold no styleguide 'testing-style-guide'.
   [WORKAROUND] unheld-selections: 7 selection(s) no registered pack holds were left out of the activation document: directive:PROJECT_001 directive:PROJECT_002 styleguide:documentation-policy-style-guide styleguide:java-style-guide styleguide:python-style-guide styleguide:quality-gates-style-guide styleguide:testing-style-guide. Every one is named by the service's own 422.
-  [ ok ] A2   POST /api/v1/activations -> 201 (relation 'activations' of the API root), activation 01M72HBK6WFRH6BYT2BS637D98
-  [ ok ] A3   GET /api/v1/activations/01M72HBK6WFRH6BYT2BS637D98 -> 200 (relation 'self' of the created activation)
-  [ ok ] A4   GET /api/v1/activations/01M72HBK6WFRH6BYT2BS637D98/artifacts?kind=agent_profile -> 200 (relation 'artifacts' of the activation)
+  [ ok ] A2   POST /api/v1/activations -> 201 (relation 'activations' of the API root), activation 01M72VXJPW8WVZH4ZNWQ32ZS2D
+  [ ok ] A3   GET /api/v1/activations/01M72VXJPW8WVZH4ZNWQ32ZS2D -> 200 (relation 'self' of the created activation)
+  [ ok ] A4   GET /api/v1/activations/01M72VXJPW8WVZH4ZNWQ32ZS2D/artifacts?kind=agent_profile -> 200 (relation 'artifacts' of the activation)
   [ ok ] A5   found agent_profile 'java-jenny' in the effective artifacts of the activation (page 1)
-  [ ok ] A6   GET /api/v1/activations/01M72HBK6WFRH6BYT2BS637D98/artifacts/agent_profile/java-jenny -> 200 (relation 'effective-artifact' of the java-jenny effective item)
+  [ ok ] A6   GET /api/v1/activations/01M72VXJPW8WVZH4ZNWQ32ZS2D/artifacts/agent_profile/java-jenny -> 200 (relation 'effective-artifact' of the java-jenny effective item)
   [ ok ] A7   the read under the activation has the body of 'java-jenny' and 7 governance entries, each with an edge
   [ ok ] A8   SC-003: styleguide java-conventions is a requires entry of java-jenny in the read under the activation
   (A9: 7 held entries of the read under the activation walked; 0 with held=false have no pack to link to; 0 relation(s) not linked because their kind is not served; 0 failed)
-  timing 20 reads of /api/v1/activations/01M72HBK6WFRH6BYT2BS637D98/artifacts/agent_profile/java-jenny
-  [ ok ] TA   NFR-003: p95 of 20 activation profile reads is 341 ms (limit 500 ms)
+  timing 20 reads of /api/v1/activations/01M72VXJPW8WVZH4ZNWQ32ZS2D/artifacts/agent_profile/java-jenny
+  [ ok ] TA   NFR-003: p95 of 20 activation profile reads is 457 ms (limit 500 ms)
 
 == summary
-  main commit        : f0f60ae31e84bea58167f9beb8873e3c40bedefb (issue-407-agent-profile-reads)
+  client commit      : 9f6c33ae274881011011261646db4c4fe57bc82f (issue-407-agent-profile-reads)
+  service jar        : /home/user/spec-kitty-charter/service/deployable/build/libs/deployable-0.1.0-SNAPSHOT.jar (sha256 713574b62931afd23d9c876b6e41b0f845581a0101eab1e4cdd0ed6764a57e6f)
   open-packs pin     : a2a93794f2d8c9f3f549e94ad024ea0e386d5df4
   hops followed      : 52 ok, 0 failed
   workarounds        : 4
@@ -144,6 +146,6 @@ NFR-003 names.
   unheld selections  : 7 (directive:PROJECT_001 directive:PROJECT_002 styleguide:documentation-policy-style-guide styleguide:java-style-guide styleguide:python-style-guide styleguide:quality-gates-style-guide styleguide:testing-style-guide)
   not linked (kind not served): 15
     - P7 artifact procedure x15
-  p95 pack-scoped    : 323 ms; under activation: 341 ms (limit 500 ms, 20 reads each)
-RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=323/341ms commit=f0f60ae3 pin=a2a93794
+  p95 pack-scoped    : 388 ms; under activation: 457 ms (limit 500 ms, 20 reads each)
+RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=388/457ms client=9f6c33ae jar=713574b62931 pin=a2a93794
 ```

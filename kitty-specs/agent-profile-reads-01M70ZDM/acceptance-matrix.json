@@ -12,7 +12,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:04:46.432001+00:00",
-      "notes": "Pin bumped to open-packs a2a9379; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "Pin bumped to open-packs a2a9379; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-002",
@@ -22,7 +22,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:04:52.713280+00:00",
-      "notes": "getPackAgentProfile answers the body of every corpus profile; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "getPackAgentProfile answers the body of every corpus profile; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-003",
@@ -32,7 +32,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:04:58.874412+00:00",
-      "notes": "Lineage-walked governance over the depends_on closure, depth 0/1; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "Lineage-walked governance over the depends_on closure, depth 0/1; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-004",
@@ -42,7 +42,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:04.390963+00:00",
-      "notes": "Every entry carries step, relation, via, hops, edge {when?,reason?} (DM-01M7232ZMR4EWNDA1P2VF455Y1) and an artifact link when held; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "Every entry carries step, relation, via, hops, edge {when?,reason?} (DM-01M7232ZMR4EWNDA1P2VF455Y1) and an artifact link when held; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-005",
@@ -52,7 +52,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:09.864454+00:00",
-      "notes": "agent_profile listed and filterable with ?kind=agent_profile; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "agent_profile listed and filterable with ?kind=agent_profile; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-006",
@@ -62,7 +62,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:15.771970+00:00",
-      "notes": "DELETE of an agent_profile behaves as for the other kinds; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "DELETE of an agent_profile behaves as for the other kinds; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-007",
@@ -72,7 +72,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:21.746171+00:00",
-      "notes": "getEffectiveArtifact for any served kind and getEffectiveAgentProfile; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "getEffectiveArtifact for any served kind and getEffectiveAgentProfile; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-008",
@@ -82,7 +82,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:27.540753+00:00",
-      "notes": "effective-artifact (+ artifact) on effective list/context items and profile governance entries, effective-artifact on graph nodes (WP08); verifyAll green at f0f60ae3 (WP10)"
+      "notes": "effective-artifact (+ artifact) on effective list/context items and profile governance entries, effective-artifact on graph nodes (WP08); verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-009",
@@ -92,7 +92,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:33.047145+00:00",
-      "notes": "Root links activations with method POST; activation links artifacts{?kind,state}; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "Root links activations with method POST; activation links artifacts{?kind,state}; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-010",
@@ -102,7 +102,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:39.221822+00:00",
-      "notes": "Unknown profile is 404 artifact_not_found; verifyAll green at f0f60ae3 (WP10)"
+      "notes": "Unknown profile is 404 artifact_not_found; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)"
     },
     {
       "criterion_id": "FR-011",
@@ -112,7 +112,7 @@
       "pass_fail": "pass",
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:44.773637+00:00",
-      "notes": "RESULT PASS hops=52/52 failed=0 unheld=7 (#452) unlinked=15 (procedures) p95=323/341ms commit=f0f60ae3 pin=a2a93794; qualified pass"
+      "notes": "RESULT PASS hops=52/52 failed=0 unheld=7 (#452) unlinked=15 (procedures) p95=388/457ms client=9f6c33ae jar=713574b62931 pin=a2a93794; qualified pass"
     },
     {
       "criterion_id": "SC-001",
@@ -154,7 +154,7 @@
       "pass_fail": "pass",
       "verified_by": "curator-carla",
       "verified_at": "2026-11-10T12:30:00+00:00",
-      "notes": "Every corpus agent profile is read pack-scoped with a body that round-trips; verifyAll green at f0f60ae3 (WP10)."
+      "notes": "Every corpus agent profile is read pack-scoped with a body that round-trips; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)."
     },
     {
       "criterion_id": "SC-005",
@@ -174,7 +174,7 @@
       "pass_fail": "pass",
       "verified_by": "curator-carla",
       "verified_at": "2026-11-10T12:30:00+00:00",
-      "notes": "100% of the corpus's profiles answered with meaning intact; verifyAll green at f0f60ae3 (WP10)."
+      "notes": "100% of the corpus's profiles answered with meaning intact; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)."
     },
     {
       "criterion_id": "NFR-002",
@@ -184,7 +184,7 @@
       "pass_fail": "pass",
       "verified_by": "curator-carla",
       "verified_at": "2026-11-10T12:30:00+00:00",
-      "notes": "Change fragments, @contract scenarios and examples with _links are in place; verifyAll green on Java 25 at f0f60ae3 (WP10)."
+      "notes": "Change fragments, @contract scenarios and examples with _links are in place; verifyAll green on Java 25 at f0f60ae3 (WP10) and at 9f6c33ae (PR head)."
     },
     {
       "criterion_id": "NFR-003",
@@ -194,7 +194,7 @@
       "pass_fail": "pass",
       "verified_by": "curator-carla",
       "verified_at": "2026-11-10T12:30:00+00:00",
-      "notes": "p95 of 20 reads: 323 ms pack-scoped, 341 ms under an activation (limit 500 ms). Measured in the dev container, not on the CI runner the requirement names; no CI measurement exists."
+      "notes": "p95 of 20 reads at 9f6c33ae: 388 ms pack-scoped, 457 ms under an activation (limit 500 ms; 323/341 ms at f0f60ae3). Measured in the dev container, not on the CI runner the requirement names; no CI measurement exists."
     },
     {
       "criterion_id": "NFR-004",
@@ -204,7 +204,7 @@
       "pass_fail": "pass",
       "verified_by": "curator-carla",
       "verified_at": "2026-11-10T12:30:00+00:00",
-      "notes": "A specializes_from cycle terminates with each node listed once; verifyAll green at f0f60ae3 (WP10)."
+      "notes": "A specializes_from cycle terminates with each node listed once; verifyAll green at f0f60ae3 (WP10) and at 9f6c33ae (PR head)."
     }
   ],
   "negative_invariants": []
