@@ -228,7 +228,7 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -241,6 +241,7 @@
         "Ready for review"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/agent-profile-reads-01M70ZDM-coord/kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP07-profile-under-an-activation-profiles-edge-route/review-cycle-1.md",
         "reference": "review-cycle://agent-profile-reads-01M70ZDM/WP07-profile-under-an-activation-profiles-edge-route/review-cycle-1.md",
@@ -248,14 +249,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 30699,
-      "shell_pid_created_at": "1794286276.37",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done"
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned"
       }
     },
     "WP08": {
