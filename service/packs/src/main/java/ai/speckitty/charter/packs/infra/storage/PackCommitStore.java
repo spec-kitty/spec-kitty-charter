@@ -244,6 +244,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         return commitEdited(pack, null, (staging, parent) -> {
             for (String file : files) {
                 Files.deleteIfExists(staging.resolve(file));
+                pruneEmptied(staging, staging.resolve(file).getParent());
             }
             if (relationshipShardText != null) {
                 Files.writeString(
@@ -253,6 +254,27 @@ public final class PackCommitStore implements WholePackWriteStore {
                 Files.writeString(staging.resolve(preset.getKey()), preset.getValue(), StandardCharsets.UTF_8);
             }
         });
+    }
+
+    /**
+     * Removes the directories a removal left empty, from the removed file's own up to the pack's root, which stays: a
+     * mission type's {@code steps/} and {@code templates/} go with its last file (D10 of #99).
+     */
+    private static void pruneEmptied(Path staging, @Nullable Path directory) throws IOException {
+        Path at = directory;
+        while (at != null && !at.equals(staging) && at.startsWith(staging) && isEmptyDirectory(at)) {
+            Files.delete(at);
+            at = at.getParent();
+        }
+    }
+
+    private static boolean isEmptyDirectory(Path directory) throws IOException {
+        if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+            return false;
+        }
+        try (Stream<Path> entries = Files.list(directory)) {
+            return entries.findAny().isEmpty();
+        }
     }
 
     /** What a commit does to its staged copy of the pack before the swap. */

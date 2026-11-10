@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -161,6 +162,26 @@ public final class InboundReferences {
      * @return the referrers, by pack and referrer; empty when nothing refers
      */
     public List<Referrer> scan(StagedPackViews.View stored, StagedTree staged, Set<Urn> removed) {
+        return scan(stored, staged, removed, false);
+    }
+
+    /**
+     * The scan of a {@code DELETE} of artifacts from one pack (FR-010 of #99, D10): the registration's scan, and a
+     * removed mission type is also referred to by every artifact bound to it (a step contract whose {@code mission}
+     * names it, {@link PackCompositionFacts#bindings()}) and by every edge that names one of its action nodes,
+     * {@code action:<type>/<step>}, at either end. An edge that starts at a removed artifact is not a referrer, as in
+     * the registration's scan; an edge that starts at an action node of a removed type is.
+     *
+     * @param stored the stored packs, read through one session
+     * @param staged the pack after the removal
+     * @param removed the artifacts the removal removes
+     * @return the referrers, by pack and referrer; empty when nothing refers
+     */
+    public List<Referrer> scanRemoval(StagedPackViews.View stored, StagedTree staged, Set<Urn> removed) {
+        return scan(stored, staged, removed, true);
+    }
+
+    private List<Referrer> scan(StagedPackViews.View stored, StagedTree staged, Set<Urn> removed, boolean removal) {
         Objects.requireNonNull(stored, "stored");
         Objects.requireNonNull(staged, "staged");
         Objects.requireNonNull(removed, "removed");
@@ -170,7 +191,7 @@ public final class InboundReferences {
         List<Member> members = membersOf(stored, staged);
         Set<Referrer> found = new LinkedHashSet<>();
         for (Member member : members) {
-            found.addAll(referrersOf(member, members, staged, removed));
+            found.addAll(referrersOf(member, members, staged, removed, removal));
         }
         return found.stream()
                 .sorted(Comparator.comparing(
@@ -208,10 +229,14 @@ public final class InboundReferences {
     }
 
     private static List<Referrer> referrersOf(
-            Member member, List<Member> members, StagedTree staged, Set<Urn> removed) {
+            Member member, List<Member> members, StagedTree staged, Set<Urn> removed, boolean removal) {
         List<Member> closure = closureOf(member, members);
         List<Referrer> out = new ArrayList<>();
-        for (Reference reference : referencesOf(member)) {
+        List<Reference> references = new ArrayList<>(referencesOf(member));
+        if (removal) {
+            references.addAll(removalReferencesOf(member));
+        }
+        for (Reference reference : references) {
             Optional<Urn> hit = removedTarget(reference.target(), closure, staged, removed);
             boolean sourceRemoved = member.staged()
                     && reference.source().filter(removed::contains).isPresent();
@@ -227,18 +252,23 @@ public final class InboundReferences {
         return out;
     }
 
-    /** The removed artifact a reference resolves to, when it resolves to one of the staged pack's. */
+    /**
+     * The removed artifact a reference resolves to, when it resolves to one of the staged pack's. An action node is
+     * removed with its mission type, and resolves where the type does.
+     */
     private static Optional<Urn> removedTarget(
             PackQualifiedReference target, List<Member> closure, StagedTree staged, Set<Urn> removed) {
-        Optional<Urn> urn = target.asUrn().filter(removed::contains);
-        if (urn.isEmpty()) {
-            return urn;
+        Optional<Urn> urn = target.asUrn();
+        Optional<Urn> owner = urn.filter(removed::contains)
+                .or(() -> urn.flatMap(StepHolding::missionTypeOf).filter(removed::contains));
+        if (owner.isEmpty()) {
+            return Optional.empty();
         }
         boolean resolvesToStaged = target.qualified()
                 ? target.packName()
                         .filter(name -> namesStagedPack(name, staged))
                         .isPresent()
-                : bareResolvesToStaged(urn.get(), closure);
+                : bareResolvesToStaged(owner.get(), closure);
         return resolvesToStaged ? urn : Optional.empty();
     }
 
@@ -289,6 +319,27 @@ public final class InboundReferences {
         }
         for (PackOverride override : member.descriptor().overrides()) {
             overrideReference(override).ifPresent(out::add);
+        }
+        return out;
+    }
+
+    /**
+     * What else refers to a removed mission type: each artifact bound to a mission type refers to it, and each edge
+     * that starts at an action node refers to that node.
+     */
+    private static List<Reference> removalReferencesOf(Member member) {
+        List<Reference> out = new ArrayList<>();
+        member.facts()
+                .bindings()
+                .forEach((bound, missionType) -> Urn.parse(bound)
+                        .ifPresent(source -> out.add(new Reference(
+                                bound,
+                                Optional.of(source),
+                                new PackQualifiedReference(Optional.empty(), missionType)))));
+        for (Relationship edge : member.facts().edges()) {
+            if (edge.from().kind() == NodeKind.ACTION) {
+                out.add(new Reference(edge.fromReference().toString(), Optional.empty(), edge.fromReference()));
+            }
         }
         return out;
     }

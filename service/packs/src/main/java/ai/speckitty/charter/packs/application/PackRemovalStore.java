@@ -5,8 +5,6 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Preset;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -54,25 +52,26 @@ public interface PackRemovalStore extends PackRevisions {
     }
 
     /**
-     * What one removal leaves behind: the files of the artifact go, the registered relationships and the presets are the
+     * What one removal leaves behind: the files of the artifacts go, the registered relationships and the presets are the
      * ones given, nothing else of the pack is rewritten.
      *
-     * @param artifact the artifact whose file and companions are removed; empty for the removal of a relationship
+     * @param artifacts the artifacts whose files and companions are removed, together: one artifact, or a mission type
+     *     and its skeletons (D10 of #99); empty for the removal of a relationship
      * @param relationships the complete registered-relationship set to persist, in place of the stored one
-     * @param presets the presets to rewrite, whole, with the items that name the artifact left out; one that holds no
+     * @param presets the presets to rewrite, whole, with the items that name the artifacts left out; one that holds no
      *     list any longer is written with none
      */
-    record Removal(Optional<Urn> artifact, List<Relationship> relationships, List<Preset> presets) {
+    record Removal(List<Urn> artifacts, List<Relationship> relationships, List<Preset> presets) {
 
         /**
          * Checks the parts and copies the lists.
          *
-         * @param artifact the removed artifact, if any
+         * @param artifacts the removed artifacts, if any
          * @param relationships the registered relationships that stay
          * @param presets the presets to rewrite
          */
         public Removal {
-            Objects.requireNonNull(artifact, "artifact");
+            artifacts = List.copyOf(artifacts);
             relationships = List.copyOf(relationships);
             presets = List.copyOf(presets);
         }
@@ -86,7 +85,22 @@ public interface PackRemovalStore extends PackRevisions {
          * @return the removal
          */
         public static Removal ofArtifact(Urn artifact, List<Relationship> relationships, List<Preset> presets) {
-            return new Removal(Optional.of(artifact), relationships, presets);
+            return ofArtifacts(List.of(artifact), relationships, presets);
+        }
+
+        /**
+         * The removal of artifacts that go together, as one removal.
+         *
+         * @param artifacts the artifacts, the one the request names first
+         * @param relationships the registered relationships that stay
+         * @param presets the presets to rewrite
+         * @return the removal
+         */
+        public static Removal ofArtifacts(List<Urn> artifacts, List<Relationship> relationships, List<Preset> presets) {
+            if (artifacts.isEmpty()) {
+                throw new IllegalArgumentException("a removal of artifacts names at least one");
+            }
+            return new Removal(artifacts, relationships, presets);
         }
 
         /**
@@ -96,7 +110,7 @@ public interface PackRemovalStore extends PackRevisions {
          * @return the removal
          */
         public static Removal ofRelationship(List<Relationship> relationships) {
-            return new Removal(Optional.empty(), relationships, List.of());
+            return new Removal(List.of(), relationships, List.of());
         }
     }
 
