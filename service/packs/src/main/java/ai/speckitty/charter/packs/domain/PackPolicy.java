@@ -333,7 +333,7 @@ public final class PackPolicy {
         boolean versioned = schemaVersion.filter(VERSIONED_SCHEMA::equals).isPresent();
         List<PromptSlotFault> faults = new ArrayList<>();
         for (PromptSlots.Fault fault : parse.faults()) {
-            String where = "line " + fault.line() + ": ";
+            String where = "line " + fault.line() + " of the canonical text: ";
             faults.add(
                     switch (fault.kind()) {
                         case MALFORMED ->

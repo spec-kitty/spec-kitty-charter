@@ -14,7 +14,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A <b>marker candidate</b> is an HTML comment, {@code <!--} up to the first {@code -->} after it, whose content,
  * trimmed, ends in {@code :start} or {@code :end}. Every other comment is text ({@code <!-- decision_id: x -->}), and
- * so is a comment never closed. A candidate counts wherever it stands: in an HTML block, in inline code, in a fenced
+ * so is a comment never closed. {@code <!-->} and {@code <!--->} are complete comments (CommonMark), with no content.
+ * A candidate counts wherever it stands: in an HTML block, in inline code, in a fenced
  * block and in a frontmatter value ("any marker counts", d7). Its id, the content minus the suffix, trimmed, must be a
  * {@link SlotId}.
  *
@@ -38,6 +39,7 @@ public final class PromptSlots {
     private static final String COMMENT_CLOSE = "-->";
     private static final String START_SUFFIX = ":start";
     private static final String END_SUFFIX = ":end";
+    private static final int MAX_SHOWN_ID = 64;
 
     private PromptSlots() {}
 
@@ -71,7 +73,8 @@ public final class PromptSlots {
      *
      * @param kind what kind of fault
      * @param slot the slot it concerns; empty when the marker's id is not a slot id
-     * @param line the 1-based line of the marker that raised it (of the start marker for {@code NOT_EMPTY})
+     * @param line the 1-based line, of the canonical text, of the marker that raised it (of the start marker for
+     *     {@code NOT_EMPTY})
      * @param reason what is wrong
      */
     public record Fault(Kind kind, Optional<SlotId> slot, int line, String reason) {
@@ -124,15 +127,23 @@ public final class PromptSlots {
     }
 
     /**
-     * Whether the text holds a marker candidate of any id, valid or not, in a pair or alone: the question a fragment
-     * is asked (d7, FR-004).
+     * Whether the text holds a marker candidate of any id, valid or not, in a pair or alone, or leaves a comment open:
+     * the question a fragment is asked (d7, FR-004). A fragment's unclosed {@code <!--} would swallow the base prompt
+     * once the fragment is rendered into it (ADR-0066), so it counts like a marker.
      *
      * @param text the text
-     * @return true when some comment's trimmed content ends in {@code :start} or {@code :end}
+     * @return true when some comment's trimmed content ends in {@code :start} or {@code :end}, or a {@code <!--} has
+     *     no {@code -->} after it
      */
     public static boolean containsMarker(String text) {
         Objects.requireNonNull(text, "text");
-        return new MarkerScan(text).next().isPresent();
+        MarkerScan scan = new MarkerScan(text);
+        return scan.next().isPresent() || scan.leftOpen();
+    }
+
+    /** An id as a reason shows it: the file is untrusted, so a long id is cut. */
+    private static String bounded(String id) {
+        return id.length() <= MAX_SHOWN_ID ? id : id.substring(0, MAX_SHOWN_ID) + "…";
     }
 
     private static boolean isSlotWhitespace(char c) {
@@ -178,26 +189,42 @@ public final class PromptSlots {
         private final String text;
         private int position;
         private int line = 1;
+        private boolean leftOpen;
 
         MarkerScan(String text) {
             this.text = text;
         }
 
+        /** Whether the scan reached a {@code <!--} that no {@code -->} follows; true only once {@link #next} is spent. */
+        boolean leftOpen() {
+            return leftOpen;
+        }
+
         Optional<Marker> next() {
             while (true) {
                 int open = text.indexOf(COMMENT_OPEN, position);
-                int close = open < 0 ? -1 : text.indexOf(COMMENT_CLOSE, open + COMMENT_OPEN.length());
-                if (close < 0) {
+                if (open < 0) {
                     position = text.length();
                     return Optional.empty();
                 }
-                int end = close + COMMENT_CLOSE.length();
+                int body = open + COMMENT_OPEN.length();
+                // CommonMark: <!--> and <!---> are complete comments; the search for --> starts after the opener.
+                int close = text.startsWith(">", body) || text.startsWith("->", body)
+                        ? body
+                        : text.indexOf(COMMENT_CLOSE, body);
+                if (close < 0) {
+                    leftOpen = true;
+                    position = text.length();
+                    return Optional.empty();
+                }
+                int end = text.startsWith(">", body)
+                        ? body + 1
+                        : text.startsWith("->", body) ? body + 2 : close + COMMENT_CLOSE.length();
                 line += newlines(position, open);
                 int openLine = line;
                 line += newlines(open, end);
                 position = end;
-                Optional<Marker> marker =
-                        candidate(trim(text, open + COMMENT_OPEN.length(), close), openLine, open, end);
+                Optional<Marker> marker = candidate(trim(text, body, close), openLine, open, end);
                 if (marker.isPresent()) {
                     return marker;
                 }
@@ -239,7 +266,9 @@ public final class PromptSlots {
 
         void accept(Marker marker) {
             if (marker.id().isEmpty()) {
-                malformed(marker, "the id '" + marker.rawId() + "' does not match ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$");
+                malformed(
+                        marker,
+                        "the id '" + bounded(marker.rawId()) + "' does not match ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$");
             } else if (marker.start()) {
                 start(marker, marker.id().get());
             } else {
@@ -260,7 +289,7 @@ public final class PromptSlots {
             if (declared.contains(id)) {
                 malformed(marker, "the slot is declared more than once");
             } else if (current != null) {
-                malformed(marker, "the slot opens inside the open slot " + current.rawId());
+                malformed(marker, "the slot opens inside the open slot " + bounded(current.rawId()));
             } else {
                 declared.add(id);
                 open = marker;
@@ -272,7 +301,10 @@ public final class PromptSlots {
             if (current == null) {
                 malformed(marker, "the end marker has no start before it");
             } else if (!current.rawId().equals(id.value())) {
-                malformed(marker, "the end marker closes " + id + " while " + current.rawId() + " is open");
+                malformed(
+                        marker,
+                        "the end marker closes " + bounded(id.value()) + " while " + bounded(current.rawId())
+                                + " is open");
             } else {
                 close(current, marker, id);
             }

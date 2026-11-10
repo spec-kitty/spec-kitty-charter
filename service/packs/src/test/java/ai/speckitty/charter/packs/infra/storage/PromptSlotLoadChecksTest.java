@@ -91,9 +91,9 @@ class PromptSlotLoadChecksTest {
     @Test
     @DisplayName("a fault names its marker's line, and the warning says why it is only a warning")
     void aFaultNamesItsLine() {
-        assertThat(faults(UNPAIRED, VERSIONED).getFirst().reason()).startsWith("line 3: ");
+        assertThat(faults(UNPAIRED, VERSIONED).getFirst().reason()).startsWith("line 3 of the canonical text: ");
         assertThat(faults(FILLED, VERSIONED).getFirst().reason())
-                .startsWith("line 3: ")
+                .startsWith("line 3 of the canonical text: ")
                 .contains("spdd:reasons-block");
         assertThat(faults(FILLED, UNVERSIONED).getFirst().reason())
                 .contains("spdd:reasons-block")
@@ -290,7 +290,7 @@ class PromptSlotLoadChecksTest {
             assertThat(pack.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.file()).isEqualTo(FILE);
                 assertThat(violation.kind()).isEqualTo("prompt_slot_malformed");
-                assertThat(violation.reason()).startsWith("line 3: ");
+                assertThat(violation.reason()).startsWith("line 3 of the canonical text: ");
             });
             assertThat(pack.warnings()).isEmpty();
         }

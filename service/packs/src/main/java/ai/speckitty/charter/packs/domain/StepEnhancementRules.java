@@ -86,7 +86,7 @@ public final class StepEnhancementRules {
             found.add(new Finding(
                     StepEnhancementFault.FRAGMENT_HAS_MARKER,
                     path,
-                    "the fragment holds a slot marker (any marker counts)"));
+                    "the fragment holds a slot marker (any marker counts) or leaves a comment open"));
         }
     }
 

@@ -172,6 +172,9 @@ class StepEnhancementRulesTest {
         @Test
         void aFragmentWithASlotMarkerIsRefusedAtTheFragmentAndItsTwinWithoutOneIsNot() {
             assertOnly(judge(packWith(text("Be <!-- x:y:start --> brief.\n"))), FRAGMENT_HAS_MARKER, FRAGMENT);
+            // an unclosed comment would swallow the base prompt once rendered; a closed one is plain text
+            assertOnly(judge(packWith(text("Use the plan. <!-- \n"))), FRAGMENT_HAS_MARKER, FRAGMENT);
+            assertThat(judge(packWith(text("Use the plan. <!-- note -->\n")))).isEmpty();
             assertThat(judge(packWith(text("Be brief.\n")))).isEmpty();
         }
 

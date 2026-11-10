@@ -91,7 +91,24 @@ class PromptSlotsTest {
                         NO_FAULTS,
                         false),
                 Arguments.of("text: the suffix ends the content", "<!-- a:b:start now -->", NO_SLOTS, NO_FAULTS, false),
-                Arguments.of("text: a comment never closed", "<!-- a:b:start\nmore", NO_SLOTS, NO_FAULTS, false),
+                // No slot and no fault of its own; a fragment may not leave one open, so it counts as a marker.
+                Arguments.of("text: a comment never closed", "<!-- a:b:start\nmore", NO_SLOTS, NO_FAULTS, true),
+                Arguments.of(
+                        "text: a comment never closed, in a body", "Use the plan. <!-- ", NO_SLOTS, NO_FAULTS, true),
+                // CommonMark closes <!--> and <!---> where they stand, so neither runs on to the next -->.
+                Arguments.of(
+                        "text: <!--> is a complete comment",
+                        "# T\n\n<!--> hi\n\n" + PAIR + "\n",
+                        List.of("a:b"),
+                        NO_FAULTS,
+                        true),
+                Arguments.of(
+                        "text: <!---> is a complete comment",
+                        "# T\n\n<!---> hi\n\n" + PAIR + "\n",
+                        List.of("a:b"),
+                        NO_FAULTS,
+                        true),
+                Arguments.of("text: <!--> alone is no marker", "<!--> hi", NO_SLOTS, NO_FAULTS, false),
                 Arguments.of("text: a comment never opened", "a:b:start -->", NO_SLOTS, NO_FAULTS, false),
                 // Where a marker may stand: any marker counts (d7).
                 Arguments.of(
@@ -241,6 +258,13 @@ class PromptSlotsTest {
             assertThat(faults.get(1).slot()).isEqualTo(Optional.empty());
             assertThat(faults.get(1).line()).isEqualTo(7);
             assertThat(faults.get(1).reason()).contains("Bad:id");
+
+            String longId = "X".repeat(500);
+            assertThat(PromptSlots.parse("<!-- " + longId + ":start -->").faults())
+                    .singleElement()
+                    .satisfies(fault -> assertThat(fault.reason())
+                            .contains("X".repeat(64) + "…")
+                            .doesNotContain("X".repeat(65)));
         }
 
         @Test
