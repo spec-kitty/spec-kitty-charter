@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -12,6 +12,8 @@ related:
   - plans/milestones
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0055-cutover-sequencing-the-java-service-first
+  - adr/0059-switch-gate-cascade-edges-and-activation-rulings
+  - plans/engineering-notes/service-usability-run-2026-11-09
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the next checkable step and what it depends on.
@@ -40,13 +42,13 @@ spec-kitty#6188 moved the imports onto the offering seam, as core ADR
 | 2 | **Gradle build.** Multi-project build with the modules in [Hexagonal service](/architecture/hexagonal-service/), strict dependency verification, and a dependency-direction test. | An empty domain and a generated `charter-api` compile; the direction test fails a planted violation; `./gradlew verifyAll` runs green on Java 25 in CI | 1 |
 | 3 | ~~**Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at depths 0, 1 and 2 (the seam maps first load to 2, a recorded load to 1). Expected results come from a harness here over core's existing CLI, mapped onto the contract shape, with deliberate differences in a reviewed register ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)).~~ **Superseded 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3). Author or update the packs to the design:** the packs the service ships and loads, and fixture packs that exercise each rule (`depends_on`, levels, activation, cascade, `required_<kind>`, `specializes_from`, `enhances` and `overrides`). | ~~The harness produces the first slice from open-packs and fixture projects, and the corpus is published with the contract~~ The packs match the design, and the ADRs say what each resolves to | 1, the reads decided by the inventory (#94) |
 | 3a | **Pack-composition resolver** ([#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145), [#146](https://github.com/spec-kitty/spec-kitty-charter/issues/146)). The `depends_on` and `parent_pack` checks, and the dependency resolver of [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/): each level is resolved through `depends_on` before the levels stack. Moved onto the cutover path 2026-11-03 (ADR-0055 D2). **Done 2026-11-03** ([changelog](/changelog/2026-11-03-pack-composition-depends-on-and-resolver/), [Compose packs](/guides/compose-packs/)); deferred: #357, #358, #359, #360, #363. | The resolver orders, range-checks and dedupes the packs of one level, and refuses cycles and sibling conflicts | 2 |
-| 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. | ~~The first corpus slice passes against Java~~ The domain resolves the step 3 packs to what the ADRs say (ADR-0055 D3) | 2, 3, 3a |
-| 5 | **Org and project layers.** Extend the packs and the domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. | ~~Corpus slice passes on both implementations~~ The domain resolves the step 3 packs for these rules to what the ADRs say | 4 |
+| 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. **Done** (#10 closed; PRs #414, #419, #427, #448). | ~~The first corpus slice passes against Java~~ The domain resolves the step 3 packs to what the ADRs say (ADR-0055 D3) | 2, 3, 3a |
+| 5 | **Org and project layers.** Extend the packs and the domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. **Done** (#11 closed; same PRs). | ~~Corpus slice passes on both implementations~~ The domain resolves the step 3 packs for these rules to what the ADRs say | 4 |
 | 6 | **Core ingests the contract** (phase 2; waits for phase 1). Core vendors a pinned 0.x release, generates a client from it, and routes every operation through a proxy at its seam, each starting on core's Python ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/); [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/): the Python charter stays in core until each operation switches). | Core's seam tests pass through the generated client, all operations in-process | the seam work, 0.1.0 (#45, #119), and phase 1 (steps 1 to 5, 3a and the activation register, [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) |
 | 7 | **Read shadow** (phase 2). Core's proxy routes an operation to a shadow: it answers from Python and compares the service's answer, one operation at a time (ADR-0021 D4). | Differences are reported in diagnostics; none is unexplained. What counts as the reference answer is an open question in ADR-0055 | 4 to 6, a running service (#70), released on the `service-v*` line ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)) |
 
-The activation register ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) is part of phase 1:
-without it the service answers `501` for every activation write.
+The activation register ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) is part of phase 1.
+It is built: no activation operation answers `501` any more (usability run of 2026-11-09).
 
 Steps 1 to 7 and 3a are the start of the **4.x cutover** milestone on the tracker. Work that builds on
 the cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
@@ -54,8 +56,9 @@ proposed distribution of issues.
 
 After step 7 the [strangler stages](/architecture/strangler-transition/) take over, one operation
 at a time (ADR-0021 D5). Each operation moves from shadow to the service once its gate passes,
-fail closed. The gate is an open question ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)); the
-corpus over core's CLI no longer is it; the first such move needs contract 1.0.0
+fail closed. The gate is the operation's design-derived BDD `@contract` scenarios and its contract tests
+([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1); the corpus over core's CLI no longer
+is it. The first such move needs contract 1.0.0
 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/) D6). The **4.x cutover** is reached when
 every offering read, including activation's, goes through this repository's API and the Python
 offering reads are removed or inactive; compile keeps a ratcheted Python read until it is the first
@@ -64,55 +67,46 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-10-27, except the note below.
+As of 2026-11-10. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
+an architecture and planning review of the plan pages against `main`, the tracker, and the nightly SonarCloud scan.
 
-*Updated 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)): the service is built first
-(phase 1) and core's integration, steps 6 and 7, follows (phase 2). Step 3 is superseded by authoring the packs to the
-design, and the resolver (3a) comes before step 4. The notes below are as of 2026-10-27.*
+- **Phase 1 steps 1 to 5, 3a and the activation register are built.** The contract holds the API root, the offering
+  reads, the generic artifact reads (`/packs/{packId}/artifacts[/{kind}/{artifactId}]`), pack registration and the
+  activation register with its effective reads (`/artifacts`, `/skipped`, `/graph` and the effective action context,
+  R9). The whole-pack round trip is a required check. Contract `0.1.0` is still uncut (#45, #196).
+- **What the usability run found.** The service is not yet usable by core. Artifact bodies are served for five kinds
+  only (tactic, directive, styleguide, paradigm, toolguide; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)), so
+  agent profiles, mission types, step contracts, procedures and templates cannot be read, although their domain and
+  storage bindings exist. No real pack registers unedited (#451, #431, #452), language tags do not alias (#453), the
+  effective action context lists fewer directives than core and links no bodies (#450), and startup refusals are hard
+  to read (#454).
+- **In flight.** Two missions wire agent profiles and mission types to reads (#407, #96, #99, #148), through the
+  generic kind route and `_links` ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)), not new
+  per-kind routes. PR #460 lands phase 1 of step enhancements and prompt fragments
+  ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/), #437).
 
-- **Step 1, done, then reshaped.** `contracts/charter/` is at `0.1.0-SNAPSHOT`, unreleased, and is
-  published as 0.x until it is stable (ADR-0022, built by PR #129). PR #139 rebuilt the service on
-  one canonical `Pack` aggregate. It removed `GET /packs`, `POST /packs/refresh` and the
-  action-context read. Since #126 (2026-10-31) the contract holds the API root `GET /`, `GET /info`,
-  `GET /openapi.yaml`, `GET /offering` (the configured packs), the generic artifact reads
-  (`/packs/{packId}/artifacts[/{kind}/{artifactId}]`) and the registrations under the same tree, every JSON success answer
-  linked through `_links`; the per-kind routes are removed. The contract's own checks (lint, closed responses, the
-  bundle, the release gate) run in the build and pass.
-- **Step 2, done.** The build is cut into onion-layered vertical slices (`kernel`, `packs`,
-  `deployable`), enforced by ArchUnit
-  ([ADR-0006](/adr/0006-onion-vertical-slices-archunit/)), behind one required CI gate
-  ([ADR-0023](/adr/0023-ci-gate-required-check/)).
-- **Step 4, under way.** Packs are validated against the canonical schemas
-  ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/), PR #137). The `Pack`
-  aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 added
-  directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)), and PR #180 added toolguide and registration for all four. Merge, activation and cascade are not built.
-- **Next.** Two tracks:
-  - **unblock core:** #119 is fixed and the publishing workflow (#45) is built. Cutting 0.1.0 is
-    held (operator, 2026-10-27); the tag ruleset (#196) comes first when it is cut. Then the
-    activation set is 0.2.0 (#125), and an additive change ready earlier, such as
-    `GET /openapi.yaml` (#208), rides that minor;
-  - **model before breadth:** the whole-pack round trip
-    ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every pack file
-    into the domain and write it back. #171 comes first; the read and registration services of
-    the kind registry (#169) are extracted after two or three more kinds are built
-    ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26), while the
-    storage and aggregate plumbing is keyed by kind first, with the whole-pack seam (#189,
-    [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), accepted 2026-10-27). Then the
-    offering reads under `/offering` (#126). *Done 2026-11-05:* the epic closes with #299 and #319 fixed,
-    and the whole-pack round trip is a required check under `CI gate / gate`.
+## Toward a service core can use
 
-  ~~Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),
-  needs the reads #126 brings back.~~ Superseded 2026-11-03: step 3 is now authoring the packs to the design
-  (ADR-0055 D3).
+The next slices, in order. Re-run the usability run after slices B and C; its checklist is the readiness gate.
+
+| Slice | Scope | Done when | Depends on |
+|---|---|---|---|
+| **A. Every kind is readable** | #407, #96, #99, #148 (moved forward from Post-cutover), #100; #437 via PR #460 | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | in flight |
+| **B. Real packs register as they are** | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
+| **C. The effective step and action context match core** | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018); close #103 into #450 | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
+| **D. A contract release core can vendor** | #196, #45, #454, #312, #367; narrow or close #47; re-scope #9 and #72 to ADR-0059 D1 | A tagged 0.x release carries slices A to C | A to C |
+| **E. Core ingests** (phase 2) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
+
+Alongside, not on the critical path: the SonarCloud findings (Security rating D, Reliability rating E, from a handful
+of issues; see [Milestones](/plans/milestones/#sonarcloud-findings)). Hosted work (#127, #396) and contract 1.0.0
+(#128) follow slice E.
 
 The action-context walk is decided in
-[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/). Its operation returns as
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/). Its operation is
 `GET /offering/mission-types/{missionType}/actions/{action}/context`
-([ADR-0020](/adr/0020-offering-and-activations/) D1, #126). What applies in one activation is the
-effective context under `/activations/{activationId}` (R9,
-[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built as `getEffectiveActionContext` (PR C).
-**R9 gated cutover stage 3**: the gate is open, and the seam's switch of its context read to the service is not part of
-this service.
+([ADR-0020](/adr/0020-offering-and-activations/) D1). What applies in one activation is the effective context under
+`/activations/{activationId}` (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built in PR C;
+its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450).
 
 ## Before step 6
 
@@ -132,7 +126,6 @@ the shadow comparison stay in core.
   points its contract here and records rewrite-and-replace.
 - **Core:** reconcile `docs/architecture/charter-backend-service-future.md`, which still
   lists the runtime service as backlog.
-- **Core:** a fixture export that turns the Python charter's answers into corpus files.
 - **Core and spec-kitty-events:** the one canonical event writer (core ADR
   [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md), Accepted), which writes only spec-kitty-events contract events, each
   with its `schema_version`. Not a dependency of this repository, but the events that cite
@@ -143,6 +136,6 @@ the shadow comparison stay in core.
 The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Both things it
 waited on are built: the fix for the duplicate classes code generation emitted (#119), so that
 core's generated client is clean, and the publishing workflow (#45). What remains is cutting the
-release, which the operator holds for now (2026-10-27), following
+release, held by the operator since 2026-10-27; slice D above proposes cutting it once slices A to C land, following
 [the release procedure](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#releasing-a-contract-version). Shapes may still change in a 0.x minor; they freeze at 1.0.0
 (#128).
