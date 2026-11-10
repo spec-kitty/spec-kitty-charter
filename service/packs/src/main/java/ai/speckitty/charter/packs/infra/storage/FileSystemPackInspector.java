@@ -190,13 +190,13 @@ public final class FileSystemPackInspector implements PackInspector {
                 full.artifacts,
                 full.assets,
                 full.unreadable,
-                full.stepEnhancementFacts(edgesOf(shards, fragment)),
+                full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
                 full.promptSlots);
     }
 
     /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
     private static List<StepEnhancementFacts.Edge> edgesOf(
-            List<FileRead<RawGraph>> shards, FileRead<RawGraph> fragment) {
+            List<FileRead<RawGraph>> shards, FileRead<RawGraph> fragment, String packName) {
         List<FileRead<RawGraph>> documents = new ArrayList<>(shards);
         documents.add(fragment);
         List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
@@ -204,37 +204,61 @@ public final class FileSystemPackInspector implements PackInspector {
             if (document instanceof FileRead.Read<RawGraph> read) {
                 read.value()
                         .edges()
-                        .forEach(edge -> stepEnhancementEdge(edge.relation(), edge.source(), edge.target())
+                        .forEach(edge -> stepEnhancementEdge(edge.relation(), edge.source(), edge.target(), packName)
                                 .ifPresent(edges::add));
             }
         }
         return edges;
     }
 
+    /** The name composition knows the pack by: the descriptor's when it was read, else the configured name. */
+    private static String ownName(FileRead<PackDescriptor> descriptor, String configured) {
+        return descriptor instanceof FileRead.Read<PackDescriptor> read
+                ? read.value().name()
+                : configured;
+    }
+
     /**
      * The edge fact of a graph edge whose source is a step enhancement of the pack: an {@code enhances} or an
-     * {@code overrides} edge from a bare {@code step_enhancement:<id>}. The target is split from its pack qualifier
-     * here, once, for the validate-mode facts and the load alike. Any other edge is no fact.
+     * {@code overrides} edge from {@code step_enhancement:<id>}, written bare or qualified with the pack's own name
+     * ({@code <pack>::step_enhancement:<id>}; composition accepts the pack itself in the closure and places the edge
+     * at the pack's own enhancement). A source qualified by another pack names that pack's enhancement, as
+     * {@code PackCompositionResolver.holderOf} resolves it, so it is no edge of this pack's enhancements. The target
+     * is split from its pack qualifier here, once, for the validate-mode facts and the load alike. Any other edge is
+     * no fact.
      *
      * @param relation the relation as written
      * @param source the source endpoint as written
      * @param target the target endpoint as written
+     * @param packName the name composition knows this pack by
      * @return the edge fact; empty for an edge the step enhancement rules do not judge
      */
-    static Optional<StepEnhancementFacts.Edge> stepEnhancementEdge(String relation, String source, String target) {
+    static Optional<StepEnhancementFacts.Edge> stepEnhancementEdge(
+            String relation, String source, String target, String packName) {
         Optional<RelationType> type = RelationType.fromToken(relation)
                 .filter(found -> found == RelationType.ENHANCES || found == RelationType.OVERRIDES);
-        if (type.isEmpty() || !source.startsWith(NodeKind.STEP_ENHANCEMENT.token() + ":")) {
+        if (type.isEmpty()) {
             return Optional.empty();
         }
+        PackQualifiedReference origin;
+        try {
+            origin = PackQualifiedReference.parse(source);
+        } catch (IllegalArgumentException malformed) {
+            // Not a reference: the graph document is judged where it is read.
+            return Optional.empty();
+        }
+        if (origin.packName().filter(qualifier -> !qualifier.equals(packName)).isPresent()
+                || !origin.urn().startsWith(NodeKind.STEP_ENHANCEMENT.token() + ":")) {
+            return Optional.empty();
+        }
+        String bare = origin.urn();
         try {
             PackQualifiedReference reference = PackQualifiedReference.parse(target);
-            return Optional.of(
-                    new StepEnhancementFacts.Edge(type.get(), source, reference.urn(), reference.packName()));
+            return Optional.of(new StepEnhancementFacts.Edge(type.get(), bare, reference.urn(), reference.packName()));
         } catch (IllegalArgumentException malformed) {
             // Not a reference: the graph document is judged where it is read; the rule sees a target that is no step.
             return Optional.of(
-                    new StepEnhancementFacts.Edge(type.get(), source, target.replace("::", ":"), Optional.empty()));
+                    new StepEnhancementFacts.Edge(type.get(), bare, target.replace("::", ":"), Optional.empty()));
         }
     }
 

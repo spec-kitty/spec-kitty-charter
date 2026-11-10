@@ -1081,6 +1081,26 @@ class FileSystemPackInspectorTest {
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
                 .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+
+        // the same overrides edge, its source qualified with the pack's own name: the same enhancement (#460 R-OVR)
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE + "- source: qa::step_enhancement:spdd-specify\n  target: mission_type:software-dev\n"
+                        + "  relation: overrides\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+
+        // an overrides edge from another pack's enhancement is that pack's edge, not this pack's
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE + "- source: other::step_enhancement:spdd-specify\n  target: mission_type:software-dev\n"
+                        + "  relation: overrides\n");
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
     }
 
     @Test
@@ -1106,6 +1126,21 @@ class FileSystemPackInspectorTest {
             assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
             assertThat(finding.detail()).contains("0 enhances edges");
         });
+
+        // a second enhances edge from the pack-qualified source counts like a bare one
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE + "- source: qa::step_enhancement:spdd-specify\n"
+                        + "  target: base::action:software-dev/plan\n  relation: enhances\n");
+        assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.detail()).contains("2 enhances edges");
+        });
+
+        // a sole enhances edge from the pack-qualified source is the enhancement's one edge
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE.replace("source: step_enhancement:", "source: qa::step_enhancement:"));
+        assertThat(promptFragmentFindings(dir)).isEmpty();
     }
 
     @Test
