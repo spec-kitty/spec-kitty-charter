@@ -100,6 +100,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | profiles | `profiles` | `ai.speckitty.charter.profiles` | 90 | 4 |
    | activations | `activations` | `ai.speckitty.charter.activations` | 85 | 37 |
    | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
+   | missions-edge | `missions-edge` | `missions.application`, `missions.infra`, without the four `*.config` packages | 85 | not yet measured |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -263,3 +264,16 @@ without the four Spring wiring packages (`application.config`, `infra.api.config
 `infra.activations.config`). These packages live in a different module from the `profiles` group's
 `ai.speckitty.charter.profiles`, so the two scopes do not overlap. The nightly's `./gradlew pitest` already reaches the
 module, and `scripts/ci/mutation_summary.py` lists it. The other floors are unchanged.
+
+## Amendment, 2026-11-10 (missions-edge): the missions-edge module joins the nightly
+
+Status: Accepted, as an amendment of this accepted ADR.
+
+`service/missions-edge` applies `charter.mutation-conventions` directly, with one whole-module group, `missions-edge`,
+at a floor of 85. The floor follows the precedent of `:activations` and `:profiles-edge`: a first floor of 85 until the
+first nightly score is known, raised by pull request once the score clears it by 5. No mutation score has been
+measured for this module yet, so the table states no margin. The group mutates
+`ai.speckitty.charter.missions.application` and `ai.speckitty.charter.missions.infra`, without the four Spring wiring
+packages (`application.config`, `infra.api.config`, `infra.packs.config`, `infra.activations.config`). These packages
+live in a different module from the `missions` group's `ai.speckitty.charter.missions`, so the two scopes do not
+overlap. The nightly's `./gradlew pitest` already reaches the module. The other floors are unchanged.

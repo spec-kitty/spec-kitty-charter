@@ -137,7 +137,8 @@ that slice needs read endpoints of its own.
 - **The rule.** A slice whose domain `packs.infra.storage` binds keeps that domain in its own module
   (`:profiles`). Its `application`, `infra.api`, `infra.packs` and `infra.activations` rings live in
   `:<slice>-edge`, with the slice's package names unchanged. The dependency direction is `:profiles`,
-  then `:packs`, then `:activations`, then `:profiles-edge`, then `:deployable`.
+  then `:packs`, then `:activations`, then `:profiles-edge`, then `:missions-edge`, then
+  `:deployable`.
 - **The rings.**
   - `profiles.infra.packs` is the one package of the slice that names `packs`, and only
     `packs.application` and `packs.domain`.
