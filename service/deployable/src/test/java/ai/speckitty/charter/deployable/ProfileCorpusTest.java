@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
@@ -438,5 +439,80 @@ class ProfileCorpusTest {
         assertThat(entry.get("step").asString()).isEqualTo("requires");
         assertThat(entry.get("_links").get("artifact").get("href").asString())
                 .isEqualTo("/api/v1/packs/built-in/artifacts/styleguide/java-conventions");
+    }
+
+    /**
+     * The governance of {@code EffectiveAgentProfileRead.java-jenny.yaml}, the contract's example, over the real corpus: the
+     * profile under an activation that selects what this repository's {@code charter.yaml} selects (the two toolguides the
+     * pin does not hold are left out). Every listed entry, its relation, its state and the words of its edge are the
+     * pack's; DIRECTIVE_024 is a {@code requires} target the charter does not select, so it is not listed.
+     */
+    @Test
+    void javaJennyUnderTheCharterSelectionListsWhatTheContractExampleShows() throws Exception {
+        String selected = "{\"schemaVersion\":2,\"packs\":[{\"packId\":\"built-in\"}],\"selected\":{"
+                + "\"agent_profile\":[\"java-jenny\"],"
+                + "\"paradigm\":[\"behaviour-driven-development\",\"specification-by-example\","
+                + "\"domain-driven-design\",\"c4-incremental-detail-modeling\"],"
+                + "\"directive\":[\"DIRECTIVE_001\",\"DIRECTIVE_003\",\"DIRECTIVE_010\",\"DIRECTIVE_025\","
+                + "\"DIRECTIVE_030\",\"DIRECTIVE_032\",\"DIRECTIVE_034\",\"DIRECTIVE_037\",\"DIRECTIVE_041\","
+                + "\"DIRECTIVE_051\",\"RECONCILE_CHANGE_SCOPE_TENSIONS\",\"USE_C4_MODEL_TECHNIQUES\"],"
+                + "\"styleguide\":[\"java-conventions\",\"given-when-then-authoring\",\"testing-principles\","
+                + "\"test-desiderata-and-boundaries\"],"
+                + "\"toolguide\":[\"gherkin\",\"java-supply-chain\"]}}";
+        assertThat(mvc.perform(put("/api/v1/activations/project")
+                                .header("Authorization", "Bearer " + TOKEN)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(selected))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus())
+                .isEqualTo(201);
+
+        JsonNode body =
+                json.readTree(mvc.perform(get("/api/v1/activations/project/artifacts/agent_profile/java-jenny?depth=1")
+                                .header("Authorization", "Bearer " + TOKEN)
+                                .accept(MediaType.APPLICATION_JSON))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString());
+
+        List<String> entries = new ArrayList<>();
+        for (JsonNode entry : body.get("governance")) {
+            JsonNode words = entry.path("suggestion");
+            entries.add(entry.get("kind").asString() + ":"
+                    + entry.get("artifactId").asString() + " "
+                    + entry.get("relation").asString() + " via "
+                    + entry.get("via").asString() + " hops "
+                    + entry.get("hops").asInt() + " " + entry.get("state").asString() + "/"
+                    + entry.get("reason").asString()
+                    + (words.isObject()
+                            ? " when \"" + words.path("when").asString() + "\" because \""
+                                    + words.path("reason").asString() + "\""
+                            : ""));
+        }
+        assertThat(entries)
+                .containsExactly(
+                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_051 hops 2 active/selected",
+                        "directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DIRECTIVE_025 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DIRECTIVE_030 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DIRECTIVE_034 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected"
+                                + " when \"when keeping the tests they write a clear scaffold rather than friction\""
+                                + " because \"An implementer-role profile should reach the tests-as-scaffold hub when"
+                                + " writing tests. Composition-only in the profile channel, authored per the #3063"
+                                + " family-D operator attestation.\"",
+                        "directive:DIRECTIVE_051 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DISCIPLINED_REFACTORING suggests via agent_profile:java-jenny hops 1"
+                                + " inactive/not_selected when \"when tidying code, encountering long classes/methods,"
+                                + " or discovering convoluted logic\" because \"An implementer-role profile should reach"
+                                + " the disciplined-refactoring directive when restructuring code. Composition-only under"
+                                + " today's traversal, authored per the #3063 family-B operator attestation.\"",
+                        "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY suggests via agent_profile:java-jenny"
+                                + " hops 1 inactive/not_selected when \"when assessing whether the tests around a change"
+                                + " actually constrain its behaviour\" because \"An implementer-role profile should reach"
+                                + " the mutation hub when assessing test quality. Composition-only in the profile channel,"
+                                + " authored per the #3063 family-D operator attestation.\"",
+                        "styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected");
     }
 }
