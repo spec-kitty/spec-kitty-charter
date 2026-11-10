@@ -90,7 +90,8 @@ delete:
     the same path, and artifact_not_found for an agent_profile, which getPackAgentProfile answers likewise. An agent
     profile is removed as the writable kinds are, with the If-Match of the ETag getPackAgentProfile gave. A mission
     type is removed with its step prompt and guidelines files and its skeletons, the files
-    under its templates/, as one removal under one impact check: every check below judges them together (#99, D10). A
+    under its templates/, as one removal under one impact check: every check below judges them together (#99, D10). The
+    literal mission type read path has no DELETE of its own, so a DELETE sent to it is this operation. A
     step contract is removed as the five kinds are. Then, in this order: 409 artifact_referenced while another artifact
     or pack still refers to it, judged against the tree after the removal, from the edges, the preset items and the
     descriptor overrides entries of every configured pack, so a referrer the same request removes does not count and
