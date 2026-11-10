@@ -1,0 +1,59 @@
+{
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T11:05:52.281061+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "25280b408047eeb105b790f06ea00fcf88df28cc"
+    },
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T11:06:03.595344+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "25280b408047eeb105b790f06ea00fcf88df28cc"
+    },
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T11:06:14.075381+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "25280b408047eeb105b790f06ea00fcf88df28cc"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-10T11:06:14.075381+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "25280b408047eeb105b790f06ea00fcf88df28cc",
+  "baseline_merge_commit": "25280b408047eeb105b790f06ea00fcf88df28cc",
+  "coordination_branch": "kitty/mission-agent-profile-reads-01M70ZDM",
+  "create_return_branch": "issue-407-agent-profile-reads",
+  "created_at": "2026-11-09T20:19:02.482698+00:00",
+  "flattened": false,
+  "friendly_name": "Agent profile reads",
+  "merged_at": "2026-11-10T11:08:16.179660+00:00",
+  "merged_commit": "a54407ff2fd1de5d252b52e5f0b8b39529b5732c",
+  "mid8": "01M70ZDM",
+  "mission_branch": "kitty/mission-agent-profile-reads-01M70ZDM",
+  "mission_id": "01M70ZDMZXTYSB91J7BQ7SKPN8",
+  "mission_number": 20,
+  "mission_slug": "agent-profile-reads-01M70ZDM",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The charter service accepts and lists agent profiles in activations, but answers 404 when a client asks for a profile's body. Core cannot read a profile's guidance from the service, which blocks moving core onto it. This mission serves profiles with their lineage-resolved governance, pack-scoped and under an activation, with links a client can follow from the API root, against open-packs at a bumped pin.",
+  "purpose_tldr": "Let a client read agent profiles and the governance they carry through the charter service API, pack-scoped and under an activation.",
+  "slug": "agent-profile-reads-01M70ZDM",
+  "status_phase": "1",
+  "target_branch": "issue-407-agent-profile-reads",
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 9,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 10
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-09T20:59:32.231926+00:00"
+}
