@@ -11,9 +11,9 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
   (its prompt declares the slot spdd:reasons-block empty) and whose research mission type has a step gather, and an
   enhancing pack that depends on the base and holds only enhancements, their fragments and the enhances edges, each
   written qualified with the base pack's name. Each refusal sits beside its passing twin, which differs in the one
-  fault: a registration that refused for another reason could not pass the twin. A refused enhancement is also listed
-  with its files as unmodelled after the fault, so the scenarios that point at it assert no count; the multi-fault
-  scenario keeps its enhancements held and asserts the exact count.
+  fault: a registration that refused for another reason could not pass the twin. One fault is one violation: a
+  refused enhancement and the fragments beside it are not listed again as unmodelled, so each refusal asserts its
+  exact count.
 
   Background:
     Given registration is switched on
@@ -538,10 +538,8 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
-  # T-07, E-5. The four enhancements stay held, so no unmodelled entry joins the four violations and the count is
-  # exact: a slot marker in a's fragment, two enhances edges on b, an overrides edge from c and a directory
-  # mismatch on d. A fault the store refuses (blank, frontmatter, missing companion) is never part of a counted
-  # fixture.
+  # T-07, E-5. Four faults, four violations, each at its file: a slot marker in a's fragment, two enhances edges on
+  # b, an overrides edge from c and a directory mismatch on d.
   Scenario: A pack with four faulty enhancements is refused with all four faults at once, each at its file
     Given the archive "quad" holds the file "pack.yaml":
       """

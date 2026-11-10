@@ -325,10 +325,8 @@ class StepEnhancementLoadChecksTest {
         Enhancer pack = repeatedId();
 
         assertThat(pack.staged())
-                .filteredOn(violation -> violation.code().equals(CODE))
-                .singleElement()
-                .satisfies(violation -> assertThat(violation.pointer()).isEqualTo(pack.yamlOf(TYPE, "spdd-plan")));
-        assertThat(pack.staged()).extracting(RefusalViolation::code).doesNotContain("pack");
+                .extracting(RefusalViolation::code, RefusalViolation::pointer)
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "spdd-plan")));
         Pack loaded = pack.loaded();
         assertThat(loaded.artifacts(ArtifactKind.STEP_ENHANCEMENT))
                 .singleElement()
@@ -453,11 +451,14 @@ class StepEnhancementLoadChecksTest {
                 .enhancement(TYPE, "brief", "spdd:one", "missing.prompt-fragment.md")
                 .enhances("brief", "base::action:software-dev/plan")
                 .fragment(TYPE, "stray", "## Stray\n\nMaybe it was meant.\n")
+                .file("missions/" + TYPE + "/enhancements/notes.txt", "x\n")
                 .graph();
 
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
+                .containsExactly(
+                        tuple(CODE, pack.yamlOf(TYPE, "brief")),
+                        tuple("unmodelled", "missions/" + TYPE + "/enhancements/notes.txt"));
         assertThat(pack.validate()).extracting(PackFinding::file).containsExactly(pack.yamlOf(TYPE, "brief"));
     }
 
