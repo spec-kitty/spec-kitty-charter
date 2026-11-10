@@ -33,7 +33,7 @@ class ProfileReadTest {
                         GovernanceEntry.Step.LINEAGE,
                         urn("agent_profile:P"),
                         1,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         Optional.of(new ai.speckitty.charter.kernel.domain.PackIdentifier("built-in")),
                         true)))
                 .isFalse();
@@ -48,7 +48,7 @@ class ProfileReadTest {
                         GovernanceEntry.Step.REQUIRES,
                         urn("agent_profile:P"),
                         1,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         Optional.empty(),
                         false)))
                 .isFalse();

@@ -90,7 +90,7 @@ public record EffectiveProfileRead(
             String policy,
             String reason,
             Optional<Urn> satisfiedBy,
-            Optional<GovernanceEntry.Suggestion> suggestion) {
+            Optional<EdgeWords> suggestion) {
 
         /**
          * Checks the fields.

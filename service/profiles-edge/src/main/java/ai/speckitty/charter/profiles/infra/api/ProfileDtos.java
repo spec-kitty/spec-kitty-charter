@@ -12,10 +12,11 @@ import ai.speckitty.charter.api.model.AgentProfileSelfReviewStep;
 import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.AgentProfileSpecializationContext;
 import ai.speckitty.charter.api.model.Artifact;
+import ai.speckitty.charter.api.model.GovernanceEdgeWords;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
-import ai.speckitty.charter.api.model.PackGovernanceSuggestion;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.domain.ArtifactReference;
@@ -122,17 +123,25 @@ public class ProfileDtos {
                 PackGovernanceEntry.RelationEnum.fromValue(entry.relation().token()),
                 entry.via().toString(),
                 entry.hops(),
-                null,
+                edge(entry.edge()),
                 entry.holder().map(holder -> holder.value()).orElse(null),
                 entry.held(),
                 links);
-        entry.suggestion().ifPresent(suggestion -> {
-            PackGovernanceSuggestion carrier = new PackGovernanceSuggestion();
-            suggestion.when().ifPresent(carrier::setWhen);
-            suggestion.reason().ifPresent(carrier::setReason);
-            wire.setSuggestion(carrier);
-        });
         return wire;
+    }
+
+    /**
+     * The words of an edge as the contract's {@code GovernanceEdgeWords}: only the words the edge states, so an edge that
+     * states neither is an empty object, never null.
+     *
+     * @param words the words of the edge
+     * @return the closed schema
+     */
+    static GovernanceEdgeWords edge(EdgeWords words) {
+        GovernanceEdgeWords carrier = new GovernanceEdgeWords();
+        words.when().ifPresent(carrier::setWhen);
+        words.reason().ifPresent(carrier::setReason);
+        return carrier;
     }
 
     /**

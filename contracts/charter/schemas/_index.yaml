@@ -82,7 +82,7 @@ files:
   - AgentProfileSpecializationContext.yaml
   - GovernanceStep.yaml
   - PackGovernanceEntry.yaml
-  - PackGovernanceSuggestion.yaml
+  - GovernanceEdgeWords.yaml
   - EffectiveAgentProfileRead.yaml
   - EffectiveGovernanceEntry.yaml
   - EffectiveGovernanceSuggestion.yaml

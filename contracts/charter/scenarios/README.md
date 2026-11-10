@@ -125,8 +125,11 @@ Keep it small; add a step only when a scenario cannot be written without it.
   answer per line, in the answer's order (sorted by urn): `<urn> <step> via <urn> hops <n>`, then ` in <packId> linked` for
   a held entry whose `_links.artifact` is the pack-scoped read of it in the pack that holds it, ` in <packId> unlinked` for
   a held entry with no `artifact` link (a kind the generic route does not serve), or ` not held unlinked` for an entry no
-  pack of the closure holds (`held` false, a null `packId`, no link); then, for an entry with a `suggestion`, ` suggested
-  when "<when>" because "<reason>"` (agent-profile-reads.feature, bound in `ProfileSteps`).
+  pack of the closure holds (`held` false, a null `packId`, no link); then ` edge {}` for an entry whose `edge` states
+  neither word, or ` edge {when "<when>" because "<reason>"}` for one that states any (one word alone is written alone):
+  every entry has an `edge`, whatever its relation (agent-profile-reads.feature, bound in `ProfileSteps`).
+- `Then the field at "<json-pointer>" is an empty object` — the member is there and is `{}` (agent-profile-reads.feature,
+  bound in `ProfileSteps`).
 - `Then the effective governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of
   the last answer per line, in the answer's order (sorted by urn): `<urn> <step> via <urn> hops <n> <state>/<reason> in
   <packId> linked`, where `<state>/<reason>` are the state and the reason the activation gives the entry's winner,
