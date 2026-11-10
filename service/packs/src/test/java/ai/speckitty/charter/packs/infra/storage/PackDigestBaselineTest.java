@@ -66,9 +66,10 @@ class PackDigestBaselineTest {
             }
         }
 
+        OpenPacksCorpus.assertPacksPresent("built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd");
         assertThat(covered)
-                .as("packs in the checkout without step enhancements")
-                .isNotEmpty();
+                .as("every pack but the one that holds step enhancements is covered")
+                .contains("built-in", "cave-kitty", "event-driven", "internal", "qa");
     }
 
     private static boolean holdsEnhancements(Path pack) throws IOException {
