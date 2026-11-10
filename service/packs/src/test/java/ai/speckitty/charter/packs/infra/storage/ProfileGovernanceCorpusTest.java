@@ -14,14 +14,11 @@ import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -70,13 +67,9 @@ class ProfileGovernanceCorpusTest {
 
         List<String> onDisk = new ArrayList<>();
         for (String pack : List.of("built-in", "qa")) {
-            try (Stream<Path> files =
-                    Files.list(OpenPacksCorpus.packsDirectory().resolve(pack).resolve("agent_profiles"))) {
-                files.map(file -> file.getFileName().toString())
-                        .filter(name -> name.endsWith(".agent.yaml"))
-                        .map(name -> name.substring(0, name.length() - ".agent.yaml".length()))
-                        .forEach(onDisk::add);
-            }
+            OpenPacksCorpus.filesEndingWith(
+                            OpenPacksCorpus.packsDirectory().resolve(pack).resolve("agent_profiles"), ".agent.yaml")
+                    .forEach(name -> onDisk.add(name.substring(0, name.length() - ".agent.yaml".length())));
         }
         assertThat(profiles)
                 .as("the built-in and qa profiles: the closure holds exactly the profile files on disk")

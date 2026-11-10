@@ -80,11 +80,11 @@ class ProcedureAndGuideCorpusTest {
         assertThat(procedureFiles)
                 .as("%s: the procedures the gate observes are the procedure files on disk", pack)
                 .isNotEmpty()
-                .containsExactlyElementsOf(onDisk(packDirectory, ".procedure.yaml"));
+                .containsExactlyElementsOf(OpenPacksCorpus.filesEndingWith(packDirectory, ".procedure.yaml"));
         assertThat(toolguideFiles)
                 .as("%s: the toolguides the gate observes are the toolguide files on disk", pack)
                 .isNotEmpty()
-                .containsExactlyElementsOf(onDisk(packDirectory, ".toolguide.yaml"));
+                .containsExactlyElementsOf(OpenPacksCorpus.filesEndingWith(packDirectory, ".toolguide.yaml"));
         assertThat(guideFiles)
                 .as("%s: one guide per toolguide, each <toolguide id>.guide.md beside it", pack)
                 .hasSameSizeAs(toolguideFiles)
@@ -102,17 +102,6 @@ class ProcedureAndGuideCorpusTest {
         List<URL> found = Collections.list(getClass().getClassLoader().getResources(MIGRATION_PACKAGE));
 
         assertThat(found).as("package %s on the classpath", MIGRATION_PACKAGE).isEmpty();
-    }
-
-    /** The pack-relative paths of the files on disk that end in {@code suffix}, sorted: what the gate must observe. */
-    private static List<String> onDisk(Path pack, String suffix) throws IOException {
-        try (Stream<Path> walk = Files.walk(pack)) {
-            return walk.filter(Files::isRegularFile)
-                    .map(file -> pack.relativize(file).toString().replace('\\', '/'))
-                    .filter(path -> path.endsWith(suffix))
-                    .sorted()
-                    .toList();
-        }
     }
 
     /** The guide a toolguide file names: {@code <its id>.guide.md} in the toolguide's directory. */

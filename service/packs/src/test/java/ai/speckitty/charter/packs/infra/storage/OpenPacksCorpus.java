@@ -74,6 +74,24 @@ public final class OpenPacksCorpus {
         }
     }
 
+    /**
+     * The files under {@code directory} whose name ends in {@code suffix}, as {@code /}-separated paths relative to
+     * {@code directory}, sorted; empty when the directory is absent. The one walk the tests use to read what is on disk
+     * without the store.
+     */
+    static List<String> filesEndingWith(Path directory, String suffix) throws IOException {
+        if (!Files.isDirectory(directory)) {
+            return List.of();
+        }
+        try (Stream<Path> walk = Files.walk(directory)) {
+            return walk.filter(Files::isRegularFile)
+                    .map(file -> directory.relativize(file).toString().replace('\\', '/'))
+                    .filter(path -> path.endsWith(suffix))
+                    .sorted()
+                    .toList();
+        }
+    }
+
     /** The built-in pack, then every other directory under {@code packs/} as an org pack, sorted by name. */
     static List<PackLocation> packs() throws IOException {
         Path packs = root().resolve("packs");
