@@ -5,7 +5,8 @@ parameters:
   required: true
   description: >-
     The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide or agent_profile, the
-    kinds the pack-scoped artifact routes serve. The parameter is a slug, not an enum: a value that is not a slug
+    kinds the pack-scoped artifact routes serve. A mission_type and a mission_step_contract are answered at this path by
+    the literal getEffectiveMissionType and getEffectiveMissionStepContract. The parameter is a slug, not an enum: a value that is not a slug
     (Tactic, -tactic) is a 400 Problem without a code, before the activation is judged, and a slug that names no served
     kind is answered 404 kind_not_found by the service, after the activation is found.
   schema:
@@ -27,7 +28,9 @@ get:
     kind is one of the kinds the pack-scoped artifact routes serve. An agent_profile is a kind of the activation that the
     literal operation getEffectiveAgentProfile answers, with the profile and its governance; this templated read never
     carries a body. depth is the number of suggests hops of that governance, 0 or 1 (default 0); it changes nothing for
-    any other kind and is part of the ETag all the same.
+    any other kind and is part of the ETag all the same. Likewise a mission_type is answered by the literal
+    getEffectiveMissionType and a mission_step_contract by the literal getEffectiveMissionStepContract, each with its
+    body, so this templated read serves neither.
 
     The order of the refusals: an unknown activation is a 404 activation_not_found; then a slug that names no served
     kind is a 404 kind_not_found; then an id that no pack of the activation's closure holds, as a copy that won or lost
@@ -76,7 +79,7 @@ get:
       description: >-
         What the path names is not there, refused with 404, in this order: the activation (activation_not_found, also for
         an activation this client may not see, so ids do not leak), then a kind the service does not serve
-        (kind_not_found), then an artifact that no pack of the activation's closure holds (artifact_not_found).
+        (kind_not_found; a mission_type or mission_step_contract is not answered here but by its literal read), then an artifact that no pack of the activation's closure holds (artifact_not_found).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

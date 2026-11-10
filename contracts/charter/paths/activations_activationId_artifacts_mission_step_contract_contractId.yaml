@@ -1,6 +1,6 @@
 get:
   operationId: getEffectiveMissionStepContract
-  summary: Get the step contract in force under an activation.
+  summary: Get the step contract that wins the layer merge under an activation.
   description: >-
     It answers the layer-merge winner of the step contract in the activation's merged closure, the version
     getEffectiveArtifact names for the same id, in the Artifact envelope as the pack read of a step contract does, with
@@ -22,7 +22,7 @@ get:
     - $ref: ../parameters/StepContractId.yaml
   responses:
     '200':
-      description: The step contract in force, in the Artifact envelope.
+      description: The step contract that wins the layer merge, in the Artifact envelope.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

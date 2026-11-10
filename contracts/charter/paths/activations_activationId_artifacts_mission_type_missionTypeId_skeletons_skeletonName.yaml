@@ -1,6 +1,6 @@
 get:
   operationId: getEffectiveMissionSkeleton
-  summary: Get one skeleton of the mission type in force under an activation.
+  summary: Get one skeleton of the mission type that wins the layer merge under an activation.
   description: >-
     It answers a skeleton of the pack that holds the layer-merge winner of the mission type, as getPackMissionSkeleton does
     (skeletons are not merged on their own), with skeletonName spelled as there (D9) and every link under the
@@ -15,7 +15,7 @@ get:
     - $ref: ../parameters/SkeletonName.yaml
   responses:
     '200':
-      description: The skeleton of the mission type in force.
+      description: The skeleton of the mission type that wins the layer merge.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
