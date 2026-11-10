@@ -1,7 +1,6 @@
 package ai.speckitty.charter.activations.infra.packs;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
-import ai.speckitty.charter.activations.application.HeldMissionType;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
@@ -18,7 +17,6 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
-import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
 import ai.speckitty.charter.packs.application.UnknownRootException;
 import ai.speckitty.charter.packs.domain.Preset;
@@ -71,29 +69,15 @@ public class PacksAvailability implements AvailablePacks {
     }
 
     private final Closures closures;
-    private final ClosureViewSession.Holdings holdings;
-
-    /**
-     * The adapter over the packs slice, whose sessions read no mission type holding.
-     *
-     * @param closures the verified closure read
-     */
-    public PacksAvailability(ClosureQueries closures) {
-        this(Objects.requireNonNull(closures, "closures")::snapshot);
-    }
 
     /**
      * The adapter over the packs slice.
      *
      * @param closures the verified closure read
-     * @param holdings the read of what one pack holds of one mission type, which a session's
-     *     {@link PacksSession#missionType} checks against the session's own fingerprint
      */
     @Autowired
-    public PacksAvailability(ClosureQueries closures, MissionTypeHoldingRead holdings) {
-        this(
-                Objects.requireNonNull(closures, "closures")::snapshot,
-                Objects.requireNonNull(holdings, "holdings")::holding);
+    public PacksAvailability(ClosureQueries closures) {
+        this(Objects.requireNonNull(closures, "closures")::snapshot);
     }
 
     /**
@@ -102,12 +86,7 @@ public class PacksAvailability implements AvailablePacks {
      * @param closures the closure read
      */
     PacksAvailability(Closures closures) {
-        this(closures, ClosureViewSession.Holdings.NONE);
-    }
-
-    private PacksAvailability(Closures closures, ClosureViewSession.Holdings holdings) {
         this.closures = Objects.requireNonNull(closures, "closures");
-        this.holdings = Objects.requireNonNull(holdings, "holdings");
     }
 
     @Override
@@ -121,7 +100,7 @@ public class PacksAvailability implements AvailablePacks {
                 packIds.map(ids -> ids.stream().map(PackIdentifier::new).toList());
         try {
             ClosureView view = closures.snapshot(roots);
-            return new ClosureViewSession(view, snapshotOf(view), holdings);
+            return new ClosureViewSession(view, snapshotOf(view));
         } catch (UnknownRootException unknownRoot) {
             return new Unresolved(ClosureSnapshot.unresolved(new LinkedHashSet<>(unknownRoot.unknownIds())));
         }
@@ -164,11 +143,6 @@ public class PacksAvailability implements AvailablePacks {
         @Override
         public void requireAction(String missionType, String action) {
             // a session that holds no closure refuses before any name is judged
-        }
-
-        @Override
-        public Optional<HeldMissionType> missionType(String missionTypeId) {
-            return Optional.empty();
         }
     }
 

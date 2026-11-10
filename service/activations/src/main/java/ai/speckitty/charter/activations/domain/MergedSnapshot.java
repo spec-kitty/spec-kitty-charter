@@ -31,12 +31,15 @@ import java.util.Set;
  *     is absent
  * @param edges the typed edges among the winners, after the merge re-homed them through the winners
  * @param layerOverrides every version a later level replaced, in merge order
+ * @param bindings the mission type each winner that is bound to one is bound to (a step contract to the type its
+ *     {@code mission} names), as the pack that holds the version in force declares it; a winner bound to none is absent
  */
 public record MergedSnapshot(
         Map<ArtifactRef, Winner> winners,
         Map<ArtifactRef, Set<String>> languages,
         List<Edge> edges,
-        List<LayerOverride> layerOverrides) {
+        List<LayerOverride> layerOverrides,
+        Map<ArtifactRef, ArtifactRef> bindings) {
 
     private static final MergedSnapshot EMPTY = new MergedSnapshot(Map.of(), Map.of(), List.of(), List.of());
 
@@ -280,6 +283,7 @@ public record MergedSnapshot(
      * @param languages the languages of each winner
      * @param edges the typed edges among the winners
      * @param layerOverrides every replaced version
+     * @param bindings the mission type each bound winner is bound to
      */
     public MergedSnapshot {
         winners = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(winners, "winners")));
@@ -289,6 +293,23 @@ public record MergedSnapshot(
         languages = Collections.unmodifiableMap(declared);
         edges = List.copyOf(Objects.requireNonNull(edges, "edges"));
         layerOverrides = List.copyOf(Objects.requireNonNull(layerOverrides, "layerOverrides"));
+        bindings = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(bindings, "bindings")));
+    }
+
+    /**
+     * A snapshot whose winners are bound to no mission type.
+     *
+     * @param winners each artifact with its winner
+     * @param languages the languages of each winner
+     * @param edges the typed edges among the winners
+     * @param layerOverrides every replaced version
+     */
+    public MergedSnapshot(
+            Map<ArtifactRef, Winner> winners,
+            Map<ArtifactRef, Set<String>> languages,
+            List<Edge> edges,
+            List<LayerOverride> layerOverrides) {
+        this(winners, languages, edges, layerOverrides, Map.of());
     }
 
     /**

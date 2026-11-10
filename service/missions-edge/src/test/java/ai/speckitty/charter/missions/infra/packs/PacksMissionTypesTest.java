@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
+import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
@@ -136,7 +137,8 @@ class PacksMissionTypesTest {
             }
         };
 
-        assertThatThrownBy(() -> PacksMissionTypes.narrowed(stub)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> MissionTypeNarrowing.narrowed(stub, "packs"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     private static MissionTypeHoldingRead read(Pack pack, PackCompanionFiles files) {

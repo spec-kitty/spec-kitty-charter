@@ -6,7 +6,6 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -73,7 +72,7 @@ public final class MissionTypeReadService {
         List<MissionTypeView.SkeletonEntry> skeletons = holding.skeletons().stream()
                 .map(skeleton -> new MissionTypeView.SkeletonEntry(
                         SkeletonNames.encode(skeleton.path()), TEMPLATES + skeleton.path()))
-                .sorted(Comparator.comparing(MissionTypeView.SkeletonEntry::name, MissionTypeReadService::byCodePoint))
+                .sorted(Comparator.comparing(MissionTypeView.SkeletonEntry::name, CodePoints::compare))
                 .toList();
         return new Fingerprinted<>(new MissionTypeView(type, steps, skeletons), holding.fingerprint());
     }
@@ -191,7 +190,7 @@ public final class MissionTypeReadService {
         return holding.stepContracts().stream()
                 .filter(contract -> contract.action().equals(stepId))
                 .map(MissionTypeHolding.BoundContract::id)
-                .min(MissionTypeReadService::byCodePoint);
+                .min(CodePoints::compare);
     }
 
     /**
@@ -215,10 +214,5 @@ public final class MissionTypeReadService {
      */
     private static String utf8(StoredFile file) {
         return file.text().orElseThrow(() -> new IllegalStateException("a step file that is not UTF-8: " + file));
-    }
-
-    /** Code-point order, which {@link String#compareTo} is not beyond the Basic Multilingual Plane. */
-    private static int byCodePoint(String left, String right) {
-        return Arrays.compare(left.codePoints().toArray(), right.codePoints().toArray());
     }
 }

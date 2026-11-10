@@ -667,41 +667,16 @@ public record ClosureView(
             return Optional.empty();
         }
         MergedClosure.Winner won = winner.get();
-        CharterArtifact artifact = winningEntity(won, kind, id);
-        Optional<ProfileGovernance.Governance> governance = kind == ArtifactKind.AGENT_PROFILE
-                ? Optional.of(governance(won.urn(), depth, states))
-                : Optional.empty();
-        return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
-    }
-
-    /**
-     * The winning copy of an artifact across the closure's levels, with no governance and no in-force resolution: the
-     * entity of the version the layer merge keeps and the pack that holds it, read as {@link #effectiveArtifact} reads it
-     * (against the closure digest this view was verified at). The mission type reads under an activation ask it for the
-     * type and for each step contract bound to it (#99).
-     *
-     * @param kind the artifact's kind
-     * @param id the artifact's id
-     * @return the winner, its governance empty; empty when no pack of the closure holds the artifact
-     * @throws CharterRefusal as {@link #effectiveArtifact} does
-     */
-    public Optional<EffectiveArtifactView> winner(ArtifactKind kind, String id) {
-        Objects.requireNonNull(kind, "kind");
-        Objects.requireNonNull(id, "id");
-        MergedView view = merged();
-        return urnOf(kind, id)
-                .flatMap(view.closure()::winnerOf)
-                .map(won -> new EffectiveArtifactView(
-                        winningEntity(won, kind, id), new Holder(won.packId(), won.level()), Optional.empty()));
-    }
-
-    private CharterArtifact winningEntity(MergedClosure.Winner won, ArtifactKind kind, String id) {
-        return mergeInputs
+        CharterArtifact artifact = mergeInputs
                 .winners()
                 .read(won.packId(), kind, id)
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE,
                         "pack `" + won.packId().value() + "` holds " + won.urn() + " and cannot read it"));
+        Optional<ProfileGovernance.Governance> governance = kind == ArtifactKind.AGENT_PROFILE
+                ? Optional.of(governance(won.urn(), depth, states))
+                : Optional.empty();
+        return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
     }
 
     private static Optional<Urn> urnOf(ArtifactKind kind, String id) {

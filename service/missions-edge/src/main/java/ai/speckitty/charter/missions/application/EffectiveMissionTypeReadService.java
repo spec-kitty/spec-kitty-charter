@@ -9,28 +9,40 @@ import org.springframework.stereotype.Service;
 
 /**
  * The mission-type reads under an activation (#99, FR-007): the mission type the activation's merged closure holds,
- * one step and one skeleton of it. Each read is one read of the {@link ActivationMissionTypes} port, and its view is
- * built as the pack-scoped read builds it ({@link MissionTypeReadService}), from the same {@link MissionTypeHolding}:
- * the winner of the layer merge, the skeletons and step files of the pack that holds it, and the merged closure's step
- * contracts bound to it.
+ * one step and one skeleton of it. Each read composes two reads (D12): the activation's winner of the type
+ * ({@link ActivationMissionTypes}: the type, the pack that holds it, the merged closure's step contracts bound to it and
+ * the source fingerprint) and what that pack stores beside the type ({@link PackMissionTypes}: its skeletons and step
+ * files). The two must be read at one source fingerprint, else the answer would mix two states of the packs and is
+ * refused {@link RefusalCode#STALE_INPUT}. The view is then built as the pack-scoped read builds it
+ * ({@link MissionTypeReadService}), from one {@link MissionTypeHolding}; its step contracts are the merged closure's
+ * winners, never the holding pack's own.
  *
- * <p>Refusals come in order: the port judges the activation ({@code activation_not_found}) and then the mission type
- * ({@code mission_type_not_found}); then an unknown step is {@link RefusalCode#ACTION_NOT_FOUND} and a name that does
- * not decode to a skeleton of the holding pack's type is {@link RefusalCode#SKELETON_NOT_FOUND}.
+ * <p>Refusals come in order: the activations port judges the activation ({@code activation_not_found}) and then the
+ * mission type ({@code mission_type_not_found}); then an unknown step is {@link RefusalCode#ACTION_NOT_FOUND} and a name
+ * that does not decode to a skeleton of the holding pack's type is {@link RefusalCode#SKELETON_NOT_FOUND}.
  */
 @Service
 public final class EffectiveMissionTypeReadService {
 
+    private static final String STALE = "The packs changed while the mission type was read; read it again.";
+
     private final ActivationMissionTypes activations;
+    private final PackMissionTypes packs;
+    private final StepContracts contracts;
 
     /**
-     * A read service over the activations port.
+     * A read service over the activations port and the packs ports.
      *
-     * @param activations the port that reads what an activation's merged closure holds of a mission type
+     * @param activations the port that reads the winner of a mission type under an activation
+     * @param packs the port that reads what a pack holds of a mission type
+     * @param contracts the port that narrows a step contract
      */
     @Autowired
-    public EffectiveMissionTypeReadService(ActivationMissionTypes activations) {
+    public EffectiveMissionTypeReadService(
+            ActivationMissionTypes activations, PackMissionTypes packs, StepContracts contracts) {
         this.activations = Objects.requireNonNull(activations, "activations");
+        this.packs = Objects.requireNonNull(packs, "packs");
+        this.contracts = Objects.requireNonNull(contracts, "contracts");
     }
 
     /**
@@ -39,11 +51,12 @@ public final class EffectiveMissionTypeReadService {
      * @param activationId the activation's id
      * @param missionTypeId the mission type's id
      * @return the view, the pack that holds the winner and the verified fingerprint
-     * @throws CharterRefusal as {@link ActivationMissionTypes#holding} refuses
+     * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints
      */
     public Held<MissionTypeView> missionType(String activationId, String missionTypeId) {
-        EffectiveMissionTypeHolding held = activations.holding(activationId, missionTypeId);
-        return new Held<>(MissionTypeReadService.missionTypeOf(held.holding()), held.holder());
+        EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
+        return new Held<>(MissionTypeReadService.missionTypeOf(holding(winner)), winner.holder());
     }
 
     /**
@@ -53,12 +66,13 @@ public final class EffectiveMissionTypeReadService {
      * @param missionTypeId the mission type's id
      * @param stepId the step's id
      * @return the step's view and the verified fingerprint
-     * @throws CharterRefusal as {@link ActivationMissionTypes#holding} refuses, then with
+     * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints, then with
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the winning type holds no such step
      */
     public Fingerprinted<StepView> step(String activationId, String missionTypeId, String stepId) {
-        EffectiveMissionTypeHolding held = activations.holding(activationId, missionTypeId);
-        return MissionTypeReadService.stepOf(held.holding(), scopeOf(activationId), missionTypeId, stepId);
+        MissionTypeHolding holding = holding(activations.missionType(activationId, missionTypeId));
+        return MissionTypeReadService.stepOf(holding, scopeOf(activationId), missionTypeId, stepId);
     }
 
     /**
@@ -68,12 +82,30 @@ public final class EffectiveMissionTypeReadService {
      * @param missionTypeId the mission type's id
      * @param name the skeleton's name (D9)
      * @return the skeleton's view and the verified fingerprint
-     * @throws CharterRefusal as {@link ActivationMissionTypes#holding} refuses, then with
+     * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints, then with
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the holding pack's type
      */
     public Fingerprinted<SkeletonView> skeleton(String activationId, String missionTypeId, String name) {
-        EffectiveMissionTypeHolding held = activations.holding(activationId, missionTypeId);
-        return MissionTypeReadService.skeletonOf(held.holding(), scopeOf(activationId), missionTypeId, name);
+        MissionTypeHolding holding = holding(activations.missionType(activationId, missionTypeId));
+        return MissionTypeReadService.skeletonOf(holding, scopeOf(activationId), missionTypeId, name);
+    }
+
+    /**
+     * The winner of the type with what the pack that holds it stores beside it, at one fingerprint: the holding pack's
+     * skeletons and step files, and the merged closure's step contracts bound to the type.
+     */
+    private MissionTypeHolding holding(EffectiveMissionType winner) {
+        MissionTypeHolding stored = packs.holding(winner.holder(), winner.type().localId());
+        if (!stored.fingerprint().equals(winner.fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
+        return new MissionTypeHolding(
+                winner.type(),
+                stored.skeletons(),
+                winner.stepContracts().stream().map(contracts::bound).toList(),
+                stored.stepFiles(),
+                winner.fingerprint());
     }
 
     private static String scopeOf(String activationId) {
