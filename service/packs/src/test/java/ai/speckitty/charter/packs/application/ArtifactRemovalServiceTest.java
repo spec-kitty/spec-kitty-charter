@@ -509,6 +509,83 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa")).isEqualTo(before);
     }
 
+    /**
+     * An author-written edge from the type to its own action node: the scan does not count an edge from a removed
+     * artifact, so the answer is the authored document's registration_conflict, not artifact_referenced.
+     */
+    @Test
+    void anAuthorWrittenEdgeFromTheTypeToItsOwnActionNodeIsARegistrationConflict(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(
+                                "types.graph.yaml",
+                                authoredEdge("mission_type:documentation", "action:documentation/discover"))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+    }
+
+    /** An author-written document that only declares one of the type's action nodes is never rewritten either. */
+    @Test
+    void anAuthorWrittenDocumentThatDeclaresAnActionNodeOfTheTypeIsARegistrationConflict(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        String declares = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes:
+                - urn: action:documentation/discover
+                  kind: action
+                  label: discover
+                edges: []
+                """;
+        rig.register("qa", rig.stage(qaWithDocumentation().file("actions.graph.yaml", declares)), Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+        assertThat(refused.getMessage()).contains("action:documentation/discover");
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+    }
+
+    /**
+     * Registered edges that start at the type or at one of its skeletons go with the one removal, whatever they point
+     * at: the type's own action node, or the type itself.
+     */
+    @Test
+    void registeredEdgesFromTheTypeAndFromItsSkeletonsGoWithTheRemoval(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(
+                                RelationshipShard.SHARD_PATH,
+                                RelationshipShard.write(List.of(
+                                        edge("mission_type:documentation", "action:documentation/discover", null),
+                                        edge(
+                                                "template:documentation/spec-template.md",
+                                                "mission_type:documentation",
+                                                null))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        assertThat(rig.writeStore.registeredRelationships(QA)).hasSize(2);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        assertThat(removals.filesOf("qa")).doesNotContainKeys(DOCUMENTATION_FILES.toArray(String[]::new));
+        assertThat(rig.writeStore.registeredRelationships(QA))
+                .as("both edges started at a removed artifact")
+                .isEmpty();
+    }
+
     private static String authoredEdge(String from, String to) {
         return "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: '" + from + "', target: '"
                 + to + "', relation: requires}\n";
