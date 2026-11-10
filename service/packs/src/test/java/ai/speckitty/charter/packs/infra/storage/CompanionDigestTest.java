@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -122,48 +123,49 @@ class CompanionDigestTest {
 
     @Test
     @Tag("open-packs")
-    @DisplayName("binding skills adds nothing to the digest of a pack with no skill; only companions are Markdown")
+    @DisplayName(
+            "binding skills adds nothing to the digest of a pack with no skill; each Markdown file sits where the rule puts it")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
-        // The pinned qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
-        // styleguides, ...) and Markdown beside them, and no skill.
+        // The checkout's qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts,
+        // tactics, styleguides, ...) and Markdown beside them, and no skill. The assertions are about roles, not
+        // counts or positions: PackFileSet digests the YAML inputs (each bound file followed by its companions), then
+        // the asset files, then the templates, then the pack-level tail (presets, pack.md, manifest, policy).
         OpenPacksCorpus.assertPinned();
         Path qa = OpenPacksCorpus.packsDirectory().resolve("qa");
         Set<ArtifactKind> withoutSkills = EnumSet.copyOf(KindBindings.kinds());
         withoutSkills.remove(ArtifactKind.SKILL);
 
         List<String> digested = PackFileSet.digested(qa);
-        // #193 digests the pack's asset files (three .py payloads) and then its templates, last; #194 makes the mission
-        // type's templates templates. The preset the pin added (open-packs 7963b62, vendored by the re-vendor) is
-        // digested after them, as the pack-level tail (ADR-0042 decision 9): the digest ends with the payloads and it.
         List<String> assetFiles = PackFileSet.assetFiles(qa);
-        List<String> payloads = new java.util.ArrayList<>(assetFiles);
+        List<String> payloads = new ArrayList<>(assetFiles);
         payloads.addAll(PackFileSet.templates(qa));
-        payloads.add("presets/qa.yaml");
-        // #194: every file before them is YAML, except the companions: the three toolguide guides, each right after its
-        // toolguide, and the qa mission type's seven step prompts, right after the mission-type file in step order.
-        List<String> beforeAssets = digested.subList(0, digested.size() - payloads.size());
-        List<String> guides =
-                beforeAssets.stream().filter(file -> file.endsWith(".guide.md")).toList();
-        int type = beforeAssets.indexOf("missions/qa/qa.mission-type.yaml");
+        assertThat(payloads)
+                .as("the qa pack's asset files and templates, which the digest ends with")
+                .isNotEmpty();
+        assertThat(assetFiles).noneSatisfy(file -> assertThat(file).endsWith(".md"));
 
-        assertThat(beforeAssets.stream().filter(file -> !file.endsWith(".yaml")))
-                .hasSize(10)
+        assertThat(digested)
+                .as("the asset files, then the templates, in one run")
+                .containsSequence(payloads);
+        int payloadStart = digested.indexOf(payloads.get(0));
+        assertThat(digested.subList(payloadStart + payloads.size(), digested.size()))
+                .as("after the payloads only the pack-level tail: presets, the pack document, the manifest, the policy")
                 .allSatisfy(file ->
-                        assertThat(file).matches("toolguides/.*\\.guide\\.md|missions/qa/steps/.*\\.prompt\\.md"));
-        assertThat(beforeAssets.subList(type + 1, type + 8))
-                .containsExactly(
-                        "missions/qa/steps/discovery.prompt.md",
-                        "missions/qa/steps/specify.prompt.md",
-                        "missions/qa/steps/plan.prompt.md",
-                        "missions/qa/steps/tasks.prompt.md",
-                        "missions/qa/steps/implement.prompt.md",
-                        "missions/qa/steps/review.prompt.md",
-                        "missions/qa/steps/accept.prompt.md");
+                        assertThat(file).matches("presets/[^/]+\\.yaml|pack\\.md|pack-manifest\\.yaml|policy\\.yaml"));
 
-        assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
-        assertThat(digested).hasSizeGreaterThan(10).endsWith(payloads.toArray(String[]::new));
-        assertThat(guides).hasSize(3).allSatisfy(guide -> {
-            String toolguide = beforeAssets.get(beforeAssets.indexOf(guide) - 1);
+        List<String> beforePayloads = digested.subList(0, payloadStart);
+        List<String> markdown =
+                beforePayloads.stream().filter(file -> !file.endsWith(".yaml")).toList();
+        assertThat(markdown)
+                .as("every non-YAML file before the payloads is a toolguide guide or a mission step prompt")
+                .isNotEmpty()
+                .allSatisfy(file -> assertThat(file)
+                        .matches("toolguides/.*\\.guide\\.md|missions/[^/]+/steps/[^/]+\\.prompt\\.md"));
+
+        List<String> guides =
+                markdown.stream().filter(file -> file.endsWith(".guide.md")).toList();
+        assertThat(guides).as("toolguide guides in the qa pack").isNotEmpty().allSatisfy(guide -> {
+            String toolguide = beforePayloads.get(beforePayloads.indexOf(guide) - 1);
             assertThat(toolguide).endsWith(".toolguide.yaml");
             // The guide is the one the toolguide before it names, not merely some guide: read its id and guide_path
             // (the file stem is no proxy, two qa toolguides' ids differ from their stems).
@@ -173,6 +175,26 @@ class CompanionDigestTest {
                     .isEqualTo("toolguides/" + declared.get("id") + ".guide.md")
                     .isEqualTo(toolguide.substring(0, toolguide.lastIndexOf('/') + 1) + declared.get("guide_path"));
         });
+
+        List<String> prompts =
+                markdown.stream().filter(file -> file.endsWith(".prompt.md")).toList();
+        assertThat(prompts)
+                .as("mission step prompts in the qa pack")
+                .isNotEmpty()
+                .allSatisfy(prompt -> {
+                    // Walk back over the run of prompts this one belongs to: it starts right after its mission-type
+                    // file.
+                    String missionDir = prompt.substring(0, prompt.indexOf("/steps/") + 1);
+                    int at = beforePayloads.indexOf(prompt);
+                    while (beforePayloads.get(at - 1).startsWith(missionDir + "steps/")) {
+                        at--;
+                    }
+                    assertThat(beforePayloads.get(at - 1))
+                            .as("the file before the step prompts of %s", missionDir)
+                            .startsWith(missionDir)
+                            .endsWith(".mission-type.yaml");
+                });
+
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
