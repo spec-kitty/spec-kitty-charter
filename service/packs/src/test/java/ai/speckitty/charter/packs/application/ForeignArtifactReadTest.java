@@ -234,7 +234,7 @@ class ForeignArtifactReadTest {
         ForeignArtifactRead.Foreign read =
                 service().read(PROJECT, ArtifactKind.AGENT_PROFILE, "P", 0).value();
 
-        assertThat(read.servedKinds()).containsExactlyElementsOf(ArtifactReadService.SERVED);
+        assertThat(read.servedKinds()).containsExactlyElementsOf(ArtifactReadService.listed());
     }
 
     @Test

@@ -51,6 +51,9 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.web.ProblemHandler;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
@@ -122,6 +125,14 @@ class ArtifactControllerTest {
                     .guide(new Guide(Map.of(GuideBlock.OVERVIEW, "Use git under governance."), List.of()))
                     .summary("Using git under governance.")
                     .build())
+            .artifact(AgentProfile.builder()
+                    .id(new AgentProfileIdentifier("jenny"))
+                    .packId(PACK)
+                    .name("Java Jenny")
+                    .role("implementer")
+                    .purpose("Implement.")
+                    .specialization(new Specialization("Java", Optional.empty(), Optional.empty(), Optional.empty()))
+                    .build())
             .build();
 
     private final ArtifactController controller;
@@ -152,7 +163,8 @@ class ArtifactControllerTest {
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
                         new TacticReadService(store, store, read)),
-                pack -> List.of());
+                pack -> List.of(),
+                revisions);
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
@@ -273,12 +285,15 @@ class ArtifactControllerTest {
         mvc.perform(get(BASE))
                 .andExpect(status().isOk())
                 .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(jsonPath("$.items.length()").value(5))
+                .andExpect(jsonPath("$.items.length()").value(6))
                 .andExpect(jsonPath("$.items[0].kind").value("tactic"))
                 .andExpect(jsonPath("$.items[0].title").value("Rehearse"))
                 .andExpect(jsonPath("$.items[0]._links.self.href").value(BASE + "/tactic/rehearse"))
                 .andExpect(jsonPath("$.items[4].kind").value("toolguide"))
                 .andExpect(jsonPath("$.items[4].title").value("How to use git"))
+                .andExpect(jsonPath("$.items[5].kind").value("agent_profile"))
+                .andExpect(jsonPath("$.items[5].title").value("Java Jenny"))
+                .andExpect(jsonPath("$.items[5]._links.self.href").value(BASE + "/agent_profile/jenny"))
                 .andExpect(jsonPath("$.page.hasNextPage").value(false))
                 .andExpect(jsonPath("$.page.nextPageCursor").value((Object) null))
                 .andExpect(jsonPath("$.page.pageSize").value(50))
@@ -319,8 +334,9 @@ class ArtifactControllerTest {
 
         mvc.perform(get(next))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].id").value("git"))
+                .andExpect(jsonPath("$.items[1].id").value("jenny"))
                 .andExpect(jsonPath("$.page.hasNextPage").value(false))
                 .andExpect(jsonPath("$._links.next").doesNotExist());
     }
@@ -332,6 +348,16 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].id").value("layered"))
                 .andExpect(jsonPath("$._links.self.href").value(BASE + "?kind=paradigm"));
+    }
+
+    @Test
+    void theKindFilterListsAgentProfilesEachLinkingToItsRead() throws Exception {
+        mvc.perform(get(BASE + "?kind=agent_profile"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value("jenny"))
+                .andExpect(jsonPath("$.items[0]._links.self.href").value(BASE + "/agent_profile/jenny"))
+                .andExpect(jsonPath("$._links.self.href").value(BASE + "?kind=agent_profile"));
     }
 
     @ParameterizedTest

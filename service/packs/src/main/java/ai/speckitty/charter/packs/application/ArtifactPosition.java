@@ -8,18 +8,18 @@ import java.util.Objects;
  * Where an artifact stands in a pack's generic list: its served kind and its id. A page cursor names one, and the
  * next page holds the artifacts strictly after it, whether or not an artifact still stands there.
  *
- * @param kind a served kind ({@link ArtifactReadService#SERVED})
+ * @param kind a served kind ({@link ArtifactReadService#listed()})
  * @param id the artifact's id within its kind
  */
 public record ArtifactPosition(ArtifactKind kind, String id) {
 
     /**
-     * The list order: by the served-kind order ({@link ArtifactReadService#SERVED}), then by id in code-point order.
+     * The list order: by the served-kind order ({@link ArtifactReadService#listed()}), then by id in code-point order.
      * Code points, not UTF-16 units: {@link String#compareTo} would put a supplementary character before
      * {@code U+FB01}.
      */
     public static final Comparator<ArtifactPosition> ORDER = Comparator.<ArtifactPosition>comparingInt(
-                    position -> ArtifactReadService.SERVED.indexOf(position.kind()))
+                    position -> ArtifactReadService.listed().indexOf(position.kind()))
             .thenComparing(ArtifactPosition::id, ArtifactPosition::compareCodePoints);
 
     /**
@@ -32,7 +32,7 @@ public record ArtifactPosition(ArtifactKind kind, String id) {
     public ArtifactPosition {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
-        if (!ArtifactReadService.SERVED.contains(kind)) {
+        if (!ArtifactReadService.listed().contains(kind)) {
             throw new IllegalArgumentException("not a served kind: " + kind.token());
         }
     }

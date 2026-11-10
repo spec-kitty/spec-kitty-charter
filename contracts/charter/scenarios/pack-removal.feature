@@ -137,6 +137,61 @@ Feature: One artifact or one registered relationship is removed from a pack
     When I GET "/packs/qa/artifacts/directive/D3"
     Then the response status is 200
 
+  # bound by: WP05 of agent-profile-reads (operator decision 01M70ZFW6S2HG3TEE33RW8VGSB: an agent profile is removed as the
+  # five kinds are, with the If-Match of the ETag its read gave)
+  Scenario: An agent profile is deleted with the ETag its own read gave, and a later read and the list no longer hold it
+    Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
+      """
+      profile-id: jenny
+      name: Java Jenny
+      roles:
+        - implementer
+      purpose: Implement.
+      specialization:
+        primary-focus: Java
+      """
+    When I GET "/packs/qa/artifacts/agent_profile/jenny"
+    Then the response status is 200
+    And I remember the ETag
+    When I DELETE "/packs/qa/artifacts/agent_profile/jenny" with the remembered ETag
+    Then the response status is 204
+    And the response header "ETag" appears once
+    When I GET "/packs/qa/artifacts/agent_profile/jenny"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    When I GET "/packs/qa/artifacts?kind=agent_profile"
+    Then the response status is 200
+    And the field at "/items/0" is absent
+    When I GET "/packs/qa/artifacts/directive/D2"
+    Then the response status is 200
+
+  # bound by: WP05 of agent-profile-reads (a profile is refused as a directive is: an edge of the pack that points at it)
+  Scenario: An agent profile another artifact of the pack points at is not deleted, and the refusal names the referrer
+    Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
+      """
+      profile-id: jenny
+      name: Java Jenny
+      roles:
+        - implementer
+      purpose: Implement.
+      specialization:
+        primary-focus: Java
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "agent_profile:jenny", "type": "requires"}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I DELETE "/packs/qa/artifacts/agent_profile/jenny" with the remembered ETag
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+    When I GET "/packs/qa/artifacts/agent_profile/jenny"
+    Then the response status is 200
+
   # bound by: WP19 (US2 AS4, FR-005: a 404 per code, each with the control of the delete that follows)
   Scenario Outline: A path that names nothing the pack holds is a 404 with its own code
     When I DELETE "<path>" with the header "If-Match": "*"
@@ -148,10 +203,11 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 204
 
     Examples: the pack, the kind, the artifact
-      | path                                 | code                |
-      | /packs/nope/artifacts/directive/D3   | pack_not_found      |
-      | /packs/qa/artifacts/procedure/D3     | kind_not_found      |
-      | /packs/qa/artifacts/directive/NOPE   | directive_not_found |
+      | path                                   | code                |
+      | /packs/nope/artifacts/directive/D3     | pack_not_found      |
+      | /packs/qa/artifacts/procedure/D3       | kind_not_found      |
+      | /packs/qa/artifacts/directive/NOPE     | directive_not_found |
+      | /packs/qa/artifacts/agent_profile/NOPE | artifact_not_found  |
 
   # bound by: WP19 (US2 AS2: another pack's edge refers to the artifact; the refusal changes nothing)
   Scenario: An artifact another pack refers to is not deleted, and the refusal names the referrer

@@ -4,6 +4,7 @@ import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusal;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -399,6 +400,94 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa"))
                 .as("the control: a gate that allows it")
                 .doesNotContainKey("directives/D3.directive.yaml");
+    }
+
+    // ---- an agent profile is removed as the five kinds are (operator decision 01M70ZFW6S2HG3TEE33RW8VGSB)
+    // ---------------------
+
+    private static final String JENNY = """
+            profile-id: jenny
+            name: Jenny
+            roles:
+              - implementer
+            purpose: Implement.
+            specialization:
+              primary-focus: Java
+            """;
+
+    private static Packs qaWithAProfile() {
+        return qa().file("agent_profiles/jenny.agent.yaml", JENNY);
+    }
+
+    @Test
+    void anAgentProfileIsRemovedWithThePackRevisionAndALaterReadFindsNone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithAProfile()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        PackRevision before = rig.writeStore.currentRevision(QA);
+        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.AGENT_PROFILE))
+                .hasSize(1);
+
+        PackRevision after = removals.service.remove(QA, "agent_profile", "jenny", before.token());
+
+        assertThat(after).isNotEqualTo(before).isEqualTo(rig.writeStore.currentRevision(QA));
+        assertThat(removals.filesOf("qa"))
+                .doesNotContainKey("agent_profiles/jenny.agent.yaml")
+                .containsKeys("directives/D1.directive.yaml", "pack.yaml");
+        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.AGENT_PROFILE))
+                .as("a later read finds none")
+                .isEmpty();
+        assertThat(refusal(() -> removals.remove("qa", "agent_profile", "jenny"))
+                        .code())
+                .as("and a second removal is the profile's not-found")
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+    }
+
+    @Test
+    void anAgentProfileTheGateRefusesIsAskedAboutAsARemovalAndNothingChanges(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithAProfile()), Preconditions.none());
+        List<String> asked = new ArrayList<>();
+        WritePolicyGate refusing = new WritePolicyGate() {
+            @Override
+            public void authorize(Pack pack, Operation operation, Urn target) {
+                asked.add(operation + " " + target);
+                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
+            }
+
+            @Override
+            public void authorizeStaged(Pack staged, List<Write> writes) {
+                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
+            }
+        };
+        Removals removals = new Removals(rig, refusing);
+        Map<String, String> before = removals.filesOf("qa");
+
+        assertThat(refusal(() -> removals.remove("qa", "agent_profile", "jenny"))
+                        .code())
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        assertThat(asked).containsExactly("REMOVE agent_profile:jenny");
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
+    }
+
+    @Test
+    void anAgentProfileAnotherArtifactPointsAtIsRefusedAsADirectiveIs(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithAProfile()
+                        .file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(Relationship.of(
+                                        urn("directive:D2"), urn("agent_profile:jenny"), RelationType.REQUIRES))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "agent_profile", "jenny"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(removals.filesOf("qa")).containsKey("agent_profiles/jenny.agent.yaml");
     }
 
     // ---- the precondition

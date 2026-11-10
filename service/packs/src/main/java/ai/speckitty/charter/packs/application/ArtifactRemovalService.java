@@ -145,7 +145,7 @@ public final class ArtifactRemovalService {
 
     /** The artifact's URN once the kind is served and the pack holds the artifact; the not-found code of the path otherwise. */
     private static Urn requireHeld(Pack current, PackIdentifier pack, String kindToken, String artifactId) {
-        ArtifactKind kind = ArtifactReadService.servedKind(kindToken)
+        ArtifactKind kind = ArtifactReadService.listedKind(kindToken)
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
         CharterRefusal absent = new CharterRefusal(
