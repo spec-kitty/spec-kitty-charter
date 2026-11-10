@@ -59,7 +59,7 @@ every `href` starts with `/api/v1` and points to a built operation.
 | `listPackArtifacts` | One configured pack's artifacts of the served kinds as summaries, filtered by an optional `kind` and paged (`pageSize` 1 to 200, 50 by default; `pageCursor`), with `self`, `first` and `next` links | `GET /packs/{packId}/artifacts` |
 | `getPackArtifact` | One artifact in the common `Artifact` envelope (`kind`, `id`, `packId`, `_links`, and one kind-named member with the kind's representation); an `ETag` for a writable kind | `GET /packs/{packId}/artifacts/{kind}/{artifactId}` |
 | `listArtifactReferences` | The references one artifact writes, in written order, each resolved through the compose: the reference as written, its relation, the `holdingPack` (`packId`, `descriptorPackId`, `name`), the bare `urn` and an `artifact` link to the pack-scoped read of the target. A composed read: it refuses a broken compose with the composition code of `GET /offering`, while `getPackArtifact` still answers. The pack, kind and artifact are judged as for `getPackArtifact` | `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` |
-| `getPackAgentProfile` | One agent profile in the `Artifact` envelope with `kind: agent_profile`: the profile in `agentProfile` and, in `governance`, the artifacts its governance walk lists over the pack's composed `depends_on` closure (tag `AgentProfiles`). `depth` (0 or 1, default 0) is the number of `suggests` hops the walk follows. Every entry names its `step`, `relation`, `via`, `hops`, the words of the edge it was reached through (`edge`: `when` and `reason`, both optional) and whether a pack of the closure holds it (`held`); a profile the pack does not hold is a 404 `artifact_not_found`. The `ETag` is the pack revision | `GET /packs/{packId}/artifacts/agent_profile/{artifactId}` |
+| `getPackAgentProfile` | One agent profile in the `Artifact` envelope with `kind: agent_profile`: the profile in `agentProfile` and, in `governance`, the artifacts its governance walk lists over the pack's composed `depends_on` closure (tag `AgentProfiles`). `depth` (0 or 1, default 0) is the number of `suggests` hops the walk follows. Every entry names its `step`, `relation`, `via`, `hops`, the words of the edge it was reached through (`edge`: `when` and `reason`, both optional) whether the place its edge leads to holds it (`held`) and, for a held entry, the pack whose copy wins the layer merge of the closure (`packId` and the `artifact` link name that copy, whose edges the walk followed); a profile the pack does not hold is a 404 `artifact_not_found`. The `ETag` is the pack revision, the `If-Match` of the profile's `DELETE`; it is not a validator of the governance, which a dependency pack can change without changing it, and the read takes no `If-None-Match` | `GET /packs/{packId}/artifacts/agent_profile/{artifactId}` |
 | `getEffectiveArtifact` | The version of one artifact in force under an activation, of any kind the pack-scoped routes serve: the winner's `packId` and `level`, its `state`, `required`, `policy` and `reason`, and no body. Links `self`, `artifact` (the pack-scoped read of the winner's pack) and `up` (the activation). A strong `ETag`, `304` on a match, `400` for a `depth` outside 0 to 1 | `GET /activations/{activationId}/artifacts/{kind}/{artifactId}` |
 | `getEffectiveAgentProfile` | One agent profile under an activation (tag `EffectiveAgentProfiles`): the facts of `getEffectiveArtifact`, the winner's profile in `agentProfile` and the governance walk judged by the activation. Links `self`, `artifact` (the pack-scoped read of the winner's pack) and `up` (the activation); an entry links `effective-artifact` and `artifact` for the kinds the pack-scoped routes serve. A strong `ETag`, `304` on a match | `GET /activations/{activationId}/artifacts/agent_profile/{artifactId}` |
 | `registerPackDirective`, `registerPackStyleguide`, `registerPackParadigm`, `registerPackToolguide` | Register an artifact of that kind; `201` with `Location` and the `Artifact` envelope | `POST /packs/{packId}/artifacts/<kind>` |
@@ -84,7 +84,11 @@ list, `?kind=`, the references and the removal serve it, a profile the pack does
 conformance harness match the method first, so `GET /packs/p/artifacts/directive/X` is `getPackArtifact`. Generic
 OpenAPI tooling matches the path item before the method: a third-party validator or mock resolves that `GET` to
 the literal path item, which defines only `PUT`, and refuses it. The ruling stands; this is a known limit of such
-tools.
+tools. The profile read has the mirror image of it: `/packs/{packId}/artifacts/agent_profile/{artifactId}` is a literal
+path item that defines only `GET` (`getPackAgentProfile`), while the profile's `DELETE` (`deletePackArtifact`) and its
+references stay on the templated paths. The service matches the method first and routes that `DELETE` to
+`deletePackArtifact`; a tool that matches the path item first resolves it to the literal item and refuses it as a
+method the item does not allow. It is the same known limit.
 
 **Agent profile reads and two divergences from core.** The profile reads walk governance with the engine of the action
 context (research D4 of the mission `agent-profile-reads-01M70ZDM`). They differ from core's profile channel in two
@@ -283,18 +287,22 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` and `parent_pack` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Built** (the list and the report in PR B, the graph and the context in PR C); R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
+| `GET` | `…/{activationId}/artifacts/{kind}/{artifactId}`, `…/{activationId}/artifacts/agent_profile/{artifactId}` | `getEffectiveArtifact` (tag `Activation`) and `getEffectiveAgentProfile` (tag `EffectiveAgentProfiles`): one artifact in force under the activation, and one agent profile with its governance judged by the activation. **Built** | [#407](https://github.com/spec-kitty/spec-kitty-charter/issues/407) |
 
 **The activation set is in the contract** (#125, inside `0.1.0-SNAPSHOT` by the operator's ruling of 2026-10-31):
-every activation operation is declared in full under the tag `Activation`. The register (`createActivation`,
-`replaceActivation`, `getActivation`, `deleteActivation`), the closure read (`listActivationPacks`, #360) and the five
-per-artifact and preset writes (#291) are built, and so are the four effective reads: no operation of the set keeps
+every activation operation is declared in full under the tag `Activation`, but `getEffectiveAgentProfile`, which is
+under the tag `EffectiveAgentProfiles` so that the profiles slice implements it in a controller of its own (#407). The
+register (`createActivation`, `replaceActivation`, `getActivation`, `deleteActivation`), the closure read
+(`listActivationPacks`, #360) and the five per-artifact and preset writes (#291) are built, and so are the four
+effective reads and the two reads of one artifact (`getEffectiveArtifact` and `getEffectiveAgentProfile`, #407): no operation of the set keeps
 `x-reserved` or answers `501` any more (ADR-0020 D8; the interceptor stays, with a planted-contract control, for a later
 reservation). The set declares the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
 `contracts/offering/schemas/`), `Activation`, `ActivationChange`, the skipped report and the effective-read schemas;
 `ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes; and the shared `Problem`'s `requiredBy`
 and `violations`. Every one of the six codes is raised: `activation_not_found` (404), `artifact_not_found` and
 `preset_not_found` (404, a per-artifact write or a preset application whose path names what the closure does not
-hold), `activation_invalid` (422), `artifact_required` and `artifact_locked` (409). The rulings are in ADR-0020's amendment of 2026-10-31.
+hold, and `artifact_not_found` also on `getEffectiveArtifact` and `getEffectiveAgentProfile` for an id no pack of the
+closure holds), `activation_invalid` (422), `artifact_required` and `artifact_locked` (409). The rulings are in ADR-0020's amendment of 2026-10-31.
 
 **Before 1.0.0, still to come:** the move of the action-context read and the hosted-first reshape of the security
 scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
