@@ -1,9 +1,10 @@
 title: MissionStepDelegationCandidate
 description: >-
   One candidate of a delegation: its id as stored and, when its kind is one the service lists (the kinds of
-  ArtifactKindToken) and the scope holds
-  the candidate, an artifact link to its read (pack-scoped for a pack's step contract). _links is empty otherwise, for
-  example for a procedure, which is not listed.
+  ArtifactKindToken) and the scope holds the candidate, a link to its read in that scope: artifact, the pack-scoped
+  read, for a pack's step contract (the pack holds it); effective-artifact, the read under the activation, for a step
+  contract read under an activation (getEffectiveMissionStepContract; the activation's merged closure holds it). _links
+  is empty otherwise, for example for a procedure, which is not listed.
 type: object
 additionalProperties: false
 required:

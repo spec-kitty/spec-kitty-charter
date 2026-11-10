@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,19 +34,30 @@ class EffectiveMissionTypeReadServiceTest {
     private final List<String> asked = new ArrayList<>();
     private String packFingerprint = FINGERPRINT;
 
-    private final ActivationMissionTypes activations = (activation, type) -> {
-        asked.add(activation + " " + type);
-        if (!type.equals("software-dev")) {
-            throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "no " + type);
+    private EffectiveStepContract stepContract = new EffectiveStepContract(
+            new PackIdentifier("main"), new Contract("specify-contract"), Optional.empty(), Set.of(), FINGERPRINT);
+
+    private final ActivationMissionTypes activations = new ActivationMissionTypes() {
+        @Override
+        public EffectiveMissionType missionType(String activation, String type) {
+            asked.add(activation + " " + type);
+            if (!type.equals("software-dev")) {
+                throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "no " + type);
+            }
+            return new EffectiveMissionType(PROJ, type(), List.of(new Contract("specify-contract")), FINGERPRINT);
         }
-        return new EffectiveMissionType(PROJ, type(), List.of(new Contract("specify-contract")), FINGERPRINT);
+
+        @Override
+        public EffectiveStepContract stepContract(String activation, String id) {
+            asked.add(activation + " contract " + id);
+            return stepContract;
+        }
     };
     private final PackMissionTypes packs = (pack, type) -> {
         asked.add(pack.value() + ":" + type);
         return holding(packFingerprint);
     };
-    private final StepContracts contracts =
-            contract -> new MissionTypeHolding.BoundContract(contract.localId(), "specify");
+    private final StepContracts contracts = contract -> view(contract.localId(), "specify");
     private final EffectiveMissionTypeReadService reads =
             new EffectiveMissionTypeReadService(activations, packs, contracts);
 
@@ -101,6 +113,64 @@ class EffectiveMissionTypeReadServiceTest {
     }
 
     @Test
+    void aStepContractLinksItsTypeAndItsStepWhenTheWinningTypeDeclaresItAndItsHeldCandidates() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"),
+                new Contract("specify-contract"),
+                Optional.of(type()),
+                Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD"), new HeldArtifact(ArtifactKind.TACTIC, "t")),
+                FINGERPRINT);
+
+        EffectiveMissionTypeReadService.Held<EffectiveStepContractView> held =
+                reads.stepContract("a-1", "specify-contract");
+
+        assertThat(held.holder()).isEqualTo(new PackIdentifier("main"));
+        assertThat(held.read().fingerprint()).isEqualTo(FINGERPRINT);
+        EffectiveStepContractView view = held.read().value();
+        assertThat(view.contract().id()).isEqualTo("specify-contract");
+        assertThat(view.missionTypeHeld()).isTrue();
+        assertThat(view.stepHeld()).as("the winning type declares specify").isTrue();
+        assertThat(view.heldCandidates())
+                .as("the candidates the closure holds, of the delegation's own kind")
+                .containsExactly(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD"));
+        assertThat(asked).as("one read of the activation").containsExactly("a-1 contract specify-contract");
+    }
+
+    @Test
+    void aStepContractWhoseActionTheWinningTypeDoesNotDeclareLinksNoStep() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
+
+        EffectiveStepContractView view =
+                reads.stepContract("a-1", "review").read().value();
+
+        assertThat(view.missionTypeHeld()).isTrue();
+        assertThat(view.stepHeld()).isFalse();
+    }
+
+    @Test
+    void anOnDemandStepIsAStepTheWinningTypeDeclares() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"),
+                new Contract("retro"),
+                Optional.of(typeWithARetrospective()),
+                Set.of(),
+                FINGERPRINT);
+
+        assertThat(reads.stepContract("a-1", "retro").read().value().stepHeld()).isTrue();
+    }
+
+    @Test
+    void aStepContractWhoseTypeTheClosureDoesNotHoldLinksNeither() {
+        EffectiveStepContractView view =
+                reads.stepContract("a-1", "specify-contract").read().value();
+
+        assertThat(view.missionTypeHeld()).isFalse();
+        assertThat(view.stepHeld()).isFalse();
+        assertThat(view.heldCandidates()).isEmpty();
+    }
+
+    @Test
     void anUnknownStepOrSkeletonNamesTheActivationInItsRefusal() {
         assertThatThrownBy(() -> reads.step("a-1", "software-dev", "deploy"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -145,6 +215,52 @@ class EffectiveMissionTypeReadServiceTest {
                         List.of(),
                         List.of()))
                 .build();
+    }
+
+    /** The type with an on-demand step, retrospect. */
+    private static MissionType typeWithARetrospective() {
+        return MissionType.builder()
+                .id(new MissionTypeIdentifier("software-dev"))
+                .packId(PROJ)
+                .schemaVersion("1.0")
+                .title("Software Development")
+                .description("Build software")
+                .step(type().steps().getFirst())
+                .onDemandStep(new MissionStep(
+                        "retrospect",
+                        "Retrospective",
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of()))
+                .build();
+    }
+
+    /**
+     * A contract's view: specify-contract binds specify and delegates to two directives, one held; review binds review,
+     * which the type does not declare; retro binds the on-demand step retrospect.
+     */
+    private static StepContractView view(String id, String unused) {
+        String action = switch (id) {
+            case "review" -> "review";
+            case "retro" -> "retrospect";
+            default -> "specify";
+        };
+        return new StepContractView(
+                id,
+                "1.0",
+                action,
+                "software-dev",
+                List.of(new StepContractView.Step(
+                        "capture",
+                        "Capture",
+                        Optional.empty(),
+                        List.of(),
+                        Optional.of(new StepContractView.Delegation(ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE"))),
+                        Optional.empty())),
+                List.of());
     }
 
     /** What proj stores beside its copy: a skeleton, the step's prompt, and a contract of its own that lost the merge. */

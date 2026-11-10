@@ -7,25 +7,60 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
+import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.packs.domain.ContractStep;
+import ai.speckitty.charter.packs.domain.GateBinding;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
+import ai.speckitty.charter.packs.domain.StepDelegation;
+import ai.speckitty.charter.packs.domain.StepInput;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * The narrowing of a step contract the activations slice hands on as a kernel artifact (D12): its id and the step its
- * {@code action} names; an artifact the store did not bind to the packs slice's step contract is a bug.
+ * The narrowing of a step contract the activations slice hands on as a kernel artifact (D11, D12): every stored field,
+ * in stored order, and the binding of the step its {@code action} names; an artifact the store did not bind to the packs
+ * slice's step contract is a bug.
  */
 class PacksStepContractsTest {
 
     private final PacksStepContracts contracts = new PacksStepContracts();
 
     @Test
-    void aStepContractBindsTheStepItsActionNames() {
-        assertThat(contracts.bound(contract()))
-                .isEqualTo(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
+    void aStepContractIsReadWithEveryStoredFieldAndBindsTheStepItsActionNames() {
+        StepContractView view = contracts.view(contract());
+
+        assertThat(view)
+                .isEqualTo(new StepContractView(
+                        "specify-contract",
+                        "1.0",
+                        "specify",
+                        "software-dev",
+                        List.of(
+                                new StepContractView.Step(
+                                        "bootstrap",
+                                        "Load the context",
+                                        Optional.of("spec-kitty charter context"),
+                                        List.of(new StepContractView.Input("--json", "literal", Optional.of(true))),
+                                        Optional.empty(),
+                                        Optional.empty()),
+                                new StepContractView.Step(
+                                        "capture",
+                                        "Capture the intent",
+                                        Optional.empty(),
+                                        List.of(),
+                                        Optional.of(new StepContractView.Delegation(
+                                                ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE"))),
+                                        Optional.of("Ask first."))),
+                        List.of(new StepContractView.Gate(
+                                "for_review",
+                                "check",
+                                Optional.of("python"),
+                                "1.0",
+                                Optional.of(false),
+                                Optional.of("core")))));
+        assertThat(view.bound()).isEqualTo(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
     }
 
     @Test
@@ -62,7 +97,7 @@ class PacksStepContractsTest {
             }
         };
 
-        assertThatThrownBy(() -> contracts.bound(stub))
+        assertThatThrownBy(() -> contracts.view(stub))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("the packs read a mission step contract as");
     }
@@ -77,10 +112,19 @@ class PacksStepContractsTest {
                 .step(new ContractStep(
                         "bootstrap",
                         "Load the context",
-                        Optional.empty(),
-                        List.of(),
+                        Optional.of("spec-kitty charter context"),
+                        List.of(new StepInput("--json", "literal", Optional.of(true))),
                         Optional.empty(),
                         Optional.empty()))
+                .step(new ContractStep(
+                        "capture",
+                        "Capture the intent",
+                        Optional.empty(),
+                        List.of(),
+                        Optional.of(new StepDelegation(ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE"))),
+                        Optional.of("Ask first.")))
+                .gate(new GateBinding(
+                        "for_review", "check", Optional.of("python"), "1.0", Optional.of(false), Optional.of("core")))
                 .build();
     }
 }

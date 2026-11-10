@@ -1,0 +1,9 @@
+name: contractId
+in: path
+required: true
+description: >-
+  The mission step contract, by its id within the activation's merged closure. An id that no pack of the closure holds
+  is a 404 mission_step_contract_not_found, after the activation is found.
+schema:
+  type: string
+  minLength: 1

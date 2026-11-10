@@ -24,3 +24,4 @@ files:
   - ActivationMissionTypeNotFound.yaml
   - ActivationMissionStepNotFound.yaml
   - ActivationMissionSkeletonNotFound.yaml
+  - ActivationMissionStepContractNotFound.yaml

@@ -7,12 +7,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.api.ActivationApi;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
+import ai.speckitty.charter.missions.application.ActivationMissionTypes;
 import ai.speckitty.charter.missions.application.EffectiveMissionType;
 import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService;
+import ai.speckitty.charter.missions.application.EffectiveStepContract;
+import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
+import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
@@ -23,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,16 +48,47 @@ class EffectiveMissionTypesControllerTest {
 
     private static final String FINGERPRINT = "sha256:" + "c".repeat(64);
 
+    /** specify, bound to software-dev's specify; its first step delegates to GUARD, which the closure holds, and NOPE. */
+    private static final StepContractView STEP_CONTRACT = new StepContractView(
+            "specify",
+            "1.0",
+            "specify",
+            "software-dev",
+            List.of(new StepContractView.Step(
+                    "capture",
+                    "Capture the intent",
+                    Optional.of("run it"),
+                    List.of(new StepContractView.Input("--json", "literal", Optional.of(true))),
+                    Optional.of(new StepContractView.Delegation(ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE"))),
+                    Optional.of("Ask first."))),
+            List.of(new StepContractView.Gate(
+                    "for_review", "check", Optional.empty(), "1.0", Optional.of(false), Optional.empty())));
+
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
                     new EffectiveMissionTypesController(
                             new EffectiveMissionTypeReadService(
-                                    (activation, type) -> new EffectiveMissionType(
-                                            new PackIdentifier("proj"),
-                                            holding().type(),
-                                            List.of(mock(CharterArtifact.class)),
-                                            FINGERPRINT),
+                                    new ActivationMissionTypes() {
+                                        @Override
+                                        public EffectiveMissionType missionType(String activation, String type) {
+                                            return new EffectiveMissionType(
+                                                    new PackIdentifier("proj"),
+                                                    holding().type(),
+                                                    List.of(mock(CharterArtifact.class)),
+                                                    FINGERPRINT);
+                                        }
+
+                                        @Override
+                                        public EffectiveStepContract stepContract(String activation, String id) {
+                                            return new EffectiveStepContract(
+                                                    new PackIdentifier("main"),
+                                                    mock(CharterArtifact.class),
+                                                    Optional.of(holding().type()),
+                                                    Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD")),
+                                                    FINGERPRINT);
+                                        }
+                                    },
                                     (pack, type) -> holding(),
-                                    contract -> new MissionTypeHolding.BoundContract("specify", "specify")),
+                                    contract -> STEP_CONTRACT),
                             new MissionLinks("/api/v1")),
                     new GenericEffectiveRead())
             .build();
@@ -64,7 +101,44 @@ class EffectiveMissionTypesControllerTest {
                 .andExpect(jsonPath("$.missionType.id").value("software-dev"));
         mvc.perform(get("/api/v1/activations/a-1/artifacts/mission_step_contract/specify"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.generic").value("mission_step_contract specify"));
+                .andExpect(jsonPath("$.kind").value("mission_step_contract"))
+                .andExpect(jsonPath("$.missionStepContract.id").value("specify"));
+        mvc.perform(get("/api/v1/activations/a-1/artifacts/directive/GUARD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.generic").value("directive GUARD"));
+    }
+
+    @Test
+    void aStepContractNamesItsHoldingPackAndLinksItsTypeStepAndHeldCandidatesUnderTheActivation() throws Exception {
+        mvc.perform(get("/api/v1/activations/a-1/artifacts/mission_step_contract/specify"))
+                .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
+                .andExpect(header().doesNotExist("ETag"))
+                .andExpect(jsonPath("$.packId").value("main"))
+                .andExpect(jsonPath("$.missionStepContract.mission").value("software-dev"))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].command").value("run it"))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].inputs[0].optional")
+                        .value(true))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].guidance").value("Ask first."))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].delegatesTo.kind")
+                        .value("directive"))
+                .andExpect(jsonPath(
+                                "$.missionStepContract.steps[0].delegatesTo.candidates[0]._links.effective-artifact.href")
+                        .value("/api/v1/activations/a-1/artifacts/directive/GUARD"))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].delegatesTo.candidates[1].id")
+                        .value("NOPE"))
+                .andExpect(jsonPath("$.missionStepContract.steps[0].delegatesTo.candidates[1]._links")
+                        .isEmpty())
+                .andExpect(jsonPath("$.missionStepContract.gates[0].failOpen").value(false))
+                .andExpect(jsonPath("$._links.self.href")
+                        .value("/api/v1/activations/a-1/artifacts/mission_step_contract/specify"))
+                .andExpect(jsonPath("$._links.collection.href")
+                        .value("/api/v1/activations/a-1/artifacts?kind=mission_step_contract"))
+                .andExpect(jsonPath("$._links.mission-type.href")
+                        .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev"))
+                .andExpect(jsonPath("$._links.step.href")
+                        .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"))
+                .andExpect(jsonPath("$._links.artifact.href")
+                        .value("/api/v1/packs/main/artifacts/mission_step_contract/specify"));
     }
 
     @Test

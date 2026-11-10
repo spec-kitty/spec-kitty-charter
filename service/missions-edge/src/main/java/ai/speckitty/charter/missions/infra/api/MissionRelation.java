@@ -10,14 +10,18 @@ public enum MissionRelation {
     SELF("self"),
     /** The pack's artifacts of the resource's kind. */
     COLLECTION("collection"),
-    /** The mission type of a step or a skeleton. */
+    /** The mission type of a step, a skeleton or a step contract. */
     MISSION_TYPE("mission-type"),
+    /** The step a step contract's {@code mission} and {@code action} name. */
+    STEP("step"),
     /** The step contract bound to a step. */
     STEP_CONTRACT("step-contract"),
     /** The stored skeleton an expected output artifact of a step names. */
     SKELETON("skeleton"),
-    /** The pack-scoped read of the winner a read under an activation answers: its mission type in the pack that holds it. */
-    ARTIFACT("artifact");
+    /** The pack-scoped read of the winner a read under an activation answers, in the pack that holds it. */
+    ARTIFACT("artifact"),
+    /** The read under the activation of a step contract's delegation candidate the activation's closure holds. */
+    EFFECTIVE_ARTIFACT("effective-artifact");
 
     private final String wireKey;
 
