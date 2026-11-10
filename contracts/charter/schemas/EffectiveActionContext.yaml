@@ -10,6 +10,11 @@ description: >-
   activation's report with one exception to its carrier rule: missionTypeNotInForce holds the requested mission type
   (kind mission_type) when that is not in force and is empty when it is in force, so an artifact bound to another
   mission type that is not in force is absent from it here.
+
+  _links holds self, the context; effective-artifact, the read of the action's step under the activation
+  (getEffectiveMissionStep); and artifact, the read of the step in the pack that holds the version in force of the
+  mission type (getPackMissionStep), the packId of the mission type's item of the effective list. Each answers the step
+  of that version of the mission type, or action_not_found when it declares no such step.
 type: object
 additionalProperties: false
 required:

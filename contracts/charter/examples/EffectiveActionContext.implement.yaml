@@ -1,7 +1,8 @@
 summary: >-
   The effective context of one action: the directive in force that the step scopes, the enhancer in force of the step
   itself, and a tactic the directive suggests that the activation does not select, listed as a suggestion with the
-  edge's when and reason. self is the context.
+  edge's when and reason. self is the context; effective-artifact is the step's read under the activation and artifact
+  its read in main, the pack that holds the mission type's version in force.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -63,3 +64,7 @@ value:
   _links:
     self:
       href: /api/v1/activations/a-1/mission-types/software-dev/actions/implement/context
+    effective-artifact:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
+    artifact:
+      href: /api/v1/packs/main/artifacts/mission_type/software-dev/steps/implement
