@@ -30,9 +30,9 @@ dependencies {
     testImplementation(catalog.lib("spring-boot-starter-test"))
 }
 
-// The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85) until the first
-// score is known; raised by PR once the score clears it by 5. The skeleton holds no logic yet, so the group has no
-// mutant until the rings are built.
+// The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85); the score
+// measured at its work package is 100 % (121 mutants), see the profiles-edge amendment of ADR-0062. Raised by PR once the
+// nightly score clears it by 5.
 mutationFloors {
     group("profiles-edge") {
         packages.addAll("ai.speckitty.charter.profiles.application", "ai.speckitty.charter.profiles.infra")

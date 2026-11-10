@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -35,8 +35,7 @@ How to build the charter service and run every check CI runs.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`: an absolute path, or
   one relative to the repository root. The checkout must be
-  clean and at `openPacksRef` in `gradle.properties` (currently
-  `86d9284695a18a71f9f7cc934f0305b1b03de19e`); the build refuses otherwise, and prints the
+  clean and at the `openPacksRef` in `gradle.properties` (the pinned commit); the build refuses otherwise, and prints the
   command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
   stash or clean the checkout).
 - **The synced packs**, once per worktree: `./gradlew syncPacks`. `packs/internal` and `packs/qa` are not
@@ -82,6 +81,7 @@ How to build the charter service and run every check CI runs.
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
 | `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
 | `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the pinned `internal` and `qa` packs are read from the same checkout. It fails, never skips, without a checkout |
+| `:deployable:openPacksProfiles` | Every agent profile of the pinned open-packs checkout is read through the whole service (part of `check`, so `verifyAll`). It fails, never skips, without a checkout |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -155,7 +155,8 @@ Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
 `timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
 before `infra.fetch` joined it and about 2 minutes more with it; kernel, missions and profiles together take about
-3 minutes, so the whole run takes about 51 minutes.
+3 minutes, so the whole run takes about 51 minutes. That figure is approximate and does not count `profiles-edge`
+(121 mutants), whose run time has not been measured.
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
 floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to

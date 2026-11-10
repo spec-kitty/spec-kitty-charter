@@ -2,7 +2,7 @@
 title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
-updated: 2026-11-06T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -99,6 +99,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | missions | `missions` | `ai.speckitty.charter.missions` | 70 | 7 |
    | profiles | `profiles` | `ai.speckitty.charter.profiles` | 90 | 4 |
    | activations | `activations` | `ai.speckitty.charter.activations` | 85 | 37 |
+   | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -250,3 +251,15 @@ run scored 91.4 %, and `:activations:pitest` on this pull request's head scored 
 `scripts/ci/mutation_summary.py` lists `activations` after `packs`, and the job summary shows "no report" for it when
 no `floors.json` is written. The nightly's `./gradlew pitest` already reaches every module that applies the plugin, so
 the workflow needs no change. The other floors are unchanged.
+
+## Amendment, 2026-11-10 (profiles-edge): the profiles-edge module joins the nightly
+
+`service/profiles-edge` applies `charter.mutation-conventions` directly, with one whole-module group, `profiles-edge`,
+at a floor of 85. Its work package measured a mutation score of 100 % (121 of 121 mutants detected). The floor follows
+the precedent of `:activations`, not `floor5(score − 3)`, which would give 95 on a module of this size: a first floor
+of 85 leaves room for the module to grow before it is raised by pull request once the nightly score clears it by 5. The margin is 18 mutants
+(103 of 121 needed). The group mutates `ai.speckitty.charter.profiles.application` and `ai.speckitty.charter.profiles.infra`,
+without the four Spring wiring packages (`application.config`, `infra.api.config`, `infra.packs.config`,
+`infra.activations.config`). These packages live in a different module from the `profiles` group's
+`ai.speckitty.charter.profiles`, so the two scopes do not overlap. The nightly's `./gradlew pitest` already reaches the
+module, and `scripts/ci/mutation_summary.py` lists it. The other floors are unchanged.
