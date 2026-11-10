@@ -103,7 +103,9 @@ properties:
   hops:
     type: integer
     minimum: 1
-    description: The length of the path from the profile, one more than the hops of via.
+    description: >-
+      The length of the path from the profile, one more than the hops of via: the fewest hops any parent the step walks
+      from gives, whatever lineage depth that parent sits at.
     x-derived:
       rule: The hops of via plus one; the profile is at 0.
       inputs:

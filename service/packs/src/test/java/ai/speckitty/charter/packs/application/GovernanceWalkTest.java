@@ -454,6 +454,48 @@ class GovernanceWalkTest {
                 .containsExactly(tuple(urn("directive:D"), false));
     }
 
+    // ---- hops: the fewest, whatever depth a seed of the step sits at --------------------------------------------
+
+    @Test
+    void aTargetADeepAncestorReachesInOneHopTakesTheShorterPathThroughTheProfilesOwnRequires() {
+        Closure closure = closure(
+                List.of(P, Q, R, "directive:X", "directive:Y"),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(Q, RelationType.SPECIALIZES_FROM, R),
+                edge(P, RelationType.REQUIRES, "directive:X"),
+                edge("directive:X", RelationType.REQUIRES, "directive:Y"),
+                edge(R, RelationType.REQUIRES, "directive:Y"));
+
+        Result result = walk(closure, 0, GovernanceWalkTest::everything);
+
+        assertThat(entry(result, "directive:Y"))
+                .as("R sits at hops 2 and would give Y hops 3; X gives it hops 2")
+                .extracting(Entry::via, Entry::hops)
+                .containsExactly(urn("directive:X"), 2);
+    }
+
+    @Test
+    void theSuggestsDepthCountsFromTheNearestSeedWhileHopsTakeTheFewestFromTheProfile() {
+        Closure closure = closure(
+                List.of(P, Q, R, "tactic:X", "tactic:Y", "tactic:Z"),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(Q, RelationType.SPECIALIZES_FROM, R),
+                edge(P, RelationType.SUGGESTS, "tactic:X"),
+                edge("tactic:X", RelationType.SUGGESTS, "tactic:Y"),
+                edge(R, RelationType.SUGGESTS, "tactic:Y"),
+                edge("tactic:Y", RelationType.SUGGESTS, "tactic:Z"));
+
+        Result result = walk(closure, 2, GovernanceWalkTest::everything);
+
+        assertThat(result.entries())
+                .as("Z is two suggests hops from R, so depth 2 lists it; Y takes its fewest hops through X")
+                .extracting(Entry::urn, Entry::via, Entry::hops)
+                .contains(
+                        tuple(urn("tactic:X"), urn(P), 1),
+                        tuple(urn("tactic:Y"), urn("tactic:X"), 2),
+                        tuple(urn("tactic:Z"), urn("tactic:Y"), 3));
+    }
+
     @Test
     void theStepsHaveTheirOwnTokensAndRelationsAndLineageIsSpecializesFrom() {
         assertThat(Step.values())

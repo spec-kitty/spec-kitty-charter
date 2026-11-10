@@ -49,6 +49,10 @@ import java.util.function.Predicate;
  * nothing. So an entry with {@code held} false has nothing below it, and no entry names it as its {@code via}.
  * Minimum-step semantics list a URN once, at the earliest step that reaches it, so such an entry keeps {@code held}
  * false even when a later step reaches the URN through a held edge.
+ *
+ * <p>Within a step the parent of a node is, among the nodes the step walks from, the one with the fewest hops from the
+ * profile, so {@code hops} is the length of the shortest path the step's walk allows, whatever lineage depth the step's
+ * seeds sit at. The {@code suggests} step's {@code depth} counts hops from the nearest seed of that step.
  */
 public final class GovernanceWalk {
 

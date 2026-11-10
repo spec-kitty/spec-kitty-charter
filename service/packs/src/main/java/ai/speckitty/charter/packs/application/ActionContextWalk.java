@@ -428,35 +428,85 @@ public final class ActionContextWalk {
         }
 
         /**
-         * One breadth-first step over the step's relation from the seeds, for at most {@code layers} layers: lists each
-         * node reached that no earlier step listed, and walks through the ones already listed. A node listed with
-         * {@code held} false is never walked from, by this step or a later one, whether it is a seed or reached again
-         * through a held edge (fold W2): an entry with {@code held} false has nothing below it.
+         * One step over the step's relation from the seeds: lists each node reached that no earlier step listed, and
+         * walks through the ones already listed. A node listed with {@code held} false is never walked from, by this
+         * step or a later one, whether it is a seed or reached again through a held edge (fold W2): an entry with
+         * {@code held} false has nothing below it.
+         *
+         * <p>The step's reach is breadth-first from every seed at once, as far as {@code layers} hops from the nearest
+         * seed. Within that reach, each node takes as its parent the node it can be reached from with the fewest hops
+         * from the start, then the smallest URN, then the smallest edge: the nodes are walked from in the order of their
+         * hops, so a seed deep in a lineage does not fix a node that a shorter path reaches, and {@code hops} is the
+         * fewest the step allows.
          *
          * @return the nodes this step listed
          */
         List<Urn> expand(Collection<Urn> seeds, S step, int layers) {
-            Set<Urn> visited = new HashSet<>(seeds);
-            visited.add(start);
-            List<Urn> frontier =
-                    new TreeSet<>(seeds).stream().filter(this::expandable).toList();
+            Set<Urn> blocked = new HashSet<>(seeds);
+            blocked.add(start);
+            Map<Urn, Integer> reach = reachOf(seeds, step.relation(), layers, blocked);
+            TreeMap<Integer, Set<Urn>> byHops = new TreeMap<>();
+            reach.keySet().stream()
+                    .filter(listed::containsKey)
+                    .forEach(relay -> byHops.computeIfAbsent(hopsOf(relay), ignored -> new TreeSet<>())
+                            .add(relay));
+            seeds.stream()
+                    .filter(reach::containsKey)
+                    .forEach(seed -> byHops.computeIfAbsent(hopsOf(seed), ignored -> new TreeSet<>())
+                            .add(seed));
+            Set<Urn> reached = new HashSet<>(blocked);
             List<Urn> fresh = new ArrayList<>();
-            for (int layer = 0; layer < layers && !frontier.isEmpty(); layer++) {
-                Map<Urn, Link> parents = parentsOf(frontier, step.relation(), visited);
-                for (Map.Entry<Urn, Link> reached : parents.entrySet()) {
-                    if (!listed.containsKey(reached.getKey())) {
-                        list(reached.getKey(), step, reached.getValue());
-                        fresh.add(reached.getKey());
+            while (!byHops.isEmpty()) {
+                List<Urn> frontier = byHops.pollFirstEntry().getValue().stream()
+                        .filter(parent -> reach.getOrDefault(parent, layers) < layers)
+                        .toList();
+                Map<Urn, Link> parents = parentsOf(frontier, step.relation(), reached);
+                for (Map.Entry<Urn, Link> next : parents.entrySet()) {
+                    Urn node = next.getKey();
+                    reached.add(node);
+                    if (!listed.containsKey(node)) {
+                        list(node, step, next.getValue());
+                        fresh.add(node);
+                        if (next.getValue().held() && reach.containsKey(node)) {
+                            byHops.computeIfAbsent(hopsOf(node), ignored -> new TreeSet<>())
+                                    .add(node);
+                        }
                     }
                 }
-                visited.addAll(parents.keySet());
-                frontier = parents.entrySet().stream()
-                        .filter(reached -> reached.getValue().held())
-                        .map(Map.Entry::getKey)
-                        .filter(this::expandable)
-                        .toList();
             }
             return fresh;
+        }
+
+        /**
+         * The nodes the step may walk from, each with its distance from the nearest seed: breadth-first from the seeds
+         * through held edges to nodes in force, for at most {@code layers} layers. A seed is at 0; a node listed with
+         * {@code held} false is not among them, and neither is a target only a dangling edge reaches.
+         */
+        private Map<Urn, Integer> reachOf(Collection<Urn> seeds, RelationType relation, int layers, Set<Urn> blocked) {
+            Map<Urn, Integer> reach = new HashMap<>();
+            List<Urn> frontier =
+                    new TreeSet<>(seeds).stream().filter(this::expandable).toList();
+            frontier.forEach(seed -> reach.put(seed, 0));
+            for (int layer = 0; layer < layers && !frontier.isEmpty(); layer++) {
+                Set<Urn> next = new TreeSet<>();
+                for (Urn parent : frontier) {
+                    for (Link link : outgoing.getOrDefault(parent, List.of())) {
+                        Urn target = link.target();
+                        if (link.relation() == relation
+                                && link.held()
+                                && !blocked.contains(target)
+                                && !reach.containsKey(target)
+                                && expandable(target)
+                                && inForce.test(target)) {
+                            next.add(target);
+                        }
+                    }
+                }
+                int distance = layer + 1;
+                next.forEach(target -> reach.put(target, distance));
+                frontier = List.copyOf(next);
+            }
+            return reach;
         }
 
         /**
