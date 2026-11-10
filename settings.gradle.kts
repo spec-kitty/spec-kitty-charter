@@ -25,6 +25,9 @@ listOf(
     // domain because packs depends on profiles (ADR-0037, amendment of 2026-11-09).
     "profiles-edge",
     "missions",
+    // The edge rings of the missions slice (application, infra.api, infra.packs, infra.activations), apart from the
+    // domain because packs depends on missions (ADR-0037, amendment of 2026-11-09).
+    "missions-edge",
     "activations",
     "charter-api",
     // The service-wide HTTP transport shared by every slice's inbound adapter (problems, refusals, body guard).
