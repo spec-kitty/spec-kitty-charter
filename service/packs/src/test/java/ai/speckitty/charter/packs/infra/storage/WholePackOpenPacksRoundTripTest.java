@@ -332,7 +332,7 @@ class WholePackOpenPacksRoundTripTest {
                     List.of(loaded.pack().artifacts(ArtifactKind.PROCEDURE).size(), toolguides.size()));
         });
 
-        assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(65, 18)), Map.entry("internal", List.of(17, 3)));
+        assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(66, 19)), Map.entry("internal", List.of(17, 3)));
     }
 
     /** The counts as {@link PackFileSet} lists the files, without the store. */
@@ -445,7 +445,7 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())
                 .as("every constituent: #194 binds procedures, so every listed kind is modelled")
-                .hasSize(315);
+                .hasSize(310);
         // Two top-level templates and 25 mission-type templates (#194).
         assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 27));
         assertThat(loaded.pack().templates())
