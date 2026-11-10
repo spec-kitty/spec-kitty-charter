@@ -31,8 +31,7 @@ dependencies {
 }
 
 // The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85) until the first
-// score is known; raised by PR once the score clears it by 5. The skeleton holds no logic yet, so the group has no
-// mutant until the rings are built.
+// score is known; raised by PR once the score clears it by 5.
 mutationFloors {
     group("missions-edge") {
         packages.addAll("ai.speckitty.charter.missions.application", "ai.speckitty.charter.missions.infra")
