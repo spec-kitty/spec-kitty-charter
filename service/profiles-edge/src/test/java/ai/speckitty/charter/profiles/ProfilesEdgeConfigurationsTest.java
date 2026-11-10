@@ -2,12 +2,15 @@ package ai.speckitty.charter.profiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
+import ai.speckitty.charter.profiles.application.EffectiveProfiles;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.application.ProfileReadService;
 import ai.speckitty.charter.profiles.application.ProfileSource;
 import ai.speckitty.charter.profiles.application.config.ProfilesApplicationConfiguration;
+import ai.speckitty.charter.profiles.infra.activations.ActivationsEffectiveProfiles;
 import ai.speckitty.charter.profiles.infra.activations.config.ProfilesActivationsConfiguration;
 import ai.speckitty.charter.profiles.infra.api.AgentProfilesController;
 import ai.speckitty.charter.profiles.infra.api.ProfileDtos;
@@ -31,6 +34,7 @@ class ProfilesEdgeConfigurationsTest {
         new ApplicationContextRunner()
                 .withUserConfiguration(ProfilesApplicationConfiguration.class)
                 .withBean(ProfileSource.class, () -> SOURCE)
+                .withBean(EffectiveProfiles.class, () -> ProfileFixtures.NO_ACTIVATIONS)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(ProfileReadService.class);
@@ -41,7 +45,8 @@ class ProfilesEdgeConfigurationsTest {
     void theInboundAdapterMakesItsControllerItsWireMapperAndItsJsonModuleBeans() {
         new ApplicationContextRunner()
                 .withUserConfiguration(ProfilesApiConfiguration.class)
-                .withBean(ProfileReadService.class, () -> new ProfileReadService(SOURCE))
+                .withBean(
+                        ProfileReadService.class, () -> new ProfileReadService(SOURCE, ProfileFixtures.NO_ACTIVATIONS))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(AgentProfilesController.class);
@@ -64,13 +69,16 @@ class ProfilesEdgeConfigurationsTest {
     }
 
     @Test
-    void theActivationsAdapterHoldsNoBeanYet() {
+    void theActivationsAdapterMakesItsPortABeanOverTheEffectiveRead() {
         new ApplicationContextRunner()
                 .withUserConfiguration(ProfilesActivationsConfiguration.class)
+                // Only the wiring is under test: the bean the adapter asks for is a stand-in that is never called.
+                .withBean(EffectiveReadService.class, () -> Mockito.mock(EffectiveReadService.class))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
-                    assertThat(context).hasSingleBean(ProfilesActivationsConfiguration.class);
-                    assertThat(context).doesNotHaveBean(PacksProfileSource.class);
+                    assertThat(context).hasSingleBean(ActivationsEffectiveProfiles.class);
+                    assertThat(context.getBean(EffectiveProfiles.class))
+                            .isInstanceOf(ActivationsEffectiveProfiles.class);
                 });
     }
 }
