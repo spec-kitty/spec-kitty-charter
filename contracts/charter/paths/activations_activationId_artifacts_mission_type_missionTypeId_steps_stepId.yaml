@@ -1,6 +1,6 @@
 get:
   operationId: getEffectiveMissionStep
-  summary: Get one step of the mission type in force under an activation.
+  summary: Get one step of the mission type that wins the layer merge under an activation.
   description: >-
     It answers the step of the layer-merge winner of the mission type, as getPackMissionStep does, with its prompt and guidelines
     files as the pack that holds the winner stores them; its step-contract link names the layer-merge winner of the
@@ -15,7 +15,7 @@ get:
     - $ref: ../parameters/StepId.yaml
   responses:
     '200':
-      description: The step of the mission type in force.
+      description: The step of the mission type that wins the layer merge.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

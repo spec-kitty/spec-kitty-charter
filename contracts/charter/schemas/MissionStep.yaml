@@ -4,7 +4,8 @@ description: >-
   fields, its prompt and guidelines files as stored, byte for byte (slot markers such as
   <!-- spdd:reasons-block:start --> included; the composed prompt is not this read's), and its expected input and
   output artifacts. _links holds self, mission-type (the type's read), step-contract (the step contract in scope whose
-  mission and action are the type and the step, the lowest id when several are; absent when none is) and, on each
+  mission and action are the type and the step, the lowest id when several are; absent when none is: the pack read in
+  a pack, getEffectiveMissionStepContract under an activation, so the link never leaves the activation) and, on each
   expected output artifact whose templatePath names a stored skeleton of the type, skeleton.
 type: object
 additionalProperties: false

@@ -3,7 +3,8 @@ description: >-
   One mission type of a Charter Pack, as its *.mission-type.yaml declares it (mission_type:<id>): its stored fields,
   then its steps in stored order followed by its on-demand steps, each marked and linked to its step read, then the
   skeletons of the type, each linked to its skeleton read. It is the missionType member of the Artifact envelope that
-  getPackMissionType answers. A step's prompt and guidelines are read on the step, not here.
+  getPackMissionType answers in a pack and getEffectiveMissionType under an activation (the layer-merge winner, with
+  the skeletons of the pack that holds it). A step's prompt and guidelines are read on the step, not here.
 type: object
 additionalProperties: false
 required:

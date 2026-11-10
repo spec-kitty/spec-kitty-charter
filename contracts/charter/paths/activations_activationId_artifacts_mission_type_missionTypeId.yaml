@@ -1,6 +1,6 @@
 get:
   operationId: getEffectiveMissionType
-  summary: Get the mission type in force under an activation, with its steps and skeletons.
+  summary: Get the mission type that wins the layer merge under an activation, with its steps and skeletons.
   description: >-
     It answers the layer-merge winner of the mission type in the activation's merged closure, the version
     getEffectiveArtifact names for the same id, in the Artifact envelope as getPackMissionType does, with packId the
@@ -22,7 +22,7 @@ get:
     - $ref: ../parameters/MissionTypeId.yaml
   responses:
     '200':
-      description: The mission type in force, in the Artifact envelope.
+      description: The mission type that wins the layer merge, in the Artifact envelope.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
