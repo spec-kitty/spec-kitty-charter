@@ -25,8 +25,14 @@ get:
     stale_input.
 
     The ETag is the pack revision, as a directive's is, for the DELETE of the profile that needs it in If-Match. It is a
-    concurrency token over the committed content and not the Charter-Source-Fingerprint, which is the freshness digest of
-    the whole source that this read verified, not a digest of the closure.
+    concurrency token over the committed content of this pack and not the Charter-Source-Fingerprint, which is the
+    freshness digest of the whole source that this read verified, not a digest of the closure. It is not a cache
+    validator of this answer: governance is walked over the pack's whole depends_on closure, so a change to a dependency
+    pack (a requires edge it adds, or a copy it overrides) can change governance while the ETag stays the same, and the
+    same ETag is answered for depth 0 and depth 1. The read therefore takes no If-None-Match and never answers 304, and a
+    client that keeps the governance revalidates it by reading again, or by comparing Charter-Source-Fingerprint, which
+    changes with any pack. The tag stays the pack revision because DELETE compares If-Match to the pack revision; a tag
+    over the closure would make the profile's delete precondition fail whenever a dependency changed.
   tags:
     - AgentProfiles
   parameters:
@@ -46,7 +52,9 @@ get:
         ETag:
           description: >-
             The pack revision the profile was read at, quoted: the value a later DELETE of the profile sends in If-Match.
-            It names the pack's committed content, not the closure the governance was walked over.
+            It names the pack's committed content, not the closure the governance was walked over or the depth, so it
+            does not change when a dependency pack changes the governance; it is a write precondition, not a cache
+            validator of the governance.
           required: true
           schema:
             type: string

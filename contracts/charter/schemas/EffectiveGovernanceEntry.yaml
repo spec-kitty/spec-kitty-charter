@@ -146,8 +146,8 @@ properties:
     allOf:
     - $ref: Urn.yaml
     description: >-
-      The parent of the entry in the walk: the profile for the entries of its own edges, another entry's urn for the
-      rest. Following via upwards always ends at the profile.
+      The parent of the entry in the walk: the profile for the entries of its own edges, the <kind>:<artifactId> of
+      another entry for the rest. Following via upwards always ends at the profile.
     x-derived:
       rule: The source of the edge the walk followed to the artifact, the one with the fewest hops and then the smallest urn.
       inputs:

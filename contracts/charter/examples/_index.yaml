@@ -26,6 +26,7 @@ files:
   - ActivationSkippedReport.nothing-skipped.yaml
   - EffectiveActionContext.implement.yaml
   - EffectiveAgentProfileRead.java-jenny.yaml
+  - EffectiveArtifactRead.directive.yaml
   - EffectiveArtifactList.first-page.yaml
   - EffectiveGraph.one-edge.yaml
   - PackRegistration.stored.yaml

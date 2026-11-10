@@ -122,7 +122,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     serves yet: it is listed and links nothing. The two links of an item
     answer 200 and name the same artifact (the effective read names the pack that holds the version in force, the
     artifact link reads that pack). The activation's artifacts link is the way to the list: it is templated, takes the
-    kind and the state, and answers the same list as the path it expands to.
+    kind and the state, and answers the same list as the path it expands to. A replace (PUT) answers the same link.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -164,6 +164,13 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     When I GET "/activations/a-1"
     Then the field at "/_links/artifacts/href" is "/api/v1/activations/a-1/artifacts{?kind,state}"
+    And the field at "/_links/artifacts/templated" is true
+    When I PUT "/activations/a-1" with the stored ETag and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["rehearse"], "mission_type": ["software-dev"]}}
+      """
+    Then the response status is 200
+    And the field at "/_links/artifacts/href" is "/api/v1/activations/a-1/artifacts{?kind,state}"
     And the field at "/_links/artifacts/templated" is true
     When I follow the templated link "artifacts" with:
       | kind  | directive |
