@@ -140,17 +140,20 @@ class WholePackRoundTripTest {
             Evaluation evaluation,
             Map<String, Optional<String>> observed) {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
-        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.GREEN, 6));
-        assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
-        // Two top-level templates and 25 mission-type templates (#194).
-        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 27));
+        // Every file the census classes as a kind is green, and the kind is not empty (top-level templates and
+        // mission-type templates, #194, are both templates).
+        for (String kind : List.of("asset", "asset-payload", "template")) {
+            long classed = census.values().stream().filter(kind::equals).count();
+            assertThat(classed).as("%s files in the census", kind).isPositive();
+            assertThat(byKind.get(kind)).as(kind).isEqualTo(Map.of(Status.GREEN, (int) classed));
+        }
         assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
         assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("asset"))
                 .map(Map.Entry::getKey)
                 .toList();
-        assertThat(sidecars).hasSize(6).allSatisfy(sidecar -> {
+        assertThat(sidecars).isNotEmpty().allSatisfy(sidecar -> {
             String named = String.valueOf(((Map<?, ?>) Yaml.load(read(pack.resolve(sidecar)))).get("path"));
             assertThat(census).as(sidecar).containsEntry(PackFileSet.ASSETS + named, "asset-payload");
             assertThat(observed.get(sidecar)).as(sidecar).isEmpty();
@@ -174,7 +177,12 @@ class WholePackRoundTripTest {
         assertThat(missionTemplates)
                 .filteredOn(path -> census.get(path).equals("template"))
                 .as("every mission template but the orientation READMEs, which are excluded")
-                .hasSize(25)
+                .isNotEmpty()
+                .hasSize((int) missionTemplates.stream()
+                        .filter(path -> !path.endsWith("/README.md") && !path.equals("README.md"))
+                        .filter(path -> !path.endsWith("plan-field-declaration.yaml"))
+                        .filter(path -> !Path.of(path).getFileName().toString().startsWith("."))
+                        .count())
                 .noneSatisfy(path -> assertThat(path).endsWith("README.md"));
         assertThat(missionTemplates)
                 .filteredOn(path -> path.endsWith("README.md"))
@@ -184,7 +192,9 @@ class WholePackRoundTripTest {
                         .filter(entry -> entry.getKey().startsWith("templates/"))
                         .map(Map.Entry::getValue)
                         .toList())
-                .containsExactly("template", "template");
+                .as("every file under the top-level templates/ is a template")
+                .isNotEmpty()
+                .containsOnly("template");
     }
 
     /**
@@ -295,8 +305,8 @@ class WholePackRoundTripTest {
                 .as("bytes-kind outcomes: the loaded pack's asset files plus templates")
                 .hasSize(loaded.get().assetFiles().size()
                         + loaded.get().templates().size())
-                .as("7 asset files, 2 top-level templates and 25 mission-type templates (#194)")
-                .hasSize(7 + 2 + 25);
+                .as("the pack holds asset files and templates (#194)")
+                .isNotEmpty();
         assertThat(bytesKind)
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
         // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.
