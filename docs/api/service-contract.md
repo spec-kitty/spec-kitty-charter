@@ -68,6 +68,10 @@ every `href` starts with `/api/v1` and points to a built operation.
 | `getPackMissionType` | One mission type in the `Artifact` envelope, member `missionType`: its stored fields, its steps then its on-demand steps, each linked, and its skeletons, each linked. No `ETag`: the kind has no write | `GET /packs/{packId}/artifacts/mission_type/{missionTypeId}` |
 | `getPackMissionStep` | One step of a mission type: its stored fields, its prompt and guidelines files byte for byte, its expected input and output artifacts, and links to its mission type, the step contract bound to it and the skeleton of each expected output artifact that names one | `GET /packs/{packId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}` |
 | `getPackMissionSkeleton` | One skeleton of a mission type, a file under its `templates/`: the stored bytes as `text` or `base64`, with `sha256` and `size` | `GET /packs/{packId}/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}` |
+| `getEffectiveMissionType` | The layer-merge winner of a mission type under an activation (tag `EffectiveMissionTypes`), whatever its state: the body of `getPackMissionType`, `packId` the pack that holds the winner, its skeletons and step files from that pack, and the step contracts the merged closure binds to it. Links stay under the activation, but `artifact` (the winner's pack read). No `ETag` | `GET /activations/{activationId}/artifacts/mission_type/{missionTypeId}` |
+| `getEffectiveMissionStep` | One step of the winning mission type under an activation: the body of `getPackMissionStep`, its `step-contract` link to `getEffectiveMissionStepContract`. No `ETag` | `GET /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}` |
+| `getEffectiveMissionSkeleton` | One skeleton of the winning mission type under an activation, from the pack that holds the winner. No `ETag` | `GET /activations/{activationId}/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}` |
+| `getEffectiveMissionStepContract` | The layer-merge winner of a step contract under an activation, in the `Artifact` envelope as the pack read answers it; `mission-type`, `step` and candidate links stay under the activation, `artifact` is the winner's pack read. No `ETag` | `GET /activations/{activationId}/artifacts/mission_step_contract/{contractId}` |
 
 The served kinds are `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide` and `agent_profile`. A tactic is read
 only, and so is a profile (it is read and removed, not written); the other four are written through the operations of their kind
@@ -92,9 +96,12 @@ the service, so neither answers an `ETag`. A skeleton is named by one path segme
 `pack_not_found` or `pack_unreadable`, `mission_type_not_found`, then `action_not_found` (an unknown step) or
 `skeleton_not_found`. A `DELETE` of a step contract follows the five kinds' rules; a `DELETE` of a mission type removes
 the type, its step files and its skeletons as one removal under one impact check, and is refused `409` while a step
-contract binds the type or a graph edge names one of its action nodes (`action:<type>/<step>`). These reads are
-pack-scoped; the activation-scoped mission type reads and the `effective-artifact` links to the version in force are
-not built yet, and come with the rest of #99.
+contract binds the type or a graph edge names one of its action nodes (`action:<type>/<step>`). A removal of any kind
+prunes the directories it leaves empty, up to the pack's root (operator ruling). Under an activation the four
+`getEffectiveMission*` reads answer the layer-merge winner, whatever its state; their literal paths are preferred over
+the templated `getEffectiveArtifact`, which serves neither mission kind, so a step's `step-contract` link never leaves
+the activation. Refusals there: `activation_not_found`, then the kind's not-found code (a type or step contract no pack
+of the closure holds), then `action_not_found` or `skeleton_not_found`.
 
 **Literal write paths beside the templated read.** The write paths name their kind literally
 (`/packs/{packId}/artifacts/directive/{artifactId}`) beside the templated
@@ -127,18 +134,22 @@ places, both by operator ruling, and field-merge resolution is not one of them (
 under an activation. The effective list, the action context and the entries of an effective profile's governance carry
 it for a kind the pack-scoped routes serve (`getEffectiveAgentProfile` for an `agent_profile`, `getEffectiveArtifact`
 for the rest), beside `artifact`, which keeps its meaning: the pack-scoped read of the pack that holds the version in
-force. A graph node names no pack, so it links `effective-artifact` only. Every effective read of one artifact, the
-generic one and the profile's, links `up` to its activation, and the `Activation` answer links `artifacts`, the
+force. `getEffectiveMissionType` and `getEffectiveMissionStepContract` answer it for the two mission kinds, and a
+step contract's delegation candidates link it under an activation. A graph node names no pack, so it links
+`effective-artifact` only; a step node `action:<type>/<step>` links `getEffectiveMissionStep`, and so does the action
+context's own `_links`, beside `artifact` (the step's pack read). Every effective read of one artifact, the
+generic one and the profile's, links `up` to its activation (the mission reads, deliberately, do not), and the `Activation` answer links `artifacts`, the
 template `/api/v1/activations/{activationId}/artifacts{?kind,state}` of its effective list. The relation table is in
 [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/).
 
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
 carries `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is declared,
 and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts`,
-`getPackArtifact`, `listArtifactReferences` and `getPackAgentProfile` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
+`getPackArtifact`, `listArtifactReferences`, `getPackAgentProfile` and the three pack mission reads ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
 that read verified. The 200s of the four effective reads (`listEffectiveArtifacts`,
 `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too and send it, as each is a
-verified read; none is reserved any more (the first two since PR B, the last two since PR C). So do `getEffectiveArtifact` and `getEffectiveAgentProfile`. `getActivation` and `listActivationPacks` send none: the document
+verified read; none is reserved any more (the first two since PR B, the last two since PR C). So do `getEffectiveArtifact`, `getEffectiveAgentProfile`, `getEffectiveMissionType`, `getEffectiveMissionStep`,
+`getEffectiveMissionSkeleton` and `getEffectiveMissionStepContract`. `getActivation` and `listActivationPacks` send none: the document
 read depends only on the stored document (ADR-0059 D5), and the closure read reports a change through its `ETag`.
 No refusal, write, root or contract-document answer carries it.
 
@@ -235,18 +246,18 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Artifact bodies (R2) | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories | Answered per pack, for the six served kinds (`agent_profile` since [#407](https://github.com/spec-kitty/spec-kitty-charter/issues/407)), by `listPackArtifacts` and `getPackArtifact`, and for a profile by `getPackAgentProfile`, whose body carries the lineage-walked governance; of the other kinds, only the mission type (`getPackMissionType`), the step contract (`getPackArtifact`) and the skeletons (`getPackMissionSkeleton`) are answered. Under an activation, `getEffectiveArtifact` reads the winner of any served kind (no body) and `getEffectiveAgentProfile` a profile with its governance; an effective list item links them with `effective-artifact`. The merged `/offering/artifacts` waits for merge |
 | Merged graph and graph queries (R3) | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers | The effective graph of an activation is built (PR C): `getEffectiveGraph`. The graph queries over a pack and the merged `/offering/graph` wait for merge |
 | Pack listing with presets (R4) | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) | `spec-kitty charter pack list` | Partly answered by `GET /offering` (the configured packs in force); presets deferred |
-| Mission types and the action index (R5) | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) | `specify_cli` mission repositories | Mission types and their steps are answered per pack: `getPackMissionType` and `getPackMissionStep`, a step's prompt and guidelines byte for byte. The activation-scoped reads and the `effective-artifact` links are not built yet; the merged `/offering/mission-types` waits for merge |
-| Step contracts and their gate bindings | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100) | `specify_cli` step-contract repositories | Answered per pack by `getPackArtifact` (`mission_step_contract`): the steps, delegations and gates as stored, linked to the mission type and the step they bind |
+| Mission types and the action index (R5) | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) | `specify_cli` mission repositories | Mission types and their steps are answered per pack: `getPackMissionType` and `getPackMissionStep`, a step's prompt and guidelines byte for byte. Under an activation they are answered by `getEffectiveMissionType`, `getEffectiveMissionStep` and `getEffectiveMissionSkeleton`, linked from the effective list, graph and action context with `effective-artifact`; the merged `/offering/mission-types` waits for merge |
+| Step contracts and their gate bindings | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100) | `specify_cli` step-contract repositories | Answered per pack by `getPackArtifact` (`mission_step_contract`): the steps, delegations and gates as stored, linked to the mission type and the step they bind. Under an activation by the literal `getEffectiveMissionStepContract` |
 | Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Partly built: the profile and its governance are read (`getPackAgentProfile`, `getEffectiveAgentProfile`). The governance is lineage-walked: `specializes_from` ancestors come first as entries a client follows, then what the profile and its ancestors `require`, `suggest` and cite in the vocabulary. The field-merge resolution (`resolve_profile`, root to leaf) is not done: the body answered is the stored leaf body, and the question stays with [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) |
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | The effective activation sets are built (PR B and PR C): `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph` and `getEffectiveActionContext`. The status commands' own output is not part of the service |
 | The other reads (expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, the kind taxonomy) | [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
 | SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. *Amended 2026-11-08: the blocks move into the opt-in `spdd` pack as prompt fragments of step enhancements, filling slots the built-in prompts declare ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The prompt read then returns the base text and the active fragments per slot; the contract change is made with R5 and R9, not here.* |
 
-R5 and R18 are deferred to the minor that brings merge, activation and cascade
+The merged `/offering/mission-types` read of R5, and R18, are deferred to the minor that brings merge, activation and cascade
 ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)): they answer merged content, which the service
 does not compute yet (operator ruling 3 on [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126),
-2026-10-31). No link points to them.
+2026-10-31). No link points to them; R5's pack and activation reads above are built.
 
 The action-context walk (R1, #95) and its `depth` parameter
 ([ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)) are served by `getEffectiveActionContext`
