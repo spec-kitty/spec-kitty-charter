@@ -281,6 +281,15 @@ class EffectiveReadServiceArtifactTest {
     // ---- the refusals
 
     @Test
+    void theKindsAnEntryCanBeLinkedByAreTheListedKindsOfThePacksSliceAndNotAConstantOfThisOne() {
+        assertThat(service.listedKinds()).containsExactlyElementsOf(LISTED);
+
+        packs.listedKinds(List.of(ArtifactKind.DIRECTIVE));
+
+        assertThat(service.listedKinds()).containsExactly(ArtifactKind.DIRECTIVE);
+    }
+
+    @Test
     void anArtifactNoPackOfTheClosureHoldsIsArtifactNotFoundAndNoEntityIsRead() {
         assertThatThrownBy(() -> service.artifact(ID, ArtifactKind.DIRECTIVE, "GHOST", 0, null))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
