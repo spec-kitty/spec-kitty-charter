@@ -1,0 +1,130 @@
+title: EffectiveArtifactRead
+description: >-
+  The winner of one artifact under an activation (ADR-0020 D7): the version the layer merge keeps, the pack and the level
+  that hold it, and its state and reason, with the same facts as the artifact's item in the effective list. It embeds no
+  body: _links.artifact is the pack-scoped read of the artifact in the pack that holds the version in force, and that
+  read is the body. _links holds self (this request), artifact and up (the activation). The schema is closed. An agent
+  profile is answered by its own operation, which extends this one with the profile and its governance.
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- governanceFingerprint
+- kind
+- artifactId
+- packId
+- level
+- state
+- required
+- policy
+- reason
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The charter-closure/v1 digest of the packs of the activation's closure alone, taken in the same consistent read as
+      the answer. It is not ServiceInfo.sourceFingerprint and not the Charter-Source-Fingerprint header, which digest the
+      whole source; a change to a pack outside the closure leaves it unchanged. With revision, it ties the answer to both
+      the document and the packs of its closure.
+    x-derived:
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind, from the one kind enum, mission types included.
+    x-derived:
+      rule: The kind of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The declared id of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version in force: the winner of the layer merge, the
+      provenance of its content (FR-013).
+    x-derived:
+      rule: The pack of the winning version of the artifact after the layer merge (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of the pack that holds the version in force (built-in, org or project).
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  state:
+    allOf:
+    - $ref: EffectiveArtifactState.yaml
+    description: Whether it is in force; in force is active.
+    x-derived:
+      rule: The effective-set algebra over config and the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  required:
+    type: boolean
+    description: >-
+      True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
+      none of whose targets is in force or is bound to a mission type not in force (E9). A required one
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
+      mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
+    x-derived:
+      rule: Derived from the must-have items of the governing presets of the closure (ADR-0031) and the pack locks.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  satisfiedBy:
+    $ref: ArtifactReference.yaml
+  suggestion:
+    $ref: EffectiveArtifactSuggestion.yaml
+  policy:
+    allOf:
+    - $ref: ArtifactPolicy.yaml
+    description: The mutability level its pack declares.
+    x-derived:
+      rule: The level the owning pack declares (ADR-0012).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: EffectiveArtifactReason.yaml
+    description: Why it has its state.
+    x-derived:
+      rule: The rule of the effective-set algebra that decided the state.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml

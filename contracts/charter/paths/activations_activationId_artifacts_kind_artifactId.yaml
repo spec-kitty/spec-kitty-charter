@@ -1,0 +1,109 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- name: kind
+  in: path
+  required: true
+  description: >-
+    The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide or agent_profile, the
+    kinds the pack-scoped artifact routes serve. The parameter is a slug, not an enum: a value that is not a slug
+    (Tactic, -tactic) is a 400 Problem without a code, before the activation is judged, and a slug that names no served
+    kind is answered 404 kind_not_found by the service, after the activation is found.
+  schema:
+    $ref: ../schemas/Slug.yaml
+- $ref: ../parameters/ArtifactId.yaml
+get:
+  operationId: getEffectiveArtifact
+  summary: Read the version of one artifact that an activation's merged closure keeps.
+  description: >-
+    The winner of one artifact under an activation (ADR-0020 D7; operator decisions of 2026-11-09): the version the
+    layer merge keeps across the levels of the activation's closure, with the pack and the level that hold it, and its
+    state, reason, policy and required as listEffectiveArtifacts gives them for the same artifact, so a client that
+    holds an item of the list reads the same facts here. "In force" is state=active. The answer embeds no body: its
+    _links.artifact is the pack-scoped read of the artifact in the pack that holds the version in force (the
+    configured packId of this answer), and that read is the body. self is this request, with depth when the request
+    sent one, and up is the activation. An artifact the layer merge replaced is answered by the replacing copy, from the
+    pack that holds it; a copy that lost is never answered.
+
+    kind is one of the kinds the pack-scoped artifact routes serve. An agent_profile is a kind of the activation that the
+    literal operation getEffectiveAgentProfile answers, with the profile and its governance; this templated read never
+    carries a body. depth is the number of suggests hops of that governance, 0 or 1 (default 0); it changes nothing for
+    any other kind and is part of the ETag all the same.
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found; then a slug that names no served
+    kind is a 404 kind_not_found; then an id that no pack of the activation's closure holds, as a copy that won or lost
+    the merge, is a 404 artifact_not_found, judged before any If-None-Match, so a name no pack holds is a 404 whatever
+    the header says. A pack of the closure that is no longer configured, a closure that cannot compose or merge, and a
+    winner whose pack cannot read it are 500, with their code (pack_unreadable also for a layer override that the
+    mutability level forbids); stale_input and internal_error may be retried. The answer is never partial.
+
+    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
+    the activation's closure, and with kind, id and depth, and it does not change when a pack outside the closure
+    changes. A matching If-None-Match is a 304 without a body, and a tag of another representation never matches
+    (RFC 9110 section 13.1.2). The read is verified against the source fingerprint, which the answer carries.
+  tags:
+  - Activation
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  - $ref: ../parameters/Depth.yaml
+  responses:
+    '200':
+      description: The winner of the artifact under the activation.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveArtifactRead.yaml
+          examples:
+            directive:
+              $ref: ../examples/EffectiveArtifactRead.directive.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        What the path names is not there, refused with 404, in this order: the activation (activation_not_found, also for
+        an activation this client may not see, so ids do not leak), then a kind the service does not serve
+        (kind_not_found), then an artifact that no pack of the activation's closure holds (artifact_not_found).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            kind-not-found:
+              summary: The path names a kind the service does not serve.
+              value:
+                title: Kind not found
+                status: 404
+                code: kind_not_found
+                detail: The service serves no artifact kind procedure.
+            artifact-not-found:
+              summary: No pack of the activation's closure holds the artifact.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: No pack of the activation's closure holds the directive DIRECTIVE_999.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

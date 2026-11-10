@@ -13,14 +13,15 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The activation set is reserved one operation at a time (ADR-0020 D8): the controller carries no mark of its own, and an
- * operation that is not built carries one, so an operation is built by removing its mark alone. Every one of the fourteen
- * operations is built now (PR C built the effective graph and the effective action context), so none is marked; the
+ * operation that is not built carries one, so an operation is built by removing its mark alone. Every one of the fifteen
+ * operations is built now (PR C built the effective graph and the effective action context, WP06 the read of one
+ * artifact), so none is marked; the
  * interceptor stays for a reservation to come, which {@code ReservedOperationInterceptorTest} and the architecture rules
  * keep honest.
  */
 class ActivationControllerTest {
 
-    /** The operations the activation set builds: the register (#125, #360), the writes (#291) and the five reads. */
+    /** The operations the activation set builds: the register (#125, #360), the writes (#291) and the six reads. */
     private static final Set<String> BUILT = Set.of(
             "createActivation",
             "getActivation",
@@ -35,7 +36,8 @@ class ActivationControllerTest {
             "listEffectiveArtifacts",
             "getActivationSkippedReport",
             "getEffectiveGraph",
-            "getEffectiveActionContext");
+            "getEffectiveActionContext",
+            "getEffectiveArtifact");
 
     private static List<Method> operations() {
         return Arrays.stream(ActivationApi.class.getMethods())
@@ -44,8 +46,8 @@ class ActivationControllerTest {
     }
 
     @Test
-    void everyOneOfTheFourteenOperationsIsOverriddenAndNoneIsMarkedReserved() throws NoSuchMethodException {
-        assertThat(operations()).hasSize(14);
+    void everyOneOfTheFifteenOperationsIsOverriddenAndNoneIsMarkedReserved() throws NoSuchMethodException {
+        assertThat(operations()).hasSize(15);
         assertThat(operations()).extracting(Method::getName).containsExactlyInAnyOrderElementsOf(BUILT);
         for (Method operation : operations()) {
             Method overridden =

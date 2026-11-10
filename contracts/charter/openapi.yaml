@@ -109,6 +109,8 @@ paths:
     $ref: paths/activations_activationId_presets_presetId.yaml
   /activations/{activationId}/artifacts:
     $ref: paths/activations_activationId_artifacts.yaml
+  /activations/{activationId}/artifacts/{kind}/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
   /activations/{activationId}/graph:
