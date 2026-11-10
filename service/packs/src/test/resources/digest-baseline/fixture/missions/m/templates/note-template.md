@@ -1,0 +1,3 @@
+# Note
+
+A mission template.

@@ -1,0 +1,8 @@
+id: tool
+schema_version: '1.0'
+tool: tool
+title: Tool
+guide_path: tool.guide.md
+summary: A tool the fixture documents.
+commands:
+- tool --help

@@ -24,8 +24,11 @@ import org.junit.jupiter.api.Test;
  * enhancements is not covered; there the binding must move the digest, which the test also asserts, so a binding that
  * digested nothing could not pass.
  *
- * <p>No digest is frozen in this test, so a move of the open-packs pin needs no recapture. If it goes red, the
- * binding changed the digest of a pack without step enhancements: fix the code (append, never insert).
+ * <p>No digest of the checkout is frozen here, so a move of the open-packs pin needs no recapture. This check is
+ * relative: both sides go through the same digest code, so it cannot see a change to the hash, the encoding or the
+ * order of the kinds. {@link PackDigestFixtureTest} guards those with a fixed fixture pack and a frozen fingerprint,
+ * which a pin move never touches. If this goes red, the binding changed the digest of a pack without step
+ * enhancements: fix the code (append, never insert).
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
  * skips.

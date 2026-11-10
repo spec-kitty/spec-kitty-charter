@@ -1,0 +1,5 @@
+id: beta
+schema_version: '1.0'
+name: Beta
+steps:
+  - title: Second
