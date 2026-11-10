@@ -52,7 +52,17 @@ public final class MissionTypeReadService {
      * @throws CharterRefusal as {@link PackMissionTypes#holding} refuses
      */
     public Fingerprinted<MissionTypeView> missionType(PackIdentifier pack, String missionTypeId) {
-        MissionTypeHolding holding = packs.holding(pack, missionTypeId);
+        return missionTypeOf(packs.holding(pack, missionTypeId));
+    }
+
+    /**
+     * The view of a mission type with its steps, then its on-demand steps, and its skeletons by name, built from what
+     * one read of a scope (a pack, or an activation's merged closure) holds of it.
+     *
+     * @param holding what the scope holds of the type
+     * @return the view and the fingerprint of the read
+     */
+    static Fingerprinted<MissionTypeView> missionTypeOf(MissionTypeHolding holding) {
         MissionType type = holding.type();
         List<MissionTypeView.StepEntry> steps = Stream.concat(
                         type.steps().stream()
@@ -79,7 +89,22 @@ public final class MissionTypeReadService {
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the type holds no such step
      */
     public Fingerprinted<StepView> step(PackIdentifier pack, String missionTypeId, String stepId) {
-        MissionTypeHolding holding = packs.holding(pack, missionTypeId);
+        return stepOf(packs.holding(pack, missionTypeId), scopeOf(pack), missionTypeId, stepId);
+    }
+
+    /**
+     * The view of one step, from its steps or its on-demand steps, built from what one read of a scope holds of its
+     * mission type.
+     *
+     * @param holding what the scope holds of the type
+     * @param scope the scope as a refusal names it, for example {@code pack main} or {@code activation a-1}
+     * @param missionTypeId the mission type's id
+     * @param stepId the step's id
+     * @return the view and the fingerprint of the read
+     * @throws CharterRefusal with {@link RefusalCode#ACTION_NOT_FOUND} when the type holds no such step
+     */
+    static Fingerprinted<StepView> stepOf(
+            MissionTypeHolding holding, String scope, String missionTypeId, String stepId) {
         MissionType type = holding.type();
         Optional<MissionStep> inSequence =
                 type.steps().stream().filter(s -> s.id().equals(stepId)).findFirst();
@@ -89,7 +114,7 @@ public final class MissionTypeReadService {
                 .or(() -> onDemand)
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.ACTION_NOT_FOUND,
-                        "Mission type " + missionTypeId + " of pack " + pack.value() + " has no step " + stepId + "."));
+                        "Mission type " + missionTypeId + " of " + scope + " has no step " + stepId + "."));
         MissionTypeHolding.StepFiles files =
                 holding.stepFiles().getOrDefault(stepId, MissionTypeHolding.StepFiles.NONE);
         List<StepView.OutputView> outputs = step.expectedOutputArtifacts().stream()
@@ -118,15 +143,30 @@ public final class MissionTypeReadService {
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the type
      */
     public Fingerprinted<SkeletonView> skeleton(PackIdentifier pack, String missionTypeId, String name) {
-        MissionTypeHolding holding = packs.holding(pack, missionTypeId);
+        return skeletonOf(packs.holding(pack, missionTypeId), scopeOf(pack), missionTypeId, name);
+    }
+
+    /**
+     * The view of one skeleton, by its one-segment name (D9), built from what one read of a scope holds of its mission
+     * type: only the type's own skeletons are looked up.
+     *
+     * @param holding what the scope holds of the type
+     * @param scope the scope as a refusal names it, for example {@code pack main} or {@code activation a-1}
+     * @param missionTypeId the mission type's id
+     * @param name the skeleton's name
+     * @return the view and the fingerprint of the read
+     * @throws CharterRefusal with {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of
+     *     the type
+     */
+    static Fingerprinted<SkeletonView> skeletonOf(
+            MissionTypeHolding holding, String scope, String missionTypeId, String name) {
         Optional<String> path = SkeletonNames.decode(name);
         MissionTypeHolding.StoredSkeleton skeleton = holding.skeletons().stream()
                 .filter(stored -> path.filter(stored.path()::equals).isPresent())
                 .findFirst()
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.SKELETON_NOT_FOUND,
-                        "Mission type " + missionTypeId + " of pack " + pack.value() + " has no skeleton " + name
-                                + "."));
+                        "Mission type " + missionTypeId + " of " + scope + " has no skeleton " + name + "."));
         StoredFile content = skeleton.content();
         Optional<String> text = content.text();
         return new Fingerprinted<>(
@@ -139,6 +179,11 @@ public final class MissionTypeReadService {
                         "sha256:" + content.sha256(),
                         content.size()),
                 holding.fingerprint());
+    }
+
+    /** A pack as a refusal of the pack-scoped reads names it. */
+    private static String scopeOf(PackIdentifier pack) {
+        return "pack " + pack.value();
     }
 
     /** The step contract whose action is the step, the lowest id in code-point order when several are. */
@@ -162,7 +207,12 @@ public final class MissionTypeReadService {
                 .map(SkeletonNames::encode);
     }
 
-    /** A step file's text: the store parsed it as Markdown text, so bytes that are not UTF-8 are a bug. */
+    /**
+     * A step file's text. The branch that refuses bytes that are not UTF-8 cannot be reached from a stored pack: the
+     * store parses each step file as Markdown text and drops a mission type whose companion is not UTF-8, and the
+     * read's digest guards the bytes between that parse and this read, so such bytes here are a bug, never a lossy
+     * decode.
+     */
     private static String utf8(StoredFile file) {
         return file.text().orElseThrow(() -> new IllegalStateException("a step file that is not UTF-8: " + file));
     }

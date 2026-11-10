@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.missions.application.config.MissionsApplicationConfiguration;
 import ai.speckitty.charter.missions.infra.activations.config.MissionsActivationsConfiguration;
 import ai.speckitty.charter.missions.infra.api.config.MissionsApiConfiguration;
@@ -13,14 +14,16 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
  * The edge module's rings: each ring's configuration is a Spring configuration that starts with the others, given the
- * one bean of the packs slice the packs adapter asks (its composite read, which the deployable composes).
+ * one bean of the packs slice the packs adapter asks (its composite read) and the one bean of the activations slice the
+ * activations adapter asks (its effective reads), which the deployable composes.
  */
 class MissionsEdgeConfigurationsTest {
 
     @Test
-    void eachRingsConfigurationStartsAsOneBeanAndHoldsNoOther() {
+    void theFourRingConfigurationsStartTogetherEachOnce() {
         new ApplicationContextRunner()
                 .withBean(MissionTypeHoldingRead.class, () -> mock(MissionTypeHoldingRead.class))
+                .withBean(EffectiveReadService.class, () -> mock(EffectiveReadService.class))
                 .withUserConfiguration(
                         MissionsApplicationConfiguration.class,
                         MissionsApiConfiguration.class,
