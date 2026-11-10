@@ -1198,6 +1198,169 @@ class HexagonalArchitectureTest {
                 "ApplicationNamesProfilesInfra");
     }
 
+    // ---- The missions slice over the packs and activations slices (ADR-0037, amendment of 2026-11-09) ----------
+    // The missions slice follows the profiles pattern: its domain stays in :missions, which packs.infra.storage binds,
+    // and its edge rings live in :missions-edge. The edge asks the packs slice and the activations slice, each from one
+    // adapter package of its own, and only their application and domain rings; and neither of those slices names the
+    // missions edge back.
+
+    private static final String MISSIONS = ROOT + ".missions..";
+    /** The one missions package that may name the packs slice. */
+    private static final String MISSIONS_PACKS_ADAPTER = ROOT + ".missions.infra.packs..";
+    /** The one missions package that may name the activations slice. */
+    private static final String MISSIONS_ACTIVATIONS_ADAPTER = ROOT + ".missions.infra.activations..";
+
+    private static final String MISSIONS_APPLICATION = ROOT + ".missions.application..";
+    private static final String MISSIONS_INFRA = ROOT + ".missions.infra..";
+
+    /** The missions edge rings, each of which must be on the classpath for the rules below to check anything. */
+    private static final List<String> MISSIONS_EDGE_RINGS = List.of(
+            "ai.speckitty.charter.missions.application",
+            "ai.speckitty.charter.missions.infra.api",
+            "ai.speckitty.charter.missions.infra.packs",
+            "ai.speckitty.charter.missions.infra.activations");
+
+    /** A MISSIONS OVER PACKS (1/2): no missions class names the packs slice, but those of its packs adapter. */
+    private static final ArchRule MISSIONS_NAME_PACKS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(MISSIONS)
+            .and()
+            .resideOutsideOfPackage(MISSIONS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS);
+
+    /**
+     * A MISSIONS OVER PACKS (2/2): that adapter names only the packs application ring and the packs domain values its
+     * answers carry, never a packs adapter: no {@code Hypermedia}, no {@code ArtifactDtos}, no {@code CharterHeaders}.
+     */
+    private static final ArchRule MISSIONS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(MISSIONS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(PACKS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(PACKS_APPLICATION, PACKS_DOMAIN)));
+
+    /** A MISSIONS OVER ACTIVATIONS (1/2): no missions class names the activations slice, but those of its adapter. */
+    private static final ArchRule MISSIONS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(MISSIONS)
+            .and()
+            .resideOutsideOfPackage(MISSIONS_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ACTIVATIONS);
+
+    /** A MISSIONS OVER ACTIVATIONS (2/2): that adapter names only the activations application and domain rings. */
+    private static final ArchRule MISSIONS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(MISSIONS_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ACTIVATIONS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(
+                            ACTIVATIONS_APPLICATION, ACTIVATIONS_DOMAIN_RING)));
+
+    /**
+     * THE MISSIONS EDGE IS NOT NAMED BACK: the packs and activations slices never name the missions edge rings
+     * ({@code missions.application}, {@code missions.infra}). They may name the missions domain: the pack store binds
+     * it.
+     */
+    private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_MISSIONS_EDGE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS, ACTIVATIONS)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(MISSIONS_APPLICATION, MISSIONS_INFRA);
+
+    @Test
+    @DisplayName("MISSIONS_OVER_PACKS_AND_ACTIVATIONS")
+    void theMissionsSliceNamesPacksAndActivationsOnlyThroughItsAdapters() {
+        MISSIONS_NAME_PACKS_ONLY_FROM_ADAPTER.check(classes);
+        MISSIONS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION.check(classes);
+        MISSIONS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
+        MISSIONS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
+        NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_MISSIONS_EDGE.check(classes);
+    }
+
+    /**
+     * The slice rules use {@code allowEmptyShould}, so a module missing from the classpath passes with nothing checked.
+     * This test fails instead: every missions edge ring holds a class, which means {@code :deployable} depends on
+     * {@code :missions-edge} and the rules above, and the per-slice rings, gate the real packages.
+     */
+    @Test
+    void everyMissionsEdgeRingIsOnTheGatedClasspath() {
+        for (String ring : MISSIONS_EDGE_RINGS) {
+            assertThat(classes.stream()
+                            .filter(c -> c.getPackageName().equals(ring)
+                                    || c.getPackageName().startsWith(ring + ".")))
+                    .as("classes in the ring %s", ring)
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void theMissionsOverPacksRulesFailOnTheKnownBads() {
+        assertBites(
+                MISSIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".missions.application.badfixture",
+                "MissionApplicationNamesPacks");
+        assertBites(
+                MISSIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".missions.infra.api.badfixture",
+                "MissionApiNamesPacksApi",
+                "ArtifactController");
+        assertBites(
+                MISSIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".missions.domain.badfixture",
+                "MissionDomainReachesPacks");
+        assertBites(
+                MISSIONS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION,
+                ROOT + ".missions.infra.packs.badfixture",
+                "MissionPacksAdapterNamesPacksStorage",
+                "ConfigRoot");
+    }
+
+    @Test
+    void theMissionsOverActivationsRulesFailOnTheKnownBads() {
+        assertBites(
+                MISSIONS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".missions.application.badfixture",
+                "MissionApplicationNamesActivations");
+        assertBites(
+                MISSIONS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION,
+                ROOT + ".missions.infra.activations.badfixture",
+                "MissionActivationsAdapterNamesActivationsApi",
+                "ActivationController");
+    }
+
+    @Test
+    void theMissionsEdgeIsNotNamedBackRuleFailsOnPacksAndActivationsClassesThatNameIt() {
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_MISSIONS_EDGE,
+                ROOT + ".packs.application.badfixture",
+                "ApplicationNamesMissionsApplication",
+                "MissionUseCaseStandIn");
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_MISSIONS_EDGE,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesMissionsInfra",
+                "MissionApiStandIn");
+    }
+
+    /** The per-slice rings reach the missions edge too: the same known-bads bite the rules of the {@code missions} slice. */
+    @Test
+    void thePerSliceRingRulesBiteOnTheMissionsEdgeRings() {
+        assertBites(
+                applicationIsEdge("missions"),
+                ROOT + ".missions.application.badfixture",
+                "MissionApplicationNamesPacks",
+                "MissionApplicationNamesActivations");
+        assertBites(
+                onlyDeployableComposesAdapters("missions"),
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesMissionsInfra");
+    }
+
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------
 
     /**
