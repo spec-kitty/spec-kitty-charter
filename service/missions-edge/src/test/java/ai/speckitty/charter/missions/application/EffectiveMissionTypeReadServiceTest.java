@@ -33,6 +33,7 @@ class EffectiveMissionTypeReadServiceTest {
 
     private final List<String> asked = new ArrayList<>();
     private String packFingerprint = FINGERPRINT;
+    private Optional<RefusalCode> packRefusal = Optional.empty();
 
     private EffectiveStepContract stepContract = new EffectiveStepContract(
             new PackIdentifier("main"), new Contract("specify-contract"), Optional.empty(), Set.of(), FINGERPRINT);
@@ -55,6 +56,9 @@ class EffectiveMissionTypeReadServiceTest {
     };
     private final PackMissionTypes packs = (pack, type) -> {
         asked.add(pack.value() + ":" + type);
+        packRefusal.ifPresent(code -> {
+            throw new CharterRefusal(code, "pack " + pack.value() + ": " + code.token());
+        });
         return holding(packFingerprint);
     };
     private final StepContracts contracts = contract -> view(contract.localId(), "specify");
@@ -101,6 +105,35 @@ class EffectiveMissionTypeReadServiceTest {
                             CharterRefusal.class,
                             refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
         }
+    }
+
+    @Test
+    void aHolderThatLeftTheConfigurationOrNoLongerHoldsTheTypeAtTheSecondReadIsStaleInputForEachRead() {
+        for (RefusalCode changed : List.of(RefusalCode.PACK_NOT_FOUND, RefusalCode.MISSION_TYPE_NOT_FOUND)) {
+            packRefusal = Optional.of(changed);
+            for (Runnable read : List.<Runnable>of(
+                    () -> reads.missionType("a-1", "software-dev"),
+                    () -> reads.step("a-1", "software-dev", "specify"),
+                    () -> reads.skeleton("a-1", "software-dev", "spec.md"))) {
+                assertThatThrownBy(read::run)
+                        .as("the activation's read found the type in proj a moment ago, so %s means the packs changed",
+                                changed.token())
+                        .isInstanceOfSatisfying(
+                                CharterRefusal.class,
+                                refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+            }
+        }
+    }
+
+    @Test
+    void anUnreadableHolderAtTheSecondReadIsRefusedAsTheHoldingReadRefusesIt() {
+        packRefusal = Optional.of(RefusalCode.PACK_UNREADABLE);
+
+        assertThatThrownBy(() -> reads.missionType("a-1", "software-dev"))
+                .as("a file the holding read alone reads may stay unreadable, so reading again would not help")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     @Test

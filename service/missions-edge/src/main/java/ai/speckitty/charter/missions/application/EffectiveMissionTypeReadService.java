@@ -55,7 +55,8 @@ public final class EffectiveMissionTypeReadService {
      * @param missionTypeId the mission type's id
      * @return the view, the pack that holds the winner and the verified fingerprint
      * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
-     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints or the
+     *     holding pack is configured no longer or no longer holds the type at the second read
      */
     public Held<MissionTypeView> missionType(String activationId, String missionTypeId) {
         EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
@@ -70,7 +71,8 @@ public final class EffectiveMissionTypeReadService {
      * @param stepId the step's id
      * @return the step's view and the verified fingerprint
      * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
-     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints, then with
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints or the
+     *     holding pack is configured no longer or no longer holds the type at the second read, then with
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the winning type holds no such step
      */
     public Fingerprinted<StepView> step(String activationId, String missionTypeId, String stepId) {
@@ -86,7 +88,8 @@ public final class EffectiveMissionTypeReadService {
      * @param name the skeleton's name (D9)
      * @return the skeleton's view and the verified fingerprint
      * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
-     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints, then with
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints or the
+     *     holding pack is configured no longer or no longer holds the type at the second read, then with
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the holding pack's type
      */
     public Fingerprinted<SkeletonView> skeleton(String activationId, String missionTypeId, String name) {
@@ -130,7 +133,7 @@ public final class EffectiveMissionTypeReadService {
      * skeletons and step files, and the merged closure's step contracts bound to the type.
      */
     private MissionTypeHolding holding(EffectiveMissionType winner) {
-        MissionTypeHolding stored = packs.holding(winner.holder(), winner.type().localId());
+        MissionTypeHolding stored = storedBeside(winner);
         if (!stored.fingerprint().equals(winner.fingerprint())) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
         }
@@ -142,6 +145,24 @@ public final class EffectiveMissionTypeReadService {
                         .toList(),
                 stored.stepFiles(),
                 winner.fingerprint());
+    }
+
+    /**
+     * What the pack that holds the winner stores beside it. The activation's read found the type in that pack a moment
+     * ago, so a pack that is configured no longer ({@code pack_not_found}) or no longer holds the type
+     * ({@code mission_type_not_found}) means the packs changed between the two reads: {@link RefusalCode#STALE_INPUT},
+     * never a refusal of a pack or type the request did not name. {@code pack_unreadable} passes unchanged: the second
+     * read reads files the first does not (the step files), and one that stays unreadable is no change to read again.
+     */
+    private MissionTypeHolding storedBeside(EffectiveMissionType winner) {
+        try {
+            return packs.holding(winner.holder(), winner.type().localId());
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() == RefusalCode.PACK_NOT_FOUND || refusal.code() == RefusalCode.MISSION_TYPE_NOT_FOUND) {
+                throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE, refusal);
+            }
+            throw refusal;
+        }
     }
 
     private static String scopeOf(String activationId) {
