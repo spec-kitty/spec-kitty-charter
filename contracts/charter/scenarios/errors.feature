@@ -243,3 +243,4 @@ Feature: Failures outside the charter's refusals
       | prompt_fragment_invalid     |
       | prompt_slot_malformed       |
       | prompt_slot_not_empty       |
+      | mission_step_contract_not_found |
