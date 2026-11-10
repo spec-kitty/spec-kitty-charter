@@ -1,0 +1,7 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: fixture
+nodes:
+- urn: tactic:alpha
+  kind: tactic
+  label: Alpha

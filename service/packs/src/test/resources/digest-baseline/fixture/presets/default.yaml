@@ -1,0 +1,5 @@
+schema_version: "1.0"
+id: default
+description: The fixture's preset.
+activated_mission_types:
+  - id: m

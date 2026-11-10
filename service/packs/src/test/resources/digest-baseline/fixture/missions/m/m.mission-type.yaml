@@ -1,0 +1,18 @@
+schema_version: '1.0'
+id: m
+title: M
+description: The fixture's mission type.
+steps:
+- id: first
+  title: First
+  description: The first step.
+  prompt_path: steps/first.prompt.md
+- id: second
+  title: Second
+  description: The second step.
+  prompt_path: steps/second.prompt.md
+  expected_output_artifacts:
+  - artifact_key: output.note.m
+    artifact_class: output
+    path_pattern: note.md
+    template_path: templates/note-template.md
