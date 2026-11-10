@@ -204,7 +204,8 @@
       "last_transition_at": "2026-11-10T04:01:35.519727+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Review passed: listed() gate, interim profile answer pinned, refusal order pinned"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
