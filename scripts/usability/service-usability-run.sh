@@ -862,7 +862,7 @@ mt_graph_and_context() { # the action nodes of the graph and the action context,
     if [[ -z $href ]]; then
         [[ -n $self ]] || { hop_fail N12 "expected relation 'self' in _links of the activation"; return 1; }
         href="$self/graph"
-        workaround "unlinked-graph-and-context: the activation links neither 'graph' nor an action context (its _links: $(jq -r '._links | keys | join(", ")' "$act")); the walk took both paths from the contract (/graph and /mission-types/{missionType}/actions/{action}/context, appended to the activation's self href). Only these two hops build a path; every step read beyond them is followed."
+        workaround "unlinked-graph-and-context (#469): the activation links neither 'graph' nor an action context (its _links: $(jq -r '._links | keys | join(", ")' "$act")); the walk took both paths from the contract (/graph and /mission-types/{missionType}/actions/{action}/context, appended to the activation's self href). Only these two hops build a path; every step read beyond them is followed."
     fi
     http_href GET "$href"
     if [[ $STATUS != 2* ]]; then

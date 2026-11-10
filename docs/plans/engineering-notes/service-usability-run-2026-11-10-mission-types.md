@@ -95,7 +95,7 @@ Five, each printed by the script when it was applied. The first four are the one
 | `unmodelled-files (#451)`, twice | `internal` and `qa` are refused over `README.md`, `PROVENANCE.md`, `org-charter.yaml` and, in `qa`, two template files. Staged copies without them were registered. | pack registration (#451) |
 | `project-pack (#452)` | The project pack has no `pack.yaml`. It is not registered. | core's project pack (#452) |
 | `unheld-selections` | 7 selections no registered pack holds: `PROJECT_001`, `PROJECT_002` and five style guides. They were left out of the activation document. | the project pack (#452) |
-| `unlinked-graph-and-context` (new) | The activation links only `self` and `artifacts`. The graph and the action context have no relation that leads to them. The walk took those two paths from the contract and appended them to the activation's `self` href. They are the only paths it built after the bootstrap. | the activation set (not this mission) |
+| `unlinked-graph-and-context` ([#469](https://github.com/spec-kitty/spec-kitty-charter/issues/469), new) | The activation links only `self` and `artifacts`. The graph and the action context have no relation that leads to them. The walk took those two paths from the contract and appended them to the activation's `self` href. They are the only paths it built after the bootstrap. | the activation set (not this mission) |
 
 The new workaround is a gap in the activation's links. It is not a gap in the mission type reads: once the graph
 and the context were read, every step was reached through their links. Linking `graph` and a templated action
