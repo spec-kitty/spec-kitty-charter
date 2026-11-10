@@ -292,22 +292,226 @@ class ArtifactRemovalServiceTest {
                 .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
     }
 
+    private static final String DOCUMENTATION = """
+            schema_version: '1.0'
+            id: documentation
+            title: Documentation
+            description: Write documentation
+            steps:
+            - id: discover
+              title: Discover
+              prompt_path: steps/discover.prompt.md
+              guidelines_path: steps/discover.guidelines.md
+            on_demand_steps:
+            - id: retrospect
+              title: Retrospective
+              prompt_path: steps/retrospect.prompt.md
+            """;
+
     /**
-     * A mission type's removal cascades its skeletons (D10), which is not built yet: until it is, the DELETE of a
-     * mission type is kind_not_found and changes nothing, rather than leaving its skeletons behind.
+     * The org pack {@code qa} with the mission kinds and a second mission type, {@code documentation}, that nothing
+     * binds: its step files and three skeletons, one nested, beside a skeleton of {@code software-dev}.
      */
+    private static Packs qaWithDocumentation() {
+        return qaWithMissionKinds()
+                .file("missions/software-dev/templates/spec-template.md", "# Spec\n")
+                .file("missions/documentation/documentation.mission-type.yaml", DOCUMENTATION)
+                .file("missions/documentation/steps/discover.prompt.md", "# Discover\n\nAsk.\n")
+                .file("missions/documentation/steps/discover.guidelines.md", "# Discover guidelines\n")
+                .file("missions/documentation/steps/retrospect.prompt.md", "# Retrospect\n")
+                .file("missions/documentation/templates/spec-template.md", "# Doc spec\n")
+                .file("missions/documentation/templates/divio/howto-template.md", "# How to\n");
+    }
+
+    private static final List<String> DOCUMENTATION_FILES = List.of(
+            "missions/documentation/documentation.mission-type.yaml",
+            "missions/documentation/steps/discover.prompt.md",
+            "missions/documentation/steps/discover.guidelines.md",
+            "missions/documentation/steps/retrospect.prompt.md",
+            "missions/documentation/templates/spec-template.md",
+            "missions/documentation/templates/divio/howto-template.md");
+
+    /** D10: the type, its step files and its skeletons go as one removal; another type and its skeleton stay. */
     @Test
-    void aMissionTypeIsNotRemovedUntilItsCascadeIsBuilt(@TempDir Path host) {
+    void aMissionTypeGoesWithItsStepFilesAndItsSkeletonsInOneRemoval(@TempDir Path host) {
         Rig rig = new Rig(host);
-        rig.register("qa", rig.stage(qaWithMissionKinds()), Preconditions.none());
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        assertThat(removals.filesOf("qa")).containsKeys(DOCUMENTATION_FILES.toArray(String[]::new));
+        PackRevision before = rig.writeStore.currentRevision(QA);
+        List<PackRevision[]> trail = new ArrayList<>();
+
+        PackRevision after = removals.service.remove(
+                QA, "mission_type", "documentation", "*", (b, a) -> trail.add(new PackRevision[] {b, a}));
+
+        assertThat(after).isNotEqualTo(before).isEqualTo(rig.writeStore.currentRevision(QA));
+        assertThat(trail).as("one removal, one move of the revision").hasSize(1);
+        assertThat(removals.filesOf("qa"))
+                .doesNotContainKeys(DOCUMENTATION_FILES.toArray(String[]::new))
+                .as("the control: the other type, its skeleton and its step contract stay")
+                .containsKeys(
+                        "missions/software-dev/software-dev.mission-type.yaml",
+                        "missions/software-dev/templates/spec-template.md",
+                        "mission_step_contracts/specify.step-contract.yaml");
+        assertThat(rig.packs.resolve("qa").resolve("missions/documentation"))
+                .as("the directories the removal emptied go too")
+                .doesNotExist();
+        Pack read = rig.repository.load(QA);
+        assertThat(read.artifacts(ArtifactKind.MISSION_TYPE))
+                .extracting(type -> type.localId())
+                .containsExactly("software-dev");
+        assertThat(read.templates())
+                .as("the skeletons of documentation went with it")
+                .extracting(template -> template.localId())
+                .containsExactly("software-dev/spec-template.md");
+        assertThat(refusal(() -> removals.remove("qa", "mission_type", "documentation"))
+                        .code())
+                .as("gone, so the next delete is its kind's not-found")
+                .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
+    }
+
+    /** D10: a step contract whose mission names the type binds it, so the type is not removed until the contract is. */
+    @Test
+    void aStepContractThatBindsTheMissionTypeRefusesItsRemovalUntilTheContractIsGone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
         Removals removals = new Removals(rig);
         Map<String, String> before = removals.filesOf("qa");
 
-        assertThat(refusal(() -> removals.remove("qa", "mission_type", "software-dev"))
-                        .code())
-                .isEqualTo(RefusalCode.KIND_NOT_FOUND);
-        assertThat(removals.filesOf("qa")).as("nothing changed").isEqualTo(before);
-        assertThat(ArtifactRemovalService.NOT_YET_REMOVABLE).containsExactly(ArtifactKind.MISSION_TYPE);
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "software-dev"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .anySatisfy(detail -> assertThat(detail)
+                        .contains("mission_step_contract:specify")
+                        .contains("mission_type:software-dev"));
+        assertThat(removals.filesOf("qa")).as("the refusal changed nothing").isEqualTo(before);
+
+        removals.remove("qa", "mission_step_contract", "specify");
+        removals.remove("qa", "mission_type", "software-dev");
+        assertThat(removals.filesOf("qa"))
+                .as("the control: once no contract binds it, it goes with its skeleton")
+                .doesNotContainKeys(
+                        "missions/software-dev/software-dev.mission-type.yaml",
+                        "missions/software-dev/templates/spec-template.md");
+    }
+
+    /**
+     * D10: a graph edge that names one of the type's action nodes, at either end, in the registered shard or in a
+     * document the author wrote, refuses the type's removal; an edge on another type's action node does not.
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "registered.graph.yaml, directive:D2, action:documentation/discover",
+        "steps.graph.yaml, action:documentation/retrospect, directive:D2",
+        "steps.graph.yaml, directive:D2, action:documentation/discover",
+    })
+    void aGraphEdgeThatNamesAnActionNodeOfTheTypeRefusesItsRemoval(
+            String document, String from, String to, @TempDir Path host) {
+        Rig rig = new Rig(host);
+        String graph = RelationshipShard.SHARD_PATH.equals(document)
+                ? RelationshipShard.write(List.of(edge(from, to, null)))
+                : authoredEdge(from, to);
+        rig.register("qa", rig.stage(qaWithDocumentation().file(document, graph)), Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .anySatisfy(detail -> assertThat(detail).contains(from).contains("action:documentation/"));
+        assertThat(removals.filesOf("qa")).as("the refusal changed nothing").isEqualTo(before);
+    }
+
+    @Test
+    void anEdgeOnAnotherTypesActionNodeLeavesTheRemovalAlone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file("steps.graph.yaml", authoredEdge("action:software-dev/specify", "directive:D2"))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        assertThat(removals.filesOf("qa"))
+                .doesNotContainKey("missions/documentation/documentation.mission-type.yaml")
+                .containsKey("steps.graph.yaml");
+    }
+
+    /** D10: a step contract of another pack that builds on the pack binds its mission type as one of its own would. */
+    @Test
+    void aStepContractOfAnotherPackThatBindsTheMissionTypeRefusesItsRemovalAndIsNamed(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        rig.register(
+                "other",
+                rig.stage(otherPack()
+                        .file(
+                                "mission_step_contracts/discover.step-contract.yaml",
+                                STEP_CONTRACT.replace("specify", "discover").replace("software-dev", "documentation"))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .anySatisfy(detail -> assertThat(detail).contains("mission_step_contract:discover"));
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
+    }
+
+    /** D10: an edge of another pack that points at a skeleton of the type is a referrer of the one removal. */
+    @Test
+    void anEdgeOfAnotherPackThatPointsAtASkeletonOfTheTypeRefusesItsRemoval(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        rig.register(
+                "other",
+                rig.stage(otherPack()
+                        .file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(
+                                        edge("directive:R", "template:documentation/spec-template.md", "qa"))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
+    }
+
+    /** The type's own node, declared in a document the author wrote, is never rewritten: as for the five kinds. */
+    @Test
+    void aMissionTypeAnAuthorWrittenGraphDocumentNamesIsRefusedAndNoFileIsRewritten(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file("types.graph.yaml", authoredEdge("mission_type:documentation", "directive:D2"))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
+    }
+
+    private static String authoredEdge(String from, String to) {
+        return "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: '" + from + "', target: '"
+                + to + "', relation: requires}\n";
     }
 
     private static String resource(String path) throws IOException {

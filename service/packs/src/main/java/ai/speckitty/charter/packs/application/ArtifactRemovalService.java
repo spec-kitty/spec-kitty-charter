@@ -12,8 +12,11 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.StepHolding;
+import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,18 +43,16 @@ import org.springframework.stereotype.Service;
  *   <li>the pack is swapped whole, so a read sees the old pack or the new one.
  * </ol>
  *
+ * <p>A mission type is removed with its skeletons, the templates under its {@code templates/}, and its step prompts and
+ * guidelines, its companions, as one removal under one impact check: every check above judges all of them together,
+ * and a step contract bound to the type or an edge that names one of its action nodes {@code action:<type>/<step>}
+ * refers to it (D10 of #99). A step contract is removed as any other artifact is.
+ *
  * <p>A saved selection of the artifact in an activation is not consulted: it reads as stale and is dropped on the next
  * write of the activation.
  */
 @Service
 public final class ArtifactRemovalService {
-
-    /**
-     * The listed kinds a {@code DELETE} does not remove yet: a mission type's removal takes its skeletons with it, one
-     * removal under one impact check (#99, D10), which this service does not build yet, so it is refused
-     * {@code kind_not_found} until it does rather than leaving the skeletons behind.
-     */
-    static final Set<ArtifactKind> NOT_YET_REMOVABLE = Set.of(ArtifactKind.MISSION_TYPE);
 
     private final PackRepository packs;
     private final PackRemovalStore store;
@@ -131,19 +132,53 @@ public final class ArtifactRemovalService {
             PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch, RevisionTrail trail) {
         Pack current = packs.load(pack);
         Urn artifact = requireHeld(current, pack, kindToken, artifactId);
+        List<Urn> removed = removedWith(current, artifact);
         PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
         List<Relationship> registered = store.registeredRelationships(pack);
-        List<Relationship> outgoing =
-                registered.stream().filter(edge -> edge.from().equals(artifact)).toList();
-        requireNoReferrer(pack, artifact, outgoing);
-        gate.authorize(current, WritePolicyGate.Operation.REMOVE, artifact);
-        requireNotAuthored(pack, artifact);
-        impact.check(pack, facts -> WriteFacts.withoutArtifact(facts, artifact, outgoing));
+        List<Relationship> outgoing = registered.stream()
+                .filter(edge -> removed.contains(edge.from()))
+                .toList();
+        requireNoReferrer(pack, artifact, removed, outgoing);
+        for (Urn each : removed) {
+            gate.authorize(current, WritePolicyGate.Operation.REMOVE, each);
+        }
+        requireNotAuthored(pack, removed);
+        impact.check(pack, facts -> without(facts, removed, outgoing));
         List<Relationship> retained =
                 registered.stream().filter(edge -> !outgoing.contains(edge)).toList();
         PackRevision after = store.remove(
-                pack, PackRemovalStore.Removal.ofArtifact(artifact, retained, rewritten(current, artifact)));
+                pack, PackRemovalStore.Removal.ofArtifacts(removed, retained, rewritten(current, removed)));
         trail.moved(before, after);
+        return after;
+    }
+
+    /**
+     * What one removal removes: the artifact, and for a mission type its skeletons, the templates under its
+     * {@code templates/}, in id order (D10 of #99). A mission type's step prompts and guidelines are its companions, so
+     * they go with its file.
+     */
+    private static List<Urn> removedWith(Pack current, Urn artifact) {
+        List<Urn> removed = new ArrayList<>(List.of(artifact));
+        if (artifact.kind() == NodeKind.MISSION_TYPE) {
+            current.templates().stream()
+                    .filter(template -> template.missionType().equals(Optional.of(artifact.id())))
+                    .map(Template::urn)
+                    .sorted(Comparator.comparing(Urn::toString))
+                    .forEach(removed::add);
+        }
+        return List.copyOf(removed);
+    }
+
+    /** The facts with every removed artifact gone, and the registered edges that start at any of them. */
+    private static PackCompositionFacts without(
+            PackCompositionFacts facts, List<Urn> removed, List<Relationship> outgoing) {
+        PackCompositionFacts after = facts;
+        for (Urn each : removed) {
+            after = WriteFacts.withoutArtifact(
+                    after,
+                    each,
+                    outgoing.stream().filter(edge -> edge.from().equals(each)).toList());
+        }
         return after;
     }
 
@@ -151,13 +186,11 @@ public final class ArtifactRemovalService {
     // ----------------------------------------------------------------------------------------------------------
 
     /**
-     * The artifact's URN once the kind is removable and the pack holds the artifact; the not-found code of the path
-     * otherwise. The removable kinds are the listed ones ({@link ArtifactReadService#LISTED}) but those of
-     * {@link #NOT_YET_REMOVABLE}.
+     * The artifact's URN once the kind is listed ({@link ArtifactReadService#LISTED}) and the pack holds the artifact; the
+     * not-found code of the path otherwise.
      */
     private static Urn requireHeld(Pack current, PackIdentifier pack, String kindToken, String artifactId) {
         ArtifactKind kind = ArtifactReadService.listedKind(kindToken)
-                .filter(listed -> !NOT_YET_REMOVABLE.contains(listed))
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
         CharterRefusal absent = new CharterRefusal(
@@ -179,21 +212,22 @@ public final class ArtifactRemovalService {
     // ----------------------------------------------------------------------------------------------------------
 
     /**
-     * Before the compose: another artifact or pack that still refers to the artifact is a {@code 409}, not a composition
-     * {@code 422}. The scan judges the tree after the removal: the pack's own presets lose the items that name the
-     * artifact, and the edges that start at it are gone, so neither counts.
+     * Before the compose: another artifact or pack that still refers to a removed artifact is a {@code 409}, not a
+     * composition {@code 422}. The scan judges the tree after the removal: the pack's own presets lose the items that
+     * name the artifacts, and the edges that start at them are gone, so neither counts. A removed mission type is also
+     * referred to by a step contract bound to it and by an edge that names one of its action nodes
+     * ({@link InboundReferences#scanRemoval}).
      */
-    private void requireNoReferrer(PackIdentifier pack, Urn artifact, List<Relationship> outgoing) {
+    private void requireNoReferrer(PackIdentifier pack, Urn artifact, List<Urn> removed, List<Relationship> outgoing) {
         StagedPackViews.View view = views.session().stored();
         PackIdentifier configured = store.configuredName(pack);
         PackDescriptor descriptor = view.descriptors().get(configured);
-        PackCompositionFacts after =
-                WriteFacts.withoutArtifact(view.artifacts().compositionFacts(configured), artifact, outgoing);
-        List<InboundReferences.Referrer> referrers = inbound.scan(
+        PackCompositionFacts after = without(view.artifacts().compositionFacts(configured), removed, outgoing);
+        List<InboundReferences.Referrer> referrers = inbound.scanRemoval(
                 view,
                 new InboundReferences.StagedTree(
                         Optional.of(configured), Optional.of(descriptor.name()), descriptor, after),
-                Set.of(artifact));
+                Set.copyOf(removed));
         if (!referrers.isEmpty()) {
             throw InboundReferences.refusal(
                     "The artifact " + artifact + " of the pack " + pack.value() + " is still referred to by "
@@ -205,20 +239,35 @@ public final class ArtifactRemovalService {
         }
     }
 
-    /** A graph document the author wrote that declares the artifact's node or holds an edge from it is never rewritten. */
-    private void requireNotAuthored(PackIdentifier pack, Urn artifact) {
-        if (store.authored(pack).names(artifact)) {
+    /**
+     * A graph document the author wrote that declares a removed artifact's node, or one of a removed mission type's
+     * action nodes, or holds an edge from one, is never rewritten.
+     */
+    private void requireNotAuthored(PackIdentifier pack, List<Urn> removed) {
+        PackRemovalStore.Authored authored = store.authored(pack);
+        Optional<Urn> named = removed.stream()
+                .filter(authored::names)
+                .findFirst()
+                .or(() -> authored.declared().stream()
+                        .filter(node -> StepHolding.missionTypeOf(node)
+                                .filter(removed::contains)
+                                .isPresent())
+                        .findFirst());
+        if (named.isPresent()) {
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
-                    artifact + " is written in the pack's graph documents: register the whole pack to remove it.");
+                    named.get() + " is written in the pack's graph documents: register the whole pack to remove it.");
         }
     }
 
-    /** The presets of the pack that name the artifact, each without those items; the others are not rewritten. */
-    private static List<Preset> rewritten(Pack current, Urn artifact) {
+    /** The presets of the pack that name a removed artifact, each without those items; the others are not rewritten. */
+    private static List<Preset> rewritten(Pack current, List<Urn> removed) {
         List<Preset> changed = new ArrayList<>();
         for (Preset stored : current.presets()) {
-            Preset left = WriteFacts.withoutItems(stored, artifact);
+            Preset left = stored;
+            for (Urn each : removed) {
+                left = WriteFacts.withoutItems(left, each);
+            }
             if (!left.equals(stored)) {
                 changed.add(left);
             }

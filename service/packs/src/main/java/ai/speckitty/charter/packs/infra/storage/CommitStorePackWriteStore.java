@@ -313,9 +313,9 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     public PackRevision remove(PackIdentifier pack, Removal removal) {
         return exclusivelyAt(pack, location -> {
             Path directory = resolve(pack);
-            List<String> files = removal.artifact()
-                    .map(urn -> ArtifactFiles.of(directory, urn, strategy))
-                    .orElse(List.of());
+            List<String> files = removal.artifacts().isEmpty()
+                    ? List.of()
+                    : ArtifactFiles.of(directory, removal.artifacts(), strategy);
             // The shard is rewritten only when an edge goes: a removal adds none, so equal sizes mean none went.
             @Nullable String shard = removal.relationships().size()
                             == registeredRelationships(pack).size()
