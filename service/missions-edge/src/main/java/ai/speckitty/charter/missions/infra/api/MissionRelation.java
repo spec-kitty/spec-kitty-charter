@@ -15,7 +15,9 @@ public enum MissionRelation {
     /** The step contract bound to a step. */
     STEP_CONTRACT("step-contract"),
     /** The stored skeleton an expected output artifact of a step names. */
-    SKELETON("skeleton");
+    SKELETON("skeleton"),
+    /** The pack-scoped read of the winner a read under an activation answers: its mission type in the pack that holds it. */
+    ARTIFACT("artifact");
 
     private final String wireKey;
 
