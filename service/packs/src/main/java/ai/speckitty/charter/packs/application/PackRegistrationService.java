@@ -153,26 +153,6 @@ public final class PackRegistrationService {
             Objects.requireNonNull(notices, "notices");
             diagnostics = List.copyOf(diagnostics);
         }
-
-        /**
-         * An outcome with no diagnostics.
-         *
-         * @param outcome what was done
-         * @param pack the pack's name
-         * @param descriptor the descriptor
-         * @param level the level
-         * @param revision the revision
-         * @param notices the notices
-         */
-        public RegistrationOutcome(
-                Outcome outcome,
-                PackIdentifier pack,
-                PackDescriptor descriptor,
-                PackLevel level,
-                PackRevision revision,
-                RegistrationImpact.Notices notices) {
-            this(outcome, pack, descriptor, level, revision, notices, List.of());
-        }
     }
 
     private final WholePackWriteStore.Loader loader;

@@ -281,23 +281,6 @@ class PackRegistrationServiceTest {
         assertThat(again.diagnostics()).hasSize(1);
     }
 
-    @Test
-    void theOutcomeBuiltWithoutDiagnosticsHasNone(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        RegistrationOutcome created =
-                rig.register("pack-x", rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")), Preconditions.none());
-
-        RegistrationOutcome rebuilt = new RegistrationOutcome(
-                created.outcome(),
-                created.pack(),
-                created.descriptor(),
-                created.level(),
-                created.revision(),
-                created.notices());
-
-        assertThat(rebuilt.diagnostics()).isEmpty();
-    }
-
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
 
     @Test

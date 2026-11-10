@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
@@ -13,8 +15,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -45,7 +47,8 @@ import java.util.regex.Pattern;
  */
 public final class StepEnhancementRules {
 
-    private static final Pattern STEP_TARGET = Pattern.compile("^action:([^/\\s]+)/([^/\\s]+)$");
+    /** The id of a step action: {@code <type>/<step>}, each segment without whitespace or a further slash. */
+    private static final Pattern STEP_ID = Pattern.compile("^[^/\\s]+/[^/\\s]+$");
 
     private static final Comparator<Finding> ORDER = Comparator.comparing(Finding::path, PackPolicy::comparePaths)
             .thenComparing(Finding::rule)
@@ -196,18 +199,23 @@ public final class StepEnhancementRules {
     }
 
     private static void target(Enhancement enhancement, Edge edge, List<Finding> found) {
-        Matcher step = STEP_TARGET.matcher(edge.target());
-        if (!step.matches()) {
+        // StepHolding.missionTypeOf alone would accept action:t/a/b, so the segments are still checked.
+        Optional<String> type = Urn.parse(edge.target())
+                .filter(urn -> urn.kind() == NodeKind.ACTION
+                        && STEP_ID.matcher(urn.id()).matches())
+                .flatMap(StepHolding::missionTypeOf)
+                .map(Urn::id);
+        if (type.isEmpty()) {
             found.add(new Finding(
                     StepEnhancementFault.EDGE_TARGET_NOT_STEP,
                     enhancement.path(),
                     "the enhances target " + written(edge) + " is not an action:<type>/<step>"));
-        } else if (!step.group(1).equals(enhancement.typeDirectory())) {
+        } else if (!type.get().equals(enhancement.typeDirectory())) {
             found.add(new Finding(
                     StepEnhancementFault.DIRECTORY_MISMATCH,
                     enhancement.path(),
                     "the file sits in the " + enhancement.typeDirectory() + " directory, but the enhances target "
-                            + written(edge) + " is of type " + step.group(1)));
+                            + written(edge) + " is of type " + type.get()));
         }
     }
 

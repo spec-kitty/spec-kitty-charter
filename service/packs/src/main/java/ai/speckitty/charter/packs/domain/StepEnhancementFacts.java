@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +39,7 @@ public record StepEnhancementFacts(
         List<Edge> edges) {
 
     /** The URN prefix of a step enhancement node. */
-    static final String URN_PREFIX = "step_enhancement:";
+    static final String URN_PREFIX = NodeKind.STEP_ENHANCEMENT.token() + ":";
 
     /**
      * Copies the collections.
