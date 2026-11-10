@@ -25,7 +25,7 @@ from pathlib import Path
 
 # The modules the nightly expects a summary from, in the order they are listed. A module found on disk but not
 # listed here is shown after them.
-EXPECTED_MODULES = ("kernel", "missions", "profiles", "profiles-edge", "packs", "activations")
+EXPECTED_MODULES = ("kernel", "missions", "missions-edge", "profiles", "profiles-edge", "packs", "activations")
 
 SUMMARY_PATH = Path("build", "reports", "mutation-floors", "floors.json")
 
