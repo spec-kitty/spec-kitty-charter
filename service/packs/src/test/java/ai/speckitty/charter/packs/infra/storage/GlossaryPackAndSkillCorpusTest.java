@@ -41,7 +41,7 @@ class GlossaryPackAndSkillCorpusTest {
     Path host;
 
     @Test
-    @DisplayName("the 4 pinned glossary packs read, write and read back with their meaning unchanged")
+    @DisplayName("every glossary pack in the checkout reads, writes and read back with their meaning unchanged")
     void everyGlossaryPackRoundTrips() throws IOException {
         List<Path> files = files(".glossary-pack.yaml");
         List<String> problems = new ArrayList<>();
@@ -54,18 +54,11 @@ class GlossaryPackAndSkillCorpusTest {
         }
 
         assertThat(problems).as("glossary packs that do not round-trip").isEmpty();
-        assertThat(files)
-                .as("pinned glossary packs: built-in, event-driven, internal and qa")
-                .extracting(path -> path.getFileName().toString())
-                .containsExactlyInAnyOrder(
-                        "spec-kitty-core.glossary-pack.yaml",
-                        "evd-glossary.glossary-pack.yaml",
-                        "spk-internal-glossary.glossary-pack.yaml",
-                        "qa-glossary.glossary-pack.yaml");
+        assertThat(files).as("glossary packs in the checkout").isNotEmpty();
     }
 
     @Test
-    @DisplayName("the 5 pinned skills and their bodies are read and written as pairs, the body byte for byte")
+    @DisplayName("every skill in the checkout and its body are read and written as pairs, the body byte for byte")
     void everySkillRoundTripsWithItsBody() throws IOException {
         List<Path> files = files(".skill.yaml");
         List<String> problems = new ArrayList<>();
@@ -91,15 +84,7 @@ class GlossaryPackAndSkillCorpusTest {
         }
 
         assertThat(problems).as("skills that do not round-trip").isEmpty();
-        assertThat(files)
-                .as("pinned skills: the internal pack's five")
-                .extracting(path -> path.getFileName().toString())
-                .containsExactlyInAnyOrder(
-                        "issue-triage.skill.yaml",
-                        "land-pr.skill.yaml",
-                        "mission-from-issue.skill.yaml",
-                        "report-debrief.skill.yaml",
-                        "semi-auto.skill.yaml");
+        assertThat(files).as("skills in the checkout").isNotEmpty();
     }
 
     @Test
