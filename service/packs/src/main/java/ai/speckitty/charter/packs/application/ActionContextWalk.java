@@ -222,7 +222,12 @@ public final class ActionContextWalk {
         }
     }
 
-    /** What a walk lists before the caller adds what is its own (the enhancers of an action entry, the holder of a profile's). */
+    /**
+     * What a walk lists before the caller adds what is its own (the enhancers of an action entry, the holder of a profile's).
+     * {@code when} and {@code reason} are the words of the edge that reached the node, whatever its relation: the edge of
+     * the parent the walk keeps, which is the first reach (the fewest hops, then the smallest parent, then the smallest
+     * edge). A node a later step, or another edge, would also reach keeps the words of its first reach.
+     */
     record Listed<S extends WalkStep>(
             Urn urn, S step, Urn via, int hops, Optional<String> when, Optional<String> reason, boolean held) {}
 
@@ -300,8 +305,8 @@ public final class ActionContextWalk {
                         item.step(),
                         item.via(),
                         item.hops(),
-                        item.when(),
-                        item.reason(),
+                        suggestsOnly(item, item.when()),
+                        suggestsOnly(item, item.reason()),
                         enhancersOf(item.urn(), inForce),
                         enhancedTargetsOf(item.urn(), inForce)))
                 .toList();
@@ -312,6 +317,14 @@ public final class ActionContextWalk {
                 run.suggestions(),
                 enhancersOf(start, inForce),
                 enhancedTargetsOf(start, inForce));
+    }
+
+    /**
+     * The action context lists the words of a {@code suggests} edge only (E12); the engine carries the words of every
+     * edge, for the profile walk.
+     */
+    private static Optional<String> suggestsOnly(Listed<Step> item, Optional<String> words) {
+        return item.step().relation() == RelationType.SUGGESTS ? words : Optional.empty();
     }
 
     /**
@@ -509,18 +522,10 @@ public final class ActionContextWalk {
 
         private void list(Urn urn, S step, Link parent) {
             int reached = hopsOf(parent.source()) + 1;
-            boolean suggested = step.relation() == RelationType.SUGGESTS;
             hops.put(urn, reached);
             listed.put(
                     urn,
-                    new Listed<>(
-                            urn,
-                            step,
-                            parent.source(),
-                            reached,
-                            suggested ? parent.when() : Optional.empty(),
-                            suggested ? parent.reason() : Optional.empty(),
-                            parent.held()));
+                    new Listed<>(urn, step, parent.source(), reached, parent.when(), parent.reason(), parent.held()));
         }
     }
 }
