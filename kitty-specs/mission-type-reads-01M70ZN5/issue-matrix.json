@@ -1,0 +1,89 @@
+{
+  "rows": {
+    "#100": {
+      "evidence_ref": "Step contract read with gates (WP03); step-to-contract links (WP04)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Cutover read R6: Mission step contracts and gate bindings",
+      "verdict": "in-mission",
+      "wp": "WP03"
+    },
+    "#148": {
+      "evidence_ref": "mission_type and mission_step_contract join the listed kinds (WP03) and removal (WP07)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Promote mission types + step contracts to full charter artifact kinds",
+      "verdict": "in-mission",
+      "wp": "WP03"
+    },
+    "#437": {
+      "evidence_ref": "Cited for coordination: ADR-0066 phase 1 owns CharterRefusalCode.yaml; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#438": {
+      "evidence_ref": "Cited for coordination: ADR-0066 phase 2 composes the effective prompt; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#450": {
+      "evidence_ref": "Item-link half only, for these kinds and action nodes (WP06); the scoping half stays open",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Action context: required and project directives left out; items have no body links",
+      "verdict": "in-mission",
+      "wp": "WP06"
+    },
+    "#96": {
+      "evidence_ref": "Bodies for mission_type, mission_step_contract and mission-type skeletons only; other kinds out of scope",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Cutover read R2: Artifact bodies",
+      "verdict": "in-mission",
+      "wp": "WP04"
+    },
+    "#99": {
+      "evidence_ref": "Mission type and step reads, pack-scoped (WP04) and under an activation (WP05)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Cutover read R5: Mission types and the action index",
+      "verdict": "in-mission",
+      "wp": "WP04"
+    }
+  },
+  "schema_version": 1
+}

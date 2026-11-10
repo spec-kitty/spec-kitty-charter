@@ -1,0 +1,52 @@
+{
+  "accept_commit": "13aba075a7203e2409ceef73f3bda22f6cb1de35",
+  "acceptance_history": [
+    {
+      "accept_commit": "dea596e646e3aaf2b76f0136f9931ebf724f525d",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T13:21:18.250339+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "36be18c4d3817dfb96cf6ee53373bf34e2c6a077"
+    },
+    {
+      "accept_commit": "1c1baffd2c7bfed7c92b169018db3b04bd8fef8f",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T13:21:27.511144+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "601a2c2bdd5a54ed903675f94f8276861b6aab2e"
+    },
+    {
+      "accept_commit": "54019e05e6116808e73f536212d39d82f20fce4a",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T13:21:42.839899+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "c4a0f043daf96dd8055aaf52a709d76fb01dc723"
+    },
+    {
+      "accept_commit": "13aba075a7203e2409ceef73f3bda22f6cb1de35",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-10T17:04:04.566776+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "534352bb99cb52eb119a288bdb3cca763ab87eb2"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-10T17:04:04.566776+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "534352bb99cb52eb119a288bdb3cca763ab87eb2",
+  "created_at": "2026-11-09T20:23:08.095602+00:00",
+  "flattened": false,
+  "friendly_name": "mission type reads",
+  "mid8": "01M70ZN5",
+  "mission_id": "01M70ZN54NQCG92HXVGZYF2N93",
+  "mission_number": null,
+  "mission_slug": "mission-type-reads-01M70ZN5",
+  "mission_type": "software-dev",
+  "purpose_context": "This mission advances mission type reads on issue-99-mission-type-reads so stakeholders can track the work from mission creation onward.",
+  "purpose_tldr": "mission type reads",
+  "slug": "mission-type-reads-01M70ZN5",
+  "status_phase": "1",
+  "target_branch": "issue-99-mission-type-reads",
+  "topology": "single_branch",
+  "topology_source": "explicit"
+}

@@ -1,0 +1,238 @@
+{
+  "event_count": 44,
+  "last_event_id": "01M72SRERN7A785Q09452H058D",
+  "materialized_at": "2026-11-10T13:18:32.725346+00:00",
+  "mission_number": "",
+  "mission_slug": "mission-type-reads-01M70ZN5",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 7,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude-reviewer-wp01",
+      "agent": "claude-reviewer-wp01",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M725JBGHB0H8MA1KF11CG99X",
+      "last_transition_at": "2026-11-10T07:25:41.265966+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "missions-edge module, wiring, rules",
+        "Independent review (separate reviewer agent): APPROVE; docs minor handed to WP07"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP01-missions-edge-module/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp01",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 12778,
+      "shell_pid_created_at": "1794293728.17",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude-reviewer-wp02",
+      "agent": "claude-reviewer-wp02",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M714Q2YAHSJEDX9926BNEA0C",
+      "last_transition_at": "2026-11-09T21:51:33.322149+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Contract + red scenarios; see research/implementation-notes.md",
+        "Independent review (separate reviewer agent): APPROVE; 7 minors folded in e4b8d820"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP02-contract-and-red-scenarios/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp02",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 6735,
+      "shell_pid_created_at": "1794257596.49",
+      "subtasks": {
+        "T004": "done",
+        "T005": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude-reviewer-wp03",
+      "agent": "claude-reviewer-wp03",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M723FTRVT22PZMNMFRG5Y3KZ",
+      "last_transition_at": "2026-11-10T06:49:21.435803+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "LISTED/ITEM_KINDS split, step contract item, lists, references",
+        "Independent review (separate reviewer agent): APPROVE; minors folded or handed to WP04/WP07"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP03-listed-kinds-and-step-contract/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp03",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 23003,
+      "shell_pid_created_at": "1794261102.9",
+      "subtasks": {
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude-reviewer-wp04",
+      "agent": "claude-reviewer-wp04",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M72852H5XX1NGAAV78ZP0XJV",
+      "last_transition_at": "2026-11-10T08:10:51.813302+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Pack-scoped mission type, step, skeleton reads; all mission-types scenarios green",
+        "Independent review (separate reviewer agent): APPROVE; mutation probe 6/6 killed"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP04-pack-scoped-mission-type-reads/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp04",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2551,
+      "shell_pid_created_at": "1794295534.34",
+      "subtasks": {
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude-reviewer-wp05",
+      "agent": "claude-reviewer-wp05",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M72N8ZAX0BKQ8JKY6RBDE4SX",
+      "last_transition_at": "2026-11-10T12:00:11.101983+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Activation-scoped mission type, step, skeleton reads",
+        "Independent review (separate reviewer agent): APPROVE; mutation probe 4/4 killed"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP05-activation-scoped-reads/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp05",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 9048,
+      "shell_pid_created_at": "1794306748.58",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude-reviewer-wp06",
+      "agent": "claude-reviewer-wp06",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M72S4XDV5NHM7YX8YJXCGFSZ",
+      "last_transition_at": "2026-11-10T13:07:52.379325+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Mission-kind effective item links and step links on action nodes and the action context",
+        "Independent review (separate reviewer agent): APPROVE; mutation probe 4/4 killed"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP06-action-node-links/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp06",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 26796,
+      "shell_pid_created_at": "1794313742.53",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude-reviewer-wp07",
+      "agent": "claude-reviewer-wp07",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M72SRERN7A785Q09452H058D",
+      "last_transition_at": "2026-11-10T13:18:32.725346+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "T022–T024 approved on re-review; T025 (usability walk) waits for the activation reads of WP05/WP06 and the profiles mission's WP08 root links",
+        "Resume for T025: the usability walk, now that WP05/WP06 are approved",
+        "T022–T024 approved earlier; T025 usability walk added and run: RESULT PASS 131/131",
+        "Independent review (separate reviewer agents): T022–T024 APPROVE on re-review; T025 APPROVE, minors folded"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://mission-type-reads-01M70ZN5/WP07-removal-docs-usability/review-cycle-1.md",
+        "reviewer": "claude-reviewer-wp07",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 21717,
+      "shell_pid_created_at": "1794298244.88",
+      "subtasks": {
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    }
+  }
+}
