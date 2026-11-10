@@ -13,10 +13,11 @@
   (an unknown step) or `skeleton_not_found`. No `ETag`. Scenarios: `effective-mission-types.feature`.
 - `getEffectiveMissionStepContract` (`GET /activations/{activationId}/artifacts/mission_step_contract/{contractId}`, tag
   `EffectiveMissionTypes`, D11): the layer-merge winner of a step contract under an activation, in the `Artifact`
-  envelope with `missionStepContract` as the pack read answers it, `packId` the pack that holds the winner. The literal
-  path the generic `getEffectiveArtifact` answered before (winner, no body). Its `mission-type` and `step` links and a
-  held delegation candidate's `effective-artifact` stay under the activation; `artifact` is the pack read of the winner.
-  A step's `step-contract` link under an activation now lands on it. Refusals: `activation_not_found`, then
+  envelope with `missionStepContract` as the pack read answers it, `packId` the pack that holds the winner. The generic
+  `getEffectiveArtifact` refuses `mission_step_contract` with `404 kind_not_found`. Its
+  `mission-type` and `step` links and a held delegation candidate's `effective-artifact` stay under the activation;
+  `artifact` is the pack read of the winner. A step's `step-contract` link under an activation now lands on it.
+  Refusals: `activation_not_found`, then
   `mission_step_contract_not_found`. No `ETag`. The 404 of each mission read under an activation names only its own
   codes (`ActivationMissionTypeNotFound`, `ActivationMissionStepNotFound`, `ActivationMissionSkeletonNotFound`,
   `ActivationMissionStepContractNotFound`).
