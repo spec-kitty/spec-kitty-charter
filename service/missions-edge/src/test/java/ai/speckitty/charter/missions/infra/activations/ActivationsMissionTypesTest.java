@@ -63,7 +63,9 @@ class ActivationsMissionTypesTest {
                         "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), List.of(), SOURCE));
         assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("the activations read a mission type as");
+                .as("the fault names the read that lacks its mission type")
+                .hasMessageStartingWith("The read of the mission type software-dev under activation a-1 holds ")
+                .hasMessageEndingWith(", not a mission type.");
         CharterRefusal refused = new CharterRefusal(RefusalCode.ACTIVATION_NOT_FOUND, "no a-1");
         when(effective.missionTypeWinner(ID, "software-dev")).thenThrow(refused);
 

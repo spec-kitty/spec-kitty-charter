@@ -60,7 +60,7 @@ public final class EffectiveMissionTypeReadService {
      */
     public Held<MissionTypeView> missionType(String activationId, String missionTypeId) {
         EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
-        return new Held<>(MissionTypeReadService.missionTypeOf(holding(winner)), winner.holder());
+        return new Held<>(MissionTypeReadService.missionTypeOf(holding(activationId, winner)), winner.holder());
     }
 
     /**
@@ -76,7 +76,7 @@ public final class EffectiveMissionTypeReadService {
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the winning type holds no such step
      */
     public Fingerprinted<StepView> step(String activationId, String missionTypeId, String stepId) {
-        MissionTypeHolding holding = holding(activations.missionType(activationId, missionTypeId));
+        MissionTypeHolding holding = holding(activationId, activations.missionType(activationId, missionTypeId));
         return MissionTypeReadService.stepOf(holding, scopeOf(activationId), missionTypeId, stepId);
     }
 
@@ -93,7 +93,7 @@ public final class EffectiveMissionTypeReadService {
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the holding pack's type
      */
     public Fingerprinted<SkeletonView> skeleton(String activationId, String missionTypeId, String name) {
-        MissionTypeHolding holding = holding(activations.missionType(activationId, missionTypeId));
+        MissionTypeHolding holding = holding(activationId, activations.missionType(activationId, missionTypeId));
         return MissionTypeReadService.skeletonOf(holding, scopeOf(activationId), missionTypeId, name);
     }
 
@@ -109,7 +109,9 @@ public final class EffectiveMissionTypeReadService {
      */
     public Held<EffectiveStepContractView> stepContract(String activationId, String stepContractId) {
         EffectiveStepContract winner = activations.stepContract(activationId, stepContractId);
-        StepContractView contract = contracts.view(winner.contract());
+        StepContractView contract = contracts.view(
+                winner.contract(),
+                "The read of the step contract " + stepContractId + " under " + scopeOf(activationId));
         boolean stepHeld = winner.missionType()
                 .map(type -> Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
                         .anyMatch(step -> step.id().equals(contract.action())))
@@ -132,7 +134,8 @@ public final class EffectiveMissionTypeReadService {
      * The winner of the type with what the pack that holds it stores beside it, at one fingerprint: the holding pack's
      * skeletons and step files, and the merged closure's step contracts bound to the type.
      */
-    private MissionTypeHolding holding(EffectiveMissionType winner) {
+    private MissionTypeHolding holding(String activationId, EffectiveMissionType winner) {
+        String read = "The read of the mission type " + winner.type().localId() + " under " + scopeOf(activationId);
         MissionTypeHolding stored = storedBeside(winner);
         if (!stored.fingerprint().equals(winner.fingerprint())) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
@@ -141,7 +144,7 @@ public final class EffectiveMissionTypeReadService {
                 winner.type(),
                 stored.skeletons(),
                 winner.stepContracts().stream()
-                        .map(contract -> contracts.view(contract).bound())
+                        .map(contract -> contracts.view(contract, read).bound())
                         .toList(),
                 stored.stepFiles(),
                 winner.fingerprint());

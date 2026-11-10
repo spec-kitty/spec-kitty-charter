@@ -29,7 +29,8 @@ class PacksStepContractsTest {
 
     @Test
     void aStepContractIsReadWithEveryStoredFieldAndBindsTheStepItsActionNames() {
-        StepContractView view = contracts.view(contract());
+        StepContractView view =
+                contracts.view(contract(), "The read of the step contract specify-contract in pack main");
 
         assertThat(view)
                 .isEqualTo(new StepContractView(
@@ -97,9 +98,12 @@ class PacksStepContractsTest {
             }
         };
 
-        assertThatThrownBy(() -> contracts.view(stub))
+        assertThatThrownBy(() ->
+                        contracts.view(stub, "The read of the step contract specify-contract under activation a-1"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("the packs read a mission step contract as");
+                .as("the fault names the read that lacks its step contract")
+                .hasMessageStartingWith("The read of the step contract specify-contract under activation a-1 holds ")
+                .hasMessageEndingWith(", not a mission step contract.");
     }
 
     static MissionStepContract contract() {

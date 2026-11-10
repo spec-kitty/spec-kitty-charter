@@ -438,13 +438,14 @@ public class EffectiveReadService {
                     "No pack of the activation's closure holds the mission type " + missionTypeId + ".");
         }
         InForceQuery query = EffectiveSet.queryOf(stored.document());
-        EffectiveArtifactRead winner = winnerOf(session, type, query);
+        String read = "The read of the mission type " + missionTypeId + " under activation " + id.value();
+        EffectiveArtifactRead winner = winnerOf(session, type, query, read);
         List<CharterArtifact> contracts = merged.bindings().entrySet().stream()
                 .filter(binding -> binding.getValue().equals(type))
                 .map(Map.Entry::getKey)
                 .filter(bound -> bound.kind() == ArtifactKind.MISSION_STEP_CONTRACT)
                 .sorted()
-                .map(bound -> winnerOf(session, bound, query).artifact())
+                .map(bound -> winnerOf(session, bound, query, read).artifact())
                 .toList();
         return new EffectiveMissionTypeWinner(
                 winner.packId(),
@@ -480,10 +481,11 @@ public class EffectiveReadService {
                     "No pack of the activation's closure holds the mission step contract " + stepContractId + ".");
         }
         InForceQuery query = EffectiveSet.queryOf(stored.document());
-        EffectiveArtifactRead winner = winnerOf(session, contract, query);
+        String read = "The read of the step contract " + stepContractId + " under activation " + id.value();
+        EffectiveArtifactRead winner = winnerOf(session, contract, query, read);
         Optional<CharterArtifact> type = Optional.ofNullable(merged.bindings().get(contract))
                 .filter(merged.winners()::containsKey)
-                .map(bound -> winnerOf(session, bound, query).artifact());
+                .map(bound -> winnerOf(session, bound, query, read).artifact());
         List<ArtifactKind> listed = packs.listedKinds();
         Set<ArtifactRef> held = merged.winners().keySet().stream()
                 .filter(ref -> listed.contains(ref.kind()))
@@ -630,11 +632,16 @@ public class EffectiveReadService {
                 .toList();
     }
 
-    /** The winner of an artifact the merged closure holds, read from the pack that holds it, whatever its state. */
-    private static EffectiveArtifactRead winnerOf(PacksSession session, ArtifactRef ref, InForceQuery query) {
+    /**
+     * The winner of an artifact the merged closure holds, read from the pack that holds it, whatever its state. A
+     * winner the session cannot read is a broken invariant, never a refusal, and the fault names {@code read}, the read
+     * that lacks it.
+     */
+    private static EffectiveArtifactRead winnerOf(
+            PacksSession session, ArtifactRef ref, InForceQuery query, String read) {
         return session.effectiveArtifact(ref.kind(), ref.id(), 0, query)
                 .orElseThrow(() -> new IllegalStateException(
-                        "The merged closure holds " + ref.urn() + ", and the session read no winner of it."));
+                        read + ": the merged closure holds " + ref.urn() + ", and the session read no winner of it."));
     }
 
     /** One verified read of the closure the document names, refused when a pack it names is no longer configured. */

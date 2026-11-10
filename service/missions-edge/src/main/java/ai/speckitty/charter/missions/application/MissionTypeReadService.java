@@ -116,6 +116,7 @@ public final class MissionTypeReadService {
                         "Mission type " + missionTypeId + " of " + scope + " has no step " + stepId + "."));
         MissionTypeHolding.StepFiles files =
                 holding.stepFiles().getOrDefault(stepId, MissionTypeHolding.StepFiles.NONE);
+        String read = "The read of the step " + stepId + " of mission type " + missionTypeId + " of " + scope;
         List<StepView.OutputView> outputs = step.expectedOutputArtifacts().stream()
                 .map(output -> new StepView.OutputView(output, boundSkeleton(holding, output)))
                 .toList();
@@ -124,8 +125,8 @@ public final class MissionTypeReadService {
                         missionTypeId,
                         step,
                         inSequence.isEmpty(),
-                        files.prompt().map(MissionTypeReadService::utf8),
-                        files.guidelines().map(MissionTypeReadService::utf8),
+                        files.prompt().map(file -> utf8(file, read)),
+                        files.guidelines().map(file -> utf8(file, read)),
                         boundContract(holding, stepId),
                         outputs),
                 holding.fingerprint());
@@ -212,7 +213,8 @@ public final class MissionTypeReadService {
      * read's digest guards the bytes between that parse and this read, so such bytes here are a bug, never a lossy
      * decode.
      */
-    private static String utf8(StoredFile file) {
-        return file.text().orElseThrow(() -> new IllegalStateException("a step file that is not UTF-8: " + file));
+    private static String utf8(StoredFile file, String read) {
+        return file.text()
+                .orElseThrow(() -> new IllegalStateException(read + " holds a step file that is not UTF-8: " + file));
     }
 }
