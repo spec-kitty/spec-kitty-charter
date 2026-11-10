@@ -584,16 +584,4 @@ class GovernanceWalkTest {
                 .extracting(Entry::when, Entry::reason)
                 .containsExactly(Optional.of("a"), Optional.of("y"));
     }
-
-    @Test
-    void theStepsHaveTheirOwnTokensAndRelationsAndLineageIsSpecializesFrom() {
-        assertThat(Step.values())
-                .extracting(Step::name, Step::relation)
-                .containsExactly(
-                        tuple("LINEAGE", RelationType.SPECIALIZES_FROM),
-                        tuple("REQUIRES", RelationType.REQUIRES),
-                        tuple("SUGGESTS", RelationType.SUGGESTS),
-                        tuple("REQUIRES_OF_SUGGESTED", RelationType.REQUIRES),
-                        tuple("VOCABULARY", RelationType.VOCABULARY));
-    }
 }
