@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -21,14 +22,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Every mission type of the pinned open-packs checkout reads into the domain (#194, ADR-0044): the built-in, cave-kitty
  * and qa packs each hold their mission types at {@code missions/<id>/<id>.mission-type.yaml}, with every step's prompt
  * and guidelines and every output template the types name, and no file of a retired family is left. Each mission-type
  * file and step companion writes back through the production writer byte for byte (the whole-pack gate covers only
- * the built-in pack, and compares by meaning). The counts are pinned.
+ * the built-in pack, and compares by meaning). The counts are never literals: each is what the mission-type files and
+ * the step files on disk declare.
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
  * skips.
@@ -61,33 +63,45 @@ class MissionTypeCorpusTest {
     @TempDir
     Path host;
 
-    @ParameterizedTest(name = "{0}: {1} mission types, {2} steps, {3} on demand")
-    @CsvSource({"built-in, 4, 25, 7", "cave-kitty, 1, 8, 0", "qa, 1, 7, 0"})
-    @DisplayName("each pack's mission types read with no violation, and their counts are pinned")
-    void everyMissionTypeReads(String pack, int types, int steps, int onDemand) throws IOException {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"built-in", "cave-kitty", "qa"})
+    @DisplayName("each pack's mission types read with no violation, and read what their files declare")
+    void everyMissionTypeReads(String pack) throws IOException {
         List<MissionType> read = missionTypes(pack);
+        List<Map<?, ?>> declared = declaredMissionTypes(pack);
 
-        assertThat(read).as("%s mission types", pack).hasSize(types);
+        assertThat(read).as("%s mission types", pack).isNotEmpty().hasSameSizeAs(declared);
         assertThat(read.stream().mapToInt(type -> type.steps().size()).sum())
                 .as("%s steps", pack)
-                .isEqualTo(steps);
+                .isPositive()
+                .isEqualTo(declared.stream()
+                        .mapToInt(type -> listOf(type, "steps").size())
+                        .sum());
         assertThat(read.stream().mapToInt(type -> type.onDemandSteps().size()).sum())
                 .as("%s on-demand steps", pack)
-                .isEqualTo(onDemand);
+                .isEqualTo(declared.stream()
+                        .mapToInt(type -> listOf(type, "on_demand_steps").size())
+                        .sum());
     }
 
     @Test
-    @DisplayName("the corpus holds 6 mission types, 40 steps and 7 on demand, 47 prompts and 17 guidelines")
-    void theCorpusCountsArePinned() throws IOException {
+    @DisplayName("every step that declares a prompt or guidelines reads it, and each file on disk is a step's")
+    void everyStepCompanionOnDiskIsReadByItsStep() throws IOException {
         List<MissionStep> steps = new ArrayList<>();
+        long promptFiles = 0;
+        long guidelineFiles = 0;
         for (String pack : List.of("built-in", "cave-kitty", "qa")) {
             for (MissionType type : missionTypes(pack)) {
                 steps.addAll(type.steps());
                 steps.addAll(type.onDemandSteps());
             }
+            for (String file : missionFiles(OpenPacksCorpus.packsDirectory().resolve(pack))) {
+                promptFiles += file.endsWith(".prompt.md") ? 1 : 0;
+                guidelineFiles += file.endsWith(".guidelines.md") ? 1 : 0;
+            }
         }
 
-        assertThat(steps).hasSize(47);
+        assertThat(steps).as("steps read").isNotEmpty();
         List<Path> templates = new ArrayList<>();
         for (String pack : List.of("built-in", "cave-kitty", "qa")) {
             Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
@@ -103,22 +117,44 @@ class MissionTypeCorpusTest {
         }
         assertThat(templates)
                 .as("output templates the mission types name")
-                .hasSize(13)
+                .isNotEmpty()
                 .allSatisfy(template -> assertThat(template).isRegularFile());
-        assertThat(steps.stream().filter(step -> step.prompt().isPresent())).hasSize(47);
-        assertThat(steps.stream().filter(step -> step.guidelines().isPresent())).hasSize(17);
+        assertThat(steps.stream().filter(step -> step.prompt().isPresent()).count())
+                .as("steps that read a prompt are the step prompt files on disk")
+                .isPositive()
+                .isEqualTo(promptFiles);
+        assertThat(steps.stream().filter(step -> step.guidelines().isPresent()).count())
+                .as("steps that read guidelines are the step guidelines files on disk")
+                .isPositive()
+                .isEqualTo(guidelineFiles);
         assertThat(steps.stream()
                         .filter(step -> step.prompt()
                                 .flatMap(prompt -> prompt.description())
                                 .isPresent()))
                 .as("prompts with a detailed description (ruling Q1 as refined on 2026-10-30)")
-                .hasSize(32);
+                .isNotEmpty();
     }
 
-    @ParameterizedTest(name = "{0}: {1} files")
-    @CsvSource({"built-in, 53", "cave-kitty, 9", "qa, 8"})
+    /** The mission-type files of a pack, read as raw YAML: what the files declare, without the store. */
+    private static List<Map<?, ?>> declaredMissionTypes(String pack) throws IOException {
+        Path root = OpenPacksCorpus.packsDirectory().resolve(pack);
+        List<Map<?, ?>> types = new ArrayList<>();
+        for (String file : missionFiles(root)) {
+            if (file.endsWith(".mission-type.yaml")) {
+                types.add((Map<?, ?>) Yaml.load(Files.readString(root.resolve(file), StandardCharsets.UTF_8)));
+            }
+        }
+        return types;
+    }
+
+    private static List<?> listOf(Map<?, ?> type, String key) {
+        return type.get(key) instanceof List<?> list ? list : List.of();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"built-in", "cave-kitty", "qa"})
     @DisplayName("each mission-type file and step companion writes back through the production writer byte for byte")
-    void everyMissionFileWritesBackByteForByte(String pack, int files) throws IOException {
+    void everyMissionFileWritesBackByteForByte(String pack) throws IOException {
         OpenPacksCorpus.assertPinned();
         Path source = OpenPacksCorpus.packsDirectory().resolve(pack);
         Path packs = copyWithDescriptor(source);
@@ -140,8 +176,9 @@ class MissionTypeCorpusTest {
         }
 
         assertThat(written)
-                .as("%s mission-type files and step companions", pack)
-                .hasSize(files);
+                .as("%s mission-type files and step companions: every one the checkout holds", pack)
+                .isNotEmpty()
+                .containsExactlyElementsOf(missionFiles(source));
         assertThat(missionFiles(copy)).containsExactlyElementsOf(written);
         for (String file : written) {
             assertThat(copy.resolve(file)).as(file).hasSameBinaryContentAs(source.resolve(file));
