@@ -54,6 +54,13 @@ tags:
       The agent profiles of an activation: the read of one profile under an activation, with its governance and the
       state of each entry. Its own tag, so that the :profiles-edge slice implements it in a controller of its own beside
       the activation set's: the generic effective read of an artifact never renders a profile body.
+  - name: EffectiveMissionTypes
+    description: >-
+      The mission types of an activation: the mission type the layer merge keeps under an activation, in the Artifact
+      envelope, its steps and its skeletons, as the pack that holds the winner stores them, with every link under the
+      activation. Its own tag, so that the :missions-edge slice implements it in a controller of its own beside the
+      pack-scoped reads, as EffectiveAgentProfiles does for a profile: the generic effective read of an artifact never
+      renders a mission type body.
   - name: MissionTypes
     description: >-
       The mission types of a Charter Pack: a mission type in the Artifact envelope, its steps with their stored
@@ -127,6 +134,12 @@ paths:
     $ref: paths/activations_activationId_artifacts.yaml
   /activations/{activationId}/artifacts/agent_profile/{artifactId}:
     $ref: paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
+  /activations/{activationId}/artifacts/mission_type/{missionTypeId}:
+    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId.yaml
+  /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}:
+    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_steps_stepId.yaml
+  /activations/{activationId}/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}:
+    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_skeletons_skeletonName.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
   /activations/{activationId}/skipped:

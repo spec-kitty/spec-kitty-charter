@@ -1,0 +1,51 @@
+get:
+  operationId: getEffectiveMissionType
+  summary: Get the mission type in force under an activation, with its steps and skeletons.
+  description: >-
+    It answers the layer-merge winner of the mission type in the activation's merged closure, the version
+    getEffectiveArtifact names for the same id, in the Artifact envelope as getPackMissionType does, with packId the
+    pack that holds the winner. It is answered whatever the type's state under the activation: a type the activation
+    does not select is still read, as getEffectiveArtifact reads it. Its steps and skeletons link (self) to
+    getEffectiveMissionStep and getEffectiveMissionSkeleton, and its skeletons are those of the pack that holds the
+    winner (skeletons are not merged on their own). _links holds self, collection (the activation's effective artifacts
+    of kind mission_type) and artifact, the pack-scoped read getPackMissionType of the winner in the pack that holds it,
+    as getEffectiveArtifact and getEffectiveAgentProfile link it. This literal path is preferred over the templated
+    getEffectiveArtifact, which carries no body. An unknown activation is a 404 activation_not_found, then a mission
+    type no pack of the activation's closure holds is a 404 mission_type_not_found; a pack of the closure that is no
+    longer configured, a closure that cannot compose or merge, and a winner whose pack cannot read it are 500 with
+    their code, and inputs that change while it is read are stale_input. The answer is one verified read and carries
+    the source fingerprint it verified. No ETag.
+  tags:
+    - EffectiveMissionTypes
+  parameters:
+    - $ref: ../parameters/ActivationId.yaml
+    - $ref: ../parameters/MissionTypeId.yaml
+  responses:
+    '200':
+      description: The mission type in force, in the Artifact envelope.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            software-dev:
+              $ref: ../examples/Artifact.activation-mission-type.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationMissionTypeNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

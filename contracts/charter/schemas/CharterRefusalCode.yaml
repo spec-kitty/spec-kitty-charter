@@ -32,8 +32,10 @@ description: >-
   mission_type, when the path names a mission type the activation's closure does not hold, and by the effective
   action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
   the merged closure does not hold for that mission type. Both are raised by the mission type reads too
-  (getPackMissionType, getPackMissionStep and getPackMissionSkeleton): mission_type_not_found for a mission type the
-  pack does not hold, after the pack is judged, and action_not_found by the step reads for a step the type does not hold, since a step is
+  (getPackMissionType, getPackMissionStep, getPackMissionSkeleton and their activation counterparts
+  getEffectiveMissionType, getEffectiveMissionStep and getEffectiveMissionSkeleton): mission_type_not_found for a
+  mission type the pack or the activation's merged closure does not hold, after the pack or the activation is judged,
+  and action_not_found by the step reads for a step the type does not hold, since a step is
   the action action:<type>/<step>. The references read of a mission_type answers mission_type_not_found as the
   not-found code of its kind. mission_step_contract_not_found (404) is the not-found code of kind
   mission_step_contract on the generic item and references reads, and skeleton_not_found (404) is answered by the

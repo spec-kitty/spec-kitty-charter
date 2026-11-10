@@ -1,0 +1,156 @@
+summary: >-
+  The layer-merge winner of software-dev under activation a-1, held by pack core; every link but artifact, the pack-scoped read of the winner, stays under the activation.
+value:
+  kind: mission_type
+  id: software-dev
+  packId: core
+  missionType:
+    id: software-dev
+    schemaVersion: '1.0'
+    title: Software Development
+    description: Build high-quality software with structured workflows and test-driven development
+    content: |-
+      You are a software development agent following TDD practices.
+      Your charter enforces Library-First, CLI Interface, and Test-First principles.
+      You work in structured phases: research -> design -> implement -> test -> review.
+
+      Key practices:
+      - Tests before code (non-negotiable)
+      - Library-first architecture
+      - CLI interfaces for all missions
+      - Integration tests over mocks
+      - Real dependencies over mocks in testing
+    requiresSubstantiveSpec: true
+    pathConventions:
+      workspace: src/
+      tests: tests/
+      deliverables: contracts/
+      documentation: docs/
+    expectedOutputArtifacts:
+      - artifactKey: evidence.research
+        artifactClass: evidence
+        pathPattern: research.md
+        blocking: false
+      - artifactKey: evidence.gap-analysis
+        artifactClass: evidence
+        pathPattern: gap-analysis.md
+        blocking: false
+      - artifactKey: evidence.quickstart
+        artifactClass: evidence
+        pathPattern: quickstart.md
+        blocking: false
+      - artifactKey: evidence.data-model
+        artifactClass: evidence
+        pathPattern: data-model.md
+        blocking: false
+      - artifactKey: runtime.charter-lint.decay
+        artifactClass: runtime
+        pathPattern: lint-report.json
+        blocking: false
+    steps:
+      - id: discovery
+        title: 'Discovery & Research'
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/discovery
+      - id: specify
+        title: Specification
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify
+      - id: plan
+        title: Implementation Planning
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/plan
+      - id: tasks
+        title: Task Breakdown
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/tasks
+      - id: analyze
+        title: Analysis
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/analyze
+      - id: implement
+        title: Implementation
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
+      - id: review
+        title: Code Review
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review
+      - id: accept
+        title: Acceptance
+        onDemand: false
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/accept
+      - id: charter
+        title: Charter
+        onDemand: true
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/charter
+      - id: tasks-finalize
+        title: Finalize Tasks
+        onDemand: true
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/tasks-finalize
+      - id: tasks-outline
+        title: Task Outline
+        onDemand: true
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/tasks-outline
+      - id: tasks-packages
+        title: Task Packages
+        onDemand: true
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/tasks-packages
+      - id: retrospect
+        title: Retrospective
+        onDemand: true
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/retrospect
+    skeletons:
+      - name: plan-template.md
+        path: templates/plan-template.md
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/plan-template.md
+      - name: spec-template.md
+        path: templates/spec-template.md
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/spec-template.md
+      - name: task-prompt-template.md
+        path: templates/task-prompt-template.md
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/task-prompt-template.md
+      - name: tasks-template.md
+        path: templates/tasks-template.md
+        _links:
+          self:
+            href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/tasks-template.md
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev
+    collection:
+      href: /api/v1/activations/a-1/artifacts?kind=mission_type
+    artifact:
+      href: /api/v1/packs/core/artifacts/mission_type/software-dev
