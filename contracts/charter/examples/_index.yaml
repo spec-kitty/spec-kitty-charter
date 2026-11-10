@@ -1,5 +1,6 @@
 files:
   - ApiRoot.links.yaml
+  - Artifact.agent_profile.yaml
   - Artifact.directive.yaml
   - Artifact.paradigm.yaml
   - Artifact.styleguide.yaml

@@ -151,6 +151,7 @@ used.
 | `exclude`, `include` | `…/exclusions/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact; `exclude` is absent on a required or locked one, `include` present only on an excluded one | Proposed |
 | `apply-preset` | `…/presets/{presetId}` | `PUT` | An offered preset, seen from an activation | Proposed |
 | `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names | In the contract |
+| `references` | `…/packs/{packId}/artifacts/{kind}/{artifactId}/references` | `GET` | An agent profile: the references its pack writes for it | In the contract on an agent profile |
 
 ## Anti-patterns
 

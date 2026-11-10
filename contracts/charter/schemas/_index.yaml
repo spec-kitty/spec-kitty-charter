@@ -69,3 +69,17 @@ files:
   - PackRegistrationNotices.yaml
   - PackSourceRecord.yaml
   - PackRegistrationProblem.yaml
+  - AgentProfile.yaml
+  - AgentProfileArtifactReference.yaml
+  - AgentProfileCollaboration.yaml
+  - AgentProfileDirectiveReference.yaml
+  - AgentProfileExcluding.yaml
+  - AgentProfileFieldValues.yaml
+  - AgentProfileModeDefault.yaml
+  - AgentProfileSelfReviewProtocol.yaml
+  - AgentProfileSelfReviewStep.yaml
+  - AgentProfileSpecialization.yaml
+  - AgentProfileSpecializationContext.yaml
+  - GovernanceStep.yaml
+  - PackGovernanceEntry.yaml
+  - PackGovernanceSuggestion.yaml

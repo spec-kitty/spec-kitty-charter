@@ -1,0 +1,34 @@
+title: AgentProfileSpecialization
+description: What an agent profile focuses on and avoids (specialization in the file).
+type: object
+additionalProperties: false
+required:
+  - primaryFocus
+properties:
+  primaryFocus:
+    type: string
+    description: What the profile focuses on.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Specialization.java
+      symbol: Specialization.primaryFocus
+  secondaryAwareness:
+    type: string
+    description: What the profile keeps an eye on; omitted when the file declares none (the pack schema's default is the empty string).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Specialization.java
+      symbol: Specialization.secondaryAwareness
+  avoidanceBoundary:
+    type: string
+    description: What the profile stays out of; omitted when the file declares none (the pack schema's default is the empty string).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Specialization.java
+      symbol: Specialization.avoidanceBoundary
+  successDefinition:
+    type: string
+    description: When the profile's work counts as done; omitted when the file declares none (the pack schema's default is the empty string).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Specialization.java
+      symbol: Specialization.successDefinition
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Specialization.java
+  symbol: Specialization

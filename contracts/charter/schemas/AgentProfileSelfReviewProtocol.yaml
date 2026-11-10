@@ -1,0 +1,18 @@
+title: AgentProfileSelfReviewProtocol
+description: The checklist an agent profile runs before it hands work off (self-review-protocol in the file).
+type: object
+additionalProperties: false
+required:
+  - steps
+properties:
+  steps:
+    type: array
+    description: The steps, in the order the file declares them.
+    items:
+      $ref: AgentProfileSelfReviewStep.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.selfReviewSteps
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+  symbol: AgentProfile.selfReviewSteps
