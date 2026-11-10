@@ -308,12 +308,11 @@ class GovernanceWalkTest {
     // --------------------------------
 
     @Test
-    void aParentNoPackOfTheClosureHoldsIsListedAsNotHeldAndNothingIsListedBelowIt() {
+    void aParentNoPackOfTheClosureHoldsIsListedAsNotHeld() {
         Closure closure = closure(
                 List.of(P, "directive:Own"),
                 edge(P, RelationType.SPECIALIZES_FROM, "agent_profile:Gone"),
-                edge(P, RelationType.REQUIRES, "directive:Own"),
-                edge("agent_profile:Gone", RelationType.REQUIRES, "directive:Below"));
+                edge(P, RelationType.REQUIRES, "directive:Own"));
 
         Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 1, GovernanceWalkTest::everything);
 
@@ -325,6 +324,34 @@ class GovernanceWalkTest {
         assertThat(listed(walk(closure, 1, GovernanceWalkTest::everything)))
                 .as("the held-links walk, the activation-scoped one, never lists a target nobody holds")
                 .containsExactly("directive:Own");
+    }
+
+    @Test
+    void aParentOnlyADependencyHoldsIsListedNotHeldAndNoLaterStepListsAnythingBelowIt() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("agent_profile:Base", "directive:D", "tactic:T", "directive:DofT", "glossary_pack:G"),
+                        edge("agent_profile:Base", RelationType.REQUIRES, "directive:D"),
+                        edge("agent_profile:Base", RelationType.SUGGESTS, "tactic:T"),
+                        edge("tactic:T", RelationType.REQUIRES, "directive:DofT"),
+                        edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_pack:G"))
+                .pack(
+                        "qa",
+                        List.of("builtin"),
+                        List.of(P),
+                        edge(P, RelationType.SPECIALIZES_FROM, "agent_profile:Base"));
+
+        Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 2, GovernanceWalkTest::everything);
+
+        assertThat(written.entries())
+                .as("the bare parent means qa's own Base, which qa does not hold: builtin's Base edges are not P's")
+                .extracting(Entry::urn, Entry::step, Entry::via, Entry::held)
+                .containsExactly(tuple(urn("agent_profile:Base"), Step.LINEAGE, urn(P), false));
+        assertThat(listed(walk(closure, 2, GovernanceWalkTest::everything)))
+                .as("the activation walk over the same closure lists neither Base nor anything below it")
+                .isEmpty();
     }
 
     @Test
@@ -384,21 +411,47 @@ class GovernanceWalkTest {
     }
 
     @Test
-    void anUnheldNodeIsNeverExpandedEvenWhereAnotherPackHoldsTheSameUrnWithEdgesOfItsOwn() {
+    void anUnheldNodeIsNeverExpandedByAnyStepEvenWhereAnotherPackHoldsTheSameUrnWithEdgesOfItsOwn() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("directive:D", "tactic:Below", "tactic:Suggested", "glossary_pack:G"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:Below"),
+                        edge("directive:D", RelationType.SUGGESTS, "tactic:Suggested"),
+                        edge("directive:D", RelationType.VOCABULARY, "glossary_pack:G"))
+                .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "directive:D"));
+
+        assertThat(GovernanceWalk.overWritten(closure.merged())
+                        .walk(urn(P), 2, GovernanceWalkTest::everything)
+                        .entries())
+                .as("builtin's D requires, suggests and has vocabulary, but the node reached through the dangling edge"
+                        + " seeds no step")
+                .extracting(Entry::urn)
+                .containsExactly(urn("directive:D"));
+    }
+
+    @Test
+    void anUnheldNodeIsNotWalkedThroughWhenALaterStepReachesItThroughAHeldEdge() {
         Closure closure = new Closure()
                 .pack(
                         "builtin",
                         List.of(),
                         List.of("directive:D", "tactic:Below"),
-                        edge("directive:D", RelationType.REQUIRES, "tactic:Below"))
-                .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "directive:D"));
+                        edge("directive:D", RelationType.SUGGESTS, "tactic:Below"))
+                .pack(
+                        "qa",
+                        List.of("builtin"),
+                        List.of(P),
+                        edge(P, RelationType.REQUIRES, "directive:D"),
+                        edge(P, RelationType.SUGGESTS, "builtin::directive:D"));
 
         assertThat(GovernanceWalk.overWritten(closure.merged())
-                        .walk(urn(P), 1, GovernanceWalkTest::everything)
+                        .walk(urn(P), 2, GovernanceWalkTest::everything)
                         .entries())
-                .as("builtin's D requires tactic:Below, but the node reached through the dangling edge is not walked")
-                .extracting(Entry::urn)
-                .containsExactly(urn("directive:D"));
+                .as("D is listed held=false by the requires step; an entry with held false has nothing below it")
+                .extracting(Entry::urn, Entry::held)
+                .containsExactly(tuple(urn("directive:D"), false));
     }
 
     @Test

@@ -30,7 +30,7 @@ import java.util.function.Predicate;
  *
  * <p>The predicate decides what is in force. A node it refuses is neither listed nor walked through, so under an
  * activation an ancestor that is not in force is not listed and seeds nothing, where the cascade passes through it
- * (operator ruling, decision {@code 01M70ZFGS5PH4K5TFCS5XPTRRX}). The start is exempt, as the action's start is: a
+ * (operator ruling, decision {@code 01M7115WE6WQ7Q41HSS9ZHD1F3}). The start is exempt, as the action's start is: a
  * profile is walked whatever its own state. An artifact the {@code suggests} step reaches that the closure holds and the
  * predicate refuses is a candidate, reported and never expanded, as the action walk reports it. Entries carry no
  * enhancers: a profile takes no step enhancement.
@@ -38,17 +38,17 @@ import java.util.function.Predicate;
  * <p>A walk is over the links of one index. {@link #over} walks the links between held artifacts, which is what the
  * activation-scoped read wants. {@link #overWritten} walks every edge a held artifact writes, each resolved as the
  * activation walk resolves it: an edge to a place that holds nothing is listed with {@link Entry#held() held}
- * {@code false} and never expanded, so the pack-scoped read can say that a parent is declared and not there. A URN
- * reached by both a held and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent and
- * edge, a held edge before a dangling one on a tie), and {@code held} follows that parent's edge. Entries are sorted by full URN string, whatever step listed them.
+ * {@code false}, so the pack-scoped read can say that a parent is declared and not there. A URN reached by both a held
+ * and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent, then the smallest edge:
+ * {@code when}, then {@code reason}, then a held edge before a dangling one), and {@code held} follows that parent's
+ * edge. Entries are sorted by full URN string, whatever step listed them.
  *
- * <p>{@code held} describes the edge that listed the entry, not the artifact for good. Minimum-step semantics list a
- * URN once, at the earliest step that reaches it, so a URN a dangling edge lists in an early step (for example a
- * {@code requires} written to a pack that holds nothing) keeps {@code held} false even when a later step reaches it
- * through a held edge (for example a {@code suggests} edge to the copy another pack of the closure holds). The later
- * steps expand from every URN the earlier ones listed, so such an entry has children, and a child then names an entry
- * with {@code held} false as its {@code via}. A reader of the answer must not take {@code held} false to mean the entry
- * has nothing below it.
+ * <p>An entry listed with {@code held} false is never walked from (fold W2): it seeds no later step, and a later step
+ * that reaches it again through a held edge does not walk through it, even where another pack of the closure holds the
+ * same URN with edges of its own. Its edges are not the profile's: the edge that listed it leads to a place that holds
+ * nothing. So an entry with {@code held} false has nothing below it, and no entry names it as its {@code via}.
+ * Minimum-step semantics list a URN once, at the earliest step that reaches it, so such an entry keeps {@code held}
+ * false even when a later step reaches the URN through a held edge.
  */
 public final class GovernanceWalk {
 
@@ -96,7 +96,7 @@ public final class GovernanceWalk {
      *     that would also reach the entry does not change it
      * @param reason the {@code reason} of that edge; empty likewise
      * @param held whether the place the listing edge leads to holds the artifact: false only in a walk over written
-     *     links, for an edge to a place that holds nothing, which is listed and never expanded
+     *     links, for an edge to a place that holds nothing, which is listed and never walked from by any step
      */
     public record Entry(
             Urn urn, Step step, Urn via, int hops, Optional<String> when, Optional<String> reason, boolean held) {
@@ -177,8 +177,8 @@ public final class GovernanceWalk {
     }
 
     /**
-     * A walk over every edge a held artifact of the index writes (fold W2): a target no pack of the closure holds is
-     * listed with {@code held} false and never expanded. This is the pack-scoped walk's.
+     * A walk over every edge a held artifact of the index writes (fold W2): a target the edge's place does not hold is
+     * listed with {@code held} false and never walked from, by any step. This is the pack-scoped walk's.
      *
      * @param index the index, merged for the pack's composed closure
      * @return the walk
