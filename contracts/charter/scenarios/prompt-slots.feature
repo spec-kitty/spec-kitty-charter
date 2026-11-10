@@ -83,6 +83,7 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_slot_malformed"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/steps/plan.prompt.md"
     When I PUT "/packs/slots" with the archive "versioned"
@@ -103,6 +104,7 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_slot_malformed"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/steps/plan.prompt.md"
     When I PUT "/packs/slots" with the archive "unversioned"
@@ -168,6 +170,7 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_slot_not_empty"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/steps/plan.prompt.md"
     When I PUT "/packs/slots" with the archive "versioned"

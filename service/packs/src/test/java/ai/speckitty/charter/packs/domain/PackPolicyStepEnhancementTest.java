@@ -217,37 +217,6 @@ class PackPolicyStepEnhancementTest {
     }
 
     @Test
-    void theViolationsKeepTheRulesOrderOfPathThenRule() {
-        StepEnhancementFacts both = new StepEnhancementFacts(
-                List.of(
-                        new Enhancement(
-                                "missions/software-dev/enhancements/b.step-enhancement.yaml",
-                                "software-dev",
-                                "b",
-                                List.of(new Entry("tone:style", "b.prompt-fragment.md"))),
-                        new Enhancement(
-                                "missions/software-dev/enhancements/a.step-enhancement.yaml",
-                                "software-dev",
-                                "a",
-                                List.of(new Entry("tone:style", "a.prompt-fragment.md")))),
-                List.of(
-                        Companion.read("missions/software-dev/enhancements/b.prompt-fragment.md", false, false, "B.\n"),
-                        Companion.read(
-                                "missions/software-dev/enhancements/a.prompt-fragment.md", false, false, "A.\n")),
-                Set.of(
-                        "missions/software-dev/enhancements/b.prompt-fragment.md",
-                        "missions/software-dev/enhancements/a.prompt-fragment.md"),
-                Set.of(),
-                List.of());
-
-        assertThat(PackPolicy.stepEnhancementViolations(both))
-                .extracting(PackElementViolation::file)
-                .containsExactly(
-                        "missions/software-dev/enhancements/a.step-enhancement.yaml",
-                        "missions/software-dev/enhancements/b.step-enhancement.yaml");
-    }
-
-    @Test
     void theCodeProjectsOntoTheRefusalCodeOfTheSameToken() {
         assertThat(PackFindingCode.PROMPT_FRAGMENT_INVALID.refusal()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
         assertThat(PackPolicy.violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID))

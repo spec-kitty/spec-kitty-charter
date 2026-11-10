@@ -112,6 +112,10 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
+  # The count of each refusal below is exact. A fault the store itself refuses (a blank or frontmatter fragment, a
+  # missing companion, a schema violation, an id that differs from its stem) leaves its enhancement and fragment out
+  # of the model, so the report lists them as unmodelled too: three violations, the fault first. The faults the rules
+  # judge on held files stand alone.
   # FR-004. The store's companion read refuses a blank fragment and records it at the enhancement's yaml (the
   # reason names the fragment), under prompt_fragment_invalid.
   Scenario: A blank fragment is refused at the enhancement that names it, beside the pack with a fragment that says something
@@ -124,6 +128,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     And the field at "/problem/violations/0/detail" contains "spdd-plan.prompt-fragment.md"
@@ -148,6 +153,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     And the field at "/problem/violations/0/detail" contains "spdd-plan.prompt-fragment.md"
@@ -170,6 +176,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.prompt-fragment.md"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -198,6 +205,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -220,6 +228,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     And the field at "/problem/violations/0/detail" contains "spdd-gone.prompt-fragment.md"
@@ -244,6 +253,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "schema"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -264,6 +274,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "schema"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -285,6 +296,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -304,6 +316,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-stray.prompt-fragment.md"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -331,6 +344,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -355,6 +369,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -379,6 +394,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -407,6 +423,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     # the same overrides edge, its source qualified with the pack's own name, is the same enhancement
@@ -426,6 +443,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     When I PUT "/packs/enhancer" with the archive "bad"
     And I poll the registration until it ends
     Then the field at "/state" is "refused"
+    And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -492,6 +510,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 2 item(s)
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "twin"
@@ -516,6 +535,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     Then the field at "/state" is "refused"
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 3 item(s)
     And the field at "/problem/violations/0/code" is "schema"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
@@ -1326,3 +1346,5 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       {"from": "directive:A", "to": "rbase::mission_type:rdev", "type": "overrides"}
       """
     Then the response status is 201
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response header "ETag" differs from the remembered header

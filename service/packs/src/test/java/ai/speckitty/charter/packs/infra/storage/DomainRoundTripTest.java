@@ -231,6 +231,13 @@ class DomainRoundTripTest {
                 .containsEntry(FRAGMENT_REASONS, new Written(FRAGMENT_REASONS))
                 .containsEntry(FRAGMENT_CANVAS, new Written(FRAGMENT_CANVAS));
         assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+        for (String fragment : List.of(FRAGMENT_REASONS, FRAGMENT_CANVAS)) {
+            assertThat(MeaningComparator.adr0036()
+                            .compareMarkdown(
+                                    Files.readString(source.resolve(fragment)), written(outcomes.get(fragment))))
+                    .as("the fragment %s is written with its meaning", fragment)
+                    .isEmpty();
+        }
         assertThat(temp.resolve("out/built-in").resolve(ENHANCEMENT_FILE)).isRegularFile();
         assertThat(temp.resolve("out/built-in").resolve("spdd-plan.step-enhancement.yaml"))
                 .as("not at the pack root")
@@ -246,7 +253,11 @@ class DomainRoundTripTest {
 
         assertThat(outcomes.get(ENHANCEMENT_FILE))
                 .as("the control: with a fragment gone the enhancement is not written back as read")
-                .isNotEqualTo(new Written(ENHANCEMENT_FILE));
+                .isInstanceOfSatisfying(
+                        Refused.class,
+                        refused -> assertThat(refused.reason())
+                                .contains("prompt_fragment_invalid")
+                                .contains("spdd-canvas.prompt-fragment.md: missing"));
     }
 
     @Test
