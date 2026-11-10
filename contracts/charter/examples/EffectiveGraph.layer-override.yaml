@@ -1,9 +1,9 @@
 summary: >-
   The effective graph of an activation in which the project pack replaced the org pack's directive DIRECTIVE_010 whole,
   and a step of the software-dev mission type that scopes it. The edge into DIRECTIVE_010 ends at the version in force,
-  and the override is listed with the level that won and the level that lost. The directive node links its effective
-  read; the step and the mission type, which the pack-scoped artifact routes do not serve, link nothing. self is the
-  graph.
+  and the override is listed with the level that won and the level that lost. The directive node and the mission type
+  node link their effective reads, and the step links its step read under the activation (getEffectiveMissionStep).
+  self is the graph.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -11,6 +11,9 @@ value:
   nodes:
     - urn: action:software-dev/implement
       kind: action
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
     - urn: directive:DIRECTIVE_010
       kind: directive
       _links:
@@ -18,6 +21,9 @@ value:
           href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
     - urn: mission_type:software-dev
       kind: mission_type
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/mission_type/software-dev
   edges:
     - source: action:software-dev/implement
       relation: scope

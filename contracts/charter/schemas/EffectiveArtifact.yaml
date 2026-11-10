@@ -6,9 +6,10 @@ description: >-
   overrides it and so satisfies the requirement, never an enhancer (research R11). suggestion is present only for an artifact whose reason is not_selected and whose suggesting artifact is in force, reached only through a suggests edge,
   with that edge's when and reason, and absent for one reached through requires or another hard relation (#408 ruling 3).
 
-  _links holds effective-artifact, the read of this artifact under the activation (getEffectiveArtifact), and artifact,
-  the pack-scoped read of the artifact in the pack that holds the version in force (the packId of the item), both only
-  for a kind the pack-scoped artifact routes serve. It is absent for any other kind, so a client follows the link when it is
+  _links holds effective-artifact, the read of this artifact under the activation (getEffectiveArtifact, or
+  getEffectiveMissionType for a mission_type), and artifact, the pack-scoped read of the artifact in the pack that holds
+  the version in force (the packId of the item), both only for a kind the pack-scoped artifact routes serve, the
+  mission kinds among them. It is absent for any other kind, so a client follows the link when it is
   there and never builds the path. An item has no self: the list, the graph or the context that holds it is the answered
   resource. The members of this schema are copied by EffectiveArtifactRead, EffectiveGovernanceEntry and
   EffectiveAgentProfileRead, which carry a _links of their own.
