@@ -10,5 +10,8 @@ value:
     artifacts:
       href: /api/v1/packs/{packId}/artifacts{?kind}
       templated: true
+    activations:
+      href: /api/v1/activations
+      method: POST
     service-desc:
       href: /api/v1/openapi.yaml

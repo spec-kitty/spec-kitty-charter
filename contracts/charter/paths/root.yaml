@@ -4,7 +4,8 @@ get:
   description: >-
     The one known place a client starts from (ADR-0019 D2 and D4): links to itself, to the service
     info, to the offering, to the artifacts of a pack as an RFC 6570 template
-    (/api/v1/packs/{packId}/artifacts{?kind}, templated true) and to the contract document
+    (/api/v1/packs/{packId}/artifacts{?kind}, templated true), to the activation register
+    (activations, method POST: it creates an activation) and to the contract document
     (service-desc, RFC 8631). The root is /api/v1/, with the trailing slash; /api/v1 without it is
     not mapped to the root and answers the 404 of a path no operation defines. The root reads no pack
     file, so it never carries Charter-Source-Fingerprint and cannot be refused for a pack. Like every

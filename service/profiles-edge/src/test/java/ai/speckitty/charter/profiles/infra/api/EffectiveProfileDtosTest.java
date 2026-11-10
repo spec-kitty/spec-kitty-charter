@@ -181,6 +181,10 @@ class EffectiveProfileDtosTest {
         assertThat(entry.getEdge().getWhen()).isNull();
         assertThat(entry.getEdge().getReason()).isNull();
         assertThat(entry.getSatisfiedBy()).isNull();
+        assertThat(entry.getLinks().keySet()).containsExactly("effective-artifact", "artifact");
+        assertThat(entry.getLinks().get("effective-artifact").getHref())
+                .as("the entry's winner read under the activation")
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/D");
         assertThat(entry.getLinks().get("artifact").getHref()).isEqualTo("/api/v1/packs/house/artifacts/directive/D");
     }
 
@@ -304,6 +308,8 @@ class EffectiveProfileDtosTest {
         assertThat(first.get("edge").size()).isZero();
         assertThat(first.get("_links").get("artifact").get("href").asString())
                 .isEqualTo("/api/v1/packs/main/artifacts/directive/D");
+        assertThat(first.get("_links").get("effective-artifact").get("href").asString())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/D");
         assertThat(written.get("governance").get(1).get("_links").isObject()).isTrue();
         assertThat(written.get("governance").get(1).get("_links").size()).isZero();
         assertThat(written.get("agentProfile").get("model").isNull()).isTrue();

@@ -67,7 +67,8 @@ class EffectiveReadMapperTest {
     private static final String SET_TAG = "sha256:" + "ab".repeat(32);
 
     private final ActivationMapper activations = new ActivationMapper("/api/v1");
-    private final EffectiveReadMapper mapper = new EffectiveReadMapper(activations);
+    private final EffectiveReadMapper mapper = new EffectiveReadMapper(
+            activations, () -> List.of(ArtifactKind.DIRECTIVE, ArtifactKind.TACTIC, ArtifactKind.AGENT_PROFILE));
     private final StoredActivation stored = StoredActivation.of(
             new ActivationId("a-1"), ActivationDocument.builder().build().document());
 
@@ -352,6 +353,119 @@ class EffectiveReadMapperTest {
                 .isNull();
         assertThat(some.getDenyNotApplied()).containsExactly("tactic:t", "directive:A");
         assertThat(some.getRevision()).isEqualTo(stored.revision().token());
+    }
+
+    // ---- the item links (WP08): effective-artifact and artifact, for the kinds the pack-scoped routes serve
+
+    @Test
+    void anItemOfAServedKindLinksItsEffectiveReadAndItsWinnersPackScopedRead() {
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(
+                                item(A, Optional.empty(), Optional.empty()),
+                                item(T, Optional.empty(), Optional.empty()))),
+                true);
+
+        assertThat(wire.getItems().get(0).getLinks()).containsOnlyKeys("effective-artifact", "artifact");
+        assertThat(wire.getItems().get(0).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/A");
+        assertThat(wire.getItems().get(0).getLinks().get("artifact").getHref())
+                .as("the pack that holds the version in force")
+                .isEqualTo("/api/v1/packs/main/artifacts/directive/A");
+        assertThat(wire.getItems().get(1).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/tactic/t");
+        assertThat(wire.getItems().get(1).getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/main/artifacts/tactic/t");
+    }
+
+    @Test
+    void anItemOfAKindNoPackScopedRouteServesCarriesNoLinks() {
+        ArtifactRef paradigm = new ArtifactRef(ArtifactKind.PARADIGM, "p");
+
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(
+                                item(paradigm, Optional.empty(), Optional.empty()),
+                                item(A, Optional.empty(), Optional.empty()))),
+                true);
+
+        assertThat(wire.getItems().get(0).getLinks()).as("not served").isNull();
+        assertThat(wire.getItems().get(1).getLinks()).as("the control, served").isNotNull();
+    }
+
+    @Test
+    void theItemLinksPercentEncodeAnIdAndFollowTheKindsTheServiceListsToday() {
+        ArtifactRef spaced = new ArtifactRef(ArtifactKind.DIRECTIVE, "a b/c");
+        EffectiveReadMapper onlyTactics = new EffectiveReadMapper(activations, () -> List.of(ArtifactKind.TACTIC));
+
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(item(spaced, Optional.empty(), Optional.empty()))),
+                true);
+        EffectiveArtifactList narrower = onlyTactics.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(item(spaced, Optional.empty(), Optional.empty()))),
+                true);
+
+        assertThat(wire.getItems()
+                        .getFirst()
+                        .getLinks()
+                        .get("effective-artifact")
+                        .getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/a%20b%2Fc");
+        assertThat(wire.getItems().getFirst().getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/main/artifacts/directive/a%20b%2Fc");
+        assertThat(narrower.getItems().getFirst().getLinks())
+                .as("the kinds are asked of the service each time, not fixed")
+                .isNull();
+    }
+
+    @Test
+    void aGraphNodeOfAServedKindLinksItsEffectiveReadAndAnActionOrAnUnservedNodeLinksNothing() {
+        NodeRef step = new NodeRef(NodeKind.ACTION, "software-dev/implement");
+        NodeRef missionType = new NodeRef(NodeKind.MISSION_TYPE, "software-dev");
+        GraphSnapshot graph =
+                new GraphSnapshot(List.of(step, missionType, NodeRef.of(A), NodeRef.of(T)), List.of(), List.of());
+
+        EffectiveGraph wire = mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph));
+
+        assertThat(wire.getNodes().get(0).getLinks())
+                .as("an action is no artifact")
+                .isNull();
+        assertThat(wire.getNodes().get(1).getLinks())
+                .as("a mission type is not served")
+                .isNull();
+        assertThat(wire.getNodes().get(2).getLinks()).containsOnlyKeys("effective-artifact");
+        assertThat(wire.getNodes().get(2).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/A");
+        assertThat(wire.getNodes().get(3).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/tactic/t");
+    }
+
+    @Test
+    void anItemOfTheActionContextLinksLikeAnItemOfTheList() {
+        EffectiveContext context = new EffectiveContext(
+                List.of(item(A, Optional.empty(), Optional.empty())), List.of(), EffectiveSkippedReport.empty());
+
+        EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
+
+        assertThat(wire.getArtifacts().getFirst().getLinks()).containsOnlyKeys("effective-artifact", "artifact");
+        assertThat(wire.getArtifacts()
+                        .getFirst()
+                        .getLinks()
+                        .get("effective-artifact")
+                        .getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/A");
+        assertThat(wire.getArtifacts().getFirst().getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/main/artifacts/directive/A");
     }
 
     // ---- the graph and the action context (IC-11)

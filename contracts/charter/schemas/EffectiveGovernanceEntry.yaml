@@ -25,8 +25,10 @@ description: >-
   suggested artifact is an entry of the list; there is no suggestions list. Entries carry no enhancedBy or
   enhances: a profile takes no step enhancement.
 
-  _links holds artifact, the pack-scoped read of the entry in the pack that holds the version in force (the packId of the
-  entry), for a kind the generic artifact route serves, and is an empty object otherwise.
+  _links holds effective-artifact, the read of the entry under the same activation (getEffectiveArtifact, or the
+  profile's own read for an agent_profile), and artifact, the pack-scoped read of the entry in the pack that holds the
+  version in force (the packId of the entry), both for a kind the pack-scoped artifact routes serve, and is an empty object
+  otherwise.
 type: object
 additionalProperties: false
 required:

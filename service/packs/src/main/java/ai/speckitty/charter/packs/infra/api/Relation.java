@@ -22,6 +22,9 @@ public enum Relation {
     /** A pack's artifact list, or its template. */
     ARTIFACTS("artifacts"),
 
+    /** The activation register, followed with {@code POST} to create an activation. */
+    ACTIVATIONS("activations"),
+
     /** The contract document (RFC 8631). */
     SERVICE_DESC("service-desc"),
 

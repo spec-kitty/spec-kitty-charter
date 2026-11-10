@@ -14,6 +14,7 @@ import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ActivationPackList;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
+import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.ResolvedDependency;
@@ -113,9 +114,27 @@ class ActivationMapperTest {
 
         assertThat(activation.getActivationId()).isEqualTo("A-1");
         assertThat(activation.getRevision()).isEqualTo(document.revision().token());
-        assertThat(activation.getLinks()).containsOnlyKeys("self");
+        assertThat(activation.getLinks()).containsOnlyKeys("self", "artifacts");
         assertThat(activation.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/A-1");
         assertThat(mapper.self("a b")).isEqualTo("/api/v1/activations/a%20b");
+    }
+
+    @Test
+    void anActivationLinksItsEffectiveListAsATemplateOfTheKindAndStateFilters() {
+        StoredActivation stored = StoredActivation.of(
+                new ActivationId("a-1"), ActivationDocument.builder().build().document());
+
+        Link artifacts = mapper.toActivation(stored).getLinks().get("artifacts");
+
+        assertThat(artifacts.getHref()).isEqualTo("/api/v1/activations/a-1/artifacts{?kind,state}");
+        assertThat(artifacts.getTemplated()).isTrue();
+        assertThat(Optional.ofNullable(artifacts.getMethod()))
+                .as("a GET, the default, is not written")
+                .isEmpty();
+        assertThat(mapper.toActivation(stored, List.of()).getLinks()).containsKeys("self", "artifacts");
+        assertThat(mapper.toReplaced(new ActivationService.Written(stored, false, List.of(), List.of()))
+                        .getLinks())
+                .containsKeys("self", "artifacts");
     }
 
     @Test

@@ -97,8 +97,10 @@ public class ActivationMapper {
      */
     public Activation toActivation(StoredActivation stored) {
         String id = stored.id().value();
-        return new Activation(
-                id, stored.revision().token(), toConfig(stored.document()), Map.of("self", link(self(id))));
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put("self", link(self(id)));
+        links.put("artifacts", new Link(self(id) + "/artifacts{?kind,state}").templated(true));
+        return new Activation(id, stored.revision().token(), toConfig(stored.document()), links);
     }
 
     /**
@@ -144,6 +146,31 @@ public class ActivationMapper {
      */
     public String self(String activationId) {
         return href("activations", activationId);
+    }
+
+    /**
+     * The path of the read of one artifact under an activation ({@code getEffectiveArtifact}, or the profile's literal
+     * route for an agent profile).
+     *
+     * @param activationId the activation's id
+     * @param kindToken the artifact's kind token
+     * @param artifactId the artifact's id
+     * @return the absolute path, each segment percent-encoded
+     */
+    public String effectiveArtifact(String activationId, String kindToken, String artifactId) {
+        return href("activations", activationId, "artifacts", kindToken, artifactId);
+    }
+
+    /**
+     * The path of the pack-scoped read of one artifact.
+     *
+     * @param packId the pack's configured id
+     * @param kindToken the artifact's kind token
+     * @param artifactId the artifact's id
+     * @return the absolute path, each segment percent-encoded
+     */
+    public String packArtifact(String packId, String kindToken, String artifactId) {
+        return href("packs", packId, "artifacts", kindToken, artifactId);
     }
 
     /**

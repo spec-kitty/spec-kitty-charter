@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
+import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
@@ -39,7 +40,8 @@ class ActivationRuntimeHintsTest {
             DeactivatedArtifacts.class,
             SelectionRequest.class,
             ExclusionRequest.class,
-            PresetApplication.class);
+            PresetApplication.class,
+            EffectiveGraphNode.class);
 
     /** The per-artifact and preset writes' answer, and every type it reaches, which the native executable writes. */
     static final List<Class<?>> ANSWERED = List.of(

@@ -8,7 +8,7 @@
 # winner's pack stores it and its governance walked under the activation: an artifact in force is listed, a suggestion
 # out of force is listed with its state, and an ancestor that is not in force is dropped with what only it requires (W1).
 # The profile the walk starts from is exempt from that predicate (W4). The scenarios follow the links: the artifact link
-# of the answer and of every governance entry, and the activation.
+# of the answer and of every governance entry (artifact, and effective-artifact since WP08), and the activation.
 #
 # Steps these scenarios add to the vocabulary of README.md (bound in ProfileSteps):
 # - `Then the effective governance holds exactly the entries:` followed by a doc string, one entry per line, in the
@@ -216,7 +216,11 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/governance/1/policy" is "open"
     And the field at "/governance/1/relation" is "requires"
     And the field at "/governance/1/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010"
+    And the field at "/governance/1/_links/effective-artifact/href" is "/api/v1/activations/charter/artifacts/directive/DIRECTIVE_010"
+    And the field at "/governance/0/_links/effective-artifact/href" is "/api/v1/activations/charter/artifacts/agent_profile/implementer-ivan"
     And following the link "artifact" of every element of "governance" answers 200
+    When I GET "/activations/charter/artifacts/agent_profile/java-jenny"
+    Then following the link "effective-artifact" of every element of "governance" answers 200
     When I GET "/activations/charter/artifacts/agent_profile/java-jenny"
     And I follow the link "artifact"
     Then the response status is 200
@@ -247,6 +251,8 @@ Feature: An agent profile is read under an activation, with its governance and t
       styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     And following the link "artifact" of every element of "governance" answers 200
+    When I GET "/activations/charter/artifacts/agent_profile/java-jenny?depth=1"
+    Then following the link "effective-artifact" of every element of "governance" answers 200
 
   Scenario: Every entry carries the words of its edge: a requires entry, and {} for a wordless suggests entry in force or out of force
     The java-conventions requires edge states a when and a reason, so its entry carries them although it is not a suggests
