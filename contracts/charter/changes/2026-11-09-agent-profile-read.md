@@ -16,3 +16,7 @@
   the digest the read verified, and an `ETag` that is the pack revision, as a directive's is. A profile the pack does not
   hold is `404 artifact_not_found`. The `Depth` parameter now speaks of any walk, and the `references` relation is added
   to the relation table for the profile's link to its references read.
+  `ArtifactKindToken` gains `agent_profile`, last, so `GET /packs/{packId}/artifacts?kind=agent_profile` lists a pack's
+  profiles (a request-side enum widened: a client that never sends the token is unaffected). The pack's artifact list,
+  `listArtifactReferences` and `deletePackArtifact` now serve the kind (see the `### Changed` fragment that follows this
+  one); the `collection`, `references` and lineage `artifact` links of a profile read therefore answer 200.

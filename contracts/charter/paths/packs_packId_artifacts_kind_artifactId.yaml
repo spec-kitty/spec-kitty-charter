@@ -8,8 +8,11 @@ get:
     a slug breaks the parameter's schema and is a 400 Problem without a code, before anything is read.
     Then the pack is judged: an identifier that matches no configured pack, by name or by declared
     pack_id, is a 404 pack_not_found, whatever the kind. Then a slug that names no kind the service
-    serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind.
-    A configured
+    serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind
+    (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found or
+    toolguide_not_found). An agent_profile is a kind of the pack that the literal operation
+    getPackAgentProfile answers, with the profile and its governance, and its not-found code is
+    artifact_not_found; this templated read never carries a profile body. A configured
     pack whose directory is missing or that has no readable pack.yaml (none, or an invalid one;
     operator ruling of 2026-10-31), whatever kind and id the request names, or a pack holding a file
     the fingerprint covers that cannot be read or a directory that cannot be listed, is a 500
@@ -39,7 +42,8 @@ get:
         ETag:
           description: >-
             The pack revision, for optimistic concurrency on a later write. Sent for the writable kinds
-            only (directive, styleguide, paradigm and toolguide); a tactic carries none.
+            only (directive, styleguide, paradigm and toolguide); a tactic carries none. The agent_profile
+            read, getPackAgentProfile, carries it too.
           required: false
           schema:
             type: string
@@ -74,7 +78,9 @@ delete:
     lock. The pack is judged first: an identifier that matches no configured pack is 404 pack_not_found; then a slug
     that names no kind the service serves is 404 kind_not_found; then an id the pack does not hold is the
     not-found code of its kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found or
-    toolguide_not_found), the code getPackArtifact answers on the same path. Then, in this order: 409 artifact_referenced while another artifact
+    toolguide_not_found), the code getPackArtifact answers on the same path, and artifact_not_found for an
+    agent_profile, which getPackAgentProfile answers likewise. An agent profile is removed as the writable kinds are,
+    with the If-Match of the ETag getPackAgentProfile gave. Then, in this order: 409 artifact_referenced while another artifact
     or pack still refers to it, judged against the tree after the removal, from the edges, the preset items and the
     descriptor overrides entries of every configured pack, so a referrer the same request removes does not count and
     the data-only fields of ADR-0064 D11 never do; its packs member (at most 100) names the referring packs and its
@@ -120,8 +126,8 @@ delete:
     '404':
       description: >-
         The pack, the kind or the artifact the path names is not there: 404 pack_not_found, kind_not_found or
-        the not-found code of the kind (directive_not_found, tactic_not_found and so on, as on getPackArtifact), each its
-        own code. The pack is judged first, then the kind, then the id.
+        the not-found code of the kind (directive_not_found, tactic_not_found and so on, as on getPackArtifact;
+        artifact_not_found for an agent_profile), each its own code. The pack is judged first, then the kind, then the id.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

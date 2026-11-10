@@ -61,6 +61,8 @@ final class ArtifactDtos {
             case ArtifactReadService.Item.OfParadigm paradigm -> envelope.paradigm(paradigm(paradigm.artifact()));
             case ArtifactReadService.Item.OfToolguide toolguide ->
                 envelope.toolguide(toolguide(toolguide.artifact(), guides));
+            case ArtifactReadService.Item.Foreign foreign ->
+                throw new IllegalStateException("served by the kind's own controller");
         };
     }
 

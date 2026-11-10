@@ -42,6 +42,9 @@ import ai.speckitty.charter.packs.domain.TacticStep;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -80,6 +83,7 @@ class ArtifactReadServiceTest {
                     .id(PACK)
                     .descriptor(descriptor(PACK))
                     .toolguide(toolguide("git"))
+                    .artifact(profile("jenny"))
                     .paradigm(paradigm("layered"))
                     .tactic(tactic("alpha", "Alpha"))
                     .directive(directive("GUARD"))
@@ -126,7 +130,8 @@ class ArtifactReadServiceTest {
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
                         new TacticReadService(store, store, read)),
-                pack -> edges.getOrDefault(pack, List.of()));
+                pack -> edges.getOrDefault(pack, List.of()),
+                revisions);
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -149,7 +154,8 @@ class ArtifactReadServiceTest {
                         position(ArtifactKind.DIRECTIVE, "GUARD"),
                         position(ArtifactKind.STYLEGUIDE, "java-style"),
                         position(ArtifactKind.PARADIGM, "layered"),
-                        position(ArtifactKind.TOOLGUIDE, "git"));
+                        position(ArtifactKind.TOOLGUIDE, "git"),
+                        position(ArtifactKind.AGENT_PROFILE, "jenny"));
         assertThat(page.hasMore()).isFalse();
     }
 
@@ -160,7 +166,13 @@ class ArtifactReadServiceTest {
                         .items())
                 .extracting(ArtifactReadService.Summary::title)
                 .containsExactly(
-                        "Zeta", "Alpha", "Title of GUARD", "Title of java-style", "Name of layered", "How to use git");
+                        "Zeta",
+                        "Alpha",
+                        "Title of GUARD",
+                        "Title of java-style",
+                        "Name of layered",
+                        "How to use git",
+                        "Name of jenny");
     }
 
     @Test
@@ -216,19 +228,19 @@ class ArtifactReadServiceTest {
 
     @Test
     void aPageOfExactlyTheRemainingItemsHasNoMore() {
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 7)
                         .value()
                         .hasMore())
                 .isFalse();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
                         .value()
                         .hasMore())
                 .isTrue();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
                         .value()
                         .items())
-                .hasSize(5);
-        assertThat(service.list(PACK, Optional.empty(), Optional.of(position(ArtifactKind.TOOLGUIDE, "git")), 5)
+                .hasSize(6);
+        assertThat(service.list(PACK, Optional.empty(), Optional.of(position(ArtifactKind.AGENT_PROFILE, "jenny")), 5)
                         .value())
                 .as("after the last item")
                 .isEqualTo(new ArtifactReadService.Page(List.of(), false));
@@ -439,17 +451,68 @@ class ArtifactReadServiceTest {
     // ---- the served kinds -------------------------------------------------------------------------------------
 
     @Test
-    void theServedKindsAreTheFiveInTheirOrder() {
+    void theServedKindsAreTheFiveThenTheAgentProfileInTheirOrder() {
         assertThat(ArtifactReadService.SERVED)
                 .containsExactly(
                         ArtifactKind.TACTIC,
                         ArtifactKind.DIRECTIVE,
                         ArtifactKind.STYLEGUIDE,
                         ArtifactKind.PARADIGM,
-                        ArtifactKind.TOOLGUIDE);
+                        ArtifactKind.TOOLGUIDE,
+                        ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.servedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
+        assertThat(ArtifactReadService.servedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.servedKind("procedure")).isEmpty();
         assertThat(ArtifactReadService.servedKind("TACTIC")).isEmpty();
+    }
+
+    @Test
+    void theListedKindsAreTheOnesTheListNamesAndInThisMissionTheServedOnes() {
+        assertThat(ArtifactReadService.listed()).containsExactlyElementsOf(ArtifactReadService.SERVED);
+        assertThat(ArtifactReadService.listed()).contains(ArtifactKind.AGENT_PROFILE);
+        assertThat(ArtifactReadService.listed()).isUnmodifiable();
+    }
+
+    @Test
+    void anAgentProfileIsListedAndFiltered() {
+        assertThat(service.list(PACK, Optional.of(ArtifactKind.AGENT_PROFILE), Optional.empty(), 50)
+                        .value()
+                        .items())
+                .extracting(ArtifactReadService.Summary::position, ArtifactReadService.Summary::title)
+                .containsExactly(tuple(position(ArtifactKind.AGENT_PROFILE, "jenny"), "Name of jenny"));
+    }
+
+    @Test
+    void anAgentProfileItemIsForeignWithTheRevisionOfItsPack() {
+        var verified = service.item(PACK, "agent_profile", "jenny");
+
+        assertThat(verified.value()).isInstanceOfSatisfying(ArtifactReadService.Item.Foreign.class, item -> {
+            assertThat(item.artifact().localId()).isEqualTo("jenny");
+            assertThat(item.revision()).contains(REVISION);
+        });
+        assertThat(verified.fingerprint()).isEqualTo(D1);
+    }
+
+    @Test
+    void anAgentProfileThePackDoesNotHoldIsArtifactNotFound() {
+        assertThatThrownBy(() -> service.item(PACK, "agent_profile", "nobody"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+                    assertThat(refused.getMessage()).isEqualTo("Pack pack-a has no agent_profile nobody.");
+                });
+        assertThat(codeOf(() -> service.item(ABSENT, "agent_profile", "jenny"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+        assertThat(ArtifactReadService.absentCode(ArtifactKind.AGENT_PROFILE))
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+    }
+
+    @Test
+    void theReferencesOfAnAgentProfileAreItsWrittenEdges() {
+        ArtifactReadService withEdges = referenceFixture(() -> D1);
+        edges.put(PACK, List.of(new PackEdge("agent_profile:jenny", "directive:OWN_2", RelationType.REQUIRES)));
+
+        assertThat(withEdges.references(PACK, "agent_profile", "jenny").value())
+                .extracting(reference -> reference.written().toString(), reference -> reference.relation())
+                .containsExactly(tuple("directive:OWN_2", RelationType.REQUIRES));
     }
 
     // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
@@ -579,6 +642,7 @@ class ArtifactReadServiceTest {
                         .descriptor(descriptorNamed(PACK, "alpha", SIBLING))
                         .directive(directiveIn(PACK, "OWN_1"))
                         .directive(directiveIn(PACK, "OWN_2"))
+                        .artifact(profile("jenny"))
                         .build());
         stored.put(
                 SIBLING,
@@ -602,6 +666,17 @@ class ArtifactReadServiceTest {
                 .title("Title of " + id)
                 .intent("Intent of " + id)
                 .enforcement(Enforcement.REQUIRED);
+    }
+
+    private static AgentProfile profile(String id) {
+        return AgentProfile.builder()
+                .id(new AgentProfileIdentifier(id))
+                .packId(PACK)
+                .name("Name of " + id)
+                .role("implementer")
+                .purpose("Purpose of " + id)
+                .specialization(new Specialization("Focus", Optional.empty(), Optional.empty(), Optional.empty()))
+                .build();
     }
 
     private static Tactic tactic(String id, String name) {

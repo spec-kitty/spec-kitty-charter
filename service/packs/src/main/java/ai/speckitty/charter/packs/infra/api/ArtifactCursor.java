@@ -54,7 +54,7 @@ final class ArtifactCursor {
             throw refused();
         }
         ArtifactKind kind =
-                ArtifactReadService.servedKind(text.substring(0, slash)).orElseThrow(ArtifactCursor::refused);
+                ArtifactReadService.listedKind(text.substring(0, slash)).orElseThrow(ArtifactCursor::refused);
         if (filter.isPresent() && filter.get() != kind) {
             throw refused();
         }

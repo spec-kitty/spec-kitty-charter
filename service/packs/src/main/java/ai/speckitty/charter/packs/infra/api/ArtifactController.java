@@ -128,7 +128,7 @@ public class ArtifactController implements ArtifactsApi {
                         .urn()
                         .kind()
                         .artifactKind()
-                        .filter(kind -> ArtifactReadService.SERVED.contains(kind))
+                        .filter(kind -> ArtifactReadService.listed().contains(kind))
                         .ifPresent(kind -> target.put(
                                 Relation.ARTIFACT,
                                 links.link(
@@ -156,7 +156,7 @@ public class ArtifactController implements ArtifactsApi {
         if (kind == null) {
             return Optional.empty();
         }
-        return Optional.of(ArtifactReadService.servedKind(kind)
+        return Optional.of(ArtifactReadService.listedKind(kind)
                 .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST)));
     }
 
