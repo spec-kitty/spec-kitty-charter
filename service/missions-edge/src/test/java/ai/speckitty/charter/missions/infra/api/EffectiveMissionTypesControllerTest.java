@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.infra.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -24,6 +25,7 @@ import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +192,34 @@ class EffectiveMissionTypesControllerTest {
                         .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev"));
     }
 
+    /**
+     * D9: a skeleton whose name holds a {@code ;} is linked with it encoded ({@code %3B}), which the servlet stack would
+     * otherwise read as the start of path parameters and drop, and the link reads it back.
+     */
+    @Test
+    void aSkeletonWhoseNameHoldsASemicolonIsLinkedEncodedAndReadBack() throws Exception {
+        String href = "/api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/x%3By.md";
+        mvc.perform(get("/api/v1/activations/a-1/artifacts/mission_type/software-dev"))
+                .andExpect(jsonPath("$.missionType.skeletons[1].name").value("x;y.md"))
+                .andExpect(
+                        jsonPath("$.missionType.skeletons[1]._links.self.href").value(href));
+        mvc.perform(get(new URI(href)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("x;y.md"))
+                .andExpect(jsonPath("$.content").value("# Semicolon\n"))
+                .andExpect(jsonPath("$._links.self.href").value(href));
+    }
+
+    /** A {@code \} is encoded as any character a segment may not hold (the embedded Tomcat refuses it; deferred). */
+    @Test
+    void aBackslashIsEncodedAsAnyCharacterASegmentMayNotHold() {
+        assertThat(new MissionLinks("/api/v1/")
+                        .activation("a 1")
+                        .skeleton("software-dev", "a\\b;c~1d.md")
+                        .getHref())
+                .isEqualTo("/api/v1/activations/a%201/artifacts/mission_type/software-dev/skeletons/a%5Cb%3Bc~1d.md");
+    }
+
     /** A stand-in of the activation set's templated effective read, at the generated interface's path. */
     @RestController
     @RequestMapping("/api/v1")
@@ -228,7 +258,9 @@ class EffectiveMissionTypesControllerTest {
                 .build();
         return new MissionTypeHolding(
                 type,
-                List.of(new MissionTypeHolding.StoredSkeleton("divio/x.md", utf8("# X\n"))),
+                List.of(
+                        new MissionTypeHolding.StoredSkeleton("divio/x.md", utf8("# X\n")),
+                        new MissionTypeHolding.StoredSkeleton("x;y.md", utf8("# Semicolon\n"))),
                 List.of(),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
                 FINGERPRINT);
