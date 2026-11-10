@@ -23,14 +23,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Every procedure, every toolguide and every toolguide guide of the pinned open-packs checkout round-trips (#194): the
  * built-in, internal and qa packs are each read through the gate's own round trip ({@link DomainRoundTrip}) and every
  * procedure and toolguide file, and every guide modelled with its toolguide, is compared with its source by the gate's
  * own comparison (YAML by meaning, ADR-0036; a guide by its Markdown model). The #187 gate covers only the built-in
- * pack; this covers the two org packs that hold procedures and toolguides too, and pins how many there are. The qa
+ * pack; this covers the two org packs that hold procedures and toolguides too, and holds the gate to every such file on disk. The qa
  * pack has no {@code pack.yaml} at the pin, so it is read from a copy with a minimal descriptor added.
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
@@ -58,10 +58,10 @@ class ProcedureAndGuideCorpusTest {
     @TempDir
     Path host;
 
-    @ParameterizedTest(name = "{0}: {1} procedures, {2} toolguides, {2} guides")
-    @CsvSource({"built-in, 66, 19", "internal, 17, 3", "qa, 5, 3"})
-    @DisplayName("each pack's procedures, toolguides and guides round-trip, and their counts are pinned")
-    void everyProcedureToolguideAndGuideRoundTrips(String pack, int procedures, int toolguides) {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"built-in", "internal", "qa"})
+    @DisplayName("each pack's procedures, toolguides and guides round-trip, and the gate observes every one on disk")
+    void everyProcedureToolguideAndGuideRoundTrips(String pack) throws IOException {
         OpenPacksCorpus.assertPinned();
         Map<String, Optional<String>> observed = observe(pack);
 
@@ -76,12 +76,18 @@ class ProcedureAndGuideCorpusTest {
         assertThat(red)
                 .as("%s: procedures, toolguides and guides that do not round-trip", pack)
                 .isEmpty();
-        assertThat(procedureFiles).as("%s procedures", pack).hasSize(procedures);
-        assertThat(toolguideFiles).as("%s toolguides", pack).hasSize(toolguides);
         Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
+        assertThat(procedureFiles)
+                .as("%s: the procedures the gate observes are the procedure files on disk", pack)
+                .isNotEmpty()
+                .containsExactlyElementsOf(onDisk(packDirectory, ".procedure.yaml"));
+        assertThat(toolguideFiles)
+                .as("%s: the toolguides the gate observes are the toolguide files on disk", pack)
+                .isNotEmpty()
+                .containsExactlyElementsOf(onDisk(packDirectory, ".toolguide.yaml"));
         assertThat(guideFiles)
                 .as("%s: one guide per toolguide, each <toolguide id>.guide.md beside it", pack)
-                .hasSize(toolguides)
+                .hasSameSizeAs(toolguideFiles)
                 .containsExactlyInAnyOrderElementsOf(toolguideFiles.stream()
                         .map(toolguide -> guideOf(packDirectory, toolguide))
                         .toList());
@@ -91,30 +97,22 @@ class ProcedureAndGuideCorpusTest {
     }
 
     @Test
-    @DisplayName("the corpus holds 88 procedures, 25 toolguides and 25 guides")
-    void theCorpusCountsArePinned() {
-        OpenPacksCorpus.assertPinned();
-        int procedures = 0;
-        int toolguides = 0;
-        int guides = 0;
-        for (String pack : List.of("built-in", "internal", "qa")) {
-            Map<String, Optional<String>> observed = observe(pack);
-            procedures +=
-                    filesOf(observed, path -> path.endsWith(".procedure.yaml")).size();
-            toolguides +=
-                    filesOf(observed, path -> path.endsWith(".toolguide.yaml")).size();
-            guides += filesOf(observed, path -> path.endsWith(GUIDE_SUFFIX)).size();
-        }
-
-        assertThat(List.of(procedures, toolguides, guides)).containsExactly(88, 25, 25);
-    }
-
-    @Test
     @DisplayName("the throwaway migration harness is gone from the test classpath")
     void theMigrationHarnessIsGone() throws IOException {
         List<URL> found = Collections.list(getClass().getClassLoader().getResources(MIGRATION_PACKAGE));
 
         assertThat(found).as("package %s on the classpath", MIGRATION_PACKAGE).isEmpty();
+    }
+
+    /** The pack-relative paths of the files on disk that end in {@code suffix}, sorted: what the gate must observe. */
+    private static List<String> onDisk(Path pack, String suffix) throws IOException {
+        try (Stream<Path> walk = Files.walk(pack)) {
+            return walk.filter(Files::isRegularFile)
+                    .map(file -> pack.relativize(file).toString().replace('\\', '/'))
+                    .filter(path -> path.endsWith(suffix))
+                    .sorted()
+                    .toList();
+        }
     }
 
     /** The guide a toolguide file names: {@code <its id>.guide.md} in the toolguide's directory. */
