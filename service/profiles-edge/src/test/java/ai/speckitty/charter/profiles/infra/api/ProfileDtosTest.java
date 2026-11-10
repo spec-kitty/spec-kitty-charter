@@ -9,6 +9,7 @@ import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
@@ -395,10 +396,10 @@ class ProfileDtosTest {
 
     private static GovernanceEntry entry(
             String urn, GovernanceEntry.Step step, String via, int hops, Optional<String> holder, boolean held) {
-        Optional<GovernanceEntry.Suggestion> suggestion = step == GovernanceEntry.Step.SUGGESTS
-                ? Optional.of(new GovernanceEntry.Suggestion(Optional.of("when x"), Optional.of("because y")))
-                : Optional.empty();
-        return new GovernanceEntry(urn(urn), step, urn(via), hops, suggestion, holder.map(PackIdentifier::new), held);
+        EdgeWords edge = step == GovernanceEntry.Step.SUGGESTS
+                ? new EdgeWords(Optional.of("when x"), Optional.of("because y"))
+                : EdgeWords.NONE;
+        return new GovernanceEntry(urn(urn), step, urn(via), hops, edge, holder.map(PackIdentifier::new), held);
     }
 
     private static ProfileRead read(GovernanceEntry... entries) {
@@ -503,50 +504,79 @@ class ProfileDtosTest {
     }
 
     @Test
-    void aSuggestsEntryWritesItsSuggestionAndEveryOtherEntryWritesNull() {
-        ProfileRead read = read(
-                entry(
-                        "directive:A",
-                        GovernanceEntry.Step.REQUIRES,
-                        "agent_profile:P",
-                        1,
-                        Optional.of("built-in"),
-                        true),
-                entry(
-                        "directive:B",
-                        GovernanceEntry.Step.SUGGESTS,
-                        "agent_profile:P",
-                        1,
-                        Optional.of("built-in"),
-                        true));
+    void everyEntryWritesTheWordsOfItsEdgeWhateverItsRelationAndNoSuggestion() {
+        GovernanceEntry bareRequires = entry(
+                "directive:A", GovernanceEntry.Step.REQUIRES, "agent_profile:P", 1, Optional.of("built-in"), true);
+        GovernanceEntry suggests = entry(
+                "directive:B", GovernanceEntry.Step.SUGGESTS, "agent_profile:P", 1, Optional.of("built-in"), true);
+        GovernanceEntry required = new GovernanceEntry(
+                urn("directive:C"),
+                GovernanceEntry.Step.REQUIRES,
+                urn("agent_profile:P"),
+                1,
+                new EdgeWords(Optional.of("when c"), Optional.of("because c")),
+                Optional.of(new PackIdentifier("built-in")),
+                true);
 
-        JsonNode governance =
-                JSON.valueToTree(dtos.artifact(read, OptionalInt.empty())).get("governance");
+        JsonNode governance = JSON.valueToTree(
+                        dtos.artifact(read(bareRequires, suggests, required), OptionalInt.empty()))
+                .get("governance");
 
-        assertThat(governance.get(0).has("suggestion")).isTrue();
-        assertThat(governance.get(0).get("suggestion").isNull()).isTrue();
-        assertThat(governance.get(1).get("suggestion").get("when").asString()).isEqualTo("when x");
-        assertThat(governance.get(1).get("suggestion").get("reason").asString()).isEqualTo("because y");
+        assertThat(governance.get(0).get("edge").size()).isZero();
+        assertThat(governance.get(1).get("edge").get("when").asString()).isEqualTo("when x");
+        assertThat(governance.get(1).get("edge").get("reason").asString()).isEqualTo("because y");
+        assertThat(governance.get(2).get("edge").get("when").asString()).isEqualTo("when c");
+        assertThat(governance.get(2).get("edge").get("reason").asString()).isEqualTo("because c");
+        governance.forEach(entry -> assertThat(entry.has("suggestion")).isFalse());
     }
 
     @Test
-    void aSuggestionOfAnEdgeThatStatesNeitherIsAnEmptyObjectAndNotNull() {
+    void anEdgeThatStatesOneWordWritesOnlyThatWord() {
+        GovernanceEntry onlyReason = new GovernanceEntry(
+                urn("directive:B"),
+                GovernanceEntry.Step.REQUIRES,
+                urn("agent_profile:P"),
+                1,
+                new EdgeWords(Optional.empty(), Optional.of("because")),
+                Optional.of(new PackIdentifier("built-in")),
+                true);
+
+        JsonNode edge = JSON.valueToTree(dtos.artifact(read(onlyReason), OptionalInt.empty()))
+                .get("governance")
+                .get(0)
+                .get("edge");
+
+        assertThat(edge.has("when")).isFalse();
+        assertThat(edge.get("reason").asString()).isEqualTo("because");
+    }
+
+    @Test
+    void anEdgeThatStatesNeitherIsAnEmptyObjectAndNeverNullOrAbsent() {
         GovernanceEntry bare = new GovernanceEntry(
                 urn("directive:B"),
                 GovernanceEntry.Step.SUGGESTS,
                 urn("agent_profile:P"),
                 1,
-                Optional.of(new GovernanceEntry.Suggestion(Optional.empty(), Optional.empty())),
+                EdgeWords.NONE,
                 Optional.of(new PackIdentifier("built-in")),
                 true);
+        GovernanceEntry bareRequired = new GovernanceEntry(
+                urn("directive:C"),
+                GovernanceEntry.Step.REQUIRES,
+                urn("agent_profile:P"),
+                1,
+                EdgeWords.NONE,
+                Optional.empty(),
+                false);
 
-        JsonNode suggestion = JSON.valueToTree(dtos.artifact(read(bare), OptionalInt.empty()))
-                .get("governance")
-                .get(0)
-                .get("suggestion");
+        JsonNode governance = JSON.valueToTree(dtos.artifact(read(bare, bareRequired), OptionalInt.empty()))
+                .get("governance");
 
-        assertThat(suggestion.isObject()).isTrue();
-        assertThat(suggestion.size()).isZero();
+        for (JsonNode entry : governance) {
+            assertThat(entry.has("edge")).isTrue();
+            assertThat(entry.get("edge").isObject()).isTrue();
+            assertThat(entry.get("edge").size()).isZero();
+        }
     }
 
     /**

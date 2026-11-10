@@ -14,8 +14,8 @@ class GovernanceEntryTest {
 
     private static final Optional<PackIdentifier> HOLDER = Optional.of(new PackIdentifier("built-in"));
 
-    private static GovernanceEntry.Suggestion suggestion() {
-        return new GovernanceEntry.Suggestion(Optional.of("when"), Optional.empty());
+    private static EdgeWords words() {
+        return new EdgeWords(Optional.of("when"), Optional.empty());
     }
 
     @Test
@@ -25,7 +25,7 @@ class GovernanceEntryTest {
                         GovernanceEntry.Step.REQUIRES,
                         urn("agent_profile:P"),
                         0,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         HOLDER,
                         true))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -34,7 +34,7 @@ class GovernanceEntryTest {
                                 GovernanceEntry.Step.REQUIRES,
                                 urn("agent_profile:P"),
                                 1,
-                                Optional.empty(),
+                                EdgeWords.NONE,
                                 HOLDER,
                                 true)
                         .hops())
@@ -42,35 +42,23 @@ class GovernanceEntryTest {
     }
 
     @Test
-    void aSuggestionBelongsToASuggestsEntryAndToNoOther() {
-        assertThatThrownBy(() -> new GovernanceEntry(
-                        urn("directive:D"),
-                        GovernanceEntry.Step.REQUIRES,
-                        urn("agent_profile:P"),
-                        1,
-                        Optional.of(suggestion()),
-                        HOLDER,
-                        true))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new GovernanceEntry(
-                        urn("directive:D"),
-                        GovernanceEntry.Step.SUGGESTS,
-                        urn("agent_profile:P"),
-                        1,
-                        Optional.empty(),
-                        HOLDER,
-                        true))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThat(new GovernanceEntry(
-                                urn("directive:D"),
-                                GovernanceEntry.Step.SUGGESTS,
-                                urn("agent_profile:P"),
-                                1,
-                                Optional.of(suggestion()),
-                                HOLDER,
-                                true)
-                        .suggestion())
-                .isPresent();
+    void anEntryOfAnyStepCarriesTheWordsOfItsEdgeAndAnEdgeMayStateNeither() {
+        for (GovernanceEntry.Step step : GovernanceEntry.Step.values()) {
+            assertThat(new GovernanceEntry(urn("directive:D"), step, urn("agent_profile:P"), 1, words(), HOLDER, true)
+                            .edge())
+                    .isEqualTo(words());
+            assertThat(new GovernanceEntry(
+                                    urn("directive:D"), step, urn("agent_profile:P"), 1, EdgeWords.NONE, HOLDER, true)
+                            .edge()
+                            .when())
+                    .isEmpty();
+        }
+    }
+
+    @Test
+    void noWordsIsTheEdgeThatStatesNeither() {
+        assertThat(EdgeWords.NONE).isEqualTo(new EdgeWords(Optional.empty(), Optional.empty()));
+        assertThat(EdgeWords.NONE.reason()).isEmpty();
     }
 
     @Test
@@ -80,7 +68,7 @@ class GovernanceEntryTest {
                         GovernanceEntry.Step.REQUIRES,
                         urn("agent_profile:P"),
                         1,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         Optional.empty(),
                         true))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -89,7 +77,7 @@ class GovernanceEntryTest {
                         GovernanceEntry.Step.REQUIRES,
                         urn("agent_profile:P"),
                         1,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         HOLDER,
                         false))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -98,7 +86,7 @@ class GovernanceEntryTest {
                                 GovernanceEntry.Step.REQUIRES,
                                 urn("agent_profile:P"),
                                 1,
-                                Optional.empty(),
+                                EdgeWords.NONE,
                                 Optional.empty(),
                                 false)
                         .held())
@@ -108,13 +96,13 @@ class GovernanceEntryTest {
     @Test
     void aMissingFieldIsRefused() {
         assertThatThrownBy(() -> new GovernanceEntry(
-                        null, GovernanceEntry.Step.REQUIRES, urn("agent_profile:P"), 1, Optional.empty(), HOLDER, true))
+                        null, GovernanceEntry.Step.REQUIRES, urn("agent_profile:P"), 1, EdgeWords.NONE, HOLDER, true))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new GovernanceEntry(
-                        urn("directive:D"), null, urn("agent_profile:P"), 1, Optional.empty(), HOLDER, true))
+                        urn("directive:D"), null, urn("agent_profile:P"), 1, EdgeWords.NONE, HOLDER, true))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new GovernanceEntry(
-                        urn("directive:D"), GovernanceEntry.Step.REQUIRES, null, 1, Optional.empty(), HOLDER, true))
+                        urn("directive:D"), GovernanceEntry.Step.REQUIRES, null, 1, EdgeWords.NONE, HOLDER, true))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new GovernanceEntry(
                         urn("directive:D"),
@@ -130,14 +118,12 @@ class GovernanceEntryTest {
                         GovernanceEntry.Step.REQUIRES,
                         urn("agent_profile:P"),
                         1,
-                        Optional.empty(),
+                        EdgeWords.NONE,
                         null,
                         true))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new GovernanceEntry.Suggestion(null, Optional.empty()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new GovernanceEntry.Suggestion(Optional.empty(), null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EdgeWords(null, Optional.empty())).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EdgeWords(Optional.empty(), null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -159,7 +145,7 @@ class GovernanceEntryTest {
                 GovernanceEntry.Step.LINEAGE,
                 urn("agent_profile:P"),
                 1,
-                Optional.empty(),
+                EdgeWords.NONE,
                 HOLDER,
                 true);
 

@@ -7,8 +7,11 @@ get:
     depends_on closure (the lineage through specializes_from, then what the profile and its ancestors require, suggest
     and cite in the vocabulary), each with how it was reached and whether a pack of the closure holds it. The walk is
     the action context's walk with a lineage step in place of scope, and depth is the number of suggests hops it
-    follows, 0 or 1 (default 0). The generic artifact item read (getPackArtifact) never renders a profile body: this
-    literal path is the read of the kind, and a DELETE or the references of a profile stay on the generic paths.
+    follows, 0 or 1 (default 0). Every entry carries edge, the when and the reason of the edge it was reached through,
+    whatever its relation (FR-004); edge is an empty object where that edge states neither word, and it is always
+    present. Where more than one edge could reach an entry, the words are those of the edge of its via, the parent the
+    walk keeps. The generic artifact item read (getPackArtifact) never renders a profile body: this literal path is the
+    read of the kind, and a DELETE or the references of a profile stay on the generic paths.
 
     The pack is judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a 404
     pack_not_found. A profile this pack does not hold is a 404 artifact_not_found, one that only a pack of its closure

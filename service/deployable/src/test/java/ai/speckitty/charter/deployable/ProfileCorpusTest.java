@@ -15,10 +15,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -174,6 +177,79 @@ class ProfileCorpusTest {
     }
 
     // ---- the expected wire, from the YAML alone --------------------------------------------------------------------
+
+    /**
+     * The words of every edge the graph files of the corpus's packs write, keyed {@code "<source> <relation> <target>"}
+     * (a pack qualifier on an end is dropped): what the {@code edge} of an entry must be, by the contract's rule that an
+     * entry carries the words of the edge it was reached through. An edge that states neither word has the empty map.
+     * More than one edge may share a key across the packs, so each key holds the set of the words written for it.
+     */
+    private static Map<String, Set<Map<String, String>>> graphEdgeWords() throws IOException {
+        Map<String, Set<Map<String, String>>> words = new HashMap<>();
+        for (String pack : PACKS) {
+            try (Stream<Path> files = Files.list(corpus.resolve("packs").resolve(pack))) {
+                for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".graph.yaml"))
+                        .sorted()
+                        .toList()) {
+                    Object loaded = new Load(LoadSettings.builder().build()).loadFromString(Files.readString(file));
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> yaml = (Map<String, Object>) loaded;
+                    for (Object edge : list(yaml, "edges")) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> e = (Map<String, Object>) edge;
+                        Map<String, String> stated = new LinkedHashMap<>();
+                        if (e.get("when") != null) {
+                            stated.put("when", String.valueOf(e.get("when")));
+                        }
+                        if (e.get("reason") != null) {
+                            stated.put("reason", String.valueOf(e.get("reason")));
+                        }
+                        String key = unqualified(e.get("source")) + " " + e.get("relation") + " "
+                                + unqualified(e.get("target"));
+                        words.computeIfAbsent(key, ignored -> new HashSet<>()).add(stated);
+                    }
+                }
+            }
+        }
+        return words;
+    }
+
+    private static String unqualified(Object urn) {
+        return String.valueOf(urn).replaceFirst("^[^:]*::", "");
+    }
+
+    /**
+     * Every entry of the wire governance carries an {@code edge} (an object, never null or absent) equal to the words of
+     * the edge written from its {@code via} to it with its relation; {@code requires_of_suggested} entries are
+     * {@code requires} edges. Counts the entries that carry words, so that the check is seen to bite.
+     */
+    private static void edgeProblems(
+            String where,
+            JsonNode governance,
+            Map<String, Set<Map<String, String>>> written,
+            List<String> problems,
+            int[] worded) {
+        for (JsonNode entry : governance) {
+            JsonNode edge = entry.get("edge");
+            String key = entry.get("via").asString() + " "
+                    + entry.get("relation").asString() + " " + entry.get("urn").asString();
+            if (edge == null || !edge.isObject()) {
+                problems.add(where + ": " + key + " has no edge object: " + edge);
+                continue;
+            }
+            Map<String, String> actual = new LinkedHashMap<>();
+            edge.properties()
+                    .forEach(member ->
+                            actual.put(member.getKey(), member.getValue().asString()));
+            if (!written.getOrDefault(key, Set.of()).contains(actual)) {
+                problems.add(
+                        where + ": the edge of " + key + " is " + actual + ", the graph writes " + written.get(key));
+            }
+            if (!actual.isEmpty()) {
+                worded[0]++;
+            }
+        }
+    }
 
     @SuppressWarnings("unchecked")
     private static List<Object> list(Map<String, Object> yaml, String key) {
@@ -350,6 +426,8 @@ class ProfileCorpusTest {
     @Test
     void everyProfileOfTheCorpusIsReadThroughTheProfileSourceAndItsBodyMeansWhatItsYamlMeans() throws Exception {
         List<String> problems = new ArrayList<>();
+        Map<String, Set<Map<String, String>>> written = graphEdgeWords();
+        int[] worded = {0};
         int read = 0;
         for (String pack : PACKS) {
             for (Map.Entry<String, Map<String, Object>> profile :
@@ -374,6 +452,7 @@ class ProfileCorpusTest {
                     continue;
                 }
                 JsonNode body = json.readTree(response.getContentAsString());
+                edgeProblems(pack + "/" + id, body.get("governance"), written, problems, worded);
                 JsonNode expected = json.readTree(json.writeValueAsString(expectedProfile(profile.getValue())));
                 if (!expected.equals(body.get("agentProfile"))) {
                     problems.add(pack + "/" + id + ": the body differs from the YAML\n  expected " + expected
@@ -382,6 +461,7 @@ class ProfileCorpusTest {
             }
         }
         assertThat(problems).isEmpty();
+        assertThat(worded[0]).as("entries whose edge states a word").isPositive();
         assertThat(read).as("profiles read").isEqualTo(BUILT_IN_PROFILES + QA_PROFILES);
     }
 

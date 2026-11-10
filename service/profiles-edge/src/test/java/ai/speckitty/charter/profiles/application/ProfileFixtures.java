@@ -61,7 +61,7 @@ public final class ProfileFixtures {
                 GovernanceEntry.Step.REQUIRES,
                 urn("agent_profile:P"),
                 1,
-                Optional.empty(),
+                EdgeWords.NONE,
                 Optional.of(new PackIdentifier(pack)),
                 true);
     }

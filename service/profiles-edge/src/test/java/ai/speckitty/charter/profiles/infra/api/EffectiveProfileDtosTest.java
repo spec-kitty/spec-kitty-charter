@@ -12,6 +12,7 @@ import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
@@ -42,7 +43,7 @@ class EffectiveProfileDtosTest {
             String policy,
             String reason,
             Optional<String> satisfiedBy,
-            Optional<GovernanceEntry.Suggestion> suggestion) {
+            Optional<EdgeWords> suggestion) {
         return new EffectiveProfileRead.Facts(
                 urn(urn),
                 new PackIdentifier(pack),
@@ -202,8 +203,7 @@ class EffectiveProfileDtosTest {
                                         "open",
                                         "not_selected",
                                         Optional.empty(),
-                                        Optional.of(
-                                                new GovernanceEntry.Suggestion(Optional.of("w"), Optional.of("r")))),
+                                        Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r")))),
                                 GovernanceEntry.Step.SUGGESTS,
                                 urn("agent_profile:P"),
                                 1),
@@ -231,8 +231,7 @@ class EffectiveProfileDtosTest {
                                         "open",
                                         "not_selected",
                                         Optional.empty(),
-                                        Optional.of(new GovernanceEntry.Suggestion(
-                                                Optional.empty(), Optional.of("only why")))),
+                                        Optional.of(new EdgeWords(Optional.empty(), Optional.of("only why")))),
                                 GovernanceEntry.Step.SUGGESTS,
                                 urn("agent_profile:P"),
                                 1)),
@@ -269,7 +268,7 @@ class EffectiveProfileDtosTest {
                                 "open",
                                 "overridden",
                                 Optional.of("agent_profile:Q"),
-                                Optional.of(new GovernanceEntry.Suggestion(Optional.of("w"), Optional.empty()))),
+                                Optional.of(new EdgeWords(Optional.of("w"), Optional.empty()))),
                         List.of(),
                         List.of()),
                 OptionalInt.empty());
@@ -312,7 +311,7 @@ class EffectiveProfileDtosTest {
                                 "open",
                                 "selected",
                                 Optional.empty(),
-                                Optional.of(new GovernanceEntry.Suggestion(Optional.empty(), Optional.of("only why")))),
+                                Optional.of(new EdgeWords(Optional.empty(), Optional.of("only why")))),
                         GovernanceEntry.Step.SUGGESTS,
                         urn("agent_profile:P"),
                         1)),

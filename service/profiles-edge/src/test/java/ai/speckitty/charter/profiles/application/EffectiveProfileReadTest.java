@@ -42,7 +42,7 @@ class EffectiveProfileReadTest {
                 "open",
                 "not_selected",
                 Optional.empty(),
-                Optional.of(new GovernanceEntry.Suggestion(Optional.of("w"), Optional.of("r"))));
+                Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r"))));
 
         assertThat(effectiveRead()
                         .linksArtifact(new EffectiveProfileRead.Entry(

@@ -7,10 +7,14 @@
   `suggests` hops the walk follows. `AgentProfile` is closed and mirrors `contracts/packs/schemas/agent-profile.schema.json`
   field for field in camelCase; `AgentProfileExcluding` is the closed wire form of `excluding` (`wholeFields` or `fieldValues`,
   the other null). `PackGovernanceEntry` is one governance entry (`kind`, `artifactId`, `urn`, `step`, `relation`, `via`,
-  `hops`, `suggestion`, `packId`, `held`, `_links`), `GovernanceStep` its walk step (`lineage`, `requires`, `suggests`,
+  `hops`, `edge`, `packId`, `held`, `_links`), `GovernanceStep` its walk step (`lineage`, `requires`, `suggests`,
   `requires_of_suggested`, `vocabulary`). A parent no pack of the closure holds is listed with `held: false`, a null
   `packId` and no link. `held` describes the edge that listed the entry: a URN listed early by a dangling edge keeps
   `held: false` even when a later step reaches it through a held edge, and entries below it name it as `via`.
+  Every entry carries `edge`, the new closed schema `GovernanceEdgeWords` (`when` and `reason`, both optional): the words
+  of the edge the walk reached the entry through, whatever its relation (`specializes_from`, `requires`, `suggests` or
+  `vocabulary`). It is an empty object where the edge states neither word, and it is always present. Where more than one
+  edge could reach an entry, the words are those of the edge of its `via`, the first reach the walk keeps.
   `suggests` entries are listed by this service; core's profile channel treats them as inert. The body references
   (`directiveReferences` and the others) are body fields and are not walked. The answer carries `Charter-Source-Fingerprint`,
   the digest the read verified, and an `ETag` that is the pack revision, as a directive's is. A profile the pack does not
