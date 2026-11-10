@@ -1,0 +1,17 @@
+summary: >-
+  Skeleton spec-template.md of the pack that holds the software-dev in force under activation a-1. The content is shortened here to its first lines; sha256 and size are those of the whole stored file.
+value:
+  name: spec-template.md
+  path: templates/spec-template.md
+  missionTypeId: software-dev
+  encoding: text
+  content: |
+    # Mission Specification: [MISSION NAME]
+    <!-- Replace [MISSION NAME] with the confirmed friendly title generated during /spec-kitty.specify. -->
+  sha256: sha256:c697bf8379a923876b170c573ea94339a61d4a9cb1936c5af2b612dbf5d6e0f5
+  size: 7243
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/spec-template.md
+    mission-type:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev

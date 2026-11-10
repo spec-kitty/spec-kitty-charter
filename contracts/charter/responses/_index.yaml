@@ -21,3 +21,4 @@ files:
   - MissionSkeletonNotFound.yaml
   - MissionStepNotFound.yaml
   - MissionTypeNotFound.yaml
+  - ActivationMissionTypeNotFound.yaml

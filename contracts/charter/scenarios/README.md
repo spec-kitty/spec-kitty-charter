@@ -294,6 +294,10 @@ that calls it. A run that selects only some scenarios reports the others' operat
 - `mission-types.feature`: the mission type, step, skeleton and step contract reads (#99, #100, #96), and the `DELETE`
   of both kinds: a step contract as the five kinds, a mission type with its step files and skeletons as one removal,
   refused `409` while a step contract binds it or an edge names one of its action nodes (D10).
+- `effective-mission-types.feature`: the same mission type, step and skeleton reads under an activation (#99, FR-007):
+  the layer-merge winner with the holding pack's skeletons and step files, the merged closure's step contracts, links
+  under the activation and an `artifact` link to the winner's pack read, the refusals in order, and the generic
+  activation read of a step contract.
 - `trust/`, `integrity/`, `distribution/`, and the rest of the pack registration and distribution scenarios of
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
