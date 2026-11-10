@@ -93,12 +93,12 @@ The next slices, in order. Re-run the usability run after slices B and C; its ch
 |---|---|---|---|
 | **A. Every kind is readable** | #407, #96, #99, #148 (moved forward from Post-cutover), #100; #437 via PR #460 | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | in flight |
 | **B. Real packs register as they are** | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
-| **C. The effective step and action context match core** | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018); close #103 into #450 | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
-| **D. A contract release core can vendor** | #196, #45, #454, #312, #367; narrow or close #47; re-scope #9 and #72 to ADR-0059 D1 | A tagged 0.x release carries slices A to C | A to C |
+| **C. The effective step and action context match core** | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
+| **D. A contract release core can vendor** | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
 | **E. Core ingests** (phase 2) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
 
 Alongside, not on the critical path: the SonarCloud findings (Security rating D, Reliability rating E, from a handful
-of issues; see [Milestones](/plans/milestones/#sonarcloud-findings)). Hosted work (#127, #396) and contract 1.0.0
+of issues; #463 to #465, see [Milestones](/plans/milestones/#sonarcloud-findings)). Hosted work (#127, #396) and contract 1.0.0
 (#128) follow slice E.
 
 The action-context walk is decided in
@@ -136,6 +136,6 @@ the shadow comparison stay in core.
 The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Both things it
 waited on are built: the fix for the duplicate classes code generation emitted (#119), so that
 core's generated client is clean, and the publishing workflow (#45). What remains is cutting the
-release, held by the operator since 2026-10-27; slice D above proposes cutting it once slices A to C land, following
+release. The operator ruled on 2026-11-10 to cut it once the main API interactions stabilize (slice D above), following
 [the release procedure](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#releasing-a-contract-version). Shapes may still change in a 0.x minor; they freeze at 1.0.0
 (#128).

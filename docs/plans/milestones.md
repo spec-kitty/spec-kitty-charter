@@ -27,8 +27,7 @@ each milestone and which issue goes where. The checkable steps are in the
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
 > **Status:** in effect (updated 2026-11-10). The assignment is provisional and changes as the plan
-> does. About thirty open issues have no tracker milestone; they are listed under
-> [Not yet assigned](#not-yet-assigned) with a proposed home. Moving them on the tracker is the operator's call.
+> does. The operator approved the proposed homes on 2026-11-10, and the tracker matches this page.
 
 ## The milestones
 
@@ -75,14 +74,14 @@ Not close: four P0s are open, two of them in flight.
 | #407, #99 | Agent-profile reads; mission-type reads (with #96, #148) | A | In flight |
 | #405 | Language profiles cannot reach their conventions styleguide | B | Fixed upstream in open-packs; the pin bump remains |
 | #406 | Reserved operations' `501` is logged as an error with a stack trace | D | With #454 |
-| #103 | R9, effective context | C | Built in PR C; close as shaped, follow-up #450 |
 | #97 | R3: merged CRG and graph queries, decide and shape | C | The effective graph read exists (PR #448) |
 | #45, #196 | Contract release publishing; tag ruleset | D | Built; open until a release is cut, which the operator holds |
 | #312, #367 | Orphaned `ActionNotFound` response; refactor the over-limit methods | D | #367 before the complexity gate #371 |
 | #206, #397, #408, #409, #411 | `required_<plural>` to presets; retire the CRG walk; cascade controls; and follow-ups | B to D | #397: check whether #448 made it moot. #411 (unserved kind gives a bare 400) shrinks with slice A |
 
-**Proposed for 4.0 GA** (no milestone on the tracker yet): the usability-run issues #450, #451, #452, #453 and #454,
-and the ADR-0066 track #424, #434, #435 and #438 (#428 and #437 close with PR #460).
+Also in 4.0 GA since 2026-11-10: the usability-run issues #450 to #454, the ADR-0066 track #424, #434, #435 and #438
+(#428 and #437 close with PR #460), the ADR requests #456 to #458, #431, #432, and #148, moved forward from
+Post-cutover. #103 closed as shaped into #450.
 
 ### 4.x cutover
 
@@ -93,7 +92,7 @@ Far: stages 3 and 4 have not started, and the read inventory is mostly undecided
 | #6 | Epic: Java charter service built against an OpenAPI contract | Children #9, #13, #14, #47, #50, #51, #68, #127, #128, #130, #133 |
 | #13 | Core ingests the contract | Slice E; phase 2 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1) |
 | #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
-| #9, #72 | Conformance corpus; conformance as a blocking gate | **To re-scope to [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1:** BDD `@contract` scenarios and contract tests gate each switch |
+| #9, #72 | Conformance corpus; conformance as a blocking gate | **Re-scoped 2026-11-10 to [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1:** BDD `@contract` scenarios and contract tests gate each switch |
 | #47 | `x-source` citation checker | PR #436 checks the paths; narrow to the symbol check or close |
 | #127, #128 | Hosted-first reshape; mint contract 1.0.0 | Before the first switched route (ADR-0022 D6) |
 | #130, #133 | Refusal-code enums; `x-extensible-enum` | Contract shape; decide before 1.0.0 |
@@ -108,7 +107,7 @@ Open-ended by definition: Creeds and Values (#16 to #23), pack governance (#55, 
 the `impacts` vocabulary (#77, #79, #80, #82), offering extensions (#40, #42), quality follow-ups (#49, #52, #36), the
 core follow-ups epic #361 (#333 to #342), and #142, #149, #154, #160, #163, #164, #178, #181, #184, #349, #350, #355.
 
-- **#148** (mission types and step contracts as full kinds) **should move forward to 4.0 GA**: the usability run
+- **#148** (mission types and step contracts as full kinds) moved forward to 4.0 GA on 2026-11-10: the usability run
   makes it a core-readiness blocker, and slice A delivers it.
 - **The id spelling at the seam** (slug versus `PROJECT_001`), under #361, blocks the first core integration: pull it
   into slice E.
@@ -123,44 +122,36 @@ core follow-ups epic #361 (#333 to #342), and #142, #149, #154, #160, #163, #164
 | #226, #230, #234 | Epic: hosted configuration and the container image | |
 | #121, #134, #140, #166, #197, #205, #243, #308, #324, #371 | CI, docs tooling and hardening | |
 
-**Proposed for Infra & Enablers:** mutation CI (#387, #388, #389, and #461, which closes once a nightly is green),
+**Added 2026-11-10:** mutation CI (#387, #388, #389, and #461, which closes once a nightly is green),
 the hardening batch (#380 to #383, #386, #416, #417, #426, #429, #439, #443, #444, #447), and the SonarCloud cleanup
-below.
+#463 to #465 below.
 
 ### Backlog
 
 Issues #143, #151, #152, #157, #158, #159.
 
-### Not yet assigned
+### Placed on 2026-11-10
 
-To place when the operator next revises the tracker milestones:
-
-| Issue | Title | Proposed |
-|---|---|---|
-| #450 to #454 | Usability-run gaps of 2026-11-09 | 4.0 GA (slices B to D) |
-| #424, #434, #435, #438 | ADR-0066 step enhancements and prompt fragments | 4.0 GA (slices B and C) |
-| #456, #457, #458 | ADR requests on profiles and paradigms (#456: principles on paradigms) | 4.0 GA; rule before #407's follow-ups grow (they bear on #102) |
-| #431, #432, #433, #404, #412 | Registration follow-ups (`org-charter.yaml`, `text` content form, closure-breaking writes) | #431 and #432 in slice B; #433 folds into #49 |
-| #396 | Multi-replica, deferred from #233 by [ADR-0061](/adr/0061-one-replica-per-deployment/) | Post-cutover, after 1.0.0 |
-| #182 | Read registered relationships back over HTTP | 4.x cutover; graph documents are the only source ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)) |
-| #132, #254 | Core-parity framing | Re-scope: conflicts with the 2026-10-28 ruling |
-| #136 | Ask core to carry the pack terms | Close as superseded by ADR-0029 (2026-11-02 triage) |
-| #203 | Mirror open-packs#74 | Post-cutover |
+The issues that had no milestone were placed as proposed: the usability-run gaps, the ADR-0066 track, the ADR
+requests #456 to #458 and #431 and #432 in 4.0 GA; #433, #404, #412, #396, #203 and #67 in Post-cutover; #182, #132
+and #254 in the 4.x cutover (#132 and #254 still to re-scope against the 2026-10-28 ruling); mutation CI and the
+hardening batch in Infra & Enablers. #136 closed as superseded by
+[ADR-0029](/adr/0029-charter-glossary-is-owned-here/).
 
 ### SonarCloud findings
 
 The nightly scan (2026-11-10) shows 43.4k lines, 94.6% coverage and 1.0% duplication, with 31 open issues: Security
-rating D, from one vulnerability, and Reliability rating E, from three critical bugs. No issue tracks them yet. Three
-work items, all Infra & Enablers:
+rating D, from one vulnerability, and Reliability rating E, from three critical bugs. Three work items, filed in
+Infra & Enablers on 2026-11-10:
 
-1. **Security and runtime bugs** (high): S5443, a world-writable temp directory used as git HOME in
+1. **Security and runtime bugs** ([#463](https://github.com/spec-kitty/spec-kitty-charter/issues/463), P1): S5443, a world-writable temp directory used as git HOME in
    `GitVersionCheck.java:117`; S6416 ×3, reachable exceptions in `ActivationFileCodec.java:167,181` and
    `PackFileKind.java:527`; S2095, `RegistrationJobs` never closed in `RegistrationWiring.java:185`; S2583 ×2, conditions
    that are always false in `ExposureStartupCheck.java:245` and `Relationship.java:89`; S6856 and S3752 on
    `ProblemErrorController.java:42`.
-2. **Test hygiene:** S6103 ×2, assertions that never run in `PackRegistrationServiceTest:813,819`; S2699; S1872; S8786
+2. **Test hygiene** ([#464](https://github.com/spec-kitty/spec-kitty-charter/issues/464)): S6103 ×2, assertions that never run in `PackRegistrationServiceTest:813,819`; S2699; S1872; S8786
    ×2.
-3. **Conventions, needing a ruling:** S1845 ×12 (constant and member differ only in case) and S1314 ×3 (octal literals,
+3. **Conventions, needing a ruling** ([#465](https://github.com/spec-kitty/spec-kitty-charter/issues/465)): S1845 ×12 (constant and member differ only in case) and S1314 ×3 (octal literals,
    zip permission bits). Either rename or disable them in the quality profile with a recorded reason. S9428 on
    `Fingerprint.java:17` is likely a false positive and can be closed with a reason.
 
