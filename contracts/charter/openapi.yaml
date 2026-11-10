@@ -49,6 +49,11 @@ tags:
       The agent profiles of a Charter Pack: the pack-scoped read of one profile with its governance. The profile
       is served under the same artifact tree as the other kinds, by its own path, because the generic item read never
       renders a profile body.
+  - name: EffectiveAgentProfiles
+    description: >-
+      The agent profiles of an activation: the read of one profile under an activation, with its governance and the
+      state of each entry. Its own tag, so that the :profiles-edge slice implements it in a controller of its own beside
+      the activation set's: the generic effective read of an artifact never renders a profile body.
   - name: Activation
     description: >-
       The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
@@ -109,6 +114,8 @@ paths:
     $ref: paths/activations_activationId_presets_presetId.yaml
   /activations/{activationId}/artifacts:
     $ref: paths/activations_activationId_artifacts.yaml
+  /activations/{activationId}/artifacts/agent_profile/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
   /activations/{activationId}/skipped:

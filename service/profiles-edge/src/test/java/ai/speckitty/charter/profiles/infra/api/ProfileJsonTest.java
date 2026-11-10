@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.api.model.AgentProfile;
 import ai.speckitty.charter.api.model.AgentProfileExcluding;
 import ai.speckitty.charter.api.model.AgentProfileSpecialization;
+import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
+import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.api.model.PackGovernanceSuggestion;
 import java.util.List;
@@ -73,6 +75,18 @@ class ProfileJsonTest {
     }
 
     @Test
+    void anAnswerUnderAnActivationOmitsItsOptionalMembersAndKeepsTheRequiredOnes() {
+        JsonNode read = JSON.valueToTree(new EffectiveAgentProfileRead());
+        JsonNode entry = JSON.valueToTree(new EffectiveGovernanceEntry());
+
+        for (JsonNode written : List.of(read, entry)) {
+            assertThat(written.has("satisfiedBy")).isFalse();
+            assertThat(written.has("suggestion")).isFalse();
+        }
+        assertThat(read.has("agentProfile")).isFalse();
+    }
+
+    @Test
     void theHintsRegisterTheModelsAndTheMixIns() {
         RuntimeHints hints = new RuntimeHints();
 
@@ -83,6 +97,10 @@ class ProfileJsonTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(PackGovernanceEntry.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(AgentProfileExcluding.class))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveAgentProfileRead.class))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceEntry.class))
                 .accepts(hints);
         for (String mixIn : List.of("OptionalProfileMembers", "OptionalSpecializationMembers", "OmitAbsentMembers")) {
             assertThat(hints.reflection()

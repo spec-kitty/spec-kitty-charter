@@ -1,0 +1,158 @@
+title: EffectiveGovernanceEntry
+description: >-
+  One artifact in the governance of an agent profile read under an activation (fold C1), and how the walk reached it.
+  It has the facts of an effective artifact (EffectiveArtifact: the version the layer merge keeps, the pack and level
+  that hold it, and its state and reason) together with the step, the relation, the via and the hops of the walk; the
+  pack-scoped read has its own entry (PackGovernanceEntry) and the two do not share a field name for a different meaning.
+
+  The walk runs over the activation's merged closure with the effective set as its predicate. An artifact that is in
+  force (state active) is listed with the step that reached it. A suggestion out of force is listed too, with state
+  inactive, reason not_selected and its suggestion inline (the when and reason of the suggests edge): it is a suggests
+  entry, reached through a suggests edge of an artifact in force. An ancestor of the profile (specializes_from) that is
+  not in force is not listed and seeds nothing; the profile the walk starts from is exempt from the predicate and is no
+  entry. This diverges from the cascade of the activation writes, which passes an ancestor through (operator ruling W1).
+
+  The entries are sorted by urn (kind, a colon and the id), each artifact once, and none is the profile itself. A
+  suggestion sits inline, as EffectiveArtifact carries it; there is no suggestions list. Entries carry no enhancedBy or
+  enhances: a profile takes no step enhancement.
+
+  _links holds artifact, the pack-scoped read of the entry in the pack that holds the version in force (the packId of the
+  entry), for a kind the generic artifact route serves, and is an empty object otherwise.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- packId
+- level
+- state
+- required
+- policy
+- reason
+- step
+- relation
+- via
+- hops
+- _links
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind, from the one kind enum, mission types included.
+    x-derived:
+      rule: The kind of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The declared id of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version in force: the winner of the layer merge, the
+      provenance of its content (FR-013).
+    x-derived:
+      rule: The pack of the winning version of the artifact after the layer merge (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of the pack that holds the version in force (built-in, org or project).
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  state:
+    allOf:
+    - $ref: EffectiveArtifactState.yaml
+    description: Whether it is in force; in force is active.
+    x-derived:
+      rule: The effective-set algebra over config and the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  required:
+    type: boolean
+    description: >-
+      True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
+      none of whose targets is in force or is bound to a mission type not in force (E9). A required one
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
+      mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
+    x-derived:
+      rule: Derived from the must-have items of the governing presets of the closure (ADR-0031) and the pack locks.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  satisfiedBy:
+    $ref: ArtifactReference.yaml
+  suggestion:
+    $ref: EffectiveArtifactSuggestion.yaml
+  policy:
+    allOf:
+    - $ref: ArtifactPolicy.yaml
+    description: The mutability level its pack declares.
+    x-derived:
+      rule: The level the owning pack declares (ADR-0012).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: EffectiveArtifactReason.yaml
+    description: Why it has its state.
+    x-derived:
+      rule: The rule of the effective-set algebra that decided the state.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  step:
+    allOf:
+    - $ref: GovernanceStep.yaml
+    description: The step of the walk that listed the artifact, its earliest.
+    x-derived:
+      rule: The earliest step of the governance walk that reaches the artifact.
+      inputs:
+      - schemas/GovernanceStep.yaml
+  relation:
+    type: string
+    enum:
+    - specializes_from
+    - requires
+    - suggests
+    - vocabulary
+    description: >-
+      The relation of the edge that listed the artifact: specializes_from for lineage, suggests for suggests, vocabulary
+      for vocabulary and requires for both requires and requires_of_suggested. A subset of Relation.
+    x-derived:
+      rule: The relation of the step that listed the artifact.
+      inputs:
+      - schemas/Relation.yaml
+      - schemas/GovernanceStep.yaml
+  via:
+    allOf:
+    - $ref: Urn.yaml
+    description: >-
+      The parent of the entry in the walk: the profile for the entries of its own edges, another entry's urn for the
+      rest. Following via upwards always ends at the profile.
+    x-derived:
+      rule: The source of the edge the walk followed to the artifact, the one with the fewest hops and then the smallest urn.
+      inputs:
+      - schemas/Urn.yaml
+  hops:
+    type: integer
+    minimum: 1
+    description: The length of the path from the profile, one more than the hops of via.
+    x-derived:
+      rule: The hops of via plus one; the profile is at 0.
+      inputs:
+      - schemas/EffectiveGovernanceEntry.yaml
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: An artifact the governance walk of the profile lists under the activation, with the facts of its winner.
+  inputs:
+  - schemas/ActivationConfig.yaml

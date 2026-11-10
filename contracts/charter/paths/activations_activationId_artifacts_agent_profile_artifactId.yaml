@@ -1,0 +1,101 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/ArtifactId.yaml
+get:
+  operationId: getEffectiveAgentProfile
+  summary: Read an agent profile under an activation, with its governance and the state of each entry.
+  description: >-
+    One agent profile under an activation (ADR-0020 D7; operator decisions of 2026-11-09): the winner the layer merge
+    keeps across the levels of the activation's closure, with the pack and the level that hold it, its state, reason,
+    policy and required as listEffectiveArtifacts gives them for the same profile, the profile as that pack stores it in
+    agentProfile and, in governance, the artifacts its governance walk lists, each with how it was reached and the
+    facts of its own winner (pack, level, state, reason). The stored winner is answered: a profile's enhances edges are
+    not resolved, so this is not the effective profile of #380. _links.self is this request, with depth when the
+    request sent one; _links.artifact is the pack-scoped read of the winner's pack (the same body, read from the pack);
+    and _links.up is the activation. The generic read getEffectiveArtifact never carries a body: this literal path is
+    the read of the kind.
+
+    The walk is the one of getPackAgentProfile, judged by the activation instead of by the pack's closure alone: the
+    lineage through specializes_from, then what the profile and its ancestors require, suggest and cite in the
+    vocabulary, and depth is the number of suggests hops it follows, 0 or 1 (default 0). An artifact that is in force is
+    listed with the step that reached it. A suggestion that is out of force is listed with state inactive, reason
+    not_selected and its suggestion inline. Everything else that is out of force is not listed and seeds nothing: an
+    ancestor that is not in force is dropped, with what only it requires (operator ruling W1, decision
+    01M7115WE6WQ7Q41HSS9ZHD1F3). This diverges from the cascade of the activation writes, which passes an ancestor
+    through. The profile the walk starts from is exempt: it is answered whatever its own state, and the state is
+    reported on the read. An entry that is listed links (artifact) to the pack-scoped read of its winner, for the kinds
+    the generic artifact route serves.
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
+    activation's closure holds as an agent_profile is a 404 artifact_not_found, judged before any If-None-Match, so a
+    name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a
+    closure that cannot compose or merge, and a winner whose pack cannot read it are 500, with their code
+    (pack_unreadable also for a layer override that the mutability level forbids); stale_input and internal_error may be
+    retried. The answer is never partial. The body and the governance are one verified read against the source
+    fingerprint, which the answer carries.
+
+    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
+    the activation's closure, and with the profile and the depth, and it does not change when a pack outside the
+    closure changes. It is not the tag of the generic read of the same profile, which has another representation. A
+    matching If-None-Match is a 304 without a body, and a tag of another representation never matches (RFC 9110 section
+    13.1.2).
+  tags:
+  - EffectiveAgentProfiles
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  - $ref: ../parameters/Depth.yaml
+  responses:
+    '200':
+      description: The agent profile under the activation, with its governance.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveAgentProfileRead.yaml
+          examples:
+            java-jenny:
+              $ref: ../examples/EffectiveAgentProfileRead.java-jenny.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        What the path names is not there, refused with 404, in this order: the activation (activation_not_found, also for
+        an activation this client may not see, so ids do not leak), then a profile that no pack of the activation's
+        closure holds (artifact_not_found).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            artifact-not-found:
+              summary: No pack of the activation's closure holds the agent profile.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: No pack of the activation's closure holds the agent_profile nobody.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
