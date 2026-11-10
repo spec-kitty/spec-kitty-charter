@@ -277,7 +277,14 @@ final class ArtifactDtos {
 
     static Paradigm paradigm(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
         return new Paradigm(
-                paradigm.id().value(), paradigm.schemaVersion().orElseThrow(), paradigm.name(), paradigm.summary());
+                paradigm.id().value(),
+                paradigm.schemaVersion().orElseThrow(),
+                paradigm.name(),
+                paradigm.summary(),
+                paradigm.principles().stream()
+                        .map(item -> new ai.speckitty.charter.api.model.ParadigmPrinciple(
+                                item.name(), item.description()))
+                        .toList());
     }
 
     // ---- mission step contract ----------------------------------------------------------------------------------

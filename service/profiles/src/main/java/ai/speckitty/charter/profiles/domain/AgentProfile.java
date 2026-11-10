@@ -26,7 +26,10 @@ import org.jspecify.annotations.Nullable;
 public final class AgentProfile implements CharterArtifact {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^(1\\.0|2)$");
-    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9_-]*$");
+    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9_-]*+$");
+
+    /** The longest role token; the cap of an identifier (#446). */
+    public static final int ROLE_MAX = 64;
 
     private static final ModularRuleset<AgentProfile> RULES = ModularRuleset.<AgentProfile>emptyRules()
             .must(Constraints.of(
@@ -34,12 +37,23 @@ public final class AgentProfile implements CharterArtifact {
                     profile -> profile.schemaVersion
                             .map(version -> SCHEMA_VERSION.matcher(version).matches())
                             .orElse(true)))
-            .must(Constraints.of("An agent profile needs at least one role.", profile -> !profile.roles.isEmpty()))
+            .must(Constraints.of(
+                    "An agent profile needs a role: declare role (with optional alt-roles) or, deprecated, roles.",
+                    profile -> profile.primaryRole.isPresent() || !profile.legacyRoles.isEmpty()))
+            .must(Constraints.of(
+                    "An agent profile declares role and alt-roles or, deprecated, roles; never both shapes.",
+                    profile -> profile.primaryRole.isEmpty()
+                            || profile.legacyRoles.isEmpty()))
+            .must(Constraints.of(
+                    "An agent profile's alt-roles need a role; the deprecated roles list has no alt-roles.",
+                    profile -> profile.altRoles.isEmpty() || profile.primaryRole.isPresent()))
             .must(Constraints.of(
                     "An agent profile's roles must be lowercase letters, digits, hyphens and underscores, starting"
-                            + " with a letter.",
-                    profile -> profile.roles.stream()
-                            .allMatch(role -> ROLE.matcher(role).matches())))
+                            + " with a letter, at most " + AgentProfile.ROLE_MAX + " characters.",
+                    profile -> profile.declaredRoles().allMatch(AgentProfile::wellFormedRole)))
+            .must(Constraints.of(
+                    "An agent profile's alt-roles must be distinct and must not repeat its role.",
+                    AgentProfile::altRolesDistinct))
             .must(Constraints.of(
                     "An agent profile's routing priority must be between 0 and 100.",
                     profile -> profile.routingPriority
@@ -54,7 +68,9 @@ public final class AgentProfile implements CharterArtifact {
     private final Optional<String> schemaVersion;
     private final String name;
     private final Optional<String> description;
-    private final List<String> roles;
+    private final Optional<String> primaryRole;
+    private final List<String> altRoles;
+    private final List<String> legacyRoles;
     private final Optional<String> avatarImage;
     private final List<String> capabilities;
     private final Optional<Integer> routingPriority;
@@ -82,7 +98,9 @@ public final class AgentProfile implements CharterArtifact {
         this.schemaVersion = builder.schemaVersion;
         this.name = Objects.requireNonNull(builder.name, "name");
         this.description = builder.description;
-        this.roles = List.copyOf(builder.roles);
+        this.primaryRole = builder.primaryRole;
+        this.altRoles = List.copyOf(builder.altRoles);
+        this.legacyRoles = List.copyOf(builder.roles);
         this.avatarImage = builder.avatarImage;
         this.capabilities = List.copyOf(builder.capabilities);
         this.routingPriority = builder.routingPriority;
@@ -174,12 +192,109 @@ public final class AgentProfile implements CharterArtifact {
     }
 
     /**
-     * The roles the profile can take, in authored order; never empty.
+     * The roles the profile can take, primary first, then the alt-roles in authored order; never empty (ADR-0069).
+     * For a profile in the deprecated shape it is the authored {@code roles} list, whose first entry is the primary.
      *
      * @return an immutable list
      */
     public List<String> roles() {
-        return roles;
+        if (!legacyRoles.isEmpty()) {
+            return legacyRoles;
+        }
+        List<String> all = new ArrayList<>();
+        primaryRole.ifPresent(all::add);
+        all.addAll(altRoles);
+        return List.copyOf(all);
+    }
+
+    /**
+     * The profile's primary role (ADR-0069): its {@code role}, or for the deprecated shape the first {@code roles}
+     * entry.
+     *
+     * @return the primary role
+     */
+    public String role() {
+        return primaryRole.orElseGet(legacyRoles::getFirst);
+    }
+
+    /**
+     * The profile's alt-roles (ADR-0069): its {@code alt-roles} in authored order, or for the deprecated shape the
+     * {@code roles} entries after the first that are not the primary, each once.
+     *
+     * @return an immutable list, empty when it has none
+     */
+    public List<String> altRoles() {
+        if (legacyRoles.isEmpty()) {
+            return altRoles;
+        }
+        String primary = legacyRoles.getFirst();
+        return legacyRoles.stream().skip(1).filter(role -> !role.equals(primary)).distinct().toList();
+    }
+
+    /**
+     * Whether the profile is written in the deprecated positional {@code roles} shape (ADR-0069 deprecation window).
+     *
+     * @return {@code true} for the deprecated shape
+     */
+    public boolean declaresLegacyRoles() {
+        return !legacyRoles.isEmpty();
+    }
+
+    /**
+     * The {@code role} as authored; empty for the deprecated shape.
+     *
+     * @return the declared role, or empty
+     */
+    public Optional<String> declaredRole() {
+        return primaryRole;
+    }
+
+    /**
+     * The {@code alt-roles} as authored; empty for the deprecated shape.
+     *
+     * @return the declared alt-roles
+     */
+    public List<String> declaredAltRoles() {
+        return altRoles;
+    }
+
+    /**
+     * The deprecated {@code roles} list as authored, duplicates kept; empty for the new shape.
+     *
+     * @return the authored list
+     */
+    public List<String> legacyRoles() {
+        return legacyRoles;
+    }
+
+    /**
+     * How the profile fits a role a step asks for (ADR-0069): {@link RoleFit#PRIMARY} for its primary role,
+     * {@link RoleFit#ALT} for one of its alt-roles, otherwise {@link RoleFit#NONE}.
+     *
+     * @param asked the role asked for
+     * @return the fit
+     */
+    public RoleFit roleFit(String asked) {
+        Objects.requireNonNull(asked, "asked");
+        if (role().equals(asked)) {
+            return RoleFit.PRIMARY;
+        }
+        return altRoles().contains(asked) ? RoleFit.ALT : RoleFit.NONE;
+    }
+
+    private java.util.stream.Stream<String> declaredRoles() {
+        return java.util.stream.Stream.concat(
+                java.util.stream.Stream.concat(primaryRole.stream(), altRoles.stream()), legacyRoles.stream());
+    }
+
+    private static boolean wellFormedRole(String role) {
+        return role.length() <= ROLE_MAX && ROLE.matcher(role).matches();
+    }
+
+    private static boolean altRolesDistinct(AgentProfile profile) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        profile.primaryRole.ifPresent(seen::add);
+        return profile.altRoles.stream().allMatch(seen::add);
     }
 
     /**
@@ -386,6 +501,8 @@ public final class AgentProfile implements CharterArtifact {
         private @Nullable String name;
         private Optional<String> description = Optional.empty();
         private final List<String> roles = new ArrayList<>();
+        private Optional<String> primaryRole = Optional.empty();
+        private final List<String> altRoles = new ArrayList<>();
         private Optional<String> avatarImage = Optional.empty();
         private final List<String> capabilities = new ArrayList<>();
         private Optional<Integer> routingPriority = Optional.empty();
@@ -465,13 +582,36 @@ public final class AgentProfile implements CharterArtifact {
         }
 
         /**
-         * Appends a role.
+         * Appends an entry to the deprecated positional {@code roles} list, whose first entry is the primary role
+         * (ADR-0069 deprecation window). A profile in the new shape uses {@link #primaryRole} and {@link #altRole}.
          *
          * @param value the role
          * @return this builder
          */
         public Builder role(String value) {
             this.roles.add(Objects.requireNonNull(value, "role"));
+            return this;
+        }
+
+        /**
+         * Sets the primary {@code role} (ADR-0069).
+         *
+         * @param value the role
+         * @return this builder
+         */
+        public Builder primaryRole(String value) {
+            this.primaryRole = Optional.of(Objects.requireNonNull(value, "role"));
+            return this;
+        }
+
+        /**
+         * Appends one {@code alt-roles} entry (ADR-0069).
+         *
+         * @param value the alt-role
+         * @return this builder
+         */
+        public Builder altRole(String value) {
+            this.altRoles.add(Objects.requireNonNull(value, "altRole"));
             return this;
         }
 

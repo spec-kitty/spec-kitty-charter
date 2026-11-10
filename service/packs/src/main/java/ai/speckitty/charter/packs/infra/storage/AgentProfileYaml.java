@@ -41,6 +41,8 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
                 optional(root, "description"),
                 optional(root, "schema-version"),
                 strings(root, "roles"),
+                optional(root, "role"),
+                strings(root, "alt-roles"),
                 optional(root, "avatar-image"),
                 strings(root, "capabilities"),
                 integer(root, "routing-priority"),
@@ -71,6 +73,8 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
                 .scalar("description", profile.description())
                 .scalar("schema-version", profile.schemaVersion())
                 .strings("roles", profile.roles())
+                .scalar("role", profile.role())
+                .strings("alt-roles", profile.altRoles())
                 .scalar("avatar-image", profile.avatarImage())
                 .strings("capabilities", profile.capabilities());
         profile.routingPriority().ifPresent(value -> out.present("routing-priority", value));

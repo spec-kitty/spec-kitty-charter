@@ -31,9 +31,9 @@ class RegistrationListsTest {
     void theListMembersOfEachRegistrationAreReadOffItsDto() {
         assertThat(RegistrationLists.of(DirectiveRegistration.class))
                 .containsExactly("explicitAllowances", "integrityRules", "validationCriteria");
-        assertThatThrownBy(() -> RegistrationLists.of(ParadigmRegistration.class))
-                .as("a paradigm registration has no list left (ADR-0064), so its guard names none")
-                .isInstanceOf(IllegalStateException.class);
+        assertThat(RegistrationLists.of(ParadigmRegistration.class))
+                .as("a paradigm registration's only list is its principles (ADR-0067)")
+                .containsExactly("principles");
         assertThat(RegistrationLists.of(StyleguideRegistration.class))
                 .containsExactly("antiPatterns", "appliesToLanguages", "patterns", "principles", "tooling");
         assertThat(RegistrationLists.of(ToolguideRegistration.class)).containsExactly("appliesToLanguages", "commands");
@@ -46,7 +46,7 @@ class RegistrationListsTest {
                 .contains("id", "integrityRules")
                 .doesNotContain("references", "relationships", "procedures");
         assertThat(RegistrationLists.members(ParadigmRegistration.class))
-                .containsExactlyInAnyOrder("id", "schemaVersion", "name", "summary");
+                .containsExactlyInAnyOrder("id", "schemaVersion", "name", "summary", "principles");
         assertThat(RegistrationLists.members(StyleguideRegistration.class)).doesNotContain("references");
         assertThat(RegistrationLists.members(ToolguideRegistration.class)).doesNotContain("references");
     }

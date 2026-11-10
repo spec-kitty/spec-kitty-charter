@@ -161,19 +161,26 @@ class AgentProfileYamlTest {
             excluding: [capabilities]
             """;
 
+    /** {@link #FULL} in the ADR-0069 shape: role and alt-roles in place of the deprecated roles list. */
+    private static final String FULL_MODERN =
+            FULL.replace("roles: [implementer, reviewer]\n", "role: implementer\nalt-roles: [reviewer]\n");
+
     @Test
-    @DisplayName("every declared field of the schema is carried, nested ones included")
+    @DisplayName("every declared field of the schema is carried, nested ones included, in either role shape")
     void everyFieldIsCarried() {
         assertThat(roundTrip(FULL)).isNotBlank();
+        assertThat(roundTrip(FULL_MODERN)).contains("role: implementer").doesNotContain("\nroles:");
     }
 
     @Test
-    @DisplayName("the fully populated profile names every top-level property the schema declares")
+    @DisplayName("the two fully populated shapes together name every top-level property the schema declares")
     void theFullProfileCoversTheSchema() {
-        Map<?, ?> full = (Map<?, ?>) Yaml.load(FULL);
+        java.util.Set<String> keys = new java.util.TreeSet<>();
+        for (String full : List.of(FULL, FULL_MODERN)) {
+            ((Map<?, ?>) Yaml.load(full)).keySet().forEach(key -> keys.add(String.valueOf(key)));
+        }
 
-        assertThat(full.keySet().stream().map(String::valueOf).toList())
-                .containsExactlyInAnyOrderElementsOf(PackSchemas.bundled().declaredProperties("agent-profile"));
+        assertThat(keys).containsExactlyInAnyOrderElementsOf(PackSchemas.bundled().declaredProperties("agent-profile"));
     }
 
     @Test

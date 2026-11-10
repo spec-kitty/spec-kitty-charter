@@ -144,7 +144,7 @@ class ProfileDtosTest {
         assertSameShape(schema, schema, wire(FullProfile.full()), "", problems);
 
         assertThat(problems).isEmpty();
-        assertThat(names(schema.get("properties"))).hasSize(25);
+        assertThat(names(schema.get("properties"))).hasSize(27);
     }
 
     @Test
@@ -166,7 +166,19 @@ class ProfileDtosTest {
 
     @Test
     void everyAccessorOfTheDomainProfileHasAMemberOnTheWire() {
-        Set<String> notFields = Set.of("hashCode", "toString", "equals", "kind", "packId", "id", "label");
+        // The authored role shape (ADR-0069) is a storage concern; the wire carries role, altRoles and roles.
+        Set<String> notFields = Set.of(
+                "hashCode",
+                "toString",
+                "equals",
+                "kind",
+                "packId",
+                "id",
+                "label",
+                "declaredRole",
+                "declaredAltRoles",
+                "legacyRoles",
+                "declaresLegacyRoles");
         Map<String, String> renamed = Map.of("localId", "profileId", "selfReviewSteps", "selfReviewProtocol");
         Set<String> accessors = Arrays.stream(AgentProfile.class.getDeclaredMethods())
                 .filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
@@ -178,7 +190,7 @@ class ProfileDtosTest {
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(names(wire(FullProfile.full()))).containsAll(accessors);
-        assertThat(accessors).as("accessors of the domain profile").hasSize(25);
+        assertThat(accessors).as("accessors of the domain profile").hasSize(27);
     }
 
     // ---- what each field says --------------------------------------------------------------------------------------

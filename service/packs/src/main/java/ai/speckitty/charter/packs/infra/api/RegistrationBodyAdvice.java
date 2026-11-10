@@ -61,15 +61,15 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     }
 
     /**
-     * The registrations this advice guards. The paradigm and relationship registrations have no list
-     * ({@code RegistrationBodyAdviceTest} pins that), so they name none rather than read them off their DTO, which
-     * would refuse to start; their members are still checked.
+     * The registrations this advice guards. A paradigm's only list is {@code principles} (ADR-0067). The relationship
+     * registration has no list ({@code RegistrationBodyAdviceTest} pins that), so it names none rather than read them off their DTO, which
+     * would refuse to start; its members are still checked.
      */
     private static final Map<Type, Guarded> GUARDED = Map.of(
             DirectiveRegistration.class,
             new Guarded("directive", DirectiveRegistration.class),
             ParadigmRegistration.class,
-            Guarded.withoutLists("paradigm", ParadigmRegistration.class),
+            new Guarded("paradigm", ParadigmRegistration.class),
             StyleguideRegistration.class,
             new Guarded("styleguide", StyleguideRegistration.class),
             RelationshipRegistration.class,

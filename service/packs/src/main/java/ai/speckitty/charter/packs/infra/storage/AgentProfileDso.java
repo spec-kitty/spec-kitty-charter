@@ -21,7 +21,9 @@ import java.util.Optional;
  * @param name the {@code name}
  * @param description the {@code description}, when declared
  * @param schemaVersion the {@code schema-version}, when declared
- * @param roles the {@code roles}, in authored order
+ * @param roles the deprecated {@code roles}, in authored order; empty for the new shape (ADR-0069)
+ * @param role the {@code role}, when declared (ADR-0069)
+ * @param altRoles the {@code alt-roles}, in authored order (ADR-0069)
  * @param avatarImage the {@code avatar-image}, when declared
  * @param capabilities the {@code capabilities}, in authored order
  * @param routingPriority the {@code routing-priority}, when declared
@@ -49,6 +51,8 @@ record AgentProfileDso(
         Optional<String> description,
         Optional<String> schemaVersion,
         List<String> roles,
+        Optional<String> role,
+        List<String> altRoles,
         Optional<String> avatarImage,
         List<String> capabilities,
         Optional<Long> routingPriority,
@@ -77,7 +81,9 @@ record AgentProfileDso(
      * @param name the name
      * @param description the description
      * @param schemaVersion the schema version
-     * @param roles the roles
+     * @param roles the deprecated roles
+     * @param role the role
+     * @param altRoles the alt-roles
      * @param avatarImage the avatar image
      * @param capabilities the capabilities
      * @param routingPriority the routing priority
@@ -105,6 +111,8 @@ record AgentProfileDso(
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(schemaVersion, "schemaVersion");
         roles = List.copyOf(roles);
+        Objects.requireNonNull(role, "role");
+        altRoles = List.copyOf(altRoles);
         Objects.requireNonNull(avatarImage, "avatarImage");
         capabilities = List.copyOf(capabilities);
         Objects.requireNonNull(routingPriority, "routingPriority");

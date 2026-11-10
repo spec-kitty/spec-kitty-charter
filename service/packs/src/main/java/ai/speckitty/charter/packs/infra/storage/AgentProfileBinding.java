@@ -99,6 +99,8 @@ enum AgentProfileBinding implements KindBinding<AgentProfileDso, AgentProfile> {
                         context.complexityPreference()))
                 .excluding(dso.excluding().map(AgentProfileBinding::exclusion));
         dso.roles().forEach(builder::role);
+        dso.role().ifPresent(builder::primaryRole);
+        dso.altRoles().forEach(builder::altRole);
         dso.capabilities().forEach(builder::capability);
         dso.modeDefaults()
                 .forEach(mode -> builder.modeDefault(new ModeDefault(mode.mode(), mode.description(), mode.useCase())));
@@ -127,7 +129,9 @@ enum AgentProfileBinding implements KindBinding<AgentProfileDso, AgentProfile> {
                 profile.name(),
                 profile.description(),
                 profile.schemaVersion(),
-                profile.roles(),
+                profile.legacyRoles(),
+                profile.declaredRole(),
+                profile.declaredAltRoles(),
                 profile.avatarImage(),
                 profile.capabilities(),
                 profile.routingPriority().map(Integer::longValue),

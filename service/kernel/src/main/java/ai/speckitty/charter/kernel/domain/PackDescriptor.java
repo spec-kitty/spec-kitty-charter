@@ -21,6 +21,8 @@ import java.util.Set;
  * @param overrides the sibling conflicts this pack settles (any pack of the compose may declare one until #358), each
  *     by the conflicting artifact and the member meant to win; empty when it settles none
  * @param schemaVersion the pack's {@code schema_version} as written; empty for an unversioned (legacy) descriptor
+ * @param fallbackProfile the profile-id of the pack's declared fallback agent profile ({@code fallback_profile},
+ *     ADR-0068); empty when the pack declares none
  */
 public record PackDescriptor(
         String packId,
@@ -32,7 +34,47 @@ public record PackDescriptor(
         PackPaths paths,
         List<PackDependency> dependencies,
         List<PackOverride> overrides,
-        Optional<String> schemaVersion) {
+        Optional<String> schemaVersion,
+        Optional<String> fallbackProfile) {
+    /**
+     * Builds a descriptor that declares no fallback profile.
+     *
+     * @param packId the pack id
+     * @param packVersion the pack version
+     * @param parentPack the parent pack
+     * @param name the name
+     * @param declaredLevel the declared level
+     * @param requiresCore the core range
+     * @param paths the pack-relative paths
+     * @param dependencies the dependencies
+     * @param overrides the overrides
+     * @param schemaVersion the schema version
+     */
+    public PackDescriptor(
+            String packId,
+            String packVersion,
+            Optional<String> parentPack,
+            String name,
+            Optional<PackLevel> declaredLevel,
+            Optional<String> requiresCore,
+            PackPaths paths,
+            List<PackDependency> dependencies,
+            List<PackOverride> overrides,
+            Optional<String> schemaVersion) {
+        this(
+                packId,
+                packVersion,
+                parentPack,
+                name,
+                declaredLevel,
+                requiresCore,
+                paths,
+                dependencies,
+                overrides,
+                schemaVersion,
+                Optional.empty());
+    }
+
     /**
      * Builds an unversioned descriptor: one that states no {@code schema_version}.
      *
@@ -171,6 +213,7 @@ public record PackDescriptor(
         Objects.requireNonNull(dependencies, "dependencies");
         Objects.requireNonNull(overrides, "overrides");
         Objects.requireNonNull(schemaVersion, "schemaVersion");
+        Objects.requireNonNull(fallbackProfile, "fallbackProfile");
         dependencies = List.copyOf(dependencies);
         overrides = List.copyOf(overrides);
         Optional<String> twice = artifactSettledTwice(overrides);

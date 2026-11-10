@@ -334,7 +334,7 @@ class AgentProfileEntityTest {
                         ConstraintBreachException.class,
                         breach -> assertThat(breach.constraintDescription())
                                 .isEqualTo("An agent profile's roles must be lowercase letters, digits, hyphens and"
-                                        + " underscores, starting with a letter."));
+                                        + " underscores, starting with a letter, at most 64 characters."));
         assertThatThrownBy(() -> AgentProfile.builder()
                         .id(new AgentProfileIdentifier("p"))
                         .packId(PACK)
@@ -345,7 +345,7 @@ class AgentProfileEntityTest {
                 .isInstanceOfSatisfying(
                         ConstraintBreachException.class,
                         breach -> assertThat(breach.constraintDescription())
-                                .isEqualTo("An agent profile needs at least one role."));
+                                .isEqualTo("An agent profile needs a role: declare role (with optional alt-roles) or, deprecated, roles."));
     }
 
     @Test

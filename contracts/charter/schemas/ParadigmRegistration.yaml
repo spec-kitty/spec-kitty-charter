@@ -42,3 +42,16 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
       symbol: Paradigm.summary
+  principles:
+    type: array
+    minItems: 1
+    maxItems: 12
+    description: >-
+      The paradigm's principles, in the order the author ranks them (ADR-0067). Optional; when sent, one to twelve
+      items whose names are unique ignoring case and surrounding whitespace. A repeated name, a blank name or
+      description, or a thirteenth item is refused 422 validation_failed and nothing is written.
+    items:
+      $ref: ParadigmPrinciple.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.principles
