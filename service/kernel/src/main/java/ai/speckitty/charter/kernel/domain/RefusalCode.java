@@ -195,13 +195,14 @@ public enum RefusalCode {
     PROMPT_SLOT_MISSING("prompt_slot_missing"),
 
     /**
-     * The asked pack has no mission step contract with the asked identity: the not-found code of kind
-     * {@code mission_step_contract}. Answered as 404. Reserved for #99 until its read is built.
+     * The asked pack, or the asked activation's merged closure, has no mission step contract with the asked identity: the
+     * not-found code of kind {@code mission_step_contract}. Answered as 404. Raised by the item read of a pack and by
+     * {@code getEffectiveMissionStepContract} (#99).
      */
     MISSION_STEP_CONTRACT_NOT_FOUND("mission_step_contract_not_found"),
     /**
      * The skeleton name does not decode to a skeleton of the asked mission type (RFC 6901 escaping, D9). Answered as
-     * 404. Reserved for #99 until its read is built.
+     * 404. Raised by {@code getPackMissionSkeleton} and {@code getEffectiveMissionSkeleton} (#99).
      */
     SKELETON_NOT_FOUND("skeleton_not_found");
 

@@ -36,8 +36,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * generated interface declares (a page size out of range), which bean validation refuses.
  *
  * <p>Every link is built by {@link Hypermedia}: an item's {@code self} and {@code collection} (no {@code edit} in this
- * minor, R-24), with a step contract's {@code mission-type} and {@code step} when its pack holds them, and a page's {@code self} (the request with the query it gave), {@code first} (without the cursor)
- * and, when more artifacts follow, {@code next}.
+ * minor, R-24), with a step contract's {@code mission-type} and {@code step} when its pack holds them, and a page's
+ * {@code self} (the request with the query it gave), {@code first} (without the cursor) and, when more artifacts follow,
+ * {@code next}.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")

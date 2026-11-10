@@ -6,6 +6,8 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.api.EffectiveMissionTypesApi;
+import ai.speckitty.charter.api.MissionTypesApi;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ActivationPackList;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -175,15 +178,15 @@ public class ActivationMapper {
 
     /**
      * The path of the read of one step of a mission type under an activation ({@code getEffectiveMissionStep}). The
-     * missions edge serves it; this slice may not name its paths, so it spells the route.
+     * missions edge serves it; this slice may not name the missions edge, so it expands the contract's path template.
      *
      * @param activationId the activation's id
      * @param missionTypeId the mission type's id
      * @param stepId the step's id
-     * @return the absolute path, each segment percent-encoded
+     * @return the absolute path, each variable strictly percent-encoded
      */
     public String effectiveMissionStep(String activationId, String missionTypeId, String stepId) {
-        return href("activations", activationId, "artifacts", "mission_type", missionTypeId, "steps", stepId);
+        return expand(EffectiveMissionTypesApi.PATH_GET_EFFECTIVE_MISSION_STEP, activationId, missionTypeId, stepId);
     }
 
     /**
@@ -192,10 +195,18 @@ public class ActivationMapper {
      * @param packId the pack's configured id
      * @param missionTypeId the mission type's id
      * @param stepId the step's id
-     * @return the absolute path, each segment percent-encoded
+     * @return the absolute path, each variable strictly percent-encoded
      */
     public String packMissionStep(String packId, String missionTypeId, String stepId) {
-        return href("packs", packId, "artifacts", "mission_type", missionTypeId, "steps", stepId);
+        return expand(MissionTypesApi.PATH_GET_PACK_MISSION_STEP, packId, missionTypeId, stepId);
+    }
+
+    /** The base path and a contract path template, its variables strictly encoded, so each stays one segment. */
+    private String expand(String template, String... values) {
+        return UriComponentsBuilder.fromPath(basePath + template)
+                .encode()
+                .buildAndExpand((Object[]) values)
+                .toUriString();
     }
 
     /**
