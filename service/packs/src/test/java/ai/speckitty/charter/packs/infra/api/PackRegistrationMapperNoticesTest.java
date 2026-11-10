@@ -45,7 +45,8 @@ class PackRegistrationMapperNoticesTest {
                                 Optional.empty()),
                         PackLevel.ORG,
                         PackRevision.compute(List.of("x")),
-                        notices),
+                        notices,
+                        List.of()),
                 Map.of());
     }
 

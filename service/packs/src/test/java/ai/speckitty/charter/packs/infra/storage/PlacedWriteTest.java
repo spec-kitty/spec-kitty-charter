@@ -137,7 +137,8 @@ class PlacedWriteTest {
     }
 
     @Test
-    @DisplayName("a place whose file name is not <id>.step-enhancement.yaml is refused")
+    @DisplayName(
+            "a place whose name is not <id>.step-enhancement.yaml, or that the files rule does not read, is refused")
     void aPlaceWithAnotherFileNameIsRefused() throws IOException {
         List<String> before = files();
 
@@ -145,6 +146,8 @@ class PlacedWriteTest {
                 "missions/software-dev/enhancements/another-id.step-enhancement.yaml",
                 "missions/software-dev/enhancements/spdd-plan.yaml",
                 "missions/software-dev/enhancements/spdd-plan.tactic.yaml",
+                "elsewhere/spdd-plan.step-enhancement.yaml",
+                "missions/software-dev/spdd-plan.step-enhancement.yaml",
                 "missions/software-dev/enhancements/")) {
             assertThatThrownBy(() -> store.writeAt(
                             PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill the slot."), place))

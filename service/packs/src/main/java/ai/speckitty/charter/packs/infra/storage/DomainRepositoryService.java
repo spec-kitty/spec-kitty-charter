@@ -865,9 +865,6 @@ public final class DomainRepositoryService
         return file.toString().replace(file.getFileSystem().getSeparator(), "/");
     }
 
-    /** The store hard-codes this kind for a companion it refuses ({@code FilesystemPackStore#withCompanions}). */
-    private static final String COMPANION_KIND = "companion";
-
     private static String enhancementSuffix() {
         return "." + StepEnhancementBinding.INSTANCE.fileToken() + ".yaml";
     }
@@ -896,12 +893,6 @@ public final class DomainRepositoryService
                         .ifPresent(body -> companions.add(FileSystemPackInspector.companionFact(companion, body)));
             }
         }
-        Set<String> refused = new LinkedHashSet<>();
-        for (PackElementViolation violation : read.violations()) {
-            if (violation.file().endsWith(enhancementSuffix())) {
-                refused.add(violation.file());
-            }
-        }
         List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
@@ -913,7 +904,8 @@ public final class DomainRepositoryService
                         .ifPresent(edges::add);
             }
         }
-        return new StepEnhancementFacts(enhancements, companions, Set.of(), refused, edges);
+        // Orphans are judged at validate and registration only: no fragment file list is passed at load.
+        return new StepEnhancementFacts(enhancements, companions, Set.of(), Set.of(), edges);
     }
 
     /** The read the existing assembly gets: the remapped companion violations, the repeated ids left out. */
@@ -927,7 +919,7 @@ public final class DomainRepositoryService
         }
         String kind = PackPolicy.violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID);
         List<PackElementViolation> violations = read.violations().stream()
-                .map(violation -> COMPANION_KIND.equals(violation.kind())
+                .map(violation -> FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
                                 && violation.file().endsWith(enhancementSuffix())
                         ? new PackElementViolation(violation.file(), kind, violation.reason())
                         : violation)

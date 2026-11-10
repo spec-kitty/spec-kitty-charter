@@ -252,6 +252,9 @@ final class FilesystemPackStore {
         }
     }
 
+    /** The kind of a violation of a companion the store refuses; the load seat reads it back to remap it. */
+    static final String COMPANION_KIND = "companion";
+
     private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
     private static final PayloadRead FILES = Files::readAllBytes;
@@ -810,7 +813,7 @@ final class FilesystemPackStore {
                 }
             }
             if (refusal != null) {
-                violations.add(new PackElementViolation(file, "companion", companion.path() + ": " + refusal));
+                violations.add(new PackElementViolation(file, COMPANION_KIND, companion.path() + ": " + refusal));
                 return Optional.empty();
             }
         }
@@ -1171,10 +1174,11 @@ final class FilesystemPackStore {
     /**
      * The file a new element is created at when the caller names its place ({@link #writeAt}): {@code place} below the
      * pack directory. It is refused when it leaves the pack (a climb, an absolute path, a backslash), when the name is
-     * already taken, links included, and when its file name is not {@code <id>.<fileToken>.yaml}, the name the stem rule
-     * ({@link FileStems#mismatch}) holds the file to on read.
+     * already taken, links included, when its file name is not {@code <id>.<fileToken>.yaml}, the name the stem rule
+     * ({@link FileStems#mismatch}) holds the file to on read, and when the place is not where the files rule of the
+     * kind ({@code contracts/packs/file-kinds.yaml}) reads such a file.
      */
-    private static Path placedFile(Path directory, KindBinding<?, ?> kind, String elementId, String place) {
+    private Path placedFile(Path directory, KindBinding<?, ?> kind, String elementId, String place) {
         String token = kind.kind().token();
         Path target = directory.resolve(place).normalize();
         boolean inPack = !place.isBlank()
@@ -1193,6 +1197,14 @@ final class FilesystemPackStore {
                     RefusalCode.PACK_UNREADABLE,
                     token + " '" + elementId + "' cannot be placed at '" + place + "': its file name must be "
                             + expected);
+        }
+        String ruled = directory.getFileName() + "/" + relative(directory, target);
+        if (!(companionRules.table().classify(ruled) instanceof PackFileKind.Mapped mapped)
+                || !mapped.kind().equals(kind.fileToken())) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    token + " '" + elementId + "' cannot be placed at '" + place
+                            + "': no files rule of the pack file kinds reads a " + kind.fileToken() + " file there");
         }
         if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
             throw new CharterRefusal(
