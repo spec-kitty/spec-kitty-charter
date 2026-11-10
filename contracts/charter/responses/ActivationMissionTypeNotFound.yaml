@@ -1,9 +1,7 @@
 description: >-
-  The activation, the mission type, the step or the skeleton the path names is not there, refused with 404, judged in
-  that order: activation_not_found for an activation no document is stored under (or one this client may not see);
-  then mission_type_not_found for a mission type the activation's merged closure does not hold; then action_not_found
-  for a step the winning type does not hold, or skeleton_not_found for a name that does not decode (D9) to a skeleton
-  of the pack that holds the winning type.
+  The activation or the mission type the path names is not there, refused with 404, judged in that order:
+  activation_not_found for an activation no document is stored under (or one this client may not see); then
+  mission_type_not_found for a mission type the activation's merged closure does not hold.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
@@ -18,7 +16,3 @@ content:
         $ref: ../examples/CharterRefusal.activation-not-found.yaml
       mission-type-not-found:
         $ref: ../examples/CharterRefusal.mission-type-not-found.yaml
-      action-not-found:
-        $ref: ../examples/CharterRefusal.action-not-found.yaml
-      skeleton-not-found:
-        $ref: ../examples/CharterRefusal.skeleton-not-found.yaml
