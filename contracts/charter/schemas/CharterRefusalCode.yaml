@@ -9,8 +9,8 @@ description: >-
   artifact_locked are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
-  artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm and
-  toolguide), on the generic artifact item read and on deletePackArtifact; the pack is judged first, so an unknown pack
+  artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
+  toolguide and agent_profile), on the generic artifact item read and on deletePackArtifact; the pack is judged first, so an unknown pack
   with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
   missing or invalid is pack_unreadable (500) on the offering and on every artifact read (operator
   ruling of 2026-10-31). A configured pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
@@ -46,7 +46,8 @@ description: >-
 
   Six codes belong to the activation set (ADR-0020 D9, D10, #125), and every one is raised (#125, #291, #360):
   activation_not_found (404), an activation no document is stored under; artifact_not_found (404), a per-artifact
-  write whose path names an artifact the activation's closure does not hold; preset_not_found (404), a preset
+  write whose path names an artifact the activation's closure does not hold, and a read or removal on a pack path of
+  an agent profile the pack does not hold; preset_not_found (404), a preset
   application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
   document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
   validation_failed, not activation_invalid); artifact_required and

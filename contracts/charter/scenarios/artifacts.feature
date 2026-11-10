@@ -1,7 +1,7 @@
 @contract @artifacts
 Feature: A pack's artifacts are read through one generic list and one generic item
-  A client lists a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm and
-  toolguide) as summaries, filtered by an optional kind and paged with the shared page information
+  A client lists a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm,
+  toolguide and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
   and first/next links (FR-003), and reads one artifact in a closed envelope that holds exactly the
   member its kind names (FR-004). The list is ordered by the served-kind order, then by id in
   code-point order, and its cursor is a position: a page holds the artifacts strictly after it. An
@@ -184,6 +184,98 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         }
       }
       """
+
+  Scenario: A list filtered by agent_profile lists the pack's profiles last in the served-kind order, each linking to its read
+    Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
+      """
+      profile-id: jenny
+      name: Java Jenny
+      roles:
+        - implementer
+      purpose: Implement.
+      specialization:
+        primary-focus: Java
+      """
+    And the org pack "qa" with the file "agent_profiles/ivan.agent.yaml":
+      """
+      profile-id: ivan
+      name: Implementer Ivan
+      roles:
+        - implementer
+      purpose: Implement.
+      specialization:
+        primary-focus: Implementation
+      """
+    When I GET "/packs/qa/artifacts?kind=agent_profile"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the response body is:
+      """
+      {
+        "items": [
+          {"kind": "agent_profile", "id": "ivan", "title": "Implementer Ivan", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/agent_profile/ivan"}}},
+          {"kind": "agent_profile", "id": "jenny", "title": "Java Jenny", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/agent_profile/jenny"}}}
+        ],
+        "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
+        "_links": {
+          "self": {"href": "/api/v1/packs/qa/artifacts?kind=agent_profile"},
+          "first": {"href": "/api/v1/packs/qa/artifacts?kind=agent_profile"}
+        }
+      }
+      """
+    And following the link "self" of every element of "items" answers 200
+    When I GET "/packs/qa/artifacts?pageSize=5"
+    Then the response status is 200
+    And the field at "/items/4/kind" is "toolguide"
+    And the field at "/page/hasNextPage" is true
+    When I follow the link "next"
+    Then the response status is 200
+    And the field at "/items/0/id" is "ivan"
+    And the field at "/items/1/id" is "jenny"
+    And the field at "/page/hasNextPage" is false
+
+  Scenario: The references of an agent profile are the edges its pack writes from it, each resolved through the compose
+    Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
+      """
+      profile-id: jenny
+      name: Java Jenny
+      roles:
+        - implementer
+      purpose: Implement.
+      specialization:
+        primary-focus: Java
+      """
+    And the org pack "qa" with the file "jenny.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: agent_profile:jenny
+        target: directive:GUARD
+        relation: requires
+      - source: agent_profile:jenny
+        target: styleguide:java-style
+        relation: suggests
+      """
+    When I GET "/packs/qa/artifacts/agent_profile/jenny/references"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/items/0/reference" is "directive:GUARD"
+    And the field at "/items/0/relation" is "requires"
+    And the field at "/items/0/holdingPack/packId" is "qa"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/qa/artifacts/directive/GUARD"
+    And the field at "/items/1/reference" is "styleguide:java-style"
+    And the field at "/items/1/relation" is "suggests"
+    And the field at "/items/2/reference" is absent
+    And the field at "/_links/self/href" is "/api/v1/packs/qa/artifacts/agent_profile/jenny/references"
+    And following the link "artifact" of every element of "items" answers 200
+
+  Scenario: The references of an agent profile the pack does not hold are artifact_not_found
+    When I GET "/packs/qa/artifacts/agent_profile/nobody/references"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    And the field at "/detail" is "Pack qa has no agent_profile nobody."
 
   Scenario: A kind filter the service does not know is a 400 Problem without a code
     When I GET "/packs/qa/artifacts?kind=tactic"
@@ -571,9 +663,10 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
-      | kind       | code                 |
-      | tactic     | tactic_not_found     |
-      | directive  | directive_not_found  |
-      | styleguide | styleguide_not_found |
-      | paradigm   | paradigm_not_found   |
-      | toolguide  | toolguide_not_found  |
+      | kind          | code                 |
+      | tactic        | tactic_not_found     |
+      | directive     | directive_not_found  |
+      | styleguide    | styleguide_not_found |
+      | paradigm      | paradigm_not_found   |
+      | toolguide     | toolguide_not_found  |
+      | agent_profile | artifact_not_found   |

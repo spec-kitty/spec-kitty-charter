@@ -15,8 +15,10 @@ get:
     refused with (pack_dependency_cycle, pack_reference_pack_missing and the others), with the packs member naming
     the packs; the pack-scoped read of the artifact itself still answers on the same setup. The pack is judged
     first: an identifier that matches no configured pack is a 404 pack_not_found, then a slug that names no kind
-    the service serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind,
-    exactly as for the artifact read. The answer is verified against the source fingerprint and carries it; inputs
+    the service serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind
+    (artifact_not_found for an agent_profile), exactly as for the artifact read. The references of an agent_profile
+    are the edges its pack's graph documents write from it (specializes_from, requires, suggests and the rest) and the
+    relations it derives, resolved through the compose as any artifact's are. The answer is verified against the source fingerprint and carries it; inputs
     that change while it is read are stale_input.
   tags:
     - Artifacts

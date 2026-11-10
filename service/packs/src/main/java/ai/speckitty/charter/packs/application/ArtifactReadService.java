@@ -59,13 +59,30 @@ import org.springframework.stereotype.Service;
 @Service
 public final class ArtifactReadService {
 
-    /** The kinds this service serves, in the list order. Other kernel kinds are not served yet. */
+    /**
+     * The kinds this service serves, in the list order; {@code agent_profile} is last. Other kernel kinds are not served
+     * yet. An agent profile is listed, referenced and removed here, but its body is rendered by the profiles slice's
+     * own controller, so the generic item read answers it as an {@link Item.Foreign}.
+     */
     public static final List<ArtifactKind> SERVED = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
             ArtifactKind.STYLEGUIDE,
             ArtifactKind.PARADIGM,
-            ArtifactKind.TOOLGUIDE);
+            ArtifactKind.TOOLGUIDE,
+            ArtifactKind.AGENT_PROFILE);
+
+    /**
+     * The kinds a client can list and follow from a list: the list, its {@code ?kind=} filter, the positions of a page,
+     * a reference's {@code artifact} link and the removal of an artifact. Every gate on the listable kinds reads this
+     * accessor and not {@link #SERVED}, so that a kind can later be served without being listed, or the other way round.
+     * Today it is {@link #SERVED}.
+     *
+     * @return the listed kinds, in the list order
+     */
+    public static List<ArtifactKind> listed() {
+        return SERVED;
+    }
 
     private static final String STALE_LIST = "The inputs changed while the artifacts were read; read them again.";
     private static final String STALE_ONE = "The inputs changed while the artifact was read; read it again.";
@@ -74,7 +91,9 @@ public final class ArtifactReadService {
             ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND,
             ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
             ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
-            ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND);
+            ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
+            // Kinds served from now on use artifact_not_found; the five above keep their own codes (contract rule).
+            ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND);
 
     /**
      * The code a request for an artifact of a served kind that the pack does not hold is refused with.
@@ -102,6 +121,7 @@ public final class ArtifactReadService {
     private final OfferingReadService offerings;
     private final CompositeComponentResolver components;
     private final PackEdgeRepository graphs;
+    private final PackRevisions revisions;
 
     /**
      * One artifact as the list names it.
@@ -211,6 +231,19 @@ public final class ArtifactReadService {
         }
 
         /**
+         * An artifact of a kind another slice's controller renders, and the revision of its pack.
+         *
+         * @param artifact the artifact
+         * @param at the revision it was read at
+         */
+        record Foreign(CharterArtifact artifact, PackRevision at) implements Item {
+            @Override
+            public Optional<PackRevision> revision() {
+                return Optional.of(at);
+            }
+        }
+
+        /**
          * A toolguide and its revision.
          *
          * @param artifact the toolguide
@@ -238,6 +271,7 @@ public final class ArtifactReadService {
      * @param offerings the offering read whose compose a reference is resolved against, resolved once per read
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
+     * @param revisions the pack revision an artifact of another slice's kind is read at
      */
     @Autowired
     public ArtifactReadService(
@@ -251,7 +285,8 @@ public final class ArtifactReadService {
             ToolguideReadService toolguides,
             OfferingReadService offerings,
             CompositeComponentResolver components,
-            PackEdgeRepository graphs) {
+            PackEdgeRepository graphs,
+            PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
@@ -263,6 +298,7 @@ public final class ArtifactReadService {
         this.offerings = Objects.requireNonNull(offerings, "offerings");
         this.components = Objects.requireNonNull(components, "components");
         this.graphs = Objects.requireNonNull(graphs, "graphs");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -273,6 +309,16 @@ public final class ArtifactReadService {
      */
     public static Optional<ArtifactKind> servedKind(String token) {
         return ArtifactKind.fromToken(token).filter(SERVED::contains);
+    }
+
+    /**
+     * The listed kind a token names.
+     *
+     * @param token a kind token, for example {@code directive}
+     * @return the kind; empty when the token names no kind, or one the list does not hold
+     */
+    public static Optional<ArtifactKind> listedKind(String token) {
+        return ArtifactKind.fromToken(token).filter(kind -> listed().contains(kind));
     }
 
     /**
@@ -296,8 +342,8 @@ public final class ArtifactReadService {
         if (size < 1) {
             throw new IllegalArgumentException("a page holds at least one artifact, not " + size);
         }
-        List<ArtifactKind> kinds = filter.map(List::of).orElse(SERVED);
-        if (!SERVED.containsAll(kinds)) {
+        List<ArtifactKind> kinds = filter.map(List::of).orElse(listed());
+        if (!listed().containsAll(kinds)) {
             throw new IllegalArgumentException("not a served kind: " + kinds);
         }
         return read.read(STALE_LIST, () -> page(packs.load(pack), kinds, after, size));
@@ -371,7 +417,7 @@ public final class ArtifactReadService {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(kindToken, "kindToken");
         Objects.requireNonNull(id, "id");
-        Optional<ArtifactKind> kind = servedKind(kindToken);
+        Optional<ArtifactKind> kind = listedKind(kindToken);
         if (kind.isEmpty()) {
             return refusedAfterThePack(
                     pack,
@@ -481,8 +527,25 @@ public final class ArtifactReadService {
                         toolguide -> as(
                                 toolguides.toolguideWithRevision(pack, toolguide),
                                 revised -> new Item.OfToolguide(revised.value(), revised.revision())));
+            case AGENT_PROFILE -> foreignItem(pack, kind, id);
             default -> throw new IllegalStateException("a served kind without a read: " + kind);
         };
+    }
+
+    /**
+     * The read of an artifact of a kind another slice renders: the stored entity and the revision of its pack, taken in
+     * one verified read. The id is not parsed as an identifier of the kind: an id the pack does not hold, malformed or
+     * not, is the kind's not-found.
+     */
+    private ConsistentRead.Verified<Item> foreignItem(PackIdentifier pack, ArtifactKind kind, String id) {
+        return read.read("The inputs changed while the " + kind.token() + " was read; read it again.", () -> {
+            CharterArtifact artifact = packs.load(pack).artifacts(kind).stream()
+                    .filter(candidate -> candidate.localId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new CharterRefusal(
+                            absentCode(kind), "Pack " + pack.value() + " has no " + kind.token() + " " + id + "."));
+            return new Item.Foreign(artifact, revisions.currentRevision(pack));
+        });
     }
 
     /**

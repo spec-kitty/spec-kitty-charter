@@ -15,7 +15,7 @@ properties:
     pattern: '^[a-z0-9][a-z0-9_-]*$'
     maxLength: 64
     description: >-
-      The kind token; this version serves tactic, directive, styleguide, paradigm and toolguide; a
+      The kind token; this version lists tactic, directive, styleguide, paradigm, toolguide and agent_profile; a
       client tolerates a kind it does not know (skips the item).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java

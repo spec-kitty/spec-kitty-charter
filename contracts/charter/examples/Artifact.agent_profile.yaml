@@ -83,7 +83,9 @@ value:
       suggestion: null
       packId: built-in
       held: true
-      _links: {}
+      _links:
+        artifact:
+          href: /api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan
     - kind: directive
       artifactId: DIRECTIVE_041
       urn: directive:DIRECTIVE_041

@@ -6,8 +6,9 @@
 #
 # The governance walk lists an artifact once, at its earliest step, and depth counts the suggests hops it follows: at the
 # default depth 0 no suggestion is listed, at depth=1 the suggested artifacts and what they require are. An entry links
-# (`artifact`) only when its target is held and the generic artifact route serves its kind: the generic route does not serve
-# agent_profile yet (a later work package opens it), so a lineage entry is unlinked here and the scenarios say so.
+# (`artifact`) only when its target is held and the artifact list serves its kind. WP05 opened the list to agent_profile, so
+# a lineage entry links to the pack-scoped read of the ancestor, and the last scenarios follow the profile read's own
+# `collection` and `references` links and every governance entry's `artifact` link and expect 200 (FR-004).
 #
 # Steps these scenarios add to the vocabulary of README.md (bound in ProfileSteps):
 # - `Then the field at "<json-pointer>" is null` — the member is there and is JSON null (a member that is left out is absent).
@@ -224,11 +225,12 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/_links/self/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in unlinked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked
       directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked
       styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked
       """
+    And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan"
     And the field at "/governance/3/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/styleguide/java-conventions"
 
   Scenario: At depth 1 the profile's suggestions are walked, each with the condition and the reason of its edge
@@ -237,12 +239,39 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/_links/self/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny?depth=1"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in unlinked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked
       directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked
       directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 in built-in linked suggested when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."
       styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked
       """
+
+  Scenario: The links of a profile read lead to reads that answer 200: its collection, its references and every governance entry
+    The collection link is the list of the pack's profiles, the references link is the edges the pack writes from the
+    profile, and the artifact link of a governance entry, a lineage entry included, is the pack-scoped read of that
+    artifact. Each is followed from the profile read, not built by hand.
+    When I GET "/packs/built-in/artifacts/agent_profile/java-jenny"
+    Then the response status is 200
+    And the field at "/_links/collection/href" is "/api/v1/packs/built-in/artifacts?kind=agent_profile"
+    And following the link "artifact" of every element of "governance" answers 200
+    When I GET "/packs/built-in/artifacts/agent_profile/java-jenny"
+    And I follow the link "collection"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/items/0/kind" is "agent_profile"
+    And the field at "/items/0/id" is "implementer-ivan"
+    And the field at "/items/1/id" is "java-jenny"
+    And the field at "/items/2/id" is "lone"
+    And the field at "/items/3/id" is absent
+    And following the link "self" of every element of "items" answers 200
+    When I GET "/packs/built-in/artifacts/agent_profile/java-jenny"
+    And I follow the link "references"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/items/0/reference" is "agent_profile:implementer-ivan"
+    And the field at "/items/0/relation" is "specializes_from"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan"
+    And following the link "artifact" of every element of "items" answers 200
 
   Scenario: A parent no pack of the closure holds is listed as not held, with no pack and no link
     Given the built-in pack "built-in" with the file "agent_profiles/orphan.agent.yaml":
@@ -318,12 +347,14 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/packId" is "house"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 2 in built-in unlinked
-      agent_profile:java-jenny lineage via agent_profile:house-jenny hops 1 in built-in unlinked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 2 in built-in linked
+      agent_profile:java-jenny lineage via agent_profile:house-jenny hops 1 in built-in linked
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 2 in built-in linked
       directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 3 in built-in linked
       styleguide:java-conventions requires via agent_profile:java-jenny hops 2 in built-in linked
       """
+    And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan"
+    And the field at "/governance/1/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the field at "/governance/2/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010"
 
   Scenario: A profile only a pack of the closure holds is not the pack's own and is artifact_not_found

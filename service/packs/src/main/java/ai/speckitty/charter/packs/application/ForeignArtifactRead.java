@@ -23,9 +23,9 @@ import org.springframework.stereotype.Service;
  * whole-source digest that read verified, the one every other built read reports as {@code Charter-Source-Fingerprint}
  * (never the closure's own digest, which {@link ClosureView#fingerprint()} holds for a view).
  *
- * <p>It lives apart from {@link ArtifactReadService} because the generic item read is another work package's: this read
- * is kind-neutral on purpose and asks nothing of the generic route's kind table, so widening {@link
- * ArtifactReadService#SERVED} does not change it. It reuses the generic read's collaborators: the pack port, the
+ * <p>It lives apart from {@link ArtifactReadService} because the generic item read renders none of these kinds' bodies:
+ * this read is kind-neutral and asks nothing of the generic route's kind table, except which kinds a client can follow
+ * ({@link ArtifactReadService#listed()}). It reuses the generic read's collaborators: the pack port, the
  * descriptor port, {@link ConsistentRead}, {@link PackRevisions} and {@link ProfileGovernance} (which composes the
  * pack's {@code depends_on} closure through {@link ClosureQueries#snapshotWithin}).
  *
@@ -54,7 +54,7 @@ public final class ForeignArtifactRead {
      * @param artifact the stored entity
      * @param revision the pack revision it was read at, the answer's {@code ETag}
      * @param governance the pack-scoped governance, for an agent profile; empty for any other kind
-     * @param servedKinds the kinds the generic route serves, so the caller can tell which entries it may link without
+     * @param servedKinds the kinds the generic route lists, so the caller can tell which entries it may link without
      *     naming this slice
      */
     public record Foreign(
@@ -145,7 +145,7 @@ public final class ForeignArtifactRead {
                             .orElseThrow(() -> new IllegalStateException("the closure of pack " + pack.value()
                                     + " does not hold the " + kind.token() + " " + id + " the pack holds")))
                     : Optional.empty();
-            return new Foreign(artifact, revisions.currentRevision(pack), walked, ArtifactReadService.SERVED);
+            return new Foreign(artifact, revisions.currentRevision(pack), walked, ArtifactReadService.listed());
         });
     }
 
