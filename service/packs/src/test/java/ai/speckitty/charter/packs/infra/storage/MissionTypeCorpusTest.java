@@ -90,13 +90,17 @@ class MissionTypeCorpusTest {
         List<MissionStep> steps = new ArrayList<>();
         long promptFiles = 0;
         long guidelineFiles = 0;
+        long promptsWithDescription = 0;
         for (String pack : List.of("built-in", "cave-kitty", "qa")) {
             for (MissionType type : missionTypes(pack)) {
                 steps.addAll(type.steps());
                 steps.addAll(type.onDemandSteps());
             }
-            for (String file : missionFiles(OpenPacksCorpus.packsDirectory().resolve(pack))) {
+            Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
+            for (String file : missionFiles(packDirectory)) {
                 promptFiles += file.endsWith(".prompt.md") ? 1 : 0;
+                promptsWithDescription +=
+                        file.endsWith(".prompt.md") && declaresDescription(packDirectory.resolve(file)) ? 1 : 0;
                 guidelineFiles += file.endsWith(".guidelines.md") ? 1 : 0;
             }
         }
@@ -130,9 +134,29 @@ class MissionTypeCorpusTest {
         assertThat(steps.stream()
                         .filter(step -> step.prompt()
                                 .flatMap(prompt -> prompt.description())
-                                .isPresent()))
-                .as("prompts with a detailed description (ruling Q1 as refined on 2026-10-30)")
-                .isNotEmpty();
+                                .isPresent())
+                        .count())
+                .as("prompts with a detailed description (ruling Q1 as refined on 2026-10-30) are the prompt files"
+                        + " whose raw frontmatter has a description")
+                .isPositive()
+                .isEqualTo(promptsWithDescription);
+    }
+
+    /** Whether the file opens with a frontmatter block that holds a top-level {@code description:} line. */
+    private static boolean declaresDescription(Path file) throws IOException {
+        List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        if (lines.isEmpty() || !lines.getFirst().equals("---")) {
+            return false;
+        }
+        for (String line : lines.subList(1, lines.size())) {
+            if (line.equals("---")) {
+                return false;
+            }
+            if (line.startsWith("description:")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The mission-type files of a pack, read as raw YAML: what the files declare, without the store. */
