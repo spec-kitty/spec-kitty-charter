@@ -8,8 +8,8 @@ import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
+import ai.speckitty.charter.api.model.GovernanceEdgeWords;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
-import ai.speckitty.charter.api.model.PackGovernanceSuggestion;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.aot.hint.RuntimeHints;
@@ -53,8 +53,8 @@ class ProfileJsonTest {
     }
 
     @Test
-    void anEmptySuggestionIsAnEmptyObject() {
-        JsonNode written = JSON.valueToTree(new PackGovernanceSuggestion());
+    void anEmptyEdgeIsAnEmptyObject() {
+        JsonNode written = JSON.valueToTree(new GovernanceEdgeWords());
         assertThat(written.isObject()).isTrue();
         assertThat(written.size()).isZero();
     }
@@ -67,6 +67,17 @@ class ProfileJsonTest {
     }
 
     @Test
+    void anEdgeWritesTheWordsItStatesAndOmitsTheOnesItDoesNot() {
+        GovernanceEdgeWords edge = new GovernanceEdgeWords();
+        edge.setReason("because");
+
+        JsonNode written = JSON.valueToTree(edge);
+
+        assertThat(written.has("when")).isFalse();
+        assertThat(written.get("reason").asString()).isEqualTo("because");
+    }
+
+    @Test
     void anExcludingWritesTheFormItDoesNotUseAsNull() {
         JsonNode written = JSON.valueToTree(new AgentProfileExcluding(List.of("roles"), null));
 
@@ -75,11 +86,11 @@ class ProfileJsonTest {
     }
 
     @Test
-    void aGovernanceEntryWritesItsNullablePackIdAndSuggestionAsNull() {
+    void aGovernanceEntryWritesItsNullablePackIdAsNull() {
         JsonNode written = JSON.valueToTree(new PackGovernanceEntry());
 
         assertThat(written.get("packId").isNull()).isTrue();
-        assertThat(written.get("suggestion").isNull()).isTrue();
+        assertThat(written.has("suggestion")).isFalse();
     }
 
     @Test
@@ -111,6 +122,8 @@ class ProfileJsonTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceEntry.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceSuggestion.class))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onType(GovernanceEdgeWords.class))
                 .accepts(hints);
         for (String mixIn : List.of("OptionalProfileMembers", "OptionalSpecializationMembers", "OmitAbsentMembers")) {
             assertThat(hints.reflection()

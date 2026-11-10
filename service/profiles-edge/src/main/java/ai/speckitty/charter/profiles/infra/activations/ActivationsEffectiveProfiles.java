@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
 import ai.speckitty.charter.profiles.application.EffectiveProfiles;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
@@ -109,7 +110,7 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
                 artifact.policy().token(),
                 artifact.reason().token(),
                 artifact.satisfiedBy().map(ActivationsEffectiveProfiles::urn),
-                suggestion.map(words -> new GovernanceEntry.Suggestion(words.when(), words.reason())));
+                suggestion.map(words -> new EdgeWords(words.when(), words.reason())));
     }
 
     private static Urn urn(ArtifactRef ref) {

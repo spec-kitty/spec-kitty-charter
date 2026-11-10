@@ -30,9 +30,9 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
 import ai.speckitty.charter.profiles.application.EffectiveProfiles;
-import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -177,7 +177,7 @@ class ActivationsEffectiveProfilesTest {
         assertThat(suggested.reason()).isEqualTo("not_selected");
         assertThat(suggested.pack().value()).isEqualTo("main");
         assertThat(suggested.suggestion())
-                .contains(new GovernanceEntry.Suggestion(Optional.of("when it helps"), Optional.of("why it helps")));
+                .contains(new EdgeWords(Optional.of("when it helps"), Optional.of("why it helps")));
     }
 
     @Test
@@ -204,8 +204,7 @@ class ActivationsEffectiveProfilesTest {
 
         assertThat(entries.getFirst().facts().state()).as("in force").isEqualTo("active");
         assertThat(entries.getFirst().facts().suggestion())
-                .contains(
-                        new GovernanceEntry.Suggestion(Optional.of("when it applies"), Optional.of("why it applies")));
+                .contains(new EdgeWords(Optional.of("when it applies"), Optional.of("why it applies")));
         assertThat(entries.get(1).facts().suggestion()).isEmpty();
     }
 

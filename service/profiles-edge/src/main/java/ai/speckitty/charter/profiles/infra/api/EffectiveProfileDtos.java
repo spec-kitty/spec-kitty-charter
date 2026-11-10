@@ -130,7 +130,7 @@ public class EffectiveProfileDtos {
     }
 
     private static EffectiveArtifactSuggestion suggestion(
-            ai.speckitty.charter.profiles.application.GovernanceEntry.Suggestion suggestion) {
+            ai.speckitty.charter.profiles.application.EdgeWords suggestion) {
         EffectiveArtifactSuggestion carrier = new EffectiveArtifactSuggestion();
         suggestion.when().ifPresent(carrier::setWhen);
         suggestion.reason().ifPresent(carrier::setReason);
@@ -139,7 +139,7 @@ public class EffectiveProfileDtos {
 
     /** The words of the suggests edge that listed an entry, whether the entry is in force or not. */
     private static EffectiveGovernanceSuggestion edgeWords(
-            ai.speckitty.charter.profiles.application.GovernanceEntry.Suggestion suggestion) {
+            ai.speckitty.charter.profiles.application.EdgeWords suggestion) {
         EffectiveGovernanceSuggestion carrier = new EffectiveGovernanceSuggestion();
         suggestion.when().ifPresent(carrier::setWhen);
         suggestion.reason().ifPresent(carrier::setReason);

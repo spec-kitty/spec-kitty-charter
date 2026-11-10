@@ -1,0 +1,36 @@
+title: GovernanceEdgeWords
+description: >-
+  The words of the edge a governance entry of an agent profile was reached through (FR-004): the when and the reason that
+  edge states. Every entry of both profile reads carries one, in edge, whatever its relation (specializes_from, requires,
+  suggests or vocabulary, and the requires of a suggested artifact), because the words belong to the edge and not to the
+  relation. Both members are optional, since an edge may state one, both or neither: an edge that states neither is an
+  empty object. edge is always there, so an entry whose edge states nothing looks the same whether the artifact is in
+  force or out of force. Where more than one edge could reach an entry, the words are those of the edge of the entry's
+  via, the parent the walk keeps: the first reach, by the fewest hops, then the smallest parent urn, then the smallest
+  edge. The walk lists an artifact once, at the earliest step that reaches it, so another edge or a later step does not
+  change them. It says nothing of the artifact's state; the effective reads' own suggestion member, defined only for an
+  artifact out of force, is EffectiveArtifactSuggestion and is not this schema (#408 ruling 3).
+type: object
+additionalProperties: false
+properties:
+  when:
+    type: string
+    description: The condition the edge states for the artifact to apply.
+    x-derived:
+      rule: The when of the edge the walk reached the entry through.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+        - schemas/EffectiveGovernanceEntry.yaml
+  reason:
+    type: string
+    description: The reason the edge gives for the relation.
+    x-derived:
+      rule: The reason of the edge the walk reached the entry through.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+        - schemas/EffectiveGovernanceEntry.yaml
+x-derived:
+  rule: The when and reason of the edge the governance walk reached the entry through; an empty object where the edge states neither.
+  inputs:
+    - schemas/PackGovernanceEntry.yaml
+    - schemas/EffectiveGovernanceEntry.yaml

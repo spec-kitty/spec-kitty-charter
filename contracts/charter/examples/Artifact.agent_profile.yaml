@@ -80,12 +80,27 @@ value:
       relation: specializes_from
       via: agent_profile:java-jenny
       hops: 1
-      suggestion: null
+      edge: {}
       packId: built-in
       held: true
       _links:
         artifact:
           href: /api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan
+    - kind: directive
+      artifactId: DIRECTIVE_030
+      urn: directive:DIRECTIVE_030
+      step: requires
+      relation: requires
+      via: agent_profile:java-jenny
+      hops: 1
+      edge:
+        when: when assessing whether tests meet the quality gate they must pass
+        reason: An implementer-role profile should reach the test-quality-gate hub when assessing test quality.
+      packId: built-in
+      held: true
+      _links:
+        artifact:
+          href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_030
     - kind: directive
       artifactId: DIRECTIVE_041
       urn: directive:DIRECTIVE_041
@@ -93,7 +108,7 @@ value:
       relation: suggests
       via: agent_profile:java-jenny
       hops: 1
-      suggestion:
+      edge:
         when: when keeping the tests they write a clear scaffold rather than friction
         reason: An implementer-role profile should reach the tests-as-scaffold hub when writing tests.
       packId: built-in
@@ -108,7 +123,7 @@ value:
       relation: requires
       via: agent_profile:java-jenny
       hops: 1
-      suggestion: null
+      edge: {}
       packId: null
       held: false
       _links: {}
@@ -119,7 +134,7 @@ value:
       relation: requires
       via: agent_profile:java-jenny
       hops: 1
-      suggestion: null
+      edge: {}
       packId: built-in
       held: true
       _links:

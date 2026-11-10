@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
 import ai.speckitty.charter.profiles.application.ProfileRead;
@@ -155,7 +156,7 @@ class PacksProfileSourceTest {
                 List.of(),
                 List.of("Q"),
                 List.of("directive:D", "directive:S", "directive:R", "glossary_pack:G"),
-                edge("directive:S", RelationType.REQUIRES, "directive:R"));
+                edge("directive:S", RelationType.REQUIRES, "directive:R", Optional.empty(), Optional.of("S needs R")));
         pack(
                 "project",
                 PackLevel.PROJECT,
@@ -163,7 +164,12 @@ class PacksProfileSourceTest {
                 List.of("P"),
                 List.of(),
                 edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "builtin::agent_profile:Q"),
-                edge("agent_profile:P", RelationType.REQUIRES, "builtin::directive:D"),
+                edge(
+                        "agent_profile:P",
+                        RelationType.REQUIRES,
+                        "builtin::directive:D",
+                        Optional.of("always"),
+                        Optional.of("the charter says so")),
                 edge(
                         "agent_profile:P",
                         RelationType.SUGGESTS,
@@ -210,19 +216,21 @@ class PacksProfileSourceTest {
     }
 
     @Test
-    void aSuggestsEntryCarriesTheConditionAndTheReasonOfItsEdgeAndNoOtherEntryDoes() {
+    void everyEntryCarriesTheWordsOfTheEdgeThatListedItWhateverItsStep() {
         everyStep();
 
         ProfileRead read = source().read(PROJECT, "P", 1);
 
         assertThat(read.governance())
-                .filteredOn(entry -> entry.suggestion().isPresent())
-                .singleElement()
-                .satisfies(entry -> {
-                    assertThat(entry.urn().toString()).isEqualTo("directive:S");
-                    assertThat(entry.suggestion().orElseThrow().when()).contains("when tidying");
-                    assertThat(entry.suggestion().orElseThrow().reason()).contains("the hub applies");
-                });
+                .extracting(entry -> entry.urn().toString(), GovernanceEntry::edge)
+                .containsExactly(
+                        tuple("agent_profile:Q", EdgeWords.NONE),
+                        tuple("directive:D", new EdgeWords(Optional.of("always"), Optional.of("the charter says so"))),
+                        tuple("directive:R", new EdgeWords(Optional.empty(), Optional.of("S needs R"))),
+                        tuple(
+                                "directive:S",
+                                new EdgeWords(Optional.of("when tidying"), Optional.of("the hub applies"))),
+                        tuple("glossary_pack:G", EdgeWords.NONE));
     }
 
     @Test

@@ -15,8 +15,9 @@
 # - `Then the governance holds exactly the entries:` followed by a doc string, one entry per line, in the answer's order:
 #   `<urn> <step> via <urn> hops <n>`, then ` in <packId> linked` for a held entry with an `artifact` link to the pack
 #   that holds it, ` in <packId> unlinked` for a held entry without one, or ` not held unlinked` for an entry no pack of
-#   the closure holds (a null packId and no link); and, for an entry with a suggestion, ` suggested when "<when>" because
-#   "<reason>"`.
+#   the closure holds (a null packId and no link); then ` edge {}` for an entry whose edge states neither word, or ` edge
+#   {when "<when>" because "<reason>"}` (either word alone is written alone) for an entry whose edge states any: every
+#   entry has an `edge`, whatever its relation.
 
 @contract @agent-profiles
 Feature: A pack's agent profile is read with its governance
@@ -135,6 +136,14 @@ Feature: A pack's agent profile is read with its governance
       intent: Keep tests a scaffold.
       enforcement: advisory
       """
+    And the built-in pack "built-in" with the file "directives/DIRECTIVE_052.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DIRECTIVE_052
+      title: Reviewable commits
+      intent: Keep commits reviewable.
+      enforcement: advisory
+      """
     And the built-in pack "built-in" with the file "styleguides/java-conventions.styleguide.yaml":
       """
       schema_version: '1.0'
@@ -156,6 +165,8 @@ Feature: A pack's agent profile is read with its governance
       - source: agent_profile:java-jenny
         target: styleguide:java-conventions
         relation: requires
+        when: when writing Java
+        reason: The house style is part of the work.
       - source: agent_profile:java-jenny
         target: directive:DIRECTIVE_010
         relation: requires
@@ -164,6 +175,9 @@ Feature: A pack's agent profile is read with its governance
         relation: suggests
         when: when keeping the tests a clear scaffold
         reason: A test-writing profile should reach the scaffold hub.
+      - source: agent_profile:java-jenny
+        target: directive:DIRECTIVE_052
+        relation: suggests
       - source: agent_profile:implementer-ivan
         target: directive:DIRECTIVE_024
         relation: requires
@@ -225,13 +239,25 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/_links/self/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked
-      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked edge {}
+      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan"
     And the field at "/governance/3/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/styleguide/java-conventions"
+
+  Scenario: Every entry carries the words of its edge, a requires entry as a suggests entry, and {} where the edge states none
+    The java-conventions requires edge and the DIRECTIVE_041 suggests edge state a when and a reason; the DIRECTIVE_010
+    requires edge and the DIRECTIVE_052 suggests edge state neither, so their edge is an empty object (it is present, not
+    null and not absent).
+    When I GET "/packs/built-in/artifacts/agent_profile/java-jenny?depth=1"
+    Then the response status is 200
+    And the field at "/governance/1/edge" is an empty object
+    And the field at "/governance/3/edge/when" is "when keeping the tests a clear scaffold"
+    And the field at "/governance/4/edge" is an empty object
+    And the field at "/governance/5/edge/reason" is "The house style is part of the work."
+    And the field at "/governance/5/suggestion" is absent
 
   Scenario: At depth 1 the profile's suggestions are walked, each with the condition and the reason of its edge
     When I GET "/packs/built-in/artifacts/agent_profile/java-jenny?depth=1"
@@ -239,11 +265,12 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/_links/self/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny?depth=1"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked
-      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked
-      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 in built-in linked suggested when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 in built-in linked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 in built-in linked edge {}
+      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 in built-in linked edge {}
+      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 in built-in linked edge {when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."}
+      directive:DIRECTIVE_052 suggests via agent_profile:java-jenny hops 1 in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
 
   Scenario: The links of a profile read lead to reads that answer 200: its collection, its references and every governance entry
@@ -304,8 +331,8 @@ Feature: A pack's agent profile is read with its governance
     Then the response status is 200
     And the governance holds exactly the entries:
       """
-      agent_profile:ghost lineage via agent_profile:orphan hops 1 not held unlinked
-      directive:DIRECTIVE_010 requires via agent_profile:orphan hops 1 in built-in linked
+      agent_profile:ghost lineage via agent_profile:orphan hops 1 not held unlinked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:orphan hops 1 in built-in linked edge {}
       """
     And the field at "/governance/0/held" is false
     And the field at "/governance/0/packId" is null
@@ -347,11 +374,11 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/packId" is "house"
     And the governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 2 in built-in linked
-      agent_profile:java-jenny lineage via agent_profile:house-jenny hops 1 in built-in linked
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 2 in built-in linked
-      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 3 in built-in linked
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 2 in built-in linked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 2 in built-in linked edge {}
+      agent_profile:java-jenny lineage via agent_profile:house-jenny hops 1 in built-in linked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 2 in built-in linked edge {}
+      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 3 in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 2 in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan"
     And the field at "/governance/1/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"

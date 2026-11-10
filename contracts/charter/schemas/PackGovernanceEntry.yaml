@@ -1,8 +1,13 @@
 title: PackGovernanceEntry
 description: >-
-  One artifact in the governance of an agent profile read from a pack, and how the walk reached it (fold C1). The walk
+  One artifact in the governance of an agent profile read from a pack, and how the walk reached it. The walk
   runs over the pack's composed depends_on closure, merged, with every artifact in force; the activation-scoped read
   has its own entry. The entries are sorted by urn, each artifact once, and none is the profile itself.
+
+  Every entry carries edge, the when and the reason of the edge it was reached through, whatever its relation (FR-004); it
+  is an empty object where the edge states neither word, and it is always present. Where more than one edge could reach an
+  entry, the words are those of the edge of its via, the parent the walk keeps (the first reach: the fewest hops, then the
+  smallest parent urn, then the smallest edge).
 
   A suggests entry is listed by this service, and it is composition-only in core's profile channel, which walks
   requires and specializes_from only: a client that follows only what core's channel follows skips the entries whose
@@ -32,7 +37,7 @@ required:
   - relation
   - via
   - hops
-  - suggestion
+  - edge
   - packId
   - held
   - _links
@@ -102,15 +107,8 @@ properties:
       rule: The hops of via plus one; the profile is at 0.
       inputs:
         - schemas/PackGovernanceEntry.yaml
-  suggestion:
-    description: Why the profile suggests the artifact; null on every entry whose relation is not suggests.
-    oneOf:
-      - $ref: PackGovernanceSuggestion.yaml
-      - type: 'null'
-    x-derived:
-      rule: The when and the reason of the suggests edge that reaches the artifact, present only for a suggests entry.
-      inputs:
-        - schemas/PackGovernanceSuggestion.yaml
+  edge:
+    $ref: GovernanceEdgeWords.yaml
   packId:
     type: ['string', 'null']
     description: >-

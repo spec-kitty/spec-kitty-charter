@@ -58,6 +58,15 @@ public class ProfileSteps {
                         .toList());
     }
 
+    @Then("the field at {string} is an empty object")
+    public void fieldIsAnEmptyObject(String pointer) throws Exception {
+        JsonNode field = JSON.readTree(http.body()).at(pointer);
+        assertThat(field.isObject())
+                .as("%s is an object: %s", pointer, http.body())
+                .isTrue();
+        assertThat(field.size()).as("%s has no member: %s", pointer, field).isZero();
+    }
+
     @Then("the field at {string} is null")
     public void fieldIsNull(String pointer) throws Exception {
         JsonNode field = JSON.readTree(http.body()).at(pointer);
@@ -112,15 +121,33 @@ public class ProfileSteps {
         line.append(
                 entry.path("held").asBoolean() ? " in " + entry.path("packId").asString() : " not held");
         line.append(linked(entry) ? " linked" : " unlinked");
-        JsonNode suggestion = entry.path("suggestion");
-        if (suggestion.isObject()) {
-            line.append(" suggested when \"")
-                    .append(suggestion.path("when").asString())
-                    .append("\" because \"")
-                    .append(suggestion.path("reason").asString())
+        line.append(edgeText(entry));
+        return line.toString();
+    }
+
+    /**
+     * The edge of an entry as text: {@code  edge {}} for an edge that states neither word, otherwise the words it
+     * states, {@code  edge {when "<when>" because "<reason>"}} (one alone is written alone). Every entry has an edge: a
+     * missing or non-object member is a failure.
+     */
+    private static String edgeText(JsonNode entry) {
+        JsonNode edge = entry.path("edge");
+        assertThat(edge.isObject())
+                .as("the edge of %s is an object: %s", entry, edge)
+                .isTrue();
+        StringBuilder text = new StringBuilder(" edge {");
+        String separator = "";
+        if (edge.has("when")) {
+            text.append("when \"").append(edge.path("when").asString()).append('"');
+            separator = " ";
+        }
+        if (edge.has("reason")) {
+            text.append(separator)
+                    .append("because \"")
+                    .append(edge.path("reason").asString())
                     .append('"');
         }
-        return line.toString();
+        return text.append('}').toString();
     }
 
     /** Whether the entry links its artifact, and links the read in the pack that holds it. */

@@ -6,12 +6,12 @@ import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
+import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.application.ProfileSource;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.util.Objects;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -54,15 +54,12 @@ public final class PacksProfileSource implements ProfileSource {
 
     private static GovernanceEntry entryOf(ProfileGovernance.Entry entry) {
         GovernanceEntry.Step step = stepOf(entry.step());
-        Optional<GovernanceEntry.Suggestion> suggestion = step == GovernanceEntry.Step.SUGGESTS
-                ? Optional.of(new GovernanceEntry.Suggestion(entry.when(), entry.reason()))
-                : Optional.empty();
         return new GovernanceEntry(
                 entry.urn(),
                 step,
                 entry.via(),
                 entry.hops(),
-                suggestion,
+                new EdgeWords(entry.when(), entry.reason()),
                 entry.holder().map(holder -> holder.packId()),
                 entry.held());
     }

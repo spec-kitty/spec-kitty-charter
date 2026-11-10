@@ -21,19 +21,15 @@ import java.util.Optional;
  * @param step the step that listed it, its earliest
  * @param via its parent in the walk: the profile, or another entry of the answer
  * @param hops the length of the path from the profile, one more than the hops of {@code via}; at least 1
- * @param suggestion why the profile suggests it; present exactly for a {@link Step#SUGGESTS} entry
+ * @param edge the words of the edge the walk reached it through, whatever the step; {@link EdgeWords#NONE} when that edge
+ *     states neither. Where several edges could reach the entry, it is the edge of the parent the walk keeps (see
+ *     {@link EdgeWords})
  * @param holder the configured identifier of the first pack of the closure that holds it; present exactly when
  *     {@code held} is true
  * @param held whether the place the listing edge leads to holds the artifact
  */
 public record GovernanceEntry(
-        Urn urn,
-        Step step,
-        Urn via,
-        int hops,
-        Optional<Suggestion> suggestion,
-        Optional<PackIdentifier> holder,
-        boolean held) {
+        Urn urn, Step step, Urn via, int hops, EdgeWords edge, Optional<PackIdentifier> holder, boolean held) {
 
     /** The step of the walk that lists an entry, with the relation its entries are listed by. */
     public enum Step {
@@ -76,51 +72,26 @@ public record GovernanceEntry(
     }
 
     /**
-     * Why a profile suggests an artifact: the condition and the reason the {@code suggests} edge states. Either may be
-     * absent, since an edge may state neither.
-     *
-     * @param when the condition under which the suggestion applies
-     * @param reason why the profile suggests it
-     */
-    public record Suggestion(Optional<String> when, Optional<String> reason) {
-
-        /**
-         * Checks the fields.
-         *
-         * @param when the condition
-         * @param reason the reason
-         */
-        public Suggestion {
-            Objects.requireNonNull(when, "when");
-            Objects.requireNonNull(reason, "reason");
-        }
-    }
-
-    /**
-     * Checks the fields and the rules that tie them: an entry is a hop or more away, it carries a suggestion exactly
-     * when a {@code suggests} edge listed it, and it names a holder exactly when it is held.
+     * Checks the fields and the rules that tie them: an entry is a hop or more away, and it names a holder exactly when
+     * it is held.
      *
      * @param urn the artifact
      * @param step the step that listed it
      * @param via its parent
      * @param hops the path length
-     * @param suggestion the edge's suggestion
+     * @param edge the words of the edge that listed it
      * @param holder the holding pack
      * @param held whether the listing edge leads to a place that holds the artifact
-     * @throws IllegalArgumentException when {@code hops} is below 1, a suggestion is on a step that is not
-     *     {@code suggests} (or missing from one), or the holder disagrees with {@code held}
+     * @throws IllegalArgumentException when {@code hops} is below 1 or the holder disagrees with {@code held}
      */
     public GovernanceEntry {
         Objects.requireNonNull(urn, "urn");
         Objects.requireNonNull(step, "step");
         Objects.requireNonNull(via, "via");
-        Objects.requireNonNull(suggestion, "suggestion");
+        Objects.requireNonNull(edge, "edge");
         Objects.requireNonNull(holder, "holder");
         if (hops < 1) {
             throw new IllegalArgumentException("an entry is at least one hop from the profile: " + hops);
-        }
-        if (suggestion.isPresent() != (step == Step.SUGGESTS)) {
-            throw new IllegalArgumentException("a suggestion belongs to a suggests entry and to no other: " + urn);
         }
         if (holder.isPresent() != held) {
             throw new IllegalArgumentException(
