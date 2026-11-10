@@ -1,5 +1,7 @@
 title: MissionSkeletonSummary
-description: One skeleton as its mission type lists it, with the self link to its skeleton read.
+description: >-
+  One skeleton as its mission type lists it, with the self link to its skeleton read. The link is left out when
+  the name cannot be served (it holds a backslash, or is longer than the skeletonName parameter allows).
 type: object
 additionalProperties: false
 required:
