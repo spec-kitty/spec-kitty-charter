@@ -200,6 +200,18 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
+    void theWinnerKeepsItsOwnEffectiveSuggestion() {
+        EffectiveArtifact winner = fact(
+                P,
+                State.INACTIVE,
+                Reason.NOT_SELECTED,
+                Optional.of(new Suggestion(Optional.of("w"), Optional.of("r"))));
+        answers(answer(winner, leanProfile("main", "P"), Optional.of(governance())), "t");
+
+        assertThat(found(null).winner().suggestion()).contains(new EdgeWords(Optional.of("w"), Optional.of("r")));
+    }
+
+    @Test
     void everyEntryCarriesTheWordsOfItsEdgeWhateverItsStepInForceOrOut() {
         answers(answer(active(P), leanProfile("main", "P"), Optional.of(governance())), "t");
 
