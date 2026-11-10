@@ -165,6 +165,7 @@ public final class ForeignArtifactRead {
                         .map(found -> found.packId().equals(descriptor.packId()))
                         .orElse(false))
                 .findFirst()
-                .orElse(requested);
+                // the pack was found a moment ago and is configured no longer: the catalog changed during the read
+                .orElseThrow(() -> new CharterRefusal(RefusalCode.STALE_INPUT, STALE));
     }
 }
