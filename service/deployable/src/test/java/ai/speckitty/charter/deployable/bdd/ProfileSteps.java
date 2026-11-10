@@ -9,8 +9,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The step vocabulary of the agent profile read (agent-profile-reads.feature): the {@code governance} list of the last
- * answer as lines of text, compared with the doc string in the order the answer gives. The order is part of what is
+ * The step vocabulary of the agent profile reads (agent-profile-reads.feature, effective-agent-profile.feature): the
+ * {@code governance} list of the last answer as lines of text, compared with the doc string in the order the answer gives. The order is part of what is
  * pinned: the entries are sorted by urn. A line also says whether the entry links to the pack-scoped read of its
  * artifact and where that read is, so a scenario states which entries link and which do not.
  */
@@ -44,6 +44,20 @@ public class ProfileSteps {
                         .toList());
     }
 
+    @Then("the effective governance holds exactly the entries:")
+    public void effectiveGovernance(String expected) throws Exception {
+        JsonNode list = JSON.readTree(http.body()).path("governance");
+        assertThat(list.isArray()).as("governance is an array: %s", http.body()).isTrue();
+        List<String> lines = new ArrayList<>();
+        list.forEach(entry -> lines.add(effectiveLine(entry)));
+        assertThat(lines)
+                .as("the effective governance entries of the answer")
+                .isEqualTo(expected.lines()
+                        .map(String::strip)
+                        .filter(text -> !text.isEmpty())
+                        .toList());
+    }
+
     @Then("the field at {string} is null")
     public void fieldIsNull(String pointer) throws Exception {
         JsonNode field = JSON.readTree(http.body()).at(pointer);
@@ -51,6 +65,39 @@ public class ProfileSteps {
                 .as("%s is there: %s", pointer, http.body())
                 .isFalse();
         assertThat(field.isNull()).as("%s is null: %s", pointer, field).isTrue();
+    }
+
+    /**
+     * An entry under an activation as a line: the urn, how the walk reached it, the state and the reason the activation
+     * gives it, the pack that holds the version in force and whether it links that pack's read; the suggestion last.
+     */
+    private static String effectiveLine(JsonNode entry) {
+        StringBuilder line = new StringBuilder()
+                .append(entry.path("kind").asString())
+                .append(':')
+                .append(entry.path("artifactId").asString())
+                .append(' ')
+                .append(entry.path("step").asString())
+                .append(" via ")
+                .append(entry.path("via").asString())
+                .append(" hops ")
+                .append(entry.path("hops").asInt())
+                .append(' ')
+                .append(entry.path("state").asString())
+                .append('/')
+                .append(entry.path("reason").asString())
+                .append(" in ")
+                .append(entry.path("packId").asString())
+                .append(linked(entry) ? " linked" : " unlinked");
+        JsonNode suggestion = entry.path("suggestion");
+        if (suggestion.isObject()) {
+            line.append(" suggested when \"")
+                    .append(suggestion.path("when").asString())
+                    .append("\" because \"")
+                    .append(suggestion.path("reason").asString())
+                    .append('"');
+        }
+        return line.toString();
     }
 
     private static String line(JsonNode entry) {

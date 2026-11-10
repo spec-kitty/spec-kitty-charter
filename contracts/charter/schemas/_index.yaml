@@ -83,3 +83,5 @@ files:
   - GovernanceStep.yaml
   - PackGovernanceEntry.yaml
   - PackGovernanceSuggestion.yaml
+  - EffectiveAgentProfileRead.yaml
+  - EffectiveGovernanceEntry.yaml

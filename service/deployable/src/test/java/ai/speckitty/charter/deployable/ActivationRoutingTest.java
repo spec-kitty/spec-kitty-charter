@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.activations.infra.api.ActivationController;
+import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,17 +30,14 @@ import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * The routing of the generic activation-scoped read, through the whole service (WP06, fold A5). The contract maps
+ * The routing of the activation-scoped reads of an artifact, through the whole service (fold A5). The contract maps
  * {@code /activations/{activationId}/artifacts/{kind}/{artifactId}} for a GET only, and the literal
- * {@code /activations/{activationId}/artifacts/agent_profile/{artifactId}} of the profiles slice (WP07) will map the same
- * URLs of a profile, which Spring answers from the literal pattern, as {@link ProfileRoutingTest} pins for the pack
- * route.
+ * {@code /activations/{activationId}/artifacts/agent_profile/{artifactId}} of the profiles slice maps the same URLs of a
+ * profile, which Spring answers from the literal pattern, as {@link ProfileRoutingTest} pins for the pack route.
  *
- * <p>Until WP07 is built, a GET on an {@code agent_profile} is answered by the generic handler, as the winner with no body
- * and no governance (the schema of that read is closed, and {@code EffectiveArtifactHttpTest} pins the answer). The
- * governance a session holds for a profile is rendered by the profile route alone. WP07 changes the expectation of
- * {@link #aGetOnAnAgentProfileIsAnsweredByTheGenericHandlerUntilTheProfileRouteIsBuilt} to the profile controller's
- * handler, and keeps the rest: a write on the path is a 405 and the list route stays where it is.
+ * <p>A GET on an {@code agent_profile} reaches the profiles slice's controller, which answers the winner with its body and
+ * its governance; the generic handler carries no body and is not reached for that kind. A write on the path is a 405 and
+ * the list route stays where it is.
  */
 @SpringBootTest(
         classes = CharterServiceApplication.class,
@@ -97,14 +95,13 @@ class ActivationRoutingTest {
     }
 
     @Test
-    void aGetOnAnAgentProfileIsAnsweredByTheGenericHandlerUntilTheProfileRouteIsBuilt() throws Exception {
+    void aGetOnAnAgentProfileReachesTheProfileControllerAndNotTheGenericRead() throws Exception {
         HandlerMethod routed = handler("GET", READ + "agent_profile/java-jenny");
 
         assertThat(routed.getBeanType())
-                .as(
-                        "WP07 maps the literal path, which Spring prefers; this expectation then names the profile controller")
-                .isEqualTo(ActivationController.class);
-        assertThat(routed.getMethod().getName()).isEqualTo("getEffectiveArtifact");
+                .as("the literal path is preferred to the templated one")
+                .isEqualTo(EffectiveAgentProfilesController.class);
+        assertThat(routed.getMethod().getName()).isEqualTo("getEffectiveAgentProfile");
     }
 
     @Test

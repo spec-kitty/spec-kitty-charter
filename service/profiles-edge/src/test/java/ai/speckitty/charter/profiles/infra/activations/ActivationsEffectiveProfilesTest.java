@@ -283,6 +283,22 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
+    void everyStateReasonAndPolicyTheActivationsSliceSpellsIsOneTheContractSpells() {
+        for (State state : State.values()) {
+            assertThat(ai.speckitty.charter.api.model.EffectiveGovernanceEntry.StateEnum.fromValue(state.token()))
+                    .isNotNull();
+        }
+        for (Reason reason : Reason.values()) {
+            assertThat(ai.speckitty.charter.api.model.EffectiveGovernanceEntry.ReasonEnum.fromValue(reason.token()))
+                    .isNotNull();
+        }
+        for (Policy policy : Policy.values()) {
+            assertThat(ai.speckitty.charter.api.model.EffectiveGovernanceEntry.PolicyEnum.fromValue(policy.token()))
+                    .isNotNull();
+        }
+    }
+
+    @Test
     void theServiceIsRequired() {
         assertThatThrownBy(() -> new ActivationsEffectiveProfiles(null)).isInstanceOf(NullPointerException.class);
     }
