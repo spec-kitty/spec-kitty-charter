@@ -749,7 +749,27 @@ The structural sub-steps of one mission step and what each delegates to (the `mi
 
 ## Step enhancement
 
-An add-only extension that a specialist or org pack attaches to an existing step of a mission type: guards on its outgoing transitions and `emit` entries (its guidance is graph edges, ADR-0064). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
+An add-only extension that a pack attaches to one step of a mission type. It contributes prompt fragments into named, empty slots of its target step's prompt; its target is its one `enhances` edge, to an `action:<type>/<step>`, and it carries no `overrides` edge (ADR-0066). Guard and emit fields are planned (#434). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#prompt-fragment}
+
+## Prompt fragment
+
+A Markdown file beside a step enhancement, `<name>.prompt-fragment.md`, named by one of its `prompt_fragments` entries. Its text is added into the slot that entry names, in the prompt of the enhancement's target step. It has no frontmatter, is not blank, and holds no slot marker or open comment (ADR-0066).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#prompt-slot}
+
+## Prompt slot
+
+A named, empty place in a step's prompt where enhancements add fragments, written as a pair of HTML comments, `<!-- <slot id>:start -->` and `<!-- <slot id>:end -->`. Its slot id has the form `namespace:name`, for example `spdd:reasons-block` (ADR-0066).
 
 **Meta:**
 

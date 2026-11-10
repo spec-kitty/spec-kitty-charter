@@ -22,7 +22,7 @@ A fragment has no frontmatter and must hold non-blank text. It may not contain a
 - **Body only.** The file is the text to insert: no frontmatter, and non-blank content in the preamble or in at least
   one section. An optional first-level heading is allowed.
 - **No slot marker of any id.** A marker (`<!-- <namespace>:<name>:start -->` or `...:end -->`) is refused anywhere in the text,
-  fences included. Only a step prompt declares slots.
+  fences included, and so is a `<!--` with no `-->` after it. Only a step prompt declares slots.
 - **LF only.** A carriage return or a byte order mark is refused; the file is not rewritten.
 - **Named by exactly one entry** of one [step enhancement](/architecture/pack-schemas/step-enhancement/). A fragment
   under `missions/<type>/enhancements/` that no entry names (an orphan) is refused, and so is one named by two entries.

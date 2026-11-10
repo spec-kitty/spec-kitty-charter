@@ -146,6 +146,8 @@ delete:
     strict: when a closure that contains the pack, after the removal, no longer composes or breaks a rule, the answer
     is 422 with the composition code or one of override_not_permitted, enhances_cycle, conflicting_relations,
     self_override and override_cycle, naming the packs, and nothing is written. The version history is kept.
+    Deleting the only registered enhances edge of a step enhancement is not refused yet and leaves the pack unreadable
+    (500 pack_unreadable); it is tracked for #438.
     While charter.registration.enabled is off (the default) the answer is 503 pack_source_unavailable before the pack, the
     path or If-Match is judged (ADR-0065 D13).
   tags:

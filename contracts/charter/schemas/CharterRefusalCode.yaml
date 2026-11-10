@@ -73,8 +73,10 @@ description: >-
   validation_failed: a refused registration lists every fault of the pack as a violation whose pointer is the
   pack-relative file and whose code is the code (drg_schema_error, one per fault of a graph document,
   prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty). So the problem that carries such a code is
-  422 at registration and a composing read answers 500 pack_unreadable naming the file. The declared status of such a code
-  is kept and read as the status of the read that meets the fault. A code that only a part no operation reaches
+  422 at registration. A composing read answers 500 pack_unreadable naming the file for the three prompt codes
+  (prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty); for a graph fault (drg_schema_error) the
+  refusal names no file. The declared status of such a code is kept and read as the status of the read that meets
+  the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
@@ -168,7 +170,8 @@ description: >-
   Four codes belong to ADR-0066 prompt slots and fragments, and are 500: the configured packs, not the request, are
   broken. prompt_fragment_invalid is raised as a violation code of a refused registration: an invalid step
   enhancement or prompt fragment (a repeated slot, a missing, shared or orphan companion, a blank or
-  frontmatter-bearing fragment, a slot marker, an enhancement without exactly one enhances edge to an
+  frontmatter-bearing fragment, a fragment with a carriage return or byte order mark, a slot marker or an unclosed
+  comment in a fragment, an enhancement without exactly one enhances edge to an
   action:<type>/<step>, an overrides edge from an enhancement, a directory that differs from the edge's type, a
   repeated id, or an absent prompt_fragments key) is listed at its file inside 422 validation_failed, and a composing
   read answers 500 pack_unreadable naming the file.

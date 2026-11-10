@@ -3,8 +3,9 @@
 - A step enhancement and its prompt fragments are checked (#428; Refs #424), so content that validated or registered
   before is now refused with `prompt_fragment_invalid`, naming the file, at validate, at load, at registration and on
   a read:
-  - a fragment that is blank, carries frontmatter or holds a slot marker of any id (the enhancement that names a blank
-    or frontmatter-bearing fragment is the pointer; a fragment with a marker is its own pointer);
+  - a fragment that is blank, carries frontmatter, a carriage return or a byte order mark, or holds a slot marker of
+    any id or leaves a comment open (the enhancement that names a blank, frontmatter-bearing, carriage-return or
+    byte-order-mark fragment is the pointer; a fragment with a marker is its own pointer);
   - an enhancement that names one slot twice, a fragment that does not exist, or a fragment another entry names; a
     fragment under `missions/<type>/enhancements/` that no entry names (an orphan);
   - an enhancement without exactly one `enhances` edge, to an `action:<type>/<step>`, with a `<type>` directory that
