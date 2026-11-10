@@ -19,6 +19,8 @@
   `prompt_fragment_invalid` declares `operations: {putPackRelationship: {status: 422}}` for it.
 - A registration lists every such fault at once, each as a violation `{pointer: <pack-relative file>, code:
   prompt_fragment_invalid}` of `422 validation_failed`; an id that differs from the file stem, an entry whose `slot`
-  breaks `<namespace>:<name>` and `prompt_fragments: []` stay schema violations.
+  breaks `<namespace>:<name>` and `prompt_fragments: []` stay schema violations. A file reported as
+  `prompt_fragment_invalid` is not also listed as `unmodelled`; nor is a refused enhancement, or the fragments beside
+  it, listed again beside its schema violation.
 - Every verified read of a closure holding such a pack answers `500 pack_unreadable`, naming the first file.
 - core: nothing while it is not a consumer (epic #186).
