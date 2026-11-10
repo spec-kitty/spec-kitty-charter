@@ -1,0 +1,152 @@
+{
+  "event_count": 57,
+  "last_event_id": "01M712R6RMWN0QF067P8E0QJP4",
+  "materialized_at": "2026-11-09T21:17:12.852068+00:00",
+  "mission_number": "",
+  "mission_slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 6,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 5
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712QS074DJVN0BQ8PCQD156",
+      "last_transition_at": "2026-11-09T21:16:58.759901+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP01-step-enhancement-held/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 4921,
+      "shell_pid_created_at": "1794241108.95"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712QVR7982YWQ5678V33P0W",
+      "last_transition_at": "2026-11-09T21:17:01.575866+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP02-kernel-slot-grammar/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 5729,
+      "shell_pid_created_at": "1794241148.85"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712QYMFFK0YJDVN6STP0A86",
+      "last_transition_at": "2026-11-09T21:17:04.527792+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP03-step-enhancement-rules/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 20454,
+      "shell_pid_created_at": "1794245566.15"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712R1AF2JEPNQWXJA78WFVV",
+      "last_transition_at": "2026-11-09T21:17:07.279714+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP04-fragment-refusals-wired/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 12658,
+      "shell_pid_created_at": "1794247538.02"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712R41GD1DYBTGG2V5MCNPA",
+      "last_transition_at": "2026-11-09T21:17:10.064816+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP05-prompt-slot-load-checks/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 11653,
+      "shell_pid_created_at": "1794253999.54"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M712R6RMWN0QF067P8E0QJP4",
+      "last_transition_at": "2026-11-09T21:17:12.852068+00:00",
+      "review_result": {
+        "reference": "review-cycle://adr-0066-step-enhancement-service-alignment-01M6ZRYK/WP06-docs-phase-1/review-cycle-2.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 18698,
+      "shell_pid_created_at": "1794258052.3"
+    },
+    "WP07": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M70118B1CEPJE49AKY1Y7X9B",
+      "last_transition_at": "2026-11-09T11:27:57.793164+00:00"
+    },
+    "WP08": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M70119SN5G5242C9K3BSMZ9W",
+      "last_transition_at": "2026-11-09T11:27:59.285711+00:00"
+    },
+    "WP09": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7011BANV31XQ4SRK9JMPNE0",
+      "last_transition_at": "2026-11-09T11:28:00.853908+00:00"
+    },
+    "WP10": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7011CWWRYMY1H5ZYEVAR45A",
+      "last_transition_at": "2026-11-09T11:28:02.460895+00:00"
+    },
+    "WP11": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7011ED7RCR44EP1Y866XC9X",
+      "last_transition_at": "2026-11-09T11:28:04.007240+00:00"
+    }
+  }
+}

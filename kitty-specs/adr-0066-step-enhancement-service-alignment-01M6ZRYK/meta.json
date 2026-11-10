@@ -1,0 +1,37 @@
+{
+  "accept_commit": "492672458001e8e0fc2f7f68ff0e3a19e3de5133",
+  "acceptance_history": [
+    {
+      "accept_commit": "492672458001e8e0fc2f7f68ff0e3a19e3de5133",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-09T21:15:50.859307+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "8cca2ecf93fec091402e9f7df0672ad673c012c6"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-09T21:15:50.859307+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "8cca2ecf93fec091402e9f7df0672ad673c012c6",
+  "baseline_merge_commit": "821e3ef7162c9848eddffecb86301c71b8d35b32",
+  "coordination_branch": "kitty/mission-adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "created_at": "2026-11-09T09:06:44.138622+00:00",
+  "flattened": false,
+  "friendly_name": "Step enhancements and prompt fragments in the charter service",
+  "merged_at": "2026-11-09T21:17:19.818824+00:00",
+  "merged_commit": "ac11f934c61e91711446f674d8f8374b89ad0ee4",
+  "mid8": "01M6ZRYK",
+  "mission_id": "01M6ZRYKV1QSKERC80RYR0XZQG",
+  "mission_number": 20,
+  "mission_slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "ADR-0066 lets a step enhancement add prompt fragments into named slots of a mission step's prompt. The contracts landed in #425; the service still drops step enhancements, never checks slots or fragments, and has no way to read the prompt a step really gets. This mission closes that gap (#424, #428) so packs such as open-packs' spdd pack can ship their guidance as fragments.",
+  "purpose_tldr": "The charter service holds step enhancements and their prompt fragments, checks them, and serves the effective step prompt.",
+  "slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "status_phase": "1",
+  "target_branch": "issue-424-428-adr-0066-service-alignment",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-09T16:18:32.871750+00:00"
+}
