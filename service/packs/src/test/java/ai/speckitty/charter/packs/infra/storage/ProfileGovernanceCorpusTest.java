@@ -13,11 +13,15 @@ import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -59,12 +63,25 @@ class ProfileGovernanceCorpusTest {
     @Test
     @DisplayName(
             "each of the built-in and qa profiles is walked, pack-scoped, and lists neither itself nor a dangling parent")
-    void everyProfileOfTheQaClosureIsWalked() {
+    void everyProfileOfTheQaClosureIsWalked() throws IOException {
         ClosureQueries queries = queries();
         ClosureView view = queries.snapshotWithin(Optional.of(List.of(new PackIdentifier("qa"))));
         List<String> profiles = new ArrayList<>(new TreeSet<>(view.heldIds().get(ArtifactKind.AGENT_PROFILE)));
 
-        assertThat(profiles).as("the 26 built-in and the 5 qa profiles").hasSize(31);
+        List<String> onDisk = new ArrayList<>();
+        for (String pack : List.of("built-in", "qa")) {
+            try (Stream<Path> files =
+                    Files.list(OpenPacksCorpus.packsDirectory().resolve(pack).resolve("agent_profiles"))) {
+                files.map(file -> file.getFileName().toString())
+                        .filter(name -> name.endsWith(".agent.yaml"))
+                        .map(name -> name.substring(0, name.length() - ".agent.yaml".length()))
+                        .forEach(onDisk::add);
+            }
+        }
+        assertThat(profiles)
+                .as("the built-in and qa profiles: the closure holds exactly the profile files on disk")
+                .isNotEmpty()
+                .containsExactlyInAnyOrderElementsOf(onDisk);
         int listed = 0;
         for (String id : profiles) {
             Urn profile = new Urn(NodeKind.AGENT_PROFILE, id);
