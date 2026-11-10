@@ -71,11 +71,14 @@ class MissionTypeControllerTest {
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(jsonPath("$.missionType.skeletons[0].name").value("a~01b.md"))
                 .andExpect(jsonPath("$.missionType.skeletons[0]._links.self.href")
-                        .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/a~01b.md"));
+                        .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/a~01b.md"))
+                .andExpect(jsonPath("$.missionType.skeletons[2]._links.self").doesNotExist())
+                .andExpect(jsonPath("$.missionType.skeletons[3].name").value("z\\b.md"))
+                .andExpect(jsonPath("$.missionType.skeletons[3]._links.self").doesNotExist());
     }
 
     @Test
-    void aStepLinksItsTypeItsStepContractAndTheSkeletonOfItsOutput() throws Exception {
+    void aStepLinksItsTypeItsStepContractAndTheServableSkeletonsOfItsOutputs() throws Exception {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
@@ -87,7 +90,9 @@ class MissionTypeControllerTest {
                 .andExpect(jsonPath("$._links.step-contract.href")
                         .value("/api/v1/packs/main/artifacts/mission_step_contract/specify"))
                 .andExpect(jsonPath("$.expectedOutputArtifacts[0]._links.skeleton.href")
-                        .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"));
+                        .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
+                .andExpect(
+                        jsonPath("$.expectedOutputArtifacts[1]._links.skeleton").doesNotExist());
     }
 
     @Test
@@ -134,18 +139,27 @@ class MissionTypeControllerTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
-                        List.of(new ExpectedArtifact(
-                                "input.spec.main",
-                                ArtifactClass.INPUT,
-                                "spec.md",
-                                true,
-                                Optional.of("templates/divio/x.md")))))
+                        List.of(
+                                new ExpectedArtifact(
+                                        "input.spec.main",
+                                        ArtifactClass.INPUT,
+                                        "spec.md",
+                                        true,
+                                        Optional.of("templates/divio/x.md")),
+                                new ExpectedArtifact(
+                                        "output.long",
+                                        ArtifactClass.OUTPUT,
+                                        "long.md",
+                                        false,
+                                        Optional.of("templates/" + "y".repeat(256))))))
                 .build();
         return new MissionTypeHolding(
                 type,
                 List.of(
                         new MissionTypeHolding.StoredSkeleton("divio/x.md", utf8("# X\n")),
-                        new MissionTypeHolding.StoredSkeleton("a~1b.md", utf8("# A\n"))),
+                        new MissionTypeHolding.StoredSkeleton("a~1b.md", utf8("# A\n")),
+                        new MissionTypeHolding.StoredSkeleton("z\\b.md", utf8("# B\n")),
+                        new MissionTypeHolding.StoredSkeleton("y".repeat(256), utf8("# Y\n"))),
                 List.of(new MissionTypeHolding.BoundContract("specify", "specify")),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
                 FINGERPRINT);

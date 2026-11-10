@@ -29,6 +29,7 @@ import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.PathConventions;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -83,13 +84,13 @@ final class MissionBodies {
                                         step.id(),
                                         step.title(),
                                         step.onDemand(),
-                                        self(scope.step(missionTypeId, step.id()))))
+                                        self(Optional.of(scope.step(missionTypeId, step.id())))))
                                 .toList(),
                         view.skeletons().stream()
                                 .map(skeleton -> new MissionSkeletonSummary(
                                         skeleton.name(),
                                         skeleton.path(),
-                                        self(scope.skeleton(missionTypeId, skeleton.name()))))
+                                        self(scope.servedSkeleton(missionTypeId, skeleton.name()))))
                                 .toList())
                 .content(type.content().orElse(null))
                 .pathConventions(
@@ -125,9 +126,9 @@ final class MissionBodies {
                                 .map(output -> {
                                     MissionExpectedArtifact artifact = output(output.artifact());
                                     output.skeletonName()
-                                            .ifPresent(name -> artifact.putLinksItem(
-                                                    MissionRelation.SKELETON.wireKey(),
-                                                    scope.skeleton(missionTypeId, name)));
+                                            .flatMap(name -> scope.servedSkeleton(missionTypeId, name))
+                                            .ifPresent(link ->
+                                                    artifact.putLinksItem(MissionRelation.SKELETON.wireKey(), link));
                                     return artifact;
                                 })
                                 .toList(),
@@ -239,9 +240,9 @@ final class MissionBodies {
         return ResponseEntity.ok().headers(headers);
     }
 
-    private static Map<String, Link> self(Link link) {
+    private static Map<String, Link> self(Optional<Link> link) {
         EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
-        own.put(MissionRelation.SELF, link);
+        link.ifPresent(self -> own.put(MissionRelation.SELF, self));
         return MissionLinks.wire(own);
     }
 
