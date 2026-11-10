@@ -164,6 +164,40 @@ class ActionContextWalkTest {
                 .isEmpty();
     }
 
+    @Test
+    void theWordsOfAScopeRequiresOrRequiresOfSuggestedEdgeNeverReachTheActionContext() {
+        Closure closure = closure(
+                List.of("tactic:T1", "directive:R2", "tactic:S1", "directive:Q1"),
+                worded(START, RelationType.SCOPE, "tactic:T1"),
+                worded("tactic:T1", RelationType.REQUIRES, "directive:R2"),
+                worded("tactic:T1", RelationType.SUGGESTS, "tactic:S1"),
+                worded("tactic:S1", RelationType.REQUIRES, "directive:Q1"));
+
+        Context context = walk(closure, 1, ActionContextWalkTest::everything);
+
+        assertThat(context.entries())
+                .extracting(Entry::urn, Entry::step)
+                .containsExactly(
+                        tuple(urn("directive:Q1"), Step.REQUIRES_OF_SUGGESTED),
+                        tuple(urn("directive:R2"), Step.REQUIRES),
+                        tuple(urn("tactic:S1"), Step.SUGGESTS),
+                        tuple(urn("tactic:T1"), Step.SCOPE));
+        for (String unworded : List.of("tactic:T1", "directive:R2", "directive:Q1")) {
+            assertThat(entry(context, unworded).when())
+                    .as("the when of the edge to %s is not an action-context word", unworded)
+                    .isEmpty();
+            assertThat(entry(context, unworded).reason())
+                    .as("the reason of the edge to %s is not an action-context word", unworded)
+                    .isEmpty();
+        }
+        assertThat(entry(context, "tactic:S1").when()).contains("when " + "tactic:S1");
+        assertThat(entry(context, "tactic:S1").reason()).contains("because " + "tactic:S1");
+    }
+
+    private static Relationship worded(String from, RelationType relation, String to) {
+        return new Relationship(urn(from), urn(to), relation, Optional.of("when " + to), Optional.of("because " + to));
+    }
+
     // ---- step 4, requires of the suggested artifacts, transitive; never walked for suggests ------------------------
 
     @Test
