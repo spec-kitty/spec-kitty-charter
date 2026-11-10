@@ -37,8 +37,7 @@ description: >-
   the action action:<type>/<step>. The references read of a mission_type answers mission_type_not_found as the
   not-found code of its kind. mission_step_contract_not_found (404) is the not-found code of kind
   mission_step_contract on the generic item and references reads, and skeleton_not_found (404) is answered by the
-  skeleton reads for a name that does not decode to a skeleton of the type; skeleton_not_found is raised: false until
-  the skeleton reads are built (#99). pack_level_mismatch is no longer raised: no operation
+  skeleton reads for a name that does not decode to a skeleton of the type. pack_level_mismatch is no longer raised: no operation
   loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
   registration (validation_failed), as the definition of raised below counts it: a graph document (a root
   *.graph.yaml shard or drg/fragment.yaml) that cannot be read or breaks its schema is a violation per fault at its
@@ -777,8 +776,8 @@ x-refusal:
   skeleton_not_found:
     status: 404
     retryable: false
-    raised: false
-    description: the name does not decode to a skeleton of the mission type (reserved for #99 until its read is built)
+    raised: true
+    description: the name does not decode to a skeleton of the mission type (the skeleton reads)
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode
