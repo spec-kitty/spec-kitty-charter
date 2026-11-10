@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.profiles.application.ProfileFixtures;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.application.ProfileReadService;
 import ai.speckitty.charter.profiles.application.ProfileSource;
@@ -38,8 +39,8 @@ class AgentProfilesControllerTest {
     private final List<String> asked = new ArrayList<>();
 
     private MockMvc mvc(ProfileSource source) {
-        AgentProfilesController controller =
-                new AgentProfilesController(new ProfileReadService(source), new ProfileDtos("/api/v1"));
+        AgentProfilesController controller = new AgentProfilesController(
+                new ProfileReadService(source, ProfileFixtures.NO_ACTIVATIONS), new ProfileDtos("/api/v1"));
         return MockMvcBuilders.standaloneSetup(controller)
                 .setMessageConverters(new JacksonJsonHttpMessageConverter(JsonMapper.builder()
                         .addModule(new ProfileJson().profileJsonModule())
