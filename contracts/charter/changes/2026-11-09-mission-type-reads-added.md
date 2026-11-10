@@ -17,6 +17,6 @@
   and guidelines files and its skeletons as one removal under one impact check; it is refused `409`
   `artifact_referenced` while a step contract whose `mission` names it, or an edge that names one of its action nodes
   (`action:<type>/<step>`) or skeletons, refers to it, and `409` `registration_conflict` while an author-written graph
-  document declares or starts at one of them. A step contract is removed as the five kinds are. An unknown id is
+  document declares the type's, a skeleton's or an action node's node, or holds an edge from the type or a skeleton. A step contract is removed as the five kinds are. An unknown id is
   `mission_type_not_found` or `mission_step_contract_not_found`. Neither kind answers an `ETag`: `If-Match: *` or the
   pack revision.
