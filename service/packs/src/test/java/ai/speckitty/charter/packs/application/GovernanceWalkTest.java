@@ -454,6 +454,38 @@ class GovernanceWalkTest {
                 .containsExactly(tuple(urn("directive:D"), false));
     }
 
+    @Test
+    void aHeldEdgeOfOneParentBeatsADanglingEdgeOfTheSameParentWhateverTheirWords() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("directive:D", "tactic:Below"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:Below"))
+                .pack(
+                        "qa",
+                        List.of("builtin"),
+                        List.of(P),
+                        edge(P, RelationType.REQUIRES, "directive:D"),
+                        new Relationship(
+                                urn(P),
+                                Optional.empty(),
+                                urn("directive:D"),
+                                Optional.of("builtin"),
+                                RelationType.REQUIRES,
+                                Optional.of("x"),
+                                Optional.empty()));
+
+        assertThat(GovernanceWalk.overWritten(closure.merged())
+                        .walk(urn(P), 0, GovernanceWalkTest::everything)
+                        .entries())
+                .as("the dangling edge has no words and would sort first on them; the held edge is kept")
+                .extracting(Entry::urn, Entry::held, Entry::when)
+                .containsExactly(
+                        tuple(urn("directive:D"), true, Optional.of("x")),
+                        tuple(urn("tactic:Below"), true, Optional.empty()));
+    }
+
     // ---- hops: the fewest, whatever depth a seed of the step sits at --------------------------------------------
 
     @Test

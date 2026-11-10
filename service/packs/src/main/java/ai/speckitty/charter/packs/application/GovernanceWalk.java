@@ -39,8 +39,8 @@ import java.util.function.Predicate;
  * activation-scoped read wants. {@link #overWritten} walks every edge a held artifact writes, each resolved as the
  * activation walk resolves it: an edge to a place that holds nothing is listed with {@link Entry#held() held}
  * {@code false}, so the pack-scoped read can say that a parent is declared and not there. A URN reached by both a held
- * and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent, then the smallest edge:
- * {@code when}, then {@code reason}, then a held edge before a dangling one), and {@code held} follows that parent's
+ * and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent, then the smallest edge: a
+ * held edge before a dangling one, then {@code when}, then {@code reason}), and {@code held} follows that parent's
  * edge. Entries are sorted by full URN string, whatever step listed them.
  *
  * <p>An entry listed with {@code held} false is never walked from (fold W2): it seeds no later step, and a later step

@@ -17,7 +17,7 @@ description: >-
   empty object where that edge states neither word, and it is always present, never null and never absent, so a wordless
   entry looks the same in force and out of force. Where more than one edge could reach an entry, the words are those of the
   edge of its via, the parent the walk keeps (the first reach: the fewest hops, then the smallest parent urn, then the
-  smallest edge). edge is GovernanceEdgeWords, the same schema as on the pack-scoped read; it replaces the suggestion
+  smallest edge: the smaller when, then the smaller reason, an absent word sorting first). edge is GovernanceEdgeWords, the same schema as on the pack-scoped read; it replaces the suggestion
   member, and the state and reason of an entry out of force keep their effective-state meaning. The entry has no
   EffectiveArtifactSuggestion, which the generic effective reads carry unchanged.
 
