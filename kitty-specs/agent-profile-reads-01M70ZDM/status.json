@@ -135,7 +135,8 @@
       "last_transition_at": "2026-11-10T00:31:45.285428+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Pack-scoped agent profile read: getPackAgentProfile contract (AgentProfile, AgentProfileExcluding, PackGovernanceEntry, GovernanceStep, tag AgentProfiles, example, fragment), packs.application.ForeignArtifactRead, :profiles-edge application/infra.packs/infra.api, 11 @contract scenarios red then green, ProfileRoutingTest, 31-profile corpus test (java-jenny requires java-conventions), profiles-edge pitest 68/68 (floor 85 kept). Header Charter-Source-Fingerprint is the verified whole-source digest; ETag is the pack revision. SERVED not widened (WP05)."
+        "Pack-scoped agent profile read: getPackAgentProfile contract (AgentProfile, AgentProfileExcluding, PackGovernanceEntry, GovernanceStep, tag AgentProfiles, example, fragment), packs.application.ForeignArtifactRead, :profiles-edge application/infra.packs/infra.api, 11 @contract scenarios red then green, ProfileRoutingTest, 31-profile corpus test (java-jenny requires java-conventions), profiles-edge pitest 68/68 (floor 85 kept). Header Charter-Source-Fingerprint is the verified whole-source digest; ETag is the pack revision. SERVED not widened (WP05).",
+        "Review passed: no blocking findings; carry notes for WP05/WP07/WP08 recorded"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
