@@ -34,7 +34,8 @@ public final class ProfileGovernance {
      * @param step the step that listed it
      * @param via its parent: the profile or another entry of the answer
      * @param hops the length of the path from the profile
-     * @param when the {@code when} of the {@code suggests} edge that reached it; empty for any other step
+     * @param when the {@code when} of the edge that reached it, whatever its relation; empty when the edge states none
+     *     (see {@link GovernanceWalk.Entry})
      * @param reason the {@code reason} of that edge; empty likewise
      * @param held whether a pack of the closure holds the artifact; false only in the pack-scoped walk, for a target
      *     no pack holds, which has no holder
@@ -58,8 +59,8 @@ public final class ProfileGovernance {
          * @param step the step
          * @param via the parent
          * @param hops the path length
-         * @param when the suggests edge's condition
-         * @param reason the suggests edge's reason
+         * @param when the reaching edge's condition
+         * @param reason the reaching edge's reason
          * @param held whether the closure holds the artifact
          * @param holder the holding pack
          */

@@ -90,8 +90,10 @@ public final class GovernanceWalk {
      * @param step the step that listed it
      * @param via its parent: the profile or another entry of the answer
      * @param hops the length of the path from the profile, {@code hops(via) + 1}
-     * @param when the {@code when} of the {@code suggests} edge that reached it; empty for any other step, and for an
-     *     edge that states none
+     * @param when the {@code when} of the edge that reached it, whatever its relation; empty when that edge states
+     *     none. Where several edges could reach the entry, it is the edge of the parent the walk keeps: the first
+     *     reach, by the fewest hops, then the smallest parent, then the smallest edge. A later step, or another edge,
+     *     that would also reach the entry does not change it
      * @param reason the {@code reason} of that edge; empty likewise
      * @param held whether the place the listing edge leads to holds the artifact: false only in a walk over written
      *     links, for an edge to a place that holds nothing, which is listed and never expanded
@@ -106,8 +108,8 @@ public final class GovernanceWalk {
          * @param step the step
          * @param via the parent
          * @param hops the path length
-         * @param when the suggests edge's condition
-         * @param reason the suggests edge's reason
+         * @param when the reaching edge's condition
+         * @param reason the reaching edge's reason
          * @param held whether the closure holds the artifact
          */
         public Entry {

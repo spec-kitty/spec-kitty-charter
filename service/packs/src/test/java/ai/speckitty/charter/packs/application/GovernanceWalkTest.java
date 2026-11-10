@@ -158,27 +158,78 @@ class GovernanceWalkTest {
                         tuple(urn("glossary_pack:G2"), Step.VOCABULARY, urn("directive:D"), 2));
     }
 
+    private static Relationship worded(String from, RelationType type, String to, String when, String reason) {
+        return new Relationship(
+                urn(from),
+                Optional.empty(),
+                urn(to),
+                Optional.empty(),
+                type,
+                Optional.ofNullable(when),
+                Optional.ofNullable(reason));
+    }
+
     @Test
-    void aSuggestsEdgeKeepsItsWhenAndItsReasonAndOtherStepsCarryNone() {
-        Relationship suggests = new Relationship(
-                urn(P),
-                Optional.empty(),
-                urn("tactic:S"),
-                Optional.empty(),
-                RelationType.SUGGESTS,
-                Optional.of("the task touches the schema"),
-                Optional.of("migrations need it"));
-        Closure closure =
-                closure(List.of(P, "tactic:S", "directive:D"), suggests, edge(P, RelationType.REQUIRES, "directive:D"));
+    void everyEntryCarriesTheWordsOfTheEdgeThatReachedItWhateverItsRelation() {
+        Closure closure = closure(
+                List.of(P, Q, "tactic:S", "tactic:SR", "directive:D", "directive:V", "glossary_pack:G"),
+                worded(P, RelationType.SPECIALIZES_FROM, Q, null, "the profile builds on Q"),
+                worded(P, RelationType.SUGGESTS, "tactic:S", "the task touches the schema", "migrations need it"),
+                worded("tactic:S", RelationType.REQUIRES, "tactic:SR", "always", null),
+                worded(P, RelationType.REQUIRES, "directive:D", "always", "the charter says so"),
+                worded(P, RelationType.VOCABULARY, "glossary_pack:G", null, "its words are used"),
+                edge(P, RelationType.SUGGESTS, "directive:V"));
 
-        Result result = walk(closure, 1, GovernanceWalkTest::everything);
+        Result result = walk(closure, 2, GovernanceWalkTest::everything);
 
+        assertThat(entry(result, "agent_profile:Q"))
+                .extracting(Entry::when, Entry::reason)
+                .containsExactly(Optional.empty(), Optional.of("the profile builds on Q"));
         assertThat(entry(result, "tactic:S"))
                 .extracting(Entry::when, Entry::reason)
                 .containsExactly(Optional.of("the task touches the schema"), Optional.of("migrations need it"));
+        assertThat(entry(result, "tactic:SR"))
+                .extracting(Entry::step, Entry::when, Entry::reason)
+                .containsExactly(Step.REQUIRES_OF_SUGGESTED, Optional.of("always"), Optional.empty());
         assertThat(entry(result, "directive:D"))
+                .extracting(Entry::step, Entry::when, Entry::reason)
+                .containsExactly(Step.REQUIRES, Optional.of("always"), Optional.of("the charter says so"));
+        assertThat(entry(result, "glossary_pack:G"))
                 .extracting(Entry::when, Entry::reason)
-                .containsExactly(Optional.empty(), Optional.empty());
+                .containsExactly(Optional.empty(), Optional.of("its words are used"));
+        assertThat(entry(result, "directive:V"))
+                .extracting(Entry::step, Entry::when, Entry::reason)
+                .containsExactly(Step.SUGGESTS, Optional.empty(), Optional.empty());
+    }
+
+    @Test
+    void aTargetReachedByRequiresAndSuggestsTakesTheWordsOfTheEdgeOfTheStepThatListedIt() {
+        Closure closure = closure(
+                List.of(P, "tactic:X"),
+                worded(P, RelationType.SUGGESTS, "tactic:X", "suggested when", "suggested because"),
+                worded(P, RelationType.REQUIRES, "tactic:X", "required when", "required because"));
+
+        Result result = walk(closure, 1, GovernanceWalkTest::everything);
+
+        assertThat(entry(result, "tactic:X"))
+                .extracting(Entry::step, Entry::when, Entry::reason)
+                .containsExactly(Step.REQUIRES, Optional.of("required when"), Optional.of("required because"));
+    }
+
+    @Test
+    void aTargetTwoEdgesOfOneStepReachTakesTheWordsOfTheEdgeOfTheParentTheWalkKeeps() {
+        Closure closure = closure(
+                List.of(P, "directive:A", "directive:B", "tactic:X"),
+                edge(P, RelationType.REQUIRES, "directive:A"),
+                edge(P, RelationType.REQUIRES, "directive:B"),
+                worded("directive:B", RelationType.REQUIRES, "tactic:X", null, "B needs it"),
+                worded("directive:A", RelationType.REQUIRES, "tactic:X", null, "A needs it"));
+
+        Result result = walk(closure, 0, GovernanceWalkTest::everything);
+
+        assertThat(entry(result, "tactic:X"))
+                .extracting(Entry::via, Entry::reason)
+                .containsExactly(urn("directive:A"), Optional.of("A needs it"));
     }
 
     @Test
