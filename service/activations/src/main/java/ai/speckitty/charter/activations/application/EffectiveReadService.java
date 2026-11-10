@@ -364,6 +364,17 @@ public class EffectiveReadService {
         return artifactOf(stored, kind, artifactId, depth, ifNoneMatch);
     }
 
+    /**
+     * The kinds whose artifacts the packs slice lists, which are the kinds {@link #artifact} serves and the kinds an
+     * entry of a profile's governance can be linked by (a pack-scoped read of it). The packs slice is asked, so a kind it
+     * opens later is served here without a change.
+     *
+     * @return the listed kinds
+     */
+    public List<ArtifactKind> listedKinds() {
+        return packs.listedKinds();
+    }
+
     private Read<EffectiveArtifactAnswer> artifactOf(
             StoredActivation stored, ArtifactKind kind, String artifactId, int depth, @Nullable String ifNoneMatch) {
         PacksSession session = open(stored);
