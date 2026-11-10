@@ -338,24 +338,20 @@ class WholePackOpenPacksRoundTripTest {
                     .allSatisfy(toolguide -> assertThat(toolguide.guide()).isNotNull());
             // Counted from the files, without the store: one procedure per *.procedure.yaml, one toolguide per
             // *.toolguide.yaml, and its guide beside it.
-            long procedureFiles = filesNamed(pack.resolve("procedures"), ".procedure.yaml");
-            long toolguideFiles = filesNamed(pack.resolve("toolguides"), ".toolguide.yaml");
+            int procedureFiles = OpenPacksCorpus.filesEndingWith(pack.resolve("procedures"), ".procedure.yaml")
+                    .size();
+            int toolguideFiles = OpenPacksCorpus.filesEndingWith(pack.resolve("toolguides"), ".toolguide.yaml")
+                    .size();
             assertThat(procedureFiles).as("%s: procedure files", name).isPositive();
             assertThat(toolguideFiles).as("%s: toolguide files", name).isPositive();
             assertThat(loaded.pack().artifacts(ArtifactKind.PROCEDURE))
                     .as("%s: procedures held", name)
-                    .hasSize((int) procedureFiles);
-            assertThat(toolguides).as("%s: toolguides held", name).hasSize((int) toolguideFiles);
-            assertThat(filesNamed(pack.resolve("toolguides"), ".guide.md"))
+                    .hasSize(procedureFiles);
+            assertThat(toolguides).as("%s: toolguides held", name).hasSize(toolguideFiles);
+            assertThat(OpenPacksCorpus.filesEndingWith(pack.resolve("toolguides"), ".guide.md"))
                     .as("%s: guide files", name)
-                    .isEqualTo(toolguideFiles);
+                    .hasSize(toolguideFiles);
         }
-    }
-
-    private static long filesNamed(Path directory, String suffix) throws IOException {
-        return regularFilesUnder(directory).stream()
-                .filter(file -> file.getFileName().toString().endsWith(suffix))
-                .count();
     }
 
     /** The ids of the top-level templates on disk: every file under {@code templates/}, relative, in '/' form. */
@@ -483,7 +479,8 @@ class WholePackOpenPacksRoundTripTest {
                 .containsExactlyInAnyOrderElementsOf(loaded.manifest().orElseThrow().presets().stream()
                         .map(entry -> entry.id())
                         .toList());
-        // The assets, asset files and templates held are the ones on disk (top-level and mission-type templates, #194).
+        // The assets, asset files and templates held are the ones on disk (top-level and mission-type templates,
+        // #194).
         assertThat(countsOf(loaded)).isEqualTo(countedOnDisk(builtIn));
         assertThat(countsOf(loaded).templates()).as("built-in templates").isPositive();
         assertThat(loaded.pack().templates())
