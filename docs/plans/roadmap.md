@@ -87,15 +87,16 @@ an architecture and planning review of the plan pages against `main`, the tracke
 
 ## Toward a service core can use
 
-The next slices, in order. Re-run the usability run after slices B and C; its checklist is the readiness gate.
+The next slices, in order. Each ticket carries a `slice:A` to `slice:E` label next to its milestone; B to D have a
+tracking issue. Re-run the usability run after slices B and C; its checklist is the readiness gate.
 
 | Slice | Scope | Done when | Depends on |
 |---|---|---|---|
 | **A. Every kind is readable** | #407, #96, #99, #148 (moved forward from Post-cutover), #100; #437 via PR #460 | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | in flight |
-| **B. Real packs register as they are** | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
-| **C. The effective step and action context match core** | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
-| **D. A contract release core can vendor** | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
-| **E. Core ingests** (phase 2) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
+| **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
+| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
+| **D. A contract release core can vendor** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
+| **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
 
 Alongside, not on the critical path: the SonarCloud findings (Security rating D, Reliability rating E, from a handful
 of issues; #463 to #465, see [Milestones](/plans/milestones/#sonarcloud-findings)). Hosted work (#127, #396) and contract 1.0.0
