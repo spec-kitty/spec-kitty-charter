@@ -630,3 +630,154 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I GET "/packs/bare/artifacts/mission_step_contract/nope"
     Then the response status is 500
     And the problem code is "pack_unreadable"
+
+  Scenario: A step contract is removed as the five kinds are, and its mission type stays
+    FR-010, US6 AS1, D10. Neither mission kind answers an ETag, so a DELETE sends If-Match: * (or the pack revision) as
+    for any kind. The removal answers 204 with the pack's new revision; the next DELETE of the id is its kind's
+    not-found code.
+    Given registration is switched on
+    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: discover
+      action: discover
+      mission: documentation
+      steps:
+        - id: first
+          description: The first step
+      """
+    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
+    Then the response status is 204
+    And the response header "ETag" appears once
+    And the pack "main" holds no file "mission_step_contracts/discover.step-contract.yaml"
+    When I GET "/packs/main/artifacts/mission_step_contract/discover"
+    Then the response status is 404
+    And the problem code is "mission_step_contract_not_found"
+    When I GET "/packs/main/artifacts/mission_type/documentation"
+    Then the response status is 200
+    And the field at "/missionType/id" is "documentation"
+    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
+    Then the response status is 404
+    And the problem code is "mission_step_contract_not_found"
+
+  Scenario: A mission type is removed with its step files and its skeletons, and every read of it is then not found
+    FR-010, US6 AS1, D10: the type, its step prompt and guidelines files and its skeletons go as one removal under one
+    impact check. A DELETE needs the pack revision: none is 428, a stale one is 412, and neither changes anything. The
+    other mission type keeps its skeletons.
+    Given registration is switched on
+    And the org pack "main" with the file "missions/documentation/documentation.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: documentation
+      title: Documentation
+      description: Write documentation that follows the Divio system
+      steps:
+      - id: discover
+        title: Discover
+        prompt_path: steps/discover.prompt.md
+        guidelines_path: steps/discover.guidelines.md
+      """
+    And the org pack "main" with the file "missions/documentation/steps/discover.prompt.md":
+      """
+      # /spec-kitty.discover - Discover the audience
+
+      Ask who reads the documentation.
+      """
+    And the org pack "main" with the file "missions/documentation/steps/discover.guidelines.md":
+      """
+      # Discover Action - Governance Guidelines
+
+      - Name the reader first.
+      """
+    When I send DELETE "/packs/main/artifacts/mission_type/documentation"
+    Then the response status is 428
+    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "\"sha256:0000000000000000000000000000000000000000000000000000000000000000\""
+    Then the response status is 412
+    When I GET "/packs/main/artifacts/mission_type/documentation/steps/discover"
+    Then the response status is 200
+    And the field at "/prompt" contains "Ask who reads the documentation."
+    When I GET "/packs/main"
+    And I remember the ETag
+    And I DELETE "/packs/main/artifacts/mission_type/documentation" with the remembered ETag
+    Then the response status is 204
+    And the response header "ETag" appears once
+    And the pack "main" holds no file "missions/documentation/documentation.mission-type.yaml"
+    And the pack "main" holds no file "missions/documentation/steps/discover.prompt.md"
+    And the pack "main" holds no file "missions/documentation/steps/discover.guidelines.md"
+    And the pack "main" holds no file "missions/documentation/templates/divio/howto-template.md"
+    And the pack "main" holds no file "missions/documentation"
+    When I GET "/packs/main/artifacts/mission_type/documentation"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I GET "/packs/main/artifacts/mission_type/documentation/steps/discover"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I GET "/packs/main/artifacts/mission_type/documentation/skeletons/divio~1howto-template.md"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I GET "/packs/main/artifacts?kind=mission_type"
+    Then the response status is 200
+    And the field at "/items" holds exactly 1 item
+    And the field at "/items/0/id" is "software-dev"
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
+    Then the response status is 200
+    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+
+  Scenario: A mission type a step contract binds is not removed until the contract is gone
+    FR-010, US6 AS1, D10: a step contract whose mission names the type refers to it, as any referrer of the five kinds
+    does, and the refusal names it and changes nothing.
+    Given registration is switched on
+    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: discover
+      action: discover
+      mission: documentation
+      steps:
+        - id: first
+          description: The first step
+      """
+    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+    And the field at "/packs/0/packId" is "main"
+    And the field at "/violations/0/detail" contains "mission_step_contract:discover"
+    When I GET "/packs/main/artifacts/mission_type/documentation/skeletons/divio~1howto-template.md"
+    Then the response status is 200
+    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
+    Then the response status is 204
+    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
+    Then the response status is 204
+
+  Scenario: A mission type whose action node an author-written graph document names is not removed, and no file is rewritten
+    FR-010, US6 AS1, D10: an edge that names one of the type's action nodes action:<type>/<step> refers to the type. The
+    edge is in a document the author wrote, so the DELETE refuses and the pack is byte-identical; another kind's
+    DELETE still goes.
+    Given registration is switched on
+    And the org pack "main" with the file "actions.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:documentation/discover
+        kind: action
+        label: discover
+      edges:
+      - source: action:documentation/discover
+        target: directive:GUARD
+        relation: requires
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+    And the field at "/violations/0/detail" contains "action:documentation/discover"
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    When I GET "/packs/main/artifacts/mission_type/documentation"
+    Then the response status is 200
+    When I DELETE "/packs/main/artifacts/mission_step_contract/orphan" with the header "If-Match": "*"
+    Then the response status is 204

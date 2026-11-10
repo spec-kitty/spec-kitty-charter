@@ -105,6 +105,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   every element is served exactly once. Each followed page must answer 200; the last one is the step's answer.
 - `When the file "<path>" of the pack "<name>" is deleted` — deletes one existing file of a configured pack, between
   two requests (a cursor's anchor that goes away between pages).
+- `Then the pack "<name>" holds no file "<path>"` — nothing is stored at the path inside the configured pack, neither a
+  file nor a directory (a mission type's removal takes its step files, its skeletons and their directories).
 - `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
   body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
@@ -289,6 +291,9 @@ that calls it. A run that selects only some scenarios reports the others' operat
   `@WIP` until the serving work package binds it (the comment above a scenario names which); see "Registration steps".
 - `pack-removal.feature`: the artifact `DELETE` and the relationship `DELETE` (ADR-0065 D4, FR-005, FR-006), their
   `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, bound by WP19.
+- `mission-types.feature`: the mission type, step, skeleton and step contract reads (#99, #100, #96), and the `DELETE`
+  of both kinds: a step contract as the five kinds, a mission type with its step files and skeletons as one removal,
+  refused `409` while a step contract binds it or an edge names one of its action nodes (D10).
 - `trust/`, `integrity/`, `distribution/`, and the rest of the pack registration and distribution scenarios of
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
