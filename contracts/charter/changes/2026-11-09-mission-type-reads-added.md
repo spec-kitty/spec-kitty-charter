@@ -11,12 +11,13 @@
   `pack_unreadable`, `mission_type_not_found`, then `action_not_found` (an unknown step) or `skeleton_not_found`.
   `mission_step_contract` is served by the generic item read
   (`getPackArtifact`); `mission_type` is listed, filtered and referenced like the other kinds, and its item is answered
-  by `getPackMissionType`. Neither kind answers an `ETag`. New relations `mission-type`, `step`, `step-contract`,
-  `skeleton` and `effective-artifact` join the hypermedia guide's table and `link-relations-are-known`.
+  by `getPackMissionType`. Neither kind answers an `ETag`. New relations `mission-type`, `step`, `step-contract` and
+  `skeleton` join the hypermedia guide's table and `link-relations-are-known`.
 - `deletePackArtifact` removes a mission type and a step contract (#99, D10). A mission type goes with its step prompt
   and guidelines files and its skeletons as one removal under one impact check; it is refused `409`
   `artifact_referenced` while a step contract whose `mission` names it, or an edge that names one of its action nodes
   (`action:<type>/<step>`) or skeletons, refers to it, and `409` `registration_conflict` while an author-written graph
   document declares the type's, a skeleton's or an action node's node, or holds an edge from the type or a skeleton. A step contract is removed as the five kinds are. An unknown id is
   `mission_type_not_found` or `mission_step_contract_not_found`. Neither kind answers an `ETag`: `If-Match: *` or the
-  pack revision.
+  pack revision. `deletePackArtifact` now also prunes the directories a removal leaves empty, up to the pack's root, for
+  every kind (operator ruling): the last directive of a pack takes `directives/` with it.
