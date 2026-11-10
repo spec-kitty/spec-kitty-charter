@@ -37,7 +37,7 @@ get:
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationMissionTypeNotFound.yaml
+      $ref: ../responses/ActivationMissionSkeletonNotFound.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
     default:
