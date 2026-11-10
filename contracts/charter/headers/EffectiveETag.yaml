@@ -1,9 +1,9 @@
 description: >-
   A strong entity tag of a read that depends on the packs of an activation's closure (the four effective reads,
-  listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph and getEffectiveActionContext, and
-  getActivation): an opaque digest that changes when the activation's revision or a pack of its closure changes, and,
+  listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph, getEffectiveActionContext and
+  getEffectiveArtifact, and getActivation): an opaque digest that changes when the activation's revision or a pack of its closure changes, and,
   for the effective reads, with the query (the artifact list's kind, state, cursor and page size; the context's mission
-  type, action and depth); a pack outside the closure leaves it unchanged. In
+  type, action and depth; the artifact read's kind, id and depth); a pack outside the closure leaves it unchanged. In
   double quotes. Opaque to consumers, who compare it and never parse it.
 required: true
 schema:

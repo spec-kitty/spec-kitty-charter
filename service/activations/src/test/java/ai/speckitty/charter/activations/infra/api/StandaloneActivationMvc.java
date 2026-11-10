@@ -92,7 +92,8 @@ public final class StandaloneActivationMvc {
                 mapper,
                 new ActivationChangeMapper(mapper),
                 new EffectiveReadService(repository, packs),
-                new EffectiveReadMapper(mapper));
+                new EffectiveReadMapper(mapper),
+                new EffectiveArtifactMapper("/api/v1"));
     }
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */

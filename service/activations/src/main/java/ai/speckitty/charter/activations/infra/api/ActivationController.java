@@ -5,6 +5,7 @@ import ai.speckitty.charter.activations.application.ActivationPresetService;
 import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
+import ai.speckitty.charter.activations.application.EffectiveArtifactAnswer;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
@@ -19,6 +20,7 @@ import ai.speckitty.charter.api.model.ActivationPackList;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
+import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.PresetApplication;
@@ -80,6 +82,7 @@ public class ActivationController implements ActivationApi {
     private final ActivationChangeMapper changes;
     private final EffectiveReadService effective;
     private final EffectiveReadMapper reads;
+    private final EffectiveArtifactMapper artifacts;
 
     /**
      * A controller over the activation register and its per-artifact writes.
@@ -92,6 +95,7 @@ public class ActivationController implements ActivationApi {
      * @param changes the per-artifact writes' wire mapper
      * @param effective the effective reads and the document read
      * @param reads the effective reads' wire mapper
+     * @param artifacts the wire mapper of the read of one artifact
      */
     @Autowired
     public ActivationController(
@@ -102,7 +106,8 @@ public class ActivationController implements ActivationApi {
             ActivationMapper mapper,
             ActivationChangeMapper changes,
             EffectiveReadService effective,
-            EffectiveReadMapper reads) {
+            EffectiveReadMapper reads,
+            EffectiveArtifactMapper artifacts) {
         this.activations = Objects.requireNonNull(activations, "activations");
         this.selections = Objects.requireNonNull(selections, "selections");
         this.exclusions = Objects.requireNonNull(exclusions, "exclusions");
@@ -111,6 +116,7 @@ public class ActivationController implements ActivationApi {
         this.changes = Objects.requireNonNull(changes, "changes");
         this.effective = Objects.requireNonNull(effective, "effective");
         this.reads = Objects.requireNonNull(reads, "reads");
+        this.artifacts = Objects.requireNonNull(artifacts, "artifacts");
     }
 
     @Override
@@ -179,6 +185,16 @@ public class ActivationController implements ActivationApi {
                         ifNoneMatch),
                 EffectiveReadService.ContextRead::sourceFingerprint,
                 read -> reads.toContext(read, depthGiven));
+    }
+
+    @Override
+    public ResponseEntity<EffectiveArtifactRead> getEffectiveArtifact(
+            String activationId, String kind, String artifactId, @Nullable String ifNoneMatch, Integer depth) {
+        OptionalInt given = queryParamGiven("depth") ? OptionalInt.of(depth) : OptionalInt.empty();
+        return verified(
+                effective.artifact(new ActivationId(activationId), kind, artifactId, depth, ifNoneMatch),
+                EffectiveArtifactAnswer::sourceFingerprint,
+                answer -> artifacts.toRead(answer, given));
     }
 
     @Override
