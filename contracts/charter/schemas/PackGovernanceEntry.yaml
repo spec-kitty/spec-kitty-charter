@@ -1,7 +1,9 @@
 title: PackGovernanceEntry
 description: >-
   One artifact in the governance of an agent profile read from a pack, and how the walk reached it. The walk
-  runs over the pack's composed depends_on closure, merged, with every artifact in force; the activation-scoped read
+  runs over the pack's composed depends_on closure, merged, with every artifact in force: where a pack of the closure
+  overrides an artifact (a layer override), the walk follows the edges of the copy that wins the layer merge, and the
+  entry names that copy in packId and _links.artifact, as the activation-scoped read does. The activation-scoped read
   has its own entry. The entries are sorted by urn, each artifact once, and none is the profile itself.
 
   Every entry carries edge, the when and the reason of the edge it was reached through, whatever its relation (FR-004); it
@@ -24,8 +26,8 @@ description: >-
   a dangling edge lists in an early step keeps held false even when a later step reaches it through a held edge (a
   suggests edge to the copy another pack of the closure holds).
 
-  _links holds artifact, the pack-scoped read of the entry, only for a held artifact of a kind the generic artifact route
-  serves, and is an empty object otherwise.
+  _links holds artifact, the pack-scoped read of the entry in the pack packId names (the merge winner), only for a held
+  artifact of a kind the generic artifact route serves, and is an empty object otherwise.
 
   Entries carry no enhancedBy or enhances: a profile takes no step enhancement.
 type: object
@@ -115,10 +117,11 @@ properties:
   packId:
     type: ['string', 'null']
     description: >-
-      The configured identifier of the first pack of the closure that holds the artifact, in closure order; null when no
-      pack holds it (held is false).
+      The configured identifier of the pack whose copy of the artifact wins the layer merge of the closure: the copy
+      whose edges the walk followed. It is null exactly when held is false (the listing edge is dangling), even when
+      another pack of the closure holds the URN.
     x-derived:
-      rule: The first holder of the artifact in the order of the pack's composed closure.
+      rule: The pack of the merge winner of the artifact in the pack's composed closure; null when held is false.
       inputs:
         - schemas/Offering.yaml
   held:

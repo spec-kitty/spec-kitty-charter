@@ -351,7 +351,7 @@ class ClosureViewGovernanceTest {
     // ---- pack-scoped -----------------------------------------------------------------------------------------------
 
     @Test
-    void thePackScopedWalkResolvesAQualifiedParentAndNamesTheFirstHolderInClosureOrder() {
+    void thePackScopedWalkResolvesAQualifiedParentAndNamesTheMergeWinnerOfAnOverriddenArtifact() {
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
@@ -375,9 +375,10 @@ class ClosureViewGovernanceTest {
                         ProfileGovernance.Entry::urn,
                         ProfileGovernance.Entry::held,
                         entry -> entry.holder().orElseThrow().packId().value())
-                .containsExactly(tuple(Q, true, "builtin"), tuple(D, true, "builtin"));
+                .as("the project's directive D overrides builtin's: the entry names the copy whose edges were walked")
+                .containsExactly(tuple(Q, true, "builtin"), tuple(D, true, "project"));
         assertThat(view.governance(P, 1, selecting(view, P, Q, D)).entries())
-                .as("under an activation the holder is the winner: the project's copy of directive D")
+                .as("under an activation the holder is the winner too: the project's copy of directive D")
                 .extracting(entry -> entry.holder().orElseThrow().packId().value())
                 .containsExactly("builtin", "project");
     }
