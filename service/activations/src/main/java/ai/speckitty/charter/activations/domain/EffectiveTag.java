@@ -53,7 +53,10 @@ public record EffectiveTag(String token) {
         GRAPH,
         /** {@code getEffectiveActionContext}. */
         CONTEXT,
-        /** {@code getEffectiveArtifact}: the winner of one artifact, of any kind but an agent profile. */
+        /**
+         * {@code getEffectiveArtifact}: the winner of one artifact, of any kind, an agent profile included, so the generic
+         * route never shares a tag with {@code getEffectiveAgentProfile}.
+         */
         ARTIFACT,
         /** {@code getEffectiveAgentProfile}: the winner of one agent profile, with its governance. */
         PROFILE

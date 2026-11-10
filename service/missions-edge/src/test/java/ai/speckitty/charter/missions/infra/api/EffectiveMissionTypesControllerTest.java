@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions.infra.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -108,6 +109,19 @@ class EffectiveMissionTypesControllerTest {
         mvc.perform(get("/api/v1/activations/a-1/artifacts/directive/GUARD"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.generic").value("directive GUARD"));
+    }
+
+    @Test
+    void aConditionalOrHeadRequestReachesTheLiteralPathsTooSoNoGenericTagCanAnswerThem() throws Exception {
+        for (String path : List.of(
+                "/api/v1/activations/a-1/artifacts/mission_type/software-dev",
+                "/api/v1/activations/a-1/artifacts/mission_step_contract/specify")) {
+            mvc.perform(get(path).header("If-None-Match", "*"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().doesNotExist("ETag"))
+                    .andExpect(jsonPath("$.generic").doesNotExist());
+            mvc.perform(head(path)).andExpect(status().isOk()).andExpect(header().doesNotExist("ETag"));
+        }
     }
 
     @Test
