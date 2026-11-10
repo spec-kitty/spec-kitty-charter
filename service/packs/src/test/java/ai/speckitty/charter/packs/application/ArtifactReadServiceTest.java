@@ -507,7 +507,8 @@ class ArtifactReadServiceTest {
                         ArtifactKind.MISSION_STEP_CONTRACT)
                 .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.LISTED).containsAll(ArtifactReadService.ITEM_KINDS);
-        assertThat(ArtifactReadService.SERVED).doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
+        assertThat(ArtifactReadService.SERVED)
+                .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
     }
 
     @Test
