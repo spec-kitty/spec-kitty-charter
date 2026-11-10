@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.activations.domain.StoredActivation;
@@ -62,9 +63,17 @@ public record EffectiveArtifactAnswer(
      * @param relation the relation it is listed by
      * @param via its parent: the profile, or another entry
      * @param hops the length of the path from the profile
+     * @param suggestion the words of the {@code suggests} edge that listed it, for an entry listed by that edge whose
+     *     edge states a {@code when} or a {@code reason}, whether the artifact is in force or not; empty for any other
+     *     entry
      */
     public record Entry(
-            EffectiveArtifact artifact, GovernanceFacts.Step step, RelationType relation, ArtifactRef via, int hops) {
+            EffectiveArtifact artifact,
+            GovernanceFacts.Step step,
+            RelationType relation,
+            ArtifactRef via,
+            int hops,
+            Optional<EffectiveSet.Suggestion> suggestion) {
 
         /**
          * Checks the fields.
@@ -74,12 +83,14 @@ public record EffectiveArtifactAnswer(
          * @param relation the relation
          * @param via the parent
          * @param hops the path length
+         * @param suggestion the suggesting edge's words
          */
         public Entry {
             Objects.requireNonNull(artifact, "artifact");
             Objects.requireNonNull(step, "step");
             Objects.requireNonNull(relation, "relation");
             Objects.requireNonNull(via, "via");
+            Objects.requireNonNull(suggestion, "suggestion");
         }
     }
 
