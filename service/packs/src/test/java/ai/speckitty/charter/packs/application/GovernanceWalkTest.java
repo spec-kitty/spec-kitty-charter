@@ -529,6 +529,63 @@ class GovernanceWalkTest {
     }
 
     @Test
+    void anEntryAnEarlierStepListedIsWalkedThroughWhenALaterStepReachesIt() {
+        Closure closure = closure(
+                List.of(P, "directive:D", "tactic:T"),
+                edge(P, RelationType.REQUIRES, "directive:D"),
+                edge(P, RelationType.SUGGESTS, "directive:D"),
+                edge("directive:D", RelationType.SUGGESTS, "tactic:T"));
+
+        Result result = walk(closure, 2, GovernanceWalkTest::everything);
+
+        assertThat(result.entries())
+                .as("D is listed by requires; the suggests step walks through it to T")
+                .extracting(Entry::urn, Entry::step, Entry::via, Entry::hops)
+                .containsExactly(
+                        tuple(urn("directive:D"), Step.REQUIRES, urn(P), 1),
+                        tuple(urn("tactic:T"), Step.SUGGESTS, urn("directive:D"), 2));
+    }
+
+    @Test
+    void aRefusedSuggestionTakesTheParentWithTheFewestHopsBeforeTheSmallestUrn() {
+        String ancestor = "agent_profile:A";
+        Closure closure = closure(
+                List.of(P, ancestor, "tactic:Out"),
+                edge(P, RelationType.SPECIALIZES_FROM, ancestor),
+                edge(ancestor, RelationType.SUGGESTS, "tactic:Out"),
+                edge(P, RelationType.SUGGESTS, "tactic:Out"));
+
+        Result result = walk(closure, 1, inForce(ancestor));
+
+        assertThat(result.suggestionCandidates())
+                .as("A is the smaller URN but sits at hops 1; P is at 0")
+                .extracting(
+                        ActionContextWalk.SuggestionCandidate::urn,
+                        ActionContextWalk.SuggestionCandidate::via,
+                        ActionContextWalk.SuggestionCandidate::hops)
+                .containsExactly(tuple(urn("tactic:Out"), urn(P), 1));
+    }
+
+    @Test
+    void twoHeldEdgesOfOneParentToOneTargetAreOrderedByWhenThenByReason() {
+        Closure byWhen = closure(
+                List.of(P, "directive:X"),
+                worded(P, RelationType.REQUIRES, "directive:X", "b", "a"),
+                worded(P, RelationType.REQUIRES, "directive:X", "a", "z"));
+        Closure byReason = closure(
+                List.of(P, "directive:X"),
+                worded(P, RelationType.REQUIRES, "directive:X", "a", "z"),
+                worded(P, RelationType.REQUIRES, "directive:X", "a", "y"));
+
+        assertThat(entry(walk(byWhen, 0, GovernanceWalkTest::everything), "directive:X"))
+                .extracting(Entry::when, Entry::reason)
+                .containsExactly(Optional.of("a"), Optional.of("z"));
+        assertThat(entry(walk(byReason, 0, GovernanceWalkTest::everything), "directive:X"))
+                .extracting(Entry::when, Entry::reason)
+                .containsExactly(Optional.of("a"), Optional.of("y"));
+    }
+
+    @Test
     void theStepsHaveTheirOwnTokensAndRelationsAndLineageIsSpecializesFrom() {
         assertThat(Step.values())
                 .extracting(Step::name, Step::relation)

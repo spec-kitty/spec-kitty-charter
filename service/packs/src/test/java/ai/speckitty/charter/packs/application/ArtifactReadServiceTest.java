@@ -500,11 +500,26 @@ class ArtifactReadServiceTest {
     @Test
     void theReferencesOfAnAgentProfileAreItsWrittenEdges() {
         ArtifactReadService withEdges = referenceFixture(() -> D1);
-        edges.put(PACK, List.of(new PackEdge("agent_profile:jenny", "directive:OWN_2", RelationType.REQUIRES)));
+        edges.put(
+                PACK,
+                List.of(
+                        new PackEdge("agent_profile:ada", "directive:OWN_1", RelationType.REQUIRES),
+                        new PackEdge("agent_profile:jenny", "directive:OWN_2", RelationType.REQUIRES)));
 
         assertThat(withEdges.references(PACK, "agent_profile", "jenny").value())
                 .extracting(reference -> reference.written().toString(), reference -> reference.relation())
                 .containsExactly(tuple("directive:OWN_2", RelationType.REQUIRES));
+    }
+
+    @Test
+    void theReferencesOfAnAgentProfileThePackDoesNotHoldAreArtifactNotFound() {
+        ArtifactReadService withEdges = referenceFixture(() -> D1);
+
+        assertThatThrownBy(() -> withEdges.references(PACK, "agent_profile", "nobody"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+                    assertThat(refused.getMessage()).isEqualTo("Pack pack-a has no agent_profile nobody.");
+                });
     }
 
     // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
@@ -634,6 +649,7 @@ class ArtifactReadServiceTest {
                         .descriptor(descriptorNamed(PACK, "alpha", SIBLING))
                         .directive(directiveIn(PACK, "OWN_1"))
                         .directive(directiveIn(PACK, "OWN_2"))
+                        .artifact(profile("ada"))
                         .artifact(profile("jenny"))
                         .build());
         stored.put(
