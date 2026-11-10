@@ -28,6 +28,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
@@ -41,6 +42,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
@@ -61,6 +63,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -77,7 +80,7 @@ import org.springframework.stereotype.Service;
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
- * {@link MutabilityPolicyRepository} and {@link MissionTypeSteps} over the filesystem.
+ * {@link MutabilityPolicyRepository}, {@link MissionTypeSteps} and {@link PackCompanionFiles} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -106,7 +109,8 @@ public final class DomainRepositoryService
                 PackEdgeRepository,
                 PackRepository,
                 MutabilityPolicyRepository,
-                MissionTypeSteps {
+                MissionTypeSteps,
+                PackCompanionFiles {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -385,6 +389,57 @@ public final class DomainRepositoryService
         type.steps().stream().map(MissionStep::id).forEach(ids::add);
         type.onDemandSteps().stream().map(MissionStep::id).forEach(ids::add);
         return Set.copyOf(ids);
+    }
+
+    // ---- PackCompanionFiles ----------------------------------------------------------------------------------
+
+    /**
+     * The stored bytes of each step's prompt and guidelines files of a mission type this store loaded: each read at the
+     * path the step names, beside the type's file ({@code missions/<id>/steps/<step>.prompt.md}, S8), through the same
+     * containment rule as every payload the store reads, and never parsed. Call it inside the verified read that loaded
+     * the type, so the bytes are the ones the type was parsed from.
+     *
+     * @param pack the pack that holds the mission type
+     * @param missionType an artifact of kind {@code mission_type}, as the pack aggregate holds it
+     * @return each step's files by its id, its steps then its on-demand steps; empty for any other artifact
+     * @throws CharterRefusal {@code PACK_UNREADABLE} when a file the type names cannot be read now, or
+     *     {@code PACK_NOT_FOUND} when no configured pack has this identifier
+     */
+    @Override
+    public Map<String, PackCompanionFiles.StepFiles> stepFiles(PackIdentifier pack, CharterArtifact missionType) {
+        if (!(missionType instanceof MissionType type)) {
+            return Map.of();
+        }
+        Path directory = resolve(pack).directory;
+        String typeDirectory = "missions/" + type.localId() + "/";
+        Map<String, PackCompanionFiles.StepFiles> files = new LinkedHashMap<>();
+        List<MissionStep> steps = new ArrayList<>(type.steps());
+        steps.addAll(type.onDemandSteps());
+        for (MissionStep step : steps) {
+            files.put(
+                    step.id(),
+                    new PackCompanionFiles.StepFiles(
+                            step.prompt()
+                                    .map(document -> stored(
+                                            pack,
+                                            directory,
+                                            typeDirectory + MissionTypeBinding.promptPathOf(step.id()))),
+                            step.guidelines()
+                                    .map(document -> stored(
+                                            pack,
+                                            directory,
+                                            typeDirectory + MissionTypeBinding.guidelinesPathOf(step.id())))));
+        }
+        return Collections.unmodifiableMap(files);
+    }
+
+    /** The bytes of a file the loaded pack holds; one that cannot be read now is unreadable, never an absent file. */
+    private static Payload stored(PackIdentifier pack, Path directory, String file) {
+        StringBuilder why = new StringBuilder();
+        return FilesystemPackStore.readPayload(directory, file, why::append)
+                .map(Payload::of)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + ": " + file + ": " + why));
     }
 
     // ---- PackArtifactRepository -------------------------------------------------------------------------------
