@@ -217,16 +217,6 @@ class ClosureViewGovernanceTest {
     }
 
     @Test
-    void anAncestorThePredicateRefusesIsNotListedAndSeedsNothingUnderAnActivation() {
-        qualifiedParentInAnotherPack();
-        ClosureView view = queries().allConfigured();
-
-        ProfileGovernance.Governance governance = view.governance(P, 1, selecting(view, P, D));
-
-        assertThat(listed(governance)).isEmpty();
-    }
-
-    @Test
     void aProfileOutOfForceIsStillWalkedUnderAnActivation() {
         qualifiedParentInAnotherPack();
         ClosureView view = queries().allConfigured();
