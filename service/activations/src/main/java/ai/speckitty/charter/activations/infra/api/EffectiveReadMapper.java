@@ -74,7 +74,21 @@ public class EffectiveReadMapper {
      */
     @Autowired
     public EffectiveReadMapper(ActivationMapper activations, EffectiveReadService effective) {
-        this(activations, Objects.requireNonNull(effective, "effective")::listedKinds);
+        this(activations, linkedKindsOf(Objects.requireNonNull(effective, "effective")));
+    }
+
+    /**
+     * The kinds an item is linked by: the listed kinds but the two mission kinds. A mission type and a mission step
+     * contract are listed (#99), but their items link nothing until the mission type reads' links are built (#99 WP06),
+     * as the effective-artifact scenarios pin.
+     *
+     * @param effective the effective reads, which know the listed kinds
+     * @return the linked kinds, asked at each read
+     */
+    private static Supplier<List<ArtifactKind>> linkedKindsOf(EffectiveReadService effective) {
+        return () -> effective.listedKinds().stream()
+                .filter(kind -> kind != ArtifactKind.MISSION_TYPE && kind != ArtifactKind.MISSION_STEP_CONTRACT)
+                .toList();
     }
 
     /**
