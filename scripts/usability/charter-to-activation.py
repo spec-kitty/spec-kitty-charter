@@ -171,7 +171,7 @@ def self_test() -> int:
             failures.append(f"{label}: expected {expected!r}, got {actual!r}")
 
     # Every entry of the table, pinned from outside the table: a numbered slug "NNN-..." is DIRECTIVE_NNN, and the
-    # eight others are listed here by hand. A wrong id in the table would reach the service as a 422 unknown_artifact
+    # six others are listed here by hand. A wrong id in the table would reach the service as a 422 unknown_artifact
     # and look like a pack gap, so each one is checked, not a sample.
     unnumbered = {
         "001-project-intent-directive": "PROJECT_001",

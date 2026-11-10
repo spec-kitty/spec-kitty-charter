@@ -10,6 +10,10 @@
 # in scripts/usability/README.md. The last line of the output is a one-line summary.
 
 set -u -o pipefail
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); then
+    echo "error: bash 4.2 or later is required (this is ${BASH_VERSION}); on macOS install bash and GNU coreutils" >&2
+    exit 2
+fi
 # bash 5.2 turns patsub_replacement on, which makes an unquoted & in a ${x/p/r} replacement mean "the match".
 shopt -u patsub_replacement 2>/dev/null || true
 
@@ -106,25 +110,36 @@ remove_work() { # rm -rf of the temporary directory, only if it is the one this 
     fi
 }
 
-remove_inside() { # path: rm -rf of a path that must resolve to somewhere strictly inside the temporary directory
-    local target
-    if [[ -z $WORK_MADE ]] || ! target=$(realpath -m -- "$1" 2>/dev/null); then
+remove_inside() { # path: rm -rf of a path whose parent resolves to somewhere inside the temporary directory
+    # Only the parent is resolved: a symlink as the last component is removed as a link, never followed to its target.
+    local parent base target
+    base=$(basename -- "$1")
+    if [[ -z $WORK_MADE || $base == / || $base == . || $base == .. ]] ||
+        ! parent=$(realpath -e -- "$(dirname -- "$1")" 2>/dev/null); then
         printf 'error: not removing %s: it cannot be resolved\n' "$1" >&2
         return 1
     fi
+    target=${parent%/}/$base
     case $target in
         "$(realpath -- "$WORK_MADE")"/?*) rm -rf -- "$target" ;;
         *) printf 'error: not removing %s: it is outside the temporary directory %s\n' "$1" "$WORK_MADE" >&2; return 1 ;;
     esac
 }
 
+KEEP_HINTED=0
+keep_hint() {
+    [[ $KEEP_HINTED -eq 0 && $KEEP -eq 1 && -n $SERVER_PID ]] || return 0
+    KEEP_HINTED=1
+    say "--keep: the service is still running (pid $SERVER_PID) at $BASE"
+    say "  token and curl options: curl -K $WORK/curl.cfg $BASE/api/v1/"
+    say "  stop it with: kill $SERVER_PID"
+}
+
 cleanup() {
     local status=$?
     if [[ -n $SERVER_PID ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
         if [[ $KEEP -eq 1 ]]; then
-            say "--keep: the service is still running (pid $SERVER_PID) at $BASE"
-            say "  token and curl options: curl -K $WORK/curl.cfg $BASE/api/v1/"
-            say "  stop it with: kill $SERVER_PID"
+            keep_hint # a no-op if the summary has already printed it, before the RESULT line
         else
             kill "$SERVER_PID" 2>/dev/null
             local i
@@ -166,7 +181,9 @@ elif [[ -z $ATTACH ]]; then
 else
     PIN=$(git -C "${OPEN_PACKS:-/nonexistent}" rev-parse HEAD 2>/dev/null || echo "not given (--attach)")
 fi
-COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)
+# The client tree: what Gradle builds when there is no --jar. "-dirty" means uncommitted changes were in the build.
+COMMIT=$(git -C "$REPO" describe --always --dirty --abbrev=40 2>/dev/null || echo unknown)
+JAR_SHA=""
 BRANCH=$(git -C "$REPO" branch --show-current 2>/dev/null || echo unknown)
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/service-usability-run.XXXXXX") || die 2 "cannot make a temporary directory"
@@ -181,7 +198,7 @@ CURL_CFG="$WORK/curl.cfg"
 http() { # method url [body-file]; sets STATUS, TIME and BODY (a file)
     local method=$1 url=$2 data=${3:-}
     BODY="$WORK/body.$((++SEQ))"
-    local args=(-sS -K "$CURL_CFG" -o "$BODY" -w '%{http_code} %{time_total}' -X "$method" -H 'Accept: application/json')
+    local args=(-g -sS -K "$CURL_CFG" -o "$BODY" -w '%{http_code} %{time_total}' -X "$method" -H 'Accept: application/json')
     if [[ -n $data ]]; then args+=(-H 'Content-Type: application/json' --data-binary "@$data"); fi
     local result
     if ! result=$(curl "${args[@]}" "$url" 2>"$WORK/curl.err"); then
@@ -211,7 +228,7 @@ urlenc() { # string: percent-encodes all but the unreserved characters (RFC 3986
 }
 
 expand() { # href var=value...: fills the variables a link declares; fails if one is left unfilled
-    local href=$1
+    local href=$1 orig=$1
     shift
     local kv k v
     for kv in "$@"; do
@@ -226,6 +243,11 @@ expand() { # href var=value...: fills the variables a link declares; fails if on
         names=${tail%%"}"*}
         tail=${tail#*"}"}
         for n in ${names//,/ }; do
+            n=${n%\*} # {?kind*}: the explode modifier; every value here is a single string, so it expands as plain
+            if [[ ! $n =~ ^[A-Za-z0-9_]+$ ]]; then
+                printf 'error: URI template %s: the variable name "%s" is not supported\n' "$orig" "$n" >&2
+                return 1
+            fi
             for kv in "$@"; do
                 if [[ ${kv%%=*} == "$n" ]]; then
                     urlenc "${kv#*=}"
@@ -236,7 +258,10 @@ expand() { # href var=value...: fills the variables a link declares; fails if on
         href="$head${query:+?$query}$tail"
     fi
     printf '%s' "$href"
-    [[ $href != *"{"* ]]
+    if [[ $href == *"{"* || $href == *"}"* ]]; then
+        printf 'error: URI template %s: left unfilled or not supported (only {var} and {?var,var*} are): %s\n' "$orig" "$href" >&2
+        return 1
+    fi
 }
 
 resolve() { # href: sets URL, the absolute URL to request; fails with REFUSAL when the href must not be followed
@@ -434,9 +459,10 @@ start_service() {
         say "== build :deployable:bootJar"
         (cd "$REPO" && ./gradlew --max-workers=1 :deployable:bootJar -q) >"$WORK/gradle.log" 2>&1 ||
             { tail -20 "$WORK/gradle.log" >&2; die 3 "building :deployable:bootJar failed"; }
-        JAR=$(ls "$REPO"/service/deployable/build/libs/deployable-*.jar 2>/dev/null | grep -v -- '-plain' | head -1)
+        JAR=$(ls -t "$REPO"/service/deployable/build/libs/deployable-*.jar 2>/dev/null | grep -v -- '-plain' | head -1)
     fi
     [[ -f $JAR ]] || die 3 "no jar at '$JAR'"
+    JAR_SHA=$(sha256sum -- "$JAR" 2>/dev/null | cut -c1-64)
     local token
     token=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
     printf 'header = "Authorization: Bearer %s"\n' "$token" >"$CURL_CFG"
@@ -659,7 +685,7 @@ create_activation() { # href: POST the document, applying the one workaround a 4
 }
 
 walk_activation() {
-    say "== walk 2: under an activation (root -> activations -> activation -> artifacts -> $PROFILE -> governance)"
+    say "== walk 2: under an activation (root -> activations -> activation -> self -> artifacts -> $PROFILE -> governance)"
     local root="$WORK/root.json" href method
     href=$(jq -r '._links.activations.href // empty' "$root")
     if [[ -z $href ]]; then
@@ -714,8 +740,11 @@ self_check() {
     check "a & in a value is encoded, not replaced" "$(expand '/x{?kind,state}' kind='a&b' state='c d')" "/x?kind=a%26b&state=c%20d"
     check "a & in a path value" "$(expand '/p/{packId}/q' packId='a&b')" "/p/a%26b/q"
     check "text after the query template" "$(expand '/x{?kind,state}/y' kind=a state=b)" "/x?kind=a&state=b/y"
+    check "an explode modifier expands as a plain variable" "$(expand '/x{?kind*}' kind=a)" "/x?kind=a"
     local out
-    if out=$(expand '/x/{id}' kind=a); then check "an unfilled variable fails" "filled" "failed"; else check "an unfilled variable fails" "failed" "failed"; fi
+    if out=$(expand '/x{&kind}' kind=a 2>/dev/null); then check "a {&..} continuation is refused" "filled" "failed"; else check "a {&..} continuation is refused" "failed" "failed"; fi
+    if out=$(expand '/x{?kind;state}' kind=a 2>/dev/null); then check "an unsupported variable name is refused" "filled" "failed"; else check "an unsupported variable name is refused" "failed" "failed"; fi
+    if out=$(expand '/x/{id}' kind=a 2>/dev/null); then check "an unfilled variable fails" "filled" "failed"; else check "an unfilled variable fails" "failed" "failed"; fi
     echo "== self-check: resolve"
     local href want
     for href in "/a/b" "$BASE/a/b"; do
@@ -736,15 +765,21 @@ self_check() {
     done
     check "the outside directory is still there" "$([[ -d $outside ]] && echo present || echo removed)" "present"
     rmdir "$outside"
+    mkdir "$WORK/sibling-dir" && : >"$WORK/sibling-dir/kept"
+    ln -s sibling-dir "$WORK/link"
+    remove_inside "$WORK/link" 2>/dev/null
+    check "a symlink inside is removed as a link" "$([[ -L $WORK/link ]] && echo present || echo removed)" "removed"
+    check "the target of a removed symlink stays" "$([[ -e $WORK/sibling-dir/kept ]] && echo present || echo removed)" "present"
     echo "== self-check: option parsing"
-    local rc
+    local rc err
     for href in --open-packs --profile --jar --attach --packs; do
-        "${BASH_SOURCE[0]}" "$href" >/dev/null 2>&1
+        err=$("${BASH_SOURCE[0]}" "$href" 2>&1 >/dev/null)
         rc=$?
-        check "$href without a value exits 2" "$rc" "2"
+        check "$href without a value exits 2, for the reason" "$rc ${err%%$'\n'*}" "2 error: $href needs a value"
     done
-    "${BASH_SOURCE[0]}" --profile --keep >/dev/null 2>&1
-    check "--profile followed by an option exits 2" "$?" "2"
+    err=$("${BASH_SOURCE[0]}" --profile --keep 2>&1 >/dev/null)
+    rc=$?
+    check "--profile followed by an option exits 2, for the reason" "$rc ${err%%$'\n'*}" "2 error: --profile needs a value"
     echo "== self-check: charter-to-activation.py --self-test"
     python3 -I "$HERE/charter-to-activation.py" --self-test 2>&1 | sed 's/^/   /'
     check "charter-to-activation.py --self-test" "${PIPESTATUS[0]}" "0"
@@ -752,10 +787,19 @@ self_check() {
     [[ $fails -eq 0 ]]
 }
 
+identity_field() { # what is known of the service under test: its jar, or that it is unknown
+    if [[ -n $ATTACH ]]; then printf ' service=unknown'; elif [[ -n $JAR_SHA ]]; then printf ' jar=%s' "${JAR_SHA:0:12}"; fi
+}
+
 summary() {
     say ""
     say "== summary"
-    say "  main commit        : $COMMIT ($BRANCH)"
+    say "  client commit      : $COMMIT ($BRANCH)"
+    if [[ -n $ATTACH ]]; then
+        say "  service under test : unknown (--attach $BASE)"
+    elif [[ -n $JAR_SHA ]]; then
+        say "  service jar        : $JAR (sha256 $JAR_SHA)"
+    fi
     say "  open-packs pin     : $PIN"
     say "  hops followed      : $HOP_OK ok, $HOP_FAIL failed"
     local f
@@ -772,7 +816,8 @@ summary() {
     say "  p95 pack-scoped    : $P95_PACK ms; under activation: $P95_ACT ms (limit $P95_LIMIT_MS ms, $READS reads each)"
     local verdict=PASS
     if [[ $HOP_FAIL -gt 0 ]]; then verdict=FAIL; fi
-    say "RESULT $verdict hops=$HOP_OK/$((HOP_OK + HOP_FAIL)) failed=$HOP_FAIL workarounds=${#WORKAROUNDS[@]} unheld=${#DROPPED[@]} unlinked=$unlinked p95=${P95_PACK}/${P95_ACT}ms commit=${COMMIT:0:8} pin=$([[ $PIN =~ ^[0-9a-f]{40}$ ]] && echo "${PIN:0:8}" || echo none)"
+    keep_hint
+    say "RESULT $verdict hops=$HOP_OK/$((HOP_OK + HOP_FAIL)) failed=$HOP_FAIL workarounds=${#WORKAROUNDS[@]} unheld=${#DROPPED[@]} unlinked=$unlinked p95=${P95_PACK}/${P95_ACT}ms client=${COMMIT:0:8}$([[ $COMMIT == *-dirty ]] && echo -dirty)$(identity_field) pin=$([[ $PIN =~ ^[0-9a-f]{40}$ ]] && echo "${PIN:0:8}" || echo none)"
     [[ $verdict == PASS ]]
 }
 
