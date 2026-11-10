@@ -2,12 +2,15 @@ package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.util.Optional;
 
 /**
  * One verified read of an activation's closure, kept for the whole request (NFR-007): the snapshot the document rules
@@ -83,6 +86,25 @@ public interface PacksSession {
      *     mission type is in force, or as {@link #inForce} does
      */
     ActionContext actionContext(String missionType, String action, int depth, InForceQuery query);
+
+    /**
+     * The winning copy of one artifact under a document's request (FR-007): the entity of the version the layer merge
+     * keeps, read from the pack that holds it, with that pack and its level and, for an agent profile, the governance
+     * its walk lists over the artifacts in force. It answers from this session's read and its in-force resolution; the
+     * entity is read lazily and against the digest the session was verified at, so a change since is a refusal and never
+     * a mix of two states.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id, exactly as declared
+     * @param depth the number of {@code suggests} hops of a profile's governance, at least 0; it changes nothing for
+     *     any other kind
+     * @param query what the document selects, denies and filters
+     * @return the winner; empty when no pack of the closure holds the artifact, and for a session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does, with {@code pack_unreadable}
+     *     when the winner's pack holds the artifact and cannot read it, and with {@code stale_input} when the packs
+     *     changed since the session was verified
+     */
+    Optional<EffectiveArtifactRead> effectiveArtifact(ArtifactKind kind, String id, int depth, InForceQuery query);
 
     /**
      * Judges the names of an action context against the merged closure, and nothing else: no in-force resolution and no

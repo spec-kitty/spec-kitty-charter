@@ -14,8 +14,10 @@ import java.util.regex.Pattern;
 /**
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
- * {@code getActivation}; the graph and the context each name their own read, and the context its mission type, action
- * and depth. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
+ * {@code getActivation}, and the read of one artifact; the graph and the context each name their own read, and the
+ * context its mission type, action and depth. The read of one artifact names its kind, id and depth, and an agent
+ * profile's names a read of its own ({@link Read#PROFILE}), because what it answers is not what the generic read
+ * answers. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
  * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
  * closure changes and never names two representations (another page, kind, state or read). A configured pack outside
@@ -50,7 +52,37 @@ public record EffectiveTag(String token) {
         /** {@code getEffectiveGraph}. */
         GRAPH,
         /** {@code getEffectiveActionContext}. */
-        CONTEXT
+        CONTEXT,
+        /** {@code getEffectiveArtifact}: the winner of one artifact, of any kind but an agent profile. */
+        ARTIFACT,
+        /** {@code getEffectiveAgentProfile}: the winner of one agent profile, with its governance. */
+        PROFILE
+    }
+
+    /**
+     * The query of the read of one artifact, as it selects a representation.
+     *
+     * @param kind the kind of the path
+     * @param artifactId the id of the path, as the request spelled it
+     * @param depth the number of {@code suggests} hops the request resolved to, its default when it sent none
+     */
+    public record ArtifactQuery(ArtifactKind kind, String artifactId, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param kind the kind
+         * @param artifactId the id
+         * @param depth the depth
+         */
+        public ArtifactQuery {
+            Objects.requireNonNull(kind, "kind");
+            Objects.requireNonNull(artifactId, "artifactId");
+        }
+
+        private String normalized() {
+            return "kind=" + kind.token() + "\nid=" + artifactId + "\ndepth=" + depth;
+        }
     }
 
     /**
@@ -181,6 +213,30 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag context(Revision revision, ClosureSnapshot closure, ContextQuery query) {
         return of(Read.CONTEXT, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the generic read of one artifact: its kind, id and depth.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the kind, the id and the depth
+     * @return the tag
+     */
+    public static EffectiveTag artifact(Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
+        return of(Read.ARTIFACT, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the read of one agent profile with its governance: its kind, id and depth.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the kind, the id and the depth
+     * @return the tag
+     */
+    public static EffectiveTag profile(Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
+        return of(Read.PROFILE, revision, closure, query.normalized());
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {
