@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: issue-407-agent-profile-reads
 merge_target_branch: issue-407-agent-profile-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-407-agent-profile-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-407-agent-profile-reads unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-agent-profile-reads-01M70ZDM
+base_commit: 2047fbb965c1eff2f5b49d855f9e99753be10fce
+created_at: '2026-11-10T03:00:10.490126+00:00'
 subtasks:
 - T029
 - T030
