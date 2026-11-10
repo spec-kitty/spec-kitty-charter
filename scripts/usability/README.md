@@ -3,7 +3,8 @@
 `service-usability-run.sh` plays a client's part against the charter service. It starts the service, loads the
 spec-kitty-open-packs, activates this repository's charter and reads an agent profile (default `java-jenny`) with
 its governance, both from the pack and under the activation. After `GET /api/v1/` it follows only `_links`: it never
-builds a URL. A relation that a hop expects and the answer lacks fails that hop, and the line names the hop and the
+builds a URL (only the bootstrap calls, `GET /api/v1/` and `POST /packs`, are written out). A relation that a hop
+expects and the answer lacks fails that hop, and the line names the hop and the
 relation. It proves FR-011, SC-001 to SC-003 and NFR-003 of the `agent-profile-reads` mission.
 
 ## Run it
@@ -22,6 +23,10 @@ JAVA_HOME=/usr/lib/jvm/temurin-25 scripts/usability/service-usability-run.sh \
 | `--packs <a,b>` | The open-packs directories to register through `POST /packs`. Default `internal,qa`. |
 | `--strict` | Treat selections no registered pack holds as a failure instead of a named workaround. |
 | `--attach <base-url>` | Walk a service that is already running and provisioned. The token comes from `CHARTER_WORKTREE_TOKEN`. |
+| `--self-check` | Run the pure parts of the client without a service (`expand`, href resolution, the removal guard, option parsing, and `charter-to-activation.py --self-test`). Exit 0 or 1. |
+
+An option that takes a value (`--open-packs`, `--profile`, `--jar`, `--packs`, `--attach`) and gets none, or gets
+another option in its place, exits 2 with the usage text.
 
 ## What it does
 
@@ -37,10 +42,25 @@ JAVA_HOME=/usr/lib/jvm/temurin-25 scripts/usability/service-usability-run.sh \
    (`001-project-intent-directive` is `PROJECT_001`).
 4. **The walk** (hop ids in the output):
    - pack-scoped: root `artifacts` (`packId=built-in`, `kind=agent_profile`) → the profile's list item `self` → body and
-     `governance` → each entry's `artifact`;
-   - under the activation: root `activations` (method POST, the document) → the answer's `self` → `artifacts`
-     (`kind=agent_profile`) → the profile's item `effective-artifact` → body and `governance` → each entry's
-     `effective-artifact` and `artifact`.
+     `governance` → each held entry's `artifact`;
+   - under the activation: root `activations` (method POST, the document) → the answer's `artifacts`
+     (`kind=agent_profile`, `{?kind,state}`) → the profile's item `effective-artifact` → body and `governance` → each
+     held entry's `effective-artifact` and `artifact`.
+
+   **Which entries must carry a link.** The service links `artifact` and `effective-artifact` only on a held entry
+   whose kind has a pack-scoped read; `procedure` has none, so there is nothing to point to. The client does not keep
+   a table of kinds. For an entry that lacks the link it asks the service: it follows the root `artifacts` link with
+   that entry's `packId` and `kind`. `200` means the kind is served, so the missing link fails the hop. `400` means the
+   kind is not served (a 400 Problem without a code, per `contracts/charter/paths/packs_packId_artifacts.yaml`), so the
+   absence is expected. The answer is cached per kind. Any other answer fails the hop, because the client cannot
+   classify the entry. Nothing is skipped silently: each walk prints `not linked, kind not served: <relation> <kind> x<n>`,
+   the summary lists the counts by kind, and the `RESULT` line carries their total as `unlinked=<n>`. Entries with
+   `held=false` have no pack and are counted in the walk line.
+
+   **Hrefs.** An href is followed when it is a path starting with `/` (relative to the service's base) or an absolute
+   URL on the base the script started or was attached to. An absolute URL on any other origin, a `//` reference, or a
+   path without a leading `/` is not followed and fails the hop with a message, so the bearer token never leaves the
+   service. URI-template variables are percent-encoded when filled (RFC 6570).
 5. **Assertions.** `java-conventions` is a `requires` entry (SC-003); every governance entry carries `edge`; 20 reads
    on each path have a p95 under 500 ms (NFR-003).
 
@@ -54,19 +74,30 @@ Nothing is silent. Every workaround prints as `[WORKAROUND]` when it is applied 
 | `project-pack (#452)` | The project pack is refused. | Skips it. No edit is tried. |
 | `unheld-selections` | The activation is refused `activation_invalid` only with `unknown_artifact` violations. | Leaves out exactly the selections the service names, and lists them. `--strict` fails instead. |
 
+The script only removes what it made: the temporary directory is removed only if it is the directory `mktemp` returned
+for this run (it carries a marker file), and a staged-copy file is removed only if its path resolves strictly inside
+that directory. A path the service names that is absolute or contains `..` is refused and fails the registration hop.
+
+`charter-to-activation.py` fails (exit 3) on a top-level `activated_*` key it does not map, and on a mapped key whose
+list is inline or indented, because either would drop selections without a word.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
-| `0` | Every hop answered 2xx, the assertions held and both p95 values are under 500 ms. |
+| `0` | Every hop answered 2xx, the assertions held and both p95 values are under 500 ms. If the `RESULT` line says `unheld=<n>` with n above 0, it is a pass with named gaps: report those selections to the operator, they are not covered by the proof. |
 | `1` | A hop failed, an assertion failed or a p95 was too high. The summary lists them. This is the code of the red baseline. |
-| `2` | Usage or prerequisite error: a missing tool, no checkout, or a checkout that is not at the pin. |
-| `3` | The service could not be built or did not start. |
+| `2` | Usage or prerequisite error: an option without its value, an unknown option, a missing tool, no checkout, or a checkout that is not at the pin. |
+| `3` | The service could not be built or did not start (or, for `charter-to-activation.py`, the charter could not be translated). |
 | `4` | The packs could not be provisioned: the copy of `built-in` differs from the pin, or a pack is missing. |
 | `130`, `143` | Interrupted. The service is stopped either way. |
 
-The last line is `RESULT PASS|FAIL hops=<ok>/<all> failed=<n> workarounds=<n> p95=<pack>/<activation>ms commit=<8> pin=<8>`.
+The last line is `RESULT PASS|FAIL hops=<ok>/<all> failed=<n> workarounds=<n> unheld=<n> unlinked=<n> p95=<pack>/<activation>ms commit=<8> pin=<8>`.
 The service is stopped when the script ends, unless `--keep` is given.
+
+When `--jar` is not given the script builds with `./gradlew --max-workers=1 :deployable:bootJar`. That leaves the Gradle
+daemon running after the build, which the repository's rules allow (never `--stop` it). The script stops only the
+service it started.
 
 ## Prerequisites
 
@@ -75,4 +106,8 @@ only when `--jar` is not given.
 
 ## Self-test
 
-`python3 -I scripts/usability/charter-to-activation.py --self-test` checks the slug table and the translation.
+`python3 -I scripts/usability/charter-to-activation.py --self-test` checks all 16 entries of the slug table: a slug
+`NNN-...` must map to `DIRECTIVE_NNN`, and the six others are listed in the test. It also reads
+`governance.charter.selected_directives` of `.kittify/charter/charter.yaml` and requires each id to be a value of the
+table and to appear in the translated document. A wrong id in the table fails it; it would otherwise reach the service
+as a 422 `unknown_artifact` and look like a pack gap. `service-usability-run.sh --self-check` runs it among its own.
