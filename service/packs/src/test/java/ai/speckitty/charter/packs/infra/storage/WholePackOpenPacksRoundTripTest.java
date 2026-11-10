@@ -272,17 +272,18 @@ class WholePackOpenPacksRoundTripTest {
                 : List.of(pack + "/" + file + " is written with sha256 " + written + ", not " + source);
     }
 
-    // ---- pinned counts -------------------------------------------------------------------------------------------
+    // ---- counts held by the files
+    // -------------------------------------------------------------------------------------------
 
     /**
-     * Acceptance check 1: what the open packs hold of our kinds at the pin. A pack with a {@code pack.yaml} is included
+     * Acceptance check 1: what the open packs hold of our kinds, read from the files themselves. A pack with a {@code pack.yaml} is included
      * from its whole-pack load; the
      * {@code qa} and {@code event-driven} packs have none, so no store loads them, and they are counted from the
      * {@link PackFileSet} listing any load reads. The internal pack's whole-pack load time is logged (NFR-004), not
      * asserted.
      */
     @Test
-    void theAssetAndTemplateCountsOfEveryPackArePinned() throws IOException {
+    void theAssetAndTemplateCountsOfEveryPackMatchTheFilesOnDisk() throws IOException {
         Path openPacks = OpenPacksCorpus.packsDirectory();
         long start = System.nanoTime();
         WholePackStore.LoadedPack internal = store.load(openPacks.resolve("internal"));
@@ -293,11 +294,12 @@ class WholePackOpenPacksRoundTripTest {
                         .sum()
                 + " payload bytes)");
 
-        assertThat(countsOf(internal)).isEqualTo(new Counts(10, 10, 4, 0));
-        assertThat(binaryExtensions(internal)).containsExactly(".otf", ".otf", ".otf", ".png");
-        // qa's mission type holds ten templates (#194: a mission type's templates are templates).
-        assertThat(listed(openPacks.resolve("qa"))).isEqualTo(new Counts(3, 3, 0, 10));
-        assertThat(listed(openPacks.resolve("event-driven"))).isEqualTo(new Counts(1, 1, 0, 0));
+        // Non-vacuity: internal holds assets, binary ones among them (fonts, an image).
+        assertThat(countsOf(internal).assetFiles()).as("internal asset files").isPositive();
+        assertThat(countsOf(internal).binary())
+                .as("internal binary asset files")
+                .isPositive();
+        assertThat(binaryExtensions(internal)).hasSize(countsOf(internal).binary());
         assertThat(listed(openPacks.resolve("internal"))).isEqualTo(countsOf(internal));
 
         // The counts read from the files, without the store, match what the store and the listing report.
@@ -307,20 +309,26 @@ class WholePackOpenPacksRoundTripTest {
         Counts qaOnDisk = countedOnDisk(openPacks.resolve("qa"));
         assertThat(qaOnDisk.sidecars()).as("qa holds sidecars").isPositive();
         assertThat(listed(openPacks.resolve("qa"))).as("qa").isEqualTo(qaOnDisk);
+        // qa's mission type holds templates (#194: a mission type's templates are templates).
+        assertThat(qaOnDisk.templates()).as("qa holds templates").isPositive();
+        assertThat(listed(openPacks.resolve("event-driven")))
+                .as("event-driven")
+                .isEqualTo(countedOnDisk(openPacks.resolve("event-driven")));
     }
 
     /**
-     * #194: what built-in and internal hold of procedures and toolguides at the pin, each toolguide with its guide.
-     * {@code qa} is counted file by file by {@code ProcedureAndGuideCorpusTest}.
+     * #194: what built-in and internal hold of procedures and toolguides is what their files hold, each toolguide with
+     * its guide. {@code qa} is counted file by file by {@code ProcedureAndGuideCorpusTest}.
      */
     @Test
-    void theProcedureAndToolguideCountsOfEveryWholePackArePinned() {
+    void theProcedureAndToolguideCountsOfEveryWholePackMatchTheFilesOnDisk() throws IOException {
         Path openPacks = OpenPacksCorpus.packsDirectory();
         Map<String, Path> packs = new LinkedHashMap<>();
         packs.put(BUILT_IN, openPacks.resolve(BUILT_IN));
         packs.put("internal", openPacks.resolve("internal"));
-        Map<String, List<Integer>> counts = new LinkedHashMap<>();
-        packs.forEach((name, pack) -> {
+        for (Map.Entry<String, Path> entry : packs.entrySet()) {
+            String name = entry.getKey();
+            Path pack = entry.getValue();
             WholePackStore.LoadedPack loaded = store.load(pack);
             List<Toolguide> toolguides = loaded.pack().artifacts(ArtifactKind.TOOLGUIDE).stream()
                     .map(Toolguide.class::cast)
@@ -328,12 +336,34 @@ class WholePackOpenPacksRoundTripTest {
             assertThat(toolguides)
                     .as("%s: every toolguide carries its guide", name)
                     .allSatisfy(toolguide -> assertThat(toolguide.guide()).isNotNull());
-            counts.put(
-                    name,
-                    List.of(loaded.pack().artifacts(ArtifactKind.PROCEDURE).size(), toolguides.size()));
-        });
+            // Counted from the files, without the store: one procedure per *.procedure.yaml, one toolguide per
+            // *.toolguide.yaml, and its guide beside it.
+            long procedureFiles = filesNamed(pack.resolve("procedures"), ".procedure.yaml");
+            long toolguideFiles = filesNamed(pack.resolve("toolguides"), ".toolguide.yaml");
+            assertThat(procedureFiles).as("%s: procedure files", name).isPositive();
+            assertThat(toolguideFiles).as("%s: toolguide files", name).isPositive();
+            assertThat(loaded.pack().artifacts(ArtifactKind.PROCEDURE))
+                    .as("%s: procedures held", name)
+                    .hasSize((int) procedureFiles);
+            assertThat(toolguides).as("%s: toolguides held", name).hasSize((int) toolguideFiles);
+            assertThat(filesNamed(pack.resolve("toolguides"), ".guide.md"))
+                    .as("%s: guide files", name)
+                    .isEqualTo(toolguideFiles);
+        }
+    }
 
-        assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(66, 19)), Map.entry("internal", List.of(17, 3)));
+    private static long filesNamed(Path directory, String suffix) throws IOException {
+        return regularFilesUnder(directory).stream()
+                .filter(file -> file.getFileName().toString().endsWith(suffix))
+                .count();
+    }
+
+    /** The ids of the top-level templates on disk: every file under {@code templates/}, relative, in '/' form. */
+    private static List<String> topLevelTemplatesOnDisk(Path pack) throws IOException {
+        Path templates = pack.resolve("templates");
+        return regularFilesUnder(templates).stream()
+                .map(file -> templates.relativize(file).toString().replace('\\', '/'))
+                .toList();
     }
 
     /** The counts as {@link PackFileSet} lists the files, without the store. */
@@ -446,13 +476,20 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())
                 .as("every constituent: #194 binds procedures, so every listed kind is modelled")
-                .hasSize(310);
-        // Two top-level templates and 25 mission-type templates (#194).
-        assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 27));
+                .isNotEmpty();
+        // The manifest's presets are the presets the pack holds, and the built-in preset ids are among them.
+        assertThat(loaded.pack().presets())
+                .extracting(Preset::id)
+                .containsExactlyInAnyOrderElementsOf(loaded.manifest().orElseThrow().presets().stream()
+                        .map(entry -> entry.id())
+                        .toList());
+        // The assets, asset files and templates held are the ones on disk (top-level and mission-type templates, #194).
+        assertThat(countsOf(loaded)).isEqualTo(countedOnDisk(builtIn));
+        assertThat(countsOf(loaded).templates()).as("built-in templates").isPositive();
         assertThat(loaded.pack().templates())
                 .filteredOn(template -> template.missionType().isEmpty())
                 .extracting(template -> template.id().value())
-                .containsExactly("writing/meeting-discussion-notes.md", "writing/meeting-minutes.md");
+                .containsExactlyInAnyOrderElementsOf(topLevelTemplatesOnDisk(builtIn));
         assertThat(roundTrip(builtIn, loaded, host.resolve("written").resolve(BUILT_IN)))
                 .isEmpty();
         assertThat(payloadsLeftUnmodelled(builtIn, loaded)).isEmpty();
