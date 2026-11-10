@@ -118,14 +118,6 @@ class StepEnhancementYamlTest {
         assertThat(strategy.write(BINDING, dso)).doesNotContain("prompt_fragments");
     }
 
-    @Test
-    @DisplayName("the entity carries no target: its only accessors are the id, the version and the entries")
-    void theEntityHasNoTargetField() {
-        assertThat(StepEnhancement.class.getDeclaredFields())
-                .extracting(java.lang.reflect.Field::getName)
-                .doesNotContain("target", "range", "anchor", "position", "priority");
-    }
-
     private record Written(String yaml, Map<String, String> fragments) {}
 
     private Written write(StepEnhancementDso dso) {

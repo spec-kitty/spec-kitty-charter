@@ -17,7 +17,6 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
@@ -130,7 +129,7 @@ class WholePackStoreTest {
             out.put(kind.kind().token(), dsos);
         }
         out.put("graphs", loaded.graphs());
-        out.put("fragments", fragments(loaded));
+        out.put("fragments", PackFixtures.fragments(loaded));
         out.put("assetFiles", loaded.pack().assetFiles());
         out.put(
                 "templates",
@@ -138,23 +137,6 @@ class WholePackStoreTest {
                         .map(template ->
                                 template.id().value() + "=" + template.content().sha256())
                         .toList());
-        return out;
-    }
-
-    /**
-     * The body of every step-enhancement fragment, as the canonical render of what the binding's shape holds (ADR-0036,
-     * T-03): a dropped or altered fragment changes the meaning even if the entry that names it is unchanged.
-     */
-    private static Map<String, String> fragments(WholePackStore.LoadedPack loaded) {
-        Map<String, String> out = new LinkedHashMap<>();
-        for (CharterArtifact artifact : loaded.pack().artifacts(ArtifactKind.STEP_ENHANCEMENT)) {
-            for (StepEnhancementDso.Entry entry :
-                    StepEnhancementBinding.INSTANCE.dsoOf(artifact).promptFragments()) {
-                out.put(
-                        artifact.localId() + " " + entry.slot() + " " + entry.path(),
-                        entry.body().map(MarkdownCodec::write).orElse("<absent>"));
-            }
-        }
         return out;
     }
 
@@ -1007,7 +989,7 @@ class WholePackStoreTest {
         assertThat(loaded.unmodelled())
                 .as("each fragment is named by exactly one entry, so the enhancement holds both")
                 .doesNotContain(FRAGMENT_REASONS, FRAGMENT_CANVAS);
-        assertThat(fragments(loaded)).hasSize(2);
+        assertThat(PackFixtures.fragments(loaded)).hasSize(2);
         Path target = host.resolve("out").resolve(source.getFileName().toString());
 
         store.write(loaded, target);

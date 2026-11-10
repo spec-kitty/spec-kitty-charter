@@ -440,10 +440,19 @@ class FileSystemPackInspectorTest {
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md");
         // OD-10 row 4: validate mode answers prompt_fragment_invalid, at the fragment, for the frontmatter fragment and
         // for the blank one (an orphan: the staged load refuses it as well, StepEnhancementLoadChecksTest).
-        assertThat(promptFragmentFindings(dir).stream().map(PackFinding::file).distinct())
-                .containsExactlyInAnyOrder(
-                        ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
-                        ENHANCEMENT_DIR + "blank.prompt-fragment.md");
+        // A blank body breaks the structure schema three ways (no title, a preamble that is not text, no section); the
+        // frontmatter fragment breaks it once. Nothing is reported twice.
+        assertThat(promptFragmentFindings(dir))
+                .extracting(PackFinding::file)
+                .containsExactly(
+                        ENHANCEMENT_DIR + "blank.prompt-fragment.md",
+                        ENHANCEMENT_DIR + "blank.prompt-fragment.md",
+                        ENHANCEMENT_DIR + "blank.prompt-fragment.md",
+                        ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md");
+        assertThat(promptFragmentFindings(dir))
+                .extracting(PackFinding::detail)
+                .as("three different reasons for the blank fragment")
+                .doesNotHaveDuplicates();
     }
 
     @Test

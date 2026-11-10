@@ -126,6 +126,9 @@ class PromptSlotLoadChecksTest {
         assertThat(PackFindingCode.PROMPT_SLOT_NOT_EMPTY.refusal()).isEqualTo(RefusalCode.PROMPT_SLOT_NOT_EMPTY);
         assertThat(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED.diagnostic())
                 .isEqualTo(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
+        // the warning of an unversioned descriptor never refuses a load, so it has no refusal to project onto
+        assertThatThrownBy(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED::refusal)
+                .isInstanceOf(IllegalStateException.class);
     }
 
     // ---- the moments: validate, load, the composing read, the registration's staged load (T024) ---------------------

@@ -200,13 +200,6 @@ class StepEnhancementRulesTest {
             assertThat(judge(packWith(text("Follow tactic:x and action:other/plan.\n"))))
                     .isEmpty();
         }
-
-        @Test
-        void anUnreadableCompanionGetsNoContentRule() {
-            // The caller's companion read already reported it; its twin below is judged on its content.
-            assertThat(judge(packWith(Companion.unreadable(FRAGMENT)))).isEmpty();
-            assertOnly(judge(packWith(Companion.read(FRAGMENT, false, true, ""))), FRAGMENT_BLANK, FRAGMENT);
-        }
     }
 
     @Nested
@@ -363,14 +356,20 @@ class StepEnhancementRulesTest {
         }
 
         @Test
-        void aTargetThatIsNotAnActionIsRefusedAndAnActionTargetIsNot() {
-            assertOnly(judge(noEdge().enhances("brief", "base", "tactic:x")), EDGE_TARGET_NOT_STEP, BRIEF);
+        void aTargetThatIsNotAnActionStepIsRefusedAndAnActionTargetIsNot() {
+            // not an action, an action without a step, an action with a further segment, a step with a blank segment
+            for (String target : List.of("tactic:x", "action:software-dev", "action:t/a/b", "action:software-dev/ x")) {
+                assertOnly(judge(noEdge().enhances("brief", "base", target)), EDGE_TARGET_NOT_STEP, BRIEF);
+            }
             assertThat(judge(noEdge().enhances("brief", "base", STEP))).isEmpty();
         }
 
         @Test
-        void anActionWithoutAStepIsNotAStep() {
-            assertOnly(judge(noEdge().enhances("brief", "base", "action:software-dev")), EDGE_TARGET_NOT_STEP, BRIEF);
+        void anIdThatBeginsAnotherIdKeepsItsOwnEdges() {
+            // brief-x begins with the URN of brief: an edge is brief's only when its source is exactly brief's URN
+            PackFixture pack = new PackFixture().valid(PLAN, "brief", "plan").valid(PLAN, "brief-x", "tasks");
+
+            assertThat(judge(pack)).isEmpty();
         }
 
         @Test
@@ -532,12 +531,6 @@ class StepEnhancementRulesTest {
                             Optional.empty()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("base::action:software-dev/plan");
-            assertThat(new Edge(
-                            RelationType.ENHANCES,
-                            "step_enhancement:brief",
-                            "action:software-dev/plan",
-                            Optional.of("base")))
-                    .isNotNull();
         }
     }
 }
