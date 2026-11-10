@@ -44,6 +44,11 @@ tags:
     description: >-
       The artifacts of a Charter Pack of every served kind, read through one paged list and one
       item.
+  - name: AgentProfiles
+    description: >-
+      The agent profiles of a Charter Pack: the pack-scoped read of one profile with its governance. The profile
+      is served under the same artifact tree as the other kinds, by its own path, because the generic item read never
+      renders a profile body.
   - name: Activation
     description: >-
       The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
@@ -68,6 +73,8 @@ paths:
     $ref: paths/packs_packId_relationships.yaml
   /packs/{packId}/artifacts:
     $ref: paths/packs_packId_artifacts.yaml
+  /packs/{packId}/artifacts/agent_profile/{artifactId}:
+    $ref: paths/packs_packId_artifacts_agent_profile_artifactId.yaml
   /packs/{packId}/artifacts/directive:
     $ref: paths/packs_packId_artifacts_directive.yaml
   /packs/{packId}/artifacts/directive/{artifactId}:

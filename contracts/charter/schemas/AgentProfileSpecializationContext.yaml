@@ -1,0 +1,63 @@
+title: AgentProfileSpecializationContext
+description: The declarative conditions that make an agent profile the preferred one (specialization-context in the file).
+type: object
+additionalProperties: false
+required:
+  - languages
+  - frameworks
+  - filePatterns
+  - domainKeywords
+  - writingStyle
+  - complexityPreference
+properties:
+  languages:
+    type: array
+    description: The languages the profile is preferred for.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.languages
+  frameworks:
+    type: array
+    description: The frameworks the profile is preferred for.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.frameworks
+  filePatterns:
+    type: array
+    description: The file patterns the profile is preferred for.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.filePatterns
+  domainKeywords:
+    type: array
+    description: The domain keywords the profile is preferred for.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.domainKeywords
+  writingStyle:
+    type: array
+    description: The writing styles the profile is preferred for; an array, as the pack schema has it.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.writingStyle
+  complexityPreference:
+    type: array
+    description: The complexities the profile is preferred for; an array, as the pack schema has it.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+      symbol: SpecializationContext.complexityPreference
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SpecializationContext.java
+  symbol: SpecializationContext

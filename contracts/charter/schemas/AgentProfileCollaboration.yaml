@@ -1,0 +1,65 @@
+title: AgentProfileCollaboration
+description: >-
+  How an agent profile hands work over and what it produces (collaboration in the file). Every list is an array, []
+  when the file declares none; the stored profile does not tell an absent collaboration from one with six empty lists.
+type: object
+additionalProperties: false
+required:
+  - handoffTo
+  - handoffFrom
+  - worksWith
+  - outputArtifacts
+  - operatingProcedures
+  - canonicalVerbs
+properties:
+  handoffTo:
+    type: array
+    description: The roles the profile hands work to.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.handoffTo
+  handoffFrom:
+    type: array
+    description: The roles the profile takes work from.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.handoffFrom
+  worksWith:
+    type: array
+    description: The roles the profile works beside.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.worksWith
+  outputArtifacts:
+    type: array
+    description: What the profile produces.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.outputArtifacts
+  operatingProcedures:
+    type: array
+    description: The procedures the profile follows, by name.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.operatingProcedures
+  canonicalVerbs:
+    type: array
+    description: The verbs the profile uses for its work.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+      symbol: Collaboration.canonicalVerbs
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Collaboration.java
+  symbol: Collaboration

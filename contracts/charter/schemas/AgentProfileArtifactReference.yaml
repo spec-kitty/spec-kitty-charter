@@ -1,0 +1,25 @@
+title: AgentProfileArtifactReference
+description: >-
+  A tactic, toolguide or styleguide an agent profile cites, with the reason (a tactic-references, toolguide-references
+  or styleguide-references item in the file).
+type: object
+additionalProperties: false
+required:
+  - id
+  - rationale
+properties:
+  id:
+    type: string
+    description: The cited artifact's id.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ArtifactReference.java
+      symbol: ArtifactReference.id
+  rationale:
+    type: string
+    description: Why the profile cites it.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ArtifactReference.java
+      symbol: ArtifactReference.rationale
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ArtifactReference.java
+  symbol: ArtifactReference

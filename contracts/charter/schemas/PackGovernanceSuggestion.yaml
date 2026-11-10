@@ -1,0 +1,26 @@
+title: PackGovernanceSuggestion
+description: >-
+  Why a profile suggests an artifact: the when and the reason the suggests edge states. Both belong to the edge and
+  either may be absent, because an edge may state neither; the entry is still a suggestion then, and this is an empty
+  object.
+type: object
+additionalProperties: false
+properties:
+  when:
+    type: string
+    description: The condition the suggests edge states for the artifact to apply.
+    x-derived:
+      rule: The when of the suggests edge that reaches the artifact.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+  reason:
+    type: string
+    description: The reason the suggests edge gives for the suggestion.
+    x-derived:
+      rule: The reason of the suggests edge that reaches the artifact.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+x-derived:
+  rule: The when and reason of the suggests edge that reaches the artifact.
+  inputs:
+    - schemas/PackGovernanceEntry.yaml

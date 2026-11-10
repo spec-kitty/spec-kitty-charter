@@ -1,0 +1,135 @@
+title: PackGovernanceEntry
+description: >-
+  One artifact in the governance of an agent profile read from a pack, and how the walk reached it (fold C1). The walk
+  runs over the pack's composed depends_on closure, merged, with every artifact in force; the activation-scoped read
+  has its own entry. The entries are sorted by urn, each artifact once, and none is the profile itself.
+
+  A suggests entry is listed by this service, and it is composition-only in core's profile channel, which walks
+  requires and specializes_from only: a client that follows only what core's channel follows skips the entries whose
+  relation is suggests and the entries below them (research D4). The profile's body references (directiveReferences,
+  tacticReferences, toolguideReferences and styleguideReferences) are body fields and are not walked: an entry exists
+  only for a graph edge.
+
+  held says whether the edge that listed the entry leads to a place that holds the artifact. An entry the pack declares
+  and no pack of the closure holds (a missing parent, say) is listed with held false, a null packId and no link, and the
+  walk goes no further through that edge. held describes that listing edge and not the artifact for good: the walk
+  lists a URN once, at the earliest step that reaches it, so a URN a dangling edge lists in an early step keeps held
+  false even when a later step reaches it through a held edge (a suggests edge to the copy another pack of the closure
+  holds). The later steps expand from every listed URN, so entries below it name an entry with held false as their via.
+  A client never reads held false as "nothing below this entry".
+
+  _links holds artifact, the pack-scoped read of the entry, only for a held artifact of a kind the generic artifact route
+  serves, and is an empty object otherwise.
+
+  Entries carry no enhancedBy or enhances: a profile takes no step enhancement.
+type: object
+additionalProperties: false
+required:
+  - kind
+  - artifactId
+  - urn
+  - step
+  - relation
+  - via
+  - hops
+  - suggestion
+  - packId
+  - held
+  - _links
+properties:
+  kind:
+    allOf:
+      - $ref: NodeKind.yaml
+    description: The kind of the artifact the entry lists, from the node kinds the contract authors.
+    x-derived:
+      rule: The kind of the target of the edge that lists the artifact.
+      inputs:
+        - schemas/NodeKind.yaml
+  artifactId:
+    type: string
+    minLength: 1
+    description: The artifact's declared id within its kind.
+    x-derived:
+      rule: The id of the target of the edge that lists the artifact.
+      inputs:
+        - schemas/Urn.yaml
+  urn:
+    allOf:
+      - $ref: Urn.yaml
+    description: The artifact's node identity, <kind>:<artifactId>.
+    x-derived:
+      rule: The kind and the id of the target of the edge that lists the artifact.
+      inputs:
+        - schemas/Urn.yaml
+  step:
+    allOf:
+      - $ref: GovernanceStep.yaml
+    description: The step of the walk that listed the artifact, its earliest.
+    x-derived:
+      rule: The earliest step of the governance walk that reaches the artifact.
+      inputs:
+        - schemas/GovernanceStep.yaml
+  relation:
+    type: string
+    enum:
+      - specializes_from
+      - requires
+      - suggests
+      - vocabulary
+    description: >-
+      The relation of the edge that listed the artifact: specializes_from for lineage, suggests for suggests, vocabulary
+      for vocabulary and requires for both requires and requires_of_suggested. A subset of Relation.
+    x-derived:
+      rule: The relation of the step that listed the artifact.
+      inputs:
+        - schemas/Relation.yaml
+        - schemas/GovernanceStep.yaml
+  via:
+    allOf:
+      - $ref: Urn.yaml
+    description: >-
+      The parent of the entry in the walk: the profile for the entries of its own edges, another entry's urn for the
+      rest. Following via upwards always ends at the profile.
+    x-derived:
+      rule: The source of the edge the walk followed to the artifact, the one with the fewest hops and then the smallest urn.
+      inputs:
+        - schemas/Urn.yaml
+  hops:
+    type: integer
+    minimum: 1
+    description: The length of the path from the profile, one more than the hops of via.
+    x-derived:
+      rule: The hops of via plus one; the profile is at 0.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+  suggestion:
+    description: Why the profile suggests the artifact; null on every entry whose relation is not suggests.
+    oneOf:
+      - $ref: PackGovernanceSuggestion.yaml
+      - type: 'null'
+    x-derived:
+      rule: The when and the reason of the suggests edge that reaches the artifact, present only for a suggests entry.
+      inputs:
+        - schemas/PackGovernanceSuggestion.yaml
+  packId:
+    type: ['string', 'null']
+    description: >-
+      The configured identifier of the first pack of the closure that holds the artifact, in closure order; null when no
+      pack holds it (held is false).
+    x-derived:
+      rule: The first holder of the artifact in the order of the pack's composed closure.
+      inputs:
+        - schemas/Offering.yaml
+  held:
+    type: boolean
+    description: Whether the place the listing edge leads to holds the artifact; false for a dangling edge, which is never walked through.
+    x-derived:
+      rule: Whether the pack the listing edge resolves to holds its target.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: An artifact the governance walk of the profile lists, over the pack's composed closure.
+  inputs:
+    - schemas/Offering.yaml

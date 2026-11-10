@@ -1,0 +1,25 @@
+title: AgentProfileFieldValues
+description: The values an agent profile drops from one field (one entry of the object form of excluding).
+type: object
+additionalProperties: false
+required:
+  - field
+  - values
+properties:
+  field:
+    type: string
+    description: The field the values are dropped from, as the file names it.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+      symbol: Exclusion.FieldValues.values
+  values:
+    type: array
+    description: The values dropped, in the order written; empty when the file lists none.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+      symbol: Exclusion.FieldValues.values
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+  symbol: Exclusion.FieldValues

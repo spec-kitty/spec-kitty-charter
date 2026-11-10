@@ -1,0 +1,34 @@
+title: AgentProfileExcluding
+description: >-
+  What an agent profile drops from the profile it enhances (excluding in the file), as the file authors it. The pack
+  schema allows two forms, and exactly one is set here, the other null. A list of field names (the file's array form,
+  Exclusion.WholeFields) is wholeFields, in the order written, with fieldValues null. A map from a field name to the
+  values dropped from it (the file's object form, Exclusion.FieldValues) is fieldValues, one item per entry in the order
+  written, an empty value list included, with wholeFields null. An empty array and an empty object are different: the
+  first is wholeFields [], the second fieldValues []. An absent excluding is not this object: the profile's excluding
+  is null.
+type: object
+additionalProperties: false
+required:
+  - wholeFields
+  - fieldValues
+properties:
+  wholeFields:
+    type: ['array', 'null']
+    description: The fields dropped whole, in the order written; null when the file authors the object form.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+      symbol: Exclusion.WholeFields.fields
+  fieldValues:
+    type: ['array', 'null']
+    description: The values dropped from each field, in the order written; null when the file authors the array form.
+    items:
+      $ref: AgentProfileFieldValues.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+      symbol: Exclusion.FieldValues.values
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/Exclusion.java
+  symbol: Exclusion

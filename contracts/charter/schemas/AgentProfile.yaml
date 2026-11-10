@@ -1,0 +1,222 @@
+title: AgentProfile
+description: >-
+  One agent profile of a Charter Pack, as the pack stores it: a flat mirror of
+  contracts/packs/schemas/agent-profile.schema.json, one property per field of that schema, in camelCase (the oracle
+  of the mapping, plan fold C10). The body is the stored leaf: nothing is resolved from the profile's lineage,
+  enhances or excluding (ADR-0032); the lineage is answered as governance entries a client can follow. A list is an
+  array, [] when the profile declares none (the stored profile does not tell an absent list from an empty one). A
+  field the pack schema defaults (description, schemaVersion, routingPriority, maxConcurrentTasks,
+  initializationDeclaration, sentinel and the specialization's three prose fields) is omitted when the profile does not
+  declare it: no default is invented, so the answer says what the file said. A field the pack schema allows to be null
+  is null when the profile declares none: avatarImage, model, effort, specializationContext, selfReviewProtocol and
+  excluding. The stored profile does not tell an absent specialization context from one whose six lists are empty, so
+  both are null here; it does not tell an absent self-review protocol from one with no steps either, so both are null
+  here. The references (directiveReferences, tacticReferences, toolguideReferences, styleguideReferences) are body
+  fields of the profile: the governance walk does not follow them.
+type: object
+additionalProperties: false
+required:
+  - profileId
+  - name
+  - roles
+  - avatarImage
+  - capabilities
+  - model
+  - effort
+  - purpose
+  - specialization
+  - collaboration
+  - modeDefaults
+  - specializationContext
+  - appliesToLanguages
+  - directiveReferences
+  - tacticReferences
+  - toolguideReferences
+  - styleguideReferences
+  - selfReviewProtocol
+  - excluding
+properties:
+  profileId:
+    type: string
+    description: The profile's identity within its pack (profile-id in the file).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.localId
+  name:
+    type: string
+    description: The profile's name.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.name
+  description:
+    type: string
+    description: A line about the profile; omitted when the file declares none (the pack schema's default is the empty string).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.description
+  schemaVersion:
+    type: string
+    pattern: '^(1\.0|2)$'
+    description: The schema version the profile file declares; omitted when it declares none (the pack schema's default is 1.0).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.schemaVersion
+  roles:
+    type: array
+    minItems: 1
+    description: The roles the profile fills, in the order the file declares them.
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9_-]*$'
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.roles
+  avatarImage:
+    type: ['string', 'null']
+    description: A path or URL of the profile's avatar; null when the file declares none.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.avatarImage
+  capabilities:
+    type: array
+    description: What the profile can do, in the order the file declares it; empty when none is declared.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.capabilities
+  routingPriority:
+    type: integer
+    minimum: 0
+    maximum: 100
+    description: How strongly the profile is preferred when several fit; omitted when the file declares none (the pack schema's default is 50).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.routingPriority
+  maxConcurrentTasks:
+    type: integer
+    minimum: 1
+    description: How many tasks the profile takes at once; omitted when the file declares none (the pack schema's default is 5).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.maxConcurrentTasks
+  model:
+    type: ['string', 'null']
+    description: The model the profile asks for; null when the file declares none.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.model
+  effort:
+    type: ['string', 'null']
+    description: The effort the profile asks for; null when the file declares none.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.effort
+  sentinel:
+    type: boolean
+    description: Whether the profile is a sentinel; omitted when the file declares none (the pack schema's default is false).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.sentinel
+  purpose:
+    type: string
+    description: The profile's mandate, what it does and does not do.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.purpose
+  specialization:
+    $ref: AgentProfileSpecialization.yaml
+  collaboration:
+    $ref: AgentProfileCollaboration.yaml
+  modeDefaults:
+    type: array
+    description: The reasoning modes the profile offers, in the order the file declares them; empty when none is declared.
+    items:
+      $ref: AgentProfileModeDefault.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.modeDefaults
+  initializationDeclaration:
+    type: string
+    description: What the profile says on start-up; omitted when the file declares none (the pack schema's default is the empty string).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.initializationDeclaration
+  specializationContext:
+    description: >-
+      When the profile is preferred (languages, frameworks, file patterns, keywords, writing style and complexity). Null
+      when the file declares none, and also when it declares one whose six lists are all empty: the stored profile keeps
+      the two apart no more than the empty list from the absent one.
+    oneOf:
+      - $ref: AgentProfileSpecializationContext.yaml
+      - type: 'null'
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.specializationContext
+  appliesToLanguages:
+    type: array
+    description: The languages the profile applies to (applies_to_languages in the file); empty when it is language-neutral.
+    items:
+      type: string
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.appliesToLanguages
+  directiveReferences:
+    type: array
+    description: >-
+      The directives the profile cites, with the reason for each. A body field, so the governance walk does not follow it.
+    items:
+      $ref: AgentProfileDirectiveReference.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.directiveReferences
+  tacticReferences:
+    type: array
+    description: >-
+      The tactics the profile cites, with the reason for each. A body field, so the governance walk does not follow it.
+    items:
+      $ref: AgentProfileArtifactReference.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.tacticReferences
+  toolguideReferences:
+    type: array
+    description: >-
+      The toolguides the profile cites, with the reason for each. A body field, so the governance walk does not follow it.
+    items:
+      $ref: AgentProfileArtifactReference.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.toolguideReferences
+  styleguideReferences:
+    type: array
+    description: >-
+      The styleguides the profile cites, with the reason for each. A body field, so the governance walk does not follow it.
+    items:
+      $ref: AgentProfileArtifactReference.yaml
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.styleguideReferences
+  selfReviewProtocol:
+    description: >-
+      The checklist the profile runs before it hands work off. Null when the file declares none, and also when it
+      declares one with no steps: the stored profile keeps only the steps.
+    oneOf:
+      - $ref: AgentProfileSelfReviewProtocol.yaml
+      - type: 'null'
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.selfReviewSteps
+  excluding:
+    description: >-
+      What the profile drops from the profile it enhances, as the file authors it; null when it drops nothing. It is
+      recorded as written and never applied here (ADR-0032).
+    oneOf:
+      - $ref: AgentProfileExcluding.yaml
+      - type: 'null'
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.excluding
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+  symbol: AgentProfile
