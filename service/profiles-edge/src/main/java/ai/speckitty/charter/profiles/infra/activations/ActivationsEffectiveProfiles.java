@@ -66,7 +66,11 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
 
     private EffectiveProfileRead read(EffectiveArtifactAnswer answer) {
         // The read of an agent profile answers the governance of a profile and an entity of the kind it was asked for.
-        EffectiveArtifactAnswer.Governance governance = answer.governance().orElseThrow();
+        EffectiveArtifactAnswer.Governance governance = answer.governance()
+                .orElseThrow(() -> new IllegalStateException("The read of the agent profile "
+                        + answer.winner().artifactId() + " under activation "
+                        + answer.stored().id().value()
+                        + " carries no governance."));
         return new EffectiveProfileRead(
                 AgentProfile.class.cast(answer.artifact()),
                 answer.stored().id().value(),
