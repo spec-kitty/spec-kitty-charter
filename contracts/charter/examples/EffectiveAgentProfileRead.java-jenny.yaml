@@ -17,8 +17,8 @@ summary: >-
   request, artifact the pack-scoped read of the winner's pack, up the activation.
 value:
   activationId: project
-  revision: sha256:14561382a1bae13310c3593fcbbd4d533d8bcbec5fc5bf856c2842f077b79201
-  governanceFingerprint: sha256:7c525c3d042460b61a5d92084afdd1c880a77aa438260ebcbd20186c2a691b70
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
   kind: agent_profile
   artifactId: java-jenny
   packId: built-in
