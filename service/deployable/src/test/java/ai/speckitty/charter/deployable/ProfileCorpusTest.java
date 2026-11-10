@@ -62,8 +62,6 @@ class ProfileCorpusTest {
 
     static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final Pattern SHA = Pattern.compile("[0-9a-f]{40}");
-    private static final int BUILT_IN_PROFILES = 26;
-    private static final int QA_PROFILES = 5;
     private static final List<String> PACKS = List.of("built-in", "qa");
 
     private static @Nullable Path configRoot;
@@ -384,9 +382,34 @@ class ProfileCorpusTest {
     // ---- the tests --------------------------------------------------------------------------------------------------
 
     @Test
-    void theCorpusHoldsTheThirtyOneProfilesOfTheTwoPacks() throws IOException {
-        assertThat(profilesOf("built-in")).as("built-in profiles").hasSize(BUILT_IN_PROFILES);
-        assertThat(profilesOf("qa")).as("qa profiles").hasSize(QA_PROFILES);
+    void everyProfileFileOfEachPackIsServedAndNothingElse() throws Exception {
+        for (String pack : PACKS) {
+            Set<String> onDisk = profilesOf(pack).keySet();
+            assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
+            assertThat(servedProfileIds(pack))
+                    .as("%s profiles served", pack)
+                    .containsExactlyInAnyOrderElementsOf(onDisk);
+        }
+    }
+
+    /** The ids of the agent_profile artifacts the service lists for a pack, over every page. */
+    private List<String> servedProfileIds(String pack) throws Exception {
+        List<String> ids = new ArrayList<>();
+        String cursor = null;
+        do {
+            String uri = "/api/v1/packs/" + pack + "/artifacts?kind=agent_profile&pageSize=200"
+                    + (cursor == null ? "" : "&pageCursor=" + cursor);
+            MockHttpServletResponse response = mvc.perform(
+                            get(uri).header("Authorization", "Bearer " + TOKEN).accept(MediaType.APPLICATION_JSON))
+                    .andReturn()
+                    .getResponse();
+            assertThat(response.getStatus()).as("GET %s", uri).isEqualTo(200);
+            JsonNode page = json.readTree(response.getContentAsString());
+            page.get("items").forEach(item -> ids.add(item.get("id").asString()));
+            JsonNode next = page.get("page").get("nextPageCursor");
+            cursor = next == null || next.isNull() ? null : next.asString();
+        } while (cursor != null);
+        return ids;
     }
 
     @Test
@@ -428,7 +451,11 @@ class ProfileCorpusTest {
         }
         assertThat(problems).isEmpty();
         assertThat(worded[0]).as("entries whose edge states a word").isPositive();
-        assertThat(read).as("profiles read").isEqualTo(BUILT_IN_PROFILES + QA_PROFILES);
+        int onDisk = 0;
+        for (String pack : PACKS) {
+            onDisk += profilesOf(pack).size();
+        }
+        assertThat(read).as("profiles read").isEqualTo(onDisk).isPositive();
     }
 
     /** The invariants of a governance answer, whatever the profile. */
