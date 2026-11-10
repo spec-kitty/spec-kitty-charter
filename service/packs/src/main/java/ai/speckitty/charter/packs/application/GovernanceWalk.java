@@ -41,6 +41,14 @@ import java.util.function.Predicate;
  * {@code false} and never expanded, so the pack-scoped read can say that a parent is declared and not there. A URN
  * reached by both a held and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent and
  * edge, a held edge before a dangling one on a tie), and {@code held} follows that parent's edge. Entries are sorted by full URN string, whatever step listed them.
+ *
+ * <p>{@code held} describes the edge that listed the entry, not the artifact for good. Minimum-step semantics list a
+ * URN once, at the earliest step that reaches it, so a URN a dangling edge lists in an early step (for example a
+ * {@code requires} written to a pack that holds nothing) keeps {@code held} false even when a later step reaches it
+ * through a held edge (for example a {@code suggests} edge to the copy another pack of the closure holds). The later
+ * steps expand from every URN the earlier ones listed, so such an entry has children, and a child then names an entry
+ * with {@code held} false as its {@code via}. A reader of the answer must not take {@code held} false to mean the entry
+ * has nothing below it.
  */
 public final class GovernanceWalk {
 
