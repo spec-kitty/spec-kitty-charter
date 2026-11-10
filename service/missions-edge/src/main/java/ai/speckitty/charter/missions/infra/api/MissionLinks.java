@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
@@ -23,13 +24,15 @@ import org.springframework.web.util.UriUtils;
  * name keeps its {@code ~}, which is unreserved: {@code a~01b.md} is written as is. A {@code ;}, which a path segment may
  * hold but which the servlet stack reads as the start of path parameters and drops with what follows, is written
  * {@code %3B}, so {@code a;b.md} is read back as itself. A {@code \} is written {@code %5C}, as any character a segment
- * may not hold; the embedded Tomcat refuses an encoded backslash (400), so a name that holds one is linked but cannot be
- * read over HTTP (no pack is known to hold one; recorded as deferred).
+ * may not hold; the embedded Tomcat refuses an encoded backslash (400), and the contract caps a name at 255 characters,
+ * so {@link Scope#servedSkeleton} links no name that holds a backslash or is longer than that: a link names a route the
+ * service answers.
  */
 @Component
 final class MissionLinks {
 
     private static final String MISSION_STEP_CONTRACT = "mission_step_contract";
+    private static final int MAX_SKELETON_NAME = 255;
     private static final String KIND_QUERY = "?kind=";
 
     /** The path templates of a pack's reads. */
@@ -117,6 +120,16 @@ final class MissionLinks {
         /** One skeleton of the scope's mission type, by its name (D9). */
         Link skeleton(String missionTypeId, String name) {
             return link(templates.skeleton(), id, missionTypeId, name);
+        }
+
+        /**
+         * The link to a skeleton the service can serve: empty for a name that holds a {@code \} (Tomcat answers 400 to its
+         * encoding) or is longer than the {@code skeletonName} parameter's 255 characters.
+         */
+        Optional<Link> servedSkeleton(String missionTypeId, String name) {
+            return name.indexOf('\\') >= 0 || name.length() > MAX_SKELETON_NAME
+                    ? Optional.empty()
+                    : Optional.of(skeleton(missionTypeId, name));
         }
 
         /**
