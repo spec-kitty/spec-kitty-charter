@@ -4,8 +4,10 @@ import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -13,13 +15,16 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActionContextWalk;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.GraphProjection;
+import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -101,6 +106,19 @@ final class ClosureViewSession implements PacksSession {
     }
 
     @Override
+    public Optional<EffectiveArtifactRead> effectiveArtifact(
+            ArtifactKind kind, String id, int depth, InForceQuery query) {
+        // One view answers the winner and the governance, against the digest the view was verified at; the states are
+        // the ones every other question of this request put to the session already resolved.
+        return view.effectiveArtifact(kind, id, depth, statesOf(query))
+                .map(winner -> new EffectiveArtifactRead(
+                        winner.artifact(),
+                        winner.holder().packId().value(),
+                        winner.holder().level(),
+                        winner.governance().map(ClosureViewSession::governanceOf)));
+    }
+
+    @Override
     public void requireAction(String missionType, String action) {
         // The packs slice judges the names, whether or not the mission type is in force, so no in-force resolution and
         // no walk is paid for.
@@ -170,6 +188,56 @@ final class ClosureViewSession implements PacksSession {
                             new ActionContext.SuggestionCandidate(ref, candidate.when(), candidate.reason())));
         }
         return new ActionContext(true, entries, candidates, listOf(walked.actionEnhancedBy()));
+    }
+
+    /**
+     * The activation domain's governance for the packs slice's profile walk: the artifacts in force the walk lists, with
+     * the step, relation, via and hops it reached them by (which {@link #contextOf} drops for an action), and the
+     * candidates for a suggestion. The predicate of an activation admits only artifacts of an activatable kind, so an
+     * entry that is none is dropped as every other part of the answer drops what is no artifact; a via is the profile or
+     * an entry, so one that is no artifact is a fault.
+     *
+     * @param governance the walk's answer, with holders
+     * @return the governance, as values
+     * @throws IllegalStateException when the via of an entry names no artifact
+     */
+    static GovernanceFacts governanceOf(ProfileGovernance.Governance governance) {
+        List<GovernanceFacts.Entry> entries = new ArrayList<>();
+        for (ProfileGovernance.Entry entry : governance.entries()) {
+            activatable(entry.urn())
+                    .ifPresent(ref -> entries.add(new GovernanceFacts.Entry(
+                            ref,
+                            stepOf(entry.step()),
+                            entry.relation(),
+                            viaOf(entry.via()),
+                            entry.hops(),
+                            entry.when(),
+                            entry.reason())));
+        }
+        List<GovernanceFacts.Candidate> candidates = new ArrayList<>();
+        for (ActionContextWalk.SuggestionCandidate candidate : governance.suggestionCandidates()) {
+            activatable(candidate.urn())
+                    .ifPresent(ref -> candidates.add(new GovernanceFacts.Candidate(
+                            ref, viaOf(candidate.via()), candidate.hops(), candidate.when(), candidate.reason())));
+        }
+        return new GovernanceFacts(viaOf(governance.profile()), entries, candidates);
+    }
+
+    /** The activations slice's step for the packs slice's, by an exhaustive switch and never by name. */
+    static GovernanceFacts.Step stepOf(GovernanceWalk.Step step) {
+        return switch (step) {
+            case LINEAGE -> GovernanceFacts.Step.LINEAGE;
+            case REQUIRES -> GovernanceFacts.Step.REQUIRES;
+            case SUGGESTS -> GovernanceFacts.Step.SUGGESTS;
+            case REQUIRES_OF_SUGGESTED -> GovernanceFacts.Step.REQUIRES_OF_SUGGESTED;
+            case VOCABULARY -> GovernanceFacts.Step.VOCABULARY;
+        };
+    }
+
+    private static ArtifactRef viaOf(Urn urn) {
+        return ArtifactRef.of(urn)
+                .orElseThrow(() -> new IllegalStateException(
+                        "The governance walk was reached through " + urn + ", which is no artifact."));
     }
 
     /**

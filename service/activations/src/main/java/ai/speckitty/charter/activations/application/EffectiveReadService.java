@@ -6,6 +6,7 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
@@ -14,9 +15,11 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.Summary;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
@@ -25,7 +28,9 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.EntityTags;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -303,6 +308,123 @@ public class EffectiveReadService {
                 NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow());
         return new Read.Found<>(
                 new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context), etag);
+    }
+
+    /**
+     * {@code getEffectiveArtifact}: the winner of one artifact under an activation (FR-007): the version the layer merge
+     * keeps, the pack and level that hold it, its state and reason as the effective list gives them, and the entity as the
+     * winner's pack stores it. A kind token is the kind it spells exactly; the activation is judged first, then the kind.
+     *
+     * @param id the activation's id
+     * @param kindToken the kind's token, as the request names it
+     * @param artifactId the artifact's id, exactly as declared
+     * @param depth the number of {@code suggests} hops of a profile's governance, at least 0
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the winner, or {@code NotModified} when the header matches the tag of this representation
+     * @throws CharterRefusal with {@code activation_not_found}, then {@code kind_not_found} when the token names a kind
+     *     the packs slice does not list, or as {@link #artifact(ActivationId, ArtifactKind, String, int, String)} does
+     */
+    public Read<EffectiveArtifactAnswer> artifact(
+            ActivationId id, String kindToken, String artifactId, int depth, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        ArtifactKind kind = ArtifactKind.fromToken(kindToken)
+                .filter(packs.listedKinds()::contains)
+                .orElseThrow(() -> notServed(kindToken));
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch);
+    }
+
+    /**
+     * {@code getEffectiveArtifact}, for a caller that holds the kind already (the profiles slice's route, the mission
+     * type route): the same read as the token form, judged in the same order.
+     *
+     * <p>One {@link PacksSession} answers it: the merge decides whether a pack of the closure holds the artifact, before
+     * any {@code If-None-Match} is compared, so a name no pack holds is a {@code 404} whatever the header says; the tag
+     * is the {@link EffectiveTag} of the read, which names the kind, the id and the depth and, for an agent profile, its
+     * own read; and only a request whose header does not match asks the session for the entity and the in-force
+     * resolution, once each. An agent profile's answer carries its governance with the state of each entry.
+     *
+     * @param id the activation's id
+     * @param kind the artifact's kind
+     * @param artifactId the artifact's id, exactly as declared
+     * @param depth the number of {@code suggests} hops of a profile's governance, at least 0
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the winner, or {@code NotModified} when the header matches the tag of this representation
+     * @throws CharterRefusal with {@code activation_not_found}; {@code kind_not_found} when the packs slice does not list
+     *     the kind; {@code pack_unreadable} when a pack the activation names is no longer configured, or the winner's
+     *     pack cannot read the artifact, or as the merge refuses; {@code artifact_not_found} when no pack of the closure
+     *     holds the artifact; {@code stale_input} when the packs changed since the session was verified
+     */
+    public Read<EffectiveArtifactAnswer> artifact(
+            ActivationId id, ArtifactKind kind, String artifactId, int depth, @Nullable String ifNoneMatch) {
+        Objects.requireNonNull(kind, "kind");
+        StoredActivation stored = found(id);
+        if (!packs.listedKinds().contains(kind)) {
+            throw notServed(kind.token());
+        }
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch);
+    }
+
+    private Read<EffectiveArtifactAnswer> artifactOf(
+            StoredActivation stored, ArtifactKind kind, String artifactId, int depth, @Nullable String ifNoneMatch) {
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        ArtifactRef ref = new ArtifactRef(kind, artifactId);
+        MergedSnapshot merged = session.merged();
+        if (!merged.winners().containsKey(ref)) {
+            throw new CharterRefusal(
+                    RefusalCode.ARTIFACT_NOT_FOUND,
+                    "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
+        }
+        EffectiveTag.ArtifactQuery asked = new EffectiveTag.ArtifactQuery(kind, artifactId, depth);
+        String etag = (kind == ArtifactKind.AGENT_PROFILE
+                        ? EffectiveTag.profile(stored.revision(), closure, asked)
+                        : EffectiveTag.artifact(stored.revision(), closure, asked))
+                .token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        InForceQuery query = EffectiveSet.queryOf(stored.document());
+        EffectiveArtifactRead read = session.effectiveArtifact(kind, artifactId, depth, query)
+                .orElseThrow(() -> new IllegalStateException(
+                        "The merged closure holds " + ref.urn() + ", and the session read no winner of it."));
+        EffectiveSet set = EffectiveSet.of(stored.document(), closure, merged, session.inForce(query));
+        Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
+        set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
+        EffectiveArtifactAnswer answer = new EffectiveArtifactAnswer(
+                stored,
+                closure.fingerprint(),
+                closure.closureFingerprint(),
+                inSet(byRef, ref),
+                read.artifact(),
+                read.governance().map(governance -> governed(governance, byRef, set)));
+        return new Read.Found<>(answer, etag);
+    }
+
+    /** A profile's governance with the state of each artifact it lists, from the one effective set of the request. */
+    private static EffectiveArtifactAnswer.Governance governed(
+            GovernanceFacts governance, Map<ArtifactRef, EffectiveArtifact> byRef, EffectiveSet set) {
+        List<EffectiveArtifactAnswer.Entry> entries = governance.entries().stream()
+                .map(entry -> new EffectiveArtifactAnswer.Entry(
+                        inSet(byRef, entry.ref()), entry.step(), entry.relation(), entry.via(), entry.hops()))
+                .toList();
+        List<EffectiveArtifactAnswer.Suggested> suggested = governance.suggestionCandidates().stream()
+                .flatMap(candidate -> set.suggested(candidate.ref(), candidate.when(), candidate.reason()).stream()
+                        .map(artifact ->
+                                new EffectiveArtifactAnswer.Suggested(artifact, candidate.via(), candidate.hops())))
+                .toList();
+        return new EffectiveArtifactAnswer.Governance(entries, suggested);
+    }
+
+    private static EffectiveArtifact inSet(Map<ArtifactRef, EffectiveArtifact> byRef, ArtifactRef ref) {
+        EffectiveArtifact artifact = byRef.get(ref);
+        if (artifact == null) {
+            throw new IllegalStateException("The read lists " + ref.urn() + ", which the effective set does not hold.");
+        }
+        return artifact;
+    }
+
+    private static CharterRefusal notServed(String kindToken) {
+        return new CharterRefusal(RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + ".");
     }
 
     /** The page of the set the query asks for: filtered, strictly after the cursor's position, at most a page size. */
