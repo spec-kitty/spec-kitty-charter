@@ -1,13 +1,25 @@
 # Usability run (green): the walk on the integrated branch
 
-SC-001 and NFR-003 of the mission `agent-profile-reads-01M70ZDM`: the script reaches `java-jenny`'s body and every one
-of her governance entries, pack-scoped and under an activation, by following links from `/api/v1/`.
+SC-001 and NFR-003 of the mission `agent-profile-reads-01M70ZDM`: the script reaches `java-jenny`'s body and the governance
+entries whose kind the service reads, pack-scoped (20 of 35) and under an activation (all 7 entries), by following links from `/api/v1/`.
+
+**SC-001 is deferred, not met** (operator ruling `DM-01M72NRD03EAGZTJ3A3F7PAK6W`, 2026-11-10). It is worded as "every one
+of her governance entries on both paths, with 0 unresolved links", and two gaps keep it from holding:
+
+1. **Procedures have no read.** 15 of the 35 pack-scoped entries are `procedure` entries with no link. Follow-up: a
+   procedure read (the pack-scoped artifact routes do not serve the kind; a follow-up of #96).
+2. **The project pack cannot register.** 7 of the charter's selections are held only by `.kittify/charter-packs`, so
+   they are left out of the activation. Follow-up: #452.
+
+The mission is accepted without its end-to-end criterion.
 
 - **Script:** `scripts/usability/service-usability-run.sh --open-packs /home/user/spec-kitty-open-packs`, run from the
   repository root without `--jar` (it builds `:deployable:bootJar`).
-- **Service under test:** commit `f0f60ae3` of `issue-407-agent-profile-reads`, with WP01 to WP09 integrated.
+- **Service under test:** commit `f0f60ae3` of `issue-407-agent-profile-reads`, with WP01 to WP09 integrated. This is a
+  pre-rebase tree: the packs code from `main` is not in it. The commit named here and in the `RESULT` line is the one the
+  run is of.
 - **Open-packs pin:** `a2a93794f2d8c9f3f549e94ad024ea0e386d5df4`.
-- **Result:** `RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=323/341ms`, exit code 0.
+- **Result (SC-001 deferred, see above):** `RESULT PASS hops=52/52 failed=0 workarounds=4 unheld=7 unlinked=15 p95=323/341ms`, exit code 0.
 
 The pass is qualified: it passes, with a count of what it could not reach, and the script prints that count rather than
 hiding it. The baseline it replaces is in `usability-baseline.md`.
@@ -54,7 +66,8 @@ service reads. Under the activation, 0 relations are unlinked.
 ## Timing (NFR-003)
 
 p95 of 20 reads, limit 500 ms: pack-scoped 323 ms, under an activation 341 ms. An earlier run on `c160c960` gave
-338 and 362 ms; the figures move by tens of milliseconds between runs.
+338 and 362 ms; the figures move by tens of milliseconds between runs. Both were measured in a dev container, not on the CI runner that
+NFR-003 names.
 
 ## The output
 
