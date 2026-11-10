@@ -2,7 +2,7 @@
 title: Hexagonal service
 description: The Gradle modules of the Java charter service and the rule that infrastructure depends inward on a plain-Java domain.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -45,7 +45,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes, and the `markdown` form's line rules (#299). Pure; no infra |
 | `packs` | `kernel`, `web-transport` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, `fetch`, the outbound adapter that fetches a toolguide's guide by URI ([ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) and a pack from an https archive, a git repository or a local path, and `archive`, which reads an uploaded or fetched pack archive into staging) |
 | `activations` | `kernel`, `packs`, `web-transport` | The activation register: the document, its storage, its write rules and its HTTP adapter (with its request-body advice and problem mapping); asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
-| `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
+| `missions` | `kernel` | The missions slice, domain ring only (`MissionType`, its steps and expected artifacts); its other rings are in `missions-edge`. `packs.infra.storage` stores the kind |
 | `missions-edge` | `missions`, `packs`, `activations`, `web-transport`, `charter-api` | The `application`, `infra.api`, `infra.packs` and `infra.activations` rings of the missions slice, in the slice's own package names. They live apart because `packs` depends on `missions`, like `profiles-edge` ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-11-09). `infra.packs` and `infra.activations` are the only packages that name those slices |
 | `profiles` | `kernel` | The agent-profiles slice, domain ring only (`AgentProfile`); its other rings are in `profiles-edge`. `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
 | `profiles-edge` | `profiles`, `packs`, `activations`, `web-transport`, `charter-api` | The `application`, `infra.api`, `infra.packs` and `infra.activations` rings of the profiles slice, in the slice's own package names. They live apart because `packs` depends on `profiles`: rings that ask `packs` would make a cycle inside `profiles` ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-11-09). `infra.packs` and `infra.activations` are the only packages that name those slices |
