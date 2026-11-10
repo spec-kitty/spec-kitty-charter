@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -139,6 +140,21 @@ public final class ScenarioPacks {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Whether a configured pack holds a file or a directory at the path, as stored now.
+     *
+     * @param pack the configured pack's name
+     * @param relativePath the path inside the pack
+     * @return whether anything is stored there
+     */
+    boolean holds(String pack, String relativePath) {
+        PackLocation location = locations.stream()
+                .filter(l -> l.name().equals(pack))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no pack " + pack + " is configured"));
+        return Files.exists(location.root().resolve(relativePath), LinkOption.NOFOLLOW_LINKS);
     }
 
     /** Plants a failure no refusal names: asking for the packs throws, until the scenario ends. */

@@ -220,6 +220,13 @@ public class CharterSteps {
         packs.deleteFile(pack, path);
     }
 
+    @Then("the pack {string} holds no file {string}")
+    public void packHoldsNoFile(String pack, String path) {
+        assertThat(packs.holds(pack, path))
+                .as("the pack %s holds %s", pack, path)
+                .isFalse();
+    }
+
     @Given("the service fails unexpectedly while it reads the packs")
     public void failUnexpectedly() {
         packs.failUnexpectedly();
