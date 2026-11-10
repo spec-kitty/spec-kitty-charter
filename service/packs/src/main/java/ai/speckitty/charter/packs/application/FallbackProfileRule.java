@@ -5,15 +5,15 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * The fallback-profile rule of ADR-0068, judged over the declaring pack's own closure: the profile a pack names in
  * {@code fallback_profile} is held by a pack of that closure (decision 2), is {@code locked} along it (decision 3), and
- * declares the reserved role {@value AgentProfile#GENERIC_ROLE} and no alt-roles (decision 4). The rule is data-blind
+ * declares the reserved role {@value RoleBearer#GENERIC} and no alt-roles (decision 4). The rule is data-blind
  * beyond these facts: the service never holds fallback content.
  */
 final class FallbackProfileRule {
@@ -61,7 +61,7 @@ final class FallbackProfileRule {
                 ? closure.winnerPackOf(ArtifactKind.AGENT_PROFILE, profileId)
                         .flatMap(holder -> profiles.read(holder, profileId))
                 : Optional.empty();
-        if (held.isEmpty() || !(held.get() instanceof AgentProfile profile)) {
+        if (held.isEmpty() || !(held.get() instanceof RoleBearer profile)) {
             return Optional.of(new Breach(
                     RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                     named + " names no agent profile the pack or a pack it depends on holds"));
@@ -71,13 +71,12 @@ final class FallbackProfileRule {
                     RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
                     named + " is not locked by any pack of its closure; a fallback profile is locked"));
         }
-        if (!AgentProfile.GENERIC_ROLE.equals(profile.role())
-                || !profile.altRoles().isEmpty()) {
+        if (!RoleBearer.GENERIC.equals(profile.role()) || !profile.altRoles().isEmpty()) {
             return Optional.of(new Breach(
                     RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
                     named + " declares role " + profile.role()
                             + (profile.altRoles().isEmpty() ? "" : " and alt-roles " + profile.altRoles())
-                            + "; a fallback profile declares role " + AgentProfile.GENERIC_ROLE
+                            + "; a fallback profile declares role " + RoleBearer.GENERIC
                             + " and no alt-roles"));
         }
         return Optional.empty();

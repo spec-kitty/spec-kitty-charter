@@ -3,6 +3,7 @@ package ai.speckitty.charter.profiles.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import org.jspecify.annotations.Nullable;
  * {@code specializes_from} edge of the pack's graph, and resolving {@code enhances}, {@code overrides} or
  * {@link #excluding()} is not done here (ADR-0032). Build one with {@link #builder()}.
  */
-public final class AgentProfile implements CharterArtifact {
+public final class AgentProfile implements CharterArtifact, RoleBearer {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^(1\\.0|2)$");
     private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9-]*+$");
@@ -33,7 +34,7 @@ public final class AgentProfile implements CharterArtifact {
             "An agent profile's alt-roles must be distinct and must not repeat its role.";
 
     /** The reserved role of a fallback profile (ADR-0068 decision 4); it never earns a role fit. */
-    public static final String GENERIC_ROLE = "generic";
+    public static final String GENERIC_ROLE = RoleBearer.GENERIC;
 
     /** The longest role token; the cap of an identifier (#446). */
     public static final int ROLE_MAX = 64;
@@ -194,6 +195,7 @@ public final class AgentProfile implements CharterArtifact {
      *
      * @return the primary role
      */
+    @Override
     public String role() {
         return role;
     }
@@ -203,6 +205,7 @@ public final class AgentProfile implements CharterArtifact {
      *
      * @return an immutable list, empty when it has none
      */
+    @Override
     public List<String> altRoles() {
         return altRoles;
     }

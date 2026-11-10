@@ -120,7 +120,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Name things plainly.", "description": "Name things plainly.."}], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Name things plainly", "description": "Name things plainly, in one sentence."}], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}

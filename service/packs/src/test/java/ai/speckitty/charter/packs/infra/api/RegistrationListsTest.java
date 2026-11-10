@@ -128,4 +128,20 @@ class RegistrationListsTest {
     private static byte[] bytes(String json) {
         return json.getBytes(StandardCharsets.UTF_8);
     }
+
+    /** ADR-0067: a principle item is closed; the guard names the first undeclared member by its place. */
+    @Test
+    void anUnknownMemberOfAPrincipleItemIsNamedByItsPlaceWhileADeclaredItemIsNot() {
+        java.util.Set<String> declared = java.util.Set.of("name", "description");
+        byte[] good = "{\"principles\":[{\"name\":\"a\",\"description\":\"b\"}],\"other\":{\"x\":1}}"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] bad = ("{\"name\":\"n\",\"principles\":[{\"name\":\"a\",\"description\":\"b\"},"
+                        + "{\"name\":\"c\",\"description\":\"d\",\"weight\":1}]}")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThat(RegistrationLists.firstUnknownInItems(good, null, "principles", declared))
+                .isEmpty();
+        assertThat(RegistrationLists.firstUnknownInItems(bad, null, "principles", declared))
+                .contains("principles[1].weight");
+    }
 }

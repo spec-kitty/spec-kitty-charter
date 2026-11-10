@@ -129,7 +129,7 @@ Feature: Paradigms are read and registered functionally
     And the field at "/paradigm/principles/1/name" is "Fast"
     And the field at "/paradigm/principles/1/description" is "Tests run quickly."
 
-  Scenario Outline: A principles list that breaks ADR-0067 is refused and nothing is written, while a valid list is created
+  Scenario Outline: A principles list that breaks a rule of ADR-0067 is refused and nothing is written, while a valid list is created
     When I PUT "/packs/qa/artifacts/paradigm/test-desiderata" with the body:
       """
       {"schemaVersion": "1.0", "name": "Test Desiderata", "summary": "Properties of good tests", "principles": <principles>}
@@ -144,13 +144,25 @@ Feature: Paradigms are read and registered functionally
       """
     Then the response status is 201
 
-    Examples:
+    Examples: a repeated name and a blank name break the rules the schema cannot state; an unknown member breaks the closed item
       | principles                                                                                       |
-      | []                                                                                               |
+      | [{"name": "Fast", "description": "Quick.", "weight": 1}]                                         |
       | [{"name": "Fast", "description": "Quick."}, {"name": " fast ", "description": "Again."}]          |
       | [{"name": " ", "description": "Blank name."}]                                                    |
+
+  Scenario Outline: A principles body that breaks the Principle schema is a bad request and nothing is written
+    When I PUT "/packs/qa/artifacts/paradigm/test-desiderata" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Test Desiderata", "summary": "Properties of good tests", "principles": <principles>}
+      """
+    Then the response status is 400
+    When I GET "/packs/qa/artifacts/paradigm/test-desiderata"
+    Then the response status is 404
+
+    Examples: an empty list, a missing description and a 65-character name
+      | principles                                                                                       |
+      | []                                                                                               |
       | [{"name": "Fast"}]                                                                               |
-      | [{"name": "Fast", "description": "Quick.", "weight": 1}]                                         |
       | [{"name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn", "description": "65."}] |
 
   Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)

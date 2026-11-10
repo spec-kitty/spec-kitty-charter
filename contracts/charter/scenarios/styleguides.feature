@@ -96,10 +96,18 @@ Feature: Styleguides are read and registered functionally
     Then the response status is 201
     And the field at "/styleguide/principles/0/name" is "Prefer immutability"
 
-    Examples:
+    Examples: a repeated name, ignoring case
       | principles                                                                                         |
-      | ["Prefer immutability"]                                                                            |
       | [{"name": "Fast", "description": "Quick."}, {"name": "FAST", "description": "Again."}]              |
+
+  Scenario: A styleguide principle written as a plain string is a bad request (ADR-0067)
+    When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 400
+    When I GET "/packs/qa/artifacts/styleguide/java-style"
+    Then the response status is 404
 
   Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:

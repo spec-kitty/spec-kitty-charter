@@ -788,6 +788,36 @@ x-refusal:
     retryable: false
     raised: true
     description: the name does not decode to a skeleton of the mission type (the skeleton reads)
+  fallback_profile_unknown:
+    status: 422
+    retryable: false
+    raised: true
+    description: a pack's fallback_profile names no agent profile its closure holds (ADR-0068)
+  fallback_profile_not_locked:
+    status: 422
+    retryable: false
+    raised: true
+    description: a pack's fallback profile is not locked along the pack's closure (ADR-0068)
+  fallback_profile_not_role_neutral:
+    status: 422
+    retryable: false
+    raised: true
+    description: a pack's fallback profile does not declare the reserved role generic, or declares alt-roles (ADR-0068)
+  fallback_profile_missing:
+    status: 422
+    retryable: false
+    raised: false
+    description: the built-in pack declares no fallback profile (ADR-0068, reserved until open-packs ships the declaration)
+  fallback_profile_conflict:
+    status: 422
+    retryable: false
+    raised: false
+    description: two packs of one closure, neither derived from the other, declare different fallbacks (ADR-0068, reserved for the selection read)
+  no_profile_matched:
+    status: 404
+    retryable: false
+    raised: false
+    description: no profile fits the asked role and no fallback is in force (ADR-0068, ADR-0069, reserved for the selection read)
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode
