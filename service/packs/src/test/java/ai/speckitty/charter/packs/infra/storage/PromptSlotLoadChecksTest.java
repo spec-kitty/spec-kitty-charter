@@ -497,6 +497,13 @@ class PromptSlotLoadChecksTest {
                 }
             }
         }
-        assertThat(withSlots).as("the prompts that declare a slot").isNotEmpty();
+        assertThat(withSlots)
+                .as("the prompts that declare a slot are the five software-dev ones, one to one")
+                .containsExactlyInAnyOrder(
+                        "missions/software-dev/steps/implement.prompt.md",
+                        "missions/software-dev/steps/plan.prompt.md",
+                        "missions/software-dev/steps/review.prompt.md",
+                        "missions/software-dev/steps/specify.prompt.md",
+                        "missions/software-dev/steps/tasks.prompt.md");
     }
 }
