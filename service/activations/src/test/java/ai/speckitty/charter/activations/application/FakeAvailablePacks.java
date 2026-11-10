@@ -44,6 +44,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<String> nameChecks = new ArrayList<>();
     private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
     private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
+    private Function<String, Optional<HeldMissionType>> missionTypeAnswer = id -> Optional.empty();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -154,6 +155,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void winners(Function<EffectiveAsk, Optional<EffectiveArtifactRead>> next) {
         this.winnerAnswer = next;
+    }
+
+    /**
+     * Answers every mission type read of a session with this function from now on.
+     *
+     * @param next the answers of {@link PacksSession#missionType}, by mission type id
+     */
+    public void missionTypes(Function<String, Optional<HeldMissionType>> next) {
+        this.missionTypeAnswer = next;
     }
 
     /**
@@ -311,6 +321,11 @@ public final class FakeAvailablePacks implements AvailablePacks {
             EffectiveAsk ask = new EffectiveAsk(kind, id, depth, query);
             effectiveAsks.add(ask);
             return winnerAnswer.apply(ask);
+        }
+
+        @Override
+        public Optional<HeldMissionType> missionType(String missionTypeId) {
+            return missionTypeAnswer.apply(missionTypeId);
         }
 
         @Override

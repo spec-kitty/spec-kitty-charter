@@ -365,6 +365,33 @@ public class EffectiveReadService {
     }
 
     /**
+     * {@code getEffectiveMissionType}, {@code getEffectiveMissionStep} and {@code getEffectiveMissionSkeleton} (#99,
+     * FR-007): what the activation's merged closure holds of one mission type, from one {@link PacksSession}. The winner
+     * is the one {@link #artifact} answers for the same id, whatever its state; the skeletons and the step files are the
+     * holding pack's, and the step contracts are the merged closure's winners whose {@code mission} is the type. The
+     * activation is judged first, then the type; the reads take no {@code If-None-Match}.
+     *
+     * @param id the activation's id
+     * @param missionTypeId the mission type's id, exactly as declared
+     * @return the mission type in force under the activation, with what its reads need
+     * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
+     *     is no longer configured or a file of the holding pack cannot be read, or as the merge refuses;
+     *     {@code mission_type_not_found} when no pack of the closure holds the type; {@code stale_input} when the packs
+     *     changed since the session was verified
+     */
+    public EffectiveMissionTypeAnswer missionType(ActivationId id, String missionTypeId) {
+        Objects.requireNonNull(missionTypeId, "missionTypeId");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        HeldMissionType held = session.missionType(missionTypeId)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.MISSION_TYPE_NOT_FOUND,
+                        "No pack of the activation's closure holds the mission type " + missionTypeId + "."));
+        return new EffectiveMissionTypeAnswer(stored, closure.fingerprint(), closure.closureFingerprint(), held);
+    }
+
+    /**
      * The kinds whose artifacts the packs slice lists, which are the kinds {@link #artifact} serves and the kinds an
      * entry of a profile's governance can be linked by (a pack-scoped read of it). The packs slice is asked, so a kind it
      * opens later is served here without a change.

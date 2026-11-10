@@ -1,5 +1,7 @@
 package ai.speckitty.charter.activations.infra.packs;
 
+import ai.speckitty.charter.activations.application.HeldBytes;
+import ai.speckitty.charter.activations.application.HeldMissionType;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -16,14 +18,17 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActionContextWalk;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.GraphProjection;
+import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
@@ -31,8 +36,12 @@ import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.MissionStepContract;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,8 +62,11 @@ import org.jspecify.annotations.Nullable;
  */
 final class ClosureViewSession implements PacksSession {
 
+    private static final String STALE = "The packs changed while the mission type was read; read it again.";
+
     private final ClosureView view;
     private final ClosureSnapshot snapshot;
+    private final Holdings holdings;
 
     /**
      * The in-force states of the last request put to this session, so a request that asks for the set and for the graph or
@@ -71,8 +83,32 @@ final class ClosureViewSession implements PacksSession {
      * @param snapshot the view, as the activation domain reads it
      */
     ClosureViewSession(ClosureView view, ClosureSnapshot snapshot) {
+        this(view, snapshot, Holdings.NONE);
+    }
+
+    /**
+     * A session over a verified view that can read what the holding pack of a mission type stores beside it.
+     *
+     * @param view the view of the request
+     * @param snapshot the view, as the activation domain reads it
+     * @param holdings the packs slice's read of what one pack holds of one mission type
+     */
+    ClosureViewSession(ClosureView view, ClosureSnapshot snapshot, Holdings holdings) {
         this.view = Objects.requireNonNull(view, "view");
         this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
+        this.holdings = Objects.requireNonNull(holdings, "holdings");
+    }
+
+    /** What one pack holds of one mission type, as {@link MissionTypeHoldingRead#holding} reads it. */
+    @FunctionalInterface
+    interface Holdings {
+
+        /** The read of a session built without the packs slice's composite read: a wiring fault, never a refusal. */
+        Holdings NONE = (pack, missionTypeId) -> {
+            throw new IllegalStateException("this session was built without the mission type read of the packs slice");
+        };
+
+        MissionTypeHoldingRead.Holding holding(PackIdentifier pack, String missionTypeId);
     }
 
     @Override
@@ -116,6 +152,77 @@ final class ClosureViewSession implements PacksSession {
                         winner.holder().packId().value(),
                         winner.holder().level(),
                         winner.governance().map(ClosureViewSession::governanceOf)));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The winner is the one {@link ClosureView#winner} names. What its pack stores beside it (the skeletons and the
+     * step files) is read by the packs slice's composite read of that pack, whose verified fingerprint must be the one
+     * this session was verified at: any other is a change since, refused {@code stale_input}, so the answer never mixes
+     * two states of the packs. The step contracts are the merged closure's: each winner bound to the type, as the pack
+     * that holds the version in force declares its {@code mission}.
+     */
+    @Override
+    public Optional<HeldMissionType> missionType(String missionTypeId) {
+        return view.winner(ArtifactKind.MISSION_TYPE, missionTypeId).map(winner -> held(winner, missionTypeId));
+    }
+
+    private HeldMissionType held(ClosureView.EffectiveArtifactView winner, String missionTypeId) {
+        MissionTypeHoldingRead.Holding holding =
+                holdings.holding(winner.holder().packId(), missionTypeId);
+        if (!holding.fingerprint().equals(view.fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
+        Urn type = Urn.missionType(missionTypeId);
+        NodeKind contractKind = NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT);
+        List<HeldMissionType.StepContract> contracts = view.merged().bindings().entrySet().stream()
+                .filter(binding -> binding.getValue().equals(type))
+                .map(Map.Entry::getKey)
+                .filter(bound -> bound.kind() == contractKind)
+                .map(Urn::id)
+                .sorted(ClosureViewSession::byCodePoint)
+                .map(this::stepContract)
+                .toList();
+        Map<String, HeldMissionType.StepFiles> files = new LinkedHashMap<>();
+        holding.stepFiles().forEach((step, stored) -> files.put(step, stepFiles(stored)));
+        return new HeldMissionType(
+                winner.holder().packId().value(),
+                winner.holder().level(),
+                winner.artifact(),
+                holding.skeletons().stream()
+                        .map(template -> new HeldMissionType.Skeleton(
+                                template.localId(),
+                                HeldBytes.of(template.content().bytes())))
+                        .toList(),
+                files,
+                contracts);
+    }
+
+    /** The winner of a step contract the merged closure binds to a type; the merge holds it, so it is there. */
+    private HeldMissionType.StepContract stepContract(String id) {
+        ClosureView.EffectiveArtifactView won = view.winner(ArtifactKind.MISSION_STEP_CONTRACT, id)
+                .orElseThrow(() -> new IllegalStateException(
+                        "the merge binds the step contract " + id + ", which it does not hold"));
+        if (!(won.artifact() instanceof MissionStepContract contract)) {
+            throw new IllegalStateException("the packs read a step contract as "
+                    + won.artifact().getClass().getName());
+        }
+        return new HeldMissionType.StepContract(
+                id, contract.action(), won.holder().packId().value());
+    }
+
+    private static HeldMissionType.StepFiles stepFiles(PackCompanionFiles.StepFiles stored) {
+        return new HeldMissionType.StepFiles(held(stored.prompt()), held(stored.guidelines()));
+    }
+
+    private static Optional<HeldBytes> held(Optional<Payload> payload) {
+        return payload.map(bytes -> HeldBytes.of(bytes.bytes()));
+    }
+
+    /** Code-point order, which {@link String#compareTo} is not beyond the Basic Multilingual Plane. */
+    private static int byCodePoint(String left, String right) {
+        return Arrays.compare(left.codePoints().toArray(), right.codePoints().toArray());
     }
 
     @Override
