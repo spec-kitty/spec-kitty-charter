@@ -130,8 +130,7 @@ class ArtifactReadServiceTest {
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
                         new TacticReadService(store, store, read)),
-                pack -> edges.getOrDefault(pack, List.of()),
-                revisions);
+                pack -> edges.getOrDefault(pack, List.of()));
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -460,10 +459,10 @@ class ArtifactReadServiceTest {
                         ArtifactKind.PARADIGM,
                         ArtifactKind.TOOLGUIDE,
                         ArtifactKind.AGENT_PROFILE);
-        assertThat(ArtifactReadService.servedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
-        assertThat(ArtifactReadService.servedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
-        assertThat(ArtifactReadService.servedKind("procedure")).isEmpty();
-        assertThat(ArtifactReadService.servedKind("TACTIC")).isEmpty();
+        assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
+        assertThat(ArtifactReadService.listedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
+        assertThat(ArtifactReadService.listedKind("procedure")).isEmpty();
+        assertThat(ArtifactReadService.listedKind("TACTIC")).isEmpty();
     }
 
     @Test
@@ -483,24 +482,17 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void anAgentProfileItemIsForeignWithTheRevisionOfItsPack() {
-        var verified = service.item(PACK, "agent_profile", "jenny");
-
-        assertThat(verified.value()).isInstanceOfSatisfying(ArtifactReadService.Item.Foreign.class, item -> {
-            assertThat(item.artifact().localId()).isEqualTo("jenny");
-            assertThat(item.revision()).contains(REVISION);
-        });
-        assertThat(verified.fingerprint()).isEqualTo(D1);
+    void anAgentProfileIsNotRenderedByTheTemplatedItemReadAndIsKindNotFoundAfterThePack() {
+        assertThatThrownBy(() -> service.item(PACK, "agent_profile", "jenny"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND);
+                    assertThat(refused.getMessage()).contains("/packs/pack-a/artifacts/agent_profile/jenny");
+                });
+        assertThat(codeOf(() -> service.item(ABSENT, "agent_profile", "jenny"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @Test
-    void anAgentProfileThePackDoesNotHoldIsArtifactNotFound() {
-        assertThatThrownBy(() -> service.item(PACK, "agent_profile", "nobody"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
-                    assertThat(refused.getMessage()).isEqualTo("Pack pack-a has no agent_profile nobody.");
-                });
-        assertThat(codeOf(() -> service.item(ABSENT, "agent_profile", "jenny"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    void anAgentProfileIsArtifactNotFoundWhenAbsent() {
         assertThat(ArtifactReadService.absentCode(ArtifactKind.AGENT_PROFILE))
                 .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
     }
