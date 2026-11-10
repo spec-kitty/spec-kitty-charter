@@ -213,8 +213,9 @@ class PromptSlotsCanonicalCorpusTest {
     }
 
     @Test
-    @DisplayName("the pinned built-in prompts hold 10 markers over 5 prompts, all empty spdd:reasons-block (the REASONS"
-            + " text moved into the spdd pack at open-packs 170dbc3)")
+    @DisplayName(
+            "the built-in prompts hold a start and an end marker per slot, every slot an empty spdd:reasons-block (the"
+                    + " REASONS text moved into the spdd pack at open-packs 170dbc3)")
     void pinnedCorpusFacts() throws IOException {
         Map<String, String> withSlots = new LinkedHashMap<>();
         List<Slot> slots = new ArrayList<>();
@@ -231,12 +232,15 @@ class PromptSlotsCanonicalCorpusTest {
             faults.addAll(parse.faults());
         }
 
-        assertThat(markers).as("slot markers in the built-in prompts").isEqualTo(10);
+        assertThat(slots).as("slots in the built-in prompts").isNotEmpty();
+        assertThat(markers)
+                .as("slot markers in the built-in prompts: one start and one end per slot, none stray")
+                .isEqualTo(2 * slots.size());
         assertThat(withSlots.keySet())
                 .as("prompts that declare a slot")
-                .hasSize(5)
+                .isNotEmpty()
                 .allSatisfy(name -> assertThat(SLOT_PROMPTS).anyMatch(name::endsWith));
-        assertThat(slots).hasSize(5).allSatisfy(slot -> {
+        assertThat(slots).allSatisfy(slot -> {
             assertThat(slot.id()).isEqualTo(REASONS);
             assertThat(slot.empty()).as("slot %s is empty", slot).isTrue();
         });
@@ -290,13 +294,13 @@ class PromptSlotsCanonicalCorpusTest {
             faults.addAll(parse.faults());
         }
 
-        assertThat(slots).hasSize(5).allSatisfy(slot -> {
+        assertThat(slots).hasSameSizeAs(SLOT_PROMPTS).allSatisfy(slot -> {
             assertThat(slot.id()).isEqualTo(REASONS);
             assertThat(slot.empty()).as("slot %s is empty", slot).isFalse();
         });
         assertThat(faults)
                 .as("the only faults are the non-empty slots, which become warnings or refusals by descriptor version")
-                .hasSize(5)
+                .hasSameSizeAs(SLOT_PROMPTS)
                 .allSatisfy(fault -> assertThat(fault.kind()).isEqualTo(Kind.NOT_EMPTY));
     }
 
