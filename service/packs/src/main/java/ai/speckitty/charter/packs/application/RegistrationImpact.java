@@ -111,6 +111,7 @@ public final class RegistrationImpact {
      * @param configured how the pack is configured: the name it is stored under and its level
      * @param descriptor its descriptor
      * @param facts what the compose reads of it
+     * @param pack the staged aggregate, when the write sends a whole pack (ADR-0068 reads the fallback profile here)
      */
     public record Replacement(
             ConfiguredPack configured, PackDescriptor descriptor, PackCompositionFacts facts, Optional<Pack> pack) {
