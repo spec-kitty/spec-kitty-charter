@@ -136,7 +136,7 @@ public final class EffectiveMissionTypeReadService {
      */
     private MissionTypeHolding holding(String activationId, EffectiveMissionType winner) {
         String read = "The read of the mission type " + winner.type().localId() + " under " + scopeOf(activationId);
-        MissionTypeHolding stored = storedBeside(winner);
+        MissionTypeHolding stored = storedBeside(activationId, winner);
         if (!stored.fingerprint().equals(winner.fingerprint())) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
         }
@@ -154,17 +154,34 @@ public final class EffectiveMissionTypeReadService {
      * What the pack that holds the winner stores beside it. The activation's read found the type in that pack a moment
      * ago, so a pack that is configured no longer ({@code pack_not_found}) or no longer holds the type
      * ({@code mission_type_not_found}) means the packs changed between the two reads: {@link RefusalCode#STALE_INPUT},
-     * never a refusal of a pack or type the request did not name. {@code pack_unreadable} passes unchanged: the second
-     * read reads files the first does not (the step files), and one that stays unreadable is no change to read again.
+     * never a refusal of a pack or type the request did not name. {@code pack_unreadable} is {@code stale_input} only when
+     * the packs fingerprint now differs from the winner's (a pack file vanished between the two reads). With the
+     * fingerprint unchanged it passes: the second read reads files the first does not (the step files), and one that
+     * stays unreadable is no change to read again.
      */
-    private MissionTypeHolding storedBeside(EffectiveMissionType winner) {
+    private MissionTypeHolding storedBeside(String activationId, EffectiveMissionType winner) {
         try {
             return packs.holding(winner.holder(), winner.type().localId());
         } catch (CharterRefusal refusal) {
             if (refusal.code() == RefusalCode.PACK_NOT_FOUND || refusal.code() == RefusalCode.MISSION_TYPE_NOT_FOUND) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE, refusal);
             }
+            if (refusal.code() == RefusalCode.PACK_UNREADABLE && packsChangedSince(activationId, winner)) {
+                throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE, refusal);
+            }
             throw refusal;
+        }
+    }
+
+    /** Whether the activation's read now answers at another fingerprint; a read that refuses is not a known change. */
+    private boolean packsChangedSince(String activationId, EffectiveMissionType winner) {
+        try {
+            return !activations
+                    .missionType(activationId, winner.type().localId())
+                    .fingerprint()
+                    .equals(winner.fingerprint());
+        } catch (CharterRefusal refusal) {
+            return false;
         }
     }
 

@@ -33,6 +33,7 @@ class EffectiveMissionTypeReadServiceTest {
 
     private final List<String> asked = new ArrayList<>();
     private String packFingerprint = FINGERPRINT;
+    private String laterFingerprint = FINGERPRINT;
     private Optional<RefusalCode> packRefusal = Optional.empty();
 
     private EffectiveStepContract stepContract = new EffectiveStepContract(
@@ -41,11 +42,12 @@ class EffectiveMissionTypeReadServiceTest {
     private final ActivationMissionTypes activations = new ActivationMissionTypes() {
         @Override
         public EffectiveMissionType missionType(String activation, String type) {
+            String fingerprint = asked.contains(activation + " " + type) ? laterFingerprint : FINGERPRINT;
             asked.add(activation + " " + type);
             if (!type.equals("software-dev")) {
                 throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "no " + type);
             }
-            return new EffectiveMissionType(PROJ, type(), List.of(new Contract("specify-contract")), FINGERPRINT);
+            return new EffectiveMissionType(PROJ, type(), List.of(new Contract("specify-contract")), fingerprint);
         }
 
         @Override
@@ -109,15 +111,19 @@ class EffectiveMissionTypeReadServiceTest {
 
     @Test
     void aHolderThatLeftTheConfigurationOrNoLongerHoldsTheTypeAtTheSecondReadIsStaleInputForEachRead() {
-        for (RefusalCode changed : List.of(RefusalCode.PACK_NOT_FOUND, RefusalCode.MISSION_TYPE_NOT_FOUND)) {
+        laterFingerprint = "sha256:" + "f".repeat(64);
+        for (RefusalCode changed :
+                List.of(RefusalCode.PACK_NOT_FOUND, RefusalCode.MISSION_TYPE_NOT_FOUND, RefusalCode.PACK_UNREADABLE)) {
             packRefusal = Optional.of(changed);
             for (Runnable read : List.<Runnable>of(
                     () -> reads.missionType("a-1", "software-dev"),
                     () -> reads.step("a-1", "software-dev", "specify"),
                     () -> reads.skeleton("a-1", "software-dev", "spec.md"))) {
+                asked.clear();
                 assertThatThrownBy(read::run)
                         .as(
-                                "the activation's read found the type in proj a moment ago, so %s means the packs changed",
+                                "the activation's read found the type in proj a moment ago, so %s means the packs changed"
+                                        + " (pack_unreadable: and the fingerprint moved)",
                                 changed.token())
                         .isInstanceOfSatisfying(
                                 CharterRefusal.class,
