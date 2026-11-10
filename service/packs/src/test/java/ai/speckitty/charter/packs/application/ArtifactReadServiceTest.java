@@ -516,8 +516,11 @@ class ArtifactReadServiceTest {
                 .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
         assertThat(ArtifactReadService.absentCode(ArtifactKind.MISSION_STEP_CONTRACT))
                 .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
+        // An agent profile answers artifact_not_found (the profiles mission's contract), pinned by its own test.
         for (ArtifactKind kind : ArtifactReadService.LISTED) {
-            assertThat(ArtifactReadService.absentCode(kind).token()).isEqualTo(kind.token() + "_not_found");
+            if (kind != ArtifactKind.AGENT_PROFILE) {
+                assertThat(ArtifactReadService.absentCode(kind).token()).isEqualTo(kind.token() + "_not_found");
+            }
         }
         assertThatThrownBy(() -> ArtifactReadService.absentCode(ArtifactKind.PROCEDURE))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -677,8 +680,9 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void theListedKindsAreTheOnesTheListNamesAndInThisMissionTheServedOnes() {
-        assertThat(ArtifactReadService.listed()).containsExactlyElementsOf(ArtifactReadService.SERVED);
+    void theListedKindsAreTheOnesTheListNamesTheServedOnesThenTheMissionKinds() {
+        assertThat(ArtifactReadService.listed()).containsExactlyElementsOf(ArtifactReadService.LISTED);
+        assertThat(ArtifactReadService.listed()).containsAll(ArtifactReadService.SERVED);
         assertThat(ArtifactReadService.listed()).contains(ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listed()).isUnmodifiable();
     }
