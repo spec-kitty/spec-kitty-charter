@@ -4,11 +4,14 @@
 #
 #   scripts/usability/service-usability-run.sh --open-packs ../spec-kitty-open-packs [--profile java-jenny]
 #       [--jar <path>] [--keep] [--packs internal,qa] [--strict] [--attach <base-url>]
+#   scripts/usability/service-usability-run.sh --self-check
 #
 # It exits 0 only if every hop of the walk answered 2xx and the profile reads were fast enough. The exit codes are
 # in scripts/usability/README.md. The last line of the output is a one-line summary.
 
 set -u -o pipefail
+# bash 5.2 turns patsub_replacement on, which makes an unquoted & in a ${x/p/r} replacement mean "the match".
+shopt -u patsub_replacement 2>/dev/null || true
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -22,21 +25,37 @@ ATTACH=""
 EXTRA_PACKS="internal,qa"
 READS=20
 P95_LIMIT_MS=500
+SELF_CHECK=0
 
 usage() {
-    sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    if [[ ${1:-2} -eq 0 ]]; then
+        sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    else
+        sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+    fi
     exit "${1:-2}"
+}
+
+needs_value() { # option remaining-argument-count next-argument: an option that takes a value must be given one
+    if [[ $2 -lt 2 || -z $3 || $3 == --* ]]; then
+        echo "error: $1 needs a value" >&2
+        usage 2
+    fi
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --open-packs) OPEN_PACKS=${2:-}; shift 2 ;;
-        --profile) PROFILE=${2:-}; shift 2 ;;
-        --jar) JAR=${2:-}; shift 2 ;;
+        --open-packs|--profile|--jar|--attach|--packs) needs_value "$1" "$#" "${2:-}" ;;
+    esac
+    case "$1" in
+        --open-packs) OPEN_PACKS=$2; shift 2 ;;
+        --profile) PROFILE=$2; shift 2 ;;
+        --jar) JAR=$2; shift 2 ;;
         --keep) KEEP=1; shift ;;
         --strict) STRICT=1; shift ;;
-        --attach) ATTACH=${2:-}; shift 2 ;;
-        --packs) EXTRA_PACKS=${2:-}; shift 2 ;;
+        --attach) ATTACH=$2; shift 2 ;;
+        --packs) EXTRA_PACKS=$2; shift 2 ;;
+        --self-check) SELF_CHECK=1; shift ;;
         -h|--help) usage 0 ;;
         *) echo "unknown option: $1" >&2; usage 2 ;;
     esac
@@ -49,13 +68,20 @@ HOP_OK=0
 HOP_FAIL=0
 HOPS_FAILED=()
 declare -A MISSING=()
+declare -A SERVED=()     # kind -> yes|no: does the service have a pack-scoped read for the kind (probed, cached)
+declare -A UNLINKED=()   # "<hop> <relation> <kind>" -> entries left unlinked because their kind is not served
 WORKAROUNDS=()
 DROPPED=()
+PROBE=""
+REFUSAL=""
+URL=""
+ENC=""
 P95_PACK="NA"
 P95_ACT="NA"
 P95_RESULT="NA"
 SERVER_PID=""
 WORK=""
+WORK_MADE=""
 BASE=""
 STATUS=""
 TIME=""
@@ -70,6 +96,27 @@ die() { local code=$1; shift; printf 'error: %s\n' "$*" >&2; EXIT_CODE=$code; ex
 hop_ok() { HOP_OK=$((HOP_OK + 1)); printf '  [ ok ] %-4s %s\n' "$1" "$2"; }
 hop_fail() { HOP_FAIL=$((HOP_FAIL + 1)); HOPS_FAILED+=("$1: $2"); printf '  [FAIL] %-4s %s\n' "$1" "$2"; }
 workaround() { WORKAROUNDS+=("$1"); printf '  [WORKAROUND] %s\n' "$1"; }
+
+remove_work() { # rm -rf of the temporary directory, only if it is the one this script made
+    if [[ $WORK == "$WORK_MADE" && -n $WORK_MADE && ! -L $WORK && -f $WORK/.made-by-service-usability-run &&
+        $(basename "$WORK") == service-usability-run.* ]]; then
+        rm -rf -- "$WORK"
+    else
+        printf 'error: not removing %s: it is not the temporary directory this script made\n' "$WORK" >&2
+    fi
+}
+
+remove_inside() { # path: rm -rf of a path that must resolve to somewhere strictly inside the temporary directory
+    local target
+    if [[ -z $WORK_MADE ]] || ! target=$(realpath -m -- "$1" 2>/dev/null); then
+        printf 'error: not removing %s: it cannot be resolved\n' "$1" >&2
+        return 1
+    fi
+    case $target in
+        "$(realpath -- "$WORK_MADE")"/?*) rm -rf -- "$target" ;;
+        *) printf 'error: not removing %s: it is outside the temporary directory %s\n' "$1" "$WORK_MADE" >&2; return 1 ;;
+    esac
+}
 
 cleanup() {
     local status=$?
@@ -86,7 +133,7 @@ cleanup() {
             wait "$SERVER_PID" 2>/dev/null
         fi
     fi
-    if [[ -n $WORK && $KEEP -eq 0 ]]; then rm -rf "$WORK"; fi
+    if [[ -n $WORK && $KEEP -eq 0 ]]; then remove_work; fi
     exit "$status"
 }
 trap cleanup EXIT
@@ -101,7 +148,9 @@ for tool in curl jq git python3 tar awk; do
 done
 [[ -n $PROFILE ]] || die 2 "--profile needs an id"
 
-if [[ -z $ATTACH ]]; then
+if [[ $SELF_CHECK -eq 1 ]]; then
+    :
+elif [[ -z $ATTACH ]]; then
     [[ -n $OPEN_PACKS ]] || die 2 "--open-packs <dir> is required (a checkout of spec-kitty-open-packs at the pin)"
     [[ -d $OPEN_PACKS ]] || die 2 "--open-packs $OPEN_PACKS is not a directory"
     OPEN_PACKS=$(cd "$OPEN_PACKS" && pwd)
@@ -122,6 +171,8 @@ BRANCH=$(git -C "$REPO" branch --show-current 2>/dev/null || echo unknown)
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/service-usability-run.XXXXXX") || die 2 "cannot make a temporary directory"
 chmod 700 "$WORK"
+WORK_MADE=$WORK
+: >"$WORK/.made-by-service-usability-run"
 CURL_CFG="$WORK/curl.cfg"
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -147,26 +198,72 @@ problem() { # the problem body of the last answer, on one line
     jq -r '[.status, .code, .title, .detail] | map(select(. != null)) | join(" | ")' "$BODY" 2>/dev/null | cut -c1-300
 }
 
+urlenc() { # string: percent-encodes all but the unreserved characters (RFC 3986, RFC 6570); the result is in ENC
+    local LC_ALL=C s=$1 out="" c i
+    for ((i = 0; i < ${#s}; i++)); do
+        c=${s:i:1}
+        case $c in
+            [A-Za-z0-9._~-]) out+=$c ;;
+            *) printf -v c '%%%02X' "'$c"; out+=$c ;;
+        esac
+    done
+    ENC=$out
+}
+
 expand() { # href var=value...: fills the variables a link declares; fails if one is left unfilled
     local href=$1
     shift
     local kv k v
     for kv in "$@"; do
         k=${kv%%=*}
-        v=${kv#*=}
-        href=${href//\{$k\}/$v}
+        urlenc "${kv#*=}"
+        v=$ENC
+        href=${href//"{$k}"/"$v"}
     done
-    if [[ $href =~ \{\?([^}]*)\} ]]; then
-        local names=${BASH_REMATCH[1]} query="" n
+    if [[ $href == *"{?"*"}"* ]]; then
+        # no ${//} here: the pieces are cut and joined, so no & of a query can be read as "the match"
+        local head=${href%%"{?"*} tail=${href#*"{?"} names query="" n
+        names=${tail%%"}"*}
+        tail=${tail#*"}"}
         for n in ${names//,/ }; do
             for kv in "$@"; do
-                if [[ ${kv%%=*} == "$n" ]]; then query+="${query:+&}$n=${kv#*=}"; fi
+                if [[ ${kv%%=*} == "$n" ]]; then
+                    urlenc "${kv#*=}"
+                    query+="${query:+&}$n=$ENC"
+                fi
             done
         done
-        href=${href/\{\?*\}/${query:+?$query}}
+        href="$head${query:+?$query}$tail"
     fi
-    if [[ $href == *"{"* ]]; then printf '%s' "$href"; return 1; fi
     printf '%s' "$href"
+    [[ $href != *"{"* ]]
+}
+
+resolve() { # href: sets URL, the absolute URL to request; fails with REFUSAL when the href must not be followed
+    case $1 in
+        "$BASE"/*) URL=$1 ;;
+        http://* | https://* | //*)
+            REFUSAL="the href $1 is not on $BASE; it was not followed, so the token stays with the service"
+            return 1
+            ;;
+        /*) URL=$BASE$1 ;;
+        *)
+            REFUSAL="the href '$1' is neither an absolute URL on $BASE nor a path starting with /; it was not followed"
+            return 1
+            ;;
+    esac
+}
+
+http_href() { # method href [body-file]: http, for an href taken from a link; an href that is refused answers 000
+    local method=$1 href=$2 data=${3:-}
+    if ! resolve "$href"; then
+        BODY="$WORK/body.$((++SEQ))"
+        STATUS=000
+        TIME=0
+        jq -nc --arg d "$REFUSAL" '{title: "link not followed", detail: $d}' >"$BODY"
+        return 0
+    fi
+    http "$method" "$URL" "$data"
 }
 
 follow() { # id doc relation what [var=value...]: GET the href of _links.<relation> of doc; keeps the answer in hop-<id>.json
@@ -183,7 +280,7 @@ follow() { # id doc relation what [var=value...]: GET the href of _links.<relati
         hop_fail "$id" "relation '$rel' of $what is $href and declares a variable this client has no value for"
         return 1
     fi
-    http GET "$BASE$expanded"
+    http_href GET "$expanded"
     if [[ $STATUS == 2* ]]; then
         cp "$BODY" "$WORK/hop-$id.json"
         HREF=$expanded
@@ -227,7 +324,7 @@ time_reads() { # label href: READS timed GETs; leaves the p95 in milliseconds in
     P95_RESULT="NA"
     : >"$WORK/times.$label"
     for i in $(seq 1 "$READS"); do
-        http GET "$BASE$href"
+        http_href GET "$href"
         if [[ $STATUS != 2* ]]; then
             hop_fail "T$label" "timed read $i of $href -> $STATUS $(problem)"
             return 1
@@ -260,7 +357,7 @@ register_pack() { # packId relative-path: POST /packs (filesystem source), polle
     local self i
     self=$(jq -r '._links.self.href' "$BODY")
     for i in $(seq 1 240); do
-        http GET "$BASE$self"
+        http_href GET "$self"
         REG="$BODY"
         case $(jq -r .state "$BODY") in
             succeeded) return 0 ;;
@@ -299,7 +396,10 @@ provision_pack() { # dir-name: registers packs/<dir-name> of the open-packs chec
             return 1
         fi
         while IFS= read -r path; do
-            rm -rf "${SOURCES:?}/$staged/$path"
+            case /$path/ in
+                /../* | */../* | //*) hop_fail "R-$dir" "the service named the path '$path', which is absolute or climbs out; not removed"; return 1 ;;
+            esac
+            remove_inside "$SOURCES/$staged/$path" || { hop_fail "R-$dir" "refused to remove '$path' outside the temporary directory"; return 1; }
             removed+=("$path")
         done < <(jq -r '(.problem // .).violations[]? | .pointer' "$REG")
         if register_pack "$pack_id" "$staged"; then
@@ -411,10 +511,32 @@ check_body() { # id doc what: the profile body and an edge on every governance e
     hop_ok "$id" "$what has the body of '$PROFILE' and $(jq '.governance | length' "$doc") governance entries, each with an edge"
 }
 
+kind_served() { # kind pack-id: 0 = the kind has a pack-scoped read, 1 = it has none, 2 = cannot tell (PROBE says why)
+    # A link-only client asks the service: the root 'artifacts' link with this packId and kind answers 200 for a kind the
+    # service serves and 400 for one it does not (contracts/charter/paths/packs_packId_artifacts.yaml). Cached per kind.
+    local kind=$1 pack=$2 href
+    case ${SERVED[$kind]:-} in
+        yes) return 0 ;;
+        no) return 1 ;;
+    esac
+    href=$(jq -r '._links.artifacts.href // empty' "$WORK/root.json")
+    if [[ -z $href ]] || ! href=$(expand "$href" "packId=$pack" "kind=$kind"); then
+        PROBE="the API root has no usable 'artifacts' relation to ask with"
+        return 2
+    fi
+    http_href GET "$href"
+    case $STATUS in
+        200) SERVED[$kind]=yes; return 0 ;;
+        400) SERVED[$kind]=no; say "  kind '$kind' is not served: GET $href -> 400"; return 1 ;;
+    esac
+    PROBE="GET $href -> $STATUS $(problem)"
+    return 2
+}
+
 walk_entries() { # id doc what relation...: for each governance entry, follow each relation named
     local id=$1 doc=$2 what=$3
     shift 3
-    local n=0 held_false=0 failed_before=$HOP_FAIL line rel
+    local n=0 held_false=0 failed_before=$HOP_FAIL line rel kind pack key rc unlinked=0
     while IFS= read -r line; do
         printf '%s\n' "$line" >"$WORK/entry.json"
         if [[ $(jq -r '.held' "$WORK/entry.json") == "false" ]]; then
@@ -422,13 +544,29 @@ walk_entries() { # id doc what relation...: for each governance entry, follow ea
             continue
         fi
         n=$((n + 1))
+        kind=$(jq -r '.kind' "$WORK/entry.json")
+        pack=$(jq -r '.packId // ""' "$WORK/entry.json")
         for rel in "$@"; do
-            local label="$id $(jq -r '.kind + "/" + .artifactId' "$WORK/entry.json")"
+            local label="$id $kind/$(jq -r '.artifactId' "$WORK/entry.json")"
             if [[ -z $(jq -r --arg r "$rel" '._links[$r].href // empty' "$WORK/entry.json") ]]; then
-                # one line per relation is enough; the counts say the rest
+                kind_served "$kind" "$pack"
+                rc=$?
+                if [[ $rc -eq 1 ]]; then
+                    # the contract links this relation only for a served kind; counted and reported, never skipped silently
+                    key="$id $rel $kind"
+                    UNLINKED[$key]=$((${UNLINKED[$key]:-0} + 1))
+                    unlinked=$((unlinked + 1))
+                    continue
+                fi
+                # a served kind without the link fails, and so does a kind the client cannot classify; one line per
+                # relation is enough, the counts say the rest
                 if [[ -z ${MISSING[$id/$rel]:-} ]]; then
                     MISSING[$id/$rel]=1
-                    hop_fail "$id" "expected relation '$rel' in _links of a governance entry of $what (first seen on $(jq -r '.kind + "/" + .artifactId' "$WORK/entry.json"))"
+                    if [[ $rc -eq 0 ]]; then
+                        hop_fail "$id" "expected relation '$rel' in _links of a governance entry of $what, whose kind '$kind' is served (first seen on $kind/$(jq -r '.artifactId' "$WORK/entry.json"))"
+                    else
+                        hop_fail "$id" "relation '$rel' is missing on $kind/$(jq -r '.artifactId' "$WORK/entry.json") and the client cannot tell whether the kind is served: $PROBE"
+                    fi
                 else
                     HOP_FAIL=$((HOP_FAIL + 1))
                 fi
@@ -437,14 +575,18 @@ walk_entries() { # id doc what relation...: for each governance entry, follow ea
             follow_quiet "$id" "$WORK/entry.json" "$rel" "$label" || true
         done
     done < <(jq -c '.governance[]' "$doc")
-    say "  (${id}: $n held entries of $what walked; $held_false with held=false have no pack to link to; $((HOP_FAIL - failed_before)) failed)"
+    local summary_unlinked="" k
+    while IFS= read -r k; do
+        [[ -n $k ]] && summary_unlinked+="; not linked, kind not served: ${k#"$id "} x${UNLINKED[$k]}"
+    done < <(printf '%s\n' "${!UNLINKED[@]}" | grep -F -- "$id " | sort)
+    say "  (${id}: $n held entries of $what walked; $held_false with held=false have no pack to link to; $unlinked relation(s) not linked because their kind is not served${summary_unlinked}; $((HOP_FAIL - failed_before)) failed)"
 }
 
 follow_quiet() { # like follow, but prints only a failure; counts the successes
     local id=$1 doc=$2 rel=$3 what=$4
     local href
     href=$(jq -r --arg r "$rel" '._links[$r].href' "$doc")
-    http GET "$BASE$href"
+    http_href GET "$href"
     if [[ $STATUS == 2* ]]; then
         HOP_OK=$((HOP_OK + 1))
         return 0
@@ -484,7 +626,7 @@ make_document() { python3 -I "$HERE/charter-to-activation.py" --profile "$PROFIL
 create_activation() { # href: POST the document, applying the one workaround a 422 allows
     local href=$1 drops=() v kind id idx
     make_document || { hop_fail A2 "charter-to-activation.py failed"; return 1; }
-    http POST "$BASE$href" "$WORK/activation.json"
+    http_href POST "$href" "$WORK/activation.json"
     if [[ $STATUS == 422 && $(jq -r .code "$BODY") == activation_invalid ]]; then
         say "  the service refused the document: $(problem)"
         jq -r '.violations[]? | "    - \(.pointer) [\(.code)] \(.detail)"' "$BODY"
@@ -506,7 +648,7 @@ create_activation() { # href: POST the document, applying the one workaround a 4
         done <<<"$lines"
         workaround "unheld-selections: ${#DROPPED[@]} selection(s) no registered pack holds were left out of the activation document: ${DROPPED[*]}. Every one is named by the service's own 422."
         make_document "${drops[@]}" || { hop_fail A2 "charter-to-activation.py failed"; return 1; }
-        http POST "$BASE$href" "$WORK/activation.json"
+        http_href POST "$href" "$WORK/activation.json"
     fi
     if [[ $STATUS != 201 && $STATUS != 200 ]]; then
         hop_fail A2 "POST $href -> $STATUS $(problem)"
@@ -546,6 +688,69 @@ walk_activation() {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+# --self-check: the pure parts of the client, no service needed
+
+self_check() {
+    local fails=0 total=0
+    check() { # label actual expected
+        total=$((total + 1))
+        if [[ $2 == "$3" ]]; then
+            printf '  [ ok ] %s\n' "$1"
+        else
+            printf '  [FAIL] %s: expected [%s], got [%s]\n' "$1" "$3" "$2"
+            fails=$((fails + 1))
+        fi
+    }
+    BASE=http://127.0.0.1:9
+    # bash 5.2 reads an unquoted & of a replacement as "the match"; these checks run with that switched on
+    shopt -s patsub_replacement 2>/dev/null || true
+    echo "== self-check: expand"
+    check "one filled variable" "$(expand '/x{?kind,state}' kind=a)" "/x?kind=a"
+    check "two filled variables" "$(expand '/x{?kind,state}' kind=a state=b)" "/x?kind=a&state=b"
+    check "two filled variables, other order of values" "$(expand '/x{?kind,state}' state=b kind=a)" "/x?kind=a&state=b"
+    check "no variable filled" "$(expand '/x{?kind,state}')" "/x"
+    check "path and two query variables" "$(expand '/api/v1/packs/{packId}/artifacts{?kind,state}' packId=built-in kind=agent_profile state=active)" \
+        "/api/v1/packs/built-in/artifacts?kind=agent_profile&state=active"
+    check "a & in a value is encoded, not replaced" "$(expand '/x{?kind,state}' kind='a&b' state='c d')" "/x?kind=a%26b&state=c%20d"
+    check "a & in a path value" "$(expand '/p/{packId}/q' packId='a&b')" "/p/a%26b/q"
+    check "text after the query template" "$(expand '/x{?kind,state}/y' kind=a state=b)" "/x?kind=a&state=b/y"
+    local out
+    if out=$(expand '/x/{id}' kind=a); then check "an unfilled variable fails" "filled" "failed"; else check "an unfilled variable fails" "failed" "failed"; fi
+    echo "== self-check: resolve"
+    local href want
+    for href in "/a/b" "$BASE/a/b"; do
+        resolve "$href" && check "resolve $href" "$URL" "$BASE/a/b" || check "resolve $href" "refused: $REFUSAL" "$BASE/a/b"
+    done
+    for href in "http://evil.example/a" "https://127.0.0.1:9/a" "//evil.example/a" "a/b" "$BASE.evil/a"; do
+        if resolve "$href"; then check "refuse $href" "followed as $URL" "refused"; else check "refuse $href" "refused" "refused"; fi
+    done
+    echo "== self-check: removal stays inside the temporary directory"
+    mkdir "$WORK/inside"
+    remove_inside "$WORK/inside" 2>/dev/null
+    check "a path inside is removed" "$([[ -e $WORK/inside ]] && echo present || echo removed)" "removed"
+    local outside
+    outside=$(mktemp -d "${TMPDIR:-/tmp}/service-usability-run-check.XXXXXX") || return 1
+    for href in "$outside" "$WORK/../$(basename "$outside")" "$WORK" "$WORK/" "/"; do
+        remove_inside "$href" 2>/dev/null
+        check "refuse to remove $href" "$?" "1"
+    done
+    check "the outside directory is still there" "$([[ -d $outside ]] && echo present || echo removed)" "present"
+    rmdir "$outside"
+    echo "== self-check: option parsing"
+    local rc
+    for href in --open-packs --profile --jar --attach --packs; do
+        "${BASH_SOURCE[0]}" "$href" >/dev/null 2>&1
+        rc=$?
+        check "$href without a value exits 2" "$rc" "2"
+    done
+    "${BASH_SOURCE[0]}" --profile --keep >/dev/null 2>&1
+    check "--profile followed by an option exits 2" "$?" "2"
+    echo "== self-check: charter-to-activation.py --self-test"
+    python3 -I "$HERE/charter-to-activation.py" --self-test 2>&1 | sed 's/^/   /'
+    check "charter-to-activation.py --self-test" "${PIPESTATUS[0]}" "0"
+    say "RESULT SELF-CHECK $([[ $fails -eq 0 ]] && echo PASS || echo FAIL) checks=$((total - fails))/$total"
+    [[ $fails -eq 0 ]]
+}
 
 summary() {
     say ""
@@ -558,14 +763,24 @@ summary() {
     say "  workarounds        : ${#WORKAROUNDS[@]}"
     for f in "${WORKAROUNDS[@]:-}"; do [[ -n $f ]] && say "    - $f"; done
     say "  unheld selections  : ${#DROPPED[@]}${DROPPED[*]:+ (${DROPPED[*]})}"
+    local unlinked=0 k
+    for k in "${!UNLINKED[@]}"; do unlinked=$((unlinked + UNLINKED[$k])); done
+    say "  not linked (kind not served): $unlinked"
+    while IFS= read -r k; do
+        [[ -n $k ]] && say "    - $k x${UNLINKED[$k]}"
+    done < <(printf '%s\n' "${!UNLINKED[@]}" | sort)
     say "  p95 pack-scoped    : $P95_PACK ms; under activation: $P95_ACT ms (limit $P95_LIMIT_MS ms, $READS reads each)"
     local verdict=PASS
     if [[ $HOP_FAIL -gt 0 ]]; then verdict=FAIL; fi
-    say "RESULT $verdict hops=$HOP_OK/$((HOP_OK + HOP_FAIL)) failed=$HOP_FAIL workarounds=${#WORKAROUNDS[@]} p95=${P95_PACK}/${P95_ACT}ms commit=${COMMIT:0:8} pin=$([[ $PIN =~ ^[0-9a-f]{40}$ ]] && echo "${PIN:0:8}" || echo none)"
+    say "RESULT $verdict hops=$HOP_OK/$((HOP_OK + HOP_FAIL)) failed=$HOP_FAIL workarounds=${#WORKAROUNDS[@]} unheld=${#DROPPED[@]} unlinked=$unlinked p95=${P95_PACK}/${P95_ACT}ms commit=${COMMIT:0:8} pin=$([[ $PIN =~ ^[0-9a-f]{40}$ ]] && echo "${PIN:0:8}" || echo none)"
     [[ $verdict == PASS ]]
 }
 
 main() {
+    if [[ $SELF_CHECK -eq 1 ]]; then
+        self_check
+        return
+    fi
     if [[ -n $ATTACH ]]; then
         BASE=${ATTACH%/}
         [[ -n ${CHARTER_WORKTREE_TOKEN:-} ]] || die 2 "--attach needs the service's token in CHARTER_WORKTREE_TOKEN"
