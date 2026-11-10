@@ -1,0 +1,135 @@
+{
+  "mission_slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Step enhancements are held: an spdd-shaped pack registers (no 'unmodelled'), round-trips and is written back",
+      "proof_type": "automated_test",
+      "evidence": "WP01: step-enhancements.feature (registration), StepEnhancementYamlTest, WholePackStoreTest, DomainRoundTripTest, PlacedWriteTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:14:42.107964+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Each prompt-fragment companion is held with its enhancement and written back at the same path with the same meaning",
+      "proof_type": "automated_test",
+      "evidence": "WP01: StepEnhancementYamlTest (fragment bodies + mutants), WholePackStoreTest, DomainRoundTripTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:14:46.979143+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "A step enhancement composes, wins or loses the layer merge, and is selectable directly and through presets",
+      "proof_type": "automated_test",
+      "evidence": "WP01: step-enhancements.feature (selection 200, sibling conflict + twin), activation-presets.feature, StepEnhancementCompositionTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:14:51.627028+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "A blank, frontmatter-bearing or marker-bearing fragment is refused prompt_fragment_invalid",
+      "proof_type": "automated_test",
+      "evidence": "WP03 StepEnhancementRulesTest; WP04 prompt-fragment-refusals.feature, StepEnhancementLoadChecksTest, FileSystemPackInspectorTest (OD-10 row 4)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:14:56.195567+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "A repeated slot, a missing, shared or orphan companion is refused prompt_fragment_invalid",
+      "proof_type": "automated_test",
+      "evidence": "WP03 StepEnhancementRulesTest (Structure); WP04 prompt-fragment-refusals.feature, StepEnhancementLoadChecksTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:00.864822+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Identity and target: exactly one enhances edge to an action, no overrides edge (R-OVR), directory, repeated id, no entries; relationship write refuses (R-REL)",
+      "proof_type": "automated_test",
+      "evidence": "WP03 StepEnhancementRulesTest (IdentityAndTarget); WP04 prompt-fragment-refusals.feature, RelationshipRegistrationServiceTest, RefusalHandlerTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:05.605788+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "A base prompt's malformed slots are refused prompt_slot_malformed; text in a slot prompt_slot_not_empty at schema_version 1.0, a warning otherwise",
+      "proof_type": "automated_test",
+      "evidence": "WP02 PromptSlotsTest, PromptSlotsCanonicalCorpusTest; WP05 prompt-slots.feature, PromptSlotLoadChecksTest, MissionTypeCorpusTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:10.279490+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "deferred",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:24.189810+00:00",
+      "notes": "TODO: replace with a real acceptance criterion",
+      "deferral_reason": "Moved to the phase-2 mission by the operator's split ruling (2026-11-09): compose checks and the effective-prompt read; not this mission's requirement",
+      "deferral_follow_up": "#438"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "deferred",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:28.748535+00:00",
+      "notes": "TODO: replace with a real acceptance criterion",
+      "deferral_reason": "Moved to the phase-2 mission by the operator's split ruling (2026-11-09): compose checks and the effective-prompt read; not this mission's requirement",
+      "deferral_follow_up": "#438"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "deferred",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:33.448303+00:00",
+      "notes": "TODO: replace with a real acceptance criterion",
+      "deferral_reason": "Moved to the phase-2 mission by the operator's split ruling (2026-11-09): compose checks and the effective-prompt read; not this mission's requirement",
+      "deferral_follow_up": "#438"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "The three load codes are raised as per-file violation codes inside 422 validation_failed (500 pack_unreadable on reads); registration lists load warnings in diagnostics",
+      "proof_type": "automated_test",
+      "evidence": "WP04/WP05: ReservedRefusalCodesTest, errors.feature raised-code table, ContractDescriptionsTest, PackRegistrationServiceTest, prompt-slots.feature",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:14.986769+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Phase-1 rulings recorded: ADR-0053 OQ2, ADR-0066 guard/emit shape and load-moment annotations, rules page, schema pages, dated changelog",
+      "proof_type": "automated_test",
+      "evidence": "WP06: docs/adr/0053, docs/adr/0066 annotations, docs/architecture/composition-and-activation-rules.md section 8, pack-schemas pages, docs/changelog/2026-11-09-step-enhancements-and-prompt-fragments.md",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-09T21:15:19.589743+00:00",
+      "notes": "Verified by the WP's independent opus review (reviewer-renata) with its gates green; re-proved by verifyAll at closeout."
+    }
+  ],
+  "negative_invariants": []
+}

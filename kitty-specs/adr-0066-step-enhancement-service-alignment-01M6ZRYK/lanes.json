@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "mission_slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "mission_id": "01M6ZRYKV1QSKERC80RYR0XZQG",
+  "mission_branch": "kitty/mission-adr-0066-step-enhancement-service-alignment-01M6ZRYK",
+  "target_branch": "issue-424-428-adr-0066-service-alignment",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-step-enhancements-held.md",
+        "contracts/charter/scenarios/activation-presets.feature",
+        "contracts/charter/scenarios/step-enhancements.feature",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PromptFragment.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepEnhancement.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/KindBindingsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDigestBaselineTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PlacedWriteTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementCompositionTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementYamlTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackOpenPacksRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java",
+        "service/packs/src/test/resources/whole-pack/expected-red.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/markdown/PromptSlots.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/markdown/SlotId.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/markdown/PromptSlotsTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/markdown/SlotIdTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/markdown/PromptSlotsCanonicalCorpusTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepEnhancementFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepEnhancementFault.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepEnhancementRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/StepEnhancementRulesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/_shared/schemas/Problem.yaml",
+        "contracts/_shared/schemas/RefusalViolation.yaml",
+        "contracts/charter/changes/2026-11-09-prompt-fragment-checks.md",
+        "contracts/charter/changes/2026-11-09-prompt-fragment-invalid-raised.md",
+        "contracts/charter/scenarios/errors.feature",
+        "contracts/charter/scenarios/prompt-fragment-refusals.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/step-enhancement.schema.json",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackFindingCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyStepEnhancementTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementLoadChecksTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StepEnhancementSchemaDescriptionTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-prompt-slot-checks-and-diagnostics.md",
+        "contracts/charter/changes/2026-11-09-prompt-slot-codes-raised.md",
+        "contracts/charter/examples/PackRegistrationStatus.succeeded.yaml",
+        "contracts/charter/scenarios/prompt-slots.feature",
+        "contracts/charter/schemas/DiagnosticCode.yaml",
+        "contracts/charter/schemas/PackRegistration.yaml",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/WholePackWriteStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PackRegistrationMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PromptSlotLoadChecksTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "docs/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions.md",
+        "docs/adr/0066-a-step-enhancement-may-contribute-prompt-fragments.md",
+        "docs/architecture/composition-and-activation-rules.md",
+        "docs/architecture/pack-schemas/prompt-fragment.md",
+        "docs/architecture/pack-schemas/step-enhancement.md",
+        "docs/changelog/2026-11-09-step-enhancements-and-prompt-fragments.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-e"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-11-09T16:11:20.819177+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "f524e9e1ef6f1c83f4702456f3a51c5ee42ea86e"
+}

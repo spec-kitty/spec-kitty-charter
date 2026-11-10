@@ -1,0 +1,133 @@
+schema_version: 1
+mission_id: 01M6ZRYKV1QSKERC80RYR0XZQG
+mission_slug: adr-0066-step-enhancement-service-alignment-01M6ZRYK
+mission_number: 20
+friendly_name: Step enhancements and prompt fragments in the charter service
+mission_type: software-dev
+target_branch: issue-424-428-adr-0066-service-alignment
+created_at: '2026-11-09T21:17:29.109523+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-09T21:17:29.109523+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-011
+- id: h-002
+  category: implementation
+  summary: WP02 completed without rejection cycles
+  evidence_refs:
+  - e-011
+- id: h-003
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-011
+- id: h-004
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-011
+- id: h-005
+  category: implementation
+  summary: WP05 completed without rejection cycles
+  evidence_refs:
+  - e-011
+not_helpful:
+- id: n-002
+  category: doc
+  summary: analysis-report.md records 5 finding(s)
+  evidence_refs:
+  - e-013
+  details: The analysis-report.md artifact for this mission records 5 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: review_loop
+  summary: WP06 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-012
+  details: WP WP06 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP01-step-enhancement-held.md
+- id: e-006
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP02-kernel-slot-grammar.md
+- id: e-007
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP03-step-enhancement-rules.md
+- id: e-008
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP04-fragment-refusals-wired.md
+- id: e-009
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP05-prompt-slot-load-checks.md
+- id: e-010
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/tasks/WP06-docs-phase-1.md
+- id: e-011
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/status.events.jsonl
+- id: e-012
+  kind: event_range
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/status.events.jsonl
+  range: 01M712D4JE3BGEBA5G1DE6NB2H
+- id: e-013
+  kind: file
+  path: kitty-specs/adr-0066-step-enhancement-service-alignment-01M6ZRYK/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

@@ -1,0 +1,96 @@
+# Planning fragment for phase 1 (IC-04, WP04 and WP05) of mission adr-0066-step-enhancement-service-alignment-01M6ZRYK.
+# Not part of the bundled contract. Each top-level key under `x-files` names one contract file under contracts/charter/
+# and shows only the part this mission adds or rewrites there. The rest of each file is unchanged.
+#
+# Rulings (plan.md, "Operator decisions (plan point, 2026-11-09): ruled"):
+# - OD-3 (a): stated once in README.md, "How a load fault reaches the wire (canonical)"; this file only drafts the text.
+# - OD-7: a new `diagnostics` member, reusing Diagnostic.yaml, on the registration result. The prompt read's
+#   `diagnostics` member is the phase-2 mission's and is not shown here.
+#
+# Classes (ADR-0022, 0.x, C-001): the raised flags and descriptions are ### Changed; the new member on a closed object
+# is ### Breaking (OD-7); content refused that loaded before is ### Breaking.
+#
+# prompt_slot_missing stays reserved in this mission; raising it is the phase-2 mission's.
+x-files:
+
+  # -------------------------------------------------------------------------------------------------------------------
+  # WP05, T025. Bound shape: optional (not in `required`), like `outcome` and `notices`; present in the result of a
+  # succeeded registration, absent from getPack. OD-7 calls the addition ### Breaking, because the object is closed;
+  # WP05's ### Breaking fragment states this shape. Changing it is a contract decision for the run lead.
+  schemas/PackRegistration.yaml#properties/diagnostics:
+    type: array
+    items:
+      $ref: Diagnostic.yaml
+    description: >-
+      Only in the result of a succeeded registration: the load warnings of the staged pack, each naming a pack-relative
+      path. Today the only one is prompt_slot_not_empty, for a step prompt whose slot holds text in a pack whose
+      descriptor declares no schema_version. Empty when the load found nothing to warn about. A warning never refuses
+      the registration; a blocking fault is a violation of 422 validation_failed instead. getPack carries no
+      diagnostics.
+    x-derived:
+      rule: The warnings list of the registration's staged load, kept apart from its violations.
+      inputs:
+      - the staged pack
+      - the pack.yaml of the staged pack
+
+  # -------------------------------------------------------------------------------------------------------------------
+  # WP05, T025. The member sits at value.result.diagnostics: PackRegistrationStatus is closed, and diagnostics is a
+  # member of its result (PackRegistration), not of the status object.
+  examples/PackRegistrationStatus.succeeded.yaml#value.result.diagnostics:
+  - code: prompt_slot_not_empty
+    detail: >-
+      missions/software-dev/steps/plan.prompt.md: slot spdd:reasons-block holds text; the descriptor declares no
+      schema_version, so this is a warning
+
+  # -------------------------------------------------------------------------------------------------------------------
+  # WP05, T026.
+  schemas/DiagnosticCode.yaml#prompt_slot_not_empty:
+    description: >-
+      a step prompt's slot holds text in a pack whose descriptor declares no schema_version (ADR-0066 version gate);
+      the pack loads, and the warning is listed in the registration result's diagnostics. Under schema_version 1.0 the
+      same condition is the refusal prompt_slot_not_empty.
+
+  # -------------------------------------------------------------------------------------------------------------------
+  # WP04 (prompt_fragment_invalid, drg_schema_error, the definition) and WP05 (the two slot codes). drg_schema_error's
+# flip and the definition are WP04's alone.
+  #
+  # The amended definition of `raised` (OD-3 (a)) and, beside it, what `status` means for a violation-only code (A19).
+  # Shown as the added sentences only; the rest of the definition text is unchanged.
+  schemas/CharterRefusalCode.yaml#x-refusal-definition-raised: >-
+    raised: true also covers a code raised only as a violation code of 422 validation_failed. For such a code, no
+    problem carries it as its top-level code: the problem that carries it answers 422 at registration
+    (validation_failed), and a composing read that meets the fault answers 500 pack_unreadable naming the file. Its
+    declared status is the status of that read (500).
+
+  schemas/CharterRefusalCode.yaml#x-refusal:
+    prompt_slot_malformed:
+      status: 500
+      retryable: false
+      raised: true
+      description: >-
+        a base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066); a registration lists it
+        as a violation at the prompt file inside 422 validation_failed, and a composing read answers pack_unreadable
+        naming the file
+    prompt_slot_not_empty:
+      status: 500
+      retryable: false
+      raised: true
+      description: >-
+        a slot holds text in a pack whose descriptor declares schema_version 1.0 (ADR-0066); a registration lists it
+        as a violation at the prompt file inside 422 validation_failed, and a composing read answers pack_unreadable
+        naming the file; for an unversioned descriptor see DiagnosticCode.prompt_slot_not_empty
+    prompt_fragment_invalid:
+      status: 500
+      retryable: false
+      raised: true
+      description: >-
+        an invalid step enhancement or prompt fragment at load (ADR-0066; rulings D8 to D12, R-OVR); a registration
+        lists it as a violation at the file inside 422 validation_failed, and a composing read answers pack_unreadable
+        naming the file. The relationship write (putPackRelationship) is the only operation that answers it as the
+        top-level code, with 422, for an edge that would give a held step enhancement an overrides edge or a second
+        enhances edge, or replace its one enhances edge (R-REL); nothing is written
+      operations:
+        putPackRelationship:
+          status: 422
+    # drg_schema_error: unchanged description; raised flips to true by the amended definition (its own ### Changed).
+    # prompt_slot_missing: unchanged in this mission (reserved, raised: false).
