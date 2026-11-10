@@ -77,8 +77,9 @@ public record EffectiveProfileRead(
      * @param policy the mutability level of the version in force, in the contract's spelling
      * @param reason the rule that decided the state, in the contract's spelling
      * @param satisfiedBy the artifact in force that satisfies a requirement this one is out of force for
-     * @param suggestion present only for an artifact reached only through a {@code suggests} edge of an artifact in
-     *     force: the edge's own words
+     * @param suggestion the winner's own: present only for an artifact reached only through a {@code suggests} edge of
+     *     an artifact in force, with the edge's words. On the facts of a governance entry it is the words of the
+     *     {@code suggests} edge that listed the entry, whether the artifact is in force or not
      */
     public record Facts(
             Urn urn,

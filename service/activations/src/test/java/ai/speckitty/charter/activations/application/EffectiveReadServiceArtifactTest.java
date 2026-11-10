@@ -131,23 +131,26 @@ class EffectiveReadServiceArtifactTest {
 
     /** What the session reads for the winner: the entity of the pack that holds it, and a profile's governance. */
     private static EffectiveArtifactRead read(ArtifactKind kind, String id) {
-        return read(kind, id, List.of(
-                new GovernanceFacts.Entry(
-                        B,
-                        GovernanceFacts.Step.REQUIRES,
-                        RelationType.REQUIRES,
-                        P,
-                        1,
-                        Optional.of("edge when"),
-                        Optional.of("edge reason")),
-                new GovernanceFacts.Entry(
-                        A,
-                        GovernanceFacts.Step.SUGGESTS,
-                        RelationType.SUGGESTS,
-                        P,
-                        1,
-                        Optional.of("a when"),
-                        Optional.of("a why"))));
+        return read(
+                kind,
+                id,
+                List.of(
+                        new GovernanceFacts.Entry(
+                                B,
+                                GovernanceFacts.Step.REQUIRES,
+                                RelationType.REQUIRES,
+                                P,
+                                1,
+                                Optional.of("edge when"),
+                                Optional.of("edge reason")),
+                        new GovernanceFacts.Entry(
+                                A,
+                                GovernanceFacts.Step.SUGGESTS,
+                                RelationType.SUGGESTS,
+                                P,
+                                1,
+                                Optional.of("a when"),
+                                Optional.of("a why"))));
     }
 
     private static EffectiveArtifactRead read(ArtifactKind kind, String id, List<GovernanceFacts.Entry> entries) {

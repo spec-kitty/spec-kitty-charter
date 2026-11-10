@@ -85,3 +85,4 @@ files:
   - PackGovernanceSuggestion.yaml
   - EffectiveAgentProfileRead.yaml
   - EffectiveGovernanceEntry.yaml
+  - EffectiveGovernanceSuggestion.yaml

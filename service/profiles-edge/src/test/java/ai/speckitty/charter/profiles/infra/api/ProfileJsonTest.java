@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.AgentProfileExcluding;
 import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
+import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.api.model.PackGovernanceSuggestion;
 import java.util.List;
@@ -59,6 +60,13 @@ class ProfileJsonTest {
     }
 
     @Test
+    void anEmptyGovernanceSuggestionIsAnEmptyObject() {
+        JsonNode written = JSON.valueToTree(new EffectiveGovernanceSuggestion());
+        assertThat(written.isObject()).isTrue();
+        assertThat(written.size()).isZero();
+    }
+
+    @Test
     void anExcludingWritesTheFormItDoesNotUseAsNull() {
         JsonNode written = JSON.valueToTree(new AgentProfileExcluding(List.of("roles"), null));
 
@@ -101,6 +109,8 @@ class ProfileJsonTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveAgentProfileRead.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceEntry.class))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceSuggestion.class))
                 .accepts(hints);
         for (String mixIn : List.of("OptionalProfileMembers", "OptionalSpecializationMembers", "OmitAbsentMembers")) {
             assertThat(hints.reflection()

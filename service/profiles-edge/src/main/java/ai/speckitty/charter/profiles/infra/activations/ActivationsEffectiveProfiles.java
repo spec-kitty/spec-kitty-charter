@@ -6,6 +6,7 @@ import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
+import ai.speckitty.charter.activations.domain.EffectiveSet.Suggestion;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,7 +35,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>The activations slice carries the artifacts in force that the walk lists apart from the artifacts out of force that
  * a listed artifact suggests. The wire lists them together, so they are merged here in URN order; a suggestion is a
- * {@code suggests} entry of its suggesting artifact.
+ * {@code suggests} entry of its suggesting artifact. A {@code suggests} entry in force carries the words of its edge as
+ * its suggestion, as one out of force does (FR-004).
  */
 @Component
 public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
@@ -78,7 +81,7 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
         List<EffectiveProfileRead.Entry> entries = new ArrayList<>();
         for (EffectiveArtifactAnswer.Entry entry : governance.entries()) {
             entries.add(new EffectiveProfileRead.Entry(
-                    facts(entry.artifact()), step(entry.step()), urn(entry.via()), entry.hops()));
+                    facts(entry.artifact(), entry.suggestion()), step(entry.step()), urn(entry.via()), entry.hops()));
         }
         for (EffectiveArtifactAnswer.Suggested suggested : governance.suggested()) {
             entries.add(new EffectiveProfileRead.Entry(
@@ -92,6 +95,11 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
     }
 
     private static EffectiveProfileRead.Facts facts(EffectiveArtifact artifact) {
+        return facts(artifact, artifact.suggestion());
+    }
+
+    /** The facts of an artifact with the words of the edge that suggests it; those of an entry in force are the edge's. */
+    private static EffectiveProfileRead.Facts facts(EffectiveArtifact artifact, Optional<Suggestion> suggestion) {
         return new EffectiveProfileRead.Facts(
                 urn(artifact.ref()),
                 new PackIdentifier(artifact.packId()),
@@ -101,8 +109,7 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
                 artifact.policy().token(),
                 artifact.reason().token(),
                 artifact.satisfiedBy().map(ActivationsEffectiveProfiles::urn),
-                artifact.suggestion()
-                        .map(suggestion -> new GovernanceEntry.Suggestion(suggestion.when(), suggestion.reason())));
+                suggestion.map(words -> new GovernanceEntry.Suggestion(words.when(), words.reason())));
     }
 
     private static Urn urn(ArtifactRef ref) {

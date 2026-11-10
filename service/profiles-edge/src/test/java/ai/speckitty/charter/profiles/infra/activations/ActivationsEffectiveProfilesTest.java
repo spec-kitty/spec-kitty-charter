@@ -181,6 +181,35 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
+    void aSuggestsEntryInForceCarriesTheWordsOfItsEdgeAsItsSuggestion() {
+        EffectiveArtifactAnswer.Entry suggestsInForce = new EffectiveArtifactAnswer.Entry(
+                active(D1),
+                GovernanceFacts.Step.SUGGESTS,
+                RelationType.SUGGESTS,
+                P,
+                1,
+                Optional.of(new Suggestion(Optional.of("when it applies"), Optional.of("why it applies"))));
+        answers(
+                answer(
+                        active(P),
+                        leanProfile("main", "P"),
+                        Optional.of(new EffectiveArtifactAnswer.Governance(
+                                List.of(
+                                        suggestsInForce,
+                                        entry(active(S), GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1)),
+                                List.of()))),
+                "t");
+
+        List<EffectiveProfileRead.Entry> entries = found(null).governance();
+
+        assertThat(entries.getFirst().facts().state()).as("in force").isEqualTo("active");
+        assertThat(entries.getFirst().facts().suggestion())
+                .contains(
+                        new GovernanceEntry.Suggestion(Optional.of("when it applies"), Optional.of("why it applies")));
+        assertThat(entries.get(1).facts().suggestion()).isEmpty();
+    }
+
+    @Test
     void aSatisfiedByIsTheUrnOfTheOverride() {
         EffectiveArtifact required = new EffectiveArtifact(
                 D1,
