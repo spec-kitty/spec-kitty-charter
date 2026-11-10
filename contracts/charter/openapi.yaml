@@ -140,6 +140,8 @@ paths:
     $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_steps_stepId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}:
     $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_skeletons_skeletonName.yaml
+  /activations/{activationId}/artifacts/mission_step_contract/{contractId}:
+    $ref: paths/activations_activationId_artifacts_mission_step_contract_contractId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
   /activations/{activationId}/skipped:

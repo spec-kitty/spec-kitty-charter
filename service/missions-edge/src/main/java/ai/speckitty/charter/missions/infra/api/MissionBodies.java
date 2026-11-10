@@ -8,13 +8,22 @@ import ai.speckitty.charter.api.model.MissionPathConventions;
 import ai.speckitty.charter.api.model.MissionSkeleton;
 import ai.speckitty.charter.api.model.MissionSkeletonSummary;
 import ai.speckitty.charter.api.model.MissionStep;
+import ai.speckitty.charter.api.model.MissionStepContract;
+import ai.speckitty.charter.api.model.MissionStepContractGate;
+import ai.speckitty.charter.api.model.MissionStepContractInput;
+import ai.speckitty.charter.api.model.MissionStepContractStep;
+import ai.speckitty.charter.api.model.MissionStepDelegation;
+import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
 import ai.speckitty.charter.api.model.MissionStepSummary;
 import ai.speckitty.charter.api.model.MissionType;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
+import ai.speckitty.charter.missions.application.EffectiveStepContractView;
 import ai.speckitty.charter.missions.application.Fingerprinted;
+import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeView;
 import ai.speckitty.charter.missions.application.SkeletonView;
+import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StepView;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.PathConventions;
@@ -25,7 +34,8 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * The wire bodies of the mission-type reads, the same for a pack and for an activation (#99): a mission type in the
- * Artifact envelope, a step and a skeleton, each linked within its {@link MissionLinks.Scope}. A controller adds the
+ * Artifact envelope, a step and a skeleton, each linked within its {@link MissionLinks.Scope}; and a step contract under
+ * an activation in the Artifact envelope (D11). A controller adds the
  * links only its scope has (an activation's {@code artifact}) to the envelope's own.
  */
 final class MissionBodies {
@@ -150,6 +160,71 @@ final class MissionBodies {
                 view.sha256(),
                 view.size(),
                 MissionLinks.wire(own));
+    }
+
+    /**
+     * A step contract under an activation in the Artifact envelope (D11): its stored fields, and each delegation
+     * candidate the closure holds linked {@code effective-artifact}, its read under the activation.
+     *
+     * @param view the step contract's view
+     * @param packId the pack that holds the winner
+     * @param scope the activation's scope
+     * @param own the envelope's links
+     * @return the envelope
+     */
+    static Artifact stepContract(
+            EffectiveStepContractView view,
+            String packId,
+            MissionLinks.Scope scope,
+            EnumMap<MissionRelation, Link> own) {
+        StepContractView contract = view.contract();
+        MissionStepContract wire = new MissionStepContract(
+                contract.id(),
+                contract.schemaVersion(),
+                contract.action(),
+                contract.mission(),
+                contract.steps().stream()
+                        .map(step -> contractStep(step, view, scope))
+                        .toList(),
+                contract.gates().stream().map(MissionBodies::gate).toList());
+        return new Artifact(ArtifactKind.MISSION_STEP_CONTRACT.token(), contract.id(), packId, MissionLinks.wire(own))
+                .missionStepContract(wire);
+    }
+
+    private static MissionStepContractStep contractStep(
+            StepContractView.Step step, EffectiveStepContractView view, MissionLinks.Scope scope) {
+        return new MissionStepContractStep(
+                        step.id(),
+                        step.description(),
+                        step.inputs().stream()
+                                .map(input -> new MissionStepContractInput(input.flag(), input.source())
+                                        .optional(input.optional().orElse(null)))
+                                .toList())
+                .command(step.command().orElse(null))
+                .delegatesTo(step.delegatesTo()
+                        .map(delegation -> new MissionStepDelegation(
+                                delegation.kind().token(),
+                                delegation.candidates().stream()
+                                        .map(candidate -> candidate(delegation.kind(), candidate, view, scope))
+                                        .toList()))
+                        .orElse(null))
+                .guidance(step.guidance().orElse(null));
+    }
+
+    private static MissionStepDelegationCandidate candidate(
+            ArtifactKind kind, String candidate, EffectiveStepContractView view, MissionLinks.Scope scope) {
+        EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
+        if (view.heldCandidates().contains(new HeldArtifact(kind, candidate))) {
+            own.put(MissionRelation.EFFECTIVE_ARTIFACT, scope.artifact(kind.token(), candidate));
+        }
+        return new MissionStepDelegationCandidate(candidate, MissionLinks.wire(own));
+    }
+
+    private static MissionStepContractGate gate(StepContractView.Gate gate) {
+        return new MissionStepContractGate(gate.onTransition(), gate.handler(), gate.schemaVersion())
+                .handlerKind(gate.handlerKind().orElse(null))
+                .failOpen(gate.failOpen().orElse(null))
+                .provenance(gate.provenance().orElse(null));
     }
 
     /**

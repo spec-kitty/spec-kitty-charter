@@ -1,0 +1,23 @@
+description: >-
+  The activation or the step contract the path names is not there, refused with 404, judged in that order:
+  activation_not_found for an activation no document is stored under (or one this client may not see); then
+  mission_step_contract_not_found for a step contract no pack of the activation's merged closure holds.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      activation-not-found:
+        $ref: ../examples/CharterRefusal.activation-not-found.yaml
+      mission-step-contract-not-found:
+        summary: No pack of the activation's closure holds the step contract.
+        value:
+          title: Mission step contract not found
+          status: 404
+          code: mission_step_contract_not_found
+          detail: No pack of the activation's closure holds the mission step contract nope.

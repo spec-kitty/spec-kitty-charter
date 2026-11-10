@@ -41,5 +41,6 @@ files:
   - CharterRefusal.skeleton-not-found.yaml
   - CharterRefusal.mission-step-contract-not-found.yaml
   - Artifact.activation-mission-type.yaml
+  - Artifact.activation-mission-step-contract.yaml
   - MissionStep.activation-implement.yaml
   - MissionSkeleton.activation-spec-template.yaml

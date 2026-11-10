@@ -133,6 +133,55 @@ class EffectiveReadServiceMissionWinnerTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 
+    @Test
+    void aStepContractIsAnsweredWithItsBoundTypesWinnerAndTheHeldArtifactsOfTheListedKinds() {
+        EffectiveStepContractWinner winner = service.stepContractWinner(ID, "a");
+
+        assertThat(winner.packId()).isEqualTo("main");
+        assertThat(winner.stepContract().localId()).isEqualTo("a");
+        assertThat(winner.missionType())
+                .as("the winner of the type the merge binds a to")
+                .hasValueSatisfying(type -> assertThat(type.packId()).isEqualTo(new PackIdentifier("proj")));
+        assertThat(winner.held())
+                .as("the listed kinds only: the fake lists no mission kind")
+                .isEmpty();
+        assertThat(winner.sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(packs.calls()).as("one session").isEqualTo(1);
+
+        packs.listedKinds(List.of(ArtifactKind.MISSION_TYPE, ArtifactKind.DIRECTIVE));
+        assertThat(service.stepContractWinner(ID, "a").held()).containsExactlyInAnyOrder(SD, OTHER);
+    }
+
+    @Test
+    void aStepContractBoundToATypeTheClosureDoesNotHoldHasNoType() {
+        packs.merged(new MergedSnapshot(
+                Map.of(A, winner("main", PackLevel.ORG)),
+                Map.of(),
+                List.of(),
+                List.of(),
+                Map.of(A, new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"))));
+
+        assertThat(service.stepContractWinner(ID, "a").missionType()).isEmpty();
+        assertThat(packs.effectiveAsks())
+                .extracting(ask -> ask.kind().token() + ":" + ask.id())
+                .containsExactly("mission_step_contract:a");
+    }
+
+    @Test
+    void aStepContractNoPackOfTheClosureHoldsIsNotFoundAfterTheActivation() {
+        assertThatThrownBy(() -> service.stepContractWinner(ID, "gather"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
+                    assertThat(refusal.getMessage())
+                            .isEqualTo("No pack of the activation's closure holds the mission step contract gather.");
+                });
+        assertThat(packs.effectiveAsks()).isEmpty();
+        assertThatThrownBy(() -> service.stepContractWinner(new ActivationId("nope"), "gather"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+    }
+
     private static MergedSnapshot.Winner winner(String packId, PackLevel level) {
         return new MergedSnapshot.Winner(packId, level, Policy.OPEN);
     }

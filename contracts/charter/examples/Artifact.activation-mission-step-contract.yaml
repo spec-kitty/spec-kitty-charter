@@ -1,0 +1,45 @@
+summary: >-
+  The layer-merge winner of step contract specify under activation a-1, held by pack core, its steps shortened to two.
+  Every link but artifact, the pack read of the winner, stays under the activation; a directive candidate the closure
+  holds links its read under the activation, and a procedure, a kind the service does not list, has no link.
+value:
+  kind: mission_step_contract
+  id: specify
+  packId: core
+  missionStepContract:
+    id: specify
+    schemaVersion: '1.0'
+    action: specify
+    mission: software-dev
+    steps:
+      - id: capture_intent
+        description: |
+          Conduct or verify the human discovery interview, then capture confirmed user intent
+        inputs: []
+        delegatesTo:
+          kind: directive
+          candidates:
+            - id: DIRECTIVE_010
+              _links:
+                effective-artifact:
+                  href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
+      - id: map_examples
+        description: Capture concrete rules, examples, and open questions for the behavior slice
+        inputs: []
+        delegatesTo:
+          kind: procedure
+          candidates:
+            - id: example-mapping-workshop
+              _links: {}
+    gates: []
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/mission_step_contract/specify
+    collection:
+      href: /api/v1/activations/a-1/artifacts?kind=mission_step_contract
+    mission-type:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev
+    step:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify
+    artifact:
+      href: /api/v1/packs/core/artifacts/mission_step_contract/specify

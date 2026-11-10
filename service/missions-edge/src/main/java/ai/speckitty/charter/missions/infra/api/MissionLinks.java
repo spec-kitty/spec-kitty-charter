@@ -116,9 +116,22 @@ final class MissionLinks {
             return link(root, id, ARTIFACTS, MISSION_TYPE, missionTypeId, "skeletons", name);
         }
 
-        /** The scope's step contract: the generic item read of a pack, or the generic effective read of an activation. */
+        /**
+         * The scope's step contract: the generic item read of a pack, or {@code getEffectiveMissionStepContract} under
+         * an activation.
+         */
         Link stepContract(String stepContractId) {
             return link(root, id, ARTIFACTS, MISSION_STEP_CONTRACT, stepContractId);
+        }
+
+        /** The scope's artifacts of kind {@code mission_step_contract}. */
+        Link stepContracts() {
+            return new Link(href(root, id, ARTIFACTS) + "?kind=" + MISSION_STEP_CONTRACT);
+        }
+
+        /** The scope's read of one artifact of any kind: the generic item read, or the generic effective read. */
+        Link artifact(String kindToken, String artifactId) {
+            return link(root, id, ARTIFACTS, kindToken, artifactId);
         }
     }
 

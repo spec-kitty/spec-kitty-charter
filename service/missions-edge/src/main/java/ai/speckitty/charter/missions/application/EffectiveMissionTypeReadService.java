@@ -4,6 +4,9 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -92,6 +95,37 @@ public final class EffectiveMissionTypeReadService {
     }
 
     /**
+     * The step contract in force under an activation (D11), with the pack that holds it: the winner of the layer merge,
+     * whether the closure holds its mission type, whether the winning type declares its step, and which of its
+     * delegation candidates the closure holds. One read of the activations port answers all of it.
+     *
+     * @param activationId the activation's id
+     * @param stepContractId the step contract's id
+     * @return the view, the pack that holds the winner and the verified fingerprint
+     * @throws CharterRefusal as {@link ActivationMissionTypes#stepContract} refuses
+     */
+    public Held<EffectiveStepContractView> stepContract(String activationId, String stepContractId) {
+        EffectiveStepContract winner = activations.stepContract(activationId, stepContractId);
+        StepContractView contract = contracts.view(winner.contract());
+        boolean stepHeld = winner.missionType()
+                .map(type -> Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
+                        .anyMatch(step -> step.id().equals(contract.action())))
+                .orElse(false);
+        Set<HeldArtifact> candidates = contract.steps().stream()
+                .flatMap(step -> step.delegatesTo().stream())
+                .flatMap(delegation -> delegation.candidates().stream()
+                        .map(candidate -> new HeldArtifact(delegation.kind(), candidate)))
+                .filter(winner.held()::contains)
+                .collect(Collectors.toUnmodifiableSet());
+        return new Held<>(
+                new Fingerprinted<>(
+                        new EffectiveStepContractView(
+                                contract, winner.missionType().isPresent(), stepHeld, candidates),
+                        winner.fingerprint()),
+                winner.holder());
+    }
+
+    /**
      * The winner of the type with what the pack that holds it stores beside it, at one fingerprint: the holding pack's
      * skeletons and step files, and the merged closure's step contracts bound to the type.
      */
@@ -103,7 +137,9 @@ public final class EffectiveMissionTypeReadService {
         return new MissionTypeHolding(
                 winner.type(),
                 stored.skeletons(),
-                winner.stepContracts().stream().map(contracts::bound).toList(),
+                winner.stepContracts().stream()
+                        .map(contract -> contracts.view(contract).bound())
+                        .toList(),
                 stored.stepFiles(),
                 winner.fingerprint());
     }
