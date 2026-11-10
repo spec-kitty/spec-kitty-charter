@@ -64,12 +64,16 @@ class MissionTypeHoldingCorpusTest {
         MissionType type = (MissionType) holding.missionType();
         List<MissionStep> all = new ArrayList<>(type.steps());
         all.addAll(type.onDemandSteps());
-        List<String> declared = declaredStepIds(mission);
-        assertThat(declared).as("steps the checkout's type declares").isNotEmpty();
-        assertThat(all)
+        List<String> sequence = declaredStepIds(mission, "steps:");
+        List<String> onDemand = declaredStepIds(mission, "on_demand_steps:");
+        List<String> declared = new ArrayList<>(sequence);
+        declared.addAll(onDemand);
+        assertThat(sequence).as("sequence steps the checkout's type declares").isNotEmpty();
+        assertThat(type.steps()).extracting(MissionStep::id).as("the sequence").containsExactlyElementsOf(sequence);
+        assertThat(type.onDemandSteps())
                 .extracting(MissionStep::id)
-                .as("sequence, then on demand")
-                .containsExactlyElementsOf(declared);
+                .as("the on-demand steps")
+                .containsExactlyElementsOf(onDemand);
         assertThat(holding.stepFiles().keySet())
                 .as("a file set per declared step")
                 .containsExactlyInAnyOrderElementsOf(declared);
@@ -99,13 +103,13 @@ class MissionTypeHoldingCorpusTest {
         assertThat(holding.fingerprint()).startsWith("sha256:");
     }
 
-    /** The ids of the top-level {@code - id:} entries of {@code steps:}, then {@code on_demand_steps:}, in file order. */
-    private static List<String> declaredStepIds(Path mission) throws IOException {
+    /** The ids of the top-level {@code - id:} entries under one top-level key ({@code steps:} or {@code on_demand_steps:}), in file order. */
+    private static List<String> declaredStepIds(Path mission, String key) throws IOException {
         List<String> ids = new ArrayList<>();
         boolean inSteps = false;
         for (String line : Files.readAllLines(mission.resolve(TYPE + ".mission-type.yaml"))) {
             if (!line.isEmpty() && !line.startsWith(" ") && !line.startsWith("-")) {
-                inSteps = line.equals("steps:") || line.equals("on_demand_steps:");
+                inSteps = line.equals(key);
             } else if (inSteps && line.startsWith("- id: ")) {
                 ids.add(line.substring("- id: ".length()).strip());
             }
