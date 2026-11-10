@@ -52,9 +52,9 @@ Activation-scoped `suggestions[]` hold the out-of-force candidates
 | `activationId`, `revision`, `governanceFingerprint` | As the effective list |
 | `kind`, `artifactId`, `packId`, `level` | The layer-merge winner |
 | `state`, `required`, `policy`, `reason` | As the effective list item |
-| `agentProfile` | Only on the profile route: the winner's body |
+| `agentProfile` | Only on the profile route: the winner's body. The generic read embeds no body (decision `01M710DQEMV7VPKDNQPWKPGD4F`): its `artifact` link reaches it |
 | `governance[]`, `suggestions[]` | Only on the profile route |
-| `_links` | `self`; `artifact` (the winner's pack-scoped read); `activation` |
+| `_links` | `self`; `artifact` (the winner's pack-scoped read); `up` (the activation) |
 
 ## Walk (`packs.application`)
 
