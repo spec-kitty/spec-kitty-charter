@@ -407,16 +407,9 @@ class StepEnhancementLoadChecksTest {
                 .enhances("brief", "base::action:software-dev/plan")
                 .graph();
 
-        List<RefusalViolation> violations = pack.staged();
-
-        assertThat(violations)
-                .filteredOn(violation -> violation.code().equals(CODE))
-                .singleElement()
-                .satisfies(violation -> assertThat(violation.pointer()).isEqualTo(pack.yamlOf(TYPE, "brief")));
-        assertThat(violations)
-                .filteredOn(violation -> violation.pointer().equals(pack.fragmentOf(TYPE, "two")))
-                .singleElement()
-                .satisfies(violation -> assertThat(violation.code()).isEqualTo("unmodelled"));
+        assertThat(pack.staged())
+                .extracting(RefusalViolation::code, RefusalViolation::pointer)
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
     }
 
     // ---- orphans: reclassified at the staged load, never on a composing read --------------------------------------
@@ -454,7 +447,7 @@ class StepEnhancementLoadChecksTest {
     }
 
     @Test
-    @DisplayName("a fragment beside an enhancement the store refuses stays unmodelled, at both moments")
+    @DisplayName("a fragment beside an enhancement the store refuses is no orphan and is not listed, at both moments")
     void aFragmentBesideARefusedEnhancementIsNoOrphan() throws IOException {
         Enhancer pack = new Enhancer()
                 .enhancement(TYPE, "brief", "spdd:one", "missing.prompt-fragment.md")
@@ -464,11 +457,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .as("the refused enhancement is unmodelled too, and so is the fragment beside it")
-                .containsExactly(
-                        tuple(CODE, pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "stray")));
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).extracting(PackFinding::file).containsExactly(pack.yamlOf(TYPE, "brief"));
     }
 
@@ -491,18 +480,14 @@ class StepEnhancementLoadChecksTest {
 
         List<RefusalViolation> violations = pack.graph().staged();
 
-        // the companion faults of the store come first, remapped; then the rule fault and the unmodelled files, by path
+        // the companion faults of the store come first, remapped; then the orphan, one violation per fault
         assertThat(violations)
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
                 .containsExactly(
                         tuple(CODE, pack.yamlOf("missing", "missing")),
                         tuple(CODE, pack.yamlOf("shared", "second")),
                         tuple(CODE, pack.yamlOf("twice", "twice")),
-                        tuple("unmodelled", pack.yamlOf("missing", "missing")),
-                        tuple(CODE, pack.fragmentOf("orphan", "stray")),
-                        tuple("unmodelled", pack.yamlOf("shared", "second")),
-                        tuple("unmodelled", pack.fragmentOf("twice", "t")),
-                        tuple("unmodelled", pack.yamlOf("twice", "twice")));
+                        tuple(CODE, pack.fragmentOf("orphan", "stray")));
     }
 
     // ---- precedence (T-08) -----------------------------------------------------------------------------------------
@@ -517,8 +502,7 @@ class StepEnhancementLoadChecksTest {
         pack.file(pack.yamlOf(TYPE, "brief"), "schema_version: '1.0'\nid: brief\nprompt_fragments: []\n");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple("schema", pack.yamlOf(TYPE, "brief")), tuple("unmodelled", pack.yamlOf(TYPE, "brief")));
+                .containsExactly(tuple("schema", pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
                 .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR));
@@ -546,11 +530,7 @@ class StepEnhancementLoadChecksTest {
         pack.enhancement(TYPE, "brief", "Bad:Id", "one.prompt-fragment.md");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple("schema", pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "one")),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "two")));
+                .containsExactly(tuple("schema", pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).isEmpty();
 
         pack.enhancement(TYPE, "brief", "spdd:slot", "one.prompt-fragment.md", "spdd:slot", "two.prompt-fragment.md");
@@ -573,10 +553,7 @@ class StepEnhancementLoadChecksTest {
                 "schema_version: '1.0'\nid: other\nprompt_fragments:\n  - slot: spdd:one\n    path: brief.prompt-fragment.md\n");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple("schema", yaml),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "brief")),
-                        tuple("unmodelled", yaml));
+                .containsExactly(tuple("schema", yaml));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
                 .filteredOn(finding -> finding.file().equals(yaml))
@@ -604,10 +581,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple(CODE, pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.yamlOf(TYPE, "brief")));
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
         assertThat(pack.staged().getFirst().detail())
                 .contains("brief.prompt-fragment.md")
                 .doesNotContain("slot marker");
@@ -625,10 +599,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple(CODE, pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.fragmentOf(TYPE, "brief")),
-                        tuple("unmodelled", pack.yamlOf(TYPE, "brief")));
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
         assertThat(pack.staged().getFirst().detail())
                 .contains("brief.prompt-fragment.md")
                 .doesNotContain("slot marker");

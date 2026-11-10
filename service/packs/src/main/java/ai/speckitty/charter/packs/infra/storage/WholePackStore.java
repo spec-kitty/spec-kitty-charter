@@ -307,8 +307,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 .violations()
                 .forEach(violation ->
                         violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
-        Map<String, PackElementViolation> orphans = orphanFragments(loaded.unmodelled());
-        loaded.unmodelled().forEach(file -> {
+        List<String> unmodelled =
+                unreportedFiles(loaded.unmodelled(), loaded.pack().violations());
+        Map<String, PackElementViolation> orphans = orphanFragments(unmodelled);
+        unmodelled.forEach(file -> {
             PackElementViolation orphan = orphans.get(file);
             violations.add(
                     orphan != null
@@ -330,10 +332,33 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
+     * The unmodelled files that no violation of the pack already accounts for: one fault, one violation. An
+     * enhancement file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the
+     * model, so it is unmodelled, and so are the fragments beside it; but the fault is already reported at the
+     * enhancement, so neither the file nor the fragments of its directory are listed again. A genuinely unmodelled file
+     * elsewhere stays listed, and so does an orphan fragment beside an enhancement that is held.
+     */
+    private static List<String> unreportedFiles(List<String> unmodelled, List<PackElementViolation> reported) {
+        Set<String> reportedFiles = new HashSet<>();
+        reported.forEach(violation -> reportedFiles.add(violation.file()));
+        Set<String> refusedDirectories = new HashSet<>();
+        for (String file : unmodelled) {
+            if (file.endsWith(ENHANCEMENT_SUFFIX) && reportedFiles.contains(file)) {
+                refusedDirectories.add(file.substring(0, file.lastIndexOf('/') + 1));
+            }
+        }
+        return unmodelled.stream()
+                .filter(file -> !(file.endsWith(ENHANCEMENT_SUFFIX) && reportedFiles.contains(file)))
+                .filter(file -> !(FRAGMENT_FILE.matcher(file).matches()
+                        && refusedDirectories.contains(file.substring(0, file.lastIndexOf('/') + 1))))
+                .toList();
+    }
+
+    /**
      * The unmodelled prompt fragments that are orphans (D11): named by no held enhancement, so refused here under
      * {@code prompt_fragment_invalid} at the fragment, and in validate mode. A fragment in a directory holding an
-     * enhancement that is not held (refused by the store, or withheld as a repeated id) stays an {@code unmodelled}
-     * entry, as every file of a refused artifact does: its companions fell out of the held ones with it (A4). An
+     * enhancement that is not held (refused by the store, or withheld as a repeated id) is no orphan, and with the
+     * enhancement's own fault already reported it is not listed at all ({@link #unreportedFiles}) (A4). An
      * enhancement that only has a rule fault is held and excuses nothing (fifth analysis A5). The rule and its text are
      * the step enhancement rules'.
      */
