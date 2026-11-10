@@ -37,7 +37,8 @@ public final class PacksMissionTypes implements PackMissionTypes {
     @Override
     public MissionTypeHolding holding(PackIdentifier pack, String missionTypeId) {
         MissionTypeHoldingRead.Holding held = reads.holding(pack, missionTypeId);
-        MissionType type = MissionTypeNarrowing.narrowed(held.missionType(), "packs");
+        String read = "The read of the mission type " + missionTypeId + " in pack " + pack.value();
+        MissionType type = MissionTypeNarrowing.narrowed(held.missionType(), read);
         Map<String, MissionTypeHolding.StepFiles> files = new LinkedHashMap<>();
         held.stepFiles()
                 .forEach((step, stored) -> files.put(
@@ -48,7 +49,8 @@ public final class PacksMissionTypes implements PackMissionTypes {
                         .map(template -> MissionTypeHolding.StoredSkeleton.ofTemplate(
                                 template.localId(),
                                 type.localId(),
-                                StoredFile.of(template.content().bytes())))
+                                StoredFile.of(template.content().bytes()),
+                                read))
                         .toList(),
                 held.stepContracts().stream()
                         .map(contract -> new MissionTypeHolding.BoundContract(contract.localId(), contract.action()))

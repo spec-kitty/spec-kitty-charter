@@ -15,15 +15,16 @@ public final class MissionTypeNarrowing {
      * The mission type the pack store bound.
      *
      * @param artifact an artifact of kind {@code mission_type}
-     * @param reader the slice that read it, as the fault names it, for example {@code packs}
+     * @param read the read that holds it, as the fault names it, for example
+     *     {@code The read of the mission type software-dev under activation a-1}
      * @return the mission type
-     * @throws IllegalStateException when the artifact is no {@link MissionType}
+     * @throws IllegalStateException when the artifact is no {@link MissionType}, naming the read that lacks it
      */
-    public static MissionType narrowed(CharterArtifact artifact, String reader) {
+    public static MissionType narrowed(CharterArtifact artifact, String read) {
         if (artifact instanceof MissionType type) {
             return type;
         }
-        throw new IllegalStateException("the " + reader + " read a mission type as "
-                + artifact.getClass().getName());
+        throw new IllegalStateException(read + " holds " + artifact.kind().token() + ":" + artifact.localId() + " as a "
+                + artifact.getClass().getName() + ", not a mission type.");
     }
 }

@@ -21,8 +21,8 @@ public final class PacksStepContracts implements StepContracts {
     public PacksStepContracts() {}
 
     @Override
-    public StepContractView view(CharterArtifact contract) {
-        MissionStepContract narrowed = narrowed(contract);
+    public StepContractView view(CharterArtifact contract, String read) {
+        MissionStepContract narrowed = narrowed(contract, read);
         return new StepContractView(
                 narrowed.localId(),
                 narrowed.schemaVersion().orElseThrow(),
@@ -33,12 +33,12 @@ public final class PacksStepContracts implements StepContracts {
     }
 
     /** The step contract the pack store bound; anything else is a bug of the store. */
-    static MissionStepContract narrowed(CharterArtifact artifact) {
+    static MissionStepContract narrowed(CharterArtifact artifact, String read) {
         if (artifact instanceof MissionStepContract contract) {
             return contract;
         }
-        throw new IllegalStateException("the packs read a mission step contract as "
-                + artifact.getClass().getName());
+        throw new IllegalStateException(read + " holds " + artifact.kind().token() + ":" + artifact.localId() + " as a "
+                + artifact.getClass().getName() + ", not a mission step contract.");
     }
 
     private static StepContractView.Step step(ContractStep step) {

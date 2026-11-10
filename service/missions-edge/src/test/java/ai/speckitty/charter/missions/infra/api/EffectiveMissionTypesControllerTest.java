@@ -90,7 +90,7 @@ class EffectiveMissionTypesControllerTest {
                                         }
                                     },
                                     (pack, type) -> holding(),
-                                    contract -> STEP_CONTRACT),
+                                    (contract, read) -> STEP_CONTRACT),
                             new MissionLinks("/api/v1")),
                     new GenericEffectiveRead())
             .build();

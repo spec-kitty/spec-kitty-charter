@@ -67,14 +67,18 @@ public record MissionTypeHolding(
          * @param templateId the template's id
          * @param missionTypeId the mission type's id
          * @param content its stored bytes
+         * @param read the read that holds it, as the fault names it, for example
+         *     {@code The read of the mission type software-dev in pack main}
          * @return the skeleton
-         * @throws IllegalStateException when the id does not start with the type's prefix: a template of the type
-         *     outside its directory is a bug of the store, never a refusal
+         * @throws IllegalStateException when the id does not start with the type's prefix, naming the read: a template
+         *     of the type outside its directory is a bug of the store, never a refusal
          */
-        public static StoredSkeleton ofTemplate(String templateId, String missionTypeId, StoredFile content) {
+        public static StoredSkeleton ofTemplate(
+                String templateId, String missionTypeId, StoredFile content, String read) {
             String prefix = missionTypeId + "/";
             if (!templateId.startsWith(prefix)) {
-                throw new IllegalStateException("a template of the type outside its directory: " + templateId);
+                throw new IllegalStateException(
+                        read + " holds the template " + templateId + " outside the type's templates/ directory.");
             }
             return new StoredSkeleton(templateId.substring(prefix.length()), content);
         }

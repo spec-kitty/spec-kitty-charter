@@ -137,8 +137,13 @@ class PacksMissionTypesTest {
             }
         };
 
-        assertThatThrownBy(() -> MissionTypeNarrowing.narrowed(stub, "packs"))
-                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> MissionTypeNarrowing.narrowed(
+                        stub, "The read of the mission type software-dev under activation a-1"))
+                .isInstanceOf(IllegalStateException.class)
+                .as("the fault names the read that lacks its mission type")
+                .hasMessageStartingWith(
+                        "The read of the mission type software-dev under activation a-1 holds mission_type:software-dev as a ")
+                .hasMessageEndingWith(", not a mission type.");
     }
 
     private static MissionTypeHoldingRead read(Pack pack, PackCompanionFiles files) {

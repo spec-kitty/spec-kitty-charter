@@ -61,7 +61,7 @@ class EffectiveMissionTypeReadServiceTest {
         });
         return holding(packFingerprint);
     };
-    private final StepContracts contracts = contract -> view(contract.localId(), "specify");
+    private final StepContracts contracts = (contract, read) -> view(contract.localId(), "specify");
     private final EffectiveMissionTypeReadService reads =
             new EffectiveMissionTypeReadService(activations, packs, contracts);
 
@@ -116,7 +116,8 @@ class EffectiveMissionTypeReadServiceTest {
                     () -> reads.step("a-1", "software-dev", "specify"),
                     () -> reads.skeleton("a-1", "software-dev", "spec.md"))) {
                 assertThatThrownBy(read::run)
-                        .as("the activation's read found the type in proj a moment ago, so %s means the packs changed",
+                        .as(
+                                "the activation's read found the type in proj a moment ago, so %s means the packs changed",
                                 changed.token())
                         .isInstanceOfSatisfying(
                                 CharterRefusal.class,

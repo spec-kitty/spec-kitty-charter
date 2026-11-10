@@ -14,8 +14,11 @@ public interface StepContracts {
      * The step contract's stored fields.
      *
      * @param contract an artifact of kind {@code mission_step_contract}
+     * @param read the read that holds it, as the fault names it, for example
+     *     {@code The read of the step contract specify-contract under activation a-1}
      * @return the contract as the missions slice reads it
-     * @throws IllegalStateException when the artifact is no mission step contract: a bug, never a refusal
+     * @throws IllegalStateException when the artifact is no mission step contract, naming the read that lacks it: a
+     *     bug, never a refusal
      */
-    StepContractView view(CharterArtifact contract);
+    StepContractView view(CharterArtifact contract, String read);
 }

@@ -42,7 +42,9 @@ public final class ActivationsMissionTypes implements ActivationMissionTypes {
         EffectiveMissionTypeWinner winner = effective.missionTypeWinner(new ActivationId(activationId), missionTypeId);
         return new EffectiveMissionType(
                 new PackIdentifier(winner.packId()),
-                MissionTypeNarrowing.narrowed(winner.missionType(), "activations"),
+                MissionTypeNarrowing.narrowed(
+                        winner.missionType(),
+                        "The read of the mission type " + missionTypeId + " under activation " + activationId),
                 winner.stepContracts(),
                 winner.sourceFingerprint());
     }
@@ -54,7 +56,11 @@ public final class ActivationsMissionTypes implements ActivationMissionTypes {
         return new EffectiveStepContract(
                 new PackIdentifier(winner.packId()),
                 winner.stepContract(),
-                winner.missionType().map(type -> MissionTypeNarrowing.narrowed(type, "activations")),
+                winner.missionType()
+                        .map(type -> MissionTypeNarrowing.narrowed(
+                                type,
+                                "The read of the step contract " + stepContractId + " under activation "
+                                        + activationId)),
                 winner.held().stream()
                         .map(ref -> new HeldArtifact(ref.kind(), ref.id()))
                         .collect(Collectors.toUnmodifiableSet()),
