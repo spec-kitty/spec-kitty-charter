@@ -128,15 +128,14 @@ Keep it small; add a step only when a scenario cannot be written without it.
   pack of the closure holds (`held` false, a null `packId`, no link); then ` edge {}` for an entry whose `edge` states
   neither word, or ` edge {when "<when>" because "<reason>"}` for one that states any (one word alone is written alone):
   every entry has an `edge`, whatever its relation (agent-profile-reads.feature, bound in `ProfileSteps`).
-- `Then the field at "<json-pointer>" is an empty object` — the member is there and is `{}` (agent-profile-reads.feature,
-  bound in `ProfileSteps`).
+- `Then the field at "<json-pointer>" is an empty object` — the member is there and is `{}` (agent-profile-reads.feature
+  and effective-agent-profile.feature, bound in `ProfileSteps`).
 - `Then the effective governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of
   the last answer per line, in the answer's order (sorted by urn): `<urn> <step> via <urn> hops <n> <state>/<reason> in
   <packId> linked`, where `<state>/<reason>` are the state and the reason the activation gives the entry's winner,
   `<packId>` is the pack that holds that winner, and `linked` says its `_links.artifact` is the pack-scoped read of the
-  entry in that pack (`unlinked` for an entry without the link, a kind the generic route does not serve); then, for an
-  entry with a `suggestion`, ` suggested when "<when>" because "<reason>"` (effective-agent-profile.feature, bound in
-  `ProfileSteps`).
+  entry in that pack (`unlinked` for an entry without the link, a kind the generic route does not serve); then ` edge {}` for an `edge` that states neither word or ` edge {when "<when>" because "<reason>"}` for one that
+  states any, whatever the entry's relation and state (effective-agent-profile.feature, bound in `ProfileSteps`).
 - `Then the operation is refused as not implemented` — the last request's operation is declared in `../openapi.yaml`
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the

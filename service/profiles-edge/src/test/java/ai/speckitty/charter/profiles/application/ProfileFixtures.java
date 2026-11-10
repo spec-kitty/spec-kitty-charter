@@ -110,7 +110,7 @@ public final class ProfileFixtures {
      */
     public static EffectiveProfileRead.Entry effectiveRequires(String urn, String pack) {
         return new EffectiveProfileRead.Entry(
-                active(urn, pack), GovernanceEntry.Step.REQUIRES, urn("agent_profile:P"), 1);
+                active(urn, pack), GovernanceEntry.Step.REQUIRES, urn("agent_profile:P"), 1, EdgeWords.NONE);
     }
 
     /**

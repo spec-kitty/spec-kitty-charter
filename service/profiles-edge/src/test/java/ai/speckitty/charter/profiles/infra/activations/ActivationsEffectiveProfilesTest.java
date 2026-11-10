@@ -66,7 +66,17 @@ class ActivationsEffectiveProfilesTest {
 
     private static EffectiveArtifactAnswer.Entry entry(
             EffectiveArtifact artifact, GovernanceFacts.Step step, RelationType relation, ArtifactRef via, int hops) {
-        return new EffectiveArtifactAnswer.Entry(artifact, step, relation, via, hops, Optional.empty());
+        return entry(artifact, step, relation, via, hops, EffectiveArtifactAnswer.EdgeWords.NONE);
+    }
+
+    private static EffectiveArtifactAnswer.Entry entry(
+            EffectiveArtifact artifact,
+            GovernanceFacts.Step step,
+            RelationType relation,
+            ArtifactRef via,
+            int hops,
+            EffectiveArtifactAnswer.EdgeWords edge) {
+        return new EffectiveArtifactAnswer.Entry(artifact, step, relation, via, hops, edge);
     }
 
     private static EffectiveArtifactAnswer answer(
@@ -85,7 +95,13 @@ class ActivationsEffectiveProfilesTest {
     private static EffectiveArtifactAnswer.Governance governance() {
         return new EffectiveArtifactAnswer.Governance(
                 List.of(
-                        entry(active(S), GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1),
+                        entry(
+                                active(S),
+                                GovernanceFacts.Step.REQUIRES,
+                                RelationType.REQUIRES,
+                                P,
+                                1,
+                                new EffectiveArtifactAnswer.EdgeWords(Optional.empty(), Optional.of("style applies"))),
                         entry(active(PARENT), GovernanceFacts.Step.LINEAGE, RelationType.SPECIALIZES_FROM, P, 1),
                         entry(
                                 fact(D1, State.ACTIVE, Reason.REQUIRED, Optional.empty()),
@@ -100,7 +116,9 @@ class ActivationsEffectiveProfilesTest {
                                 Reason.NOT_SELECTED,
                                 Optional.of(new Suggestion(Optional.of("when it helps"), Optional.of("why it helps")))),
                         P,
-                        1)));
+                        1,
+                        new EffectiveArtifactAnswer.EdgeWords(
+                                Optional.of("when it helps"), Optional.of("why it helps")))));
     }
 
     private void answers(EffectiveArtifactAnswer answer, String etag) {
@@ -163,7 +181,7 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
-    void anEntryCarriesTheStateReasonAndSuggestionTheActivationGivesItAndNoneOfTheEdgesOfItsOwn() {
+    void anEntryCarriesTheStateAndTheReasonTheActivationGivesItAndLeavesTheWinnersSuggestionToTheWinner() {
         answers(answer(active(P), leanProfile("main", "P"), Optional.of(governance())), "t");
 
         List<EffectiveProfileRead.Entry> entries = found(null).governance();
@@ -177,35 +195,26 @@ class ActivationsEffectiveProfilesTest {
         assertThat(suggested.reason()).isEqualTo("not_selected");
         assertThat(suggested.pack().value()).isEqualTo("main");
         assertThat(suggested.suggestion())
-                .contains(new EdgeWords(Optional.of("when it helps"), Optional.of("why it helps")));
+                .as("the words of the edge are the entry's edge, not a fact of the winner")
+                .isEmpty();
     }
 
     @Test
-    void aSuggestsEntryInForceCarriesTheWordsOfItsEdgeAsItsSuggestion() {
-        EffectiveArtifactAnswer.Entry suggestsInForce = new EffectiveArtifactAnswer.Entry(
-                active(D1),
-                GovernanceFacts.Step.SUGGESTS,
-                RelationType.SUGGESTS,
-                P,
-                1,
-                Optional.of(new Suggestion(Optional.of("when it applies"), Optional.of("why it applies"))));
-        answers(
-                answer(
-                        active(P),
-                        leanProfile("main", "P"),
-                        Optional.of(new EffectiveArtifactAnswer.Governance(
-                                List.of(
-                                        suggestsInForce,
-                                        entry(active(S), GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1)),
-                                List.of()))),
-                "t");
+    void everyEntryCarriesTheWordsOfItsEdgeWhateverItsStepInForceOrOut() {
+        answers(answer(active(P), leanProfile("main", "P"), Optional.of(governance())), "t");
 
         List<EffectiveProfileRead.Entry> entries = found(null).governance();
 
-        assertThat(entries.getFirst().facts().state()).as("in force").isEqualTo("active");
-        assertThat(entries.getFirst().facts().suggestion())
-                .contains(new EdgeWords(Optional.of("when it applies"), Optional.of("why it applies")));
-        assertThat(entries.get(1).facts().suggestion()).isEmpty();
+        assertThat(entries)
+                .extracting(entry -> entry.facts().urn().toString(), EffectiveProfileRead.Entry::edge)
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple("agent_profile:parent", EdgeWords.NONE),
+                        org.assertj.core.api.Assertions.tuple("directive:D1", EdgeWords.NONE),
+                        org.assertj.core.api.Assertions.tuple(
+                                "directive:D2",
+                                new EdgeWords(Optional.of("when it helps"), Optional.of("why it helps"))),
+                        org.assertj.core.api.Assertions.tuple(
+                                "styleguide:S", new EdgeWords(Optional.empty(), Optional.of("style applies"))));
     }
 
     @Test

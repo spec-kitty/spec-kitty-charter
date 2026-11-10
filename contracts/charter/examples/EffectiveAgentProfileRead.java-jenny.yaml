@@ -3,9 +3,12 @@ summary: >-
   activation selects what this repository's charter.yaml selects (its directives, paradigms, style guides and the gherkin
   and java-supply-chain toolguides; the two toolguides the pack does not hold are left out) and java-jenny itself. The list
   is complete, not abridged. java-jenny requires DIRECTIVE_010, 025, 030, 034 and 051 and the java-conventions style guide,
-  all selected and in force; DIRECTIVE_001 is reached through DIRECTIVE_051 (hops 2). DIRECTIVE_041 is a suggests entry in
-  force and carries the when and reason of its edge. DISCIPLINED_REFACTORING and USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY
-  are suggests entries out of force (inactive, not_selected), each with the words of its edge. DIRECTIVE_024 is not listed:
+  all selected and in force; DIRECTIVE_001 is reached through DIRECTIVE_051 (hops 2). Every entry carries edge, the words of
+  the edge it was reached through, whatever its relation: DIRECTIVE_030 and DIRECTIVE_034 are requires entries whose edges
+  state a when and a reason, java-conventions a reason alone, and the requires edges of DIRECTIVE_010, 025, 051 and 001
+  state neither, so their edge is {}. DIRECTIVE_041 is a suggests entry in force with the when and reason of its edge.
+  DISCIPLINED_REFACTORING and USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY are suggests entries out of force (inactive,
+  not_selected), each with the words of its edge. DIRECTIVE_024 is not listed:
   java-jenny requires it, but the charter does not select it, so it is out of force and a requires target is not a suggestion;
   implementer-ivan is not listed either, because the activation does not select it (W1). required is false on every entry:
   it is the member of the effective set (a preset requires the artifact or a pack locks it), not the relation. self is this
@@ -206,6 +209,7 @@ value:
     relation: requires
     via: directive:DIRECTIVE_051
     hops: 2
+    edge: {}
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_001
@@ -221,6 +225,7 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge: {}
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010
@@ -236,6 +241,7 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge: {}
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_025
@@ -251,6 +257,11 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      when: when assessing whether tests meet the quality gate they must pass
+      reason: >-
+        An implementer-role profile should reach the test-quality-gate hub when assessing test quality. Composition-only
+        in the profile channel, authored per the #3063 family-D operator attestation.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_030
@@ -266,6 +277,11 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      when: when writing or reviewing the tests that accompany an implementation
+      reason: >-
+        An implementer-role profile should reach the test-first hub when writing tests. Composition-only in the profile
+        channel, authored per the #3063 family-D operator attestation.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_034
@@ -281,14 +297,14 @@ value:
     relation: suggests
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      when: when keeping the tests they write a clear scaffold rather than friction
+      reason: >-
+        An implementer-role profile should reach the tests-as-scaffold hub when writing tests. Composition-only in the
+        profile channel, authored per the #3063 family-D operator attestation.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_041
-    suggestion:
-      reason: >-
-        An implementer-role profile should reach the tests-as-scaffold hub when writing tests. Composition-only in the profile
-        channel, authored per the #3063 family-D operator attestation.
-      when: when keeping the tests they write a clear scaffold rather than friction
   - kind: directive
     artifactId: DIRECTIVE_051
     packId: built-in
@@ -301,6 +317,7 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge: {}
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_051
@@ -316,14 +333,14 @@ value:
     relation: suggests
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      when: when tidying code, encountering long classes/methods, or discovering convoluted logic
+      reason: >-
+        An implementer-role profile should reach the disciplined-refactoring directive when restructuring code.
+        Composition-only under today's traversal, authored per the #3063 family-B operator attestation.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DISCIPLINED_REFACTORING
-    suggestion:
-      reason: >-
-        An implementer-role profile should reach the disciplined-refactoring directive when restructuring code. Composition-only
-        under today's traversal, authored per the #3063 family-B operator attestation.
-      when: when tidying code, encountering long classes/methods, or discovering convoluted logic
   - kind: directive
     artifactId: USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY
     packId: built-in
@@ -336,14 +353,14 @@ value:
     relation: suggests
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      when: when assessing whether the tests around a change actually constrain its behaviour
+      reason: >-
+        An implementer-role profile should reach the mutation hub when assessing test quality. Composition-only in the
+        profile channel, authored per the #3063 family-D operator attestation.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY
-    suggestion:
-      reason: >-
-        An implementer-role profile should reach the mutation hub when assessing test quality. Composition-only in the profile
-        channel, authored per the #3063 family-D operator attestation.
-      when: when assessing whether the tests around a change actually constrain its behaviour
   - kind: styleguide
     artifactId: java-conventions
     packId: built-in
@@ -356,6 +373,10 @@ value:
     relation: requires
     via: agent_profile:java-jenny
     hops: 1
+    edge:
+      reason: >-
+        A language-specialist profile requires the conventions styleguide of each of its applies_to_languages (java);
+        operator ruling on spec-kitty-charter#405.
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/styleguide/java-conventions

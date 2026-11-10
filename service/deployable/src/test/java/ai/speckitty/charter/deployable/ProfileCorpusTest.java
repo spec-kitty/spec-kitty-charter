@@ -231,8 +231,12 @@ class ProfileCorpusTest {
             int[] worded) {
         for (JsonNode entry : governance) {
             JsonNode edge = entry.get("edge");
-            String key = entry.get("via").asString() + " "
-                    + entry.get("relation").asString() + " " + entry.get("urn").asString();
+            String urn = entry.has("urn")
+                    ? entry.get("urn").asString()
+                    : entry.get("kind").asString() + ":"
+                            + entry.get("artifactId").asString();
+            String key =
+                    entry.get("via").asString() + " " + entry.get("relation").asString() + " " + urn;
             if (edge == null || !edge.isObject()) {
                 problems.add(where + ": " + key + " has no edge object: " + edge);
                 continue;
@@ -517,6 +521,9 @@ class ProfileCorpusTest {
         }
         assertThat(entry).as("the wire entry of styleguide:java-conventions").isNotNull();
         assertThat(entry.get("step").asString()).isEqualTo("requires");
+        assertThat(entry.get("edge").has("when")).isFalse();
+        assertThat(entry.get("edge").get("reason").asString())
+                .startsWith("A language-specialist profile requires the conventions styleguide");
         assertThat(entry.get("_links").get("artifact").get("href").asString())
                 .isEqualTo("/api/v1/packs/built-in/artifacts/styleguide/java-conventions");
     }
@@ -556,43 +563,61 @@ class ProfileCorpusTest {
                         .getResponse()
                         .getContentAsString());
 
+        List<String> problems = new ArrayList<>();
+        int[] worded = {0};
+        edgeProblems(
+                "java-jenny under the charter selection", body.get("governance"), graphEdgeWords(), problems, worded);
+        assertThat(problems).isEmpty();
+        assertThat(worded[0]).as("entries whose edge states a word").isPositive();
         List<String> entries = new ArrayList<>();
         for (JsonNode entry : body.get("governance")) {
-            JsonNode words = entry.path("suggestion");
+            JsonNode words = entry.get("edge");
+            assertThat(words.isObject()).as("the edge of %s", entry).isTrue();
+            List<String> stated = new ArrayList<>();
+            if (words.has("when")) {
+                stated.add("when \"" + words.get("when").asString() + "\"");
+            }
+            if (words.has("reason")) {
+                stated.add("because \"" + words.get("reason").asString() + "\"");
+            }
             entries.add(entry.get("kind").asString() + ":"
                     + entry.get("artifactId").asString() + " "
                     + entry.get("relation").asString() + " via "
                     + entry.get("via").asString() + " hops "
                     + entry.get("hops").asInt() + " " + entry.get("state").asString() + "/"
-                    + entry.get("reason").asString()
-                    + (words.isObject()
-                            ? " when \"" + words.path("when").asString() + "\" because \""
-                                    + words.path("reason").asString() + "\""
-                            : ""));
+                    + entry.get("reason").asString() + " edge {" + String.join(" ", stated) + "}");
         }
+        String d030 = " edge {when \"when assessing whether tests meet the quality gate they must pass\" because"
+                + " \"An implementer-role profile should reach the test-quality-gate hub when assessing test quality."
+                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
+        String d034 = " edge {when \"when writing or reviewing the tests that accompany an implementation\" because"
+                + " \"An implementer-role profile should reach the test-first hub when writing tests."
+                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
         assertThat(entries)
                 .containsExactly(
-                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_051 hops 2 active/selected",
-                        "directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected",
-                        "directive:DIRECTIVE_025 requires via agent_profile:java-jenny hops 1 active/selected",
-                        "directive:DIRECTIVE_030 requires via agent_profile:java-jenny hops 1 active/selected",
-                        "directive:DIRECTIVE_034 requires via agent_profile:java-jenny hops 1 active/selected",
+                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_051 hops 2 active/selected edge {}",
+                        "directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
+                        "directive:DIRECTIVE_025 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
+                        "directive:DIRECTIVE_030 requires via agent_profile:java-jenny hops 1 active/selected" + d030,
+                        "directive:DIRECTIVE_034 requires via agent_profile:java-jenny hops 1 active/selected" + d034,
                         "directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected"
-                                + " when \"when keeping the tests they write a clear scaffold rather than friction\""
+                                + " edge {when \"when keeping the tests they write a clear scaffold rather than friction\""
                                 + " because \"An implementer-role profile should reach the tests-as-scaffold hub when"
                                 + " writing tests. Composition-only in the profile channel, authored per the #3063"
-                                + " family-D operator attestation.\"",
-                        "directive:DIRECTIVE_051 requires via agent_profile:java-jenny hops 1 active/selected",
+                                + " family-D operator attestation.\"}",
+                        "directive:DIRECTIVE_051 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
                         "directive:DISCIPLINED_REFACTORING suggests via agent_profile:java-jenny hops 1"
-                                + " inactive/not_selected when \"when tidying code, encountering long classes/methods,"
+                                + " inactive/not_selected edge {when \"when tidying code, encountering long classes/methods,"
                                 + " or discovering convoluted logic\" because \"An implementer-role profile should reach"
                                 + " the disciplined-refactoring directive when restructuring code. Composition-only under"
-                                + " today's traversal, authored per the #3063 family-B operator attestation.\"",
+                                + " today's traversal, authored per the #3063 family-B operator attestation.\"}",
                         "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY suggests via agent_profile:java-jenny"
-                                + " hops 1 inactive/not_selected when \"when assessing whether the tests around a change"
-                                + " actually constrain its behaviour\" because \"An implementer-role profile should reach"
-                                + " the mutation hub when assessing test quality. Composition-only in the profile channel,"
-                                + " authored per the #3063 family-D operator attestation.\"",
-                        "styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected");
+                                + " hops 1 inactive/not_selected edge {when \"when assessing whether the tests around a"
+                                + " change actually constrain its behaviour\" because \"An implementer-role profile should"
+                                + " reach the mutation hub when assessing test quality. Composition-only in the profile"
+                                + " channel, authored per the #3063 family-D operator attestation.\"}",
+                        "styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected"
+                                + " edge {because \"A language-specialist profile requires the conventions styleguide of"
+                                + " each of its applies_to_languages (java); operator ruling on spec-kitty-charter#405.\"}");
     }
 }
