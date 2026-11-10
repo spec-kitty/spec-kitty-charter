@@ -1,14 +1,15 @@
 # Usability baseline (red): the walk before the profile reads
 
-SC-002 of the mission `agent-profile-reads-01M70ZDM`: the same script, run on the service as it stood before this
-mission, fails at the first profile hop.
+SC-002 of the mission `agent-profile-reads-01M70ZDM`: the WP09 script as first committed (before the fixes of its review
+cycle 1; the final script was not re-run here), run on the service as it stood before this mission, fails at the first
+profile hop. The red verdict comes from P2 and A1, which fail before any changed code runs.
 
 - **Script:** `scripts/usability/service-usability-run.sh --open-packs /home/user/spec-kitty-open-packs` (WP09), from
   the lane workspace of WP09.
 - **Service under test:** commit `25a59918bce882a574adb82c5686418d09d9f772`, the base of the mission's WP01 with the
   WP09 script on top and none of the profile reads.
 - **Open-packs pin:** `a2a93794f2d8c9f3f549e94ad024ea0e386d5df4`.
-- **Result:** `RESULT FAIL hops=3/5 failed=2 workarounds=3`, exit code non-zero.
+- **Result:** `RESULT FAIL hops=3/5 failed=2 workarounds=3`, exit code 1.
 
 ## What failed
 
