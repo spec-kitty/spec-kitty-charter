@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
@@ -368,6 +369,96 @@ class ArtifactRemovalServiceTest {
                         .code())
                 .as("gone, so the next delete is its kind's not-found")
                 .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
+    }
+
+    /** D10: the write gate is asked about each part of the one removal: the type, then each of its skeletons. */
+    @Test
+    void theWriteGateIsAskedToRemoveTheTypeAndEachOfItsSkeletons(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        List<String> asked = new ArrayList<>();
+        WritePolicyGate recording = new WritePolicyGate() {
+            @Override
+            public void authorize(Pack pack, Operation operation, Urn target) {
+                asked.add(operation + " " + target);
+            }
+
+            @Override
+            public void authorizeStaged(Pack staged, List<Write> writes) {
+                asked.add("staged " + writes);
+            }
+        };
+
+        new Removals(rig, recording).remove("qa", "mission_type", "documentation");
+
+        assertThat(asked)
+                .containsExactlyInAnyOrder(
+                        "REMOVE mission_type:documentation",
+                        "REMOVE template:documentation/divio/howto-template.md",
+                        "REMOVE template:documentation/spec-template.md");
+    }
+
+    /** D10: a gate that refuses one skeleton refuses the whole removal, and nothing changes. */
+    @Test
+    void aGateThatRefusesOneSkeletonRefusesTheRemovalAndChangesNothing(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        WritePolicyGate refusingTheSkeleton = new WritePolicyGate() {
+            @Override
+            public void authorize(Pack pack, Operation operation, Urn target) {
+                if (target.toString().equals("template:documentation/spec-template.md")) {
+                    throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "the skeleton is locked");
+                }
+            }
+
+            @Override
+            public void authorizeStaged(Pack staged, List<Write> writes) {
+                // a removal stages nothing
+            }
+        };
+        Removals removals = new Removals(rig, refusingTheSkeleton);
+        Map<String, String> before = removals.filesOf("qa");
+        PackRevision revision = rig.writeStore.currentRevision(QA);
+
+        assertThat(refusal(() -> removals.remove("qa", "mission_type", "documentation"))
+                        .code())
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
+        assertThat(rig.writeStore.currentRevision(QA)).isEqualTo(revision);
+    }
+
+    /**
+     * D10: a preset of the pack that names the type is rewritten without it. A preset cannot name a skeleton: a
+     * template is no activatable kind, so a preset carries no list of them (the control).
+     */
+    @Test
+    void aPresetThatNamesTheTypeIsRewrittenWithoutItAndNoPresetCanNameASkeleton(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(
+                                "presets/docs.yaml",
+                                """
+                                schema_version: "1.0"
+                                id: docs
+                                description: Documentation.
+                                activated_directives:
+                                  - id: D1
+                                activated_mission_types:
+                                  - id: documentation
+                                """)),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        assertThat(rig.repository.load(QA).presets())
+                .filteredOn(preset -> preset.id().equals("docs"))
+                .singleElement()
+                .satisfies(preset -> assertThat(preset.artifacts()).containsOnlyKeys(ArtifactKind.DIRECTIVE));
+        assertThat(Preset.ACTIVATION_KINDS).doesNotContain(ArtifactKind.TEMPLATE);
     }
 
     /** D10: a step contract whose mission names the type binds it, so the type is not removed until the contract is. */
