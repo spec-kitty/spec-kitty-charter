@@ -250,6 +250,12 @@ enum:
   - prompt_slot_missing
   - mission_step_contract_not_found
   - skeleton_not_found
+  - fallback_profile_unknown
+  - fallback_profile_not_locked
+  - fallback_profile_not_role_neutral
+  - fallback_profile_missing
+  - fallback_profile_conflict
+  - no_profile_matched
 x-refusal:
   mission_type_not_found:
     status: 404

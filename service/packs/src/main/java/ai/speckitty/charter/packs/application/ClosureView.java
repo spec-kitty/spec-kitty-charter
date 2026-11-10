@@ -679,6 +679,20 @@ public record ClosureView(
         return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
     }
 
+    /**
+     * The pack that holds the version of an artifact in force across the closure's levels, read from the merge alone:
+     * what a rule over the closure, such as the fallback-profile rule (ADR-0068), loads the entity from.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id
+     * @return the winner's pack; empty when no pack of the closure holds the artifact
+     */
+    public Optional<PackIdentifier> winnerPackOf(ArtifactKind kind, String id) {
+        Objects.requireNonNull(kind, "kind");
+        Objects.requireNonNull(id, "id");
+        return urnOf(kind, id).flatMap(merged().closure()::winnerOf).map(MergedClosure.Winner::packId);
+    }
+
     private static Optional<Urn> urnOf(ArtifactKind kind, String id) {
         try {
             return Optional.of(new Urn(NodeKind.of(kind), id));

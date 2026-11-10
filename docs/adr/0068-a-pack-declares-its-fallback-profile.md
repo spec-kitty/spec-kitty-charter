@@ -70,7 +70,7 @@ the pack's closure and is judged locked along it, and the fallback declares the 
    - A derived pack may declare its own fallback (an org baseline). The fallback in force for a context is the one
      the most derived declaring pack of the closure names; built-in's still answers in any context whose closure has
      no other declaring pack.
-   - A derived pack cannot remove built-in's: the descriptor has no value that unsets it, and the locked profile
+   - A derived pack cannot remove built-in's: the descriptor has no value that removes it, and the locked profile
      cannot be replaced or removed (`409 governance_policy_violation`, ADR-0065 D5) or excluded or deactivated
      (`409 artifact_locked`, ADR-0013, ADR-0030).
 6. **How the result is marked.** A selection answer says how it fits: `primary`, `alt` (ADR-0069) or `fallback`. The
@@ -78,16 +78,18 @@ the pack's closure and is judged locked along it, and the fallback declares the 
 7. **Refusals.**
 
    | Code | When | Status |
-   |---|---|---|
-   | `fallback_profile_unknown` | the id resolves to no profile in the closure (decision 2) | a violation of `pack.yaml` in `422 validation_failed` on a registration; `500 pack_unreadable` on a read |
-   | `fallback_profile_not_locked` | the profile is not `locked` along the closure (decision 3) | as above |
-   | `fallback_profile_not_role_neutral` | the profile's role is not `generic`, or it declares alt-roles (decision 4) | as above |
-   | `fallback_profile_missing` | the built-in pack declares no fallback | reserved (`raised: false`) until open-packs ships the declaration; then as above |
+   | --- | --- | --- |
+   | `fallback_profile_unknown` | the id resolves to no profile in the closure (decision 2) | `422` |
+   | `fallback_profile_not_locked` | the profile is not `locked` along the closure (decision 3) | `422` |
+   | `fallback_profile_not_role_neutral` | the profile's role is not `generic`, or it declares alt-roles (decision 4) | `422` |
+   | `fallback_profile_missing` | the built-in pack declares no fallback | `422`, reserved (`raised: false`) until open-packs ships the declaration |
    | `fallback_profile_conflict` | two packs of one closure, neither derived from the other, declare different fallbacks | reserved for the selection read |
    | `no_profile_matched` | no profile fits and no fallback is in force for the context (ADR-0032 decision 3.4) | reserved for the selection read, `404` |
 
-   The three raised codes are judged where a closure is composed: on a whole-pack registration's impact check
-   (ADR-0065 D6) and on a composing read, like the other compose rules.
+   The three raised codes are judged over the declaring pack's own closure, with the write in place, by the
+   registration impact check (ADR-0065 D6): a whole-pack registration ends `refused` with the code, naming the closure,
+   and nothing is stored. Like the other impact rules, a pack stored before the rule is not re-judged on a read; the
+   startup census logs it.
 
 ## Consequences
 

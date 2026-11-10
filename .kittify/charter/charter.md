@@ -60,7 +60,7 @@ contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
 - No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
 - **The charter's model is the canonical data model** (operator, 2026-11-10; charter #456 to #458).
   The shapes packs carry today grew incrementally and were never redesigned; they are not set in
-  stone. A change defines the rationalised shape and replaces the old one outright: no deprecation
+  stone. A change defines the rationalized shape and replaces the old one outright: no deprecation
   window, no reading of the old shape beside the new one. `spec-kitty-open-packs` follows the
   model to stay valid; core aligns once the API is functional and released, through the generated
   client.

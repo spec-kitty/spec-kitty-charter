@@ -592,7 +592,10 @@ public final class PackRegistrationService {
         ConfiguredPack configured = stored.map(Stored::configured)
                 .orElseGet(() -> new ConfiguredPack(new PackIdentifier(upload.packId()), upload.level()));
         return new RegistrationImpact.Replacement(
-                configured, upload.descriptor(), upload.contents().facts());
+                configured,
+                upload.descriptor(),
+                upload.contents().facts(),
+                Optional.of(upload.contents().pack()));
     }
 
     // ---- step 10: the commit -------------------------------------------------------------------------------------

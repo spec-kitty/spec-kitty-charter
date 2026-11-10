@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -7,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
@@ -109,7 +112,8 @@ public final class RegistrationImpact {
      * @param descriptor its descriptor
      * @param facts what the compose reads of it
      */
-    public record Replacement(ConfiguredPack configured, PackDescriptor descriptor, PackCompositionFacts facts) {
+    public record Replacement(
+            ConfiguredPack configured, PackDescriptor descriptor, PackCompositionFacts facts, Optional<Pack> pack) {
 
         /**
          * Checks the fields.
@@ -117,11 +121,25 @@ public final class RegistrationImpact {
          * @param configured how the pack is configured
          * @param descriptor its descriptor
          * @param facts what the compose reads of it
+         * @param pack the staged aggregate, when the write sends a whole pack; a rule that reads an entity of the
+         *     written pack (ADR-0068) reads it here
          */
         public Replacement {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptor, "descriptor");
             Objects.requireNonNull(facts, "facts");
+            Objects.requireNonNull(pack, "pack");
+        }
+
+        /**
+         * A replacement whose entities are read from the store.
+         *
+         * @param configured how the pack is configured
+         * @param descriptor its descriptor
+         * @param facts what the compose reads of it
+         */
+        public Replacement(ConfiguredPack configured, PackDescriptor descriptor, PackCompositionFacts facts) {
+            this(configured, descriptor, facts, Optional.empty());
         }
     }
 
@@ -265,6 +283,7 @@ public final class RegistrationImpact {
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now));
         }
+        judgeFallback(replacement, after, staged, session);
         List<String> affected = namingActivations
                 ? activations.activationsAffected(
                         roots -> found.holding().apply(roots).map(changes::get))
@@ -304,21 +323,34 @@ public final class RegistrationImpact {
      * @return one finding per stored pack whose closure would be refused, in catalog order
      */
     public List<Finding> census() {
-        StagedPackViews.View stored = views.session().stored();
+        StagedPackViews.Session session = views.session();
+        StagedPackViews.View stored = session.stored();
         Views composing = Views.over(stored);
         List<Finding> findings = new ArrayList<>();
         for (ConfiguredPack pack : stored.catalog().configured()) {
-            censusOf(pack, composing).ifPresent(findings::add);
+            censusOf(pack, composing, stored, session.packs()).ifPresent(findings::add);
         }
         return findings;
     }
 
-    private static Optional<Finding> censusOf(ConfiguredPack pack, Views composing) {
+    private static Optional<Finding> censusOf(
+            ConfiguredPack pack,
+            Views composing,
+            StagedPackViews.View stored,
+            Optional<ai.speckitty.charter.packs.domain.PackRepository> packsOfCensus) {
         String name = pack.id().value();
         try {
-            return ImpactRelations.check(composing.offering().composedWithFacts(List.of(pack.id())))
+            Optional<Finding> relations = ImpactRelations.check(
+                            composing.offering().composedWithFacts(List.of(pack.id())))
                     .map(broken ->
                             new Finding(name, broken.code(), broken.detail() + " (packs " + packsOf(broken) + ")"));
+            if (relations.isPresent()) {
+                return relations;
+            }
+            FallbackProfileRule.Profiles profiles =
+                    (holder, id) -> packsOfCensus.flatMap(store -> profileIn(store.load(holder), id));
+            return fallbackBreach(pack.id(), stored.descriptors().get(pack.id()), composing, profiles)
+                    .map(breach -> new Finding(name, breach.code(), breach.detail()));
         } catch (CharterRefusal refused) {
             return Optional.of(new Finding(name, refused.code(), String.valueOf(refused.getMessage())));
         }
@@ -356,6 +388,48 @@ public final class RegistrationImpact {
      */
     public void committed(String packId, Notices notices) {
         activations.registered(packId, notices);
+    }
+
+    // ---- the fallback profile (ADR-0068) --------------------------------------------------------------------------
+
+    /**
+     * Judges a pack's {@code fallback_profile} over the pack's own closure, the write in place (ADR-0068 decisions 2 to
+     * 4); a pack that declares none is not judged.
+     */
+    private static void judgeFallback(
+            Replacement replacement, Views views, StagedPackViews.View staged, StagedPackViews.Session session) {
+        PackIdentifier pack = replacement.configured().id();
+        FallbackProfileRule.Profiles profiles =
+                (holder, id) -> holder.equals(pack) && replacement.pack().isPresent()
+                        ? profileIn(replacement.pack().get(), id)
+                        : session.packs().flatMap(store -> profileIn(store.load(holder), id));
+        Optional<FallbackProfileRule.Breach> breach = fallbackBreach(pack, replacement.descriptor(), views, profiles);
+        if (breach.isPresent()) {
+            ClosureRoots.Roots roots = new ClosureRoots.Roots(List.of(pack));
+            throw new CharterRefusal(
+                    breach.get().code(),
+                    "In the closure rooted at " + roots.label() + ": "
+                            + breach.get().detail(),
+                    withRoots(List.of(), roots, staged));
+        }
+    }
+
+    private static Optional<FallbackProfileRule.Breach> fallbackBreach(
+            PackIdentifier pack, PackDescriptor descriptor, Views views, FallbackProfileRule.Profiles profiles) {
+        Optional<String> named = descriptor.fallbackProfile();
+        if (named.isEmpty()) {
+            return Optional.empty();
+        }
+        ClosureView own = views.queries().snapshot(Optional.of(List.of(pack)));
+        return FallbackProfileRule.check(pack.value(), named.get(), own, profiles);
+    }
+
+    /** The agent profile of this id an aggregate holds. */
+    private static Optional<CharterArtifact> profileIn(Pack pack, String id) {
+        return pack.artifacts(ArtifactKind.AGENT_PROFILE).stream()
+                .filter(artifact -> artifact.localId().equals(id))
+                .<CharterArtifact>map(artifact -> artifact)
+                .findFirst();
     }
 
     // ---- one closure ---------------------------------------------------------------------------------------------

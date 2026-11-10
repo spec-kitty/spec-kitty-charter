@@ -4,6 +4,7 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Port: the stored packs as the registration impact check composes them, with the pack being written standing in the
@@ -58,6 +59,16 @@ public interface StagedPackViews {
          * @return the view, which shares what this session has read
          */
         View with(RegistrationImpact.Replacement written);
+
+        /**
+         * The stored packs' aggregates, for a rule that reads an entity (ADR-0068); empty when the session cannot load
+         * them.
+         *
+         * @return the store, when there is one
+         */
+        default Optional<ai.speckitty.charter.packs.domain.PackRepository> packs() {
+            return Optional.empty();
+        }
     }
 
     /**

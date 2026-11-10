@@ -20,7 +20,7 @@ Two usage patterns:
 
 Read `.kittify/charter/charter.md` before planning. Two rules from it that sessions have missed:
 
-- **The charter's model is canonical.** When a shape changes, define the rationalised shape and
+- **The charter's model is canonical.** When a shape changes, define the rationalized shape and
   replace the old one outright: no deprecation window, no legacy reader beside the new one, no
   "core first" ordering. `spec-kitty-open-packs` follows the model; core aligns later through the
   generated client.
