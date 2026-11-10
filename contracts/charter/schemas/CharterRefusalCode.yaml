@@ -774,7 +774,9 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
-    description: the pack holds no mission step contract with the asked id (the generic item and references reads)
+    description: >-
+      the pack (or the activation's closure) holds no mission step contract with the asked id (the generic item,
+      references and delete reads, and getEffectiveMissionStepContract)
   skeleton_not_found:
     status: 404
     retryable: false
