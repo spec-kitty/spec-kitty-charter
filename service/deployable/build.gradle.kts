@@ -158,6 +158,10 @@ val openPacksProfiles = tasks.register<Test>("openPacksProfiles") {
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
+    // The contract directory holds the examples that ProfileExamplesEdgeTest checks against the checkout's graph files.
+    val contracts = repositoryRoot.resolve("contracts/charter")
+    inputs.dir(contracts.resolve("examples")).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractExamples")
+    systemProperty("charter.contractsDir", contracts.path)
     val ref = openPacksRef
     inputs.property("openPacksRef", ref.orElse(""))
     doFirst {

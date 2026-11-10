@@ -22,7 +22,7 @@
   the activation's revision, the packs of its closure and the profile and the `depth`; a matching `If-None-Match` is `304`,
   and `depth` outside 0 to 1 is a `400`. The new tag `EffectiveAgentProfiles` lets the profiles slice implement the
   operation in a controller of its own; no relation is added.
-- Every `EffectiveGovernanceEntry` carries `edge`, the new closed schema `GovernanceEdgeWords` (`when` and `reason`, both
+- Every `EffectiveGovernanceEntry` carries `edge`, the closed schema `GovernanceEdgeWords` (`when` and `reason`, both
   optional; the pack-scoped `PackGovernanceEntry` carries the same one): the words of the edge the walk reached the entry
   through (FR-004), whatever its relation (`specializes_from`, `requires`, `suggests` or `vocabulary`) and whether the
   artifact is in force (`state: active`) or out of force (`inactive`, `not_selected`). It is an empty object where the edge
