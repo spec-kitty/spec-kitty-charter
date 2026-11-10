@@ -39,8 +39,8 @@ each enhancement at the place it was read.
 
 ## Rules and codes
 
-A pack that breaks one of these is refused when it is validated, registered or read. The full rules, moments and order
-are on [Load rules](/architecture/composition-and-activation-rules/#load-rules).
+A pack that breaks one of these is refused when it is validated, registered or read, except that an orphan fragment is
+judged only when it is validated or registered, not on a read. The full rules, moments and order are on [Load rules](/architecture/composition-and-activation-rules/#load-rules).
 
 | Fault | Answer |
 |---|---|

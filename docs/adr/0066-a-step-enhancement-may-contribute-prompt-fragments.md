@@ -239,6 +239,16 @@ The rules and their moments are on the [Load rules](/architecture/composition-an
 page. The compose checks of decision 8 are not built; the phase-2 mission
 ([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)) builds them.
 
+### Annotation 2026-11-10: what the phase-1 build holds to (R-OVR, R-REL)
+
+Two rulings of the same mission, as built in the pull request that landed it:
+
+- R-OVR: a step enhancement may not carry an `overrides` edge. An enhancement only adds, so an `overrides` edge with the
+  enhancement as its source, its own mission type included, is refused as `prompt_fragment_invalid` at the enhancement
+  file. A source written with the pack's own name, `<pack>::step_enhancement:<id>`, is judged like a bare one.
+- R-REL: the relationship write refuses, with `422 prompt_fragment_invalid` and nothing written, an edge that would
+  break a held step enhancement: an `overrides` edge from it, or a second `enhances` edge from it.
+
 ## Alternatives considered
 
 ### Leave the blocks in `built-in` behind the activation gate

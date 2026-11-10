@@ -308,7 +308,7 @@ writes come after the read stages, one at a time: charter document save and comp
   pack that owns the target does not permit the write (ADR-0012, epic #55). Each pack's `policy.yaml` is read, per
   pack, along the closure of the pack written ([ADR-0063](/adr/0063-pack-mutability-policy-file/)); no open pack ships one yet, so every target is open and
   no write is refused with it until one does.
-- `pack_level_mismatch` is declared and raised by no operation. `ReservedRefusalCodesTest` reads every code the
+- `pack_level_mismatch`, `unresolved_edge_endpoint` and `prompt_slot_missing` are declared and raised by no operation. `ReservedRefusalCodesTest` reads every code the
   `x-refusal` map marks not raised and fails when a main class on the wire names one (#293).
 - `drg_schema_error`, `prompt_fragment_invalid`, `prompt_slot_malformed` and `prompt_slot_not_empty` are raised as
   violation codes: a refused registration (`422 validation_failed`) lists every fault of the staged pack, each at its

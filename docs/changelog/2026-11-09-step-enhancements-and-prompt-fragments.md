@@ -20,21 +20,23 @@ audience:
 # 2026-11-09 — Step enhancements and prompt fragments
 
 **The service now holds step enhancements and checks them** ([#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428),
-[#424](https://github.com/spec-kitty/spec-kitty-charter/issues/424)). Before, it dropped them.
+[#424](https://github.com/spec-kitty/spec-kitty-charter/issues/424)). Before, a load ignored the files and a
+registration refused them `422` as unmodelled.
 
 - **Held and selectable.** A step enhancement and its `*.prompt-fragment.md` companions register, round-trip and are
-  selectable like any artifact, directly and through a preset.
+  selectable like any artifact, also through a preset.
 - **Checked at load.** A bad enhancement or fragment is refused `prompt_fragment_invalid`, a malformed slot marker
   `prompt_slot_malformed`, and text in a slot `prompt_slot_not_empty` when the descriptor declares
   `schema_version: "1.0"`. A registration answers `422 validation_failed` with one violation per fault; a read answers
   `500 pack_unreadable` naming the first file. An edge write that breaks the rules answers `422 prompt_fragment_invalid`.
+- **Every graph fault is listed.** A refused registration lists each graph fault at its file; the pointer moves from
+  the pack to the file.
 - **Registration `diagnostics`.** A succeeded registration lists the `prompt_slot_not_empty` warning of an unversioned
-  descriptor. At the pin, the built-in pack loads with five such warnings, one per software-dev step prompt (open-packs#175).
+  descriptor. At the pin, the built-in pack loads with five, one per software-dev step prompt (open-packs#175).
 - **Breaking, sibling conflict.** Two packs at one level that define the same step enhancement id are refused
-  `500 pack_sibling_conflict` on every composing read. A descriptor `overrides` entry settles it, and a higher level
-  replaces the lower by layer override.
-- **Raised definition.** A code counts as raised when it is a violation code of a `422 validation_failed`, so
-  `drg_schema_error` is raised too.
+  `500 pack_sibling_conflict` on every composing read. A descriptor `overrides` entry settles it; a higher level
+  replaces the lower.
+- **Raised definition.** A violation code of a `422 validation_failed` counts as raised, `drg_schema_error` too.
 
 Rules: [Load rules](/architecture/composition-and-activation-rules/#load-rules). Rulings:
 [ADR-0053 question 2](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) (layout) and

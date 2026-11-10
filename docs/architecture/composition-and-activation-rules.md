@@ -1258,11 +1258,11 @@ Each rule names the moment it is judged: **V** validate mode, **L** load (both t
 every composing read), **W** the relationship write (`PUT /packs/{packId}/relationships`), **C** compose (every composing read). A fault found at L is a
 violation at its file: a registration answers `422 validation_failed` and lists every fault at once, each as
 `{pointer: <pack-relative file>, code}`; a composing read answers `500 pack_unreadable` naming the first faulty file.
-The wire shape is the one under "How a load fault reaches the wire" in the mission's contract notes, restated in the
-annotations of [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/#annotation-2026-11-09-how-the-load-codes-of-decision-8-reach-the-wire-od-3-a-od-7).
+The wire shape is the one recorded in the annotations of [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/#annotation-2026-11-09-how-the-load-codes-of-decision-8-reach-the-wire-od-3-a-od-7).
 
 **F1 Fragment content.** A slot marker of any id, anywhere in the text, code fences included, is refused
-`prompt_fragment_invalid` at the fragment (V, L). A blank body, frontmatter, a carriage return or a byte order mark is
+`prompt_fragment_invalid` at the fragment (V, L). So is a `<!--` with no `-->` after it, which would swallow the base
+prompt once the fragment is rendered into it. A blank body, frontmatter, a carriage return or a byte order mark is
 refused `prompt_fragment_invalid` at the fragment in validate mode; at load the store's companion read refuses it
 first, at the enhancement that names the fragment, and the reason names the fragment.
 *Source:* FR-004; ADR-0066 d3, d7; ADR-0036. **Built.** Moments: V, L.
