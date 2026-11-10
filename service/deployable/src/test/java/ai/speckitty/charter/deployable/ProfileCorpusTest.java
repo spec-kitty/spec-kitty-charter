@@ -558,8 +558,32 @@ class ProfileCorpusTest {
                 "java-jenny under the charter selection", body.get("governance"), graphEdgeWords(), problems, worded);
         assertThat(problems).isEmpty();
         assertThat(worded[0]).as("entries whose edge states a word").isPositive();
+        Path example = Path.of(System.getProperty("charter.contractsDir"), "examples")
+                .resolve("EffectiveAgentProfileRead.java-jenny.yaml");
+        Object loaded = new Load(LoadSettings.builder().build()).loadFromString(Files.readString(example));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> exampleValue = (Map<String, Object>) ((Map<String, Object>) loaded).get("value");
+        JsonNode exampleGovernance = json.readTree(json.writeValueAsString(exampleValue.get("governance")));
+        // The example is the single place a pin bump updates (ProfileExamplesEdgeTest guards it against the pack
+        // graph),
+        // so the answer is compared on the fields projected below, not on its _links or the held flag.
+        assertThat(governanceOf(body.get("governance")))
+                .as("governance of java-jenny, against the contract example")
+                .isNotEmpty()
+                .containsExactlyElementsOf(governanceOf(exampleGovernance));
+        assertThat(governanceOf(body.get("governance")))
+                .as("a requires target the charter does not select is not listed")
+                .noneMatch(entry -> entry.startsWith("directive:DIRECTIVE_024 "));
+        assertThat(governanceOf(body.get("governance")))
+                .as("the java-conventions requires edge")
+                .anyMatch(entry ->
+                        entry.startsWith("styleguide:java-conventions requires via agent_profile:java-jenny "));
+    }
+
+    /** One line per governance entry: what it is, how it was reached, its state, and the words of its edge. */
+    private static List<String> governanceOf(JsonNode governance) {
         List<String> entries = new ArrayList<>();
-        for (JsonNode entry : body.get("governance")) {
+        for (JsonNode entry : governance) {
             JsonNode words = entry.get("edge");
             assertThat(words.isObject()).as("the edge of %s", entry).isTrue();
             List<String> stated = new ArrayList<>();
@@ -576,37 +600,6 @@ class ProfileCorpusTest {
                     + entry.get("hops").asInt() + " " + entry.get("state").asString() + "/"
                     + entry.get("reason").asString() + " edge {" + String.join(" ", stated) + "}");
         }
-        String d030 = " edge {when \"when assessing whether tests meet the quality gate they must pass\" because"
-                + " \"An implementer-role profile should reach the test-quality-gate hub when assessing test quality."
-                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
-        String d034 = " edge {when \"when writing or reviewing the tests that accompany an implementation\" because"
-                + " \"An implementer-role profile should reach the test-first hub when writing tests."
-                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
-        assertThat(entries)
-                .containsExactly(
-                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_051 hops 2 active/selected edge {}",
-                        "directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DIRECTIVE_025 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DIRECTIVE_030 requires via agent_profile:java-jenny hops 1 active/selected" + d030,
-                        "directive:DIRECTIVE_034 requires via agent_profile:java-jenny hops 1 active/selected" + d034,
-                        "directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected"
-                                + " edge {when \"when keeping the tests they write a clear scaffold rather than friction\""
-                                + " because \"An implementer-role profile should reach the tests-as-scaffold hub when"
-                                + " writing tests. Composition-only in the profile channel, authored per the #3063"
-                                + " family-D operator attestation.\"}",
-                        "directive:DIRECTIVE_051 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DISCIPLINED_REFACTORING suggests via agent_profile:java-jenny hops 1"
-                                + " inactive/not_selected edge {when \"when tidying code, encountering long classes/methods,"
-                                + " or discovering convoluted logic\" because \"An implementer-role profile should reach"
-                                + " the disciplined-refactoring directive when restructuring code. Composition-only under"
-                                + " today's traversal, authored per the #3063 family-B operator attestation.\"}",
-                        "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY suggests via agent_profile:java-jenny"
-                                + " hops 1 inactive/not_selected edge {when \"when assessing whether the tests around a"
-                                + " change actually constrain its behaviour\" because \"An implementer-role profile should"
-                                + " reach the mutation hub when assessing test quality. Composition-only in the profile"
-                                + " channel, authored per the #3063 family-D operator attestation.\"}",
-                        "styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected"
-                                + " edge {because \"A language-specialist profile requires the conventions styleguide of"
-                                + " each of its applies_to_languages (java); operator ruling on spec-kitty-charter#405.\"}");
+        return entries;
     }
 }
