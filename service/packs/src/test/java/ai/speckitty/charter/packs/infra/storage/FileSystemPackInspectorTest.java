@@ -737,22 +737,17 @@ class FileSystemPackInspectorTest {
                     .contains("<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->");
         }
 
-        // The listing rule (FileSystemPackInspector, FULL scope): every *.yaml regular file the table excludes for a
-        // reviewed reason or maps to a kind, and every file of a bytes-form kind (the asset payloads and templates,
-        // whatever their extension, #251). Walked here independently of the inspector, so no hand-kept ledger of
-        // added and removed files stands between a pin move and a green run.
-        PackFileKind table = PackFileKind.bundled();
+        // The listing rule (FileSystemPackInspector, FULL scope), restated here from the file layout alone, without
+        // PackFileKind: every *.yaml file the pack holds (a file the table excludes for a reviewed reason is listed
+        // with its exclusion class), and every payload or template file whatever its extension (#251): anything under
+        // assets/, templates/ or missions/<type>/templates/. Orientation READMEs and hidden files are excluded there
+        // (the table's exclusions for README.md and dot-files). The classifier is used below only to check each
+        // listed file's kind, so a pattern regression cannot drop a file from both sides.
         List<String> listedByTheRule;
         try (Stream<Path> walk = Files.walk(builtIn)) {
             listedByTheRule = walk.filter(Files::isRegularFile)
                     .map(file -> builtIn.relativize(file).toString().replace('\\', '/'))
-                    .filter(file -> switch (table.classify("built-in/" + file)) {
-                        case PackFileKind.Excluded excluded -> file.endsWith(".yaml");
-                        case PackFileKind.Mapped mapped ->
-                            file.endsWith(".yaml") || mapped.contentForm() == ContentForm.BYTES;
-                        case PackFileKind.Retired retired -> false;
-                        case PackFileKind.Unclassified unclassified -> false;
-                    })
+                    .filter(file -> file.endsWith(".yaml") || isPayloadOrTemplate(file))
                     .toList();
         }
         assertThat(listedByTheRule)
@@ -760,12 +755,42 @@ class FileSystemPackInspectorTest {
                 .isNotEmpty();
         assertThat(verdict.files()).extracting(f -> f.file()).containsExactlyInAnyOrderElementsOf(listedByTheRule);
         assertThat(verdict.files())
+                .as("every listed file carries a kind or an exclusion class, and payloads and templates their kind")
+                .allSatisfy(f -> {
+                    assertThat(f.kind().isPresent() || f.exclusionClass().isPresent())
+                            .as(f.file())
+                            .isTrue();
+                    if (f.file().matches("assets/.*\\.asset\\.yaml")) {
+                        assertThat(f.kind()).as(f.file()).contains("asset");
+                    } else if (isPayloadOrTemplate(f.file())) {
+                        assertThat(f.kind())
+                                .as(f.file())
+                                .contains(f.file().startsWith("assets/") ? "asset-payload" : "template");
+                    }
+                });
+        assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
         assertThat(verdict.files())
                 .as("no file is excluded by the retired rule")
                 .noneMatch(f ->
                         f.exclusionClass().filter("**/*.config.yaml"::equals).isPresent());
+    }
+
+    /**
+     * Whether a pack-relative path is a payload or template file the validate-mode listing holds whatever its
+     * extension: under {@code assets/}, {@code templates/} or {@code missions/<type>/templates/}, and neither an
+     * orientation {@code README.md} nor a hidden file.
+     */
+    private static boolean isPayloadOrTemplate(String file) {
+        Path path = Path.of(file);
+        String name = path.getFileName().toString();
+        boolean underPayloadRoot = file.startsWith("assets/")
+                || file.startsWith("templates/")
+                || (path.getNameCount() > 3
+                        && path.getName(0).toString().equals("missions")
+                        && path.getName(2).toString().equals("templates"));
+        return underPayloadRoot && !name.equals("README.md") && !name.startsWith(".");
     }
 
     // ---- asset containment ---------------------------------------------------------------------------------------
