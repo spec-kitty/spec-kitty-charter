@@ -737,16 +737,28 @@ class FileSystemPackInspectorTest {
                     .contains("<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->");
         }
 
-        // 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
-        // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever
-        // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
-        // this walk listed already). The pin f85cf23 adds four mission step prompts (open-packs 7963b62), all under
-        // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified. The
-        // #240 migration adds the 43 built-in procedures its directives' steps became. The pin a2a9379 removes nine
-        // listed files (directive 038, five paradigms, the reasons-canvas styleguide and its two tactics) and adds six
-        // (the git-flow procedure, three conventions styleguides, the lane-recovery tactic and the execution-lanes
-        // toolguide); its guide and the two deleted __init__.py files are not listed by this walk.
-        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43 - 9 + 6);
+        // The listing rule (FileSystemPackInspector, FULL scope): every *.yaml regular file the table excludes for a
+        // reviewed reason or maps to a kind, and every file of a bytes-form kind (the asset payloads and templates,
+        // whatever their extension, #251). Walked here independently of the inspector, so no hand-kept ledger of
+        // added and removed files stands between a pin move and a green run.
+        PackFileKind table = PackFileKind.bundled();
+        List<String> listedByTheRule;
+        try (Stream<Path> walk = Files.walk(builtIn)) {
+            listedByTheRule = walk.filter(Files::isRegularFile)
+                    .map(file -> builtIn.relativize(file).toString().replace('\\', '/'))
+                    .filter(file -> switch (table.classify("built-in/" + file)) {
+                        case PackFileKind.Excluded excluded -> file.endsWith(".yaml");
+                        case PackFileKind.Mapped mapped ->
+                            file.endsWith(".yaml") || mapped.contentForm() == ContentForm.BYTES;
+                        case PackFileKind.Retired retired -> false;
+                        case PackFileKind.Unclassified unclassified -> false;
+                    })
+                    .toList();
+        }
+        assertThat(listedByTheRule)
+                .as("files the listing rule admits in the built-in pack")
+                .isNotEmpty();
+        assertThat(verdict.files()).extracting(f -> f.file()).containsExactlyInAnyOrderElementsOf(listedByTheRule);
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
