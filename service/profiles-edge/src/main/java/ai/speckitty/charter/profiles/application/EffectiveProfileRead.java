@@ -77,9 +77,9 @@ public record EffectiveProfileRead(
      * @param policy the mutability level of the version in force, in the contract's spelling
      * @param reason the rule that decided the state, in the contract's spelling
      * @param satisfiedBy the artifact in force that satisfies a requirement this one is out of force for
-     * @param suggestion the winner's own: present only for an artifact reached only through a {@code suggests} edge of
-     *     an artifact in force, with the edge's words. On the facts of a governance entry it is the words of the
-     *     {@code suggests} edge that listed the entry, whether the artifact is in force or not
+     * @param suggestion the winner's own effective suggestion, as the effective list gives it: present only for an
+     *     artifact out of force that is reached only through a {@code suggests} edge of an artifact in force. The facts
+     *     of a governance entry leave it empty: an entry says the words of its edge in {@link Entry#edge()}
      */
     public record Facts(
             Urn urn,
@@ -124,8 +124,11 @@ public record EffectiveProfileRead(
      * @param step the step that listed it, its earliest
      * @param via its parent in the walk: the profile, or another entry of the answer
      * @param hops the length of the path from the profile, one more than the hops of {@code via}; at least 1
+     * @param edge the words of the edge that listed it, whatever its relation and whether the artifact is in force or
+     *     not; {@link EdgeWords#NONE} when that edge states neither. Where several edges could reach the entry, it is
+     *     the edge of the parent the walk keeps (see {@link EdgeWords})
      */
-    public record Entry(Facts facts, GovernanceEntry.Step step, Urn via, int hops) {
+    public record Entry(Facts facts, GovernanceEntry.Step step, Urn via, int hops, EdgeWords edge) {
 
         /**
          * Checks the fields.
@@ -134,12 +137,14 @@ public record EffectiveProfileRead(
          * @param step the step
          * @param via the parent
          * @param hops the path length
+         * @param edge the words of the listing edge
          * @throws IllegalArgumentException when {@code hops} is below 1
          */
         public Entry {
             Objects.requireNonNull(facts, "facts");
             Objects.requireNonNull(step, "step");
             Objects.requireNonNull(via, "via");
+            Objects.requireNonNull(edge, "edge");
             if (hops < 1) {
                 throw new IllegalArgumentException("an entry is at least one hop from the profile: " + hops);
             }

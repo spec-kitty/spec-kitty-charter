@@ -36,8 +36,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>The activations slice carries the artifacts in force that the walk lists apart from the artifacts out of force that
  * a listed artifact suggests. The wire lists them together, so they are merged here in URN order; a suggestion is a
- * {@code suggests} entry of its suggesting artifact. A {@code suggests} entry in force carries the words of its edge as
- * its suggestion, as one out of force does (FR-004).
+ * {@code suggests} entry of its suggesting artifact. Every entry, whatever its relation and whether it is in force or
+ * not, carries the words of the edge that listed it (FR-004).
  */
 @Component
 public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
@@ -82,24 +82,36 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
         List<EffectiveProfileRead.Entry> entries = new ArrayList<>();
         for (EffectiveArtifactAnswer.Entry entry : governance.entries()) {
             entries.add(new EffectiveProfileRead.Entry(
-                    facts(entry.artifact(), entry.suggestion()), step(entry.step()), urn(entry.via()), entry.hops()));
+                    facts(entry.artifact(), Optional.empty()),
+                    step(entry.step()),
+                    urn(entry.via()),
+                    entry.hops(),
+                    edge(entry.edge())));
         }
         for (EffectiveArtifactAnswer.Suggested suggested : governance.suggested()) {
             entries.add(new EffectiveProfileRead.Entry(
-                    facts(suggested.artifact()),
+                    facts(suggested.artifact(), Optional.empty()),
                     GovernanceEntry.Step.SUGGESTS,
                     urn(suggested.via()),
-                    suggested.hops()));
+                    suggested.hops(),
+                    edge(suggested.edge())));
         }
         entries.sort(Comparator.comparing(entry -> entry.facts().urn()));
         return entries;
+    }
+
+    private static EdgeWords edge(EffectiveArtifactAnswer.EdgeWords words) {
+        return new EdgeWords(words.when(), words.reason());
     }
 
     private static EffectiveProfileRead.Facts facts(EffectiveArtifact artifact) {
         return facts(artifact, artifact.suggestion());
     }
 
-    /** The facts of an artifact with the words of the edge that suggests it; those of an entry in force are the edge's. */
+    /**
+     * The facts of an artifact with the effective-set suggestion it has. The winner keeps its own; an entry leaves it
+     * empty, since the words of the edge that listed an entry are the entry's {@link EffectiveProfileRead.Entry#edge()}.
+     */
     private static EffectiveProfileRead.Facts facts(EffectiveArtifact artifact, Optional<Suggestion> suggestion) {
         return new EffectiveProfileRead.Facts(
                 urn(artifact.ref()),

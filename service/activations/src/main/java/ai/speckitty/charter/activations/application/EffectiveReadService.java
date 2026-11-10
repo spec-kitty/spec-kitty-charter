@@ -421,22 +421,17 @@ public class EffectiveReadService {
                         entry.relation(),
                         entry.via(),
                         entry.hops(),
-                        edgeWords(entry)))
+                        new EffectiveArtifactAnswer.EdgeWords(entry.when(), entry.reason())))
                 .toList();
         List<EffectiveArtifactAnswer.Suggested> suggested = governance.suggestionCandidates().stream()
                 .flatMap(candidate -> set.suggested(candidate.ref(), candidate.when(), candidate.reason()).stream()
-                        .map(artifact ->
-                                new EffectiveArtifactAnswer.Suggested(artifact, candidate.via(), candidate.hops())))
+                        .map(artifact -> new EffectiveArtifactAnswer.Suggested(
+                                artifact,
+                                candidate.via(),
+                                candidate.hops(),
+                                new EffectiveArtifactAnswer.EdgeWords(candidate.when(), candidate.reason()))))
                 .toList();
         return new EffectiveArtifactAnswer.Governance(entries, suggested);
-    }
-
-    /** The words of a {@code suggests} edge that states any: an entry in force carries them as the suggestion's. */
-    private static Optional<EffectiveSet.Suggestion> edgeWords(GovernanceFacts.Entry entry) {
-        boolean worded = entry.when().isPresent() || entry.reason().isPresent();
-        return entry.step() == GovernanceFacts.Step.SUGGESTS && worded
-                ? Optional.of(new EffectiveSet.Suggestion(entry.when(), entry.reason()))
-                : Optional.empty();
     }
 
     private static EffectiveArtifact inSet(Map<ArtifactRef, EffectiveArtifact> byRef, ArtifactRef ref) {

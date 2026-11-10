@@ -154,14 +154,23 @@ class EffectiveReadServiceArtifactTest {
     }
 
     private static EffectiveArtifactRead read(ArtifactKind kind, String id, List<GovernanceFacts.Entry> entries) {
+        return read(
+                kind,
+                id,
+                entries,
+                List.of(new GovernanceFacts.Candidate(C, P, 1, Optional.of("when"), Optional.of("why"))));
+    }
+
+    private static EffectiveArtifactRead read(
+            ArtifactKind kind,
+            String id,
+            List<GovernanceFacts.Entry> entries,
+            List<GovernanceFacts.Candidate> candidates) {
         ArtifactRef ref = new ArtifactRef(kind, id);
         String holder = ref.equals(A) ? "house" : "main";
         PackLevel level = ref.equals(A) ? PackLevel.PROJECT : PackLevel.ORG;
         Optional<GovernanceFacts> governance = kind == ArtifactKind.AGENT_PROFILE
-                ? Optional.of(new GovernanceFacts(
-                        P,
-                        entries,
-                        List.of(new GovernanceFacts.Candidate(C, P, 1, Optional.of("when"), Optional.of("why")))))
+                ? Optional.of(new GovernanceFacts(P, entries, candidates))
                 : Optional.empty();
         return new EffectiveArtifactRead(entity(kind, id, holder), holder, level, governance);
     }
@@ -268,54 +277,78 @@ class EffectiveReadServiceArtifactTest {
                 .extracting(entry -> entry.artifact().ref())
                 .containsExactly(C);
         assertThat(governance.suggested().getFirst().artifact().suggestion()).isPresent();
+        assertThat(governance.suggested().getFirst().edge())
+                .as("an out-of-force suggestion carries the words of its edge, as an entry in force does")
+                .isEqualTo(new EffectiveArtifactAnswer.EdgeWords(Optional.of("when"), Optional.of("why")));
         assertThat(packs.calls()).isEqualTo(1);
     }
 
     @Test
-    void aSuggestsEntryInForceCarriesTheWordsOfItsEdgeAndNoOtherEntryDoes() {
+    void everyEntryCarriesTheWordsOfItsEdgeWhateverItsRelation() {
         EffectiveArtifactAnswer.Governance governance =
                 answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
 
+        EffectiveArtifactAnswer.Entry requires = governance.entries().getFirst();
+        assertThat(requires.relation()).isEqualTo(RelationType.REQUIRES);
+        assertThat(requires.edge())
+                .as("a requires entry carries the words of its edge")
+                .isEqualTo(new EffectiveArtifactAnswer.EdgeWords(Optional.of("edge when"), Optional.of("edge reason")));
         EffectiveArtifactAnswer.Entry suggests = governance.entries().get(1);
         assertThat(suggests.artifact().ref()).isEqualTo(A);
         assertThat(suggests.artifact().state()).as("in force").isEqualTo(State.ACTIVE);
-        assertThat(suggests.suggestion()).isPresent();
-        assertThat(suggests.suggestion().orElseThrow().when()).contains("a when");
-        assertThat(suggests.suggestion().orElseThrow().reason()).contains("a why");
-        assertThat(governance.entries().getFirst().suggestion())
-                .as("a requires entry carries no suggestion, whatever words its edge has")
-                .isEmpty();
+        assertThat(suggests.edge())
+                .isEqualTo(new EffectiveArtifactAnswer.EdgeWords(Optional.of("a when"), Optional.of("a why")));
     }
 
     @Test
-    void aSuggestsEntryInForceWhoseEdgeStatesNeitherWordCarriesNoSuggestion() {
+    void anEntryWhoseEdgeStatesNeitherWordCarriesAnEmptyEdgeInForceAndOutOfForce() {
         packs.winners(ask -> Optional.of(read(
                 ask.kind(),
                 ask.id(),
-                List.of(new GovernanceFacts.Entry(
-                        A,
-                        GovernanceFacts.Step.SUGGESTS,
-                        RelationType.SUGGESTS,
-                        P,
-                        1,
-                        Optional.empty(),
-                        Optional.empty())))));
+                List.of(
+                        new GovernanceFacts.Entry(
+                                A,
+                                GovernanceFacts.Step.SUGGESTS,
+                                RelationType.SUGGESTS,
+                                P,
+                                1,
+                                Optional.empty(),
+                                Optional.empty()),
+                        new GovernanceFacts.Entry(
+                                B,
+                                GovernanceFacts.Step.REQUIRES,
+                                RelationType.REQUIRES,
+                                P,
+                                1,
+                                Optional.empty(),
+                                Optional.empty())),
+                List.of(new GovernanceFacts.Candidate(C, P, 1, Optional.empty(), Optional.empty())))));
 
         EffectiveArtifactAnswer.Governance governance =
                 answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
 
-        assertThat(governance.entries().getFirst().suggestion()).isEmpty();
+        assertThat(governance.entries().get(0).artifact().state())
+                .as("A is in force")
+                .isEqualTo(State.ACTIVE);
+        assertThat(governance.entries().get(0).edge()).isEqualTo(EffectiveArtifactAnswer.EdgeWords.NONE);
+        assertThat(governance.entries().get(1).artifact().state())
+                .as("B is out of force")
+                .isEqualTo(State.INACTIVE);
+        assertThat(governance.entries().get(1).edge()).isEqualTo(EffectiveArtifactAnswer.EdgeWords.NONE);
+        assertThat(governance.suggested().getFirst().edge())
+                .as("the suggested path says the same as the entries do")
+                .isEqualTo(EffectiveArtifactAnswer.EdgeWords.NONE);
     }
 
     @Test
-    void aSuggestsEntryInForceWhoseEdgeStatesOnlyOneWordCarriesThatWord() {
+    void anEntryWhoseEdgeStatesOnlyOneWordCarriesThatWord() {
         packs.winners(ask -> Optional.of(read(
                 ask.kind(),
                 ask.id(),
                 List.of(new GovernanceFacts.Entry(
                         A,
-                        GovernanceFacts.Step.SUGGESTS,
-                        RelationType.SUGGESTS,
+                        GovernanceFacts.Step.REQUIRES,
+                        RelationType.REQUIRES,
                         P,
                         1,
                         Optional.empty(),
@@ -324,10 +357,8 @@ class EffectiveReadServiceArtifactTest {
         EffectiveArtifactAnswer.Governance governance =
                 answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
 
-        assertThat(governance.entries().getFirst().suggestion().orElseThrow().when())
-                .isEmpty();
-        assertThat(governance.entries().getFirst().suggestion().orElseThrow().reason())
-                .contains("only why");
+        assertThat(governance.entries().getFirst().edge().when()).isEmpty();
+        assertThat(governance.entries().getFirst().edge().reason()).contains("only why");
     }
 
     @Test

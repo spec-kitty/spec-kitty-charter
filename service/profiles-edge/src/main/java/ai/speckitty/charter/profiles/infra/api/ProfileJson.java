@@ -13,7 +13,6 @@ import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.AgentProfileSpecializationContext;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
-import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.api.model.GovernanceEdgeWords;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -33,9 +32,9 @@ import tools.jackson.databind.module.SimpleModule;
  * NullOmissionTest} checks it against the schemas). {@code AgentProfile} and its specialization hold both kinds of
  * member, so a class-wide rule would drop the {@code null} of a required nullable one ({@code model}, {@code excluding}):
  * the mix-in marks the optional members one by one. {@link GovernanceEdgeWords} has optional members only, and so do
- * the answer of the read under an activation and its entries ({@code satisfiedBy} and {@code suggestion} are the optional
- * members, as the activation set's own reads have them; the activation adapter's JSON module owns the suggestion and
- * the reference they hold). The rule
+ * the answer of the read under an activation and its entries ({@code satisfiedBy} and, on the answer, {@code suggestion}
+ * are the optional members, as the activation set's own reads have them; the activation adapter's JSON module owns the
+ * suggestion and the reference they hold; an entry's {@code edge} is required and always written). The rule
  * reaches the generated DTOs only through the mix-ins, which a native executable reads by reflection ({@link Hints}).
  */
 @Configuration(proxyBeanMethods = false)
@@ -57,8 +56,7 @@ public class ProfileJson {
                 .setMixInAnnotation(AgentProfileSpecialization.class, OptionalSpecializationMembers.class)
                 .setMixInAnnotation(GovernanceEdgeWords.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveAgentProfileRead.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(EffectiveGovernanceEntry.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(EffectiveGovernanceSuggestion.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(EffectiveGovernanceEntry.class, OmitAbsentMembers.class);
     }
 
     /**
@@ -128,8 +126,7 @@ public class ProfileJson {
                             PackGovernanceEntry.class,
                             GovernanceEdgeWords.class,
                             EffectiveAgentProfileRead.class,
-                            EffectiveGovernanceEntry.class,
-                            EffectiveGovernanceSuggestion.class);
+                            EffectiveGovernanceEntry.class);
             hints.reflection()
                     .registerType(OptionalProfileMembers.class)
                     .registerType(OptionalSpecializationMembers.class)

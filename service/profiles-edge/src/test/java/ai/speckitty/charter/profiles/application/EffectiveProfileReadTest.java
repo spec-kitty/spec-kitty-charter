@@ -42,11 +42,11 @@ class EffectiveProfileReadTest {
                 "open",
                 "not_selected",
                 Optional.empty(),
-                Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r"))));
+                Optional.empty());
 
         assertThat(effectiveRead()
                         .linksArtifact(new EffectiveProfileRead.Entry(
-                                inactive, GovernanceEntry.Step.SUGGESTS, urn("agent_profile:P"), 1)))
+                                inactive, GovernanceEntry.Step.SUGGESTS, urn("agent_profile:P"), 1, EdgeWords.NONE)))
                 .isTrue();
     }
 
@@ -54,7 +54,11 @@ class EffectiveProfileReadTest {
     void anEntryHasTheRelationOfItsStep() {
         assertThat(effectiveRequires("directive:D", "main").relation()).isEqualTo(RelationType.REQUIRES);
         assertThat(new EffectiveProfileRead.Entry(
-                                active("directive:D", "main"), GovernanceEntry.Step.SUGGESTS, urn("agent_profile:P"), 1)
+                                active("directive:D", "main"),
+                                GovernanceEntry.Step.SUGGESTS,
+                                urn("agent_profile:P"),
+                                1,
+                                EdgeWords.NONE)
                         .relation())
                 .isEqualTo(RelationType.SUGGESTS);
     }
@@ -62,7 +66,11 @@ class EffectiveProfileReadTest {
     @Test
     void anEntryIsAtLeastOneHopFromTheProfile() {
         assertThatThrownBy(() -> new EffectiveProfileRead.Entry(
-                        active("directive:D", "main"), GovernanceEntry.Step.REQUIRES, urn("agent_profile:P"), 0))
+                        active("directive:D", "main"),
+                        GovernanceEntry.Step.REQUIRES,
+                        urn("agent_profile:P"),
+                        0,
+                        EdgeWords.NONE))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("at least one hop");
     }
