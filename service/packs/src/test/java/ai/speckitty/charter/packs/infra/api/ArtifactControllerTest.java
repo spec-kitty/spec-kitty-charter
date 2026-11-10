@@ -163,8 +163,7 @@ class ArtifactControllerTest {
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
                         new TacticReadService(store, store, read)),
-                pack -> List.of(),
-                revisions);
+                pack -> List.of());
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
@@ -253,6 +252,14 @@ class ArtifactControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("kind_not_found"))
                 .andExpect(jsonPath("$.title").value("Kind not found"));
+    }
+
+    @Test
+    void anAgentProfileOnTheTemplatedItemReadIsKindNotFoundNotAServerError() throws Exception {
+        mvc.perform(get(BASE + "/agent_profile/jenny"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("kind_not_found"));
     }
 
     @Test
