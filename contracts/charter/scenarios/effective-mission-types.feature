@@ -15,6 +15,12 @@
 # spec-template.md and the step contract implement. elsewhere (org) holds research and is not in the activation's
 # closure. The activation selects software-dev and leaves documentation out.
 #
+# The pre-PR fold (D11) adds getEffectiveMissionStepContract, the literal read of a step contract under an activation:
+# the scenario that pinned the generic getEffectiveArtifact's body-less answer at that URL (WP05) now pins the literal
+# answer, and a step's step-contract link followed answers the envelope (its /id, where the generic read had
+# /artifactId). Written red first: run against the service before the operation was built, the two D11 scenarios and
+# the step scenario failed.
+#
 # WP06 (FR-008, US5) adds the links of the effective reads to these reads: an effective list item of kind mission_type
 # or mission_step_contract links effective-artifact and artifact, an action node of the graph links effective-artifact
 # to its step's read, and the action context links its step's read under the activation and in the pack that holds the
@@ -238,7 +244,7 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     When I follow the link "step-contract"
     Then the response status is 200
     And the field at "/kind" is "mission_step_contract"
-    And the field at "/artifactId" is "specify"
+    And the field at "/id" is "specify"
     And the field at "/packId" is "main"
     When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/implement"
     Then the response status is 200
@@ -288,27 +294,157 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       mission_type:documentation
       """
 
-  Scenario: The step contracts are read under the activation by the generic effective read, and an unreached one is not found
-    The effective-artifact link of an effective list item (and the step-contract link of a step) names
-    /activations/{id}/artifacts/mission_step_contract/{id}, which the generic read answers with the winner and a link to
-    the pack that holds it. A step contract no pack of the closure holds is a 404 artifact_not_found, as for any kind
-    of the generic read; the pack read of the same id is the control that the name exists nowhere else.
+  Scenario: D11 - a step contract is read under the activation as the layer merge keeps it, every link under the activation
+    D11, US4 AS2. getEffectiveMissionStepContract answers the winner of the step contract in the Artifact envelope, as
+    the pack read does, with the pack that holds it as packId. The literal path wins over the generic getEffectiveArtifact,
+    which answered this URL before D11 with the winner and no body (this scenario pinned that answer in WP05). specify is
+    main's, while the winning software-dev is proj's: its mission-type and step links stay under the activation and
+    answer proj's type and step, never the copy that lost. A delegation candidate of a listed kind the closure holds links
+    effective-artifact, its read under the activation: GUARD is proj's, so main's own pack read links nothing for it; NOPE
+    is held nowhere and a procedure is not listed. artifact is the pack read of the winner.
+    Given the project pack "proj" with the file "directives/guard.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: GUARD
+      title: Guard the gate
+      intent: Guard it.
+      enforcement: required
+      """
+    And the org pack "main" with the file "mission_step_contracts/specify.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: specify
+      action: specify
+      mission: software-dev
+      steps:
+        - id: bootstrap
+          description: Load charter context for this action
+        - id: capture_intent
+          description: Capture the intent
+          delegates_to:
+            kind: directive
+            candidates:
+              - GUARD
+              - NOPE
+        - id: map_examples
+          description: Capture concrete rules and examples
+          delegates_to:
+            kind: procedure
+            candidates:
+              - example-mapping-workshop
+      """
     When I GET "/activations/a-1/artifacts/mission_step_contract/specify"
     Then the response status is 200
-    And the field at "/kind" is "mission_step_contract"
-    And the field at "/packId" is "main"
-    And the field at "/level" is "org"
-    And the field at "/_links/artifact/href" is "/api/v1/packs/main/artifacts/mission_step_contract/specify"
-    When I follow the link "artifact"
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the response has no "ETag" header
+    And the response body is:
+      """
+      {
+        "kind": "mission_step_contract",
+        "id": "specify",
+        "packId": "main",
+        "missionStepContract": {
+          "id": "specify",
+          "schemaVersion": "1.0",
+          "action": "specify",
+          "mission": "software-dev",
+          "steps": [
+            {"id": "bootstrap", "description": "Load charter context for this action", "inputs": []},
+            {
+              "id": "capture_intent",
+              "description": "Capture the intent",
+              "inputs": [],
+              "delegatesTo": {
+                "kind": "directive",
+                "candidates": [
+                  {"id": "GUARD", "_links": {"effective-artifact": {"href": "/api/v1/activations/a-1/artifacts/directive/GUARD"}}},
+                  {"id": "NOPE", "_links": {}}
+                ]
+              }
+            },
+            {
+              "id": "map_examples",
+              "description": "Capture concrete rules and examples",
+              "inputs": [],
+              "delegatesTo": {"kind": "procedure", "candidates": [{"id": "example-mapping-workshop", "_links": {}}]}
+            }
+          ],
+          "gates": []
+        },
+        "_links": {
+          "self": {"href": "/api/v1/activations/a-1/artifacts/mission_step_contract/specify"},
+          "collection": {"href": "/api/v1/activations/a-1/artifacts?kind=mission_step_contract"},
+          "mission-type": {"href": "/api/v1/activations/a-1/artifacts/mission_type/software-dev"},
+          "step": {"href": "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"},
+          "artifact": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/specify"}
+        }
+      }
+      """
+    When I follow the link "mission-type"
     Then the response status is 200
-    And the field at "/missionStepContract/mission" is "software-dev"
+    And the field at "/packId" is "proj"
+    And the field at "/missionType/title" is "Software Development at project"
+    When I GET "/activations/a-1/artifacts/mission_step_contract/specify"
+    And I follow the link "step"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+    And the field at "/_links/step-contract/href" is "/api/v1/activations/a-1/artifacts/mission_step_contract/specify"
+    When I GET "/activations/a-1/artifacts/mission_step_contract/specify"
+    And I follow the link "collection"
+    Then the response status is 200
+    When I GET "/activations/a-1/artifacts/directive/GUARD"
+    Then the response status is 200
+    And the field at "/packId" is "proj"
+    When I GET "/activations/a-1/artifacts/mission_step_contract/specify"
+    And I follow the link "artifact"
+    Then the response status is 200
+    And the field at "/packId" is "main"
+    And the field at "/missionStepContract/steps/1/delegatesTo/candidates/0/_links/artifact" is absent
     When I GET "/activations/a-1/artifacts/mission_step_contract/implement"
     Then the response status is 200
     And the field at "/packId" is "proj"
-    And the field at "/level" is "project"
+    And the field at "/_links/step/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement"
+    And the field at "/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_step_contract/implement"
+
+  Scenario: D11 - a step contract links its mission type when the closure holds it, and its step when the winning type declares it
+    review is bound to software-dev, which the closure holds, but neither copy of software-dev declares review: it links
+    mission-type and no step. stray is bound to research, which no pack of the closure holds: it links neither. A step
+    contract no pack of the closure holds is mission_step_contract_not_found, after an unknown activation, which is
+    activation_not_found whatever the rest of the path names.
+    Given the org pack "main" with the file "mission_step_contracts/review.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: review
+      action: review
+      mission: software-dev
+      steps:
+        - id: read
+          description: Read the change
+      """
+    And the org pack "main" with the file "mission_step_contracts/stray.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: stray
+      action: gather
+      mission: research
+      steps:
+        - id: look
+          description: Look around
+      """
+    When I GET "/activations/a-1/artifacts/mission_step_contract/review"
+    Then the response status is 200
+    And the field at "/_links/mission-type/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
+    And the field at "/_links/step" is absent
+    When I GET "/activations/a-1/artifacts/mission_step_contract/stray"
+    Then the response status is 200
+    And the field at "/_links/mission-type" is absent
+    And the field at "/_links/step" is absent
     When I GET "/activations/a-1/artifacts/mission_step_contract/gather"
     Then the response status is 404
-    And the problem code is "artifact_not_found"
+    And the problem code is "mission_step_contract_not_found"
+    When I GET "/activations/nope/artifacts/mission_step_contract/specify"
+    Then the response status is 404
+    And the problem code is "activation_not_found"
 
   Scenario: The refusals come in order: the activation, then the mission type, then the step or the skeleton
     FR-009 under an activation. An unknown activation is activation_not_found whatever the rest of the path names. A
