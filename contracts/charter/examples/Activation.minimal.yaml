@@ -8,3 +8,6 @@ value:
   _links:
     self:
       href: /api/v1/activations/a-1
+    artifacts:
+      href: /api/v1/activations/a-1/artifacts{?kind,state}
+      templated: true

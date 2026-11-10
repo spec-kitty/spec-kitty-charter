@@ -123,7 +123,7 @@ used.
 | `self` | The resource itself | `GET` | Every success response whose URI has a `GET`: the root, the info, the offering, a page of artifacts, an artifact summary, an artifact (also as a write answers it). Not on a registered relationship, whose path has no `GET` | In the contract |
 | `collection` | The collection the resource belongs to | `GET` | An artifact: the pack's artifacts of its kind (`…/artifacts?kind=<kind>`); a pack, once packs are read | In the contract (on an artifact) |
 | `item` | One member of a collection | `GET` | A listing item: pack, artifact | Proposed |
-| `up` | The parent resource | `GET` | An artifact (its pack) | Proposed |
+| `up` | The parent resource | `GET` | An artifact (its pack); an effective artifact read, an effective agent profile read and an activation change (their activation) | In the contract on the effective artifact read, the effective agent profile read and an activation change; proposed on an artifact |
 | `first` | The first page of a paged list: the same request without its page cursor ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page | In the contract |
 | `next` | The next page of a paged list ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page that is not the last; absent on the last | In the contract |
 | `info` | `/api/v1/info` | `GET` | Root | In the contract |
@@ -133,7 +133,7 @@ used.
 | `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored | In the contract |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
-| `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`{?kind,state}`) | In the contract on the root, an offering pack and a registered relationship; proposed elsewhere |
+| `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`/api/v1/activations/{activationId}/artifacts{?kind,state}`, templated) | In the contract on the root, an offering pack, a registered relationship and an activation; proposed elsewhere |
 | `graph` | `…/graph` | `GET` | A pack; the offering; an activation | Proposed |
 | `presets` | `…/presets` | `GET` | A pack; the offering | Proposed |
 | `assets` | `/api/v1/packs/{packId}/assets` | `GET` | A pack | Proposed |
@@ -142,7 +142,7 @@ used.
 | `kinds` | `/api/v1/offering/kinds` | `GET` | The offering | Proposed |
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
-| `activations` | `/api/v1/activations` | `POST` | Root, once activation writes are built | Proposed |
+| `activations` | `/api/v1/activations` | `POST` | Root | In the contract |
 | `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so neither an artifact's, a pack's nor a whole-pack registration is advertised by a link | Proposed |
 | `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
 | `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |
@@ -150,7 +150,8 @@ used.
 | `select`, `unselect` | `…/selections/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact | Proposed |
 | `exclude`, `include` | `…/exclusions/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact; `exclude` is absent on a required or locked one, `include` present only on an excluded one | Proposed |
 | `apply-preset` | `…/presets/{presetId}` | `PUT` | An offered preset, seen from an activation | Proposed |
-| `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names | In the contract |
+| `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names; an effective artifact read and an effective agent profile read (the winner's pack); an effective list item, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve | In the contract |
+| `effective-artifact` | `…/activations/{activationId}/artifacts/{kind}/{artifactId}` | `GET` | An effective list item, an effective graph node, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve | In the contract |
 | `references` | `…/packs/{packId}/artifacts/{kind}/{artifactId}/references` | `GET` | An agent profile: the references its pack writes for it | In the contract on an agent profile |
 
 ## Anti-patterns

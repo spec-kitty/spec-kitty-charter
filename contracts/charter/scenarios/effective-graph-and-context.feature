@@ -959,3 +959,88 @@ Feature: The effective graph and the effective action context answer what the ac
     When I GET "/activations/a-1/graph" with If-None-Match the remembered header "ETag"
     Then the response status is 200
     And the response header "ETag" differs from the remembered header
+
+  Scenario: WP08 - a graph node and a context item of a served kind link their effective read, and a step links nothing
+    #450 for the served kinds. The step implement scopes D, which requires R. The graph lists the step, D, R and the mission type:
+    the two directives link effective-artifact (a node names no pack, so it has no artifact link), and the step, which
+    is no artifact, and the mission type, a kind no pack-scoped read serves yet, link nothing. The context lists D and R as items, which link effective-artifact and artifact. Every link
+    followed answers 200.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: software-dev
+      title: software-dev
+      description: software-dev
+      steps:
+        - id: implement
+          title: implement
+          role: implementer
+      """
+    And the org pack "main" with the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: D
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/R.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: R
+      title: R
+      intent: R
+      enforcement: required
+      """
+    And the org pack "main" with the file "edges.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges:
+      - source: action:software-dev/implement
+        target: directive:D
+        relation: scope
+      - source: directive:D
+        target: directive:R
+        relation: requires
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "R"]}}
+      """
+    When I GET "/activations/a-1/graph"
+    Then the response status is 200
+    And the graph holds exactly the nodes:
+      """
+      action:software-dev/implement
+      directive:D
+      directive:R
+      mission_type:software-dev
+      """
+    And the field at "/nodes/0/_links" is absent
+    And the field at "/nodes/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
+    And the field at "/nodes/1/_links/artifact" is absent
+    And the field at "/nodes/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/R"
+    And the field at "/nodes/3/_links" is absent
+    When I GET "/activations/a-1/artifacts/directive/D"
+    Then the response status is 200
+    And the field at "/packId" is "main"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1"
+    Then the response status is 200
+    And the field at "/artifacts/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
+    And the field at "/artifacts/0/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/D"
+    And following the link "effective-artifact" of every element of "artifacts" answers 200
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1"
+    Then following the link "artifact" of every element of "artifacts" answers 200

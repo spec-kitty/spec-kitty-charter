@@ -35,10 +35,13 @@ import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PageInfo;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SkippedReport;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -50,20 +53,39 @@ import org.springframework.web.util.UriComponentsBuilder;
  * request wrote them, so {@code self} is the request that was made and a
  * followed {@code next} reads the next page of the same set; the cursor it carries is the position of the page's last
  * item and the tag of its set ({@link EffectiveCursor}).
+ *
+ * <p>An item of a kind the pack-scoped artifact routes serve ({@link EffectiveReadService#listedKinds()}, asked at each
+ * read) links {@code effective-artifact}, its own read under the activation, and, where the item names the pack that holds
+ * the version in force, {@code artifact}, the pack-scoped read of that pack. A graph node names no pack, so it links
+ * {@code effective-artifact} only, and a step ({@code action}) or a node of a kind that is not served links nothing.
  */
 @Component
 public class EffectiveReadMapper {
 
     private final ActivationMapper activations;
+    private final Supplier<List<ArtifactKind>> linkedKinds;
 
     /**
-     * A mapper that names the activation through the document mapper's paths.
+     * A mapper that names the activation through the document mapper's paths and links the items of the kinds the
+     * service lists.
      *
      * @param activations the document mapper, whose {@code self} path is the activation's
+     * @param effective the effective reads, which know the kinds the pack-scoped artifact routes serve
      */
     @Autowired
-    public EffectiveReadMapper(ActivationMapper activations) {
+    public EffectiveReadMapper(ActivationMapper activations, EffectiveReadService effective) {
+        this(activations, Objects.requireNonNull(effective, "effective")::listedKinds);
+    }
+
+    /**
+     * A mapper over any answer of the served kinds, so that a test can name them.
+     *
+     * @param activations the document mapper, whose {@code self} path is the activation's
+     * @param linkedKinds the kinds an item can be linked by, asked at each read
+     */
+    EffectiveReadMapper(ActivationMapper activations, Supplier<List<ArtifactKind>> linkedKinds) {
         this.activations = Objects.requireNonNull(activations, "activations");
+        this.linkedKinds = Objects.requireNonNull(linkedKinds, "linkedKinds");
     }
 
     /**
@@ -84,7 +106,7 @@ public class EffectiveReadMapper {
                 page.stored().revision().token(),
                 page.governanceFingerprint(),
                 summary(page.summary()),
-                page.items().stream().map(EffectiveReadMapper::item).toList(),
+                items(id, page.items()),
                 info,
                 pageLinks(id, page.query(), pageSizeGiven, next));
     }
@@ -114,16 +136,12 @@ public class EffectiveReadMapper {
     public EffectiveGraph toGraph(GraphRead read) {
         String id = read.stored().id().value();
         GraphSnapshot graph = read.graph();
+        List<ArtifactKind> served = linkedKinds.get();
         return new EffectiveGraph(
                 id,
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
-                graph.nodes().stream()
-                        .map(node -> new EffectiveGraphNode(
-                                node.urn(),
-                                EffectiveGraphNode.KindEnum.fromValue(
-                                        node.kind().token())))
-                        .toList(),
+                graph.nodes().stream().map(node -> graphNode(id, node, served)).toList(),
                 graph.edges().stream()
                         .map(edge -> new EffectiveGraphEdge(
                                 edge.source().urn(),
@@ -155,7 +173,7 @@ public class EffectiveReadMapper {
                 read.governanceFingerprint(),
                 read.query().missionType(),
                 read.query().action(),
-                context.artifacts().stream().map(EffectiveReadMapper::item).toList(),
+                items(id, context.artifacts()),
                 context.enhancements().stream()
                         .map(enhancement -> new ActionEnhancement(
                                 node(enhancement.target()),
@@ -193,7 +211,25 @@ public class EffectiveReadMapper {
                 counts.skipped());
     }
 
-    private static ai.speckitty.charter.api.model.EffectiveArtifact item(EffectiveArtifact artifact) {
+    private List<ai.speckitty.charter.api.model.EffectiveArtifact> items(String id, List<EffectiveArtifact> artifacts) {
+        List<ArtifactKind> served = linkedKinds.get();
+        return artifacts.stream().map(artifact -> item(id, artifact, served)).toList();
+    }
+
+    /** A node of the graph, with its effective read when it is an artifact of a served kind. */
+    private EffectiveGraphNode graphNode(String id, NodeRef node, List<ArtifactKind> served) {
+        EffectiveGraphNode wire = new EffectiveGraphNode(
+                node.urn(), EffectiveGraphNode.KindEnum.fromValue(node.kind().token()));
+        node.kind()
+                .artifactKind()
+                .filter(served::contains)
+                .ifPresent(kind -> wire.setLinks(Map.of(
+                        "effective-artifact", new Link(activations.effectiveArtifact(id, kind.token(), node.id())))));
+        return wire;
+    }
+
+    private ai.speckitty.charter.api.model.EffectiveArtifact item(
+            String id, EffectiveArtifact artifact, List<ArtifactKind> served) {
         ai.speckitty.charter.api.model.EffectiveArtifact wire = new ai.speckitty.charter.api.model.EffectiveArtifact(
                 ai.speckitty.charter.api.model.EffectiveArtifact.KindEnum.fromValue(
                         artifact.kind().token()),
@@ -215,6 +251,13 @@ public class EffectiveReadMapper {
             suggestion.reason().ifPresent(carrier::setReason);
             wire.setSuggestion(carrier);
         });
+        if (served.contains(artifact.kind())) {
+            String kind = artifact.kind().token();
+            Map<String, Link> links = new LinkedHashMap<>();
+            links.put("effective-artifact", new Link(activations.effectiveArtifact(id, kind, artifact.artifactId())));
+            links.put("artifact", new Link(activations.packArtifact(artifact.packId(), kind, artifact.artifactId())));
+            wire.setLinks(links);
+        }
         return wire;
     }
 

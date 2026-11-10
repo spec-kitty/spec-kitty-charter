@@ -7,8 +7,14 @@ value:
   nodes:
     - urn: directive:DIRECTIVE_010
       kind: directive
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
     - urn: tactic:acceptance-test-first
       kind: tactic
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/tactic/acceptance-test-first
   edges:
     - source: directive:DIRECTIVE_010
       relation: requires

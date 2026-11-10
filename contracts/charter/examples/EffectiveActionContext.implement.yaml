@@ -17,6 +17,11 @@ value:
       required: false
       policy: open
       reason: selected
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
+        artifact:
+          href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_010
     - kind: tactic
       artifactId: acceptance-test-first
       packId: main
@@ -28,6 +33,11 @@ value:
       suggestion:
         when: the change has no test yet
         reason: a failing test shows the change is needed
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/tactic/acceptance-test-first
+        artifact:
+          href: /api/v1/packs/main/artifacts/tactic/acceptance-test-first
   enhancements:
     - target:
         kind: action

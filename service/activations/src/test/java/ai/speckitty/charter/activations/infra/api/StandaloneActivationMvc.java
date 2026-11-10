@@ -84,6 +84,7 @@ public final class StandaloneActivationMvc {
     static ActivationController controller(InMemoryActivationRepository repository, AvailablePacks packs) {
         ActivationWrites writes = new ActivationWrites(repository, packs);
         ActivationMapper mapper = new ActivationMapper("/api/v1");
+        EffectiveReadService effective = new EffectiveReadService(repository, packs);
         return new ActivationController(
                 new ActivationService(repository, packs, new ActivationIdMint()),
                 new ActivationSelectionService(writes),
@@ -91,8 +92,8 @@ public final class StandaloneActivationMvc {
                 new ActivationPresetService(writes),
                 mapper,
                 new ActivationChangeMapper(mapper),
-                new EffectiveReadService(repository, packs),
-                new EffectiveReadMapper(mapper),
+                effective,
+                new EffectiveReadMapper(mapper, effective),
                 new EffectiveArtifactMapper("/api/v1"));
     }
 

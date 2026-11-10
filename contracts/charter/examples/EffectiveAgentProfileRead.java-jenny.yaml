@@ -211,6 +211,8 @@ value:
     hops: 2
     edge: {}
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_001
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_001
   - kind: directive
@@ -227,6 +229,8 @@ value:
     hops: 1
     edge: {}
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_010
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010
   - kind: directive
@@ -243,6 +247,8 @@ value:
     hops: 1
     edge: {}
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_025
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_025
   - kind: directive
@@ -263,6 +269,8 @@ value:
         An implementer-role profile should reach the test-quality-gate hub when assessing test quality. Composition-only
         in the profile channel, authored per the #3063 family-D operator attestation.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_030
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_030
   - kind: directive
@@ -283,6 +291,8 @@ value:
         An implementer-role profile should reach the test-first hub when writing tests. Composition-only in the profile
         channel, authored per the #3063 family-D operator attestation.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_034
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_034
   - kind: directive
@@ -303,6 +313,8 @@ value:
         An implementer-role profile should reach the tests-as-scaffold hub when writing tests. Composition-only in the
         profile channel, authored per the #3063 family-D operator attestation.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_041
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_041
   - kind: directive
@@ -319,6 +331,8 @@ value:
     hops: 1
     edge: {}
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DIRECTIVE_051
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_051
   - kind: directive
@@ -339,6 +353,8 @@ value:
         An implementer-role profile should reach the disciplined-refactoring directive when restructuring code.
         Composition-only under today's traversal, authored per the #3063 family-B operator attestation.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/DISCIPLINED_REFACTORING
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DISCIPLINED_REFACTORING
   - kind: directive
@@ -359,6 +375,8 @@ value:
         An implementer-role profile should reach the mutation hub when assessing test quality. Composition-only in the
         profile channel, authored per the #3063 family-D operator attestation.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/directive/USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY
   - kind: styleguide
@@ -378,6 +396,8 @@ value:
         A language-specialist profile requires the conventions styleguide of each of its applies_to_languages (java);
         operator ruling on spec-kitty-charter#405.
     _links:
+      effective-artifact:
+        href: /api/v1/activations/project/artifacts/styleguide/java-conventions
       artifact:
         href: /api/v1/packs/built-in/artifacts/styleguide/java-conventions
   _links:

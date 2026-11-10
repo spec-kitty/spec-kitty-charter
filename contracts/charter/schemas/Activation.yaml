@@ -9,6 +9,11 @@ description: >-
   the document builds on are on its closure read (listActivationPacks). dropped and
   droppedPins are on a replaceActivation answer only, and only when that write dropped something (A4, B1): a read never
   carries them.
+
+  _links holds self (the activation) and artifacts, the activation's effective artifact list as an RFC 6570 template
+  (/api/v1/activations/{activationId}/artifacts{?kind,state}, templated true; listEffectiveArtifacts), on every answer
+  that carries an Activation: a client reaches the effective reads from the activation it created or read, without
+  building a path.
 type: object
 additionalProperties: false
 required:

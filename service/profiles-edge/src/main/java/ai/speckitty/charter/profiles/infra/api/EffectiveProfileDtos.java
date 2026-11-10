@@ -27,8 +27,8 @@ import org.springframework.web.util.UriUtils;
  *
  * <p>The links of the answer are {@code self} (the request that was made: the {@code depth} is repeated only when the
  * request sent one), {@code artifact} (the pack-scoped read of the profile in the pack that holds the version in force)
- * and {@code up} (the activation). An entry links {@code artifact}, the pack-scoped read of its winner, only for a kind
- * that read serves.
+ * and {@code up} (the activation). An entry links {@code effective-artifact}, its winner's read under the activation, and
+ * {@code artifact}, the pack-scoped read of its winner, only for a kind that read serves.
  */
 @Component
 public class EffectiveProfileDtos {
@@ -95,6 +95,14 @@ public class EffectiveProfileDtos {
         EffectiveProfileRead.Facts facts = entry.facts();
         Map<String, Link> links = new LinkedHashMap<>();
         if (read.linksArtifact(entry)) {
+            links.put(
+                    "effective-artifact",
+                    new Link(href(
+                            ACTIVATIONS,
+                            read.activationId(),
+                            ARTIFACTS,
+                            facts.urn().kind().token(),
+                            facts.urn().id())));
             links.put(
                     "artifact",
                     new Link(href(

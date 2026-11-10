@@ -30,14 +30,18 @@ class InfoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist(FINGERPRINT))
                 .andExpect(header().doesNotExist("Link"))
-                .andExpect(jsonPath("$._links.length()").value(5))
+                .andExpect(jsonPath("$._links.length()").value(6))
                 .andExpect(jsonPath("$._links.self.href").value("/api/v1/"))
                 .andExpect(jsonPath("$._links.info.href").value("/api/v1/info"))
                 .andExpect(jsonPath("$._links.offering.href").value("/api/v1/offering"))
                 .andExpect(jsonPath("$._links.artifacts.href").value("/api/v1/packs/{packId}/artifacts{?kind}"))
                 .andExpect(jsonPath("$._links.artifacts.templated").value(true))
+                .andExpect(jsonPath("$._links.activations.href").value("/api/v1/activations"))
+                .andExpect(jsonPath("$._links.activations.method").value("POST"))
+                .andExpect(jsonPath("$._links.activations.templated").doesNotExist())
                 .andExpect(jsonPath("$._links.service-desc.href").value("/api/v1/openapi.yaml"))
-                .andExpect(jsonPath("$._links.self.templated").doesNotExist());
+                .andExpect(jsonPath("$._links.self.templated").doesNotExist())
+                .andExpect(jsonPath("$._links.artifacts.method").doesNotExist());
     }
 
     @Test
@@ -49,7 +53,8 @@ class InfoControllerTest {
                 .build()
                 .perform(get("/api/v1/"))
                 .andExpect(jsonPath("$._links.self.href").value("/charter/"))
-                .andExpect(jsonPath("$._links.artifacts.href").value("/charter/packs/{packId}/artifacts{?kind}"));
+                .andExpect(jsonPath("$._links.artifacts.href").value("/charter/packs/{packId}/artifacts{?kind}"))
+                .andExpect(jsonPath("$._links.activations.href").value("/charter/activations"));
     }
 
     @Test
