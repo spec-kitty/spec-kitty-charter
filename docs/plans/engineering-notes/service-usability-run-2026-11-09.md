@@ -88,7 +88,7 @@ A client still cannot read what it needs to act:
 governance (#407, #96), and mission types are taken up by the parallel mission-type reads (#99). Gap 3: the items of
 the action context, the effective list and the effective graph link their reads under the activation
 (`effective-artifact`) and, where the pack is known, their pack-scoped reads (`artifact`), the item-link part of #450;
-the scoping rule stays open there. Gap 8: the root now links `activations`. The rerunnable walk is
+the scoping rule stays open there. Gap 8: the root now links `activations`. The repeatable walk is
 `scripts/usability/service-usability-run.sh`.
 
 ## Tickets after the run
