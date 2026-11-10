@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -52,24 +52,30 @@ every `href` starts with `/api/v1` and points to a built operation.
 
 | Operation | Answers | Path |
 |---|---|---|
-| `getApiRoot` | The API root: links to `info`, `offering`, `artifacts` (the template `/api/v1/packs/{packId}/artifacts{?kind}`) and `service-desc`, plus `self`. The root is `/api/v1/`, with the trailing slash; `/api/v1` is a 404 | `GET /` |
+| `getApiRoot` | The API root: links to `info`, `offering`, `activations` (`/api/v1/activations`, `method: POST`, the register a client creates an activation in), `artifacts` (the template `/api/v1/packs/{packId}/artifacts{?kind}`) and `service-desc`, plus `self`. The root is `/api/v1/`, with the trailing slash; `/api/v1` is a 404 | `GET /` |
 | `getServiceInfo` | The contract version, the service's build version (`serviceVersion`), the worktree it serves and a fingerprint of the sources it answers from, with `self` and `service-desc` links and a `Link` header to the contract document | `GET /info` |
 | `getOpenApiDocument` | The bundled contract the service was built from, as `application/yaml`, with a strong `ETag`; `304` on a matching `If-None-Match` | `GET /openapi.yaml` |
 | `getOffering` | The configured packs in force, in the merge order (dependencies before the packs that need them, each level contiguous; packs no dependency relates stay in configured-level, then pack-id order), each with its id, `descriptorPackId`, configured level, name, version, resolved `dependsOn` and an `artifacts` link | `GET /offering` |
 | `listPackArtifacts` | One configured pack's artifacts of the served kinds as summaries, filtered by an optional `kind` and paged (`pageSize` 1 to 200, 50 by default; `pageCursor`), with `self`, `first` and `next` links | `GET /packs/{packId}/artifacts` |
 | `getPackArtifact` | One artifact in the common `Artifact` envelope (`kind`, `id`, `packId`, `_links`, and one kind-named member with the kind's representation); an `ETag` for a writable kind | `GET /packs/{packId}/artifacts/{kind}/{artifactId}` |
 | `listArtifactReferences` | The references one artifact writes, in written order, each resolved through the compose: the reference as written, its relation, the `holdingPack` (`packId`, `descriptorPackId`, `name`), the bare `urn` and an `artifact` link to the pack-scoped read of the target. A composed read: it refuses a broken compose with the composition code of `GET /offering`, while `getPackArtifact` still answers. The pack, kind and artifact are judged as for `getPackArtifact` | `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` |
+| `getPackAgentProfile` | One agent profile in the `Artifact` envelope with `kind: agent_profile`: the profile in `agentProfile` and, in `governance`, the artifacts its governance walk lists over the pack's composed `depends_on` closure (tag `AgentProfiles`). `depth` (0 or 1, default 0) is the number of `suggests` hops the walk follows. Every entry names its `step`, `relation`, `via`, `hops`, the words of the edge it was reached through (`edge`: `when` and `reason`, both optional) and whether a pack of the closure holds it (`held`); a profile the pack does not hold is a 404 `artifact_not_found`. The `ETag` is the pack revision | `GET /packs/{packId}/artifacts/agent_profile/{artifactId}` |
+| `getEffectiveArtifact` | The version of one artifact in force under an activation, of any kind the pack-scoped routes serve: the winner's `packId` and `level`, its `state`, `required`, `policy` and `reason`, and no body. Links `self`, `artifact` (the pack-scoped read of the winner's pack) and `up` (the activation). A strong `ETag`, `304` on a match, `400` for a `depth` outside 0 to 1 | `GET /activations/{activationId}/artifacts/{kind}/{artifactId}` |
+| `getEffectiveAgentProfile` | One agent profile under an activation (tag `EffectiveAgentProfiles`): the facts of `getEffectiveArtifact`, the winner's profile in `agentProfile` and the governance walk judged by the activation. Links `self`, `artifact` (the pack-scoped read of the winner's pack) and `up` (the activation); an entry links `effective-artifact` and `artifact` for the kinds the pack-scoped routes serve. A strong `ETag`, `304` on a match | `GET /activations/{activationId}/artifacts/agent_profile/{artifactId}` |
 | `registerPackDirective`, `registerPackStyleguide`, `registerPackParadigm`, `registerPackToolguide` | Register an artifact of that kind; `201` with `Location` and the `Artifact` envelope | `POST /packs/{packId}/artifacts/<kind>` |
 | `putPackDirective`, `putPackStyleguide`, `putPackParadigm`, `putPackToolguide` | Register or replace an artifact of that kind, with `If-Match`; `200` (`201` when it creates) with the `Artifact` envelope | `PUT /packs/{packId}/artifacts/<kind>/{artifactId}` |
 | `putPackRelationship` | Register a relationship between a pack's components; answers `RelationshipRegistered`, linked to the pack's artifacts | `PUT /packs/{packId}/relationships` |
 
-The served kinds are `tactic`, `directive`, `styleguide`, `paradigm` and `toolguide`. A tactic is read only; the
-other four are written through the operations of their kind
+The served kinds are `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide` and `agent_profile`. A tactic is read
+only, and so is a profile (it is read and removed, not written); the other four are written through the operations of their kind
 ([ADR-0026](/adr/0026-write-surface-is-functional-registration/) D1.2, as amended 2026-10-31). No answer carries an
 `edit` link yet, so registration is not advertised by a link. A path kind the service does not serve (for
 example `procedure`) is a 404 `kind_not_found`; an unknown `kind` filter is a 400 `Problem` without a code.
 The `kind` of a summary and of an `Artifact` is an open string, not an enum: a client skips an item whose kind it
-does not know, so a kind a later version serves (a glossary, a procedure) is an additive change.
+does not know, so a kind a later version serves (a glossary, a procedure) is an additive change. `agent_profile` was the sixth: the
+list, `?kind=`, the references and the removal serve it, a profile the pack does not hold is a 404 `artifact_not_found`
+(the five older kinds keep their own codes), and the templated `getPackArtifact` never carries a profile body, which only
+`getPackAgentProfile` answers.
 
 **Literal write paths beside the templated read.** The write paths name their kind literally
 (`/packs/{packId}/artifacts/directive/{artifactId}`) beside the templated
@@ -80,13 +86,36 @@ OpenAPI tooling matches the path item before the method: a third-party validator
 the literal path item, which defines only `PUT`, and refuses it. The ruling stands; this is a known limit of such
 tools.
 
+**Agent profile reads and two divergences from core.** The profile reads walk governance with the engine of the action
+context (research D4 of the mission `agent-profile-reads-01M70ZDM`). They differ from core's profile channel in two
+places, both by operator ruling, and field-merge resolution is not one of them (it stays with
+[#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102)):
+
+- **`suggests` entries are listed.** Core's profile channel walks `requires` and `specializes_from` only and treats
+  `suggests` as composition-only and inert. This service lists a `suggests` entry, and with `depth=1` what the suggested
+  artifact requires (`requires_of_suggested`). Under an activation a suggestion out of force is listed with `state:
+  inactive` and `reason: not_selected`.
+- **An ancestor not in force is dropped under an activation.** `getEffectiveAgentProfile` lists no `specializes_from`
+  ancestor that is not in force, and seeds nothing from it (operator ruling `01M7115WE6WQ7Q41HSS9ZHD1F3`). The cascade
+  of the activation writes passes an ancestor through instead. The profile the walk starts from is exempt: it is answered
+  whatever its state, and the state is on the read. The pack-scoped read has no such predicate: every node is in force.
+
+**The `effective-artifact` relation and the `up` link.** `effective-artifact` is the link from an item to its read
+under an activation. The effective list, the action context and the entries of an effective profile's governance carry
+it for a kind the pack-scoped routes serve (`getEffectiveAgentProfile` for an `agent_profile`, `getEffectiveArtifact`
+for the rest), beside `artifact`, which keeps its meaning: the pack-scoped read of the pack that holds the version in
+force. A graph node names no pack, so it links `effective-artifact` only. Every effective read of one artifact, the
+generic one and the profile's, links `up` to its activation, and the `Activation` answer links `artifacts`, the
+template `/api/v1/activations/{activationId}/artifacts{?kind,state}` of its effective list. The relation table is in
+[Hypermedia (HATEOAS)](/development/hypermedia-hateoas/).
+
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
 carries `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is declared,
 and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts`,
-`getPackArtifact` and `listArtifactReferences` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
+`getPackArtifact`, `listArtifactReferences` and `getPackAgentProfile` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
 that read verified. The 200s of the four effective reads (`listEffectiveArtifacts`,
 `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too and send it, as each is a
-verified read; none is reserved any more (the first two since PR B, the last two since PR C). `getActivation` and `listActivationPacks` send none: the document
+verified read; none is reserved any more (the first two since PR B, the last two since PR C). So do `getEffectiveArtifact` and `getEffectiveAgentProfile`. `getActivation` and `listActivationPacks` send none: the document
 read depends only on the stored document (ADR-0059 D5), and the closure read reports a change through its `ETag`.
 No refusal, write, root or contract-document answer carries it.
 
@@ -180,11 +209,11 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 |---|---|---|---|
 | Effective context (R9): what applies in one project, with activation, exclusions, selection roots, the language filter and the directive allowlist, built on the walk. **It gates cutover stage 3** | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter context --action <name> --mission-type <type>` | The effective context is built (PR C): `getEffectiveActionContext`, with the effective list, report and graph (below). The seam's switch to it (stage 3) is not part of the service |
 | Tension annotation over authored tension relationships ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/), [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)), in the creed contract set | [#16](https://github.com/spec-kitty/spec-kitty-charter/issues/16), [#77](https://github.com/spec-kitty/spec-kitty-charter/issues/77) | the `in_tension_with` annotation in `charter context` | Not built |
-| Artifact bodies (R2) | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories | Answered per pack, for the five served kinds, by `listPackArtifacts` and `getPackArtifact`; the merged `/offering/artifacts` waits for merge |
+| Artifact bodies (R2) | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories | Answered per pack, for the six served kinds (`agent_profile` since [#407](https://github.com/spec-kitty/spec-kitty-charter/issues/407)), by `listPackArtifacts` and `getPackArtifact`, and for a profile by `getPackAgentProfile`, whose body carries the lineage-walked governance. Under an activation, `getEffectiveArtifact` reads the winner of any served kind (no body) and `getEffectiveAgentProfile` a profile with its governance; an effective list item links them with `effective-artifact`. The merged `/offering/artifacts` waits for merge |
 | Merged graph and graph queries (R3) | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers | The effective graph of an activation is built (PR C): `getEffectiveGraph`. The graph queries over a pack and the merged `/offering/graph` wait for merge |
 | Pack listing with presets (R4) | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) | `spec-kitty charter pack list` | Partly answered by `GET /offering` (the configured packs in force); presets deferred |
 | Mission types and the action index (R5) | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) | `specify_cli` mission repositories | Deferred to the minor that brings merge |
-| Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Not built |
+| Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Partly built: the profile and its governance are read (`getPackAgentProfile`, `getEffectiveAgentProfile`). The governance is lineage-walked: `specializes_from` ancestors come first as entries a client follows, then what the profile and its ancestors `require`, `suggest` and cite in the vocabulary. The field-merge resolution (`resolve_profile`, root to leaf) is not done: the body answered is the stored leaf body, and the question stays with [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) |
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | The effective activation sets are built (PR B and PR C): `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph` and `getEffectiveActionContext`. The status commands' own output is not part of the service |
 | The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
 | SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. *Amended 2026-11-08: the blocks move into the opt-in `spdd` pack as prompt fragments of step enhancements, filling slots the built-in prompts declare ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The prompt read then returns the base text and the active fragments per slot; the contract change is made with R5 and R9, not here.* |
