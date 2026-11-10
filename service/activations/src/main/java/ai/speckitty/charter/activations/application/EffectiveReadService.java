@@ -24,6 +24,7 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -408,30 +409,46 @@ public class EffectiveReadService {
     }
 
     /**
-     * {@code getEffectiveMissionType}, {@code getEffectiveMissionStep} and {@code getEffectiveMissionSkeleton} (#99,
-     * FR-007): what the activation's merged closure holds of one mission type, from one {@link PacksSession}. The winner
-     * is the one {@link #artifact} answers for the same id, whatever its state; the skeletons and the step files are the
-     * holding pack's, and the step contracts are the merged closure's winners whose {@code mission} is the type. The
-     * activation is judged first, then the type; the reads take no {@code If-None-Match}.
+     * The winner of one mission type under an activation (#99, FR-007), for the missions slice's reads of the type, its
+     * steps and its skeletons: the version the layer merge keeps, the pack that holds it, and the merged closure's step
+     * contracts bound to the type, each the winner of its own id, all from one {@link PacksSession}. The type is
+     * answered whatever its state, as {@link #artifact} answers it; what the holding pack stores beside it (its skeletons
+     * and step files) is the packs slice's to read, and the source fingerprint is what a caller checks that read
+     * against. The activation is judged first, then the type.
      *
      * @param id the activation's id
      * @param missionTypeId the mission type's id, exactly as declared
-     * @return the mission type in force under the activation, with what its reads need
+     * @return the winning type, its pack, the step contracts bound to it and the source fingerprint of the read
      * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
-     *     is no longer configured or a file of the holding pack cannot be read, or as the merge refuses;
+     *     is no longer configured or a winner's pack cannot read it, or as the merge or the in-force resolution refuses;
      *     {@code mission_type_not_found} when no pack of the closure holds the type; {@code stale_input} when the packs
      *     changed since the session was verified
      */
-    public EffectiveMissionTypeAnswer missionType(ActivationId id, String missionTypeId) {
+    public EffectiveMissionTypeWinner missionTypeWinner(ActivationId id, String missionTypeId) {
         Objects.requireNonNull(missionTypeId, "missionTypeId");
         StoredActivation stored = found(id);
         PacksSession session = open(stored);
-        ClosureSnapshot closure = session.snapshot();
-        HeldMissionType held = session.missionType(missionTypeId)
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.MISSION_TYPE_NOT_FOUND,
-                        "No pack of the activation's closure holds the mission type " + missionTypeId + "."));
-        return new EffectiveMissionTypeAnswer(stored, closure.fingerprint(), closure.closureFingerprint(), held);
+        MergedSnapshot merged = session.merged();
+        ArtifactRef type = new ArtifactRef(ArtifactKind.MISSION_TYPE, missionTypeId);
+        if (!merged.winners().containsKey(type)) {
+            throw new CharterRefusal(
+                    RefusalCode.MISSION_TYPE_NOT_FOUND,
+                    "No pack of the activation's closure holds the mission type " + missionTypeId + ".");
+        }
+        InForceQuery query = EffectiveSet.queryOf(stored.document());
+        EffectiveArtifactRead winner = winnerOf(session, type, query);
+        List<CharterArtifact> contracts = merged.bindings().entrySet().stream()
+                .filter(binding -> binding.getValue().equals(type))
+                .map(Map.Entry::getKey)
+                .filter(bound -> bound.kind() == ArtifactKind.MISSION_STEP_CONTRACT)
+                .sorted()
+                .map(bound -> winnerOf(session, bound, query).artifact())
+                .toList();
+        return new EffectiveMissionTypeWinner(
+                winner.packId(),
+                winner.artifact(),
+                contracts,
+                session.snapshot().fingerprint());
     }
 
     /**
@@ -566,6 +583,13 @@ public class EffectiveReadService {
                 .distinct()
                 .sorted()
                 .toList();
+    }
+
+    /** The winner of an artifact the merged closure holds, read from the pack that holds it, whatever its state. */
+    private static EffectiveArtifactRead winnerOf(PacksSession session, ArtifactRef ref, InForceQuery query) {
+        return session.effectiveArtifact(ref.kind(), ref.id(), 0, query)
+                .orElseThrow(() -> new IllegalStateException(
+                        "The merged closure holds " + ref.urn() + ", and the session read no winner of it."));
     }
 
     /** One verified read of the closure the document names, refused when a pack it names is no longer configured. */

@@ -435,12 +435,7 @@ class ArtifactRemovalServiceTest {
     @Test
     void aPresetThatNamesTheTypeIsRewrittenWithoutItAndNoPresetCanNameASkeleton(@TempDir Path host) {
         Rig rig = new Rig(host);
-        rig.register(
-                "qa",
-                rig.stage(qaWithDocumentation()
-                        .file(
-                                "presets/docs.yaml",
-                                """
+        rig.register("qa", rig.stage(qaWithDocumentation().file("presets/docs.yaml", """
                                 schema_version: "1.0"
                                 id: docs
                                 description: Documentation.
@@ -448,8 +443,7 @@ class ArtifactRemovalServiceTest {
                                   - id: D1
                                 activated_mission_types:
                                   - id: documentation
-                                """)),
-                Preconditions.none());
+                                """)), Preconditions.none());
         Removals removals = new Removals(rig);
 
         removals.remove("qa", "mission_type", "documentation");

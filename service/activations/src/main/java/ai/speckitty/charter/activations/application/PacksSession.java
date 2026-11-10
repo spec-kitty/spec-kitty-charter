@@ -118,23 +118,4 @@ public interface PacksSession {
      *     does
      */
     void requireAction(String missionType, String action);
-
-    /**
-     * What the merged closure holds of one mission type (#99, FR-007): the winner of the layer merge as the pack that
-     * holds it stores it, that pack's skeletons of the type and its step files, and the winning step contracts of the
-     * merged closure whose {@code mission} is the type. It answers from this session's read: the holding pack's files
-     * are read against the digest the session was verified at, so a change since is a refusal and never a mix of two
-     * states. No in-force resolution is asked: the type is answered whatever its state.
-     *
-     * <p>The default refuses: a session that cannot read a pack's files (a test's fake) is never asked.
-     *
-     * @param missionTypeId the mission type's id, exactly as declared
-     * @return what the closure holds of the type; empty when no pack of the closure holds it
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, with {@code pack_unreadable}
-     *     when the holding pack cannot read a file of the type, and with {@code stale_input} when the packs changed since
-     *     the session was verified
-     */
-    default Optional<HeldMissionType> missionType(String missionTypeId) {
-        throw new UnsupportedOperationException("this session reads no mission type of its packs");
-    }
 }

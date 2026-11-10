@@ -5,36 +5,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import ai.speckitty.charter.activations.application.EffectiveMissionTypeAnswer;
+import ai.speckitty.charter.activations.application.EffectiveMissionTypeWinner;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
-import ai.speckitty.charter.activations.application.HeldBytes;
-import ai.speckitty.charter.activations.application.HeldMissionType;
-import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
-import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.missions.application.EffectiveMissionTypeHolding;
-import ai.speckitty.charter.missions.application.MissionTypeHolding;
-import ai.speckitty.charter.missions.application.StoredFile;
+import ai.speckitty.charter.missions.application.EffectiveMissionType;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * The adapter over the activations slice's read of a mission type (#99, FR-007): the winner is narrowed to the missions
- * domain's {@link MissionType}, a skeleton is named by its path under the type's {@code templates/}, a step contract by
- * its id and action, a step's files keep their bytes, the holder is the pack that holds the winner and the fingerprint
- * is the read's source fingerprint. A refusal passes unchanged; any other artifact held as the type is a bug.
+ * The adapter over the activations slice's winner of a mission type (#99, FR-007, D12): the winner is narrowed to the
+ * missions domain's {@link MissionType}, the holder is the pack that holds it, the step contracts pass as the kernel
+ * artifacts the activations slice read and the fingerprint is the read's source fingerprint. A refusal passes unchanged;
+ * any other artifact held as the type is a bug.
  */
 class ActivationsMissionTypesTest {
 
@@ -46,73 +37,37 @@ class ActivationsMissionTypesTest {
     private final ActivationsMissionTypes adapter = new ActivationsMissionTypes(effective);
 
     @Test
-    void theHoldingIsTheMissionsSlicesOwnWithTheWinnersPackAtTheReadsSourceFingerprint() {
+    void theWinnerIsTheMissionsSlicesOwnWithItsPackItsBoundContractsAndTheSourceFingerprint() {
         MissionType type = type();
-        when(effective.missionType(ID, "software-dev"))
-                .thenReturn(answer(
-                        type,
-                        List.of(new HeldMissionType.Skeleton(
-                                "software-dev/divio/x.md", HeldBytes.of(bytes("# X\n"))))));
+        CharterArtifact contract = new Stub(ArtifactKind.MISSION_STEP_CONTRACT, "specify-contract");
+        when(effective.missionTypeWinner(ID, "software-dev"))
+                .thenReturn(new EffectiveMissionTypeWinner("proj", type, List.of(contract), SOURCE));
 
-        EffectiveMissionTypeHolding held = adapter.holding("a-1", "software-dev");
+        EffectiveMissionType winner = adapter.missionType("a-1", "software-dev");
 
-        assertThat(held.holder()).isEqualTo(PROJ);
-        MissionTypeHolding holding = held.holding();
-        assertThat(holding.type()).isSameAs(type);
-        assertThat(holding.fingerprint()).isEqualTo(SOURCE);
-        assertThat(holding.skeletons()).singleElement().satisfies(skeleton -> {
-            assertThat(skeleton.path()).isEqualTo("divio/x.md");
-            assertThat(skeleton.content().bytes()).isEqualTo(bytes("# X\n"));
-        });
-        assertThat(holding.stepContracts())
-                .containsExactly(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
-        MissionTypeHolding.StepFiles files = holding.stepFiles().get("specify");
-        assertThat(files.prompt().map(StoredFile::bytes))
-                .hasValueSatisfying(prompt -> assertThat(prompt).isEqualTo(bytes("# Specify\n")));
-        assertThat(files.guidelines()).isEmpty();
-    }
-
-    @Test
-    void aSkeletonOutsideTheTypesDirectoryIsABug() {
-        when(effective.missionType(ID, "software-dev"))
-                .thenReturn(
-                        answer(type(), List.of(new HeldMissionType.Skeleton("other/x.md", HeldBytes.of(bytes("x"))))));
-
-        assertThatThrownBy(() -> adapter.holding("a-1", "software-dev"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("other/x.md");
+        assertThat(winner.holder()).isEqualTo(PROJ);
+        assertThat(winner.type()).isSameAs(type);
+        assertThat(winner.stepContracts()).containsExactly(contract);
+        assertThat(winner.fingerprint()).isEqualTo(SOURCE);
     }
 
     @Test
     void anArtifactThatIsNoMissionTypeIsABugAndARefusalPassesUnchanged() {
-        assertThatThrownBy(() -> ActivationsMissionTypes.narrowed(new NotAType()))
-                .isInstanceOf(IllegalStateException.class);
+        when(effective.missionTypeWinner(ID, "software-dev"))
+                .thenReturn(new EffectiveMissionTypeWinner(
+                        "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), List.of(), SOURCE));
+        assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("the activations read a mission type as");
         CharterRefusal refused = new CharterRefusal(RefusalCode.ACTIVATION_NOT_FOUND, "no a-1");
-        when(effective.missionType(ID, "software-dev")).thenThrow(refused);
+        when(effective.missionTypeWinner(ID, "software-dev")).thenThrow(refused);
 
-        assertThatThrownBy(() -> adapter.holding("a-1", "software-dev")).isSameAs(refused);
+        assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev")).isSameAs(refused);
     }
 
     @Test
     void theAdapterNeedsTheEffectiveReads() {
         assertThatThrownBy(() -> new ActivationsMissionTypes(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    private static EffectiveMissionTypeAnswer answer(MissionType type, List<HeldMissionType.Skeleton> skeletons) {
-        return new EffectiveMissionTypeAnswer(
-                StoredActivation.of(ID, ActivationDocument.builder().build().document()),
-                SOURCE,
-                "sha256:closure",
-                new HeldMissionType(
-                        "proj",
-                        PackLevel.PROJECT,
-                        type,
-                        skeletons,
-                        Map.of(
-                                "specify",
-                                new HeldMissionType.StepFiles(
-                                        Optional.of(HeldBytes.of(bytes("# Specify\n"))), Optional.empty())),
-                        List.of(new HeldMissionType.StepContract("specify-contract", "specify", "main"))));
     }
 
     private static MissionType type() {
@@ -134,26 +89,12 @@ class ActivationsMissionTypesTest {
                 .build();
     }
 
-    private static byte[] bytes(String text) {
-        return text.getBytes(StandardCharsets.UTF_8);
-    }
-
-    /** An artifact the store would never hold as a mission type. */
-    private record NotAType() implements CharterArtifact {
-
-        @Override
-        public ArtifactKind kind() {
-            return ArtifactKind.MISSION_TYPE;
-        }
+    /** An artifact of a kind as the kernel holds it, which the store would never bind. */
+    private record Stub(ArtifactKind kind, String localId) implements CharterArtifact {
 
         @Override
         public PackIdentifier packId() {
             return PROJ;
-        }
-
-        @Override
-        public String localId() {
-            return "software-dev";
         }
 
         @Override
@@ -163,7 +104,7 @@ class ActivationsMissionTypesTest {
 
         @Override
         public String label() {
-            return "software-dev";
+            return localId;
         }
 
         @Override

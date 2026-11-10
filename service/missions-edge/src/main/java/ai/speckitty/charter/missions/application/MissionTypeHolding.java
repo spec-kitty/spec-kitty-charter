@@ -59,6 +59,25 @@ public record MissionTypeHolding(
             Objects.requireNonNull(path, "path");
             Objects.requireNonNull(content, "content");
         }
+
+        /**
+         * The skeleton a template of the type is: its id, {@code <type>/<path under templates/>}, without the
+         * {@code <type>/} prefix.
+         *
+         * @param templateId the template's id
+         * @param missionTypeId the mission type's id
+         * @param content its stored bytes
+         * @return the skeleton
+         * @throws IllegalStateException when the id does not start with the type's prefix: a template of the type
+         *     outside its directory is a bug of the store, never a refusal
+         */
+        public static StoredSkeleton ofTemplate(String templateId, String missionTypeId, StoredFile content) {
+            String prefix = missionTypeId + "/";
+            if (!templateId.startsWith(prefix)) {
+                throw new IllegalStateException("a template of the type outside its directory: " + templateId);
+            }
+            return new StoredSkeleton(templateId.substring(prefix.length()), content);
+        }
     }
 
     /**

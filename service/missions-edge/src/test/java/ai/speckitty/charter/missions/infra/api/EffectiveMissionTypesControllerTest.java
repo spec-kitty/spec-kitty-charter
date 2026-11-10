@@ -1,14 +1,16 @@
 package ai.speckitty.charter.missions.infra.api;
 
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.api.ActivationApi;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
-import ai.speckitty.charter.missions.application.EffectiveMissionTypeHolding;
+import ai.speckitty.charter.missions.application.EffectiveMissionType;
 import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.StoredFile;
@@ -42,8 +44,14 @@ class EffectiveMissionTypesControllerTest {
 
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
                     new EffectiveMissionTypesController(
-                            new EffectiveMissionTypeReadService((activation, type) ->
-                                    new EffectiveMissionTypeHolding(new PackIdentifier("proj"), holding())),
+                            new EffectiveMissionTypeReadService(
+                                    (activation, type) -> new EffectiveMissionType(
+                                            new PackIdentifier("proj"),
+                                            holding().type(),
+                                            List.of(mock(CharterArtifact.class)),
+                                            FINGERPRINT),
+                                    (pack, type) -> holding(),
+                                    contract -> new MissionTypeHolding.BoundContract("specify", "specify")),
                             new MissionLinks("/api/v1")),
                     new GenericEffectiveRead())
             .build();
@@ -147,7 +155,7 @@ class EffectiveMissionTypesControllerTest {
         return new MissionTypeHolding(
                 type,
                 List.of(new MissionTypeHolding.StoredSkeleton("divio/x.md", utf8("# X\n"))),
-                List.of(new MissionTypeHolding.BoundContract("specify", "specify")),
+                List.of(),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
                 FINGERPRINT);
     }
