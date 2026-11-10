@@ -15,6 +15,10 @@ get:
     holds a 404 mission_step_contract_not_found; a pack of the closure that is no longer configured, a closure that
     cannot compose or merge, and a winner whose pack cannot read it are 500 with their code, and inputs that change while
     it is read are stale_input. The answer is one verified read and carries the source fingerprint it verified. No ETag.
+
+    Where this read differs from the pack read of the same contract (getPackArtifact): here the contract is the
+    layer-merge winner, and its mission-type and step links follow the winning type of the merged closure, which
+    another pack of the closure may hold; the pack read answers the requested pack's own copy.
   tags:
     - EffectiveMissionTypes
   parameters:

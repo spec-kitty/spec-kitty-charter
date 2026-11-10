@@ -13,8 +13,16 @@ get:
     getEffectiveArtifact, which carries no body. An unknown activation is a 404 activation_not_found, then a mission
     type no pack of the activation's closure holds is a 404 mission_type_not_found; a pack of the closure that is no
     longer configured, a closure that cannot compose or merge, and a winner whose pack cannot read it are 500 with
-    their code, and inputs that change while it is read are stale_input. The answer is one verified read and carries
-    the source fingerprint it verified. No ETag.
+    their code, and inputs that change while it is read are stale_input. The answer is two reads at one source
+    fingerprint, which it carries: the winner under the activation, then what the pack that holds it stores beside it.
+    Two fingerprints that differ, or a holding pack that is configured no longer or no longer holds the type at the
+    second read, are stale_input, never a refusal of a pack the request did not name. No ETag.
+
+    Where this read differs from the pack-scoped read of the same type (getPackMissionType): here the type is the
+    layer-merge winner; its steps, skeletons and step files come from the pack that holds the winner; and its step
+    contracts are each the merged closure's layer-merge winner bound to the type, which another pack of the closure may
+    hold. getPackMissionType answers the requested pack's own copy, with that pack's own skeletons, step files and step
+    contracts.
   tags:
     - EffectiveMissionTypes
   parameters:

@@ -6,7 +6,13 @@ get:
     files as the pack that holds the winner stores them; its step-contract link names the layer-merge winner of the
     step contract of the merged closure bound to the step, and every link stays under the activation. An unknown
     activation is a 404 activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step
-    the winning type does not hold a 404 action_not_found. No ETag.
+    the winning type does not hold a 404 action_not_found. A holding pack that is configured no longer or no longer
+    holds the type between the two reads is stale_input, as for getEffectiveMissionType. No ETag.
+
+    Where this read differs from getPackMissionStep: here the step is the winning type's and its prompt and guidelines
+    files are those of the pack that holds the winner, while its step-contract link names the merged closure's winner,
+    which another pack of the closure may hold; getPackMissionStep answers the requested pack's own copy and links that
+    pack's own step contract.
   tags:
     - EffectiveMissionTypes
   parameters:
