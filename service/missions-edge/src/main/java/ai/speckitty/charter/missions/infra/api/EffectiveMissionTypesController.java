@@ -56,7 +56,7 @@ public class EffectiveMissionTypesController implements EffectiveMissionTypesApi
         String holder = held.holder().value();
         MissionLinks.Scope scope = links.activation(activationId);
         EnumMap<MissionRelation, Link> own = MissionBodies.envelopeLinks(scope, missionTypeId);
-        own.put(MissionRelation.ARTIFACT, links.missionType(holder, missionTypeId));
+        own.put(MissionRelation.ARTIFACT, links.pack(holder).missionType(missionTypeId));
         return MissionBodies.ok(held.read())
                 .body(MissionBodies.missionType(held.read().value(), holder, scope, own));
     }
