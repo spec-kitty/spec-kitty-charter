@@ -72,6 +72,7 @@ class MissionTypeControllerTest {
                 .andExpect(jsonPath("$.missionType.skeletons[0].name").value("a~01b.md"))
                 .andExpect(jsonPath("$.missionType.skeletons[0]._links.self.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/a~01b.md"))
+                .andExpect(jsonPath("$.missionType.skeletons[2].name").value("y".repeat(256)))
                 .andExpect(jsonPath("$.missionType.skeletons[2]._links.self").doesNotExist())
                 .andExpect(jsonPath("$.missionType.skeletons[3].name").value("z\\b.md"))
                 .andExpect(jsonPath("$.missionType.skeletons[3]._links.self").doesNotExist());
