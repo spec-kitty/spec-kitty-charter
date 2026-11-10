@@ -30,7 +30,7 @@ domain type is not mapped.
 | `relation` | enum `specializes_from`, `requires`, `suggests`, `vocabulary` | The step's relation |
 | `via` | string (URN) | The parent: the profile for its own edges, otherwise another entry |
 | `hops` | integer ≥ 1 | `hops(via) + 1` |
-| `when`, `reason` | string, nullable | Only on a `suggests` entry, from the edge |
+| `edge` | `GovernanceEdgeWords` `{when?, reason?}` | On every entry of both reads, whatever its relation: the words of the edge of its `via` (first reach kept). `{}` when that edge states neither; never null or absent (DM-01M7232ZMR4EWNDA1P2VF455Y1) |
 | `packId` | string, nullable | The holding pack (pack-scoped: the first holder in closure order; activation-scoped: the winner) |
 | `held` | boolean | Pack-scoped only. False when the closure holds no such artifact (no link then) |
 | `state`, `required`, `policy`, `reason` | as `EffectiveArtifact` | Activation-scoped only |
@@ -43,6 +43,7 @@ domain type is not mapped.
 
 Activation-scoped `suggestions[]` hold the out-of-force candidates
 `{kind, artifactId, via, hops, when, reason}`, as in the action context.
+(Superseded: see the fold section below; edge words are carried by `edge`.)
 
 ## Effective artifact read (`EffectiveArtifactRead`)
 
@@ -71,6 +72,15 @@ The engine is `ActionContextWalk.Run`, generalised to a start node and a first s
 The governance entry table above is superseded by plan.md fold C1:
 - `PackGovernanceEntry` is the pack-scoped entry.
 - `EffectiveGovernanceEntry` is the activation-scoped entry: `allOf` `EffectiveArtifact` plus `step`, `relation`,
-  `via` and `hops`, with the suggestion inline.
+  `via`, `hops` and `edge`.
 
 There is no `suggestions[]`. Entry kinds use `NodeKind`.
+
+## Superseded by DM-01M7232ZMR4EWNDA1P2VF455Y1 (operator ruling, 2026-11-10)
+
+Both entries carry one member `edge: GovernanceEdgeWords {when?, reason?}` on every entry,
+whatever the relation, `{}` when the edge states neither word. It replaces the per-entry
+`suggestion` member; `PackGovernanceSuggestion` and `EffectiveGovernanceSuggestion` no longer exist.
+The words are those of the edge of the entry's `via` (the first reach the walk keeps: fewest hops,
+then smallest parent URN, then smallest edge). `EffectiveArtifact` and `EffectiveArtifactSuggestion`
+on the generic effective reads are unchanged.

@@ -179,6 +179,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-10T06:42:20.440664Z",
+      "decision_id": "01M7232ZMR4EWNDA1P2VF455Y1",
+      "final_answer": "Generic edge words: one edge {when?, reason?} member on every entry of both reads, {} when none; replaces suggestion",
+      "input_key": "governance_entry_edge_words",
+      "mission_id": "01M70ZDMZXTYSB91J7BQ7SKPN8",
+      "mission_slug": "agent-profile-reads-01M70ZDM",
+      "opened_by": "claude",
+      "options": [
+        "Generic edge words: one edge {when?, reason?} member on every entry of both reads, {} when none; replaces suggestion",
+        "Add field, keep suggestion",
+        "Narrow FR-004 to suggests entries"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "FR-004: how do governance entries carry the when/reason of their edge, given requires edges also carry words?",
+      "rationale": "Operator ruling 2026-11-10: meets FR-004 as written with one name for one fact; nothing merged yet, so WP04's suggestion member is replaced, not deprecated.",
+      "resolved_at": "2026-11-10T06:42:24.037379Z",
+      "resolved_by": "operator",
+      "slot_key": null,
+      "status": "resolved",
+      "step_id": "wp07-review-2",
+      "summary_json": null
     }
   ],
   "mission_id": "01M70ZDMZXTYSB91J7BQ7SKPN8",
