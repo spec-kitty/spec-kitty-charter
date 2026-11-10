@@ -1,7 +1,7 @@
 name: Mutation testing (nightly)
 
 # The nightly mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
-# (kernel, missions, profiles, profiles-edge, packs and activations). `./gradlew pitest` is its own task, never part of
+# (kernel, missions, profiles, profiles-edge, missions-edge, packs and activations). `./gradlew pitest` is its own task, never part of
 # `check` or `verifyAll`, and this workflow has only the schedule and workflow_dispatch triggers, so no pull-request
 # run invokes it or waits for it.
 # - `pitest --continue` runs every module even when one is below its floor; each module's checkMutationFloors
@@ -40,7 +40,8 @@ jobs:
   pitest:
     runs-on: ubuntu-24.04
     # A full :packs:pitest measured 45m54s on an idle 4-core machine, ~2 min more with infra.fetch, plus ~3 min for
-    # kernel, missions and profiles: ~51 min of mutation testing. 90 gives >25 % headroom (NFR-002).
+    # kernel, missions and profiles: ~51 min of mutation testing. That figure predates missions-edge and has not been
+    # re-measured with it; 90 gives >25 % headroom over the figure as measured (NFR-002).
     # The mutation step has 80 of the 90 minutes, so the summary and the upload still run when PIT runs out of time.
     # A timeout raises the mutation-nightly issue.
     timeout-minutes: 90
