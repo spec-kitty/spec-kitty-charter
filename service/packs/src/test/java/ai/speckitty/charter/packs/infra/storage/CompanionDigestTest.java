@@ -148,10 +148,16 @@ class CompanionDigestTest {
                 .as("the asset files, then the templates, in one run")
                 .containsSequence(payloads);
         int payloadStart = digested.indexOf(payloads.get(0));
-        assertThat(digested.subList(payloadStart + payloads.size(), digested.size()))
+        List<String> tail = digested.subList(payloadStart + payloads.size(), digested.size());
+        assertThat(tail)
                 .as("after the payloads only the pack-level tail: presets, the pack document, the manifest, the policy")
                 .allSatisfy(file ->
                         assertThat(file).matches("presets/[^/]+\\.yaml|pack\\.md|pack-manifest\\.yaml|policy\\.yaml"));
+        List<String> presetsOnDisk = OpenPacksCorpus.filesEndingWith(qa.resolve("presets"), ".yaml").stream()
+                .map(file -> "presets/" + file)
+                .toList();
+        assertThat(presetsOnDisk).as("presets in the qa pack").isNotEmpty();
+        assertThat(tail).as("every preset on disk is in the tail").containsAll(presetsOnDisk);
 
         List<String> beforePayloads = digested.subList(0, payloadStart);
         List<String> markdown =
@@ -178,22 +184,35 @@ class CompanionDigestTest {
 
         List<String> prompts =
                 markdown.stream().filter(file -> file.endsWith(".prompt.md")).toList();
-        assertThat(prompts)
-                .as("mission step prompts in the qa pack")
-                .isNotEmpty()
-                .allSatisfy(prompt -> {
-                    // Walk back over the run of prompts this one belongs to: it starts right after its mission-type
-                    // file.
-                    String missionDir = prompt.substring(0, prompt.indexOf("/steps/") + 1);
-                    int at = beforePayloads.indexOf(prompt);
-                    while (beforePayloads.get(at - 1).startsWith(missionDir + "steps/")) {
-                        at--;
+        List<String> missionTypes = beforePayloads.stream()
+                .filter(file -> file.endsWith(".mission-type.yaml"))
+                .toList();
+        assertThat(missionTypes).as("mission types in the qa pack").isNotEmpty();
+        List<String> declaredPrompts = new ArrayList<>();
+        for (String type : missionTypes) {
+            // The step prompts follow their mission-type file, in the order the file declares its steps.
+            String missionDir = type.substring(0, type.lastIndexOf('/') + 1);
+            Map<?, ?> declared = yaml(qa, type);
+            List<String> expected = new ArrayList<>();
+            for (String key : List.of("steps", "on_demand_steps")) {
+                if (declared.get(key) instanceof List<?> steps) {
+                    for (Object step : steps) {
+                        if (step instanceof Map<?, ?> fields && fields.get("prompt_path") != null) {
+                            expected.add(missionDir + fields.get("prompt_path"));
+                        }
                     }
-                    assertThat(beforePayloads.get(at - 1))
-                            .as("the file before the step prompts of %s", missionDir)
-                            .startsWith(missionDir)
-                            .endsWith(".mission-type.yaml");
-                });
+                }
+            }
+            int at = beforePayloads.indexOf(type);
+            assertThat(beforePayloads.subList(at + 1, at + 1 + expected.size()))
+                    .as("the step prompts after %s, in its declared step order", type)
+                    .containsExactlyElementsOf(expected);
+            declaredPrompts.addAll(expected);
+        }
+        assertThat(prompts)
+                .as("mission step prompts in the qa pack: exactly the declared ones, none stray")
+                .isNotEmpty()
+                .containsExactlyInAnyOrderElementsOf(declaredPrompts);
 
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
