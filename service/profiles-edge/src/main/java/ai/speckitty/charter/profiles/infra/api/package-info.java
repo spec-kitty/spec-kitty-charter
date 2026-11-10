@@ -1,4 +1,4 @@
-/** The profiles inbound REST adapter, over the application ring. The ring is empty until the read endpoints are built. */
+/** The profiles inbound REST adapter, over the application ring: the pack-scoped profile read, its wire mapper and its JSON rules. It names no other slice, the packs adapter's link builder and DTO mapper included. */
 @NullMarked
 package ai.speckitty.charter.profiles.infra.api;
 

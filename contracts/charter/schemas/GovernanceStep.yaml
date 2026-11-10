@@ -1,0 +1,20 @@
+title: GovernanceStep
+description: >-
+  The step of a profile's governance walk that listed an entry. The walk runs five steps in this order and lists an
+  artifact once, at the earliest step that reaches it (minimum-step semantics): lineage (the profile's ancestors,
+  through specializes_from, transitively), requires (what the profile and its ancestors require, transitively),
+  suggests (what they suggest, as many hops as depth says), requires_of_suggested (what the suggested artifacts
+  require, transitively) and vocabulary (one hop of vocabulary from the profile and from everything the earlier steps
+  listed, the profile's own included). It is the profile walk's own enum: it shares no value with the action context's
+  steps, which a profile has no use for.
+type: string
+enum:
+  - lineage
+  - requires
+  - suggests
+  - requires_of_suggested
+  - vocabulary
+x-derived:
+  rule: The step of the governance walk that lists the entry, by its minimum step.
+  inputs:
+    - schemas/PackGovernanceEntry.yaml

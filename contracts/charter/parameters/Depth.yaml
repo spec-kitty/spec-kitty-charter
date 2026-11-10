@@ -2,8 +2,8 @@ name: depth
 in: query
 required: false
 description: >-
-  How many suggests hops the context follows from the action, as the offering's walk counts them (ADR-0018): 0 or
-  1.
+  How many suggests hops a walk follows, as the offering's walk counts them (ADR-0018): 0 or 1. The action context
+  follows them from the action; the read of an agent profile follows them from the profile, in its governance walk.
 schema:
   type: integer
   minimum: 0

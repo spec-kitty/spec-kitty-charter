@@ -1,0 +1,30 @@
+title: AgentProfileSelfReviewStep
+description: One step of an agent profile's self-review protocol.
+type: object
+additionalProperties: false
+required:
+  - name
+  - command
+  - gate
+properties:
+  name:
+    type: string
+    description: The step's name.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SelfReviewStep.java
+      symbol: SelfReviewStep.name
+  command:
+    type: ['string', 'null']
+    description: The command that runs the step; null when the step is a judgement and has none.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SelfReviewStep.java
+      symbol: SelfReviewStep.command
+  gate:
+    type: string
+    description: What must hold for the step to pass.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SelfReviewStep.java
+      symbol: SelfReviewStep.gate
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/SelfReviewStep.java
+  symbol: SelfReviewStep

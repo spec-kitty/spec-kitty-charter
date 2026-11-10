@@ -2,8 +2,9 @@ title: Artifact
 description: >-
   One artifact of a pack in the common envelope: its kind, its id, the pack, its links, and exactly
   one kind-named member holding the artifact in its kind's own representation, the member kind
-  names. The other four members are absent. The oneOf below documents the exactly-one rule; the
-  service fills the one member itself, whatever a generated client enforces of it.
+  names. The other five members are absent. The oneOf below documents the exactly-one rule; the
+  service fills the one member itself, whatever a generated client enforces of it. An agent profile also carries
+  governance, the entries its pack-scoped walk lists; no other kind does.
 type: object
 additionalProperties: false
 required:
@@ -22,15 +23,17 @@ oneOf:
       - paradigm
   - required:
       - toolguide
+  - required:
+      - agentProfile
 properties:
   kind:
     type: string
     pattern: '^[a-z0-9][a-z0-9_-]*$'
     maxLength: 64
     description: >-
-      The kind token; this version serves tactic, directive, styleguide, paradigm and toolguide; a
+      The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide and agent_profile; a
       client tolerates a kind it does not know (skips the item). It names the one member that holds
-      the artifact.
+      the artifact: agent_profile names agentProfile.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -58,3 +61,17 @@ properties:
     $ref: Paradigm.yaml
   toolguide:
     $ref: Toolguide.yaml
+  agentProfile:
+    $ref: AgentProfile.yaml
+  governance:
+    type: array
+    description: >-
+      The governance of an agent profile read from its pack: the artifacts its walk lists, sorted by urn, each with how it
+      was reached and whether a pack of the closure holds it. Present only with an agentProfile member, and an empty
+      array when the walk lists nothing. No other kind carries it.
+    items:
+      $ref: PackGovernanceEntry.yaml
+    x-derived:
+      rule: The pack-scoped governance walk of the profile over the pack's composed depends_on closure.
+      inputs:
+        - schemas/PackGovernanceEntry.yaml

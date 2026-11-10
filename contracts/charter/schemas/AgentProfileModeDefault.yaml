@@ -1,0 +1,30 @@
+title: AgentProfileModeDefault
+description: One reasoning mode an agent profile offers (a mode-defaults item in the file).
+type: object
+additionalProperties: false
+required:
+  - mode
+  - description
+  - useCase
+properties:
+  mode:
+    type: string
+    description: The mode's name.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ModeDefault.java
+      symbol: ModeDefault.mode
+  description:
+    type: string
+    description: What the mode is.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ModeDefault.java
+      symbol: ModeDefault.description
+  useCase:
+    type: string
+    description: When the mode is used (use-case in the file).
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ModeDefault.java
+      symbol: ModeDefault.useCase
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ModeDefault.java
+  symbol: ModeDefault
