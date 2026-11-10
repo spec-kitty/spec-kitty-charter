@@ -10,7 +10,7 @@ relation. It proves FR-011, SC-001 to SC-003 and NFR-003 of the `agent-profile-r
 ## Run it
 
 ```bash
-JAVA_HOME=/usr/lib/jvm/temurin-25 scripts/usability/service-usability-run.sh \
+JAVA_HOME=<your JDK 25 home> scripts/usability/service-usability-run.sh \
   --open-packs ../spec-kitty-open-packs --profile java-jenny
 ```
 
