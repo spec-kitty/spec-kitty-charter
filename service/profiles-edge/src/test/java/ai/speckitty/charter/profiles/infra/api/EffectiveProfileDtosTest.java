@@ -276,7 +276,7 @@ class EffectiveProfileDtosTest {
                                 "open",
                                 "overridden",
                                 Optional.of("agent_profile:Q"),
-                                Optional.of(new EdgeWords(Optional.of("w"), Optional.empty()))),
+                                Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r")))),
                         List.of(),
                         List.of()),
                 OptionalInt.empty());
@@ -284,6 +284,7 @@ class EffectiveProfileDtosTest {
         assertThat(wire.getSatisfiedBy().getKind().getValue()).isEqualTo("agent_profile");
         assertThat(wire.getSatisfiedBy().getArtifactId()).isEqualTo("Q");
         assertThat(wire.getSuggestion().getWhen()).isEqualTo("w");
+        assertThat(wire.getSuggestion().getReason()).isEqualTo("r");
     }
 
     @Test
