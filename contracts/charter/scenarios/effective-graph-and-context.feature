@@ -960,10 +960,10 @@ Feature: The effective graph and the effective action context answer what the ac
     Then the response status is 200
     And the response header "ETag" differs from the remembered header
 
-  Scenario: WP08 - a graph node and a context item of a served kind link their effective read, and a step links nothing
+  Scenario: WP08 - a graph node and a context item of a served kind link their effective read, and a step links its step read
     #450 for the served kinds. The step implement scopes D, which requires R. The graph lists the step, D, R and the mission type:
-    the two directives link effective-artifact (a node names no pack, so it has no artifact link), and the step, which
-    is no artifact, and the mission type, a kind no pack-scoped read serves yet, link nothing. The context lists D and R as items, which link effective-artifact and artifact. Every link
+    the two directives link effective-artifact (a node names no pack, so it has no artifact link), the step links its
+    step read under the activation and the mission type its own read (#99 WP06). The context lists D and R as items, which link effective-artifact and artifact. Every link
     followed answers 200.
     Given the org pack "main" with the file "pack.yaml":
       """
@@ -1029,11 +1029,11 @@ Feature: The effective graph and the effective action context answer what the ac
       directive:R
       mission_type:software-dev
       """
-    And the field at "/nodes/0/_links" is absent
+    And the field at "/nodes/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement"
     And the field at "/nodes/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
     And the field at "/nodes/1/_links/artifact" is absent
     And the field at "/nodes/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/R"
-    And the field at "/nodes/3/_links" is absent
+    And the field at "/nodes/3/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
     When I GET "/activations/a-1/artifacts/directive/D"
     Then the response status is 200
     And the field at "/packId" is "main"
