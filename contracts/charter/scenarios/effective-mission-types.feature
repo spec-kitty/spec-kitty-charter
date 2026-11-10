@@ -14,6 +14,13 @@
 # contract specify, and documentation. proj (project) holds its own software-dev, with its own step files, its own
 # spec-template.md and the step contract implement. elsewhere (org) holds research and is not in the activation's
 # closure. The activation selects software-dev and leaves documentation out.
+#
+# WP06 (FR-008, US5) adds the links of the effective reads to these reads: an effective list item of kind mission_type
+# or mission_step_contract links effective-artifact and artifact, an action node of the graph links effective-artifact
+# to its step's read, and the action context links its step's read under the activation and in the pack that holds the
+# winning mission type. Written red first: run before the mapper changed, the five scenarios that pin these links (the
+# three below, and one each in effective-reads.feature and effective-graph-and-context.feature) failed on their first
+# link assertion.
 
 @contract @activations @mission-types
 Feature: A mission type, its steps and its skeletons are read under an activation, as the layer merge keeps them
@@ -338,3 +345,103 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     When I GET "/activations/a-1/artifacts/mission_type/software-dev/skeletons/old-template.md"
     Then the response status is 404
     And the problem code is "skeleton_not_found"
+
+  Scenario: WP06 - an effective list item of a mission kind links its read under the activation and the winner's pack read
+    FR-008, US5 AS1. The effective list's items of kind mission_type and mission_step_contract carry effective-artifact,
+    the read under the activation (getEffectiveMissionType for a mission type, getEffectiveArtifact for a step
+    contract), and artifact, the pack-scoped read of the pack that holds the version in force: proj for software-dev
+    and implement, main for documentation and specify. Every link followed answers 200.
+    When I GET "/activations/a-1/artifacts?kind=mission_type"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      mission_type:documentation
+      mission_type:software-dev
+      """
+    And the field at "/items/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/documentation"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/main/artifacts/mission_type/documentation"
+    And the field at "/items/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
+    And the field at "/items/1/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev"
+    And following the link "effective-artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1/artifacts?kind=mission_type"
+    Then following the link "artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1/artifacts?kind=mission_step_contract"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      mission_step_contract:implement
+      mission_step_contract:specify
+      """
+    And the field at "/items/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_step_contract/implement"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_step_contract/implement"
+    And the field at "/items/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_step_contract/specify"
+    And the field at "/items/1/_links/artifact/href" is "/api/v1/packs/main/artifacts/mission_step_contract/specify"
+    And following the link "effective-artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1/artifacts?kind=mission_step_contract"
+    Then following the link "artifact" of every element of "items" answers 200
+
+  Scenario: WP06 - an action node of the graph links the step's read under the activation
+    FR-008, US5 AS1. proj's graph declares software-dev's two steps, so the closure holds them, and the graph lists the
+    mission type in force and its steps: each action node action:<type>/<step>
+    links effective-artifact, the step's read under the activation (getEffectiveMissionStep), and the mission type node
+    its own read. A node names no pack, so neither has an artifact link. Every node's link followed answers 200, and the
+    specify step's is the winner's, proj's.
+    Given the project pack "proj" with the file "edges.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      - urn: action:software-dev/specify
+        kind: action
+        label: specify
+      edges: []
+      """
+    When I GET "/activations/a-1/graph"
+    Then the response status is 200
+    And the graph holds exactly the nodes:
+      """
+      action:software-dev/implement
+      action:software-dev/specify
+      mission_type:software-dev
+      """
+    And the field at "/nodes/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement"
+    And the field at "/nodes/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"
+    And the field at "/nodes/1/_links/artifact" is absent
+    And the field at "/nodes/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
+    And the field at "/nodes/2/_links/artifact" is absent
+    And following the link "effective-artifact" of every element of "nodes" answers 200
+    When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/specify"
+    Then the field at "/title" is "Specification at project"
+
+  Scenario: WP06 - the action context links its step's read under the activation and in the pack that holds the winner
+    FR-008, US5 AS1. proj's graph declares the step specify. The context of software-dev's specify links
+    effective-artifact, the step's read under the activation, and artifact, the step's read in proj, the pack that holds
+    the winning mission type. Both answer proj's step.
+    Given the project pack "proj" with the file "edges.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      - urn: action:software-dev/specify
+        kind: action
+        label: specify
+      edges: []
+      """
+    When I GET "/activations/a-1/mission-types/software-dev/actions/specify/context"
+    Then the response status is 200
+    And the field at "/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"
+    And the field at "/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/specify"
+    When I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/specify/context"
+    And I follow the link "artifact"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+    And the field at "/_links/self/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/specify"

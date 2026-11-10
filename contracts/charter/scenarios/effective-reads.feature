@@ -118,8 +118,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
 
   Scenario: WP08 - each item of the list links its effective read and the pack-scoped read of the pack that holds it
     #450 for the served kinds: a client follows an item without building a path. D is held by the org pack and
-    selected, rehearse is a tactic, selected too, and software-dev is a mission type, the control of a kind no pack-scoped read
-    serves yet: it is listed and links nothing. The two links of an item
+    selected, rehearse is a tactic, selected too, and software-dev is a mission type, listed and linked like
+    them (#99 WP06). The two links of an item
     answer 200 and name the same artifact (the effective read names the pack that holds the version in force, the
     artifact link reads that pack). The activation's artifacts link is the way to the list: it is templated, takes the
     kind and the state, and answers the same list as the path it expands to. A replace (PUT) answers the same link.
@@ -196,7 +196,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
       tactic:rehearse
       """
     And the field at "/items/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
-    And the field at "/items/1/_links" is absent
+    And the field at "/items/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
+    And the field at "/items/1/_links/artifact/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev"
     And the field at "/items/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/tactic/rehearse"
     And the field at "/items/2/_links/artifact/href" is "/api/v1/packs/main/artifacts/tactic/rehearse"
 
