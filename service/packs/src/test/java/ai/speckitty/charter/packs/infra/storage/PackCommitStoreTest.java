@@ -660,4 +660,25 @@ class PackCommitStoreTest {
         }
         return out;
     }
+
+    @Test
+    @DisplayName("a removal prunes the directories it empties and keeps the pack root, pack.yaml included")
+    void aRemovalOfThePacksOnlyOtherFilePrunesItsDirectoriesAndKeepsTheRoot(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.createDirectories(packDir.resolve("missions/only/templates"));
+        Files.writeString(packDir.resolve("missions/only/templates/only.md"), "# Only\n", StandardCharsets.UTF_8);
+        PackCommitStore store = new PackCommitStore(locations(packDir), new YamlSerializationStrategy());
+        String descriptor = Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8);
+
+        store.remove(PACK, List.of("missions/only/templates/only.md"), null, Map.of());
+
+        assertThat(packDir.resolve("missions"))
+                .as("every emptied directory went")
+                .doesNotExist();
+        assertThat(packDir).as("the pack root stays").isDirectory();
+        assertThat(snapshot(packDir)).containsOnlyKeys(PackFileSet.PACK_YAML);
+        assertThat(Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8))
+                .isEqualTo(descriptor);
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
 }
