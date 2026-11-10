@@ -22,5 +22,5 @@
   to the relation table for the profile's link to its references read.
   `ArtifactKindToken` gains `agent_profile`, last, so `GET /packs/{packId}/artifacts?kind=agent_profile` lists a pack's
   profiles (a request-side enum widened: a client that never sends the token is unaffected). The pack's artifact list,
-  `listArtifactReferences` and `deletePackArtifact` now serve the kind (see the `### Changed` fragment that follows this
-  one); the `collection`, `references` and lineage `artifact` links of a profile read therefore answer 200.
+  `listArtifactReferences` and `deletePackArtifact` now serve the kind (see the `### Changed` fragment of this change); the `collection`,
+  `references` and lineage `artifact` links of a profile read therefore answer 200.

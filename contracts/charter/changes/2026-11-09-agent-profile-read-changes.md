@@ -1,7 +1,7 @@
 ### Changed
 
-- `agent_profile` is a served kind of the generic pack-artifact surface (#407, #96). Three wordings change, and no request
-  that answered 200 answers differently.
+- `agent_profile` is a served kind of the generic pack-artifact surface (#407, #96). Three wordings change, and every
+  change is additive.
   - **The served kinds.** The pack's artifact list (`listPackArtifacts`), its `?kind=` filter, the references read
     (`listArtifactReferences`) and `deletePackArtifact` serve `agent_profile` beside tactic, directive, styleguide, paradigm
     and toolguide. The descriptions that listed five kinds (`ArtifactKindToken`, the `kind` path parameter,

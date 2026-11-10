@@ -27,8 +27,8 @@ get:
     ancestor that is not in force is dropped, with what only it requires (operator ruling W1, decision
     01M7115WE6WQ7Q41HSS9ZHD1F3). This diverges from the cascade of the activation writes, which passes an ancestor
     through. The profile the walk starts from is exempt: it is answered whatever its own state, and the state is
-    reported on the read. An entry that is listed links (artifact) to the pack-scoped read of its winner, for the kinds
-    the generic artifact route serves.
+    reported on the read. An entry that is listed links, for the kinds the generic artifact route serves,
+    effective-artifact (its read under this activation) and artifact (the pack-scoped read of its winner).
 
     The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
     activation's closure holds as an agent_profile is a 404 artifact_not_found, judged before any If-None-Match, so a

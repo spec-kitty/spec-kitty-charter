@@ -1,9 +1,9 @@
 summary: 'java-jenny read from the built-in pack of spec-kitty-open-packs at a2a9379, depth=1, with the built-in, internal and
-  qa packs loaded. agentProfile is the service''s answer verbatim. Of the 45 governance entries the service lists, 7 are shown,
+  qa packs loaded. agentProfile is the service''s answer verbatim. Of the 42 governance entries the service lists, 7 are shown,
   each verbatim and in urn order with its complete edge words: implementer-ivan (lineage), DIRECTIVE_010 and DIRECTIVE_051 (requires,
   edge {}), DIRECTIVE_030 (requires, when and reason), DIRECTIVE_041 (suggests, when and reason), procedure:failing-test-triage
   (requires_of_suggested, via DIRECTIVE_041) and styleguide:java-conventions (requires, a reason alone: the edge FR-001 names).
-  The other 38 entries are omitted, so the list is abridged. None of the 45 real entries has held false: the pack holds every
+  The other 35 entries are omitted, so the list is abridged. None of the 42 real entries has held false: the pack holds every
   target. Invented and illustrative: directive:DIRECTIVE_099, an entry no pack holds, added only to show what held false looks
   like (packId null, no artifact link); its place in the list and its edge are made up. Every edge of the other entries is checked
   against the pack graph files by ProfileExamplesEdgeTest.'
