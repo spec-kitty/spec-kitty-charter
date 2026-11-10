@@ -516,6 +516,9 @@ class EffectiveReadServiceArtifactTest {
                                 closure(CLOSURE),
                                 new EffectiveTag.ArtifactQuery(ArtifactKind.AGENT_PROFILE, "P", 1))
                         .token());
+        // the generic route answers a different body for the same profile, so it must not share the tag
+        Read<EffectiveArtifactAnswer> generic = service.artifact(ID, "agent_profile", "P", 1, null);
+        assertThat(((Read.Found<EffectiveArtifactAnswer>) generic).etag()).isNotEqualTo(expected);
     }
 
     @Test

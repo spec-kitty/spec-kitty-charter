@@ -330,7 +330,7 @@ public class EffectiveReadService {
         ArtifactKind kind = ArtifactKind.fromToken(kindToken)
                 .filter(packs.listedKinds()::contains)
                 .orElseThrow(() -> notServed(kindToken));
-        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch);
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, false);
     }
 
     /**
@@ -361,7 +361,7 @@ public class EffectiveReadService {
         if (!packs.listedKinds().contains(kind)) {
             throw notServed(kind.token());
         }
-        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch);
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, kind == ArtifactKind.AGENT_PROFILE);
     }
 
     /**
@@ -375,8 +375,19 @@ public class EffectiveReadService {
         return packs.listedKinds();
     }
 
+    /**
+     * The one read behind both routes. {@code profileRoute} is true for the profiles slice's route, whose body carries
+     * the governance and so names {@link EffectiveTag.Read#PROFILE}; the generic route names
+     * {@link EffectiveTag.Read#ARTIFACT} for every kind, agent profile included, because its body never renders the
+     * governance, so the two URLs never share a tag.
+     */
     private Read<EffectiveArtifactAnswer> artifactOf(
-            StoredActivation stored, ArtifactKind kind, String artifactId, int depth, @Nullable String ifNoneMatch) {
+            StoredActivation stored,
+            ArtifactKind kind,
+            String artifactId,
+            int depth,
+            @Nullable String ifNoneMatch,
+            boolean profileRoute) {
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
         ArtifactRef ref = new ArtifactRef(kind, artifactId);
@@ -387,7 +398,7 @@ public class EffectiveReadService {
                     "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
         }
         EffectiveTag.ArtifactQuery asked = new EffectiveTag.ArtifactQuery(kind, artifactId, depth);
-        String etag = (kind == ArtifactKind.AGENT_PROFILE
+        String etag = (profileRoute
                         ? EffectiveTag.profile(stored.revision(), closure, asked)
                         : EffectiveTag.artifact(stored.revision(), closure, asked))
                 .token();
@@ -407,7 +418,9 @@ public class EffectiveReadService {
                 closure.closureFingerprint(),
                 inSet(byRef, ref),
                 read.artifact(),
-                read.governance().map(governance -> governed(governance, byRef, set)));
+                profileRoute
+                        ? read.governance().map(governance -> governed(governance, byRef, set))
+                        : Optional.empty());
         return new Read.Found<>(answer, etag);
     }
 
