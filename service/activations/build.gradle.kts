@@ -64,6 +64,18 @@ mutationFloors {
 }
 
 // PIT runs the unit tests as `test` does: the timing budgets above stay out of it.
+// ActivationWireTokenParityTest reads the contract schemas through a system property that `tasks.test` sets above; PIT's
+// minion JVM does not inherit it, so without it the nightly mutation run (mutation-nightly.yml) failed on a green suite.
 pitest {
     excludedGroups = setOf("timing")
+    jvmArgs.add(
+        rootProject.layout.projectDirectory.dir("contracts/charter/schemas").asFile.absolutePath
+            .let { "-Dcharter.contractSchemas=$it" },
+    )
+}
+
+// The schemas are an input of the mutation run as they are of `test`, so a changed enum re-runs it.
+tasks.named("pitest") {
+    inputs.dir(rootProject.layout.projectDirectory.dir("contracts/charter/schemas"))
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
 }
