@@ -1,0 +1,119 @@
+{
+  "mission_slug": "agent-profile-reads-01M70ZDM",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "gradle.properties + packs/open-packs.lock.yaml at a2a9379 (371748ed); :packs:wholePackRoundTrip green",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:04:46.432001+00:00",
+      "notes": "Pin bumped to open-packs a2a9379; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/agent-profile-reads.feature:186,227,403; ProfileCorpusTest (31 profiles, :deployable:openPacksProfiles)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:04:52.713280+00:00",
+      "notes": "getPackAgentProfile answers the body of every corpus profile; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "agent-profile-reads.feature:227,262,340; GovernanceWalkTest; ProfileReadServiceTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:04:58.874412+00:00",
+      "notes": "Lineage-walked governance over the depends_on closure, depth 0/1; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "agent-profile-reads.feature:250,276,303; effective-agent-profile.feature:257; ProfileExamplesEdgeTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:04.390963+00:00",
+      "notes": "Every entry carries step, relation, via, hops, edge {when?,reason?} (DM-01M7232ZMR4EWNDA1P2VF455Y1) and an artifact link when held; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/artifacts.feature:188",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:09.864454+00:00",
+      "notes": "agent_profile listed and filterable with ?kind=agent_profile; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/pack-removal.feature:142,169",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:15.771970+00:00",
+      "notes": "DELETE of an agent_profile behaves as for the other kinds; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "effective-artifact.feature:77-195; effective-agent-profile.feature:178-400; EffectiveReadServiceArtifactTest; EffectiveProfileReadTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:21.746171+00:00",
+      "notes": "getEffectiveArtifact for any served kind and getEffectiveAgentProfile; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "effective-reads.feature:119; effective-graph-and-context.feature; EffectiveProfileDtosTest; ActivationMapperTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:27.540753+00:00",
+      "notes": "effective-artifact (+ artifact) on effective list/context items and profile governance entries, effective-artifact on graph nodes (WP08); verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/root.feature:84; InfoControllerTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:33.047145+00:00",
+      "notes": "Root links activations with method POST; activation links artifacts{?kind,state}; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "agent-profile-reads.feature:443,449; effective-agent-profile.feature:392,400; ProfileProblemParityTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:39.221822+00:00",
+      "notes": "Unknown profile is 404 artifact_not_found; verifyAll green at f0f60ae3 (WP10)"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "manual_test",
+      "evidence": "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-green.md (25280b40); red baseline research/usability-baseline.md",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-10T11:05:44.773637+00:00",
+      "notes": "RESULT PASS hops=52/52 failed=0 unheld=7 (#452) unlinked=15 (procedures) p95=323/341ms commit=f0f60ae3 pin=a2a93794; qualified pass"
+    }
+  ],
+  "negative_invariants": []
+}

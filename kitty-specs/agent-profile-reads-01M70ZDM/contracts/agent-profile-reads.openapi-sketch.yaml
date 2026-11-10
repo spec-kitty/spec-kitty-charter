@@ -1,0 +1,35 @@
+# Sketch of the wire changes. The authoritative contract is written in contracts/charter/ by the contract WP.
+paths:
+  /packs/{packId}/artifacts/agent_profile/{artifactId}:
+    get:
+      operationId: getPackAgentProfile
+      tags: [AgentProfiles]
+      parameters: [PackId, ArtifactId, Depth]
+      responses:
+        '200': { schema: Artifact (kind agent_profile; agentProfile + governance), headers: [Charter-Source-Fingerprint, ETag] }
+        '404': { codes: [pack_not_found, artifact_not_found] }
+  /activations/{activationId}/artifacts/{kind}/{artifactId}:
+    get:
+      operationId: getEffectiveArtifact
+      tags: [Activations]
+      parameters: [ActivationId, ArtifactKind, ArtifactId]
+      responses:
+        '200': { schema: EffectiveArtifactRead }
+        '404': { codes: [activation_not_found, kind_not_found, artifact_not_found] }
+  /activations/{activationId}/artifacts/agent_profile/{artifactId}:
+    get:
+      operationId: getEffectiveAgentProfile
+      tags: [AgentProfiles]
+      parameters: [ActivationId, ArtifactId, Depth]
+      responses:
+        '200': { schema: EffectiveArtifactRead (agentProfile + governance + suggestions) }
+        '404': { codes: [activation_not_found, artifact_not_found] }
+schemas:
+  AgentProfile: closed; every agent-profile.schema.json field, camelCase
+  ProfileGovernanceEntry: see data-model.md
+  EffectiveArtifactRead: see data-model.md
+  ArtifactKindToken: += agent_profile
+  Artifact.oneOf: += { kind: agent_profile, agentProfile, governance }
+  EffectiveArtifact / EffectiveGraphNode / action-context item: += _links { artifact, effective-artifact }
+  ApiRoot._links: += activations
+relations: += effective-artifact

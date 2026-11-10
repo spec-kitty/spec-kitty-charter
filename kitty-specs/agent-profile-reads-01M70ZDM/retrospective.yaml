@@ -1,0 +1,207 @@
+schema_version: 1
+mission_id: 01M70ZDMZXTYSB91J7BQ7SKPN8
+mission_slug: agent-profile-reads-01M70ZDM
+mission_number: 20
+friendly_name: Agent profile reads
+mission_type: software-dev
+target_branch: issue-407-agent-profile-reads
+created_at: '2026-11-10T11:08:21.991578+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-10T11:08:21.991578+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-002
+  category: implementation
+  summary: WP05 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-003
+  category: implementation
+  summary: WP06 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-004
+  category: implementation
+  summary: WP08 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-005
+  category: implementation
+  summary: WP10 completed without rejection cycles
+  evidence_refs:
+  - e-015
+not_helpful:
+- id: n-008
+  category: doc
+  summary: analysis-report.md records 6 finding(s)
+  evidence_refs:
+  - e-023
+  details: The analysis-report.md artifact for this mission records 6 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-004
+  category: process
+  summary: WP01 had 1 lane bounce(s) before approval
+  evidence_refs:
+  - e-019
+  details: WP WP01 moved backward across workflow lanes 1 time(s) outside the documented reviewer-feedback flow.
+- id: n-006
+  category: process
+  summary: WP01 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-021
+  details: WP WP01 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-005
+  category: process
+  summary: WP02 had 1 lane bounce(s) before approval
+  evidence_refs:
+  - e-020
+  details: WP WP02 moved backward across workflow lanes 1 time(s) outside the documented reviewer-feedback flow.
+- id: n-007
+  category: process
+  summary: WP02 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-022
+  details: WP WP02 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-001
+  category: review_loop
+  summary: WP03 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-016
+  details: WP WP03 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP07 required 3 rejection cycle(s) before approval
+  evidence_refs:
+  - e-017
+  details: WP WP07 was sent back to an earlier lane with documented review feedback 3 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP09 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-018
+  details: WP WP09 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP01-open-packs-pin-bump-to-a2a9379.md
+- id: e-006
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP02-the-profiles-edge-module-the-adr-amendment-and-the.md
+- id: e-007
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP03-the-governance-walk-in-packs-application.md
+- id: e-008
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP04-pack-scoped-profile-read-contract-and-profiles-edg.md
+- id: e-009
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP05-open-the-list-the-references-and-delete-to-agent-p.md
+- id: e-010
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP06-activation-scoped-artifact-read-generic.md
+- id: e-011
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP07-profile-under-an-activation-profiles-edge-route.md
+- id: e-012
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP08-effective-item-links-the-effective-artifact-relati.md
+- id: e-013
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP09-usability-script-and-red-baseline.md
+- id: e-014
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP10-docs-changelog-and-the-acceptance-run.md
+- id: e-015
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+- id: e-016
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M717JTYRX3FBR8RE01T2D890
+- id: e-017
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M71X59PABD1DTHXYGVW80GA7..01M727VH7RCA5D14K7QXYCSRQ4
+- id: e-018
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M72B6YDYE1M9FQ3W1Q7SZNNP
+- id: e-019
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M713A5CS28XAYPZZ6E4GQX3B
+- id: e-020
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M714XXPD2CPZMEJTHJC3KPMG
+- id: e-021
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M7138DNF73YG2S4ZAQ3T9N8A..01M713A5CS28XAYPZZ6E4GQX3B
+- id: e-022
+  kind: event_range
+  path: kitty-specs/agent-profile-reads-01M70ZDM/status.events.jsonl
+  range: 01M714XBK2B9G0D478T12DDY4V..01M714XXPD2CPZMEJTHJC3KPMG
+- id: e-023
+  kind: file
+  path: kitty-specs/agent-profile-reads-01M70ZDM/analysis-report.md
+generator_version: '1.0'
+provenance_history: []
