@@ -1,7 +1,7 @@
 {
-  "event_count": 43,
-  "last_event_id": "01M71DWDM5Q2329XDS76ZT8F20",
-  "materialized_at": "2026-11-10T00:31:45.285428+00:00",
+  "event_count": 45,
+  "last_event_id": "01M71DWWS6EFK2HJD3D827BA2S",
+  "materialized_at": "2026-11-10T00:32:00.667320+00:00",
   "mission_number": "",
   "mission_slug": "agent-profile-reads-01M70ZDM",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 6
+    "planned": 5
   },
   "work_packages": {
     "WP01": {
@@ -160,11 +160,15 @@
       }
     },
     "WP05": {
-      "actor": "finalize-tasks",
+      "actor": "claude:sonnet:java-jenny",
+      "agent": "claude:sonnet:java-jenny",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M711N8DHF9GGE4B2Q5J71TQW",
-      "last_transition_at": "2026-11-09T20:58:07.665923+00:00"
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M71DWWS6EFK2HJD3D827BA2S",
+      "last_transition_at": "2026-11-10T00:32:00.667320+00:00",
+      "shell_pid": 20125,
+      "shell_pid_created_at": "1794270712.67"
     },
     "WP06": {
       "actor": "finalize-tasks",
