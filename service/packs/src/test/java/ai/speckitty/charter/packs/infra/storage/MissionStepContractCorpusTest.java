@@ -54,6 +54,8 @@ class MissionStepContractCorpusTest {
 
         assertThat(problems).as("step contracts that do not round-trip").isEmpty();
         assertThat(files).as("step contract files in the checkout").isNotEmpty();
+        OpenPacksCorpus.assertPacksPresent("built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd");
+        OpenPacksCorpus.assertEachPackHolds("step contract", files, "built-in", "qa");
     }
 
     @Test

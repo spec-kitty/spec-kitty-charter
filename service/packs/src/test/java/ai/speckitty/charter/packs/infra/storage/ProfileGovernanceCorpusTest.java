@@ -61,6 +61,7 @@ class ProfileGovernanceCorpusTest {
     @DisplayName(
             "each of the built-in and qa profiles is walked, pack-scoped, and lists neither itself nor a dangling parent")
     void everyProfileOfTheQaClosureIsWalked() throws IOException {
+        OpenPacksCorpus.assertPacksPresent("built-in", "qa");
         ClosureQueries queries = queries();
         ClosureView view = queries.snapshotWithin(Optional.of(List.of(new PackIdentifier("qa"))));
         List<String> profiles = new ArrayList<>(new TreeSet<>(view.heldIds().get(ArtifactKind.AGENT_PROFILE)));

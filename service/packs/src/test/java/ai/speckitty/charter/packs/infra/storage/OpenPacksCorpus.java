@@ -75,6 +75,37 @@ public final class OpenPacksCorpus {
     }
 
     /**
+     * Fails unless each named pack is a directory that holds at least one regular file. Tests that glob over every
+     * pack call it, so a whole pack vanishing from the checkout cannot pass as a smaller corpus.
+     */
+    public static void assertPacksPresent(String... names) throws IOException {
+        for (String name : names) {
+            Path pack = packsDirectory().resolve(name);
+            if (!Files.isDirectory(pack)) {
+                throw new AssertionError("The open-packs checkout holds no pack directory '" + name + "'");
+            }
+            try (Stream<Path> walk = Files.walk(pack)) {
+                if (walk.noneMatch(Files::isRegularFile)) {
+                    throw new AssertionError("The open-packs pack '" + name + "' holds no file");
+                }
+            }
+        }
+    }
+
+    /**
+     * Fails unless {@code files} holds at least one file of each named pack, so a pack whose files a glob over all
+     * packs should have found cannot silently drop out.
+     */
+    public static void assertEachPackHolds(String what, List<Path> files, String... packs) {
+        for (String pack : packs) {
+            Path directory = packsDirectory().resolve(pack);
+            if (files.stream().noneMatch(file -> file.startsWith(directory))) {
+                throw new AssertionError("The open-packs pack '" + pack + "' holds no " + what);
+            }
+        }
+    }
+
+    /**
      * The files under {@code directory} whose name ends in {@code suffix}, as {@code /}-separated paths relative to
      * {@code directory}, sorted; empty when the directory is absent. The one walk the tests use to read what is on disk
      * without the store.
