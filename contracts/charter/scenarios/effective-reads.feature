@@ -116,6 +116,83 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/denyNotApplied/0/reason" is "required"
 
+  Scenario: WP08 - each item of the list links its effective read and the pack-scoped read of the pack that holds it
+    #450 for the served kinds: a client follows an item without building a path. D is held by the org pack and
+    selected, rehearse is a tactic, selected too, and software-dev is a mission type, the control of a kind no pack-scoped read
+    serves yet: it is listed and links nothing. The two links of an item
+    answer 200 and name the same artifact (the effective read names the pack that holds the version in force, the
+    artifact link reads that pack). The activation's artifacts link is the way to the list: it is templated, takes the
+    kind and the state, and answers the same list as the path it expands to.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: D
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/rehearse.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: rehearse
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: software-dev
+      title: software-dev
+      description: software-dev
+      steps:
+        - id: implement
+          title: implement
+          role: implementer
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["rehearse"], "mission_type": ["software-dev"]}}
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/_links/artifacts/href" is "/api/v1/activations/a-1/artifacts{?kind,state}"
+    And the field at "/_links/artifacts/templated" is true
+    When I follow the templated link "artifacts" with:
+      | kind  | directive |
+      | state | active    |
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:D
+      """
+    And the field at "/items/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/D"
+    And following the link "effective-artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1"
+    And I follow the templated link "artifacts" with:
+      | kind | directive |
+    Then following the link "artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1/artifacts"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:D
+      mission_type:software-dev
+      tactic:rehearse
+      """
+    And the field at "/items/0/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/directive/D"
+    And the field at "/items/1/_links" is absent
+    And the field at "/items/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/tactic/rehearse"
+    And the field at "/items/2/_links/artifact/href" is "/api/v1/packs/main/artifacts/tactic/rehearse"
+
   Scenario: US3 AS3 - a selected id no pack holds is absent and reported as stale
     US3 AS3, ADR-0059 D4: the document selects D, which main holds, and GHOST, which no pack holds any longer. GHOST
     is absent from the artifacts in force and is in staleIds; D is the control, present in the same answer.

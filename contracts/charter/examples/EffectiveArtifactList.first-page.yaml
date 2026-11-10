@@ -21,6 +21,11 @@ value:
       required: false
       policy: open
       reason: selected
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
+        artifact:
+          href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_010
   pageInfo:
     hasNextPage: false
     nextPageCursor: null

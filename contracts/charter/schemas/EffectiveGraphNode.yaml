@@ -2,6 +2,11 @@ title: EffectiveGraphNode
 description: >-
   A node of the graph of the merged closure under an activation: an artifact in force, or a step of a mission type
   (kind action) that the closure holds while its mission type is in force.
+
+  _links holds effective-artifact, the read of the artifact the node is under the activation (getEffectiveArtifact), for
+  a node of a kind the pack-scoped artifact routes serve. It is absent for any other node, an action among them: a step
+  of a mission type is no artifact. A node names no pack, so it has no artifact link; the effective-artifact read it leads
+  to has one.
 type: object
 additionalProperties: false
 required:
@@ -24,3 +29,5 @@ properties:
       rule: The kind of the node.
       inputs:
       - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml

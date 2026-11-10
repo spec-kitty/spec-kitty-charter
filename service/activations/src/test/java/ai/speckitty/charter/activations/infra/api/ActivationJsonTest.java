@@ -3,6 +3,10 @@ package ai.speckitty.charter.activations.infra.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.ActivationConfig;
+import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.Link;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.ObjectMapper;
@@ -34,5 +38,20 @@ class ActivationJsonTest {
         ActivationConfig read = mapper.readValue(document, ActivationConfig.class);
 
         assertThat(mapper.readTree(mapper.writeValueAsString(read))).isEqualTo(mapper.readTree(document));
+    }
+
+    @Test
+    void aGraphNodeWithoutLinksWritesNoLinksMemberAndOneWithLinksWritesThem() {
+        EffectiveGraphNode step = new EffectiveGraphNode("action:m/s", EffectiveGraphNode.KindEnum.ACTION);
+        EffectiveGraphNode linked = new EffectiveGraphNode("directive:D", EffectiveGraphNode.KindEnum.DIRECTIVE);
+        linked.setLinks(Map.of("effective-artifact", new Link("/api/v1/activations/a-1/artifacts/directive/D")));
+
+        assertThat(mapper.readTree(mapper.writeValueAsString(step)).has("_links"))
+                .as("an absent _links is left out, not written as null")
+                .isFalse();
+        assertThat(mapper.readTree(mapper.writeValueAsString(linked))
+                        .at("/_links/effective-artifact/href")
+                        .asString())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/D");
     }
 }

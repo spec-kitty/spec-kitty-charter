@@ -2,7 +2,8 @@
 Feature: The API root links to every top-level resource
   A client starts from one known place, GET / (the server prefix with its trailing slash,
   /api/v1/), and follows links from there (ADR-0019 D2 and D4, FR-001): self, info, offering, the
-  artifacts of a pack as an RFC 6570 template, and service-desc, the contract document (RFC 8631).
+  artifacts of a pack as an RFC 6570 template, activations (the register, followed with POST) and service-desc, the
+  contract document (RFC 8631).
   The root reads no pack file, so it carries no Charter-Source-Fingerprint. Like every operation it
   needs the worktree token.
 
@@ -35,6 +36,7 @@ Feature: The API root links to every top-level resource
           "info": {"href": "/api/v1/info"},
           "offering": {"href": "/api/v1/offering"},
           "artifacts": {"href": "/api/v1/packs/{packId}/artifacts{?kind}", "templated": true},
+          "activations": {"href": "/api/v1/activations", "method": "POST"},
           "service-desc": {"href": "/api/v1/openapi.yaml"}
         }
       }
@@ -78,6 +80,32 @@ Feature: The API root links to every top-level resource
     Then the response status is 200
     And the field at "/items/0/kind" is "tactic"
     And the field at "/_links/self/href" is "/api/v1/packs/qa/artifacts?kind=tactic"
+
+  Scenario: The activations link of the root is the POST that creates an activation, and the activation leads on to its effective list
+    The root names the register and the method to follow it with; a client creates an activation with the href it
+    was given and follows the created activation's artifacts template to the effective list (the Activation answer
+    links it), without writing a path. The root's own self and artifacts links are the controls: they are GET links,
+    which carry no method.
+    When I GET "/"
+    Then the field at "/_links/activations/href" is "/api/v1/activations"
+    And the field at "/_links/activations/method" is "POST"
+    And the field at "/_links/activations/templated" is absent
+    And the field at "/_links/self/method" is absent
+    And the field at "/_links/artifacts/method" is absent
+    When I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "qa"}], "selected": {"tactic": ["rehearse"]}}
+      """
+    Then the response status is 201
+    And the field at "/_links/artifacts/href" starts with "/api/v1/activations/"
+    And the field at "/_links/artifacts/templated" is true
+    And the path of the Location header is the href of the link "self"
+    When I follow the templated link "artifacts" with:
+      | kind | tactic |
+    Then the response status is 200
+    And the field at "/items/0/artifactId" is "rehearse"
+    And the field at "/_links/self/href" starts with "/api/v1/activations/"
+    And following the link "effective-artifact" of every element of "items" answers 200
 
   Scenario: The root needs the worktree token
     When I GET "/" without the worktree token

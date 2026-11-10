@@ -60,6 +60,7 @@ public class InfoController implements ServiceApi {
         root.put(Relation.INFO, links.link(INFO));
         root.put(Relation.OFFERING, links.link("offering"));
         root.put(Relation.ARTIFACTS, links.templated("{?kind}", "packs", "{packId}", "artifacts"));
+        root.put(Relation.ACTIVATIONS, links.link(Hypermedia.Method.POST, "activations"));
         root.put(Relation.SERVICE_DESC, links.link(OPENAPI));
         return ResponseEntity.ok(new ApiRoot(Hypermedia.wire(root)));
     }
