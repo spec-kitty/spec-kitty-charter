@@ -22,7 +22,7 @@ description: >-
   EffectiveArtifactSuggestion, which the generic effective reads carry unchanged.
 
   The entries are sorted by urn (kind, a colon and the id), each artifact once, and none is the profile itself. A
-  suggestion sits inline on the entry; there is no suggestions list. Entries carry no enhancedBy or
+  suggested artifact is an entry of the list; there is no suggestions list. Entries carry no enhancedBy or
   enhances: a profile takes no step enhancement.
 
   _links holds artifact, the pack-scoped read of the entry in the pack that holds the version in force (the packId of the
