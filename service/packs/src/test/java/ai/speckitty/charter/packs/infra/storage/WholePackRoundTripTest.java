@@ -178,6 +178,9 @@ class WholePackRoundTripTest {
                 .filteredOn(path -> census.get(path).equals("template"))
                 .as("every mission template but the orientation READMEs, which are excluded")
                 .isNotEmpty()
+                // The filters below deliberately restate, in the test, the production rule that excludes a mission
+                // template from the census (READMEs, hidden files, plan-field-declaration.yaml): an independent mirror,
+                // so a change to the production rule that drops or admits a file shows up as a difference here.
                 .hasSize((int) missionTemplates.stream()
                         .filter(path -> !path.endsWith("/README.md") && !path.equals("README.md"))
                         .filter(path -> !path.endsWith("plan-field-declaration.yaml"))
