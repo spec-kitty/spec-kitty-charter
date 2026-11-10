@@ -237,10 +237,11 @@ class PromptSlotsCanonicalCorpusTest {
                 .as("slot markers in the built-in prompts: one start and one end per slot, none stray")
                 .isEqualTo(2 * slots.size());
         assertThat(withSlots.keySet())
-                .as("prompts that declare a slot")
-                .isNotEmpty()
-                .allSatisfy(name -> assertThat(SLOT_PROMPTS).anyMatch(name::endsWith));
-        assertThat(slots).allSatisfy(slot -> {
+                .as("prompts that declare a slot are the known slot prompts, one to one")
+                .containsExactlyInAnyOrderElementsOf(SLOT_PROMPTS.stream()
+                        .map(name -> SOFTWARE_DEV_STEPS + name)
+                        .toList());
+        assertThat(slots).hasSameSizeAs(SLOT_PROMPTS).allSatisfy(slot -> {
             assertThat(slot.id()).isEqualTo(REASONS);
             assertThat(slot.empty()).as("slot %s is empty", slot).isTrue();
         });
