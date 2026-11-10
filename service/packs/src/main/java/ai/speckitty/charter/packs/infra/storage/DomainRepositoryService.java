@@ -905,7 +905,11 @@ public final class DomainRepositoryService
         List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
-                FileSystemPackInspector.stepEnhancementEdge(edge.relation(), edge.source(), edge.target())
+                FileSystemPackInspector.stepEnhancementEdge(
+                                edge.relation(),
+                                edge.source(),
+                                edge.target(),
+                                read.descriptor().name())
                         .ifPresent(edges::add);
             }
         }

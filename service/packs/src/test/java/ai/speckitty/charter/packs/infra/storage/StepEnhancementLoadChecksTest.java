@@ -102,6 +102,13 @@ class StepEnhancementLoadChecksTest {
             return this;
         }
 
+        /** An edge whose source is qualified with the pack's own name: the same enhancement as the bare spelling. */
+        Enhancer selfQualified(String id, String relation, String target) {
+            edges.add("- source: enhancer::step_enhancement:" + id + "\n  target: " + target + "\n  relation: "
+                    + relation + "\n");
+            return this;
+        }
+
         Enhancer overrides(String id, String target) {
             edges.add("- source: step_enhancement:" + id + "\n  target: " + target + "\n  relation: overrides\n");
             return this;
@@ -260,6 +267,34 @@ class StepEnhancementLoadChecksTest {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
             assertThat(refusal.getMessage()).contains(pack.yamlOf(TYPE, "brief"));
         });
+    }
+
+    @Test
+    @DisplayName("a self-qualified source is the same enhancement: its overrides and second enhances edges are refused")
+    void aSelfQualifiedSourceIsJudgedLikeABareOne() throws IOException {
+        Enhancer overriding =
+                new Enhancer().pair("brief").selfQualified("brief", "overrides", "mission_type:software-dev");
+        overriding.graph();
+        assertThat(pointers(overriding.stagedAs(CODE))).containsExactly(overriding.yamlOf(TYPE, "brief"));
+        assertThat(overriding.read()).isPresent();
+
+        Enhancer twice =
+                new Enhancer().pair("brief").selfQualified("brief", "enhances", "base::action:software-dev/build");
+        twice.graph();
+        assertThat(pointers(twice.stagedAs(CODE))).containsExactly(twice.yamlOf(TYPE, "brief"));
+        assertThat(twice.read()).isPresent();
+    }
+
+    @Test
+    @DisplayName("the twin: a sole self-qualified enhances edge registers and reads")
+    void aSoleSelfQualifiedEdgeIsAccepted() throws IOException {
+        Enhancer sole = new Enhancer()
+                .enhancement(TYPE, "brief", "spdd:reasons-block", "brief.prompt-fragment.md")
+                .fragment(TYPE, "brief", "## Guidance\n\nFill it.\n")
+                .selfQualified("brief", "enhances", "base::action:software-dev/plan");
+        sole.graph();
+        assertThat(sole.staged()).isEmpty();
+        assertThat(sole.read()).isEmpty();
     }
 
     @Test

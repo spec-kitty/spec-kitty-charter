@@ -409,6 +409,25 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    # the same overrides edge, its source qualified with the pack's own name, is the same enhancement
+    Given the archive "bad" holds the file "enhancements.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: base::action:software-dev/plan
+        relation: enhances
+      - source: enhancer::step_enhancement:spdd-plan
+        target: mission_type:software-dev
+        relation: overrides
+      """
+    When I PUT "/packs/enhancer" with the archive "bad"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/violations/0/code" is "prompt_fragment_invalid"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
