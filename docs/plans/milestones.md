@@ -123,8 +123,8 @@ core follow-ups epic #361 (#333 to #342), and #142, #149, #154, #160, #163, #164
 | #121, #134, #140, #166, #197, #205, #243, #308, #324, #371 | CI, docs tooling and hardening | |
 
 **Added 2026-11-10:** mutation CI (#387, #388, #389, and #461, which closes once a nightly is green),
-the hardening batch (#380 to #383, #386, #416, #417, #426, #429, #439, #443, #444, #447), and the SonarCloud cleanup
-#463 to #465 below.
+the hardening batch (#380 to #383, #386, #416, #417, #426, #429, #439, #443, #444, #447), and the SonarCloud cleanup,
+issues #463 to #465 below.
 
 ### Backlog
 
