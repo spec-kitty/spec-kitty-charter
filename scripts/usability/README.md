@@ -43,8 +43,8 @@ another option in its place, exits 2 with the usage text.
 4. **The walk** (hop ids in the output):
    - pack-scoped: root `artifacts` (`packId=built-in`, `kind=agent_profile`) → the profile's list item `self` → body and
      `governance` → each held entry's `artifact`;
-   - under the activation: root `activations` (method POST, the document) → the answer's `artifacts`
-     (`kind=agent_profile`, `{?kind,state}`) → the profile's item `effective-artifact` → body and `governance` → each
+   - under the activation: root `activations` (method POST, the document) → the answer's `self` (A3) →
+     that activation's `artifacts` (A4, `kind=agent_profile`, `{?kind,state}`) → the profile's item `effective-artifact` → body and `governance` → each
      held entry's `effective-artifact` and `artifact`.
 
    **Which entries must carry a link.** The service links `artifact` and `effective-artifact` only on a held entry
@@ -78,8 +78,9 @@ The script only removes what it made: the temporary directory is removed only if
 for this run (it carries a marker file), and a staged-copy file is removed only if its path resolves strictly inside
 that directory. A path the service names that is absolute or contains `..` is refused and fails the registration hop.
 
-`charter-to-activation.py` fails (exit 3) on a top-level `activated_*` key it does not map, and on a mapped key whose
-list is inline or indented, because either would drop selections without a word.
+`charter-to-activation.py` fails (it exits 3 itself) on a top-level `activated_*` key it does not map, and on a mapped
+key whose list is inline or indented, because either would drop selections without a word. The run then fails hop A2
+and exits 1.
 
 ## Exit codes
 
@@ -88,11 +89,14 @@ list is inline or indented, because either would drop selections without a word.
 | `0` | Every hop answered 2xx, the assertions held and both p95 values are under 500 ms. If the `RESULT` line says `unheld=<n>` with n above 0, it is a pass with named gaps: report those selections to the operator, they are not covered by the proof. |
 | `1` | A hop failed, an assertion failed or a p95 was too high. The summary lists them. This is the code of the red baseline. |
 | `2` | Usage or prerequisite error: an option without its value, an unknown option, a missing tool, no checkout, or a checkout that is not at the pin. |
-| `3` | The service could not be built or did not start (or, for `charter-to-activation.py`, the charter could not be translated). |
+| `3` | The service could not be built or did not start. |
 | `4` | The packs could not be provisioned: the copy of `built-in` differs from the pin, or a pack is missing. |
-| `130`, `143` | Interrupted. The service is stopped either way. |
+| `130`, `143` | Interrupted. The service is stopped unless `--keep` is given. |
 
-The last line is `RESULT PASS|FAIL hops=<ok>/<all> failed=<n> workarounds=<n> unheld=<n> unlinked=<n> p95=<pack>/<activation>ms commit=<8> pin=<8>`.
+With `--keep`, the stop hint is printed before the last line. The last line is `RESULT PASS|FAIL hops=<ok>/<all> failed=<n> workarounds=<n> unheld=<n> unlinked=<n> p95=<pack>/<activation>ms client=<8>[-dirty] [jar=<12>|service=unknown] pin=<8>`.
+`client` is `git describe --always --dirty` of this repository, the tree Gradle builds without `--jar`; with `--jar`, `jar` is the
+start of the jar's sha256, and with `--attach` the service under test is `unknown`. `--attach` creates one activation on that
+service and does not delete it.
 The service is stopped when the script ends, unless `--keep` is given.
 
 When `--jar` is not given the script builds with `./gradlew --max-workers=1 :deployable:bootJar`. That leaves the Gradle
@@ -101,7 +105,8 @@ service it started.
 
 ## Prerequisites
 
-`bash`, `curl`, `jq`, `git`, `tar`, `awk`, `python3` (run with `-I`, standard library only) and a JDK 25. Gradle runs
+`bash` 4.2 or later (the script uses associative arrays; the macOS `/bin/bash` 3.2 is too old, the script refuses it),
+GNU coreutils (`realpath -e`, `sha256sum`; BSD `realpath` lacks `-e`), `curl`, `jq`, `git`, `tar`, `awk`, `python3` (run with `-I`, standard library only) and a JDK 25. Gradle runs
 only when `--jar` is not given.
 
 ## Self-test
