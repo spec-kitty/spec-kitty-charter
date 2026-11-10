@@ -8,8 +8,10 @@
   field for field in camelCase; `AgentProfileExcluding` is the closed wire form of `excluding` (`wholeFields` or `fieldValues`,
   the other null). `PackGovernanceEntry` is one governance entry (`kind`, `artifactId`, `urn`, `step`, `relation`, `via`,
   `hops`, `edge`, `packId`, `held`, `_links`), `GovernanceStep` its walk step (`lineage`, `requires`, `suggests`,
-  `requires_of_suggested`, `vocabulary`). A parent no pack of the closure holds is listed with `held: false`, a null
-  `packId` and no link. `held` describes the edge that listed the entry: a URN listed early by a dangling edge keeps
+  `requires_of_suggested`, `vocabulary`). The walk follows the merged closure, so where a pack of the closure overrides
+  an artifact (a layer override), an entry's `packId` and its `artifact` link name the copy that wins the merge, whose
+  edges the walk followed, as the read under an activation does (operator ruling `01M72NRA73EZ02HYYMBQQVRJF3`). A
+  parent the edge's place does not hold is listed with `held: false`, a null `packId` and no link. `held` describes the edge that listed the entry: a URN listed early by a dangling edge keeps
   `held: false` even when a later step reaches it through a held edge. The walk never goes through an entry with
   `held: false`, so nothing is listed below it, even where another pack of the closure holds the same URN.
   Every entry carries `edge`, the new closed schema `GovernanceEdgeWords` (`when` and `reason`, both optional): the words

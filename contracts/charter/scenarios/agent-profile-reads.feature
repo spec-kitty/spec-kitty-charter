@@ -384,6 +384,68 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/governance/1/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the field at "/governance/2/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010"
 
+  Scenario: A project pack that overrides a built-in directive the profile requires names its own copy, whose edges are walked
+    Given the project pack "proj" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: proj
+      pack_level: project
+      depends_on:
+        - pack_id: 01ARWG13C000000000000000FG
+          range: ">=1.0,<2"
+      """
+    And the project pack "proj" with the file "agent_profiles/proj-jenny.agent.yaml":
+      """
+      profile-id: proj-jenny
+      name: Project Jenny
+      roles:
+        - implementer
+      purpose: Java, the project way.
+      specialization:
+        primary-focus: Java
+      """
+    And the project pack "proj" with the file "directives/DIRECTIVE_010.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DIRECTIVE_010
+      title: Specification fidelity, the project way
+      intent: Follow the project's specification.
+      enforcement: required
+      """
+    And the project pack "proj" with the file "directives/PROJ_001.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PROJ_001
+      title: Project review
+      intent: Review the project way.
+      enforcement: required
+      """
+    And the project pack "proj" with the file "proj.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: agent_profile:proj-jenny
+        target: directive:DIRECTIVE_010
+        relation: requires
+      - source: directive:DIRECTIVE_010
+        target: directive:PROJ_001
+        relation: requires
+      """
+    When I GET "/packs/proj/artifacts/agent_profile/proj-jenny"
+    Then the response status is 200
+    And the governance holds exactly the entries:
+      """
+      directive:DIRECTIVE_010 requires via agent_profile:proj-jenny hops 1 in proj linked edge {}
+      directive:PROJ_001 requires via directive:DIRECTIVE_010 hops 2 in proj linked edge {}
+      """
+    And the field at "/governance/0/packId" is "proj"
+    And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/proj/artifacts/directive/DIRECTIVE_010"
+    And following the link "artifact" of every element of "governance" answers 200
+
   Scenario: A profile only a pack of the closure holds is not the pack's own and is artifact_not_found
     Given the org pack "house" with the file "pack.yaml":
       """

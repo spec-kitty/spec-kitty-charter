@@ -31,8 +31,8 @@ domain type is not mapped.
 | `via` | string (URN) | The parent: the profile for its own edges, otherwise another entry |
 | `hops` | integer ≥ 1 | `hops(via) + 1` |
 | `edge` | `GovernanceEdgeWords` `{when?, reason?}` | On every entry of both reads, whatever its relation: the words of the edge of its `via` (first reach kept). `{}` when that edge states neither; never null or absent (DM-01M7232ZMR4EWNDA1P2VF455Y1) |
-| `packId` | string, nullable | The holding pack (pack-scoped: the first holder in closure order; activation-scoped: the winner) |
-| `held` | boolean | Pack-scoped only. False when the closure holds no such artifact (no link then) |
+| `packId` | string, nullable | The layer-merge winner, the copy whose edges the walk followed, on both reads (decision `01M72NRA73EZ02HYYMBQQVRJF3`); pack-scoped: null exactly when `held` is false |
+| `held` | boolean | Pack-scoped only. False when the place the listing edge leads to holds no such artifact (no link then, and nothing listed below the entry) |
 | `state`, `required`, `policy`, `reason` | as `EffectiveArtifact` | Activation-scoped only |
 | `_links` | `artifact` (and `effective-artifact` under an activation) | A link only to a held target of a served kind |
 

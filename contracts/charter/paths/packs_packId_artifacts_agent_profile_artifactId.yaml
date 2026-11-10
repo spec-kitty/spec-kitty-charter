@@ -5,8 +5,10 @@ get:
     One agent profile of one pack in the Artifact envelope: kind agent_profile, id, packId, _links, the profile as the
     pack stores it in agentProfile and, in governance, the artifacts its governance walk lists over the pack's composed
     depends_on closure (the lineage through specializes_from, then what the profile and its ancestors require, suggest
-    and cite in the vocabulary), each with how it was reached and whether a pack of the closure holds it. The walk is
-    the action context's walk with a lineage step in place of scope, and depth is the number of suggests hops it
+    and cite in the vocabulary), each with how it was reached, whether the place its edge leads to holds it and, when
+    it does, the pack whose copy wins the layer merge of the closure: the walk follows the merged closure, so where a
+    pack of the closure overrides an artifact, the entry's packId and artifact link name the winning copy, whose edges
+    the walk followed. The walk is the action context's walk with a lineage step in place of scope, and depth is the number of suggests hops it
     follows, 0 or 1 (default 0). Every entry carries edge, the when and the reason of the edge it was reached through,
     whatever its relation (FR-004); edge is an empty object where that edge states neither word, and it is always
     present. Where more than one edge could reach an entry, the words are those of the edge of its via, the parent the

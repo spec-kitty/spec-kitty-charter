@@ -614,15 +614,15 @@ public record ClosureView(
     public ProfileGovernance.Governance governance(Urn profile, int depth, InForceStates states) {
         MergedView view = merged();
         GovernanceWalk.Result walked = GovernanceWalk.over(view.edges()).walk(profile, depth, effective(states));
-        return ProfileGovernance.Governance.of(
-                walked, urn -> view.closure().winnerOf(urn).map(winner -> new Holder(winner.packId(), winner.level())));
+        return ProfileGovernance.Governance.of(walked, urn -> winnerOf(view, urn));
     }
 
     /**
      * A profile's governance over this closure, taken as one pack's composed {@code depends_on} closure (fold W5): the
-     * profile walk over the merged edges with every node in force, plus the edges written to a target no pack holds,
-     * which are listed with {@code held} false and never expanded. Each held entry names the first holder in closure
-     * order ({@link #holderOf()}). {@link ProfileGovernance#ofPack} builds the view and calls this inside the caller's
+     * profile walk over the merged edges with every node in force, plus the edges written to a target the edge's place
+     * does not hold, which are listed with {@code held} false and never walked from. Each held entry names the merge
+     * winner, the copy whose edges the walk followed, as {@link #governance} does (operator ruling, decision {@code
+     * 01M72NRA73EZ02HYYMBQQVRJF3}). {@link ProfileGovernance#ofPack} builds the view and calls this inside the caller's
      * verified read.
      *
      * @param profile the profile, {@code agent_profile:<id>}
@@ -634,15 +634,11 @@ public record ClosureView(
     public ProfileGovernance.Governance packGovernance(Urn profile, int depth) {
         MergedView view = merged();
         GovernanceWalk.Result walked = GovernanceWalk.overWritten(view.edges()).walk(profile, depth, urn -> true);
-        return ProfileGovernance.Governance.of(
-                walked, urn -> Optional.ofNullable(holderOf.get(urn)).flatMap(this::holderOfDescriptor));
+        return ProfileGovernance.Governance.of(walked, urn -> winnerOf(view, urn));
     }
 
-    private Optional<Holder> holderOfDescriptor(String descriptorPackId) {
-        return packs.stream()
-                .filter(entry -> entry.descriptorPackId().equals(descriptorPackId))
-                .findFirst()
-                .map(entry -> new Holder(entry.id(), entry.level()));
+    private static Optional<Holder> winnerOf(MergedView view, Urn urn) {
+        return view.closure().winnerOf(urn).map(winner -> new Holder(winner.packId(), winner.level()));
     }
 
     /**

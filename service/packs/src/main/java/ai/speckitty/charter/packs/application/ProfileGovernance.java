@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
  * A profile's governance with the pack that holds each artifact it lists: the answer of both entry points of the
  * governance walk ({@link GovernanceWalk}). The activation-scoped one is {@link ClosureView#governance}, over the
  * merged closure and the in-force predicate, and names the winner. The pack-scoped one, {@link #ofPack}, walks one
- * pack's composed {@code depends_on} closure with every node in force and names the first holder in closure order.
+ * pack's composed {@code depends_on} closure with every node in force and names the merge winner too: the copy whose
+ * edges the walk followed (decision {@code 01M72NRA73EZ02HYYMBQQVRJF3}).
  *
  * <p>The pack-scoped read is one piece of a larger read: the caller opens the {@link ConsistentRead#read verified read}
  * and runs the body read and this walk in its supplier, so the body, the closure and the walk name the same inputs
@@ -37,10 +38,10 @@ public final class ProfileGovernance {
      * @param when the {@code when} of the edge that reached it, whatever its relation; empty when the edge states none
      *     (see {@link GovernanceWalk.Entry})
      * @param reason the {@code reason} of that edge; empty likewise
-     * @param held whether a pack of the closure holds the artifact; false only in the pack-scoped walk, for a target
-     *     no pack holds, which has no holder
-     * @param holder the holding pack: the winner under an activation, the first holder in closure order for a pack;
-     *     empty when {@code held} is false
+     * @param held whether the place the listing edge leads to holds the artifact; false only in the pack-scoped walk,
+     *     for a dangling edge, and such an entry has no holder even when another pack of the closure holds the URN
+     * @param holder the merge winner, the copy whose edges the walk followed, on both entry points; empty exactly
+     *     when {@code held} is false
      */
     public record Entry(
             Urn urn,
@@ -144,8 +145,8 @@ public final class ProfileGovernance {
      * @param pack the configured pack whose closure is walked
      * @param profileId the profile's id
      * @param depth the number of {@code suggests} hops, at least 0
-     * @return the governance, with the first holder of each held entry in closure order; empty when no pack of the
-     *     closure holds the profile
+     * @return the governance, with the merge winner of each held entry; empty when no pack of the closure holds the
+     *     profile
      * @throws CharterRefusal as the compose and the layer merge refuse the closure, unchanged
      * @throws UnknownRootException when {@code pack} is not a configured pack
      * @throws IllegalArgumentException when {@code depth} is negative
