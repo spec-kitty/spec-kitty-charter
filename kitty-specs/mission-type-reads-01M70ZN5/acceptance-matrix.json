@@ -1,0 +1,129 @@
+{
+  "mission_slug": "mission-type-reads-01M70ZN5",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature (?kind= lists, references, step contract item); ArtifactReadServiceTest; WireTokenParityTest (WP03, approved)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:11.114160+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature 'A mission type is read in the envelope\u2026'; MissionTypeReadServiceTest; MissionTypeControllerTest (WP04, approved, mutation probe 6/6)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:15.777061+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature step scenarios (prompt/guidelines byte for byte); MissionTypeHoldingCorpusTest: all 13 software-dev steps at a2a9379 (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:19.485580+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature step contract scenario (links held only, candidates); StepContractDtoTest (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:23.300186+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature flat/nested/a~01b.md skeleton scenarios; SkeletonNamesTest (D9 codec); base64 unit test (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:26.875387+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MissionTypeControllerTest routing test; scenarios through the deployed service (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:30.645336+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "effective-mission-types.feature (layer-merge winner, links under the activation); ClosureViewSessionMissionTypeTest (WP05, approved, mutation probe 4/4); usability walk 4: 34/34 hops",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:34.308495+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "effective-mission-types.feature link scenarios; effective-reads.feature / effective-graph-and-context.feature WP08 scenarios; EffectiveReadMapperTest (WP06, approved, mutation probe 4/4); usability graph+context 11/11 hops",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:38.816384+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature and effective-mission-types.feature refusal-order scenarios; errors.feature raised-code registry (WP02\u2013WP05)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:43.485933+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-types.feature removal scenarios (cascade, 409 referrers, If-Match); ArtifactRemovalServiceTest 29 tests incl. author-written branches (WP07, approved on re-review)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:47.340639+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Met by construction: no new walk; the action-context scenarios of effective-graph-and-context.feature pass unchanged apart from the mission-kind links",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:51.054887+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Fingerprint header asserted in every mission-types and effective-mission-types scenario; one verified read per request (MissionTypeHoldingRead, ClosureViewSession stale check) reviewed in WP04/WP05",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-10T13:20:54.769448+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
