@@ -8,5 +8,5 @@
   `mission_step_contract` after `agent_profile`. The new `MissionSkeleton.encoding` is a closed enum, `text` or
   `base64`. Core must regenerate its DTOs (`CharterRefusalCode`, `Artifact`, `ArtifactKindToken` and the new mission
   schemas) and handle the two codes, the two members and the two kind tokens before it relies on an exhaustive switch
-  over any of them. For the five kinds already served the reads answer as before; one behaviour changes: a
+  over any of them. For the five kinds already served the reads answer as before; one behavior changes: a
   `deletePackArtifact` now prunes the directories the removal leaves empty (operator ruling).
