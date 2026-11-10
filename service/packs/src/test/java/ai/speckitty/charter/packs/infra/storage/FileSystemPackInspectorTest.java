@@ -533,7 +533,7 @@ class FileSystemPackInspectorTest {
         write(dir, "agent-profiles/p.agent.yaml", """
                 profile-id: p
                 name: P
-                roles: [implementer]
+                role: implementer
                 purpose: x
                 specialization:
                   primary-focus: f

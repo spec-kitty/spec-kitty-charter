@@ -56,7 +56,7 @@ class CompositionFactsLanguagesTest {
         Files.writeString(pack.resolve("implementer.agent.yaml"), """
                 profile-id: implementer
                 name: Implementer
-                roles: [implementer]
+                role: implementer
                 purpose: Implements.
                 specialization:
                   primary-focus: code

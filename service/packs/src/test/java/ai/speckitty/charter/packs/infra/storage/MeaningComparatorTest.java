@@ -65,7 +65,7 @@ class MeaningComparatorTest {
             // the twin: an open map's content is data, so an entry with an empty value is not nothing
             assertThat(compare("styleguide", "id: x\ntooling:\n  lint: []\n", "id: x\n"))
                     .isPresent();
-            assertThat(compare("agent-profile", "id: x\nexcluding:\n  roles: []\n", "id: x\n"))
+            assertThat(compare("agent-profile", "id: x\nexcluding:\n  alt-roles: []\n", "id: x\n"))
                     .isPresent();
             // and a declared object with one value is not empty
             assertThat(compare("agent-profile", "id: x\nctx:\n  frameworks: [spring]\n", "id: x\n"))

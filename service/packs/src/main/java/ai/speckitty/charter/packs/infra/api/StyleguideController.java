@@ -129,7 +129,7 @@ public class StyleguideController implements StyleguidesApi {
             String schemaVersion,
             String title,
             String scope,
-            List<String> principles,
+            List<ai.speckitty.charter.api.model.Principle> principles,
             List<StyleguidePattern> patterns,
             List<StyleguideAntiPattern> antiPatterns,
             List<StyleguideToolEntry> tooling,
@@ -146,7 +146,7 @@ public class StyleguideController implements StyleguidesApi {
                             .orElseThrow(
                                     () -> new CharterRefusal(RefusalCode.VALIDATION_FAILED, "unknown scope: " + scope)))
                     .qualityTest(qualityTest);
-            principles.forEach(builder::principle);
+            principles.forEach(item -> builder.principle(item.getName(), item.getDescription()));
             if (!patterns.isEmpty()) {
                 builder.patterns(patterns.stream()
                         .map(p -> new ai.speckitty.charter.packs.domain.StyleguidePattern(

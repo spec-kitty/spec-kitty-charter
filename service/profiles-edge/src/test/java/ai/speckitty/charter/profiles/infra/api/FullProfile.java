@@ -34,7 +34,7 @@ final class FullProfile {
                 .name("Full")
                 .description(Optional.of("Every field"))
                 .role("implementer")
-                .role("reviewer")
+                .altRole("reviewer")
                 .avatarImage(Optional.of("avatars/full.png"))
                 .capability("cap-one")
                 .capability("cap-two")
@@ -81,7 +81,7 @@ final class FullProfile {
      */
     static AgentProfile full() {
         Map<String, List<String>> values = new LinkedHashMap<>();
-        values.put("roles", List.of("reviewer"));
+        values.put("alt-roles", List.of("reviewer"));
         values.put("capabilities", List.of());
         return builder()
                 .excluding(Optional.of(new Exclusion.FieldValues(values)))

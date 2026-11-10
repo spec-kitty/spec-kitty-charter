@@ -58,8 +58,8 @@ class ParadigmEntityTest {
 
     // ---- principles (ADR-0067) ------------------------------------------------------------------------------
 
-    private static ParadigmPrinciple principle(String name) {
-        return new ParadigmPrinciple(name, "Why " + name + " matters.");
+    private static Principle principle(String name) {
+        return new Principle(name, "Why " + name + " matters.");
     }
 
     @Test
@@ -72,29 +72,26 @@ class ParadigmEntityTest {
                 .build();
 
         assertThat(paradigm.principles())
-                .extracting(ParadigmPrinciple::name)
+                .extracting(Principle::name)
                 .containsExactly("Isolated", "Fast", "Deterministic");
     }
 
     @Test
-    @DisplayName("twelve principles build; a thirteenth is refused")
-    void atMostTwelve() {
-        List<ParadigmPrinciple> twelve = java.util.stream.IntStream.rangeClosed(1, 12)
+    @DisplayName("the list has no count cap: a long list builds (ADR-0067 decision 4)")
+    void noCountCap() {
+        List<Principle> many = java.util.stream.IntStream.rangeClosed(1, 40)
                 .mapToObj(i -> principle("P" + i))
                 .toList();
-        assertThat(valid("ddd").principles(twelve).build().principles()).hasSize(12);
 
-        List<ParadigmPrinciple> thirteen = new java.util.ArrayList<>(twelve);
-        thirteen.add(principle("P13"));
-        assertThatThrownBy(() -> valid("ddd").principles(thirteen).build())
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("at most 12 principles");
+        assertThat(valid("ddd").principles(many).build().principles()).hasSize(40);
     }
 
     @Test
     @DisplayName("a principle name repeated ignoring case and whitespace is refused; distinct names build")
     void uniqueNames() {
-        assertThat(valid("ddd").principles(List.of(principle("Fast"), principle("Isolated"))).build())
+        assertThat(valid("ddd")
+                        .principles(List.of(principle("Fast"), principle("Isolated")))
+                        .build())
                 .isNotNull();
 
         assertThatThrownBy(() -> valid("ddd")
@@ -110,18 +107,18 @@ class ParadigmEntityTest {
         String name64 = String.join("", Collections.nCopies(64, "n"));
         String desc255 = String.join("", Collections.nCopies(255, "d"));
         assertThat(valid("ddd")
-                        .principles(List.of(new ParadigmPrinciple(name64, desc255)))
+                        .principles(List.of(new Principle(name64, desc255)))
                         .build())
                 .isNotNull();
 
-        for (ParadigmPrinciple bad : List.of(
-                new ParadigmPrinciple(" ", "d"),
-                new ParadigmPrinciple("n", " "),
-                new ParadigmPrinciple(name64 + "n", "d"),
-                new ParadigmPrinciple("n", desc255 + "d"))) {
+        for (Principle bad : List.of(
+                new Principle(" ", "d"),
+                new Principle("n", " "),
+                new Principle(name64 + "n", "d"),
+                new Principle("n", desc255 + "d"))) {
             assertThatThrownBy(() -> valid("ddd").principles(List.of(bad)).build())
                     .isInstanceOf(ConstraintBreachException.class)
-                    .hasMessageContaining("principle needs a name");
+                    .hasMessageContaining("A principle needs a name");
         }
     }
 }

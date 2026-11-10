@@ -23,7 +23,7 @@ class StyleguideEntityTest {
                 .schemaVersion("1.0")
                 .title("Java style")
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer immutability");
+                .principle("Prefer immutability", "Prefer immutability, in one sentence.");
     }
 
     @Test
@@ -37,7 +37,8 @@ class StyleguideEntityTest {
     @Test
     @DisplayName("principles must be non-empty")
     void principlesNonEmpty() {
-        assertThat(valid().build().principles()).containsExactly("Prefer immutability");
+        assertThat(valid().build().principles())
+                .containsExactly(new Principle("Prefer immutability", "Prefer immutability, in one sentence."));
         assertThatThrownBy(() -> Styleguide.builder()
                         .id(new StyleguideIdentifier("x"))
                         .packId(PACK)

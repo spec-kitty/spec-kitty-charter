@@ -108,7 +108,7 @@ class ArtifactControllerTest {
                     .schemaVersion("1.0")
                     .title("Java style")
                     .scope(StyleguideScope.CODE)
-                    .principle("Name things plainly.")
+                    .principle("Name things plainly.", "Name things plainly, in one sentence.")
                     .build())
             .paradigm(Paradigm.builder()
                     .id(new ParadigmIdentifier("layered"))

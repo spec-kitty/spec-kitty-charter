@@ -12,8 +12,9 @@ import java.util.Objects;
  * @param schemaVersion the {@code schema_version}
  * @param name the {@code name}
  * @param summary the {@code summary}
+ * @param principles the {@code principles}, in authored order; empty when it states none (ADR-0067)
  */
-record ParadigmDso(String id, String schemaVersion, String name, String summary, List<Principle> principles) {
+record ParadigmDso(String id, String schemaVersion, String name, String summary, List<PrincipleDso> principles) {
 
     /**
      * Checks that the required fields are present.
@@ -22,6 +23,7 @@ record ParadigmDso(String id, String schemaVersion, String name, String summary,
      * @param schemaVersion the schema version
      * @param name the name
      * @param summary the summary
+     * @param principles the principles
      */
     ParadigmDso {
         Objects.requireNonNull(id, "id");
@@ -41,18 +43,5 @@ record ParadigmDso(String id, String schemaVersion, String name, String summary,
      */
     ParadigmDso(String id, String schemaVersion, String name, String summary) {
         this(id, schemaVersion, name, summary, List.of());
-    }
-
-    /**
-     * One {@code principles} item as written (ADR-0067).
-     *
-     * @param name the principle's name
-     * @param description its description
-     */
-    record Principle(String name, String description) {
-        Principle {
-            Objects.requireNonNull(name, "name");
-            Objects.requireNonNull(description, "description");
-        }
     }
 }

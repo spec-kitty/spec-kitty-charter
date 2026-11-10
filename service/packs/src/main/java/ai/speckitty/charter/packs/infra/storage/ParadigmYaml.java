@@ -1,10 +1,9 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import static ai.speckitty.charter.packs.infra.storage.YamlFields.mappings;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import java.util.ArrayList;
+import ai.speckitty.charter.packs.domain.PackContents;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +29,12 @@ enum ParadigmYaml implements YamlFormat<ParadigmDso> {
                 required(root, "schema_version"),
                 required(root, "name"),
                 required(root, "summary"),
-                mappings(root, "principles").stream()
-                        .map(item -> new ParadigmDso.Principle(required(item, "name"), required(item, "description")))
-                        .toList());
+                PrincipleYaml.read(root));
+    }
+
+    @Override
+    public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
+        return PrincipleYaml.rules(root, file);
     }
 
     @Override
@@ -42,18 +44,7 @@ enum ParadigmYaml implements YamlFormat<ParadigmDso> {
                 .scalar("schema_version", paradigm.schemaVersion())
                 .scalar("name", paradigm.name())
                 .scalar("summary", paradigm.summary())
-                .mappings("principles", principles(paradigm))
+                .mappings(PrincipleYaml.KEY, PrincipleYaml.write(paradigm.principles()))
                 .dump();
-    }
-
-    private static List<Map<String, Object>> principles(ParadigmDso paradigm) {
-        List<Map<String, Object>> out = new ArrayList<>();
-        for (ParadigmDso.Principle principle : paradigm.principles()) {
-            Map<String, Object> item = YamlDumpEmitter.mapping();
-            item.put("name", principle.name());
-            item.put("description", principle.description());
-            out.add(item);
-        }
-        return out;
     }
 }

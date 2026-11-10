@@ -40,7 +40,7 @@ properties:
     description: >-
       The paradigm's principles, in the order the author ranks them (ADR-0067); [] when the paradigm states none.
     items:
-      $ref: ParadigmPrinciple.yaml
+      $ref: Principle.yaml
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
       symbol: Paradigm.principles

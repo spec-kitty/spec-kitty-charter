@@ -75,7 +75,7 @@ Feature: Paradigms are read and registered functionally
         "kind": "paradigm",
         "id": "clean-architecture",
         "packId": "qa",
-        "paradigm": {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward"},
+        "paradigm": {"id": "clean-architecture", "schemaVersion": "1.0", "name": "Clean", "summary": "inward", "principles": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/paradigm/clean-architecture"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=paradigm"}
@@ -116,6 +116,42 @@ Feature: Paradigms are read and registered functionally
       | directiveRefs | null                                                                             |
       | references    | [{"type": "tactic", "id": "x"}]                                                  |
       | relationships | [{"from": "paradigm:clean-architecture", "to": "directive:ALPHA", "type": "requires"}] |
+
+  Scenario: A paradigm's named principles are read back in authored order (ADR-0067)
+    When I PUT "/packs/qa/artifacts/paradigm/test-desiderata" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Test Desiderata", "summary": "Properties of good tests", "principles": [{"name": "Isolated", "description": "Tests return the same results whatever order they run in."}, {"name": "Fast", "description": "Tests run quickly."}]}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa/artifacts/paradigm/test-desiderata"
+    Then the response status is 200
+    And the field at "/paradigm/principles/0/name" is "Isolated"
+    And the field at "/paradigm/principles/1/name" is "Fast"
+    And the field at "/paradigm/principles/1/description" is "Tests run quickly."
+
+  Scenario Outline: A principles list that breaks ADR-0067 is refused and nothing is written, while a valid list is created
+    When I PUT "/packs/qa/artifacts/paradigm/test-desiderata" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Test Desiderata", "summary": "Properties of good tests", "principles": <principles>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I GET "/packs/qa/artifacts/paradigm/test-desiderata"
+    Then the response status is 404
+    When I PUT "/packs/qa/artifacts/paradigm/test-desiderata" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Test Desiderata", "summary": "Properties of good tests", "principles": [{"name": "Fast", "description": "Tests run quickly."}]}
+      """
+    Then the response status is 201
+
+    Examples:
+      | principles                                                                                       |
+      | []                                                                                               |
+      | [{"name": "Fast", "description": "Quick."}, {"name": " fast ", "description": "Again."}]          |
+      | [{"name": " ", "description": "Blank name."}]                                                    |
+      | [{"name": "Fast"}]                                                                               |
+      | [{"name": "Fast", "description": "Quick.", "weight": 1}]                                         |
+      | [{"name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn", "description": "65."}] |
 
   Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)
     When I POST "/packs/qa/artifacts/paradigm" as JSON with the body:

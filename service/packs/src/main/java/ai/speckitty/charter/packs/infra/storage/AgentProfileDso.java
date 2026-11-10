@@ -21,8 +21,7 @@ import java.util.Optional;
  * @param name the {@code name}
  * @param description the {@code description}, when declared
  * @param schemaVersion the {@code schema-version}, when declared
- * @param roles the deprecated {@code roles}, in authored order; empty for the new shape (ADR-0069)
- * @param role the {@code role}, when declared (ADR-0069)
+ * @param role the {@code role} (ADR-0069)
  * @param altRoles the {@code alt-roles}, in authored order (ADR-0069)
  * @param avatarImage the {@code avatar-image}, when declared
  * @param capabilities the {@code capabilities}, in authored order
@@ -50,8 +49,7 @@ record AgentProfileDso(
         String name,
         Optional<String> description,
         Optional<String> schemaVersion,
-        List<String> roles,
-        Optional<String> role,
+        String role,
         List<String> altRoles,
         Optional<String> avatarImage,
         List<String> capabilities,
@@ -81,7 +79,6 @@ record AgentProfileDso(
      * @param name the name
      * @param description the description
      * @param schemaVersion the schema version
-     * @param roles the deprecated roles
      * @param role the role
      * @param altRoles the alt-roles
      * @param avatarImage the avatar image
@@ -110,7 +107,6 @@ record AgentProfileDso(
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(schemaVersion, "schemaVersion");
-        roles = List.copyOf(roles);
         Objects.requireNonNull(role, "role");
         altRoles = List.copyOf(altRoles);
         Objects.requireNonNull(avatarImage, "avatarImage");

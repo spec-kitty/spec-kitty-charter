@@ -5,11 +5,9 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -31,27 +29,15 @@ public final class Paradigm implements CharterArtifact {
             .must(Constraints.of("A paradigm needs a name that is not blank.", paradigm -> !paradigm.name.isBlank()))
             .must(Constraints.of(
                     "A paradigm needs a summary that is not blank.", paradigm -> !paradigm.summary.isBlank()))
-            .must(Constraints.of(
-                    "A paradigm states at most " + Paradigm.PRINCIPLES_MAX + " principles.",
-                    paradigm -> paradigm.principles.size() <= Paradigm.PRINCIPLES_MAX))
-            .must(Constraints.of(
-                    "A paradigm's principle needs a name of 1 to " + ParadigmPrinciple.NAME_MAX
-                            + " characters and a description of 1 to " + ParadigmPrinciple.DESCRIPTION_MAX
-                            + " characters, neither blank.",
-                    paradigm -> paradigm.principles.stream().allMatch(ParadigmPrinciple::wellFormed)))
-            .must(Constraints.of(
-                    "A paradigm's principle names must be unique, ignoring case and surrounding whitespace.",
-                    Paradigm::principleNamesUnique));
-
-    /** The most principles a paradigm may state (ADR-0067). */
-    public static final int PRINCIPLES_MAX = 12;
+            .must(Constraints.of(Principles.SHAPE, paradigm -> Principles.wellFormed(paradigm.principles)))
+            .must(Constraints.of(Principles.UNIQUE, paradigm -> Principles.uniqueNames(paradigm.principles)));
 
     private final ParadigmIdentifier id;
     private final PackIdentifier packId;
     private final String schemaVersion;
     private final String name;
     private final String summary;
-    private final List<ParadigmPrinciple> principles;
+    private final List<Principle> principles;
 
     /**
      * Reconstructs a paradigm from its parts; reachable only inside the domain package.
@@ -70,7 +56,7 @@ public final class Paradigm implements CharterArtifact {
             String schemaVersion,
             String name,
             String summary,
-            List<ParadigmPrinciple> principles) {
+            List<Principle> principles) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -162,13 +148,8 @@ public final class Paradigm implements CharterArtifact {
      *
      * @return the principles
      */
-    public List<ParadigmPrinciple> principles() {
+    public List<Principle> principles() {
         return principles;
-    }
-
-    private static boolean principleNamesUnique(Paradigm paradigm) {
-        Set<String> seen = new HashSet<>();
-        return paradigm.principles.stream().allMatch(principle -> seen.add(principle.key()));
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
@@ -194,7 +175,7 @@ public final class Paradigm implements CharterArtifact {
         private @Nullable String schemaVersion;
         private @Nullable String name;
         private @Nullable String summary;
-        private List<ParadigmPrinciple> principles = List.of();
+        private List<Principle> principles = List.of();
 
         private Builder() {}
 
@@ -259,7 +240,7 @@ public final class Paradigm implements CharterArtifact {
          * @param value the principles; empty for none
          * @return this builder
          */
-        public Builder principles(List<ParadigmPrinciple> value) {
+        public Builder principles(List<Principle> value) {
             this.principles = List.copyOf(value);
             return this;
         }

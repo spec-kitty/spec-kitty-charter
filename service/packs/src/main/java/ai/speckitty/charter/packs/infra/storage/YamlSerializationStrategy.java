@@ -29,7 +29,8 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     /** Parses, validates against the bundled schema of the kind, then maps the root; never throws on content. */
     @Override
     public <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file) {
-        return readValidated(kind.schemaName(), text, file, YamlFormats.of(kind)::read);
+        YamlFormat<D> format = YamlFormats.of(kind);
+        return readValidated(kind.schemaName(), text, file, format::read, root -> format.rules(root, file));
     }
 
     @Override
@@ -58,6 +59,19 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
      */
     private static <D> FileRead<D> readValidated(
             String schema, String text, String file, Function<Map<?, ?>, D> reader) {
+        return readValidated(schema, text, file, reader, root -> List.of());
+    }
+
+    /**
+     * The schema-validated read with the kind's own rules (ADR-0067 decision 5): a rule violation makes the file
+     * unreadable exactly as a schema violation does.
+     */
+    private static <D> FileRead<D> readValidated(
+            String schema,
+            String text,
+            String file,
+            Function<Map<?, ?>, D> reader,
+            Function<Map<?, ?>, List<SchemaViolation>> rules) {
         ParsedYaml parsed = ParsedYaml.parse(text, file);
         if (parsed.failure() != null) {
             return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
@@ -69,6 +83,10 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         }
         if (!(document instanceof Map<?, ?> root)) {
             throw new IllegalStateException("a " + schema + " passed the schema but is no mapping");
+        }
+        List<SchemaViolation> broken = rules.apply(root);
+        if (!broken.isEmpty()) {
+            return new FileRead.Unreadable<>(file, null, broken);
         }
         return new FileRead.Read<>(file, reader.apply(root));
     }

@@ -1,0 +1,29 @@
+title: Principle
+description: >-
+  One named principle of a paradigm or a styleguide (ADR-0067): a core idea, with a short name and one or two sentences. The name is unique
+  within its paradigm, compared ignoring case and surrounding whitespace.
+type: object
+additionalProperties: false
+required:
+  - name
+  - description
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The principle's short name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Principle.java
+      symbol: Principle.name
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: One or two sentences stating the principle.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Principle.java
+      symbol: Principle.description
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Principle.java
+  symbol: Principle

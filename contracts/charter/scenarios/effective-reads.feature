@@ -1498,7 +1498,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
       title: py-style
       scope: code
       principles:
-        - Keep it small
+        - name: Keep it small
+          description: Keep it small, in one sentence.
       applies_to_languages:
         - python
       """
@@ -1509,7 +1510,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
       title: js-style
       scope: code
       principles:
-        - Keep it small
+        - name: Keep it small
+          description: Keep it small, in one sentence.
       applies_to_languages:
         - javascript
       """
@@ -1777,7 +1779,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
       title: js-style
       scope: code
       principles:
-        - Keep it small
+        - name: Keep it small
+          description: Keep it small, in one sentence.
       applies_to_languages:
         - javascript
       """

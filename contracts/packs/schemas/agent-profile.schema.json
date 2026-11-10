@@ -251,7 +251,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Rich agent behavioral identity.\n\nDefines WHO an agent IS through a section structure:\n1. Purpose - mandate (what it does/doesn't do)\n2. Specialization - focus, awareness, boundaries\n3. Collaboration Contract - handoffs, outputs, verbs\n4. Mode Defaults - available reasoning modes\n5. Initialization Declaration - startup acknowledgment\n6. Doctrine references - ``*-references`` (directive/tactic/toolguide/\n   styleguide), the canonical DRG-provisioned context surface\n\n(The retired ``context-sources.*`` bare-string surface was removed in\nmission ``doctrine-drg-silent-drop-boundary-01M0PE7E``; authored references\nlive solely on the top-level ``*-references`` fields.)\n\nRoles (ADR-0069): a profile declares ``role`` and optional ``alt-roles``. The\npositional ``roles`` list is deprecated and accepted until it is retired; a profile\ndeclares exactly one of the two shapes.",
+  "description": "Rich agent behavioral identity.\n\nDefines WHO an agent IS through a section structure:\n1. Purpose - mandate (what it does/doesn't do)\n2. Specialization - focus, awareness, boundaries\n3. Collaboration Contract - handoffs, outputs, verbs\n4. Mode Defaults - available reasoning modes\n5. Initialization Declaration - startup acknowledgment\n6. Doctrine references - ``*-references`` (directive/tactic/toolguide/\n   styleguide), the canonical DRG-provisioned context surface\n\n(The retired ``context-sources.*`` bare-string surface was removed in\nmission ``doctrine-drg-silent-drop-boundary-01M0PE7E``; authored references\nlive solely on the top-level ``*-references`` fields.)\n\nRoles (ADR-0069): a profile declares its primary ``role`` and optional ``alt-roles``.\nThe retired positional ``roles`` list is not a key of this closed schema.",
   "properties": {
     "profile-id": {
       "title": "Profile-Id",
@@ -272,23 +272,12 @@
       "title": "Schema-Version",
       "type": "string"
     },
-    "roles": {
-      "items": {
-        "type": "string",
-        "pattern": "^[a-z][a-z0-9_-]*$",
-        "maxLength": 64
-      },
-      "minItems": 1,
-      "title": "Roles",
-      "type": "array",
-      "description": "Deprecated (ADR-0069): the positional roles list, whose first entry is the primary role and the rest alt-roles. Accepted during the deprecation window; never together with role or alt-roles."
-    },
     "role": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_-]*$",
+      "pattern": "^[a-z][a-z0-9-]*$",
       "maxLength": 64,
       "title": "Role",
-      "description": "The profile's primary role (ADR-0069). A step asking for it finds a primary-role fit, which outranks every alt-role fit."
+      "description": "The profile's primary role (ADR-0069). A step asking for it finds a primary-role fit, which outranks every alt-role fit. 'generic' is reserved for a fallback profile and fits no role (ADR-0068)."
     },
     "alt-roles": {
       "title": "Alt-Roles",
@@ -297,10 +286,10 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^[a-z][a-z0-9_-]*$",
+        "pattern": "^[a-z][a-z0-9-]*$",
         "maxLength": 64
       },
-      "description": "Roles the profile can also fill, in authored order (ADR-0069). Requires role; distinct, and never repeating role."
+      "description": "Roles the profile can also fill, in authored order (ADR-0069). Distinct, and never repeating role (checked by the reader, reported as uniqueItems at the repeat)."
     },
     "avatar-image": {
       "anyOf": [
@@ -470,40 +459,10 @@
   "required": [
     "profile-id",
     "name",
+    "role",
     "purpose",
     "specialization"
   ],
   "title": "AgentProfile",
-  "type": "object",
-  "oneOf": [
-    {
-      "required": [
-        "role"
-      ],
-      "not": {
-        "required": [
-          "roles"
-        ]
-      }
-    },
-    {
-      "required": [
-        "roles"
-      ],
-      "not": {
-        "anyOf": [
-          {
-            "required": [
-              "role"
-            ]
-          },
-          {
-            "required": [
-              "alt-roles"
-            ]
-          }
-        ]
-      }
-    }
-  ]
+  "type": "object"
 }

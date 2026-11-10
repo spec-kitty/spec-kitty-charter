@@ -53,6 +53,10 @@ class PackSchemasTest {
         }
     }
 
+    private static JsonNode schema(String kind) throws IOException {
+        return MAPPER.readTree(bundledText(kind));
+    }
+
     private static PackSchemas fixture(String dir, String... names) {
         return new PackSchemas("schema-fixtures/" + dir + "/", List.of(names));
     }
@@ -70,6 +74,23 @@ class PackSchemasTest {
         JsonNode schema = MAPPER.readTree(bundledText(kind));
         assertThat(schema.path("$schema").asString()).isEqualTo(DRAFT);
         assertThat(schema.path("$id").asString()).isEqualTo(ID_PREFIX + kind + ".schema.json");
+    }
+
+    /** ADR-0067 decision 1: paradigms and styleguides carry the one principle element, byte for byte the same. */
+    @Test
+    void paradigmAndStyleguideShareThePrincipleElement() throws IOException {
+        JsonNode paradigm = schema("paradigm");
+        JsonNode styleguide = schema("styleguide");
+
+        assertThat(paradigm.at("/$defs/Principle")).isEqualTo(styleguide.at("/$defs/Principle"));
+        assertThat(paradigm.at("/$defs/Principle/additionalProperties").asBoolean(true))
+                .isFalse();
+        assertThat(paradigm.at("/properties/principles/items/$ref").asString()).isEqualTo("#/$defs/Principle");
+        assertThat(styleguide.at("/properties/principles/items/$ref").asString())
+                .isEqualTo("#/$defs/Principle");
+        assertThat(paradigm.at("/properties/principles").has("maxItems"))
+                .as("no count cap")
+                .isFalse();
     }
 
     @Test
@@ -263,7 +284,7 @@ class PackSchemasTest {
                         + "exit_condition: x\\nsteps: [{title: s}]|references|references: [{type: directive, id: D1}]",
                 "mission-type|id: m1\\nschema_version: '1.0'\\ntitle: One\\ndescription: one\\nsteps: [{id: s, title: S}]"
                         + "|references|references: [{type: directive, id: D1}]",
-                "styleguide|id: s1\\nschema_version: '1.0'\\ntitle: One\\nscope: code\\nprinciples: [p]|references|"
+                "styleguide|id: s1\\nschema_version: '1.0'\\ntitle: One\\nscope: code\\nprinciples: [{name: p, description: p.}]|references|"
                         + "references: [packs/built-in/tactics/t1.tactic.yaml]",
                 "toolguide|id: g1\\nschema_version: '1.0'\\ntool: git\\ntitle: One\\nguide_path: g1.guide.md\\nsummary: one|"
                         + "references|references: [https://example.org]"

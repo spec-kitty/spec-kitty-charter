@@ -837,8 +837,7 @@ class ArtifactRemovalServiceTest {
     private static final String JENNY = """
             profile-id: jenny
             name: Jenny
-            roles:
-              - implementer
+            role: implementer
             purpose: Implement.
             specialization:
               primary-focus: Java

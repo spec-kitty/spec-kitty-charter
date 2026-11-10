@@ -25,7 +25,7 @@ Feature: Styleguides are read and registered functionally
   Scenario: A registered styleguide is read back value-equal, with no relationship field (FR-013, SC-001, ADR-0064)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 201
     When I GET "/packs/qa/artifacts/styleguide/java-style"
@@ -39,7 +39,7 @@ Feature: Styleguides are read and registered functionally
   Scenario: A duplicate id is a conflict on POST while a distinct id is created (FR-008)
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:
       """
-      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 201
     And the response header "ETag" appears once
@@ -50,7 +50,7 @@ Feature: Styleguides are read and registered functionally
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}
@@ -59,38 +59,57 @@ Feature: Styleguides are read and registered functionally
       """
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:
       """
-      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style again", "scope": "code", "principles": ["Prefer immutability"]}
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style again", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 409
     And the problem code is "registration_conflict"
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:
       """
-      {"id": "docs-style", "schemaVersion": "1.0", "title": "Docs style", "scope": "docs", "principles": ["Write for the reader"]}
+      {"id": "docs-style", "schemaVersion": "1.0", "title": "Docs style", "scope": "docs", "principles": [{"name": "Write for the reader", "description": "Write for the reader."}]}
       """
     Then the response status is 201
 
   Scenario: A malformed body is refused and a well-formed registration succeeds (FR-010, SC-003)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "nonsense", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "nonsense", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 201
+
+  Scenario Outline: A styleguide's principles are named and unique (ADR-0067); a breach is refused and a valid list is created
+    When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": <principles>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Make state final unless it must change."}]}
+      """
+    Then the response status is 201
+    And the field at "/styleguide/principles/0/name" is "Prefer immutability"
+
+    Examples:
+      | principles                                                                                         |
+      | ["Prefer immutability"]                                                                            |
+      | [{"name": "Fast", "description": "Quick."}, {"name": "FAST", "description": "Again."}]              |
 
   Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:
       """
-      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 201
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with If-Match "sha256:0000000000000000000000000000000000000000000000000000000000000000" and the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 412
     When I GET "/packs/qa/artifacts/styleguide/java-style"
@@ -98,14 +117,14 @@ Feature: Styleguides are read and registered functionally
     When I remember the ETag
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the remembered ETag and the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 200
 
   Scenario Outline: A null list, or a null item in a list, is refused before the body is bound (#292, #309: <case>)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]<fields>}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]<fields>}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
@@ -122,13 +141,13 @@ Feature: Styleguides are read and registered functionally
   Scenario: A styleguide registration body over 1 MiB is refused before it is read (#310)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body, its "title" padded to 1048576 bytes:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
     And the field "detail" of the response body is "The styleguide registration body is larger than 1048576 bytes."
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body, its "title" padded to 1048000 bytes:
       """
-      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}
       """
     Then the response status is 201

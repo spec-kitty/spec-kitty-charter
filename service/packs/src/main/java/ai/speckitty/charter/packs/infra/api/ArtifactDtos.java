@@ -232,7 +232,7 @@ final class ArtifactDtos {
                 styleguide.schemaVersion().orElseThrow(),
                 styleguide.title(),
                 styleguide.scope().token(),
-                styleguide.principles(),
+                styleguide.principles().stream().map(ArtifactDtos::principle).toList(),
                 styleguide.patterns().stream()
                         .map(ArtifactDtos::styleguidePattern)
                         .toList(),
@@ -273,6 +273,10 @@ final class ArtifactDtos {
         return JSON.writeValueAsString(config.toParsed());
     }
 
+    static ai.speckitty.charter.api.model.Principle principle(ai.speckitty.charter.packs.domain.Principle principle) {
+        return new ai.speckitty.charter.api.model.Principle(principle.name(), principle.description());
+    }
+
     // ---- paradigm -----------------------------------------------------------------------------------------------
 
     static Paradigm paradigm(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
@@ -281,10 +285,7 @@ final class ArtifactDtos {
                 paradigm.schemaVersion().orElseThrow(),
                 paradigm.name(),
                 paradigm.summary(),
-                paradigm.principles().stream()
-                        .map(item -> new ai.speckitty.charter.api.model.ParadigmPrinciple(
-                                item.name(), item.description()))
-                        .toList());
+                paradigm.principles().stream().map(ArtifactDtos::principle).toList());
     }
 
     // ---- mission step contract ----------------------------------------------------------------------------------

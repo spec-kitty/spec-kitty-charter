@@ -41,7 +41,8 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       title: Java style
       scope: code
       principles:
-        - Name things plainly.
+        - name: Name things plainly
+          description: Name things plainly, in one sentence.
       """
     And the org pack "qa" with the file "paradigms/layered.paradigm.yaml":
       """
@@ -119,7 +120,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Name things plainly."], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Name things plainly.", "description": "Name things plainly.."}], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}
@@ -138,7 +139,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
         "kind": "paradigm",
         "id": "layered",
         "packId": "qa",
-        "paradigm": {"id": "layered", "schemaVersion": "1.0", "name": "Layered architecture", "summary": "Keep the layers apart."},
+        "paradigm": {"id": "layered", "schemaVersion": "1.0", "name": "Layered architecture", "summary": "Keep the layers apart.", "principles": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/paradigm/layered"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=paradigm"}
@@ -190,8 +191,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
       profile-id: jenny
       name: Java Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Java
@@ -200,8 +200,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
       profile-id: ivan
       name: Implementer Ivan
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Implementation
@@ -239,8 +238,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
       profile-id: jenny
       name: Java Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Java

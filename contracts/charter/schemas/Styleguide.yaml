@@ -46,9 +46,10 @@ properties:
       symbol: StyleguideScope.token
   principles:
     type: array
-    description: The styleguide's principles, in authored order; never empty.
+    description: >-
+      The styleguide's principles, named (ADR-0067), in authored order; never empty.
     items:
-      type: string
+      $ref: Principle.yaml
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
       symbol: Styleguide.principles

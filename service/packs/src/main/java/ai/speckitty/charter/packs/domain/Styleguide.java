@@ -28,6 +28,8 @@ public final class Styleguide implements CharterArtifact {
                     "A styleguide needs a schema version of 1.0.", sg -> sg.schemaVersion.matches("^1\\.0$")))
             .must(Constraints.of("A styleguide needs a title that is not blank.", sg -> !sg.title.isBlank()))
             .must(Constraints.of("A styleguide needs at least one principle.", sg -> !sg.principles.isEmpty()))
+            .must(Constraints.of(Principles.SHAPE, sg -> Principles.wellFormed(sg.principles)))
+            .must(Constraints.of(Principles.UNIQUE, sg -> Principles.uniqueNames(sg.principles)))
             .must(Constraints.of(
                     "A styleguide's patterns, when present, must not be empty.",
                     sg -> sg.patterns.map(list -> !list.isEmpty()).orElse(true)))
@@ -40,7 +42,7 @@ public final class Styleguide implements CharterArtifact {
     private final String schemaVersion;
     private final String title;
     private final StyleguideScope scope;
-    private final List<String> principles;
+    private final List<Principle> principles;
     private final Optional<List<StyleguidePattern>> patterns;
     private final Optional<List<StyleguideAntiPattern>> antiPatterns;
     private final Optional<Map<String, String>> tooling;
@@ -71,7 +73,7 @@ public final class Styleguide implements CharterArtifact {
             String schemaVersion,
             String title,
             StyleguideScope scope,
-            List<String> principles,
+            List<Principle> principles,
             Optional<List<StyleguidePattern>> patterns,
             Optional<List<StyleguideAntiPattern>> antiPatterns,
             Optional<Map<String, String>> tooling,
@@ -161,11 +163,11 @@ public final class Styleguide implements CharterArtifact {
     }
 
     /**
-     * The principles, in authored order.
+     * The principles, named (ADR-0067), in authored order.
      *
      * @return an immutable, non-empty list
      */
-    public List<String> principles() {
+    public List<Principle> principles() {
         return principles;
     }
 
@@ -246,7 +248,7 @@ public final class Styleguide implements CharterArtifact {
         private @Nullable String schemaVersion;
         private @Nullable String title;
         private @Nullable StyleguideScope scope;
-        private final List<String> principles = new ArrayList<>();
+        private final List<Principle> principles = new ArrayList<>();
         private @Nullable List<StyleguidePattern> patterns;
         private @Nullable List<StyleguideAntiPattern> antiPatterns;
         private Optional<Map<String, String>> tooling = Optional.empty();
@@ -317,9 +319,20 @@ public final class Styleguide implements CharterArtifact {
          * @param value the principle
          * @return this builder
          */
-        public Builder principle(String value) {
-            this.principles.add(value);
+        public Builder principle(Principle value) {
+            this.principles.add(java.util.Objects.requireNonNull(value, "principle"));
             return this;
+        }
+
+        /**
+         * Appends a principle by its parts.
+         *
+         * @param name the principle's name
+         * @param description its description
+         * @return this builder
+         */
+        public Builder principle(String name, String description) {
+            return principle(new Principle(name, description));
         }
 
         /**

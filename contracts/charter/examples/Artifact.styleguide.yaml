@@ -9,7 +9,8 @@ value:
     title: Java style
     scope: code
     principles:
-      - Name things plainly.
+      - name: Name things plainly
+        description: A name says what the thing is, in the reader's words.
     patterns: []
     antiPatterns: []
     tooling: []

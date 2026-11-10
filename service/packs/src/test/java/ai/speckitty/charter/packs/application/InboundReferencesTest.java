@@ -215,7 +215,7 @@ class InboundReferencesTest {
     private static final String PROFILE = """
             profile-id: prof
             name: Prof
-            roles: [implementer]
+            role: implementer
             purpose: x
             specialization:
               primary-focus: f

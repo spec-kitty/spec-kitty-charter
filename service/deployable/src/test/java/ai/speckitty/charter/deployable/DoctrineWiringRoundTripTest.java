@@ -148,7 +148,7 @@ class DoctrineWiringRoundTripTest {
                 .schemaVersion("1.0")
                 .title("Round-tripped styleguide")
                 .scope(StyleguideScope.TESTING)
-                .principle("be small")
+                .principle("be small", "be small, in one sentence.")
                 .pattern(new StyleguidePattern("P", "a pattern", Optional.of("bad"), Optional.empty()))
                 .antiPattern(new StyleguideAntiPattern("A", "an anti-pattern", "bad", "good"))
                 .qualityTest("does it read")

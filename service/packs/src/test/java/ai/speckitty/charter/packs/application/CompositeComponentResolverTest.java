@@ -84,7 +84,7 @@ class CompositeComponentResolverTest {
             .schemaVersion("1.0")
             .title("Style one")
             .scope(StyleguideScope.CODE)
-            .principle("Prefer immutability")
+            .principle("Prefer immutability", "Prefer immutability, in one sentence.")
             .build();
     private final Paradigm paradigm = Paradigm.builder()
             .id(new ParadigmIdentifier("paradigm-1"))

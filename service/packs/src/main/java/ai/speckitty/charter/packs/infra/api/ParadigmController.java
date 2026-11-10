@@ -10,7 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
-import ai.speckitty.charter.packs.domain.ParadigmPrinciple;
+import ai.speckitty.charter.packs.domain.Principle;
 import ai.speckitty.charter.web.RefusalHandler;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -51,8 +51,7 @@ public class ParadigmController implements ParadigmsApi {
     public ResponseEntity<Artifact> registerPackParadigm(String packId, ParadigmRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
-        ai.speckitty.charter.packs.domain.Paradigm paradigm =
-                assemble(pack, id, body);
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(pack, id, body);
         ParadigmRegistrationService.Registered result = registrations.registerParadigm(pack, paradigm, false, null);
         Artifact written =
                 ArtifactDtos.envelope(ArtifactKind.PARADIGM, pack, id, links).paradigm(ArtifactDtos.paradigm(paradigm));
@@ -65,8 +64,7 @@ public class ParadigmController implements ParadigmsApi {
     public ResponseEntity<Artifact> putPackParadigm(
             String packId, String artifactId, ParadigmRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
-        ai.speckitty.charter.packs.domain.Paradigm paradigm =
-                assemble(pack, artifactId, body);
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(pack, artifactId, body);
         ParadigmRegistrationService.Registered result = registrations.registerParadigm(pack, paradigm, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
@@ -95,7 +93,7 @@ public class ParadigmController implements ParadigmsApi {
                     .summary(body.getSummary());
             if (body.getPrinciples() != null) {
                 builder.principles(body.getPrinciples().stream()
-                        .map(item -> new ParadigmPrinciple(item.getName(), item.getDescription()))
+                        .map(item -> new Principle(item.getName(), item.getDescription()))
                         .toList());
             }
             return builder.build();

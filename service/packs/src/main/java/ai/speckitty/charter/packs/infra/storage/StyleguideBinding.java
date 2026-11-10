@@ -45,7 +45,7 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
                 .tooling(dso.tooling().orElse(null))
                 .qualityTest(dso.qualityTest().orElse(null))
                 .structuralLintConfig(dso.structuralLintConfig().orElse(null));
-        dso.principles().forEach(builder::principle);
+        PrincipleYaml.toDomain(dso.principles()).forEach(builder::principle);
         dso.patterns()
                 .forEach(p -> builder.pattern(
                         new StyleguidePattern(p.name(), p.description(), p.badExample(), p.goodExample())));
@@ -63,7 +63,7 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
                 styleguide.schemaVersion().orElseThrow(),
                 styleguide.title(),
                 styleguide.scope().token(),
-                styleguide.principles(),
+                PrincipleYaml.toDso(styleguide.principles()),
                 styleguide.patterns().stream()
                         .map(p -> new StyleguideDso.Pattern(p.name(), p.description(), p.badExample(), p.goodExample()))
                         .toList(),

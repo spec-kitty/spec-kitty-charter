@@ -191,8 +191,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
       profile-id: p
       name: p
-      roles:
-        - implementer
+      role: implementer
       purpose: Implements.
       specialization:
         primary-focus: Implementation.
@@ -201,8 +200,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
       profile-id: q
       name: q
-      roles:
-        - implementer
+      role: implementer
       purpose: Implements in general.
       specialization:
         primary-focus: Implementation in general.
