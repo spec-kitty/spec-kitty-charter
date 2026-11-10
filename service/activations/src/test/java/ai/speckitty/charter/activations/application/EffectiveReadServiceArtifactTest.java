@@ -131,20 +131,33 @@ class EffectiveReadServiceArtifactTest {
 
     /** What the session reads for the winner: the entity of the pack that holds it, and a profile's governance. */
     private static EffectiveArtifactRead read(ArtifactKind kind, String id) {
+        return read(kind, id, List.of(
+                new GovernanceFacts.Entry(
+                        B,
+                        GovernanceFacts.Step.REQUIRES,
+                        RelationType.REQUIRES,
+                        P,
+                        1,
+                        Optional.of("edge when"),
+                        Optional.of("edge reason")),
+                new GovernanceFacts.Entry(
+                        A,
+                        GovernanceFacts.Step.SUGGESTS,
+                        RelationType.SUGGESTS,
+                        P,
+                        1,
+                        Optional.of("a when"),
+                        Optional.of("a why"))));
+    }
+
+    private static EffectiveArtifactRead read(ArtifactKind kind, String id, List<GovernanceFacts.Entry> entries) {
         ArtifactRef ref = new ArtifactRef(kind, id);
         String holder = ref.equals(A) ? "house" : "main";
         PackLevel level = ref.equals(A) ? PackLevel.PROJECT : PackLevel.ORG;
         Optional<GovernanceFacts> governance = kind == ArtifactKind.AGENT_PROFILE
                 ? Optional.of(new GovernanceFacts(
                         P,
-                        List.of(new GovernanceFacts.Entry(
-                                B,
-                                GovernanceFacts.Step.REQUIRES,
-                                RelationType.REQUIRES,
-                                P,
-                                1,
-                                Optional.empty(),
-                                Optional.empty())),
+                        entries,
                         List.of(new GovernanceFacts.Candidate(C, P, 1, Optional.of("when"), Optional.of("why")))))
                 : Optional.empty();
         return new EffectiveArtifactRead(entity(kind, id, holder), holder, level, governance);
@@ -240,7 +253,7 @@ class EffectiveReadServiceArtifactTest {
 
         assertThat(answer.winner().state()).isEqualTo(State.ACTIVE);
         EffectiveArtifactAnswer.Governance governance = answer.governance().orElseThrow();
-        assertThat(governance.entries()).hasSize(1);
+        assertThat(governance.entries()).hasSize(2);
         assertThat(governance.entries().getFirst().artifact().ref()).isEqualTo(B);
         assertThat(governance.entries().getFirst().artifact().state()).isEqualTo(State.INACTIVE);
         assertThat(governance.entries().getFirst().step()).isEqualTo(GovernanceFacts.Step.REQUIRES);
@@ -253,6 +266,65 @@ class EffectiveReadServiceArtifactTest {
                 .containsExactly(C);
         assertThat(governance.suggested().getFirst().artifact().suggestion()).isPresent();
         assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void aSuggestsEntryInForceCarriesTheWordsOfItsEdgeAndNoOtherEntryDoes() {
+        EffectiveArtifactAnswer.Governance governance =
+                answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
+
+        EffectiveArtifactAnswer.Entry suggests = governance.entries().get(1);
+        assertThat(suggests.artifact().ref()).isEqualTo(A);
+        assertThat(suggests.artifact().state()).as("in force").isEqualTo(State.ACTIVE);
+        assertThat(suggests.suggestion()).isPresent();
+        assertThat(suggests.suggestion().orElseThrow().when()).contains("a when");
+        assertThat(suggests.suggestion().orElseThrow().reason()).contains("a why");
+        assertThat(governance.entries().getFirst().suggestion())
+                .as("a requires entry carries no suggestion, whatever words its edge has")
+                .isEmpty();
+    }
+
+    @Test
+    void aSuggestsEntryInForceWhoseEdgeStatesNeitherWordCarriesNoSuggestion() {
+        packs.winners(ask -> Optional.of(read(
+                ask.kind(),
+                ask.id(),
+                List.of(new GovernanceFacts.Entry(
+                        A,
+                        GovernanceFacts.Step.SUGGESTS,
+                        RelationType.SUGGESTS,
+                        P,
+                        1,
+                        Optional.empty(),
+                        Optional.empty())))));
+
+        EffectiveArtifactAnswer.Governance governance =
+                answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
+
+        assertThat(governance.entries().getFirst().suggestion()).isEmpty();
+    }
+
+    @Test
+    void aSuggestsEntryInForceWhoseEdgeStatesOnlyOneWordCarriesThatWord() {
+        packs.winners(ask -> Optional.of(read(
+                ask.kind(),
+                ask.id(),
+                List.of(new GovernanceFacts.Entry(
+                        A,
+                        GovernanceFacts.Step.SUGGESTS,
+                        RelationType.SUGGESTS,
+                        P,
+                        1,
+                        Optional.empty(),
+                        Optional.of("only why"))))));
+
+        EffectiveArtifactAnswer.Governance governance =
+                answered(ArtifactKind.AGENT_PROFILE, "P", 1).governance().orElseThrow();
+
+        assertThat(governance.entries().getFirst().suggestion().orElseThrow().when())
+                .isEmpty();
+        assertThat(governance.entries().getFirst().suggestion().orElseThrow().reason())
+                .contains("only why");
     }
 
     @Test

@@ -66,7 +66,7 @@ class ActivationsEffectiveProfilesTest {
 
     private static EffectiveArtifactAnswer.Entry entry(
             EffectiveArtifact artifact, GovernanceFacts.Step step, RelationType relation, ArtifactRef via, int hops) {
-        return new EffectiveArtifactAnswer.Entry(artifact, step, relation, via, hops);
+        return new EffectiveArtifactAnswer.Entry(artifact, step, relation, via, hops, Optional.empty());
     }
 
     private static EffectiveArtifactAnswer answer(
