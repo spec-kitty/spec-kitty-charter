@@ -14,7 +14,9 @@ rule of PROJECT_002 reads as equality of meaning (ADR-0036). Amended 2026-10-28:
 orchestrating cloud sessions, and the rewrite is designed without regard to core. Amended
 2026-10-29 (operator): until the service is incorporated into core, PROJECT_002's first two
 failures are judged against the charter's own model, contract and packs (epic #186). Amended
-2026-11-05 (operator): the whole-pack round trip is a gate before merge (epic #186).
+2026-11-05 (operator): the whole-pack round trip is a gate before merge (epic #186). Amended
+2026-11-10 (operator, charter #456 to #458): the charter's model is the canonical data model, and
+legacy shapes get no compatibility.
 
 ## What this repository is for
 
@@ -56,6 +58,16 @@ contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
 
 - No compatibility with core's current formats or behavior, and no "core first" ordering.
 - No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
+- **The charter's model is the canonical data model** (operator, 2026-11-10; charter #456 to #458).
+  The shapes packs carry today grew incrementally and were never redesigned; they are not set in
+  stone. A change defines the rationalised shape and replaces the old one outright: no deprecation
+  window, no reading of the old shape beside the new one. `spec-kitty-open-packs` follows the
+  model to stay valid; core aligns once the API is functional and released, through the generated
+  client.
+- **Tests and examples carry only the canonical shape.** An old or invalid shape appears in a test
+  only to exercise an error-handling path (an invalid pack or invalid content), never as a
+  supported input. Fixtures, example packs and contract examples are updated with the model,
+  never exempted from a parity or round-trip check.
 - Core changes when the service is incorporated into core; that work is planned then.
 - This repository's own org layer is lost under the as-is CLI, and that is accepted (operator,
   2026-11-05; open-packs #118). `.kittify/config.yaml` registers `packs/internal` and `packs/qa` by
