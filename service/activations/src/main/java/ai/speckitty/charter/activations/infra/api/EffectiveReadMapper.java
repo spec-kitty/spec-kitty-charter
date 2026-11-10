@@ -36,6 +36,7 @@ import ai.speckitty.charter.api.model.PageInfo;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SkippedReport;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,14 @@ import org.springframework.web.util.UriComponentsBuilder;
  * <p>An item of a kind the pack-scoped artifact routes serve ({@link EffectiveReadService#listedKinds()}, asked at each
  * read) links {@code effective-artifact}, its own read under the activation, and, where the item names the pack that holds
  * the version in force, {@code artifact}, the pack-scoped read of that pack. A graph node names no pack, so it links
- * {@code effective-artifact} only, and a step ({@code action}) or a node of a kind that is not served links nothing.
+ * {@code effective-artifact} only, and a node of a kind that is not served links nothing.
+ *
+ * <p>While mission types are served, a step links the read of the step under the activation
+ * ({@code getEffectiveMissionStep}) as its {@code effective-artifact}: an action node of the graph
+ * ({@code action:<type>/<step>}), which names no pack either, and the action context, whose step is the action it
+ * answers; the context also links {@code artifact}, the step's read in the pack that holds the mission type's version in
+ * force ({@code getPackMissionStep}), when the effective set names that pack. A step is linked when the closure holds it,
+ * as the graph and the context judge it; whether the winning mission type declares it is the step read's to answer.
  */
 @Component
 public class EffectiveReadMapper {
@@ -74,21 +82,7 @@ public class EffectiveReadMapper {
      */
     @Autowired
     public EffectiveReadMapper(ActivationMapper activations, EffectiveReadService effective) {
-        this(activations, linkedKindsOf(Objects.requireNonNull(effective, "effective")));
-    }
-
-    /**
-     * The kinds an item is linked by: the listed kinds but the two mission kinds. A mission type and a mission step
-     * contract are listed (#99), but their items link nothing until the mission type reads' links are built (#99 WP06),
-     * as the effective-artifact scenarios pin.
-     *
-     * @param effective the effective reads, which know the listed kinds
-     * @return the linked kinds, asked at each read
-     */
-    private static Supplier<List<ArtifactKind>> linkedKindsOf(EffectiveReadService effective) {
-        return () -> effective.listedKinds().stream()
-                .filter(kind -> kind != ArtifactKind.MISSION_TYPE && kind != ArtifactKind.MISSION_STEP_CONTRACT)
-                .toList();
+        this(activations, Objects.requireNonNull(effective, "effective")::listedKinds);
     }
 
     /**
@@ -181,20 +175,30 @@ public class EffectiveReadMapper {
     public EffectiveActionContext toContext(ContextRead read, boolean depthGiven) {
         String id = read.stored().id().value();
         EffectiveContext context = read.context();
+        List<ArtifactKind> served = linkedKinds.get();
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put("self", contextLink(id, read.query(), depthGiven));
+        if (served.contains(ArtifactKind.MISSION_TYPE)) {
+            String type = read.query().missionType();
+            String step = read.query().action();
+            links.put("effective-artifact", new Link(activations.effectiveMissionStep(id, type, step)));
+            read.missionTypePack()
+                    .ifPresent(pack -> links.put("artifact", new Link(activations.packMissionStep(pack, type, step))));
+        }
         return new EffectiveActionContext(
                 id,
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
                 read.query().missionType(),
                 read.query().action(),
-                items(id, context.artifacts()),
+                items(context.artifacts(), id, served),
                 context.enhancements().stream()
                         .map(enhancement -> new ActionEnhancement(
                                 node(enhancement.target()),
                                 ActivationChangeMapper.references(enhancement.enhancedBy())))
                         .toList(),
                 skipped(context.skipped()),
-                Map.of("self", contextLink(id, read.query(), depthGiven)));
+                links);
     }
 
     /** The context's own request: its path, and the depth when the request named one. */
@@ -226,11 +230,18 @@ public class EffectiveReadMapper {
     }
 
     private List<ai.speckitty.charter.api.model.EffectiveArtifact> items(String id, List<EffectiveArtifact> artifacts) {
-        List<ArtifactKind> served = linkedKinds.get();
+        return items(artifacts, id, linkedKinds.get());
+    }
+
+    private List<ai.speckitty.charter.api.model.EffectiveArtifact> items(
+            List<EffectiveArtifact> artifacts, String id, List<ArtifactKind> served) {
         return artifacts.stream().map(artifact -> item(id, artifact, served)).toList();
     }
 
-    /** A node of the graph, with its effective read when it is an artifact of a served kind. */
+    /**
+     * A node of the graph, with its effective read when it is an artifact of a served kind, or the read of its step
+     * under the activation when it is a step ({@code action:<type>/<step>}) and mission types are served.
+     */
     private EffectiveGraphNode graphNode(String id, NodeRef node, List<ArtifactKind> served) {
         EffectiveGraphNode wire = new EffectiveGraphNode(
                 node.urn(), EffectiveGraphNode.KindEnum.fromValue(node.kind().token()));
@@ -239,6 +250,13 @@ public class EffectiveReadMapper {
                 .filter(served::contains)
                 .ifPresent(kind -> wire.setLinks(Map.of(
                         "effective-artifact", new Link(activations.effectiveArtifact(id, kind.token(), node.id())))));
+        int slash = node.id().indexOf('/');
+        if (node.kind() == NodeKind.ACTION && slash > 0 && served.contains(ArtifactKind.MISSION_TYPE)) {
+            wire.setLinks(Map.of(
+                    "effective-artifact",
+                    new Link(activations.effectiveMissionStep(
+                            id, node.id().substring(0, slash), node.id().substring(slash + 1)))));
+        }
         return wire;
     }
 

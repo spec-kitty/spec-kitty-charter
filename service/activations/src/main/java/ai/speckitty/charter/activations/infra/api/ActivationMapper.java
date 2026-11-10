@@ -174,6 +174,31 @@ public class ActivationMapper {
     }
 
     /**
+     * The path of the read of one step of a mission type under an activation ({@code getEffectiveMissionStep}). The
+     * missions edge serves it; this slice may not name its paths, so it spells the route.
+     *
+     * @param activationId the activation's id
+     * @param missionTypeId the mission type's id
+     * @param stepId the step's id
+     * @return the absolute path, each segment percent-encoded
+     */
+    public String effectiveMissionStep(String activationId, String missionTypeId, String stepId) {
+        return href("activations", activationId, "artifacts", "mission_type", missionTypeId, "steps", stepId);
+    }
+
+    /**
+     * The path of the pack-scoped read of one step of a mission type ({@code getPackMissionStep}).
+     *
+     * @param packId the pack's configured id
+     * @param missionTypeId the mission type's id
+     * @param stepId the step's id
+     * @return the absolute path, each segment percent-encoded
+     */
+    public String packMissionStep(String packId, String missionTypeId, String stepId) {
+        return href("packs", packId, "artifacts", "mission_type", missionTypeId, "steps", stepId);
+    }
+
+    /**
      * The answer of the closure read.
      *
      * @param activationId the activation's id

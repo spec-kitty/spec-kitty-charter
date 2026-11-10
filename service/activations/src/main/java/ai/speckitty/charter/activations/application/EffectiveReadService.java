@@ -156,13 +156,49 @@ public class EffectiveReadService {
      * @param governanceFingerprint the digest of the closure's own packs
      * @param query the mission type, the action and the depth
      * @param context what the action's step names
+     * @param missionTypePack the pack that holds the version in force of the mission type, as the effective set names
+     *     it; empty when the set does not list the mission type
      */
     public record ContextRead(
             StoredActivation stored,
             String sourceFingerprint,
             String governanceFingerprint,
             EffectiveTag.ContextQuery query,
-            EffectiveContext context) {}
+            EffectiveContext context,
+            Optional<String> missionTypePack) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint of the read
+         * @param governanceFingerprint the digest of the closure's own packs
+         * @param query the mission type, the action and the depth
+         * @param context what the action's step names
+         * @param missionTypePack the pack that holds the mission type's version in force
+         */
+        public ContextRead {
+            Objects.requireNonNull(missionTypePack, "missionTypePack");
+        }
+
+        /**
+         * A context whose mission type's holding pack is not named.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint of the read
+         * @param governanceFingerprint the digest of the closure's own packs
+         * @param query the mission type, the action and the depth
+         * @param context what the action's step names
+         */
+        public ContextRead(
+                StoredActivation stored,
+                String sourceFingerprint,
+                String governanceFingerprint,
+                EffectiveTag.ContextQuery query,
+                EffectiveContext context) {
+            this(stored, sourceFingerprint, governanceFingerprint, query, context, Optional.empty());
+        }
+    }
 
     /** A page cursor of another set, which a client holds after the document or a pack of the closure changed. */
     public static final class StaleCursorException extends RuntimeException {
@@ -301,13 +337,20 @@ public class EffectiveReadService {
         }
         ActionContext walked = session.actionContext(
                 query.missionType(), query.action(), query.depth(), EffectiveSet.queryOf(stored.document()));
+        EffectiveSet set = effectiveSet(stored, session);
+        ArtifactRef missionType = new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType());
         EffectiveContext context = EffectiveContext.of(
-                effectiveSet(stored, session),
+                set,
                 walked,
-                new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType()),
+                missionType,
                 NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow());
+        Optional<String> holder = set.artifacts().stream()
+                .filter(artifact -> artifact.ref().equals(missionType))
+                .map(EffectiveSet.EffectiveArtifact::packId)
+                .findFirst();
         return new Read.Found<>(
-                new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context), etag);
+                new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context, holder),
+                etag);
     }
 
     /**
