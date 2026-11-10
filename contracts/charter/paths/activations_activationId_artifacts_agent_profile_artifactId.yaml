@@ -30,6 +30,12 @@ get:
     reported on the read. An entry that is listed links, for the kinds the generic artifact route serves,
     effective-artifact (its read under this activation) and artifact (the pack-scoped read of its winner).
 
+    Where this read differs from the pack-scoped read of the same profile (getPackAgentProfile): a requires target of a
+    kind that cannot be activated (a template or an asset) is listed there and is omitted here, because an activation
+    holds no state for it; and a specializes_from, requires or vocabulary target that is not in force is omitted here
+    altogether, while the pack-scoped read lists every target its closure holds. Under an activation only a suggests
+    target that is not in force still appears, as an off-state candidate with state inactive and reason not_selected.
+
     The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
     activation's closure holds as an agent_profile is a 404 artifact_not_found, judged before any If-None-Match, so a
     name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a
