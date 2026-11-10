@@ -468,6 +468,82 @@ class EffectiveReadMapperTest {
                 .isEqualTo("/api/v1/packs/main/artifacts/directive/A");
     }
 
+    // ---- the mission kinds and the steps (#99 WP06)
+
+    private final EffectiveReadMapper missions = new EffectiveReadMapper(
+            activations,
+            () -> List.of(ArtifactKind.DIRECTIVE, ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT));
+
+    @Test
+    void anItemOfAMissionKindLinksItsReadUnderTheActivationAndThePackRead() {
+        ArtifactRef type = new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev");
+        ArtifactRef contract = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, "specify");
+        Page page = page(
+                new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                Optional.empty(),
+                List.of(
+                        item(contract, Optional.empty(), Optional.empty()),
+                        item(type, Optional.empty(), Optional.empty())));
+
+        EffectiveArtifactList wire = missions.toList(page, false);
+
+        assertThat(wire.getItems().get(0).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_step_contract/specify");
+        assertThat(wire.getItems().get(0).getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/main/artifacts/mission_step_contract/specify");
+        assertThat(wire.getItems().get(1).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev");
+        assertThat(wire.getItems().get(1).getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/main/artifacts/mission_type/software-dev");
+    }
+
+    @Test
+    void aStepNodeLinksItsStepReadUnderTheActivationWhileMissionTypesAreServed() {
+        NodeRef step = new NodeRef(NodeKind.ACTION, "software-dev/implement");
+        NodeRef type = new NodeRef(NodeKind.MISSION_TYPE, "software-dev");
+        NodeRef contract = new NodeRef(NodeKind.MISSION_STEP_CONTRACT, "implement");
+        GraphSnapshot graph = new GraphSnapshot(List.of(step, contract, type), List.of(), List.of());
+
+        EffectiveGraph wire = missions.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph));
+
+        assertThat(wire.getNodes().get(0).getLinks()).containsOnlyKeys("effective-artifact");
+        assertThat(wire.getNodes().get(0).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement");
+        assertThat(wire.getNodes().get(1).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_step_contract/implement");
+        assertThat(wire.getNodes().get(2).getLinks()).containsOnlyKeys("effective-artifact");
+        assertThat(wire.getNodes().get(2).getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev");
+        assertThat(mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph))
+                        .getNodes()
+                        .getFirst()
+                        .getLinks())
+                .as("a step links nothing while mission types are not served")
+                .isNull();
+    }
+
+    @Test
+    void theContextLinksItsStepReadUnderTheActivationAndInThePackThatHoldsTheMissionType() {
+        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
+        EffectiveTag.ContextQuery query = new EffectiveTag.ContextQuery("software-dev", "implement", 0);
+        ContextRead held =
+                new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"));
+
+        EffectiveActionContext wire = missions.toContext(held, false);
+
+        assertThat(wire.getLinks()).containsOnlyKeys("self", "effective-artifact", "artifact");
+        assertThat(wire.getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement");
+        assertThat(wire.getLinks().get("artifact").getHref())
+                .isEqualTo("/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/implement");
+        assertThat(missions.toContext(contextRead(empty), false).getLinks())
+                .as("no artifact link when the effective set names no holding pack")
+                .containsOnlyKeys("self", "effective-artifact");
+        assertThat(mapper.toContext(held, false).getLinks())
+                .as("no step link while mission types are not served")
+                .containsOnlyKeys("self");
+    }
+
     // ---- the graph and the action context (IC-11)
 
     @Test

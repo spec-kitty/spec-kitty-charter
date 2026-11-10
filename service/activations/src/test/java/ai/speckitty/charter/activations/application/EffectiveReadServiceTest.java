@@ -555,6 +555,44 @@ class EffectiveReadServiceTest {
     }
 
     @Test
+    void theContextNamesThePackThatHoldsTheMissionTypesVersionInForceAndNoneWhenTheSetDoesNotListIt() {
+        packs.contexts(ask -> walked());
+
+        assertThat(context(IMPLEMENT).missionTypePack())
+                .as("the set lists no mission type")
+                .isEmpty();
+
+        ArtifactRef type = new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev");
+        packs.answer(ClosureSnapshots.snapshot()
+                .pack("main", "1.0.0")
+                .held(ArtifactKind.DIRECTIVE, "A", "B", "C")
+                .held(ArtifactKind.TACTIC, "t1")
+                .held(ArtifactKind.MISSION_TYPE, "software-dev")
+                .fingerprint(SOURCE)
+                .closureFingerprint("sha256:with-a-mission-type")
+                .build());
+        MergedSnapshot base = merged();
+        Map<ArtifactRef, MergedSnapshot.Winner> winners = new LinkedHashMap<>(base.winners());
+        winners.put(type, new MergedSnapshot.Winner("proj", PackLevel.PROJECT, Policy.OPEN));
+        packs.merged(new MergedSnapshot(winners, base.languages(), base.edges(), base.layerOverrides()));
+        packs.resolves(query -> {
+            InForceAnswer plain = answer();
+            Map<ArtifactRef, ArtifactState> states = new LinkedHashMap<>(plain.states());
+            states.put(type, state(type, State.INACTIVE, Reason.NOT_SELECTED, Optional.empty()));
+            return new InForceAnswer(
+                    states,
+                    plain.staleIds(),
+                    plain.denyNotApplied(),
+                    plain.overrideNotApplied(),
+                    plain.requiredNotHeld(),
+                    plain.requiredNotInForce(),
+                    plain.enhancedTargets());
+        });
+
+        assertThat(context(IMPLEMENT).missionTypePack()).contains("proj");
+    }
+
+    @Test
     void theContextAsksTheSessionOnceForTheWalkAndResolvesTheInForceStatesOnceForTheSet() {
         packs.contexts(ask -> walked());
 
