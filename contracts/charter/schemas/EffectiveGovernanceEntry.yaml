@@ -8,12 +8,19 @@ description: >-
   The walk runs over the activation's merged closure with the effective set as its predicate. An artifact that is in
   force (state active) is listed with the step that reached it. A suggestion out of force is listed too, with state
   inactive, reason not_selected and its suggestion inline (the when and reason of the suggests edge): it is a suggests
-  entry, reached through a suggests edge of an artifact in force. An ancestor of the profile (specializes_from) that is
+  entry, reached through a suggests edge of an artifact in force.
+
+  Every suggests entry carries the words of its edge in suggestion when the edge states a when or a reason (FR-004),
+  whether the artifact is in force or not: an entry in force (state active, reached by a suggests edge of an artifact in
+  force) carries them too, and an edge that states neither leaves suggestion absent. Only a suggests entry has a
+  suggestion; a requires entry has none, whatever words its edge has. suggestion is EffectiveGovernanceSuggestion, the
+  words of the edge that listed the entry, and not EffectiveArtifactSuggestion, which is defined only for an artifact out
+  of force and which the generic effective reads carry unchanged. An ancestor of the profile (specializes_from) that is
   not in force is not listed and seeds nothing; the profile the walk starts from is exempt from the predicate and is no
   entry. This diverges from the cascade of the activation writes, which passes an ancestor through (operator ruling W1).
 
   The entries are sorted by urn (kind, a colon and the id), each artifact once, and none is the profile itself. A
-  suggestion sits inline, as EffectiveArtifact carries it; there is no suggestions list. Entries carry no enhancedBy or
+  suggestion sits inline on the entry; there is no suggestions list. Entries carry no enhancedBy or
   enhances: a profile takes no step enhancement.
 
   _links holds artifact, the pack-scoped read of the entry in the pack that holds the version in force (the packId of the
@@ -92,7 +99,7 @@ properties:
   satisfiedBy:
     $ref: ArtifactReference.yaml
   suggestion:
-    $ref: EffectiveArtifactSuggestion.yaml
+    $ref: EffectiveGovernanceSuggestion.yaml
   policy:
     allOf:
     - $ref: ArtifactPolicy.yaml

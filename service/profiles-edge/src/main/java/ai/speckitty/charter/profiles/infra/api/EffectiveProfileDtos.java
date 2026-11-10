@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
+import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
@@ -119,7 +120,7 @@ public class EffectiveProfileDtos {
                 entry.hops(),
                 links);
         facts.satisfiedBy().map(EffectiveProfileDtos::reference).ifPresent(wire::setSatisfiedBy);
-        facts.suggestion().map(EffectiveProfileDtos::suggestion).ifPresent(wire::setSuggestion);
+        facts.suggestion().map(EffectiveProfileDtos::edgeWords).ifPresent(wire::setSuggestion);
         return wire;
     }
 
@@ -131,6 +132,15 @@ public class EffectiveProfileDtos {
     private static EffectiveArtifactSuggestion suggestion(
             ai.speckitty.charter.profiles.application.GovernanceEntry.Suggestion suggestion) {
         EffectiveArtifactSuggestion carrier = new EffectiveArtifactSuggestion();
+        suggestion.when().ifPresent(carrier::setWhen);
+        suggestion.reason().ifPresent(carrier::setReason);
+        return carrier;
+    }
+
+    /** The words of the suggests edge that listed an entry, whether the entry is in force or not. */
+    private static EffectiveGovernanceSuggestion edgeWords(
+            ai.speckitty.charter.profiles.application.GovernanceEntry.Suggestion suggestion) {
+        EffectiveGovernanceSuggestion carrier = new EffectiveGovernanceSuggestion();
         suggestion.when().ifPresent(carrier::setWhen);
         suggestion.reason().ifPresent(carrier::setReason);
         return carrier;

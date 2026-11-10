@@ -8,7 +8,7 @@
   `suggestion` where the effective list has them), the winner's profile in `agentProfile` (the same closed `AgentProfile` as
   the pack-scoped read) and `governance`, a list of `EffectiveGovernanceEntry` sorted by `urn`. An entry has the facts of an
   effective artifact (`kind`, `artifactId`, the winner's `packId` and `level`, `state`, `required`, `policy`, `reason`,
-  `satisfiedBy`, and a `suggestion` inline, as `EffectiveArtifact` carries it) and the walk's `step`, `relation`, `via` and
+  `satisfiedBy`, and a `suggestion` inline, the words of the `suggests` edge that listed it) and the walk's `step`, `relation`, `via` and
   `hops`. It is not `PackGovernanceEntry`: it has no `held` and no `urn`, its `packId` is the winner's pack and never null,
   and its `reason` is the effective reason, not a word of the walk. The walk is judged by the activation: an artifact in
   force is listed with the step that reached it, a suggestion out of force is listed with `state: inactive`,
@@ -23,3 +23,13 @@
   the activation's revision, the packs of its closure and the profile and the `depth`; a matching `If-None-Match` is `304`,
   and `depth` outside 0 to 1 is a `400`. The new tag `EffectiveAgentProfiles` lets the profiles slice implement the
   operation in a controller of its own; no relation is added.
+- `EffectiveGovernanceEntry.suggestion` is the new schema `EffectiveGovernanceSuggestion` (`when` and `reason`, both
+  optional): the words of the `suggests` edge that listed the entry, present on every `suggests` entry whose edge states a
+  `when` or a `reason` (FR-004), whether the artifact is in force (`state: active`) or out of force (`inactive`,
+  `not_selected`); an edge that states neither leaves it absent, and a `requires` entry has none. It is a schema of its
+  own, as `PackGovernanceSuggestion` is for the pack-scoped read, because `EffectiveArtifactSuggestion` is defined only
+  for an artifact out of force that a `suggests` edge reaches (#408 ruling 3) and keeps that meaning on every generic
+  effective read. The wire of a suggestion out of force is unchanged.
+- The tag `EffectiveAgentProfiles` and its controller deviate from plan fold C6, which put both profile operations under
+  `AgentProfiles`: the tag is set by the WP07 prompt, so that `:profiles-edge` implements the operation in a controller of
+  its own (`useTags=true` generates one API interface per tag). The operation id, the path and the body are unaffected.

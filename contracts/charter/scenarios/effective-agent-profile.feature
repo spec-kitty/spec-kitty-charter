@@ -201,10 +201,10 @@ Feature: An agent profile is read under an activation, with its governance and t
     Then the response status is 200
     And the field at "/activationId" is "charter"
 
-  Scenario: At depth 1 the suggestions are walked: one in force, one out of force with its state and the words of its edge
-    DIRECTIVE_041 is selected, so it is a suggests entry in force. DIRECTIVE_037 is not selected: it is listed as a
-    suggestion that is inactive, not_selected, with the when and the reason of the suggests edge inline. Both link the
-    pack-scoped read. The self link repeats the depth the request sent.
+  Scenario: At depth 1 the suggestions are walked: both carry the words of their edge, one in force, one out of force
+    DIRECTIVE_041 is selected, so it is a suggests entry in force, and it carries the when and the reason of its suggests
+    edge (FR-004). DIRECTIVE_037 is not selected: it is listed as a suggestion that is inactive, not_selected, with the
+    words of its edge inline. Both link the pack-scoped read. The self link repeats the depth the request sent.
     When I GET "/activations/charter/artifacts/agent_profile/java-jenny?depth=1"
     Then the response status is 200
     And the field at "/_links/self/href" is "/api/v1/activations/charter/artifacts/agent_profile/java-jenny?depth=1"
@@ -214,7 +214,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
       directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 active/selected in built-in linked
       directive:DIRECTIVE_037 suggests via agent_profile:java-jenny hops 1 inactive/not_selected in built-in linked suggested when "when the change alters behaviour" because "Documentation should follow the behaviour."
-      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected in built-in linked
+      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected in built-in linked suggested when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."
       styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
       """
     And following the link "artifact" of every element of "governance" answers 200

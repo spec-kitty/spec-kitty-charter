@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
+import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -238,6 +239,7 @@ class EffectiveProfileDtosTest {
                 OptionalInt.empty());
 
         EffectiveGovernanceEntry suggested = wire.getGovernance().get(0);
+        assertThat(suggested.getSuggestion()).isInstanceOf(EffectiveGovernanceSuggestion.class);
         assertThat(suggested.getSuggestion().getWhen()).isEqualTo("w");
         assertThat(suggested.getSuggestion().getReason()).isEqualTo("r");
         assertThat(suggested.getRelation()).isEqualTo(EffectiveGovernanceEntry.RelationEnum.SUGGESTS);
@@ -295,5 +297,30 @@ class EffectiveProfileDtosTest {
         assertThat(written.get("agentProfile").get("model").isNull()).isTrue();
         assertThat(ArtifactKind.AGENT_PROFILE.token())
                 .isEqualTo(written.get("kind").asString());
+    }
+
+    @Test
+    void aSuggestionOfAnEntryInForceIsWrittenWithTheWordsTheEdgeStatesAndNoOther() throws Exception {
+        JsonNode written = JSON.valueToTree(dtos.read(
+                effectiveRead(new EffectiveProfileRead.Entry(
+                        facts(
+                                "directive:D",
+                                "main",
+                                PackLevel.ORG,
+                                "active",
+                                false,
+                                "open",
+                                "selected",
+                                Optional.empty(),
+                                Optional.of(new GovernanceEntry.Suggestion(Optional.empty(), Optional.of("only why")))),
+                        GovernanceEntry.Step.SUGGESTS,
+                        urn("agent_profile:P"),
+                        1)),
+                OptionalInt.empty()));
+
+        JsonNode entry = written.get("governance").get(0);
+        assertThat(entry.get("state").asString()).isEqualTo("active");
+        assertThat(entry.get("suggestion").has("when")).isFalse();
+        assertThat(entry.get("suggestion").get("reason").asString()).isEqualTo("only why");
     }
 }
