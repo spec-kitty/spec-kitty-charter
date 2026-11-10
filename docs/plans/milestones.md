@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -26,9 +26,9 @@ each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** in effect (updated 2026-10-27). The assignment is provisional and changes as the plan
-> does. Twenty open issues have no milestone yet; they are listed under
-> [Not yet assigned](#not-yet-assigned).
+> **Status:** in effect (updated 2026-11-10). The assignment is provisional and changes as the plan
+> does. About thirty open issues have no tracker milestone; they are listed under
+> [Not yet assigned](#not-yet-assigned) with a proposed home. Moving them on the tracker is the operator's call.
 
 ## The milestones
 
@@ -48,8 +48,9 @@ The operator set this definition on 2026-10-19 and refined how the cutover happe
   0.1.0) and routes every operation through a proxy at its seam. Each operation starts on core's
   Python.
 - **One operation at a time.** Each operation moves to a shadow (compared with the service), then
-  to the service, on its own, fail closed, with no Python fallback. The conformance corpus gates
-  each move.
+  to the service, on its own, fail closed, with no Python fallback. ~~The conformance corpus gates
+  each move.~~ Its BDD `@contract` scenarios and contract tests gate each move
+  ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1).
 - **1.0.0 before the first remote route.** The contract stays 0.x until the operator judges it
   stable, and is 1.0.0 before any operation is answered by the service.
 - **Scope.** The cutover covers every offering read, including activation's reads, and the
@@ -62,136 +63,106 @@ Core makes adopting the charter activation contract a 4.0 GA deliverable (spec-k
 
 ## Distribution
 
+Refreshed 2026-11-10 against the tracker (142 open issues). Closed issues have left the tables. The order of work
+inside and across milestones is the slice order in the [Roadmap](/plans/roadmap/#toward-a-service-core-can-use).
+
 ### 4.0 GA (contract adopted)
 
-Created on 2026-10-24 by the operator. Two tracks run in parallel: unblock core by publishing the
-contract, and model the artifact kinds before more of them are exposed.
+Not close: four P0s are open, two of them in flight.
 
-Delivered so far: issues #120 and #173, by PR #177 (every read answers with the source fingerprint
-it verified). PR #180 delivered the toolguide half of #168: directive, styleguide, paradigm and
-toolguide can be read and registered. PR #198 fixed #119 (one generated model per schema) and built
-the publishing workflow of #45. ADR-0035 settled #171 (the shared artifact interface lives in the
-kernel). The [2026-11-02 triage](/plans/triage-2026-11-02/) closed #168, #169, #175 and #176 as delivered,
-merged #167 into #240, and moved #13 to the 4.x cutover (ADR-0055 D1). #125 (the activation set), #126 (the
-offering reads under `/offering`), #131 (`activated_glossary_packs` in the charter schema) and #174 (a symlinked
-pack root loading as empty) were delivered days before the triage and leave the table here.
+| Issue | Title | Slice | Note |
+|---|---|---|---|
+| #407, #99 | Agent-profile reads; mission-type reads (with #96, #148) | A | In flight |
+| #405 | Language profiles cannot reach their conventions styleguide | B | Fixed upstream in open-packs; the pin bump remains |
+| #406 | Reserved operations' `501` is logged as an error with a stack trace | D | With #454 |
+| #103 | R9, effective context | C | Built in PR C; close as shaped, follow-up #450 |
+| #97 | R3: merged CRG and graph queries, decide and shape | C | The effective graph read exists (PR #448) |
+| #45, #196 | Contract release publishing; tag ruleset | D | Built; open until a release is cut, which the operator holds |
+| #312, #367 | Orphaned `ActionNotFound` response; refactor the over-limit methods | D | #367 before the complexity gate #371 |
+| #206, #397, #408, #409, #411 | `required_<plural>` to presets; retire the CRG walk; cascade controls; and follow-ups | B to D | #397: check whether #448 made it moot. #411 (unserved kind gives a bare 400) shrinks with slice A |
 
-**Release 0.1.0 is held** (operator, 2026-10-27): the workflow is ready, and no tag is cut yet. When
-it is cut, the tag ruleset (#196) comes first. Numbering of the next minor (operator, 2026-10-27):
-the activation set (#125) is 0.2.0, and an additive change that is ready earlier, such as
-`GET /openapi.yaml` (#208), rides that minor rather than taking its own number.
-
-| Issue | Title | Why it is here |
-|---|---|---|
-| #45 | Contract release publishing | Built (PR #198); open until 0.1.0 is cut, which is held |
-| #240 | Re-evaluate the artifact fields that mint relationships | The graph documents (CRG) are the authoritative copy of an edge (operator, 2026-10-27); the registration bodies' `relationships` may change before 1.0.0 |
-| #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first. Closed 2026-11-05: #299 and #319 fixed, and the whole-pack round trip is required under `CI gate / gate` |
+**Proposed for 4.0 GA** (no milestone on the tracker yet): the usability-run issues #450, #451, #452, #453 and #454,
+and the ADR-0066 track #424, #434, #435 and #438 (#428 and #437 close with PR #460).
 
 ### 4.x cutover
 
-The cutover path, the work that keeps the contract releasable, and the conformance net.
-Delivered so far: issues #7 and #8 (contract and build), #34 (storage behind repository ports,
-in PRs #137 and #139), #44 (decided by ADR-0020), #48 (pack-level policy), #53, #113 (reserved
-surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129). The
-[2026-11-02 triage](/plans/triage-2026-11-02/) merged #46 into #128 and closed #115 as not planned.
-
-| Issue | Title | Why it is here |
-|---|---|---|
-| #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
-| #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
-| #233 | Spike: the multi-instance state model for hosted | Ruled 2026-11-05: one replica per deployment for now ([ADR-0061](/adr/0061-one-replica-per-deployment/)). The remaining scope is deferred to [#396](https://github.com/spec-kitty/spec-kitty-charter/issues/396), which may follow 1.0.0; multi-tenancy would then be a contract change after 1.0.0 |
-| #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
-| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3, now superseded: the corpus over core's CLI is no longer the acceptance oracle (ADR-0055 D3; [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). To be re-scoped |
-| #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
-| #145, #146 | Pack-composition resolver: the `depends_on` and `parent_pack` checks, and the dependency resolver | Roadmap step 3a. Moved here from Post-cutover on 2026-11-03: the layer merge is built on it, so it lands before #10 and #11 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2). **Done 2026-11-03** (#145; deferred: #357, #358, #359, #360, #363) |
-| #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5. Accepted against the design-derived packs (ADR-0055 D3) |
-| #13 | Core ingests the contract: generated client and routing proxy | Phase 2: core vendors the client once the service is built ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1). Moved from 4.0 GA on 2026-11-03 |
-| #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
-| #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
-| #50 | Build structure follow-ups | Generate `charter-api` from the released bundle, so only one parser resolves `$ref` |
-| #51 | Supply-chain and CI hygiene | The wrapper checksum and signature ruling belong before the first release |
-| #29 | Epic: behavior-first overhaul (P1 to P3) | The scenarios are the conformance net the cutover relies on |
-| #30, #31, #33 | P1: boundary scenarios, Layer-B harness, docsite rendering | The P1 outcome; #32 (charter in force) closed as delivered on 2026-11-02 |
-| #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
-| #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
-| #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
-| #67 | Persistent deactivation, core side | The required half is fixed in core; #62 to #64 and #66 closed as delivered in core on 2026-11-02 |
-
-#### Stages 3 and 4
-
-These follow the evidence each stage needs in
-[Strangler transition](/architecture/strangler-transition/). Under ADR-0021 they happen one
-operation at a time.
-
-| Issue | Stage | Done when |
-|---|---|---|
-| #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
-| #70 Launcher and service lifecycle | 3 | The service runs wherever a routed operation needs it. Needed by the first switch, not before (ADR-0021 D5) |
-| #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact: native for four targets plus the jar, on the `service-v*` line ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)). The launcher criterion moved to #70 and core's checksum check to spec-kitty#6909 |
-| #72 Conformance as a blocking gate | 3, 4 | ~~A divergence on the supported corpus fails core's CI. It gates each operation's switch~~ To be re-scoped: the gate for each switch is an open question in ADR-0055 |
-| #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed per routed operation: a down or slow service is a named error, and stale input is refused |
-| #74 Java authoritative reads | 3, 4 | Every read is routed to the service |
-| #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core, and a ratchet keeps it that way |
-
-### Post-cutover
-
-| Issue | Title | Why it is here |
-|---|---|---|
-| #16, #17 to #23 | Epic and steps: Creeds and Values | New charter capability. #17 (re-baseline) and #18 (prose layer, which gates nothing) can start any time |
-| #55, #57 to #61 | Epic and steps: Charter Pack governance (mutability policy) | New charter capability |
-| #56, #65 | Epic; projection and resolution honor exclusions | The epic, and the step that lands on the Java offering side once reads go through the API. #62 to #64, #66 and #67 are fixed in core now and sit in 4.x cutover |
-| #77, #78 to #80 | Epic and steps: the `impacts` vocabulary for the CRG | The graph layer of Creeds and Values. #16 carries the charter value layer, now including #82 |
-| #40 | Recommended-tools list per activated pack | Offering extension |
-| #42 | Pack-declared profile-role resolution | Offering extension; core work comes first |
-| #49 | Derive the hand-kept lists | Quality follow-up; blocks nothing |
-| #52 | Closure checker and YAML adapter follow-ups | Quality follow-up; blocks nothing |
-| #36, #37 | Bootstrap review follow-ups; home the internal pack upstream | Wait on `spec-kitty-open-packs` |
-
-### Infra & Enablers
-
-Created on 2026-10-27 by the operator. Three epics, each with its operator rulings on the epic
-issue:
-
-| Issue | Title | Why it is here |
-|---|---|---|
-| #207, #208 to #214 | Epic and steps: read, fetch and try the contract | The service serves its own bundle at `GET /openapi.yaml` (token required, linked from the info operation with `rel=service-desc`), the docsite renders it with Redoc, and IntelliJ HTTP Client examples run in CI. No Swagger UI |
-| #217, #218 to #225 | Epic and steps: a generated Java client and client guidance | An openapi-generator `okhttp-gson` client (`ai.speckitty.charter.client`), released as a sources-only zip with the contract, plus a how-to for generating any client. It stays 0.x until `_links` lands (#126) |
-| #226, #227 to #232, #234 | Epic and steps: hosted configuration and the container image | Validated hosted properties, secrets only from env and mounted files, no Spring Cloud Config, and no setting that changes without a redeploy. A platform-neutral container. Tenancy is undecided. #233 moved to 4.x cutover |
-| #241 | ADR: service versioning and release tags | Decided in [ADR-0046](/adr/0046-service-release-line-and-native-packaging/): `service-v*` tags and the service's own SemVer, separate from `contract-charter-v*`; the container image (#234) builds on it |
-
-### Backlog
-
-| Issue | Title | Why it is here |
-|---|---|---|
-| #24 | Design spike: deployable charter backend service | Hosting direction now set by ADR-0020 D12; caching and precompute remain open |
-
-### Not yet assigned
-
-Filed after the last distribution, or never placed; to be placed when the milestones are next
-revised.
+Far: stages 3 and 4 have not started, and the read inventory is mostly undecided.
 
 | Issue | Title | Note |
 |---|---|---|
-| #132 | Remaining YAML scalar differences from core | Conformance detail |
-| #133 | `x-extensible-enum` for open code enums | Contract shape; decide before 1.0.0 |
-| #130 | Narrow the refusal-code enum per HTTP response | Contract shape; decide before 1.0.0 |
-| #121 | Worktree token: refuse a placeholder resolved from the command line | Local deployment profile |
-| #140 | ArchUnit slice-coverage meta-rule | Partly delivered by PR #141 |
-| #166 | CI gate: single-source the path taxonomy | CI hygiene |
-| #134 | `check_docs.py` slugify drops underscores | Docs tooling |
-| #135 | Redraw the older descriptor diagrams on the pack schemas | Docs |
-| #136 | Ask core to carry the pack terms in its glossary | Cross-repository |
-| #181 | Wire a runtime `MutabilityPolicySource` so the write gate is not `open` for everything | Follow-up of PR #180; overlaps #160 |
-| #182 | Read registered relationships back over HTTP | Follow-up of PR #180; a contract surface |
-| #183 | Guard pack registration writes against writers in other processes | Follow-up of PR #180; a deployment decision |
-| #184 | Single-source the pack id to directory resolution | Follow-up of PR #180; refactor |
-| #185 | Pack commit swap: readers in the window, staging leftovers, repair by `pack_id` | Follow-up of PR #180; hardening |
-| #196 | Protect `contract-charter-v*` tags with a ruleset | A repository setting; before the first contract tag |
-| #197 | Lint the workflows in CI, and make every workflow change reach a CI group | CI hygiene |
-| #203 | Mirror the red-main procedure-to-directive move from open-packs#74 | Doctrine alignment |
-| #205 | Re-render the class and component diagrams for the ADR-0035 kernel move | Docs |
-| #235 | CRG: a tension edge is read as `impacts` and written back without its strength | Round-trip defect; relates to #186 |
-| #236 | CRG: graph-shard node tags are dropped on read and write | Round-trip defect; relates to #186 |
+| #6 | Epic: Java charter service built against an OpenAPI contract | Children #9, #13, #14, #47, #50, #51, #68, #127, #128, #130, #133 |
+| #13 | Core ingests the contract | Slice E; phase 2 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1) |
+| #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
+| #9, #72 | Conformance corpus; conformance as a blocking gate | **To re-scope to [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1:** BDD `@contract` scenarios and contract tests gate each switch |
+| #47 | `x-source` citation checker | PR #436 checks the paths; narrow to the symbol check or close |
+| #127, #128 | Hosted-first reshape; mint contract 1.0.0 | Before the first switched route (ADR-0022 D6) |
+| #130, #133 | Refusal-code enums; `x-extensible-enum` | Contract shape; decide before 1.0.0 |
+| #94, #96, #98, #100 to #102, #104 to #110, #112 | Epic and steps: the cutover read inventory | #96 and #100 are in slice A |
+| #29, #30, #31, #33, #15, #38, #68 | Behaviour-first overhaul and the scenario net | The scenarios now gate each switch, so this net is on the critical path |
+| #69, #70 to #74, #76, #332, #343 | Stages 3 and 4 | #70 and #71 are in slice E. #76 still cites the closed #75 |
+| #357 to #360, #67, #185, #306 | Resolver deferrals and follow-ups | #67: the 2026-11-02 triage proposed Post-cutover. #185: re-check against [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) |
+
+### Post-cutover
+
+Open-ended by definition: Creeds and Values (#16 to #23), pack governance (#55, #57 to #61), exclusions (#56, #65),
+the `impacts` vocabulary (#77, #79, #80, #82), offering extensions (#40, #42), quality follow-ups (#49, #52, #36), the
+core follow-ups epic #361 (#333 to #342), and #142, #149, #154, #160, #163, #164, #178, #181, #184, #349, #350, #355.
+
+- **#148** (mission types and step contracts as full kinds) **should move forward to 4.0 GA**: the usability run
+  makes it a core-readiness blocker, and slice A delivers it.
+- **The id spelling at the seam** (slug versus `PROJECT_001`), under #361, blocks the first core integration: pull it
+  into slice E.
+- **#181** is overtaken by [ADR-0063](/adr/0063-pack-mutability-policy-file/) (the mutability policy file).
+
+### Infra & Enablers
+
+| Issue | Title | Note |
+|---|---|---|
+| #207, #211, #212, #214 | Epic: read, fetch and try the contract | Close: three steps left |
+| #217, #219 to #223, #225 | Epic: a generated Java client and client guidance | Not started |
+| #226, #230, #234 | Epic: hosted configuration and the container image | |
+| #121, #134, #140, #166, #197, #205, #243, #308, #324, #371 | CI, docs tooling and hardening | |
+
+**Proposed for Infra & Enablers:** mutation CI (#387, #388, #389, and #461, which closes once a nightly is green),
+the hardening batch (#380 to #383, #386, #416, #417, #426, #429, #439, #443, #444, #447), and the SonarCloud cleanup
+below.
+
+### Backlog
+
+Issues #143, #151, #152, #157, #158, #159.
+
+### Not yet assigned
+
+To place when the operator next revises the tracker milestones:
+
+| Issue | Title | Proposed |
+|---|---|---|
+| #450 to #454 | Usability-run gaps of 2026-11-09 | 4.0 GA (slices B to D) |
+| #424, #434, #435, #438 | ADR-0066 step enhancements and prompt fragments | 4.0 GA (slices B and C) |
+| #456, #457, #458 | ADR requests on profiles and paradigms (#456: principles on paradigms) | 4.0 GA; rule before #407's follow-ups grow (they bear on #102) |
+| #431, #432, #433, #404, #412 | Registration follow-ups (`org-charter.yaml`, `text` content form, closure-breaking writes) | #431 and #432 in slice B; #433 folds into #49 |
+| #396 | Multi-replica, deferred from #233 by [ADR-0061](/adr/0061-one-replica-per-deployment/) | Post-cutover, after 1.0.0 |
+| #182 | Read registered relationships back over HTTP | 4.x cutover; graph documents are the only source ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)) |
+| #132, #254 | Core-parity framing | Re-scope: conflicts with the 2026-10-28 ruling |
+| #136 | Ask core to carry the pack terms | Close as superseded by ADR-0029 (2026-11-02 triage) |
+| #203 | Mirror open-packs#74 | Post-cutover |
+
+### SonarCloud findings
+
+The nightly scan (2026-11-10) shows 43.4k lines, 94.6% coverage and 1.0% duplication, with 31 open issues: Security
+rating D, from one vulnerability, and Reliability rating E, from three critical bugs. No issue tracks them yet. Three
+work items, all Infra & Enablers:
+
+1. **Security and runtime bugs** (high): S5443, a world-writable temp directory used as git HOME in
+   `GitVersionCheck.java:117`; S6416 ×3, reachable exceptions in `ActivationFileCodec.java:167,181` and
+   `PackFileKind.java:527`; S2095, `RegistrationJobs` never closed in `RegistrationWiring.java:185`; S2583 ×2, conditions
+   that are always false in `ExposureStartupCheck.java:245` and `Relationship.java:89`; S6856 and S3752 on
+   `ProblemErrorController.java:42`.
+2. **Test hygiene:** S6103 ×2, assertions that never run in `PackRegistrationServiceTest:813,819`; S2699; S1872; S8786
+   ×2.
+3. **Conventions, needing a ruling:** S1845 ×12 (constant and member differ only in case) and S1314 ×3 (octal literals,
+   zip permission bits). Either rename or disable them in the quality profile with a recorded reason. S9428 on
+   `Fingerprint.java:17` is likely a false positive and can be closed with a reason.
 
 ## Decided on 2026-10-19
 
@@ -204,7 +175,8 @@ The operator ruled on the open questions this page raised. The decisions are pro
   cutover; #65 stays here (ADR-0013).
 - **Creeds and Values** is split by layer: #77 carries the `impacts` vocabulary, #16 the
   charter value layer. #81, #83, #84 and #85 were closed as duplicates (ADR-0014).
-- **The observation period (#75)** was dropped: the conformance corpus gates the switch-over.
-- **The conformance corpus** is a harness over core's CLI (ADR-0016). **Pack schemas** are
+- **The observation period (#75)** was dropped: the conformance corpus gates the switch-over (now the BDD scenarios and contract tests, ADR-0059 D1).
+- **The conformance corpus** is a harness over core's CLI (ADR-0016). *Superseded:* it is no longer the oracle
+  (ADR-0055 D3) or the switch gate (ADR-0059 D1). **Pack schemas** are
   imported from core's models and owned here (ADR-0017). #12 was closed (ADR-0008), and #87 was
   closed once core fixed org precedence.

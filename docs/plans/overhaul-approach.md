@@ -2,7 +2,7 @@
 title: High-level approach to the charter overhaul
 description: The behavior-first, strangler-fig approach to splitting out the charter — scenarios and boundary first, then the OpenAPI contract, before any implementation is chosen.
 doc_status: draft
-updated: 2026-10-17T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -58,8 +58,8 @@ once an implementation exists.
 | **P0 — Governance and seed** *(done)* | Register (vendor) the authoring packs; seed the behavior contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
 | **P1 — Scenarios and boundary** | Define the offering's role and boundary as promise-first scenarios. | The suite covers the offering's guarantees and edges; each promise is traced to an authority; the set is presented in the docsite. |
 | **P2 — API specification** | Turn the described boundary into a published contract. | An OpenAPI 3.1 YAML contract under `contracts/charter/`, versioned as the external contract and rendered in the docsite (see [ADR-0002](/adr/0002-contract-source-of-record/)). |
-| **P3 — Low-level design** *(next focus)* | The artifact structure and storage model, behind a repository layer. | A design that decouples infrastructure from logic: a repository layer agnostic of whether charter content is file-based or database-provided. |
-| **P4 — Implementation** *(deferred)* | Build the Java service ([ADR-0001](/adr/0001-java-service-with-openapi-contract/)); settle the migration sequencing. | Sequenced only once P1–P2 fix the behavior and the contract; see [Roadmap](/plans/roadmap/) steps 2–7 (step 1, the contract, is P2). |
+| **P3 — Low-level design** *(done)* | The artifact structure and storage model, behind a repository layer. | A design that decouples infrastructure from logic: a repository layer agnostic of whether charter content is file-based or database-provided. |
+| **P4 — Implementation** *(under way)* | Build the Java service ([ADR-0001](/adr/0001-java-service-with-openapi-contract/)); settle the migration sequencing. | Sequenced only once P1–P2 fix the behavior and the contract; see [Roadmap](/plans/roadmap/) steps 2–7 (step 1, the contract, is P2). |
 
 P0, P1 and P2 can run in parallel with the core's seam work, because none of them answers a
 production read.
