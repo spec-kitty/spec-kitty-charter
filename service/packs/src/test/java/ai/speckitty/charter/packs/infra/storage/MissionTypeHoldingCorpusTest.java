@@ -13,12 +13,12 @@ import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -26,9 +26,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The mission type read serves the pinned open-packs {@code software-dev} as stored (#99, T016, SC-001): the composite
- * read over the production store holds all 13 of its steps (8 in sequence, 5 on demand), and each step's prompt and
- * guidelines are the files of the checkout byte for byte, the bare {@code spdd} slot markers included. It holds the 4
- * skeletons the type's {@code templates/} directory holds and the 5 step contracts bound to it.
+ * read over the production store holds every step the checkout's type declares (in sequence, then on demand), and each
+ * step's prompt and guidelines are the files of the checkout byte for byte, the bare {@code spdd} slot markers
+ * included. It holds the skeletons the type's {@code templates/} directory holds and the step contracts bound to it.
+ * The expectations derive from the checkout, so a corpus change at a new pin needs no edit here.
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
  * skips.
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 class MissionTypeHoldingCorpusTest {
 
     private static final PackIdentifier BUILT_IN = new PackIdentifier("built-in");
+    private static final String TYPE = "software-dev";
 
     /** Fail with the pin's own message rather than as a mismatch when the checkout is at another commit. */
     @BeforeAll
@@ -54,39 +56,91 @@ class MissionTypeHoldingCorpusTest {
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         MissionTypeHoldingRead reads = new MissionTypeHoldingRead(
                 store, store, new ConsistentRead(new FileSystemPackSources(() -> locations)), store);
-        Path steps = OpenPacksCorpus.packsDirectory().resolve("built-in/missions/software-dev/steps");
+        Path mission = OpenPacksCorpus.packsDirectory().resolve("built-in/missions/" + TYPE);
+        Path steps = mission.resolve("steps");
 
-        MissionTypeHoldingRead.Holding holding = reads.holding(BUILT_IN, "software-dev");
+        MissionTypeHoldingRead.Holding holding = reads.holding(BUILT_IN, TYPE);
 
         MissionType type = (MissionType) holding.missionType();
-        assertThat(type.steps()).hasSize(8);
-        assertThat(type.onDemandSteps()).hasSize(5);
         List<MissionStep> all = new ArrayList<>(type.steps());
         all.addAll(type.onDemandSteps());
-        assertThat(holding.stepFiles()).hasSize(13);
-        int marked = 0;
+        List<String> declared = declaredStepIds(mission);
+        assertThat(declared).as("steps the checkout's type declares").isNotEmpty();
+        assertThat(all)
+                .extracting(MissionStep::id)
+                .as("sequence, then on demand")
+                .containsExactlyElementsOf(declared);
+        assertThat(holding.stepFiles().keySet())
+                .as("a file set per declared step")
+                .containsExactlyInAnyOrderElementsOf(declared);
+        assertThat(filesOf(steps, ".prompt.md"))
+                .as("every prompt the checkout holds belongs to a declared step")
+                .isSubsetOf(declared);
         for (MissionStep step : all) {
             PackCompanionFiles.StepFiles files = holding.stepFiles().get(step.id());
             assertThat(files).as(step.id()).isNotNull();
             assertStored(files.prompt(), steps.resolve(step.id() + ".prompt.md"));
             assertStored(files.guidelines(), steps.resolve(step.id() + ".guidelines.md"));
-            if (new String(files.prompt().orElseThrow().bytes(), StandardCharsets.UTF_8)
-                    .contains("<!-- spdd:reasons-block:start -->")) {
-                marked++;
-            }
         }
-        assertThat(marked).as("prompts that keep their spdd slot markers").isEqualTo(5);
+        List<String> templates = filesOf(mission.resolve("templates"), "-template.md");
+        assertThat(templates)
+                .as("skeletons the checkout's templates/ directory holds")
+                .isNotEmpty();
         assertThat(holding.skeletons())
                 .extracting(Template::localId)
-                .containsExactly(
-                        "software-dev/plan-template.md",
-                        "software-dev/spec-template.md",
-                        "software-dev/task-prompt-template.md",
-                        "software-dev/tasks-template.md");
+                .containsExactlyInAnyOrderElementsOf(templates.stream()
+                        .map(name -> TYPE + "/" + name + "-template.md")
+                        .toList());
+        List<String> bound = boundContractActions(mission.getParent().resolve("built_in_step_contracts"));
+        assertThat(bound).as("step contracts the checkout binds to the type").isNotEmpty();
         assertThat(holding.stepContracts())
                 .extracting(MissionStepContract::action)
-                .containsExactly("implement", "plan", "review", "specify", "tasks");
+                .containsExactlyInAnyOrderElementsOf(bound);
         assertThat(holding.fingerprint()).startsWith("sha256:");
+    }
+
+    /** The ids of the top-level {@code - id:} entries of {@code steps:}, then {@code on_demand_steps:}, in file order. */
+    private static List<String> declaredStepIds(Path mission) throws IOException {
+        List<String> ids = new ArrayList<>();
+        boolean inSteps = false;
+        for (String line : Files.readAllLines(mission.resolve(TYPE + ".mission-type.yaml"))) {
+            if (!line.isEmpty() && !line.startsWith(" ") && !line.startsWith("-")) {
+                inSteps = line.equals("steps:") || line.equals("on_demand_steps:");
+            } else if (inSteps && line.startsWith("- id: ")) {
+                ids.add(line.substring("- id: ".length()).strip());
+            }
+        }
+        return ids;
+    }
+
+    /** The names, without {@code suffix}, of the files of {@code directory} that end in it, sorted. */
+    private static List<String> filesOf(Path directory, String suffix) throws IOException {
+        try (Stream<Path> files = Files.list(directory)) {
+            return files.map(file -> file.getFileName().toString())
+                    .filter(name -> name.endsWith(suffix))
+                    .map(name -> name.substring(0, name.length() - suffix.length()))
+                    .sorted()
+                    .toList();
+        }
+    }
+
+    /** The {@code action} of every step contract file of {@code directory} whose {@code mission} is the type. */
+    private static List<String> boundContractActions(Path directory) throws IOException {
+        List<String> actions = new ArrayList<>();
+        try (Stream<Path> files = Files.list(directory)) {
+            for (Path file : files.filter(f -> f.toString().endsWith(".step-contract.yaml"))
+                    .toList()) {
+                List<String> lines = Files.readAllLines(file);
+                if (lines.contains("mission: " + TYPE)) {
+                    lines.stream()
+                            .filter(line -> line.startsWith("action: "))
+                            .findFirst()
+                            .ifPresent(line -> actions.add(
+                                    line.substring("action: ".length()).strip()));
+                }
+            }
+        }
+        return actions;
     }
 
     /** The bytes the read holds are the file's, and a file the checkout lacks is held as none. */
