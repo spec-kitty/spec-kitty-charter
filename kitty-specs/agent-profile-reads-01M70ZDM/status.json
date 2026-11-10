@@ -171,7 +171,8 @@
       "last_transition_at": "2026-11-10T02:59:57.215312+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Review passed: listed() split consistent; FR-004 links proven; carry notes recorded"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
