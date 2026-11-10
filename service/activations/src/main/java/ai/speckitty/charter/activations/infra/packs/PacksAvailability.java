@@ -4,6 +4,7 @@ import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -13,6 +14,7 @@ import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
@@ -88,6 +90,11 @@ public class PacksAvailability implements AvailablePacks {
     }
 
     @Override
+    public List<ArtifactKind> listedKinds() {
+        return ArtifactReadService.listed();
+    }
+
+    @Override
     public PacksSession session(Optional<List<String>> packIds) {
         Optional<List<PackIdentifier>> roots =
                 packIds.map(ids -> ids.stream().map(PackIdentifier::new).toList());
@@ -125,6 +132,12 @@ public class PacksAvailability implements AvailablePacks {
         @Override
         public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
             return ActionContext.notInForce();
+        }
+
+        @Override
+        public Optional<EffectiveArtifactRead> effectiveArtifact(
+                ArtifactKind kind, String id, int depth, InForceQuery query) {
+            return Optional.empty();
         }
 
         @Override

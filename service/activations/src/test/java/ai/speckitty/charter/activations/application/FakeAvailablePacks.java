@@ -2,12 +2,14 @@ package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<ContextAsk> contextAsks = new ArrayList<>();
     private int graphReads;
     private final List<String> nameChecks = new ArrayList<>();
+    private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
+    private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
+    private List<ArtifactKind> listedKinds = List.of(
+            ArtifactKind.TACTIC,
+            ArtifactKind.DIRECTIVE,
+            ArtifactKind.STYLEGUIDE,
+            ArtifactKind.PARADIGM,
+            ArtifactKind.TOOLGUIDE,
+            ArtifactKind.AGENT_PROFILE);
 
     /**
      * What a session was asked of the action context.
@@ -50,6 +61,16 @@ public final class FakeAvailablePacks implements AvailablePacks {
      * @param query the document's request
      */
     public record ContextAsk(String missionType, String action, int depth, InForceQuery query) {}
+
+    /**
+     * What a session was asked of the winner read.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id
+     * @param depth the number of {@code suggests} hops of a profile's governance
+     * @param query the document's request
+     */
+    public record EffectiveAsk(ArtifactKind kind, String id, int depth, InForceQuery query) {}
 
     /**
      * A fake that answers the snapshot.
@@ -123,6 +144,39 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void contexts(Function<ContextAsk, ActionContext> next) {
         this.contextAnswer = next;
+    }
+
+    /**
+     * Answers every winner read of a session with this function from now on; a function that throws a refusal answers
+     * as the packs slice does for a stale input.
+     *
+     * @param next the answers of {@link PacksSession#effectiveArtifact}, by question
+     */
+    public void winners(Function<EffectiveAsk, Optional<EffectiveArtifactRead>> next) {
+        this.winnerAnswer = next;
+    }
+
+    /**
+     * The winner reads the sessions were asked, in order.
+     *
+     * @return the questions
+     */
+    public List<EffectiveAsk> effectiveAsks() {
+        return List.copyOf(effectiveAsks);
+    }
+
+    /**
+     * Lists these kinds from now on.
+     *
+     * @param next the answer of {@link AvailablePacks#listedKinds}
+     */
+    public void listedKinds(List<ArtifactKind> next) {
+        this.listedKinds = List.copyOf(next);
+    }
+
+    @Override
+    public List<ArtifactKind> listedKinds() {
+        return listedKinds;
     }
 
     /**
@@ -249,6 +303,14 @@ public final class FakeAvailablePacks implements AvailablePacks {
             nameChecks.add(missionType + "/" + action);
             java.util.Objects.requireNonNull(contextAnswer.apply(new ContextAsk(
                     missionType, action, 0, new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of()))));
+        }
+
+        @Override
+        public Optional<EffectiveArtifactRead> effectiveArtifact(
+                ArtifactKind kind, String id, int depth, InForceQuery query) {
+            EffectiveAsk ask = new EffectiveAsk(kind, id, depth, query);
+            effectiveAsks.add(ask);
+            return winnerAnswer.apply(ask);
         }
 
         @Override

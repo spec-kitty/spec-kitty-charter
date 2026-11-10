@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,15 @@ public interface AvailablePacks {
      *     read ({@code stale_input})
      */
     PacksSession session(Optional<List<String>> packIds);
+
+    /**
+     * The artifact kinds a client can list and follow, in the list order: the gate of the generic read of one artifact
+     * (a kind outside it is {@code kind_not_found}). It is the packs slice's own list, so that the activation route and
+     * the pack route agree on the kinds they serve, and it reads no pack.
+     *
+     * @return the listed kinds
+     */
+    List<ArtifactKind> listedKinds();
 
     /**
      * One verified read of a composition closure, for a use case that walks nothing: the snapshot of a
