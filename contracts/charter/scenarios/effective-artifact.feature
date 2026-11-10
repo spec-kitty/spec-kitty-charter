@@ -1,7 +1,7 @@
 # WP06 of agent-profile-reads: the generic activation-scoped read of one artifact, getEffectiveArtifact (FR-007, FR-010,
 # NFR-002; plan fold A3, C4, C6; operator decisions 01M70ZFPHZTBH670GF7046XDW0 and 01M710DQEMV7VPKDNQPWKPGD4F). Written red
-# first: the scenarios were committed with every step bound and run against the service as it stood, where
-# /activations/a-1/artifacts/directive/X answered the router's 404; the operation was then built.
+# first: the scenarios were committed with every step bound and run against the operation stubbed as a reserved one,
+# where /activations/a-1/artifacts/directive/X answered 501 (all eight scenarios); the operation was then built.
 #
 # The read answers the winner of the layer merge with the facts the effective list gives it, and embeds no body: its
 # `artifact` link is the pack-scoped read of the pack that holds the version in force, and the scenarios follow it. An

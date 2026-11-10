@@ -1,7 +1,9 @@
 summary: >-
   java-jenny under the activation "project", read at depth=1 from the built-in pack of spec-kitty-open-packs at a2a9379. The
-  activation selects what this repository's charter.yaml selects (its directives, paradigms, style guides and the gherkin
-  and java-supply-chain toolguides; the two toolguides the pack does not hold are left out) and java-jenny itself. The list
+  activation selects what this repository's charter.yaml selects from that pack (its directives, paradigms, style guides
+  and the gherkin and java-supply-chain toolguides) and java-jenny itself. Two other toolguides the charter selects,
+  terminology-guard and test-quality-triage, are left out because they are in the internal pack of spec-kitty-open-packs,
+  which this activation does not load, not because the built-in pack lacks them. The list
   is complete, not abridged. java-jenny requires DIRECTIVE_010, 025, 030, 034 and 051 and the java-conventions style guide,
   all selected and in force; DIRECTIVE_001 is reached through DIRECTIVE_051 (hops 2). Every entry carries edge, the words of
   the edge it was reached through, whatever its relation: DIRECTIVE_030 and DIRECTIVE_034 are requires entries whose edges
