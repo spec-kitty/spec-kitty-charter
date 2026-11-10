@@ -20,6 +20,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.EdgeIndex;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
@@ -202,6 +203,16 @@ class ClosureViewSessionArtifactTest {
         assertThatThrownBy(() -> ClosureViewSession.governanceOf(broken))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("action:M/s");
+    }
+
+    @Test
+    void theKindsAClientCanReadAreTheListedKindsOfThePacksSliceAndIncludeTheAgentProfile() {
+        PacksAvailability packs = new PacksAvailability(roots -> {
+            throw new AssertionError("listing the kinds reads no pack");
+        });
+
+        assertThat(packs.listedKinds()).isEqualTo(ArtifactReadService.listed());
+        assertThat(packs.listedKinds()).contains(ArtifactKind.DIRECTIVE, ArtifactKind.AGENT_PROFILE);
     }
 
     private static ProfileGovernance.Entry entry(Urn urn, GovernanceWalk.Step step, Urn via) {
