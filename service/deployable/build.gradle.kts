@@ -130,3 +130,42 @@ tasks.test {
         }.standardOutput.asText)
     })
 }
+
+// The open-packs corpus test of the profile read (WP04, T023): every agent profile of the pinned spec-kitty-open-packs
+// checkout is read through the whole service. Point -PopenPacksDir at a checkout (an absolute path, or one relative to
+// the repository root); by default the sibling ../spec-kitty-open-packs. It is not part of `test`, which has no checkout,
+// and `check` runs it; a missing or moved checkout fails the task, it never skips.
+val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
+val openPacksDir = providers.gradleProperty("openPacksDir")
+    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
+    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
+val openPacksRef = providers.gradleProperty("openPacksRef")
+
+tasks.test {
+    useJUnitPlatform { excludeTags("open-packs") }
+}
+
+val openPacksProfiles = tasks.register<Test>("openPacksProfiles") {
+    group = "verification"
+    description = "Reads every agent profile of the pinned spec-kitty-open-packs checkout through the service (part of check)."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    // Not the Cucumber suite: it selects the contract scenarios by its own tag and finds none here.
+    useJUnitPlatform {
+        includeTags("open-packs")
+        includeEngines("junit-jupiter")
+    }
+    val dir = openPacksDir
+    inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
+    systemProperty("charter.openPacksDir", dir.get())
+    val ref = openPacksRef
+    inputs.property("openPacksRef", ref.orElse(""))
+    doFirst {
+        val pin = ref.orNull
+        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
+            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
+        }
+        systemProperty("charter.openPacksRef", pin)
+    }
+}
+tasks.check { dependsOn(openPacksProfiles) }
