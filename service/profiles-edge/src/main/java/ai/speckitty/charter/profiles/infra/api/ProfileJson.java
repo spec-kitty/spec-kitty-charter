@@ -13,6 +13,7 @@ import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.AgentProfileSpecializationContext;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
+import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.api.model.PackGovernanceSuggestion;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -56,7 +57,8 @@ public class ProfileJson {
                 .setMixInAnnotation(AgentProfileSpecialization.class, OptionalSpecializationMembers.class)
                 .setMixInAnnotation(PackGovernanceSuggestion.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveAgentProfileRead.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(EffectiveGovernanceEntry.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(EffectiveGovernanceEntry.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(EffectiveGovernanceSuggestion.class, OmitAbsentMembers.class);
     }
 
     /**
@@ -126,7 +128,8 @@ public class ProfileJson {
                             PackGovernanceEntry.class,
                             PackGovernanceSuggestion.class,
                             EffectiveAgentProfileRead.class,
-                            EffectiveGovernanceEntry.class);
+                            EffectiveGovernanceEntry.class,
+                            EffectiveGovernanceSuggestion.class);
             hints.reflection()
                     .registerType(OptionalProfileMembers.class)
                     .registerType(OptionalSpecializationMembers.class)

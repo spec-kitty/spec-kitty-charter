@@ -1,0 +1,28 @@
+title: EffectiveGovernanceSuggestion
+description: >-
+  The words of the suggests edge that listed a governance entry of an agent profile read under an activation (FR-004):
+  its when and its reason. It is present on every suggests entry whose edge states either, whether the artifact is in
+  force (state active) or out of force (inactive, reason not_selected). It is the edge's own and says nothing of the
+  artifact's state; it is not EffectiveArtifactSuggestion, which is defined only for an artifact out of force that a
+  suggests edge reaches (#408 ruling 3). Both members are optional: an edge may state only one of them.
+type: object
+additionalProperties: false
+properties:
+  when:
+    type: string
+    description: The condition the suggests edge states for the artifact to apply.
+    x-derived:
+      rule: The when of the suggests edge that listed the entry.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    type: string
+    description: The reason the suggests edge gives for the suggestion.
+    x-derived:
+      rule: The reason of the suggests edge that listed the entry.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The when and reason of the suggests edge that listed the entry.
+  inputs:
+  - schemas/ActivationConfig.yaml

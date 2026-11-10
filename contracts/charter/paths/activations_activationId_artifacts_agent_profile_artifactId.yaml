@@ -19,7 +19,9 @@ get:
     lineage through specializes_from, then what the profile and its ancestors require, suggest and cite in the
     vocabulary, and depth is the number of suggests hops it follows, 0 or 1 (default 0). An artifact that is in force is
     listed with the step that reached it. A suggestion that is out of force is listed with state inactive, reason
-    not_selected and its suggestion inline. Everything else that is out of force is not listed and seeds nothing: an
+    not_selected and its suggestion inline. A suggests entry carries the words of its edge in suggestion, a when and a
+    reason, wherever the edge states them (FR-004), whether the artifact is in force or not: an entry in force carries
+    them too. A requires entry carries none. Everything else that is out of force is not listed and seeds nothing: an
     ancestor that is not in force is dropped, with what only it requires (operator ruling W1, decision
     01M7115WE6WQ7Q41HSS9ZHD1F3). This diverges from the cascade of the activation writes, which passes an ancestor
     through. The profile the walk starts from is exempt: it is answered whatever its own state, and the state is
