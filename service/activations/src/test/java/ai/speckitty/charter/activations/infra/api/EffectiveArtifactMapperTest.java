@@ -117,6 +117,17 @@ class EffectiveArtifactMapperTest {
         assertThat(wire.getSatisfiedBy().getArtifactId()).isEqualTo("E");
         assertThat(wire.getSuggestion().getWhen()).isEqualTo("when");
         assertThat(wire.getSuggestion().getReason()).isNull();
+
+        EffectiveArtifactRead both = mapper.toRead(
+                answer(winner(
+                        ArtifactKind.DIRECTIVE,
+                        "D",
+                        "main",
+                        Optional.empty(),
+                        Optional.of(new Suggestion(Optional.empty(), Optional.of("why"))))),
+                OptionalInt.empty());
+        assertThat(both.getSuggestion().getWhen()).isNull();
+        assertThat(both.getSuggestion().getReason()).isEqualTo("why");
     }
 
     @Test
