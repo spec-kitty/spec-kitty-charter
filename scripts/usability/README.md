@@ -5,7 +5,8 @@ spec-kitty-open-packs, activates this repository's charter and reads an agent pr
 its governance, both from the pack and under the activation. After `GET /api/v1/` it follows only `_links`: it never
 builds a URL (only the bootstrap calls, `GET /api/v1/` and `POST /packs`, are written out). A relation that a hop
 expects and the answer lacks fails that hop, and the line names the hop and the
-relation. It proves FR-011, SC-001 to SC-003 and NFR-003 of the `agent-profile-reads` mission.
+relation. It proves FR-011, SC-001 to SC-003 and NFR-003 of the `agent-profile-reads` mission and, with its mission type
+walk, SC-001 of the `mission-type-reads` mission.
 
 ## Run it
 
@@ -23,7 +24,7 @@ JAVA_HOME=<your JDK 25 home> scripts/usability/service-usability-run.sh \
 | `--packs <a,b>` | The open-packs directories to register through `POST /packs`. Default `internal,qa`. |
 | `--strict` | Treat selections no registered pack holds as a failure instead of a named workaround. |
 | `--attach <base-url>` | Walk a service that is already running and provisioned. The token comes from `CHARTER_WORKTREE_TOKEN`. |
-| `--self-check` | Run the pure parts of the client without a service (`expand`, href resolution, the removal guard, option parsing, and `charter-to-activation.py --self-test`). Exit 0 or 1. |
+| `--self-check` | Run the pure parts of the client without a service (`expand`, href resolution, the removal guard, option parsing, the mission type walk's set checks, and `charter-to-activation.py --self-test`). Exit 0 or 1. |
 
 An option that takes a value (`--open-packs`, `--profile`, `--jar`, `--packs`, `--attach`) and gets none, or gets
 another option in its place, exits 2 with the usage text.
@@ -57,6 +58,22 @@ another option in its place, exits 2 with the usage text.
    the summary lists the counts by kind, and the `RESULT` line carries their total as `unlinked=<n>`. Entries with
    `held=false` have no pack and are counted in the walk line.
 
+   - mission type, pack-scoped (#99): root `artifacts` (`packId=built-in`, `kind=mission_type`) → the `software-dev`
+     list item `self` → each step's `self` (13: 8 in sequence, in order, and 5 on demand) → each step's `step-contract`
+     where present (exactly 5: specify, plan, tasks, implement, review) → each expected output's `skeleton` (exactly 2:
+     specify → `spec-template.md`, plan → `plan-template.md`) → each listed skeleton's `self` (4);
+   - mission type under the activation: the activation's `artifacts` (`kind=mission_type`) → the item's
+     `effective-artifact` → the same steps, step contracts (the generic effective read) and skeletons → the graph's
+     action nodes of `software-dev`, each `effective-artifact` (its step read; `specify` must be among them) → the
+     action context of `software-dev/specify`, its `effective-artifact` and `artifact` (the step under the activation
+     and in the pack that holds the type).
+
+   The expected ids are constants at the top of the mission type section (`MT_*`). A step id, contract, skeleton or
+   listed skeleton the walk did not reach fails a hop that names the relation it expected; one it reached but did not
+   expect fails too. Each scope prints a `MISSION <scope> type=software-dev steps=<n>/13 contracts=<n>/5
+   bound-skeletons=<n>/2 skeletons=<n>/4 hops=<ok>/<all>` line before `RESULT`, and the graph and context part a
+   `MISSION graph+context` line; their hops count in `RESULT` too.
+
    **Hrefs.** An href is followed when it is a path starting with `/` (relative to the service's base) or an absolute
    URL on the base the script started or was attached to. An absolute URL on any other origin, a `//` reference, or a
    path without a leading `/` is not followed and fails the hop with a message, so the bearer token never leaves the
@@ -72,6 +89,7 @@ Nothing is silent. Every workaround prints as `[WORKAROUND]` when it is applied 
 |---|---|---|
 | `unmodelled-files (#451)` | A registration is refused only over `unmodelled` files (README, PROVENANCE, `org-charter.yaml`, ...). | Registers a staged copy without the files the refusal named. The checkout is untouched. |
 | `project-pack (#452)` | The project pack is refused. | Skips it. No edit is tried. |
+| `unlinked-graph-and-context` | The activation links neither `graph` nor an action context. | Takes `/graph` and `/mission-types/software-dev/actions/specify/context` from the contract, appended to the activation's `self` href. These are the only paths the walk builds after the bootstrap; every read beyond them is followed. If the activation links `graph`, the link is followed and no workaround is named for the graph. |
 | `unheld-selections` | The activation is refused `activation_invalid` only with `unknown_artifact` violations. | Leaves out exactly the selections the service names, and lists them. `--strict` fails instead. |
 
 The script only removes what it made: the temporary directory is removed only if it is the directory `mktemp` returned
