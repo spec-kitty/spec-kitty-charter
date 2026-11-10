@@ -769,7 +769,8 @@ mt_expect() { # id what found expected relation: fails, naming the relation, for
     local id=$1 what=$2 found=$3 expected=$4 rel=$5 missing extra
     missing=$(words_minus "$expected" "$found")
     extra=$(words_minus "$found" "$expected")
-    if [[ -z $missing && -z $extra ]]; then
+    # A repeated item is a failure too: the set compare alone would read "plan plan specify" as two of two.
+    if [[ -z $missing && -z $extra && $(words_count "$found") == "$(words_count "$expected")" ]]; then
         hop_ok "$id" "$what: $(words_count "$found")/$(words_count "$expected") reached"
         return 0
     fi
@@ -1005,6 +1006,8 @@ self_check() {
         "  [FAIL] X    fixture: 1/2 reached; expected relation 'step-contract' not reached for: specify"
     out=$(mt_expect X "fixture" "specify plan" "plan specify" step-contract)
     check "mt_expect passes on the same set in another order" "$out" "  [ ok ] X    fixture: 2/2 reached"
+    out=$(mt_expect X "fixture" "plan plan specify" "plan specify" step-contract)
+    check "mt_expect fails on a repeated item" "$out" "  [FAIL] X    fixture: 3/2 reached"
     HOP_FAIL=$before
     echo "== self-check: charter-to-activation.py --self-test"
     python3 -I "$HERE/charter-to-activation.py" --self-test 2>&1 | sed 's/^/   /'

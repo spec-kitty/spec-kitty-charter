@@ -89,7 +89,7 @@ Nothing is silent. Every workaround prints as `[WORKAROUND]` when it is applied 
 |---|---|---|
 | `unmodelled-files (#451)` | A registration is refused only over `unmodelled` files (README, PROVENANCE, `org-charter.yaml`, ...). | Registers a staged copy without the files the refusal named. The checkout is untouched. |
 | `project-pack (#452)` | The project pack is refused. | Skips it. No edit is tried. |
-| `unlinked-graph-and-context` | The activation links neither `graph` nor an action context. | Takes `/graph` and `/mission-types/software-dev/actions/specify/context` from the contract, appended to the activation's `self` href. These are the only paths the walk builds after the bootstrap; every read beyond them is followed. If the activation links `graph`, the link is followed and no workaround is named for the graph. |
+| `unlinked-graph-and-context` | The activation links neither `graph` nor an action context. | Takes `/graph` and `/mission-types/software-dev/actions/specify/context` from the contract, appended to the activation's `self` href. These are the only paths the walk builds after the bootstrap; every read beyond them is followed. If the activation links `graph`, the link is followed and no workaround is named for the graph; the action context path is always built (the activation offers no context template). |
 | `unheld-selections` | The activation is refused `activation_invalid` only with `unknown_artifact` violations. | Leaves out exactly the selections the service names, and lists them. `--strict` fails instead. |
 
 The script only removes what it made: the temporary directory is removed only if it is the directory `mktemp` returned

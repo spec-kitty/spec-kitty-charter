@@ -27,7 +27,8 @@ activation? It is the proof of SC-001 of the mission type reads (#99). It follow
 
 - **Script:** `scripts/usability/service-usability-run.sh`, extended with a mission type walk (walks 3 and 4). The
   profile walks (1 and 2) are unchanged and ran in the same pass.
-- **Service:** branch `issue-99-mission-type-reads` at `07abe2e6`. The jar was built from `2634cfcb` with
+- **Service:** branch `issue-99-mission-type-reads` at `07abe2e6`, which is tree-identical to `87b033d8` on the branch
+  (the same commit, re-signed before the push). The jar was built from `2634cfcb` with
   `:deployable:bootJar`. The commit between them changes only the script, so the service is the same. The script
   started the jar with `java -jar`, with registration and the filesystem pack source on, and stopped it at the end.
 - **Packs:** spec-kitty-open-packs at the pin `a2a9379`. `built-in` was copied into `<config-root>/packs/` and its git
