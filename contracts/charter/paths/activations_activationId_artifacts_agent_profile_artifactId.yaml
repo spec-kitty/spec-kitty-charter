@@ -40,9 +40,8 @@ get:
 
     ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
     the activation's closure, and with the profile and the depth, and it does not change when a pack outside the
-    closure changes. It is not the tag of the generic read of the same profile, which has another representation. A
-    matching If-None-Match is a 304 without a body, and a tag of another representation never matches (RFC 9110 section
-    13.1.2).
+    closure changes. A matching If-None-Match is a 304 without a body, and a tag of another representation never matches
+    (RFC 9110 section 13.1.2).
   tags:
   - EffectiveAgentProfiles
   parameters:

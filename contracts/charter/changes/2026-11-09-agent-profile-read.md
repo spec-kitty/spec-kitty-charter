@@ -20,7 +20,9 @@
   edge could reach an entry, the words are those of the edge of its `via`, the first reach the walk keeps.
   `suggests` entries are listed by this service; core's profile channel treats them as inert. The body references
   (`directiveReferences` and the others) are body fields and are not walked. The answer carries `Charter-Source-Fingerprint`,
-  the digest the read verified, and an `ETag` that is the pack revision, as a directive's is. A profile the pack does not
+  the digest the read verified, and an `ETag` that is the pack revision, as a directive's is: the precondition a
+  `DELETE` of the profile sends in `If-Match`, not a validator of the governance, which a dependency pack can change
+  without changing it (the read takes no `If-None-Match`). A profile the pack does not
   hold is `404 artifact_not_found`. The `Depth` parameter now speaks of any walk, and the `references` relation is added
   to the relation table for the profile's link to its references read.
   `ArtifactKindToken` gains `agent_profile`, last, so `GET /packs/{packId}/artifacts?kind=agent_profile` lists a pack's

@@ -20,8 +20,7 @@
   refusals are judged in order: `activation_not_found`, then `artifact_not_found` for an id that no pack of the closure
   holds as a profile, before any `If-None-Match`. The answer carries `Charter-Source-Fingerprint` and a strong `ETag` over
   the activation's revision, the packs of its closure and the profile and the `depth`; a matching `If-None-Match` is `304`,
-  and `depth` outside 0 to 1 is a `400`. The new tag `EffectiveAgentProfiles` lets the profiles slice implement the
-  operation in a controller of its own; no relation is added.
+  and `depth` outside 0 to 1 is a `400`. No relation is added.
 - Every `EffectiveGovernanceEntry` carries `edge`, the `GovernanceEdgeWords` of the pack-scoped read (the schema is
   introduced with `getPackAgentProfile`): the words of the edge the walk reached the entry through (FR-004), whatever its
   relation, and whether the artifact is in force (`state: active`) or out of force (`inactive`, `not_selected`). It is

@@ -82,8 +82,8 @@ Feature: The API root links to every top-level resource
     And the field at "/_links/self/href" is "/api/v1/packs/qa/artifacts?kind=tactic"
 
   Scenario: The activations link of the root is the POST that creates an activation, and the activation leads on to its effective list
-    The root names the register and the method to follow it with; a client creates an activation with the href it
-    was given and follows the created activation's artifacts template to the effective list (the Activation answer
+    The root names the register and the method to follow it with; a client creates an activation by sending that
+    method to that href (the steps below assert both and then write the same request out) and follows the created activation's artifacts template to the effective list (the Activation answer
     links it), without writing a path. The root's own self and artifacts links are the controls: they are GET links,
     which carry no method.
     When I GET "/"
