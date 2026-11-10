@@ -13,12 +13,15 @@
 # Steps these scenarios add to the vocabulary of README.md (bound in ProfileSteps):
 # - `Then the effective governance holds exactly the entries:` followed by a doc string, one entry per line, in the
 #   answer's order: `<urn> <step> via <urn> hops <n> <state>/<reason> in <packId> linked` (or `unlinked` for an entry
-#   without an artifact link), then ` suggested when "<when>" because "<reason>"` for an entry with a suggestion.
+#   without an artifact link), then ` edge {}` for an entry whose edge states neither word, or ` edge {when "<when>" because
+#   "<reason>"}` for one that states any (one word alone is written alone): every entry has an `edge`, whatever its relation
+#   and whether it is in force or not.
 #
 # Fixture: built-in holds java-jenny (which specializes implementer-ivan, requires DIRECTIVE_010 and java-conventions and
-# suggests DIRECTIVE_041 and DIRECTIVE_037) and implementer-ivan (which requires DIRECTIVE_024). The activation "charter"
+# suggests DIRECTIVE_041, DIRECTIVE_037, DIRECTIVE_052 and DIRECTIVE_053) and implementer-ivan (which requires DIRECTIVE_024). The activation "charter"
 # is built from a selection like this repository's charter.yaml: the directives and style guides it selects, and the two
-# profiles; DIRECTIVE_037 is left out of the selection.
+# profiles; DIRECTIVE_037 and DIRECTIVE_053 are left out of the selection. The java-conventions requires edge and the two
+# suggests edges of DIRECTIVE_041 and DIRECTIVE_037 state words; the edges to DIRECTIVE_052 and DIRECTIVE_053 state none.
 
 @contract @activations @agent-profiles
 Feature: An agent profile is read under an activation, with its governance and the state of each entry
@@ -102,6 +105,22 @@ Feature: An agent profile is read under an activation, with its governance and t
       intent: Keep tests a scaffold.
       enforcement: advisory
       """
+    And the built-in pack "built-in" with the file "directives/DIRECTIVE_052.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DIRECTIVE_052
+      title: Reviewable commits
+      intent: Keep commits reviewable.
+      enforcement: advisory
+      """
+    And the built-in pack "built-in" with the file "directives/DIRECTIVE_053.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DIRECTIVE_053
+      title: Small pull requests
+      intent: Keep pull requests small.
+      enforcement: advisory
+      """
     And the built-in pack "built-in" with the file "styleguides/java-conventions.styleguide.yaml":
       """
       schema_version: '1.0'
@@ -123,6 +142,8 @@ Feature: An agent profile is read under an activation, with its governance and t
       - source: agent_profile:java-jenny
         target: styleguide:java-conventions
         relation: requires
+        when: when writing Java
+        reason: The house style is part of the work.
       - source: agent_profile:java-jenny
         target: directive:DIRECTIVE_010
         relation: requires
@@ -136,6 +157,12 @@ Feature: An agent profile is read under an activation, with its governance and t
         relation: suggests
         when: when the change alters behaviour
         reason: Documentation should follow the behaviour.
+      - source: agent_profile:java-jenny
+        target: directive:DIRECTIVE_052
+        relation: suggests
+      - source: agent_profile:java-jenny
+        target: directive:DIRECTIVE_053
+        relation: suggests
       - source: agent_profile:implementer-ivan
         target: directive:DIRECTIVE_024
         relation: requires
@@ -144,7 +171,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       """
       {"schemaVersion": 2, "packs": [{"packId": "built-in"}], "selected": {
         "agent_profile": ["implementer-ivan", "java-jenny"],
-        "directive": ["DIRECTIVE_010", "DIRECTIVE_024", "DIRECTIVE_041"],
+        "directive": ["DIRECTIVE_010", "DIRECTIVE_024", "DIRECTIVE_041", "DIRECTIVE_052"],
         "styleguide": ["java-conventions"]}}
       """
 
@@ -178,10 +205,10 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/_links/up/href" is "/api/v1/activations/charter"
     And the effective governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 active/selected in built-in linked
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 active/selected in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     And the field at "/governance/1/kind" is "directive"
     And the field at "/governance/1/artifactId" is "DIRECTIVE_010"
@@ -210,14 +237,33 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/_links/self/href" is "/api/v1/activations/charter/artifacts/agent_profile/java-jenny?depth=1"
     And the effective governance holds exactly the entries:
       """
-      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 active/selected in built-in linked
-      directive:DIRECTIVE_037 suggests via agent_profile:java-jenny hops 1 inactive/not_selected in built-in linked suggested when "when the change alters behaviour" because "Documentation should follow the behaviour."
-      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected in built-in linked suggested when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
+      agent_profile:implementer-ivan lineage via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_024 requires via agent_profile:implementer-ivan hops 2 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_037 suggests via agent_profile:java-jenny hops 1 inactive/not_selected in built-in linked edge {when "when the change alters behaviour" because "Documentation should follow the behaviour."}
+      directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when keeping the tests a clear scaffold" because "A test-writing profile should reach the scaffold hub."}
+      directive:DIRECTIVE_052 suggests via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      directive:DIRECTIVE_053 suggests via agent_profile:java-jenny hops 1 inactive/not_selected in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     And following the link "artifact" of every element of "governance" answers 200
+
+  Scenario: Every entry carries the words of its edge: a requires entry, and {} for a wordless suggests entry in force or out of force
+    The java-conventions requires edge states a when and a reason, so its entry carries them although it is not a suggests
+    entry. DIRECTIVE_052 is selected and DIRECTIVE_053 is not, and neither suggests edge states a word: both entries carry
+    the same empty object, whatever their state (the member is present, not null and not absent). The suggestion member of
+    the effective list is not on an entry.
+    When I GET "/activations/charter/artifacts/agent_profile/java-jenny?depth=1"
+    Then the response status is 200
+    And the field at "/governance/1/edge" is an empty object
+    And the field at "/governance/3/edge/when" is "when the change alters behaviour"
+    And the field at "/governance/5/state" is "active"
+    And the field at "/governance/5/edge" is an empty object
+    And the field at "/governance/6/state" is "inactive"
+    And the field at "/governance/6/reason" is "not_selected"
+    And the field at "/governance/6/edge" is an empty object
+    And the field at "/governance/6/suggestion" is absent
+    And the field at "/governance/7/edge/reason" is "The house style is part of the work."
 
   Scenario: An ancestor that is not in force is dropped, with what only it requires, though that is in force itself
     The activation selects java-jenny but not its parent. The parent is not listed and seeds nothing: DIRECTIVE_024 is
@@ -235,8 +281,8 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/state" is "active"
     And the effective governance holds exactly the entries:
       """
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     When I GET "/activations/charter/artifacts/agent_profile/java-jenny"
     Then the response status is 200
@@ -261,8 +307,8 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/agentProfile/profileId" is "java-jenny"
     And the effective governance holds exactly the entries:
       """
-      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
-      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked
+      directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
+      styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {when "when writing Java" because "The house style is part of the work."}
       """
     When I follow the link "artifact"
     Then the response status is 200

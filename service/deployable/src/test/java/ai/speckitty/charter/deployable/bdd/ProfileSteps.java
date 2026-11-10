@@ -78,7 +78,7 @@ public class ProfileSteps {
 
     /**
      * An entry under an activation as a line: the urn, how the walk reached it, the state and the reason the activation
-     * gives it, the pack that holds the version in force and whether it links that pack's read; the suggestion last.
+     * gives it, the pack that holds the version in force and whether it links that pack's read; the edge last.
      */
     private static String effectiveLine(JsonNode entry) {
         StringBuilder line = new StringBuilder()
@@ -98,14 +98,7 @@ public class ProfileSteps {
                 .append(" in ")
                 .append(entry.path("packId").asString())
                 .append(linked(entry) ? " linked" : " unlinked");
-        JsonNode suggestion = entry.path("suggestion");
-        if (suggestion.isObject()) {
-            line.append(" suggested when \"")
-                    .append(suggestion.path("when").asString())
-                    .append("\" because \"")
-                    .append(suggestion.path("reason").asString())
-                    .append('"');
-        }
+        line.append(edgeText(entry));
         return line.toString();
     }
 

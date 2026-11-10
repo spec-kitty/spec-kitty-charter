@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
-import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
+import ai.speckitty.charter.api.model.GovernanceEdgeWords;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -158,7 +158,8 @@ class EffectiveProfileDtosTest {
                                 Optional.empty()),
                         GovernanceEntry.Step.REQUIRES_OF_SUGGESTED,
                         urn("directive:S"),
-                        2)),
+                        2,
+                        EdgeWords.NONE)),
                 OptionalInt.empty());
 
         EffectiveGovernanceEntry entry = wire.getGovernance().getFirst();
@@ -174,7 +175,11 @@ class EffectiveProfileDtosTest {
         assertThat(entry.getRelation()).isEqualTo(EffectiveGovernanceEntry.RelationEnum.REQUIRES);
         assertThat(entry.getVia()).isEqualTo("directive:S");
         assertThat(entry.getHops()).isEqualTo(2);
-        assertThat(entry.getSuggestion()).isNull();
+        assertThat(entry.getEdge())
+                .as("an edge that states neither is an empty object")
+                .isNotNull();
+        assertThat(entry.getEdge().getWhen()).isNull();
+        assertThat(entry.getEdge().getReason()).isNull();
         assertThat(entry.getSatisfiedBy()).isNull();
         assertThat(entry.getLinks().get("artifact").getHref()).isEqualTo("/api/v1/packs/house/artifacts/directive/D");
     }
@@ -190,7 +195,7 @@ class EffectiveProfileDtosTest {
     }
 
     @Test
-    void aSuggestionAndASatisfiedByAreCarriedWhereTheActivationStatesThem() {
+    void theWordsOfTheEdgeAndASatisfiedByAreCarriedWhereTheyAreStated() {
         EffectiveAgentProfileRead wire = dtos.read(
                 effectiveRead(
                         new EffectiveProfileRead.Entry(
@@ -203,10 +208,11 @@ class EffectiveProfileDtosTest {
                                         "open",
                                         "not_selected",
                                         Optional.empty(),
-                                        Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r")))),
+                                        Optional.empty()),
                                 GovernanceEntry.Step.SUGGESTS,
                                 urn("agent_profile:P"),
-                                1),
+                                1,
+                                new EdgeWords(Optional.of("w"), Optional.of("r"))),
                         new EffectiveProfileRead.Entry(
                                 facts(
                                         "directive:E",
@@ -220,7 +226,8 @@ class EffectiveProfileDtosTest {
                                         Optional.empty()),
                                 GovernanceEntry.Step.REQUIRES,
                                 urn("agent_profile:P"),
-                                1),
+                                1,
+                                EdgeWords.NONE),
                         new EffectiveProfileRead.Entry(
                                 facts(
                                         "directive:G",
@@ -231,23 +238,24 @@ class EffectiveProfileDtosTest {
                                         "open",
                                         "not_selected",
                                         Optional.empty(),
-                                        Optional.of(new EdgeWords(Optional.empty(), Optional.of("only why")))),
+                                        Optional.empty()),
                                 GovernanceEntry.Step.SUGGESTS,
                                 urn("agent_profile:P"),
-                                1)),
+                                1,
+                                new EdgeWords(Optional.empty(), Optional.of("only why")))),
                 OptionalInt.empty());
 
         EffectiveGovernanceEntry suggested = wire.getGovernance().get(0);
-        assertThat(suggested.getSuggestion()).isInstanceOf(EffectiveGovernanceSuggestion.class);
-        assertThat(suggested.getSuggestion().getWhen()).isEqualTo("w");
-        assertThat(suggested.getSuggestion().getReason()).isEqualTo("r");
+        assertThat(suggested.getEdge()).isInstanceOf(GovernanceEdgeWords.class);
+        assertThat(suggested.getEdge().getWhen()).isEqualTo("w");
+        assertThat(suggested.getEdge().getReason()).isEqualTo("r");
         assertThat(suggested.getRelation()).isEqualTo(EffectiveGovernanceEntry.RelationEnum.SUGGESTS);
         EffectiveGovernanceEntry satisfied = wire.getGovernance().get(1);
         assertThat(satisfied.getSatisfiedBy().getKind().getValue()).isEqualTo("directive");
         assertThat(satisfied.getSatisfiedBy().getArtifactId()).isEqualTo("F");
         EffectiveGovernanceEntry partial = wire.getGovernance().get(2);
-        assertThat(partial.getSuggestion().getWhen()).isNull();
-        assertThat(partial.getSuggestion().getReason()).isEqualTo("only why");
+        assertThat(partial.getEdge().getWhen()).isNull();
+        assertThat(partial.getEdge().getReason()).isEqualTo("only why");
     }
 
     @Test
@@ -289,6 +297,10 @@ class EffectiveProfileDtosTest {
         JsonNode first = written.get("governance").get(0);
         assertThat(first.has("satisfiedBy")).isFalse();
         assertThat(first.has("suggestion")).isFalse();
+        assertThat(first.get("edge").isObject())
+                .as("always present, never null or absent")
+                .isTrue();
+        assertThat(first.get("edge").size()).isZero();
         assertThat(first.get("_links").get("artifact").get("href").asString())
                 .isEqualTo("/api/v1/packs/main/artifacts/directive/D");
         assertThat(written.get("governance").get(1).get("_links").isObject()).isTrue();
@@ -299,27 +311,51 @@ class EffectiveProfileDtosTest {
     }
 
     @Test
-    void aSuggestionOfAnEntryInForceIsWrittenWithTheWordsTheEdgeStatesAndNoOther() throws Exception {
+    void theEdgeOfAnEntryInForceIsWrittenWithTheWordsItStatesAndNoOtherWhateverTheRelation() throws Exception {
         JsonNode written = JSON.valueToTree(dtos.read(
-                effectiveRead(new EffectiveProfileRead.Entry(
-                        facts(
-                                "directive:D",
-                                "main",
-                                PackLevel.ORG,
-                                "active",
-                                false,
-                                "open",
-                                "selected",
-                                Optional.empty(),
-                                Optional.of(new EdgeWords(Optional.empty(), Optional.of("only why")))),
-                        GovernanceEntry.Step.SUGGESTS,
-                        urn("agent_profile:P"),
-                        1)),
+                effectiveRead(
+                        new EffectiveProfileRead.Entry(
+                                facts(
+                                        "directive:D",
+                                        "main",
+                                        PackLevel.ORG,
+                                        "active",
+                                        false,
+                                        "open",
+                                        "selected",
+                                        Optional.empty(),
+                                        Optional.empty()),
+                                GovernanceEntry.Step.REQUIRES,
+                                urn("agent_profile:P"),
+                                1,
+                                new EdgeWords(Optional.empty(), Optional.of("only why"))),
+                        new EffectiveProfileRead.Entry(
+                                facts(
+                                        "directive:E",
+                                        "main",
+                                        PackLevel.ORG,
+                                        "inactive",
+                                        false,
+                                        "open",
+                                        "not_selected",
+                                        Optional.empty(),
+                                        Optional.empty()),
+                                GovernanceEntry.Step.SUGGESTS,
+                                urn("agent_profile:P"),
+                                1,
+                                EdgeWords.NONE)),
                 OptionalInt.empty()));
 
-        JsonNode entry = written.get("governance").get(0);
-        assertThat(entry.get("state").asString()).isEqualTo("active");
-        assertThat(entry.get("suggestion").has("when")).isFalse();
-        assertThat(entry.get("suggestion").get("reason").asString()).isEqualTo("only why");
+        JsonNode required = written.get("governance").get(0);
+        assertThat(required.get("state").asString()).isEqualTo("active");
+        assertThat(required.get("edge").has("when")).isFalse();
+        assertThat(required.get("edge").get("reason").asString()).isEqualTo("only why");
+        JsonNode suggested = written.get("governance").get(1);
+        assertThat(suggested.get("state").asString()).isEqualTo("inactive");
+        assertThat(suggested.get("edge").isObject())
+                .as("the same {} as an entry in force whose edge states neither")
+                .isTrue();
+        assertThat(suggested.get("edge").size()).isZero();
+        assertThat(suggested.has("suggestion")).isFalse();
     }
 }

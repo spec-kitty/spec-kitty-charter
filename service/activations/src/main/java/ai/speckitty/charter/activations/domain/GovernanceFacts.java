@@ -9,7 +9,7 @@ import java.util.Optional;
 /**
  * What a profile's governance walk reached under an activation, as the activations slice reads it: the packs slice walked
  * the merged closure with the effective set as its predicate, and this is the adapter's copy, as values only. Each
- * entry names an artifact in force, how the walk reached it and, for a {@code suggests} entry, the edge's own words. The
+ * entry names an artifact in force, how the walk reached it and the edge's own words, whatever its relation. The
  * artifacts out of force that a listed artifact suggests are carried apart, as candidates. Which state an artifact has is
  * the {@link EffectiveSet}'s to say, so no state is carried here.
  *
@@ -54,7 +54,7 @@ public record GovernanceFacts(ArtifactRef profile, List<Entry> entries, List<Can
      * @param relation the relation the entry is listed by
      * @param via its parent: the profile, or another entry
      * @param hops the length of the path from the profile
-     * @param when the {@code when} of the {@code suggests} edge that reached it; empty for any other step
+     * @param when the {@code when} of the edge that reached it, whatever its relation; empty when the edge states none
      * @param reason the {@code reason} of that edge; empty likewise
      */
     public record Entry(

@@ -206,6 +206,40 @@ class ClosureViewSessionArtifactTest {
     }
 
     @Test
+    void theWordsOfTheEdgeReachTheFactsOfEveryStepAndNotOnlyOfSuggests() {
+        ProfileGovernance.Governance walked = new ProfileGovernance.Governance(
+                P,
+                List.of(
+                        new ProfileGovernance.Entry(
+                                D,
+                                GovernanceWalk.Step.REQUIRES,
+                                P,
+                                1,
+                                Optional.of("always"),
+                                Optional.of("it is required"),
+                                true,
+                                Optional.empty()),
+                        new ProfileGovernance.Entry(
+                                urn("directive:S"),
+                                GovernanceWalk.Step.SUGGESTS,
+                                P,
+                                1,
+                                Optional.empty(),
+                                Optional.empty(),
+                                true,
+                                Optional.empty())),
+                List.of());
+
+        GovernanceFacts facts = ClosureViewSession.governanceOf(walked);
+
+        assertThat(facts.entries())
+                .extracting(GovernanceFacts.Entry::when, GovernanceFacts.Entry::reason)
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple(Optional.of("always"), Optional.of("it is required")),
+                        org.assertj.core.api.Assertions.tuple(Optional.empty(), Optional.empty()));
+    }
+
+    @Test
     void theKindsAClientCanReadAreTheListedKindsOfThePacksSliceAndIncludeTheAgentProfile() {
         PacksAvailability packs = new PacksAvailability(roots -> {
             throw new AssertionError("listing the kinds reads no pack");

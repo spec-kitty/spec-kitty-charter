@@ -7,7 +7,6 @@ import ai.speckitty.charter.api.model.AgentProfileExcluding;
 import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
-import ai.speckitty.charter.api.model.EffectiveGovernanceSuggestion;
 import ai.speckitty.charter.api.model.GovernanceEdgeWords;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import java.util.List;
@@ -55,13 +54,6 @@ class ProfileJsonTest {
     @Test
     void anEmptyEdgeIsAnEmptyObject() {
         JsonNode written = JSON.valueToTree(new GovernanceEdgeWords());
-        assertThat(written.isObject()).isTrue();
-        assertThat(written.size()).isZero();
-    }
-
-    @Test
-    void anEmptyGovernanceSuggestionIsAnEmptyObject() {
-        JsonNode written = JSON.valueToTree(new EffectiveGovernanceSuggestion());
         assertThat(written.isObject()).isTrue();
         assertThat(written.size()).isZero();
     }
@@ -120,8 +112,6 @@ class ProfileJsonTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveAgentProfileRead.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceEntry.class))
-                .accepts(hints);
-        assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceSuggestion.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(GovernanceEdgeWords.class))
                 .accepts(hints);
