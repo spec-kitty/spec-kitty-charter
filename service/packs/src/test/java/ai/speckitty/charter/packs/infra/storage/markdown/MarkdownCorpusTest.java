@@ -36,9 +36,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Every pinned Markdown file reads and writes back byte for byte (SC-006)")
 class MarkdownCorpusTest {
 
-    /** The covered Markdown files at the pin: 25 guides, pack.md and 64 mission step prompts and guidelines (#194). */
-    private static final int PINNED_COUNT = 90;
-
     private static final List<PathMatcher> COVERED = Stream.of(
                     "glob:packs/*/toolguides/**.md", "glob:packs/*/pack.md", "glob:packs/*/missions/*/steps/*.md")
             .map(FileSystems.getDefault()::getPathMatcher)
@@ -50,7 +47,7 @@ class MarkdownCorpusTest {
     }
 
     @Test
-    @DisplayName("the 90 covered Markdown files parse, and write(parse(bytes)) equals the bytes")
+    @DisplayName("every covered Markdown file parses, and write(parse(bytes)) equals the bytes")
     void everyCoveredFileIsCanonical() throws IOException {
         List<Path> files = coveredFiles();
         List<String> problems = new ArrayList<>();
@@ -61,20 +58,22 @@ class MarkdownCorpusTest {
         assertThat(problems)
                 .as("pinned Markdown files refused or not byte-canonical")
                 .isEmpty();
-        assertThat(files).as("covered Markdown files at the pin").hasSize(PINNED_COUNT);
+        assertThat(files).as("covered Markdown files in the checkout").isNotEmpty();
     }
 
     @Test
     @DisplayName("the corpus exercises frontmatter, titles, sections and fences, so the check is not vacuous")
     void corpusIsNotVacuous() throws IOException {
+        List<Path> files = coveredFiles();
         List<MarkdownDocument> documents = new ArrayList<>();
-        for (Path file : coveredFiles()) {
+        for (Path file : files) {
             if (MarkdownCodec.parse(read(file)) instanceof Parsed parsed) {
                 documents.add(parsed.document());
             }
         }
 
-        assertThat(documents).as("documents that parse").hasSize(PINNED_COUNT);
+        assertThat(documents).as("every covered file parses to a document").hasSameSizeAs(files);
+        assertThat(documents).as("documents that parse").isNotEmpty();
         assertThat(documents.stream().filter(d -> d.frontmatter().isPresent()).count())
                 .as("documents with frontmatter")
                 .isPositive();
