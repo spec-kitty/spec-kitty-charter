@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-10T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -26,3 +26,6 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Service usability run, 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/) — how
   ready the service is for core. It registers the open-packs, activates this repository's charter, and reads a profile, its
   guidance and a mission. It gives the gaps with their issues and the recommended order of the next work.
+- [Service usability run, 2026-11-10: mission types](/plans/engineering-notes/service-usability-run-2026-11-10-mission-types/) —
+  a client that starts at the API root reaches `software-dev`, its 13 steps, its 5 step contracts and its skeletons,
+  from the pack and under an activation. It is the proof of SC-001 of the mission type reads (#99).
