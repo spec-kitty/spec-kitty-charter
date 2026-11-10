@@ -396,6 +396,7 @@ public final class ActionContextWalk {
         private final Map<Urn, Listed<S>> listed = new LinkedHashMap<>();
         private final Map<Urn, Integer> hops = new HashMap<>();
         private final Map<Urn, Link> refused = new TreeMap<>();
+        private final Set<Urn> unheld = new HashSet<>();
 
         /**
          * A walk from the start node.
@@ -428,14 +429,17 @@ public final class ActionContextWalk {
 
         /**
          * One breadth-first step over the step's relation from the seeds, for at most {@code layers} layers: lists each
-         * node reached that no earlier step listed, and walks through the ones already listed.
+         * node reached that no earlier step listed, and walks through the ones already listed. A node listed with
+         * {@code held} false is never walked from, by this step or a later one, whether it is a seed or reached again
+         * through a held edge (fold W2): an entry with {@code held} false has nothing below it.
          *
          * @return the nodes this step listed
          */
         List<Urn> expand(Collection<Urn> seeds, S step, int layers) {
             Set<Urn> visited = new HashSet<>(seeds);
             visited.add(start);
-            List<Urn> frontier = List.copyOf(new TreeSet<>(seeds));
+            List<Urn> frontier =
+                    new TreeSet<>(seeds).stream().filter(this::expandable).toList();
             List<Urn> fresh = new ArrayList<>();
             for (int layer = 0; layer < layers && !frontier.isEmpty(); layer++) {
                 Map<Urn, Link> parents = parentsOf(frontier, step.relation(), visited);
@@ -449,6 +453,7 @@ public final class ActionContextWalk {
                 frontier = parents.entrySet().stream()
                         .filter(reached -> reached.getValue().held())
                         .map(Map.Entry::getKey)
+                        .filter(this::expandable)
                         .toList();
             }
             return fresh;
@@ -520,9 +525,17 @@ public final class ActionContextWalk {
                     .toList();
         }
 
+        /** Whether a node may be walked from: not one an earlier reach listed with {@code held} false (fold W2). */
+        private boolean expandable(Urn urn) {
+            return !unheld.contains(urn);
+        }
+
         private void list(Urn urn, S step, Link parent) {
             int reached = hopsOf(parent.source()) + 1;
             hops.put(urn, reached);
+            if (!parent.held()) {
+                unheld.add(urn);
+            }
             listed.put(
                     urn,
                     new Listed<>(urn, step, parent.source(), reached, parent.when(), parent.reason(), parent.held()));

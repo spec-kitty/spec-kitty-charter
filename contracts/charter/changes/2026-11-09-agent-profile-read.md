@@ -10,7 +10,8 @@
   `hops`, `edge`, `packId`, `held`, `_links`), `GovernanceStep` its walk step (`lineage`, `requires`, `suggests`,
   `requires_of_suggested`, `vocabulary`). A parent no pack of the closure holds is listed with `held: false`, a null
   `packId` and no link. `held` describes the edge that listed the entry: a URN listed early by a dangling edge keeps
-  `held: false` even when a later step reaches it through a held edge, and entries below it name it as `via`.
+  `held: false` even when a later step reaches it through a held edge. The walk never goes through an entry with
+  `held: false`, so nothing is listed below it, even where another pack of the closure holds the same URN.
   Every entry carries `edge`, the new closed schema `GovernanceEdgeWords` (`when` and `reason`, both optional): the words
   of the edge the walk reached the entry through, whatever its relation (`specializes_from`, `requires`, `suggests` or
   `vocabulary`). It is an empty object where the edge states neither word, and it is always present. Where more than one

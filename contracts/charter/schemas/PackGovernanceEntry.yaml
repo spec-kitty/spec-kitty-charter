@@ -16,12 +16,13 @@ description: >-
   only for a graph edge.
 
   held says whether the edge that listed the entry leads to a place that holds the artifact. An entry the pack declares
-  and no pack of the closure holds (a missing parent, say) is listed with held false, a null packId and no link, and the
-  walk goes no further through that edge. held describes that listing edge and not the artifact for good: the walk
-  lists a URN once, at the earliest step that reaches it, so a URN a dangling edge lists in an early step keeps held
-  false even when a later step reaches it through a held edge (a suggests edge to the copy another pack of the closure
-  holds). The later steps expand from every listed URN, so entries below it name an entry with held false as their via.
-  A client never reads held false as "nothing below this entry".
+  and that place does not hold (a missing parent, say) is listed with held false, a null packId and no link, and the
+  walk never goes through it: no later step is seeded from it, and a later step that reaches the same URN through a
+  held edge does not walk through it either, even where another pack of the closure holds that URN with edges of its
+  own. An entry with held false therefore has nothing below it, and no entry names it as its via. held describes that
+  listing edge and not the artifact for good: the walk lists a URN once, at the earliest step that reaches it, so a URN
+  a dangling edge lists in an early step keeps held false even when a later step reaches it through a held edge (a
+  suggests edge to the copy another pack of the closure holds).
 
   _links holds artifact, the pack-scoped read of the entry, only for a held artifact of a kind the generic artifact route
   serves, and is an empty object otherwise.
@@ -120,7 +121,9 @@ properties:
         - schemas/Offering.yaml
   held:
     type: boolean
-    description: Whether the place the listing edge leads to holds the artifact; false for a dangling edge, which is never walked through.
+    description: >-
+      Whether the place the listing edge leads to holds the artifact; false for a dangling edge. An entry with held false
+      is never walked through, by any step, so nothing is listed below it.
     x-derived:
       rule: Whether the pack the listing edge resolves to holds its target.
       inputs:

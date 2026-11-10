@@ -383,23 +383,31 @@ class ClosureViewGovernanceTest {
     }
 
     @Test
-    void aParentNoPackOfThePackClosureHoldsIsListedNotHeldWithNoHolderAndNothingBelowIt() {
+    void aParentTheProfilesPackDoesNotHoldIsListedNotHeldWithNoHolderAndNothingBelowItThoughADependencyHoldsIt() {
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
                 List.of(),
+                List.of("Base"),
+                List.of("directive:D", "glossary_pack:G"),
+                edge("agent_profile:Base", RelationType.REQUIRES, "directive:D"),
+                edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_pack:G"));
+        pack(
+                "qa",
+                PackLevel.ORG,
+                List.of("builtin"),
                 List.of("P"),
-                List.of("directive:D"),
-                edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "agent_profile:Gone"),
-                edge("agent_profile:Gone", RelationType.REQUIRES, "directive:D"));
+                List.of(),
+                edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "agent_profile:Base"));
         ClosureView view = queries().allConfigured();
 
         ProfileGovernance.Governance governance = view.packGovernance(P, 1);
 
         assertThat(governance.entries())
+                .as("the bare parent is qa's own Base, which qa does not hold: builtin's Base requires nothing of P")
                 .extracting(
                         ProfileGovernance.Entry::urn, ProfileGovernance.Entry::held, ProfileGovernance.Entry::holder)
-                .containsExactly(tuple(urn("agent_profile:Gone"), false, Optional.empty()));
+                .containsExactly(tuple(urn("agent_profile:Base"), false, Optional.empty()));
     }
 
     @Test
