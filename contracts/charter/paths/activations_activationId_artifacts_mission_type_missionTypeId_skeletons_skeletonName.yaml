@@ -6,7 +6,8 @@ get:
     (skeletons are not merged on their own), with skeletonName spelled as there (D9) and every link under the
     activation. An unknown activation is a 404 activation_not_found, then an unknown mission type a 404
     mission_type_not_found, then a name that does not decode to a skeleton of that pack's type a 404
-    skeleton_not_found. No ETag.
+    skeleton_not_found. A holding pack that is configured no longer or no longer holds the type between the two reads is
+    stale_input, as for getEffectiveMissionType. No ETag.
   tags:
     - EffectiveMissionTypes
   parameters:

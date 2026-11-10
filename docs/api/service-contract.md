@@ -101,7 +101,13 @@ prunes the directories it leaves empty, up to the pack's root (operator ruling).
 `getEffectiveMission*` reads answer the layer-merge winner, whatever its state; their literal paths are preferred over
 the templated `getEffectiveArtifact`, which serves neither mission kind, so a step's `step-contract` link never leaves
 the activation. Refusals there: `activation_not_found`, then the kind's not-found code (a type or step contract no pack
-of the closure holds), then `action_not_found` or `skeleton_not_found`.
+of the closure holds), then `action_not_found` or `skeleton_not_found`. Under an activation the type is the layer-merge
+winner; its steps, skeletons and step files come from the pack that holds the winner; and its step contracts are each
+the merged closure's winner bound to the type, which another pack of the closure may hold. A pack-scoped read answers
+the requested pack's own copy, with that pack's own skeletons, step files and step contracts. A type, step or skeleton
+read under an activation is two reads at one source fingerprint (the winner, then what its pack stores beside it), so
+a holding pack that is configured no longer, or no longer holds the type, at the second read is `stale_input`, never
+a refusal of a pack the request did not name.
 
 **Literal write paths beside the templated read.** The write paths name their kind literally
 (`/packs/{packId}/artifacts/directive/{artifactId}`) beside the templated
