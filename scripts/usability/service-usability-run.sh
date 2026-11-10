@@ -9,6 +9,7 @@
 # It exits 0 only if every hop of the walk answered 2xx and the profile reads were fast enough. The exit codes are
 # in scripts/usability/README.md. The last line of the output is a one-line summary.
 
+# No -e on purpose: the walk collects the failure of each hop and reports them all at the end.
 set -u -o pipefail
 if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2))); then
     echo "error: bash 4.2 or later is required (this is ${BASH_VERSION}); on macOS install bash and GNU coreutils" >&2
