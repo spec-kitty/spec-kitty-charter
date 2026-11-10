@@ -9,7 +9,8 @@ description: >-
   Every entry carries edge, the when and the reason of the edge it was reached through, whatever its relation (FR-004); it
   is an empty object where the edge states neither word, and it is always present. Where more than one edge could reach an
   entry, the words are those of the edge of its via, the parent the walk keeps (the first reach: the fewest hops, then the
-  smallest parent urn, then the smallest edge).
+  smallest parent urn, then the smallest edge: a held edge before a dangling one, then the smaller when, then the
+  smaller reason, an absent word sorting first).
 
   A suggests entry is listed by this service, and it is composition-only in core's profile channel, which walks
   requires and specializes_from only: a client that follows only what core's channel follows skips the entries whose

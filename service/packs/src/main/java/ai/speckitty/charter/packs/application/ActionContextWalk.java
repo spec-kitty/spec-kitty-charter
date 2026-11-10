@@ -231,10 +231,13 @@ public final class ActionContextWalk {
     record Listed<S extends WalkStep>(
             Urn urn, S step, Urn via, int hops, Optional<String> when, Optional<String> reason, boolean held) {}
 
-    private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing(
-                    (Link link) -> link.when().orElse(""))
-            .thenComparing(link -> link.reason().orElse(""))
-            .thenComparing(link -> !link.held());
+    /**
+     * The order of two edges of one parent to one target: a held edge before a dangling one, then the smaller
+     * {@code when}, then the smaller {@code reason}, an absent word as the empty string.
+     */
+    private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing((Link link) -> !link.held())
+            .thenComparing(link -> link.when().orElse(""))
+            .thenComparing(link -> link.reason().orElse(""));
 
     /** The relations that reach an artifact for certain: the cascade's, but {@code suggests} and {@code enhances}. */
     private static final Set<RelationType> HARD_RELATIONS =
