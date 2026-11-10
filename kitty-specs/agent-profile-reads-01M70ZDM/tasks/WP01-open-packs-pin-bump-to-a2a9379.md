@@ -99,7 +99,8 @@ and the qa profiles qualify their references to `built-in::`.
 3. For each number you change, put a one-line trace in the commit body: the old value, the new value, and the
    upstream commit that explains it. Examples:
    - `7174cc9`: execution-lanes reclassified as a toolguide.
-   - `a6e11d9`: git-flow becomes a procedure.
+   - `a6e11d9`: git-flow becomes a procedure. The built-in manifest omits both reclassified constituents
+     (spec-kitty/spec-kitty-open-packs#182).
    - `9f9bf06`: shared-branch-ci folded into trunk-based.
    - `b73432c`: extract-then-publish folded.
    - the two `__init__.py` deletions;

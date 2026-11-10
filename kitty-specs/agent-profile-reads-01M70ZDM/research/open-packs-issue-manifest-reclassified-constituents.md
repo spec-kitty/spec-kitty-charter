@@ -1,4 +1,4 @@
-# Draft issue for spec-kitty/spec-kitty-open-packs (open-packs#TBD)
+# Draft issue for spec-kitty/spec-kitty-open-packs (filed as spec-kitty/spec-kitty-open-packs#182)
 
 **Title:** built-in pack-manifest.yaml omits procedure:git-flow and toolguide:execution-lanes after their reclassification
 

@@ -113,6 +113,98 @@
       "verified_by": "claude:opus:reviewer-renata",
       "verified_at": "2026-11-10T11:05:44.773637+00:00",
       "notes": "RESULT PASS hops=52/52 failed=0 unheld=7 (#452) unlinked=15 (procedures) p95=323/341ms commit=f0f60ae3 pin=a2a93794; qualified pass"
+    },
+    {
+      "criterion_id": "SC-001",
+      "description": "Verify SC-001 is satisfied",
+      "proof_type": "manual_test",
+      "evidence": "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-green.md; decisions/DM-01M72NRD03EAGZTJ3A3F7PAK6W.md",
+      "pass_fail": "deferred",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "Deferred by operator ruling DM-01M72NRD03EAGZTJ3A3F7PAK6W. The run passes 52/52 hops but 15 pack-scoped procedure entries have no link (procedures have no read) and 7 charter selections are held only by the project pack, which cannot register (#452). Reached: 20 of 35 pack-scoped entries; the activation read is walked in full.",
+      "reason": "Not met as worded: procedures have no read, and the project pack cannot register as a pack, so 7 selections are left out of the activation.",
+      "follow_up": "procedure read (follow-up of #96); #452 (project pack registered as a pack); ruling DM-01M72NRD03EAGZTJ3A3F7PAK6W"
+    },
+    {
+      "criterion_id": "SC-002",
+      "description": "Verify SC-002 is satisfied",
+      "proof_type": "manual_test",
+      "evidence": "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-baseline.md",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "Red baseline recorded: the script run before the mission fails at the first profile hop (P2). The baseline used the WP09 script as first committed, before the review fixes."
+    },
+    {
+      "criterion_id": "SC-003",
+      "description": "Verify SC-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "usability-green.md hops P6 and A8; GovernanceWalkTest; agent-profile-reads.feature",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "styleguide java-conventions is a requires entry of java-jenny, pack-scoped and under an activation, at pin a2a9379."
+    },
+    {
+      "criterion_id": "SC-004",
+      "description": "Verify SC-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ProfileCorpusTest (31 profiles, :deployable:openPacksProfiles); :packs:wholePackRoundTrip",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "Every corpus agent profile is read pack-scoped with a body that round-trips; verifyAll green at f0f60ae3 (WP10)."
+    },
+    {
+      "criterion_id": "SC-005",
+      "description": "Verify SC-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "CI gate / gate on the pull request",
+      "pass_fail": "pending",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "Not evidenced before the pull request is opened and its CI gate has run; update when it is green."
+    },
+    {
+      "criterion_id": "NFR-001",
+      "description": "Verify NFR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ProfileCorpusTest (:deployable:openPacksProfiles); :packs:wholePackRoundTrip",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "100% of the corpus's profiles answered with meaning intact; verifyAll green at f0f60ae3 (WP10)."
+    },
+    {
+      "criterion_id": "NFR-002",
+      "description": "Verify NFR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/changes/2026-11-09-*.md; agent-profile-reads.feature; verifyAll at f0f60ae3",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "Change fragments, @contract scenarios and examples with _links are in place; verifyAll green on Java 25 at f0f60ae3 (WP10)."
+    },
+    {
+      "criterion_id": "NFR-003",
+      "description": "Verify NFR-003 is satisfied",
+      "proof_type": "manual_test",
+      "evidence": "kitty-specs/agent-profile-reads-01M70ZDM/research/usability-green.md (Timing)",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "p95 of 20 reads: 323 ms pack-scoped, 341 ms under an activation (limit 500 ms). Measured in the dev container, not on the CI runner the requirement names; no CI measurement exists."
+    },
+    {
+      "criterion_id": "NFR-004",
+      "description": "Verify NFR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/application/GovernanceWalkTest.java (aSpecializesFromCycleTerminatesAndListsEveryNodeOnceWithoutTheStart)",
+      "pass_fail": "pass",
+      "verified_by": "curator-carla",
+      "verified_at": "2026-11-10T12:30:00+00:00",
+      "notes": "A specializes_from cycle terminates with each node listed once; verifyAll green at f0f60ae3 (WP10)."
     }
   ],
   "negative_invariants": []
