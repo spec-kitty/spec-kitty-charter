@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,6 +40,7 @@ class FileSystemPackInspectorTest {
 
     private static final FileSystemPackInspector INSPECTOR = new FileSystemPackInspector();
 
+    /** The files validate mode classifies in the built-in example pack. */
     private static PackRoot root(Path dir) {
         return new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString());
     }
@@ -705,31 +706,20 @@ class FileSystemPackInspectorTest {
     }
 
     /**
-     * Acceptance check 12: validate mode over the pinned built-in pack reports no exception for its sidecar-less asset
-     * payload {@code assets/docs_structural_lint.config.yaml}, and its findings are those of main at 90de8f9.
-     *
-     * <p>The expected findings were captured, not recomputed: on 90de8f9 (open-packs at 01edb4e) a throwaway
-     * {@code @Tag("open-packs")} test printed {@code PackPolicy.judge(inspect(built-in, FULL)).findings()} and the
-     * size of {@code files()}, run with {@code ./gradlew :packs:openPacksRoundTrip --tests '<that test>'
-     * -PopenPacksDir=<checkout>}. It printed no findings and 386 classified files. The one expected difference in the
-     * file list is the config payload: excluded by {@code **}{@code /*.config.yaml} then, kind {@code asset-payload}
-     * now.
+     * Acceptance check 12: validate mode over the built-in example pack (ADR-0070) reports no finding and no exception
+     * for its sidecar-less asset payload {@code assets/docs_structural_lint.config.yaml}, which it lists as an asset
+     * payload. The listing is held to the listing rule restated from the file layout.
+     * The control after it shows the same read reports a finding once a file the pack names is deleted.
      */
     @Test
-    @Tag("open-packs")
-    void validateModeOverTheBuiltInPackFindsWhatMainFoundAndListsTheConfigPayload() throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
+    void validateModeOverTheBuiltInExampleFindsNothingAndListsTheConfigPayload() throws IOException {
+        Path builtIn = ExamplePacks.pack(ExamplePacks.BUILT_IN);
         PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), builtIn.toString());
 
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
-        // OP-1, OP-2 and open-packs#75 landed: the presets, the manifest and the six sidecars are all in the shapes the
-        // store reads (ADR-0042, ADR-0040 decision 6), and at the pin a2a9379 open-packs 170dbc3 (open-packs#175, #435)
-        // emptied the five software-dev spdd:reasons-block slots, moving their text into the spdd pack's prompt
-        // fragments, and versioned the descriptor (schema_version "1.0"). So main at 90de8f9's "no findings" is back in
-        // full: no PROMPT_SLOT_NOT_EMPTY_UNVERSIONED warning is left, and none of the five prompts raises any slot
-        // finding, though each still declares its (empty) slot.
+        // The five software-dev step prompts each declare an empty spdd:reasons-block slot (its text lives in the
+        // org-base example's prompt fragments), which raises no slot finding.
         assertThat(verdict.findings()).isEmpty();
         for (String step : List.of("implement", "plan", "review", "specify", "tasks")) {
             assertThat(builtIn.resolve("missions/software-dev/steps/" + step + ".prompt.md"))
@@ -791,6 +781,18 @@ class FileSystemPackInspectorTest {
                         && path.getName(0).toString().equals("missions")
                         && path.getName(2).toString().equals("templates"));
         return underPayloadRoot && !name.equals("README.md") && !name.startsWith(".");
+    }
+
+    /** Failing control for the check above: the built-in example with one asset payload deleted is not clean. */
+    @Test
+    void validateModeOverTheBuiltInExampleWithADeletedPayloadFindsIt(@TempDir Path scratch) throws IOException {
+        Path copy = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, scratch);
+        Files.delete(copy.resolve("assets/carrier_lint.py"));
+        PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), copy.toString());
+
+        PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
+
+        assertThat(verdict.findings()).isNotEmpty();
     }
 
     // ---- asset containment ---------------------------------------------------------------------------------------

@@ -3,7 +3,8 @@ package ai.speckitty.charter.packs.infra.storage.markdown;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
-import ai.speckitty.charter.packs.infra.storage.OpenPacksCorpus;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.PackFiles;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec.Parsed;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,32 +20,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Every Markdown file of the pinned open-packs checkout that the {@code markdown} form covers reads and writes back
+ * Every Markdown file of the example packs that the {@code markdown} form covers reads and writes back
  * byte for byte (SC-006): the toolguide guides ({@code packs/*}{@code /toolguides/**}), each pack's {@code pack.md},
  * and the mission step prompts and guidelines ({@code packs/*}{@code /missions/*}{@code /steps/*.md}, #194).
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips. A refused or non-canonical pinned file is a finding for open-packs, never a reason to loosen a rule.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("Every pinned Markdown file reads and writes back byte for byte (SC-006)")
+@DisplayName("Every example Markdown file reads and writes back byte for byte (SC-006)")
 class MarkdownCorpusTest {
 
     private static final List<PathMatcher> COVERED = Stream.of(
-                    "glob:packs/*/toolguides/**.md", "glob:packs/*/pack.md", "glob:packs/*/missions/*/steps/*.md")
+                    "glob:*/toolguides/**.md", "glob:*/pack.md", "glob:*/missions/*/steps/*.md")
             .map(FileSystems.getDefault()::getPathMatcher)
             .toList();
-
-    @BeforeAll
-    static void pinned() {
-        OpenPacksCorpus.assertPinned();
-    }
 
     @Test
     @DisplayName("every covered Markdown file parses, and write(parse(bytes)) equals the bytes")
@@ -52,15 +44,16 @@ class MarkdownCorpusTest {
         List<Path> files = coveredFiles();
         List<String> problems = new ArrayList<>();
         for (Path file : files) {
-            check(file).ifPresent(problem -> problems.add(OpenPacksCorpus.root().relativize(file) + ": " + problem));
+            check(file)
+                    .ifPresent(problem ->
+                            problems.add(ExamplePacks.packsDirectory().relativize(file) + ": " + problem));
         }
 
         assertThat(problems)
-                .as("pinned Markdown files refused or not byte-canonical")
+                .as("example Markdown files refused or not byte-canonical")
                 .isEmpty();
-        assertThat(files).as("covered Markdown files in the checkout").isNotEmpty();
-        OpenPacksCorpus.assertAllPacksPresent();
-        OpenPacksCorpus.assertEachPackHolds("covered Markdown file", files, "built-in", "internal", "qa");
+        assertThat(files).as("covered Markdown files in the example packs").isNotEmpty();
+        PackFiles.assertEachPackHolds("covered Markdown file", files, ExamplePacks.BUILT_IN, ExamplePacks.ORG);
     }
 
     @Test
@@ -89,7 +82,7 @@ class MarkdownCorpusTest {
                         .count())
                 .as("documents whose blocks hold a column-0 H1 or H2 line, which the model admits only inside a fence")
                 .isPositive();
-        // No empty file is left at the pin: the two empty retrospect prompts were not carried by the mission-type
+        // No empty file is left in the examples: the two empty retrospect prompts were not carried by the mission-type
         // migration (#194); MarkdownCodecTest covers the empty document.
     }
 
@@ -145,8 +138,8 @@ class MarkdownCorpusTest {
     }
 
     private static List<Path> coveredFiles() throws IOException {
-        Path root = OpenPacksCorpus.root();
-        try (Stream<Path> walk = Files.walk(root.resolve("packs"))) {
+        Path root = ExamplePacks.packsDirectory();
+        try (Stream<Path> walk = Files.walk(root)) {
             return walk.filter(Files::isRegularFile)
                     .filter(p -> {
                         Path relative = root.relativize(p);

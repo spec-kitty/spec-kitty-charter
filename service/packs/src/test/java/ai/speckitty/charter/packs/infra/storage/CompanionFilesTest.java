@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.Tactic;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +21,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -290,11 +290,9 @@ class CompanionFilesTest {
     }
 
     @Test
-    @Tag("open-packs")
     @DisplayName("a bound kind without companions reads exactly as its strategy reads it (positive control)")
     void aKindWithoutCompanionsIsUnchanged() throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path tactics = OpenPacksCorpus.packsDirectory().resolve("internal/tactics");
+        Path tactics = ExamplePacks.pack(ExamplePacks.BUILT_IN).resolve("tactics");
         Path source;
         try (java.util.stream.Stream<Path> files = Files.list(tactics)) {
             source = files.filter(f -> f.toString().endsWith(".tactic.yaml"))
@@ -312,6 +310,17 @@ class CompanionFilesTest {
         assertThat(direct).isInstanceOf(FileRead.Read.class);
         assertThat(real.readAll(PACK, TacticBinding.INSTANCE))
                 .containsExactly(((FileRead.Read<TacticDso>) direct).value());
+
+        // Failing control: the comparison sees a change, so the equality above is not vacuous.
+        Path copied = pack.resolve(source.getFileName());
+        String text = Files.readString(copied);
+        String nameLine = text.lines()
+                .filter(line -> line.startsWith("name:"))
+                .findFirst()
+                .orElseThrow();
+        Files.writeString(copied, text.replace(nameLine, "name: changed by the control"));
+        assertThat(real.readAll(PACK, TacticBinding.INSTANCE))
+                .doesNotContain(((FileRead.Read<TacticDso>) direct).value());
     }
 
     // ---- fixture --------------------------------------------------------------------------------------------------

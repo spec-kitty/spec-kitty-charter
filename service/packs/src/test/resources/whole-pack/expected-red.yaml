@@ -3,29 +3,14 @@
 # that round-trips fails with "remove it". When your mission turns a kind green, remove its entry in the same change.
 #
 # kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
-# empty_kinds: a modelled kind the pinned pack has no file of; it goes stale when the pack gains one.
+# empty_kinds: a modelled kind the pack has no file of; it goes stale when the pack gains one. The example packs carry
+# every kind (ADR-0070), so a missing kind is fixed in the example pack, never listed here.
 kinds:
+  - kind: policy
+    reason: >-
+      The mutability policy file (ADR-0063) has no gate adapter: the gate writes through DomainRepositoryService, which
+      does not write policy.yaml (only WholePackStore does, covered by PolicyRoundTripTest). The built-in example holds
+      one, as the data model requires; the entry goes when the round trip models the kind.
+    issue: "https://github.com/spec-kitty/spec-kitty-charter/issues/476"
 files: []
-empty_kinds:
-  - kind: skill
-    reason: >-
-      The pinned built-in pack has no skill (skills/ holds only .gitkeep). Skills round-trip, with their bodies, in
-      GlossaryPackAndSkillCorpusTest and the open-packs seam test. The gate does not yet pair a companion (body_path)
-      with its artifact; when the built-in pack gains a skill this entry goes stale and that pairing is due.
-    issue: "#192"
-  - kind: guard
-    reason: >-
-      The pinned built-in pack has no guard yet: the foundation built-in guards and the qa lint as the first
-      asset-backed guard are spec-kitty-open-packs work (ADR-0054 follow-ups), and an asset-backed one waits for the
-      asset path fix (open-packs#75). Guards round-trip in GuardAndLifecycleYamlTest and GuardAndLifecycleLoadTest.
-    issue: "#156"
-  - kind: lifecycle
-    reason: >-
-      The pinned built-in pack has no lifecycle yet: the work-package lifecycle from core's lane table is
-      spec-kitty-open-packs P6. Lifecycles round-trip in GuardAndLifecycleYamlTest and GuardAndLifecycleLoadTest.
-    issue: "#156"
-  - kind: step-enhancement
-    reason: >-
-      Step enhancements and their fragments round-trip in StepEnhancementYamlTest, WholePackStoreTest and the
-      DomainRoundTrip fixture test; built-in has none at the pin (open-packs#175 ships them in packs/spdd).
-    issue: "#428"
+empty_kinds: []

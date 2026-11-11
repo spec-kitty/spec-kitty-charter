@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,55 +17,44 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Every mission type of the pinned open-packs checkout reads into the domain (#194, ADR-0044): the built-in, cave-kitty
- * and qa packs each hold their mission types at {@code missions/<id>/<id>.mission-type.yaml}, with every step's prompt
+ * Every mission type of the example packs reads into the domain (#194, ADR-0044): the built-in example
+ * pack holds its mission type at {@code missions/<id>/<id>.mission-type.yaml}, with every step's prompt
  * and guidelines and every output template the types name, and no file of a retired family is left. Each mission-type
  * file and step companion writes back through the production writer byte for byte (the whole-pack gate covers only
  * the built-in pack, and compares by meaning). The counts are never literals: each is what the mission-type files and
  * the step files on disk declare.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("Every pinned mission type reads into the domain (#194)")
+@DisplayName("Every example mission type reads into the domain (#194)")
 class MissionTypeCorpusTest {
 
-    /** Fail with the pin's own message rather than as a count mismatch when the checkout is at another commit. */
-    @BeforeAll
-    static void theCheckoutIsAtThePin() {
-        OpenPacksCorpus.assertPinned();
-    }
+    /**
+     * The schema violations of the built-in example pack's presets: none; they carry the canonical shape, so a new
+     * one is a regression this count catches.
+     */
+    private static final int BUILT_IN_PRESET_VIOLATIONS = 0;
 
     /** The descriptor added to a copy of a pack that has none, so the store can read it. */
     private static final String PACK_YAML = """
             pack_id: 01M60H9B0000000000000000QA
             pack_version: 1.0.0
-            name: qa
+            name: built-in
             pack_level: org
             """;
-
-    /**
-     * The schema violations of the built-in pack's two pinned presets: none. OP-1 landed upstream before the pin
-     * (open-packs commit 213a059, the presets moved to the sanitized shape), so the presets load clean; a new one is
-     * a regression this count catches.
-     */
-    private static final int BUILT_IN_PRESET_VIOLATIONS = 0;
 
     @TempDir
     Path host;
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"built-in", "cave-kitty", "qa"})
+    @ValueSource(strings = {"built-in"})
     @DisplayName("each pack's mission types read with no violation, and read what their files declare")
     void everyMissionTypeReads(String pack) throws IOException {
         List<MissionType> read = missionTypes(pack);
@@ -91,12 +81,12 @@ class MissionTypeCorpusTest {
         long promptFiles = 0;
         long guidelineFiles = 0;
         long promptsWithDescription = 0;
-        for (String pack : List.of("built-in", "cave-kitty", "qa")) {
+        for (String pack : List.of(ExamplePacks.BUILT_IN)) {
             for (MissionType type : missionTypes(pack)) {
                 steps.addAll(type.steps());
                 steps.addAll(type.onDemandSteps());
             }
-            Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
+            Path packDirectory = ExamplePacks.packsDirectory().resolve(pack);
             for (String file : missionFiles(packDirectory)) {
                 promptFiles += file.endsWith(".prompt.md") ? 1 : 0;
                 promptsWithDescription +=
@@ -107,8 +97,8 @@ class MissionTypeCorpusTest {
 
         assertThat(steps).as("steps read").isNotEmpty();
         List<Path> templates = new ArrayList<>();
-        for (String pack : List.of("built-in", "cave-kitty", "qa")) {
-            Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
+        for (String pack : List.of(ExamplePacks.BUILT_IN)) {
+            Path packDirectory = ExamplePacks.packsDirectory().resolve(pack);
             for (MissionType type : missionTypes(pack)) {
                 Path typeDirectory = packDirectory.resolve("missions").resolve(type.localId());
                 Stream.concat(
@@ -161,7 +151,7 @@ class MissionTypeCorpusTest {
 
     /** The mission-type files of a pack, read as raw YAML: what the files declare, without the store. */
     private static List<Map<?, ?>> declaredMissionTypes(String pack) throws IOException {
-        Path root = OpenPacksCorpus.packsDirectory().resolve(pack);
+        Path root = ExamplePacks.packsDirectory().resolve(pack);
         List<Map<?, ?>> types = new ArrayList<>();
         for (String file : missionFiles(root)) {
             if (file.endsWith(".mission-type.yaml")) {
@@ -176,12 +166,11 @@ class MissionTypeCorpusTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"built-in", "cave-kitty", "qa"})
+    @ValueSource(strings = {"built-in"})
     @DisplayName("each mission-type file and step companion writes back through the production writer byte for byte")
     void everyMissionFileWritesBackByteForByte(String pack) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path source = OpenPacksCorpus.packsDirectory().resolve(pack);
-        Path packs = copyWithDescriptor(source);
+        Path source = ExamplePacks.packsDirectory().resolve(pack);
+        Path packs = copyOf(source);
         Path copy = packs.resolve(pack);
         List<String> written = missionFiles(copy);
         FilesystemPackStore store = new FilesystemPackStore(packs, new YamlSerializationStrategy());
@@ -200,7 +189,7 @@ class MissionTypeCorpusTest {
         }
 
         assertThat(written)
-                .as("%s mission-type files and step companions: every one the checkout holds", pack)
+                .as("%s mission-type files and step companions: every one the example pack holds", pack)
                 .isNotEmpty()
                 .containsExactlyElementsOf(missionFiles(source));
         assertThat(missionFiles(copy)).containsExactlyElementsOf(written);
@@ -210,10 +199,9 @@ class MissionTypeCorpusTest {
     }
 
     /**
-     * The five software-dev prompts that declare the {@code spdd:reasons-block} slot. At the pin (open-packs a2a9379)
-     * the slots are empty: open-packs 170dbc3 moved their legacy REASONS text into the opt-in {@code spdd} pack as
-     * prompt fragments (open-packs#175, ADR-0066 amendment) and gave the built-in descriptor {@code schema_version}
-     * {@code "1.0"}, under which a non-empty slot would be the blocking {@code prompt_slot_not_empty}.
+     * The five software-dev prompts that declare the {@code spdd:reasons-block} slot. The slots are
+     * empty: the org example pack fills them through prompt fragments (ADR-0066 amendment), and the built-in
+     * descriptor has {@code schema_version} {@code "1.0"}, under which a non-empty slot would be the blocking {@code prompt_slot_not_empty}.
      */
     private static final List<String> SLOT_PROMPTS = List.of(
             "missions/software-dev/steps/implement.prompt.md",
@@ -224,10 +212,9 @@ class MissionTypeCorpusTest {
 
     @Test
     @DisplayName("the built-in pack loads with 0 prompt-slot findings: its 5 software-dev slots are present and empty"
-            + " since open-packs 170dbc3 moved the REASONS text into the spdd pack")
+            + " because the org example pack fills them through prompt fragments")
     void theBuiltInPackHoldsItsSlotsEmpty() throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
+        Path builtIn = ExamplePacks.packsDirectory().resolve("built-in");
 
         for (String prompt : SLOT_PROMPTS) {
             String text = Files.readString(builtIn.resolve(prompt), StandardCharsets.UTF_8);
@@ -247,10 +234,9 @@ class MissionTypeCorpusTest {
     }
 
     @Test
-    @DisplayName("the built-in pack composes at the pin: no pack_unreadable (NFR-002)")
+    @DisplayName("the built-in pack composes in the examples: no pack_unreadable (NFR-002)")
     void theBuiltInPackComposesAtThePin() {
-        OpenPacksCorpus.assertPinned();
-        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
+        Path builtIn = ExamplePacks.packsDirectory().resolve("built-in");
         DomainRepositoryService service = new DomainRepositoryService(
                 () -> List.of(new PackLocation("built-in", PackLevel.BUILT_IN, builtIn)),
                 new YamlSerializationStrategy());
@@ -260,9 +246,9 @@ class MissionTypeCorpusTest {
     }
 
     @Test
-    @DisplayName("no pack at the pin holds a file of a retired family")
+    @DisplayName("no pack in the examples holds a file of a retired family")
     void noRetiredFileIsLeft() throws IOException {
-        try (Stream<Path> packs = Files.list(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> packs = Files.list(ExamplePacks.packsDirectory())) {
             for (Path pack : packs.filter(Files::isDirectory).sorted().toList()) {
                 assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).retired())
                         .as("retired files in %s", pack)
@@ -282,9 +268,33 @@ class MissionTypeCorpusTest {
                 .doesNotContain("migration", "MissionTierMigration");
     }
 
+    @Test
+    @DisplayName("a pack with no pack.yaml reads its mission types once a minimal descriptor is added to a copy")
+    void aPackWithoutDescriptorReadsThroughACopyWithDescriptor() throws IOException {
+        Path packs = copyOf(ExamplePacks.packsDirectory().resolve(ExamplePacks.BUILT_IN));
+        Path copy = packs.resolve(ExamplePacks.BUILT_IN);
+        Files.delete(copy.resolve(PackFileSet.PACK_YAML));
+        assertThat(copy.resolve(PackFileSet.PACK_YAML)).doesNotExist();
+
+        List<MissionType> read = missionTypes(ExamplePacks.BUILT_IN, packs);
+
+        assertThat(read.stream().map(MissionType::localId))
+                .as("mission types read from the copy with the added descriptor")
+                .isNotEmpty()
+                .containsExactlyElementsOf(missionTypes(ExamplePacks.BUILT_IN).stream()
+                        .map(MissionType::localId)
+                        .toList());
+        assertThat(read.stream().mapToInt(type -> type.steps().size()).sum())
+                .isEqualTo(declaredMissionTypes(ExamplePacks.BUILT_IN).stream()
+                        .mapToInt(type -> listOf(type, "steps").size())
+                        .sum());
+    }
+
     private List<MissionType> missionTypes(String pack) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path packs = OpenPacksCorpus.packsDirectory();
+        return missionTypes(pack, ExamplePacks.packsDirectory());
+    }
+
+    private List<MissionType> missionTypes(String pack, Path packs) throws IOException {
         if (!Files.isRegularFile(packs.resolve(pack).resolve(PackFileSet.PACK_YAML))) {
             packs = copyWithDescriptor(packs.resolve(pack));
         }
@@ -316,8 +326,8 @@ class MissionTypeCorpusTest {
         }
     }
 
-    /** A copy of a pack with a minimal {@code pack.yaml} added (a test fixture only, never the checkout). */
-    private Path copyWithDescriptor(Path pack) throws IOException {
+    /** A copy of a pack the test may change, under a fresh packs directory. */
+    private Path copyOf(Path pack) throws IOException {
         Path packs = host.resolve("copy-" + System.nanoTime());
         Path copy = packs.resolve(String.valueOf(pack.getFileName()));
         try (Stream<Path> walk = Files.walk(pack)) {
@@ -330,6 +340,13 @@ class MissionTypeCorpusTest {
                 }
             }
         }
+        return packs;
+    }
+
+    /** A copy of a pack with a minimal {@code pack.yaml} added (a test fixture only, never the example pack). */
+    private Path copyWithDescriptor(Path pack) throws IOException {
+        Path packs = copyOf(pack);
+        Path copy = packs.resolve(String.valueOf(pack.getFileName()));
         if (!Files.exists(copy.resolve(PackFileSet.PACK_YAML))) {
             Files.writeString(copy.resolve(PackFileSet.PACK_YAML), PACK_YAML, StandardCharsets.UTF_8);
         }

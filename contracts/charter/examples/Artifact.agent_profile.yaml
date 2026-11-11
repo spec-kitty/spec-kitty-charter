@@ -1,23 +1,29 @@
-summary: 'java-jenny read from the built-in pack of spec-kitty-open-packs at a2a9379, depth=1, with the built-in, internal and
-  qa packs loaded. agentProfile is the service''s answer verbatim. Of the 42 governance entries the service lists, 7 are shown,
-  each verbatim and in urn order with its complete edge words: implementer-ivan (lineage), DIRECTIVE_010 and DIRECTIVE_051 (requires,
-  edge {}), DIRECTIVE_030 (requires, when and reason), DIRECTIVE_041 (suggests, when and reason), procedure:failing-test-triage
-  (requires_of_suggested, via DIRECTIVE_041) and styleguide:java-conventions (requires, a reason alone: the edge FR-001 names).
-  The other 35 entries are omitted, so the list is abridged. None of the 42 real entries has held false: the pack holds every
-  target. Invented and illustrative: directive:DIRECTIVE_099, an entry no pack holds, added only to show what held false looks
-  like (packId null, no artifact link); its place in the list and its edge are made up. Every edge of the other entries is checked
-  against the pack graph files by ProfileExamplesEdgeTest.'
+summary: 'java-jenny read from the built-in example pack of the charter (ADR-0070), depth=1, with the built-in, org-base and
+  project example packs loaded. agentProfile is the service''s answer verbatim. The governance list is the service''s complete
+  answer, verbatim and in urn order: implementer-ivan (lineage), DIRECTIVE_001 (requires, reached through DIRECTIVE_010, hops
+  2), DIRECTIVE_003 (requires, when and reason), DIRECTIVE_010 and the procedure adversarial-squad-deployment (requires, edge
+  {}), boring-code-review and autonomous-operation-protocol (suggests, when and reason) and styleguide:java-conventions (requires,
+  a reason alone: the edge FR-001 names). None of the real entries has held false: the pack holds every target. Invented and
+  illustrative: directive:DIRECTIVE_099, an entry no pack holds, added only to show what held false looks like (packId null,
+  no artifact link); its place in the list and its edge are made up. Every edge of the other entries is checked against the
+  pack graph files by ProfileExamplesEdgeTest.'
 value:
   kind: agent_profile
   id: java-jenny
   packId: built-in
+  _links:
+    self:
+      href: /api/v1/packs/built-in/artifacts/agent_profile/java-jenny?depth=1
+    collection:
+      href: /api/v1/packs/built-in/artifacts?kind=agent_profile
+    references:
+      href: /api/v1/packs/built-in/artifacts/agent_profile/java-jenny/references
   agentProfile:
     profileId: java-jenny
     name: Java Jenny
     role: implementer
-    altRoles:
-    - reviewer
-    avatarImage: null
+    altRoles: []
+    avatarImage: avatars/java-jenny.png
     capabilities:
     - java-implementation
     - junit-testing
@@ -26,8 +32,8 @@ value:
     - refactoring
     - debugging
     - code-review-response
-    model: null
-    effort: null
+    model: claude-opus
+    effort: high
     purpose: |
       Deliver idiomatic, well-tested Java code that respects style conventions, passes all quality gates, and faithfully implements specifications. Java Jenny is a language-specialist implementer who translates design documents and task descriptions into clean Java code using ATDD (acceptance-test first) and TDD (red-green-refactor). Enforces naming conventions, null-safety, and resource-management discipline. Runs the full Maven quality gate (compile, test, checkstyle, spotbugs, jacoco) before handoff. Does NOT make architectural decisions — defers to the architect for structural choices and to the reviewer for final approval.
     specialization:
@@ -138,13 +144,17 @@ value:
       rationale: |
         Run the checklist, per DIRECTIVE_051, before accepting a new or changed Maven/Gradle dependency, using the java-supply-chain toolguide for exact commands, and record the evidence rather than an aspirational statement of intent.
     - id: acceptance-test-first
-      rationale: ATDD outside-in from acceptance criteria; migrated from a misfiled operating-procedures entry (it names a tactic,
-        not a procedure).
+      rationale: ATDD outside-in from acceptance criteria; migrated from a misfiled operating-procedures entry (it names a
+        tactic, not a procedure).
     - id: tdd-red-green-refactor
-      rationale: Unit-level red-green-refactor discipline; migrated from a misfiled operating-procedures entry (it names a tactic,
-        not a procedure).
-    toolguideReferences: []
-    styleguideReferences: []
+      rationale: Unit-level red-green-refactor discipline; migrated from a misfiled operating-procedures entry (it names a
+        tactic, not a procedure).
+    toolguideReferences:
+    - id: efficient-local-tooling
+      rationale: Searches and edits the repository with the fast local tools.
+    styleguideReferences:
+    - id: boring-code-review
+      rationale: Reviews keep the code obvious.
     selfReviewProtocol:
       steps:
       - name: compile
@@ -171,13 +181,17 @@ value:
       - name: locality-review
         command: null
         gate: only files directly related to the task objective are modified
-    excluding: null
+    excluding:
+      wholeFields:
+      - frontend
+      fieldValues: null
     description: Java-specialist implementer applying ATDD/TDD discipline, Maven build tooling, and idiomatic Java style enforcement
     initializationDeclaration: |
       I am Java Jenny. I write idiomatic, well-tested Java code that fulfills specifications and architectural guidance. I apply ATDD and TDD — defining acceptance criteria as executable tests, then driving implementation via red-green-refactor. I run the full Maven quality gate (compile, test, checkstyle, spotbugs, jacoco) before handing off to review. I enforce naming conventions, null-safety, and resource-management discipline. I collaborate with reviewers to improve quality and with architects to understand constraints. I do not make architectural or product decisions.
     maxConcurrentTasks: 5
     routingPriority: 80
     schemaVersion: '1.0'
+    sentinel: false
   governance:
   - kind: agent_profile
     artifactId: implementer-ivan
@@ -193,6 +207,34 @@ value:
       artifact:
         href: /api/v1/packs/built-in/artifacts/agent_profile/implementer-ivan
   - kind: directive
+    artifactId: DIRECTIVE_001
+    urn: directive:DIRECTIVE_001
+    step: requires
+    relation: requires
+    via: directive:DIRECTIVE_010
+    hops: 2
+    edge: {}
+    packId: built-in
+    held: true
+    _links:
+      artifact:
+        href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_001
+  - kind: directive
+    artifactId: DIRECTIVE_003
+    urn: directive:DIRECTIVE_003
+    step: requires
+    relation: requires
+    via: agent_profile:java-jenny
+    hops: 1
+    edge:
+      reason: An implementer records the decision it takes, so the reviewer reads why the code differs from the plan.
+      when: when an implementation choice departs from the plan
+    packId: built-in
+    held: true
+    _links:
+      artifact:
+        href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_003
+  - kind: directive
     artifactId: DIRECTIVE_010
     urn: directive:DIRECTIVE_010
     step: requires
@@ -206,51 +248,6 @@ value:
       artifact:
         href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_010
   - kind: directive
-    artifactId: DIRECTIVE_030
-    urn: directive:DIRECTIVE_030
-    step: requires
-    relation: requires
-    via: agent_profile:java-jenny
-    hops: 1
-    edge:
-      reason: 'An implementer-role profile should reach the test-quality-gate hub when assessing test quality. Composition-only
-        in the profile channel, authored per the #3063 family-D operator attestation.'
-      when: when assessing whether tests meet the quality gate they must pass
-    packId: built-in
-    held: true
-    _links:
-      artifact:
-        href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_030
-  - kind: directive
-    artifactId: DIRECTIVE_041
-    urn: directive:DIRECTIVE_041
-    step: suggests
-    relation: suggests
-    via: agent_profile:java-jenny
-    hops: 1
-    edge:
-      reason: 'An implementer-role profile should reach the tests-as-scaffold hub when writing tests. Composition-only in the
-        profile channel, authored per the #3063 family-D operator attestation.'
-      when: when keeping the tests they write a clear scaffold rather than friction
-    packId: built-in
-    held: true
-    _links:
-      artifact:
-        href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_041
-  - kind: directive
-    artifactId: DIRECTIVE_051
-    urn: directive:DIRECTIVE_051
-    step: requires
-    relation: requires
-    via: agent_profile:java-jenny
-    hops: 1
-    edge: {}
-    packId: built-in
-    held: true
-    _links:
-      artifact:
-        href: /api/v1/packs/built-in/artifacts/directive/DIRECTIVE_051
-  - kind: directive
     artifactId: DIRECTIVE_099
     urn: directive:DIRECTIVE_099
     step: requires
@@ -262,19 +259,31 @@ value:
     held: false
     _links: {}
   - kind: procedure
-    artifactId: failing-test-triage
-    urn: procedure:failing-test-triage
-    step: requires_of_suggested
+    artifactId: adversarial-squad-deployment
+    urn: procedure:adversarial-squad-deployment
+    step: requires
     relation: requires
-    via: directive:DIRECTIVE_041
-    hops: 2
-    edge:
-      reason: Classifies a failing test, establishes causation through the code path, then fixes the assertion, deletes the test,
-        or fixes the product.
-      when: a test fails or is identified as friction
+    via: agent_profile:java-jenny
+    hops: 1
+    edge: {}
     packId: built-in
     held: true
     _links: {}
+  - kind: styleguide
+    artifactId: boring-code-review
+    urn: styleguide:boring-code-review
+    step: suggests
+    relation: suggests
+    via: agent_profile:java-jenny
+    hops: 1
+    edge:
+      reason: An implementer-role profile reaches the review styleguide when it answers a review.
+      when: when answering review comments on the code it wrote
+    packId: built-in
+    held: true
+    _links:
+      artifact:
+        href: /api/v1/packs/built-in/artifacts/styleguide/boring-code-review
   - kind: styleguide
     artifactId: java-conventions
     urn: styleguide:java-conventions
@@ -283,17 +292,24 @@ value:
     via: agent_profile:java-jenny
     hops: 1
     edge:
-      reason: A language-specialist profile requires the conventions styleguide of each of its applies_to_languages (java); operator
-        ruling on spec-kitty-charter#405.
+      reason: A language-specialist profile requires the conventions styleguide of each of its applies_to_languages (java).
     packId: built-in
     held: true
     _links:
       artifact:
         href: /api/v1/packs/built-in/artifacts/styleguide/java-conventions
-  _links:
-    self:
-      href: /api/v1/packs/built-in/artifacts/agent_profile/java-jenny?depth=1
-    collection:
-      href: /api/v1/packs/built-in/artifacts?kind=agent_profile
-    references:
-      href: /api/v1/packs/built-in/artifacts/agent_profile/java-jenny/references
+  - kind: tactic
+    artifactId: autonomous-operation-protocol
+    urn: tactic:autonomous-operation-protocol
+    step: suggests
+    relation: suggests
+    via: agent_profile:java-jenny
+    hops: 1
+    edge:
+      reason: An implementer-role profile reaches the autonomous-operation tactic for unattended work.
+      when: when it works through a task without an operator at hand
+    packId: built-in
+    held: true
+    _links:
+      artifact:
+        href: /api/v1/packs/built-in/artifacts/tactic/autonomous-operation-protocol
