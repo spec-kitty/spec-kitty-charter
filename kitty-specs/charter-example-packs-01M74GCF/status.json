@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01M74H5DSSF2Z0DCZQ74Q2RG1E",
-  "materialized_at": "2026-11-11T05:26:49.401756+00:00",
+  "event_count": 9,
+  "last_event_id": "01M74H5EXZFDKZMDKWNY0G1NJ1",
+  "materialized_at": "2026-11-11T05:26:50.559315+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 8
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
@@ -73,6 +73,13 @@
       "lane": "planned",
       "last_event_id": "01M74H5DSSF2Z0DCZQ74Q2RG1E",
       "last_transition_at": "2026-11-11T05:26:49.401756+00:00"
+    },
+    "WP09": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M74H5EXZFDKZMDKWNY0G1NJ1",
+      "last_transition_at": "2026-11-11T05:26:50.559315+00:00"
     }
   }
 }
