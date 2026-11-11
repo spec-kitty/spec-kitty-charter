@@ -1,0 +1,9 @@
+# The project's own triage entry point; it replaces org-base's issue-triage for this project.
+schema_version: "1.0"
+id: project-triage
+title: Triage the project's issues
+description: Use to triage the project's open issues with the project's own labels.
+form: wrapper
+expands_to:
+  target: builtin:triage
+overrides: issue-triage

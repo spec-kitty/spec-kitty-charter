@@ -1,0 +1,10 @@
+# The built-in `minimal` preset (ADR-0042 shape), naming only artifacts the example pack holds.
+schema_version: '1.0'
+id: minimal
+description: A small curated baseline of foundational directives and tactics for software-dev.
+activated_mission_types:
+- id: software-dev
+activated_directives:
+- id: DIRECTIVE_001
+activated_tactics:
+- id: adversarial-qa-handoff

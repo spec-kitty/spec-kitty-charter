@@ -1,0 +1,17 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: directive:DIRECTIVE_001
+  kind: directive
+  label: Architectural Integrity Standard
+- urn: directive:DIRECTIVE_003
+  kind: directive
+  label: Decision Documentation Requirement
+- urn: directive:DIRECTIVE_010
+  kind: directive
+  label: Specification Fidelity Requirement
+edges:
+- source: directive:DIRECTIVE_010
+  target: directive:DIRECTIVE_001
+  relation: requires

@@ -1,0 +1,26 @@
+schema_version: "1.0"
+id: spdd
+description: >-
+  Put Structured-Prompt-Driven Development and the REASONS canvas workflow in
+  force, including the five software-dev prompt enhancements. One preset is the
+  only activation gate for the doctrine and its prompt fragments (ADR-0066 d4).
+activated_paradigms:
+  - id: structured-prompt-driven-development
+activated_directives:
+  - id: DIRECTIVE_038
+activated_tactics:
+  - id: reasons-canvas-fill
+  - id: reasons-canvas-review
+activated_styleguides:
+  - id: reasons-canvas-writing
+activated_step_enhancements:
+  - id: spdd-specify
+    must_have: true
+  - id: spdd-plan
+  - id: spdd-tasks
+  - id: spdd-implement
+  - id: spdd-review
+activated_skills:
+  - id: issue-triage
+    must_have: true
+  - id: triage-status

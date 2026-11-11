@@ -1,0 +1,195 @@
+schema_version: '1.0'
+id: software-dev
+title: Software Development
+description: Build high-quality software with structured workflows and test-driven development
+content: |-
+  You are a software development agent following TDD practices.
+  Your charter enforces Library-First, CLI Interface, and Test-First principles.
+  You work in structured phases: research -> design -> implement -> test -> review.
+
+  Key practices:
+  - Tests before code (non-negotiable)
+  - Library-first architecture
+  - CLI interfaces for all missions
+  - Integration tests over mocks
+  - Real dependencies over mocks in testing
+requires_substantive_spec: true
+path_conventions:
+  workspace: src/
+  tests: tests/
+  deliverables: contracts/
+  documentation: docs/
+  data: data/
+expected_output_artifacts:
+- artifact_key: evidence.research
+  artifact_class: evidence
+  path_pattern: research.md
+  blocking: true
+  template_path: templates/research-template.md
+- artifact_key: evidence.gap-analysis
+  artifact_class: evidence
+  path_pattern: gap-analysis.md
+- artifact_key: evidence.quickstart
+  artifact_class: evidence
+  path_pattern: quickstart.md
+- artifact_key: evidence.data-model
+  artifact_class: evidence
+  path_pattern: data-model.md
+- artifact_key: runtime.charter-lint.decay
+  artifact_class: runtime
+  path_pattern: lint-report.json
+steps:
+- id: discovery
+  title: Discovery & Research
+  description: Research technologies and best practices
+  prompt_path: steps/discovery.prompt.md
+- id: specify
+  title: Specification
+  description: Define user scenarios and acceptance criteria
+  prompt_path: steps/specify.prompt.md
+  guidelines_path: steps/specify.guidelines.md
+  expected_output_artifacts:
+  - artifact_key: input.spec.main
+    artifact_class: input
+    path_pattern: spec.md
+    blocking: true
+    template_path: templates/spec-template.md
+- id: plan
+  title: Implementation Planning
+  description: Design technical architecture
+  prompt_path: steps/plan.prompt.md
+  guidelines_path: steps/plan.guidelines.md
+  expected_input_artifacts:
+  - artifact_key: input.spec.main
+    path_pattern: spec.md
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.plan.main
+    artifact_class: output
+    path_pattern: plan.md
+    blocking: true
+    template_path: templates/plan-template.md
+- id: tasks
+  title: Task Breakdown
+  description: Create task breakdown, work package prompts, and finalized dependencies
+  prompt_path: steps/tasks.prompt.md
+  guidelines_path: steps/tasks.guidelines.md
+  expected_input_artifacts:
+  - artifact_key: input.spec.main
+    path_pattern: spec.md
+    blocking: true
+  - artifact_key: output.plan.main
+    path_pattern: plan.md
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.tasks.list
+    artifact_class: output
+    path_pattern: tasks.md
+    blocking: true
+  - artifact_key: output.tasks.per_wp
+    artifact_class: output
+    path_pattern: tasks/WP*.md
+    blocking: true
+- id: analyze
+  title: Analysis
+  description: Cross-artifact consistency analysis, recorded as a current analysis report
+  prompt_path: steps/analyze.prompt.md
+  expected_input_artifacts:
+  - artifact_key: input.spec.main
+    path_pattern: spec.md
+    blocking: true
+  - artifact_key: output.plan.main
+    path_pattern: plan.md
+    blocking: true
+  - artifact_key: output.tasks.list
+    path_pattern: tasks.md
+    blocking: true
+- id: implement
+  title: Implementation
+  description: Execute implementation
+  role: implementer
+  prompt_path: steps/implement.prompt.md
+  guidelines_path: steps/implement.guidelines.md
+  expected_input_artifacts:
+  - artifact_key: output.tasks.per_wp
+    path_pattern: tasks/WP*.md
+    blocking: true
+- id: review
+  title: Code Review
+  description: Review and validate
+  role: reviewer
+  prompt_path: steps/review.prompt.md
+  guidelines_path: steps/review.guidelines.md
+  expected_input_artifacts:
+  - artifact_key: output.tasks.per_wp
+    path_pattern: tasks/WP*.md
+    blocking: true
+- id: accept
+  title: Acceptance
+  description: Validate mission completeness
+  prompt_path: steps/accept.prompt.md
+  expected_input_artifacts:
+  - artifact_key: output.tasks.list
+    path_pattern: tasks.md
+    blocking: true
+on_demand_steps:
+- id: charter
+  title: Charter
+  description: Interview the operator and compile the project charter that governs every mission.
+  prompt_path: steps/charter.prompt.md
+  guidelines_path: steps/charter.guidelines.md
+- id: tasks-finalize
+  title: Finalize Tasks
+  description: Validate WP dependencies, finalize WP frontmatter, generate tasks.md and commit the task artifacts.
+  prompt_path: steps/tasks-finalize.prompt.md
+  expected_input_artifacts:
+  - artifact_key: output.tasks.index
+    path_pattern: wps.yaml
+    blocking: true
+  - artifact_key: output.tasks.per_wp
+    path_pattern: tasks/WP*.md
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.tasks.per_wp
+    artifact_class: output
+    path_pattern: tasks/WP*.md
+    blocking: true
+  - artifact_key: output.tasks.list
+    artifact_class: output
+    path_pattern: tasks.md
+    blocking: true
+    template_path: templates/tasks-template.md
+- id: tasks-outline
+  title: Task Outline
+  description: 'Write the work package manifest, wps.yaml: each WP''s scope, dependencies and owned files.'
+  prompt_path: steps/tasks-outline.prompt.md
+  expected_input_artifacts:
+  - artifact_key: input.spec.main
+    path_pattern: spec.md
+    blocking: true
+  - artifact_key: output.plan.main
+    path_pattern: plan.md
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.tasks.index
+    artifact_class: output
+    path_pattern: wps.yaml
+    blocking: true
+- id: tasks-packages
+  title: Task Packages
+  description: Generate one tasks/WP*.md prompt file per work package from the wps.yaml manifest.
+  prompt_path: steps/tasks-packages.prompt.md
+  expected_input_artifacts:
+  - artifact_key: output.tasks.index
+    path_pattern: wps.yaml
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.tasks.per_wp
+    artifact_class: output
+    path_pattern: tasks/WP*.md
+    blocking: true
+- id: retrospect
+  title: Retrospective
+  description: Capture what helped, what did not and the governance gaps of a finished mission as a retrospective record.
+  role: facilitator
+  prompt_path: steps/retrospect.prompt.md

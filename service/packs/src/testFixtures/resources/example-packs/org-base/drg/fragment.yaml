@@ -1,0 +1,67 @@
+# The SPDD pack's only DRG document (ADR-0064). Prompt-fragment text lives in
+# Markdown companions; only these relationships live here.
+# Preserve the built-in architect's suggestion without leaving a built-in edge
+# to an opt-in artifact. There is one edge on this unordered pair (ADR-0027).
+# The enhancements' only target relationship. Their activation comes from the
+# spdd preset (or explicit selection), never from these targets (ADR-0066 d4).
+nodes:
+- id: structured-prompt-driven-development
+  kind: paradigms
+  title: Structured-Prompt-Driven Development
+  body_path: paradigms/structured-prompt-driven-development.paradigm.yaml
+- id: DIRECTIVE_038
+  kind: directives
+  title: Structured Prompt Change-Boundary
+  body_path: directives/038-structured-prompt-boundary.directive.yaml
+- id: reasons-canvas-writing
+  kind: styleguides
+  title: REASONS Canvas Writing Styleguide
+  body_path: styleguides/reasons-canvas-writing.styleguide.yaml
+- id: spdd-specify
+  kind: step_enhancements
+  title: REASONS Guidance - Specify
+  body_path: missions/software-dev/enhancements/spdd-specify.step-enhancement.yaml
+- id: spdd-plan
+  kind: step_enhancements
+  title: REASONS Guidance - Plan
+  body_path: missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml
+- id: spdd-tasks
+  kind: step_enhancements
+  title: REASONS Guidance - Tasks
+  body_path: missions/software-dev/enhancements/spdd-tasks.step-enhancement.yaml
+- id: spdd-implement
+  kind: step_enhancements
+  title: REASONS Guidance - Implement
+  body_path: missions/software-dev/enhancements/spdd-implement.step-enhancement.yaml
+- id: spdd-review
+  kind: step_enhancements
+  title: REASONS Guidance - Review
+  body_path: missions/software-dev/enhancements/spdd-review.step-enhancement.yaml
+edges:
+- source: paradigm:structured-prompt-driven-development
+  target: directive:DIRECTIVE_038
+  relation: requires
+- source: paradigm:structured-prompt-driven-development
+  target: styleguide:reasons-canvas-writing
+  relation: suggests
+  when: writing a REASONS canvas
+  reason: the canvas has its own writing rules
+- source: directive:DIRECTIVE_038
+  target: styleguide:reasons-canvas-writing
+  relation: impacts
+  impacts: 0.5
+- source: step_enhancement:spdd-specify
+  target: built-in::action:software-dev/specify
+  relation: enhances
+- source: step_enhancement:spdd-plan
+  target: built-in::action:software-dev/plan
+  relation: enhances
+- source: step_enhancement:spdd-tasks
+  target: built-in::action:software-dev/tasks
+  relation: enhances
+- source: step_enhancement:spdd-implement
+  target: built-in::action:software-dev/implement
+  relation: enhances
+- source: step_enhancement:spdd-review
+  target: built-in::action:software-dev/review
+  relation: enhances

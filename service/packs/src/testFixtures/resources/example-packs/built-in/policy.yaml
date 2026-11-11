@@ -1,0 +1,24 @@
+# The built-in example's mutability policy (ADR-0063): every level once, and the fallback profile locked (ADR-0068).
+schema_version: 1
+kind_defaults:
+  template: extendable
+  directive: open
+  tactic: open
+  styleguide: open
+  toolguide: open
+  paradigm: open
+  procedure: open
+  agent_profile: open
+  mission_step_contract: open
+  glossary_pack: open
+  skill: open
+  anti_pattern: open
+  asset: open
+  mission_type: open
+  guard: open
+  lifecycle: open
+  step_enhancement: open
+artifacts:
+  agent_profile:generic-agent: locked
+  directive:DIRECTIVE_001: locked
+  styleguide:boring-code-review: extendable

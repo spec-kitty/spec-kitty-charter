@@ -1,0 +1,6 @@
+# A project directive: the smallest directive the schema allows.
+schema_version: "1.0"
+id: PROJECT_001
+title: Keep the project's examples canonical
+intent: Every example in this project uses the canonical shape the charter model defines.
+enforcement: required

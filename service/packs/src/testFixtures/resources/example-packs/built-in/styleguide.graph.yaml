@@ -1,0 +1,24 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: styleguide:aggregate-design-rules
+  kind: styleguide
+  label: Aggregate Design Rules
+- urn: styleguide:java-conventions
+  kind: styleguide
+  label: Java Conventions
+- urn: styleguide:boring-code-review
+  kind: styleguide
+  label: Boring Code Review
+  provenance: styleguides/boring-code-review.styleguide.yaml
+  tags: [review, simplicity]
+- urn: anti_pattern:indirection-for-repetition
+  kind: anti_pattern
+  label: Indirection to remove a few repeated lines
+edges:
+- source: styleguide:boring-code-review
+  target: anti_pattern:indirection-for-repetition
+  relation: suggests
+  when: reviewing a new helper or wrapper
+  reason: the styleguide names this anti-pattern

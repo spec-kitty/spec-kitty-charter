@@ -1,0 +1,14 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: tactic:adversarial-qa-handoff
+  kind: tactic
+  label: Adversarial QA Handoff
+- urn: tactic:architectural-gate-non-vacuity
+  kind: tactic
+  label: Architectural Gate Non-Vacuity
+- urn: tactic:autonomous-operation-protocol
+  kind: tactic
+  label: Autonomous Operation Protocol
+edges: []

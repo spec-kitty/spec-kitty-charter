@@ -1,0 +1,11 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: procedure:action-item-attribution-gate
+  kind: procedure
+  label: Action Item Attribution Gate
+- urn: procedure:adversarial-squad-deployment
+  kind: procedure
+  label: Adversarial Squad Deployment
+edges: []

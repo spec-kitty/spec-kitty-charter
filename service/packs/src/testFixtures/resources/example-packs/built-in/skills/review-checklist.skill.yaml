@@ -1,0 +1,16 @@
+schema_version: "1.0"
+id: review-checklist
+title: Review a work package against its checklist
+description: Use to review one work package against its acceptance checklist and record a verdict with the evidence for each item.
+triggers: ["review against the checklist", "checklist review"]
+form: prompt
+body_path: review-checklist.skill.md
+parameters:
+  - name: work_package
+    required: true
+    description: "The work package to review, by id."
+invocation:
+  user_invocable: true
+  side_effects: []
+version: 1.0.0
+maintainers: ["@spec-kitty/core"]

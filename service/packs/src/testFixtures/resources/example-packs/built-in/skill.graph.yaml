@@ -1,0 +1,8 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: skill:review-checklist
+  kind: skill
+  label: review-checklist
+edges: []
