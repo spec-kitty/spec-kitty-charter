@@ -45,6 +45,8 @@ import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
+import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
@@ -102,6 +104,7 @@ public final class DomainRepositoryService
                 DirectiveRepository,
                 StyleguideRepository,
                 ToolguideRepository,
+                ProcedureRepository,
                 ParadigmRepository,
                 PackDescriptorRepository,
                 PackCatalogRepository,
@@ -200,6 +203,11 @@ public final class DomainRepositoryService
     @Override
     public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
         return loadOne(pack, ToolguideBinding.INSTANCE, toolguide.value());
+    }
+
+    @Override
+    public Optional<Procedure> load(PackIdentifier pack, ProcedureIdentifier procedure) {
+        return loadOne(pack, ProcedureBinding.INSTANCE, procedure.value());
     }
 
     @Override

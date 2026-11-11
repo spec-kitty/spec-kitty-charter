@@ -212,7 +212,7 @@ class EffectiveArtifactHttpTest {
     @Test
     void theRefusalsAreJudgedInOrderAndAnswered404WithTheirCode() throws Exception {
         assertRefused(get("/api/v1/activations/nope/artifacts/procedure/D"), "activation_not_found");
-        assertRefused(get(BASE + "/artifacts/procedure/D"), "kind_not_found");
+        assertRefused(get(BASE + "/artifacts/template/D"), "kind_not_found");
         assertRefused(get(BASE + "/artifacts/directive/GHOST"), "artifact_not_found");
         assertRefused(get(BASE + "/artifacts/directive/GHOST").header("If-None-Match", "*"), "artifact_not_found");
     }

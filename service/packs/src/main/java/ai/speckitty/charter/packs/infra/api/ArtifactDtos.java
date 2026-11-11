@@ -11,6 +11,9 @@ import ai.speckitty.charter.api.model.MissionStepContractStep;
 import ai.speckitty.charter.api.model.MissionStepDelegation;
 import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
 import ai.speckitty.charter.api.model.Paradigm;
+import ai.speckitty.charter.api.model.Procedure;
+import ai.speckitty.charter.api.model.ProcedureAntiPattern;
+import ai.speckitty.charter.api.model.ProcedureStep;
 import ai.speckitty.charter.api.model.Styleguide;
 import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
@@ -82,6 +85,7 @@ final class ArtifactDtos {
             case ArtifactReadService.Item.OfParadigm paradigm -> envelope.paradigm(paradigm(paradigm.artifact()));
             case ArtifactReadService.Item.OfToolguide toolguide ->
                 envelope.toolguide(toolguide(toolguide.artifact(), guides));
+            case ArtifactReadService.Item.OfProcedure procedure -> envelope.procedure(procedure(procedure.artifact()));
             case ArtifactReadService.Item.OfMissionStepContract contract ->
                 envelope.missionStepContract(stepContract(contract, hypermedia));
         };
@@ -370,5 +374,38 @@ final class ArtifactDtos {
                 toolguide.commands(),
                 toolguide.appliesToLanguages(),
                 toolguide.lastUpdated().orElse(null));
+    }
+
+    // ---- procedure ----------------------------------------------------------------------------------------------
+
+    static Procedure procedure(ai.speckitty.charter.packs.domain.Procedure procedure) {
+        return new Procedure(
+                procedure.id().value(),
+                procedure.schemaVersion().orElseThrow(),
+                procedure.title(),
+                procedure.description().orElseThrow(),
+                procedure.entryCondition(),
+                procedure.exitCondition(),
+                procedure.steps().stream().map(ArtifactDtos::procedureStep).toList(),
+                procedure.antiPatterns().stream().map(ArtifactDtos::antiPattern).toList(),
+                procedure.notes().orElse(null),
+                procedure.appliesToLanguages());
+    }
+
+    private static ProcedureStep procedureStep(ai.speckitty.charter.packs.domain.ProcedureStep step) {
+        return new ProcedureStep(
+                step.title(),
+                step.description().orElse(null),
+                step.role().orElse(null),
+                step.onSuccess().orElse(null),
+                step.onFailure().orElse(null));
+    }
+
+    private static ProcedureAntiPattern antiPattern(ai.speckitty.charter.packs.domain.AntiPatternEntry entry) {
+        return new ProcedureAntiPattern(
+                entry.title(),
+                entry.content().orElse(null),
+                entry.badExample().orElse(null),
+                entry.goodExample().orElse(null));
     }
 }

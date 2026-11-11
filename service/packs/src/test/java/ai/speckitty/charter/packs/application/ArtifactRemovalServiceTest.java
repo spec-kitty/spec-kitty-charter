@@ -203,7 +203,7 @@ class ArtifactRemovalServiceTest {
     @ParameterizedTest
     @CsvSource({
         "ghost, directive, D3, PACK_NOT_FOUND",
-        "qa, procedure, D3, KIND_NOT_FOUND",
+        "qa, template, D3, KIND_NOT_FOUND",
         "qa, directive, NOPE, DIRECTIVE_NOT_FOUND",
         "qa, tactic, NOPE, TACTIC_NOT_FOUND",
     })

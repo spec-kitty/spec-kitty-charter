@@ -50,9 +50,9 @@ class ArtifactCursorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"***", "not base64", "dGFjdGlj", "cHJvY2VkdXJlL3g", "dGFjdGljLw", "Ym9ndXMveA", "L3g"})
+    @ValueSource(strings = {"***", "not base64", "dGFjdGlj", "dGVtcGxhdGUveA", "dGFjdGljLw", "Ym9ndXMveA", "L3g"})
     void aCursorThatIsNotBase64urlOfAServedKindAndAnIdIsA400(String cursor) {
-        // not base64url; "tactic" (no slash); "procedure/x" (not served); "tactic/" (no id); "bogus/x"; "/x".
+        // not base64url; "tactic" (no slash); "template/x" (not served); "tactic/" (no id); "bogus/x"; "/x".
         assertBadRequest(() -> ArtifactCursor.decode(cursor, Optional.empty()));
     }
 

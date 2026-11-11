@@ -132,7 +132,7 @@ class StepContractDtoTest {
         assertThat(member.getSteps().get(2).getDelegatesTo().getCandidates())
                 .singleElement()
                 .satisfies(procedure -> assertThat(procedure.getLinks())
-                        .as("a procedure is not a listed kind: no link")
+                        .as("the procedure is listed but not held: no link")
                         .isEqualTo(Map.of()));
         assertThat(member.getGates()).singleElement().satisfies(gate -> {
             assertThat(gate.getOnTransition()).isEqualTo("in_progress->for_review");
