@@ -160,10 +160,47 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # PlantUML lays class diagrams out with Graphviz `dot`. Without it the render is an error image, which the
+      # semantic comparison rightly reports as stale. Its packages are cached like the jar below, so an outage of
+      # the runner's Ubuntu mirror cannot turn a pull request red: on 2026-11-11 `azure.archive.ubuntu.com` did
+      # not resolve for over two hours and held PR #481. A miss downloads the packages through apt, which checks
+      # them against the signed archive index, and saves them at once; pull requests restore what main saved.
+      # A hit installs them offline with dpkg. If the runner image has drifted so the cached set no longer
+      # installs, the step falls back to the mirror.
+      - name: Restore the Graphviz packages
+        id: graphviz-cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/graphviz-debs
+          key: graphviz-debs-ubuntu-24.04-v1
+      - name: Download the Graphviz packages
+        id: graphviz-download
+        if: steps.graphviz-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache/graphviz-debs/partial
+          sudo apt-get update -q -o Acquire::Retries=5
+          sudo apt-get install -y -q --download-only -o Acquire::Retries=5 \
+            -o Dir::Cache::archives="$HOME/.cache/graphviz-debs" graphviz
+          sudo rm -rf ~/.cache/graphviz-debs/partial ~/.cache/graphviz-debs/lock
+          sudo chown -R "$USER" ~/.cache/graphviz-debs
+          # None when the image already ships Graphviz: then there is nothing to cache.
+          echo "debs=$(find ~/.cache/graphviz-debs -name '*.deb' | wc -l)" >> "$GITHUB_OUTPUT"
+      - name: Save the Graphviz packages
+        if: steps.graphviz-cache.outputs.cache-hit != 'true' && steps.graphviz-download.outputs.debs != '0'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/graphviz-debs
+          key: graphviz-debs-ubuntu-24.04-v1
       - name: Install Graphviz
-        # PlantUML lays class diagrams out with Graphviz `dot`. Without it the render is an
-        # error image, which the semantic comparison rightly reports as stale.
-        run: sudo apt-get update -q && sudo apt-get install -y -q graphviz
+        run: |
+          if ! command -v dot >/dev/null && ! sudo dpkg -i ~/.cache/graphviz-debs/*.deb; then
+            echo "::warning::the cached Graphviz packages did not install; installing from the mirror"
+            sudo apt-get update -q -o Acquire::Retries=5
+            # A partial dpkg run leaves packages unconfigured; -f with no package repairs that first.
+            sudo apt-get install -y -q -f -o Acquire::Retries=5
+            sudo apt-get install -y -q -o Acquire::Retries=5 graphviz
+          fi
+          dot -V
       # The jar is cached on its pin, so a run needs no release download unless the pin changed or the entry
       # was evicted: a github.com outage on release assets (504s on 2026-11-08, #420) then cannot turn a pull
       # request red. Pull requests restore the entry runs on main save (a cache saved in a pull request is
