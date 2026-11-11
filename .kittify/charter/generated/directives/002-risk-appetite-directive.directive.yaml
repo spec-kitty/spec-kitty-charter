@@ -14,8 +14,8 @@ intent: >-
   (operator ruling, epic #186, 2026-10-28); the core-oracle and
   core-compatibility clauses return when the service is incorporated into
   core, and that work is planned then. Also never traded away:
-  pack YAML always round-trips without loss of meaning, proven on charter's own example packs (spec-kitty-open-packs proves its content against a pinned charter release, ADR-0070), (ADR-0036: meaning, not bytes, so formatting and comments may
-  change), and no unverified dependency enters the build. No exception is
+  pack YAML always round-trips without loss of meaning (ADR-0036: meaning, not bytes, so formatting and comments may
+  change), proven on charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release (ADR-0070), and no unverified dependency enters the build. No exception is
   granted for the first two failures.
 enforcement: required
 scope: >-
