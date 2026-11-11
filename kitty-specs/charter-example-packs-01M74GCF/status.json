@@ -192,7 +192,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
-        "Forced: side-worktree implementation, cherry-picked (69e99f2cc + fix-up 31d9d451b). packs:test 4647, wholePackRoundTrip 8, deployable:test 1405 green."
+        "Forced: side-worktree implementation, cherry-picked (69e99f2cc + fix-up 31d9d451b). packs:test 4647, wholePackRoundTrip 8, deployable:test 1405 green.",
+        "Moved tests prove their rules over ExamplePacks with non-vacuity guards (read count, worded>0, checked>0); contract examples cross-checked against pack graph edges and live answers. Dropped project skill edge: project depends_on org-base (01M6Y9ACNAAD96XPNQS0XWP2FF) and an org-base:: impacts edge passes the same closure check, so the refusal is unexplained by the example; follow-up, not a WP06 defect."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
