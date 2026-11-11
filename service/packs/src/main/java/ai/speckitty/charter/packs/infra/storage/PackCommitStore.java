@@ -734,32 +734,16 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     // ---- id to directory -----------------------------------------------------------------------------------------
 
-    /** A pack's live directory, its store and the directory-name key, resolved as {@link DomainRepositoryService} does. */
+    /** A pack's live directory, its store and the directory-name key, at the location {@link PackLocator} resolves. */
     private record Resolved(String name, FilesystemPackStore store, PackIdentifier key, Path directory) {}
 
+    /** The pack's store and directory, at the location {@link PackLocator} resolves. */
     private Resolved resolve(PackIdentifier pack) {
-        List<PackLocation> configured = locations.all();
-        for (PackLocation location : configured) {
-            if (location.name().equals(pack.value())) {
-                return over(location);
-            }
-        }
-        for (PackLocation location : configured) {
-            // A location with no parent directory holds no store to read pack.yaml from, so it cannot declare the id.
-            if (!hasParent(location)) {
-                continue;
-            }
-            Resolved candidate = over(location);
-            if (declaresId(candidate, pack)) {
-                return candidate;
-            }
-        }
-        // The identifier matches no configured pack: the caller asked wrongly (CharterRefusalCode pack_not_found).
-        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        return over(PackLocator.locate(locations, strategy, pack));
     }
 
     private Resolved over(PackLocation location) {
-        Path directory = location.root().toAbsolutePath().normalize();
+        Path directory = PackLocator.directoryOf(location);
         Path parent = directory.getParent();
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");
@@ -769,19 +753,6 @@ public final class PackCommitStore implements WholePackWriteStore {
                 new FilesystemPackStore(parent, strategy),
                 new PackIdentifier(directory.getFileName().toString()),
                 directory);
-    }
-
-    private static boolean hasParent(PackLocation location) {
-        Path directory = location.root().toAbsolutePath().normalize();
-        return directory.getParent() != null && directory.getFileName() != null;
-    }
-
-    private static boolean declaresId(Resolved candidate, PackIdentifier pack) {
-        try {
-            return candidate.store.readDescriptor(candidate.key).packId().equals(pack.value());
-        } catch (CharterRefusal unreadable) {
-            return false;
-        }
     }
 
     // ---- filesystem helpers --------------------------------------------------------------------------------------
