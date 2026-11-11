@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
@@ -71,10 +72,15 @@ class FileStagingAreaTest {
     }
 
     @Test
-    void deletingWhatIsNotThereIsQuiet() {
+    void deletingWhatIsNotThereIsQuietAndTouchesNothingElse() throws IOException {
         FileStagingArea area = new FileStagingArea(host.resolve("staging"));
+        Path other = area.createJobDirectory("01J0000000000000000000000F");
 
-        area.delete(area.root().resolve("01J0000000000000000000000D"));
+        assertThatCode(() -> area.delete(area.root().resolve("01J0000000000000000000000D")))
+                .doesNotThrowAnyException();
+
+        assertThat(area.root()).isDirectory();
+        assertThat(other).as("another job's directory").isDirectory();
     }
 
     @Test
