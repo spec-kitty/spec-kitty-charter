@@ -30,3 +30,6 @@ gradlew text eol=lf
 
 # The generated client's header template: ClientOutputTest reads the header byte for byte.
 client-java/templates/** text eol=lf
+
+# The digest baseline fixture: PackDigestFixtureTest freezes the fingerprint of its bytes, so no checkout converts its line endings.
+service/packs/src/test/resources/digest-baseline/** -text
