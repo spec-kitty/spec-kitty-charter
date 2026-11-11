@@ -31,24 +31,39 @@ pack is refused with `422 unmodelled`, over its documentation files (#451) and, 
 registers. Slice C's spdd case and the re-run of the usability run, which is the readiness gate,
 both wait on it.
 
-Two rulings come first:
+The operator ruled on 2026-11-11:
 
-1. **Documentation files (#451).** Registration either holds them as opaque documents, skips
-   them with a notice, or requires packs to leave them out. Proposed: skip with a notice. They
-   carry no governance meaning, and ADR-0036 asks the round trip to keep meaning, not bytes.
-2. **`org-charter.yaml` (#431).** Either (a) move its intent, org-level preset enforcement, to
-   presets plus policy levels and retire the file, or (b) model the file, or (c) refuse it by
-   name. Proposed: (a). It is the only option that removes a legacy shape, as the canonical-model
-   rule in `charter.md` asks, and the file's retirement is then open-packs work.
+1. **The pack's documentation is `README.md` (#451).** `README.md` at the pack root is the pack's
+   one documentation file, held in the store next to the pack and round-tripped. `pack.md` is
+   retired outright, and ADR-0042 decision 8 is amended to name `README.md`. `PROVENANCE.md` is
+   folded into `README.md`. Both retired files get a named refusal. Other unmodelled Markdown is
+   author aid: it is excluded with a reason, not held and not refused. A new read,
+   `GET /packs/{packId}/doc`, answers by content negotiation: `text/markdown` gives the raw
+   document, and `application/json` gives `{title, body, _links}`. Its ETag is the pack revision,
+   and the pack resource links it as `doc`.
+2. **`org-charter.yaml` becomes an activation preset (#431).** Org-level preset enforcement is an
+   activation preset, plus the policy levels `RequiredFloor` applies (ADR-0063). The file, its
+   schema, its validation and `pack.yaml`'s `active_charter` are retired outright. A pack that
+   still ships the file gets a named refusal.
+3. **Readers ride out the swap window (#490).** A reader that finds the live pack directory
+   missing while a `.pack-old-*` sibling exists reads the sibling, which holds the last committed
+   state. Hot reads take no read locks, and a deterministic test pauses the swap between its two
+   renames.
+4. **The `text` comment is reworded in slice B (#432).**
+
+The content side lands in open-packs: each pack merges `pack.md` and `PROVENANCE.md` into
+`README.md`, and the twelve packs that ship an `org-charter.yaml` convert it to a preset. The
+slice B Mission drafts both issues for the orchestrator to file. It changes the contract and an
+ADR, so it gets a review squad at the plan point and before merge.
 
 Scope:
 
 | Issue | What |
 | --- | --- |
-| #451 | Documentation files, as ruled |
-| #431 | `org-charter.yaml`, as ruled |
-| #490 | A write during a whole-pack replace can get a `500 pack_unreadable` (P2) |
-| #432 | Reword the comment that says the `text` content form is refused, or close it as won't-do |
+| #451 | `README.md` as the pack document, `GET /packs/{packId}/doc`, retire `pack.md` and `PROVENANCE.md` |
+| #431 | Retire `org-charter.yaml` in favor of an activation preset |
+| #490 | Readers ride out the swap window (P2) |
+| #432 | Reword the `text` content-form comment |
 | #453 | Closed: moved to open-packs #202 (may be settled by open-packs PR #198) |
 
 Done when a real pack registers unedited and the usability run's registration checks pass. Under
