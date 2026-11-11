@@ -414,9 +414,11 @@ abstract class LintContract : ContractToolTask() {
     fun lint() {
         // vacuum lints the bundle resolved, so keeping components (#294) roughly halves the lint, not more: on four
         // busy cores (the build's parallel tasks) the whole run took 6 to 7 seconds, and vacuum's default 5-second
-        // rule timeout skipped rules. After the mission-type reads (#472) grew the contract, 20 seconds was no longer
-        // enough on busy CI runners: on main, a different rule timed out on each run, while the whole lint takes about
-        // 3.5 seconds on an idle machine. 60 seconds is the headroom the inlined bundle once needed.
+        // rule timeout skipped rules. vacuum runs the rules concurrently and times each from the shared start, so the
+        // timeout bounds the whole lint, not one rule. The lint costs about 10 CPU-seconds (3.5 s on 32 idle cores,
+        // more than 20 s on a busy 4-core runner) and grows with the contract: after the mission-type reads (#472),
+        // 20 seconds skipped a different rule on each main run. 60 seconds gives about three times the failing point;
+        // if the contract keeps growing, run the lint without competing tasks rather than raising this again.
         // A rule that times out is skipped, which the ERR check below refuses, so a longer timeout never lets one pass.
         val (code, output) = run(vacuum.get().asFile.path, "lint", "--no-style", "--no-banner", "--no-update-check",
             "--details", "--all-results", "--no-clip", "--timeout", "60", "--ruleset", ruleset.get().asFile.path,
@@ -464,9 +466,11 @@ abstract class LintFixtures : BundlingTask() {
         for ((name, file) in byName.toSortedMap()) {
             val bundled = File(temporaryDir, "$name.yaml")
             bundle(vacuum.get().asFile, file, bundled)?.let { problems += "$name: bundling failed: $it"; continue }
+            // The same rule timeout as LintContract: a rule that timed out on the clean fixture would otherwise pass.
             val (code, output) = run(vacuum.get().asFile.path, "report", "--stdout", "--no-style",
-                "--no-update-check", "--ruleset", ruleset.get().asFile.path, bundled.path)
+                "--no-update-check", "--timeout", "60", "--ruleset", ruleset.get().asFile.path, bundled.path)
             if (code != 0) { problems += "$name: vacuum report failed:\n$output"; continue }
+            if (output.contains("timed out")) { problems += "$name: a rule timed out and was skipped:\n$output"; continue }
             @Suppress("UNCHECKED_CAST")
             val results = ((JsonSlurper().parseText(output) as Map<String, Any?>)["resultSet"] as Map<String, Any?>?)
                 ?.get("results") as List<Map<String, Any?>>? ?: emptyList()
