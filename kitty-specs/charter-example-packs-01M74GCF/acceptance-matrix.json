@@ -1,0 +1,89 @@
+{
+  "mission_slug": "charter-example-packs-01M74GCF",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Three charter-owned example packs (built-in, org-base, project) in canonical shape cover every artifact kind and level closure",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/testFixtures/resources/example-packs (115 files); ExamplePackCoverageTest; ./gradlew --offline verifyAll -PrequireSymlinks=true (10,246 tests, 0 failures) @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:15:53.369420+00:00",
+      "notes": "115 files <= 150 (NFR-002). Verified by reviewer."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Whole-pack round trip runs over example packs with empty expected-red lists inside required verifyAll",
+      "proof_type": "automated_test",
+      "evidence": ":packs:wholePackRoundTrip -PopenPacksDir=/nonexistent passed; verifyAll in service.yml @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:15:57.261438+00:00",
+      "notes": "Passing with a nonexistent open-packs dir proves no open-packs input."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Coverage test fails when a schema property, artifact kind or refusal code lacks an example",
+      "proof_type": "automated_test",
+      "evidence": "ExamplePackCoverageTest, ExampleCoverage (service/packs), ExampleCoverageTest (service/deployable) @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:01.084756+00:00",
+      "notes": "Green in verifyAll."
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Tests that read open-packs content (pinned checkout, packs/qa, packs/internal) now read example packs",
+      "proof_type": "automated_test",
+      "evidence": "grep of service/*/src/test: remaining packs/qa refs are @TempDir fixtures (CharterWiringTest, ActivationListingFaultTest); verifyAll green @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:04.900848+00:00",
+      "notes": "No test reads the synced trees."
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "No required task or CI job reads open-packs; openPacksRoundTrip/openPacksProfiles tasks and openPacksDir test inputs removed",
+      "proof_type": "automated_test",
+      "evidence": "grep of build files/workflows: openPacksDir only feeds syncPacks and the non-required :packs:driftTest @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:08.606462+00:00",
+      "notes": "SC-002 aligned."
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Scheduled non-blocking drift job runs round trip over open-packs main and opens/comments an issue on failure",
+      "proof_type": "inspection",
+      "evidence": ".github/workflows/open-packs-drift.yml (schedule, :packs:driftTest, open-packs-drift label issue); drift test confirmed to catch real drift @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:12.188668+00:00",
+      "notes": "Not a required check."
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "syncPacks and openPacksRef kept for governance only, never test input",
+      "proof_type": "inspection",
+      "evidence": "build.gradle.kts syncPacks; service.yml comment + step; tests read example packs @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:15.970294+00:00",
+      "notes": "Sync still runs in CI for digest verification only."
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Charter 'Gates before merge' and PROJECT_002 amended per ADR-0070",
+      "proof_type": "inspection",
+      "evidence": ".kittify/charter/charter.md:93-97; 002-risk-appetite-directive and how-we-apply-project-002 tactic mention example packs @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:19.942613+00:00",
+      "notes": "Matches ADR-0070."
+    }
+  ],
+  "negative_invariants": []
+}

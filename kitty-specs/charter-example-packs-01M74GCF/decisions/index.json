@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-11T05:13:23.139389Z",
+      "decision_id": "01M74GCTE3RK2PW94VYTF54E96",
+      "final_answer": "Follow-up issue in open-packs (charter side only here)",
+      "input_key": "open_packs_side_scope",
+      "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+      "mission_slug": "charter-example-packs-01M74GCF",
+      "opened_by": "cli",
+      "options": [
+        "Follow-up issue in open-packs (charter side only here)",
+        "Build it here as a second PR in open-packs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0070 decision 3 needs a validation job in spec-kitty-open-packs CI. This mission runs on the charter PR #474 branch. Should the open-packs job be built in this mission (a second PR in open-packs), or filed as a follow-up issue there?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T05:13:50.840353Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.open-packs-side",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T05:14:47.497971Z",
+      "decision_id": "01M74GFCT9ZC6V4HEAQZM6MA3C",
+      "final_answer": "A: test-fixtures source set in :packs",
+      "input_key": "example_packs_home",
+      "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+      "mission_slug": "charter-example-packs-01M74GCF",
+      "opened_by": "cli",
+      "options": [
+        "A: test-fixtures source set in :packs",
+        "B: repository directory passed as a system property",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Where do the example packs live so both :packs and :deployable tests read the same files? (A) a java-test-fixtures source set in :packs (Gradle core plugin, no new dependency) exposing the packs and an ExamplePacks locator; (B) a plain directory under the repository (e.g. examples/packs/) passed to both test tasks as a system property, like openPacksDir today.",
+      "rationale": null,
+      "resolved_at": "2026-11-11T05:16:05.755501Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.fixture-home",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+  "version": 1
+}
