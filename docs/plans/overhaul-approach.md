@@ -97,5 +97,6 @@ force:
 - `qa-description-to-acceptance-ci` (procedure) with the `qa-001`/`qa-003`/`qa-007` directives —
   the description → acceptance → CI loop and its traceability and no-fake-green gates.
 
-Putting them in force (targeted charter synthesis and per-entry `charter activate`) is P1 setup
-work, tracked by issue #32 and sequenced around the Creeds-and-Values epic #16.
+Putting them in force (targeted charter synthesis and per-entry `charter activate`) was P1 setup
+work, tracked by issue #32 (closed 2026-11-02: a charter has been in force since 2026-10-18) and
+sequenced around the Creeds-and-Values epic #16.
