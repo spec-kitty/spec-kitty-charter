@@ -126,7 +126,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Governance amended; open-packs#188 filed",
-        "fold review"
+        "fold review",
+        "Generated copies now match authored clause order"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
