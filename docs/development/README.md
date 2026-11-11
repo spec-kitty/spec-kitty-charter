@@ -38,6 +38,8 @@ operations themselves are in the [service contract](/api/service-contract/).
   each one means, its body and whether a client may retry.
 - [Set up a Claude Code cloud session](/development/cloud-session-setup/) — Java 25, the domains to
   allow and the per-session steps, so a cloud session runs what CI runs.
+- [Keep the issue tracker small](/development/issue-tracker/) — when to file, fold or drop a
+  finding, the closing pass at every closeout, and where pack and core work is tracked.
 - [Epic 186 sanitized-shape follow-ups](/development/epic-186-sanitized-shape-follow-ups/) — the
   merged pack schemas that break the sanitized-shape rules, with the change each needs.
 

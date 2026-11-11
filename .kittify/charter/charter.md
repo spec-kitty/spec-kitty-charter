@@ -18,6 +18,7 @@ failures are judged against the charter's own model, contract and packs (epic #1
 2026-11-10 (operator, charter #456 to #458): the charter's model is the canonical data model, and
 legacy shapes get no compatibility. Amended 2026-11-11 (operator, ADR-0070): the round-trip gate
 runs over charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release.
+Amended 2026-11-11 (operator, issue triage): rules for filing and closing issues.
 
 ## What this repository is for
 
@@ -52,6 +53,18 @@ two.
 - Contract, architecture and domain changes get an **adversarial review squad** at the
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
+- **Issues stay small** (operator, 2026-11-11; the detail is in
+  `docs/development/issue-tracker.md`):
+  - A squad finding below MEDIUM is folded into the pull request, recorded under its "Not done",
+    or dropped, never filed. The boy-scout rule files only defects found outside the Mission's
+    domain, not tidy-ups.
+  - Every Mission closeout and landing closes the issues it delivered, with evidence, and ticks
+    the parent epic.
+  - An auto-filed follow-up carries the `follow-up` label and expires after 21 days without a
+    milestone or assignee.
+  - Pack content is filed in `spec-kitty-open-packs`, and core work is not filed here until
+    incorporation.
+  - The native issue type is the only kind carrier.
 
 ## Designing during the rewrite
 
