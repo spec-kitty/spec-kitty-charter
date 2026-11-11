@@ -593,7 +593,9 @@ risks the native build (a new reflective path, a dependency bump, a change to `s
 `scripts/release/smoke-service.sh` or `charter.native-image.gradle.kts`), run the workflow on that branch with
 `workflow_dispatch`. Locally,
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
-needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.
+needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one. On Windows, where the contract
+tools have no pinned binary, pass a bundle built elsewhere with `-PcontractBundle=<file>`, absolute or relative to the
+repository root, as the Windows job does.
 
 ## The Java client
 

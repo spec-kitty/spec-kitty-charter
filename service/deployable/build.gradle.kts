@@ -49,7 +49,10 @@ dependencies {
 // -PcontractBundle=<file> packages a bundle built elsewhere instead: the native build on Windows, where the contract
 // tools have no pinned binary (contracts/build.gradle.kts), takes the bundle a Linux job built from the same commit and
 // checked against its SHA-256 (.github/workflows/service-native.yml). Every other build bundles the contract itself.
+// A relative path resolves against the repository root, not this project's directory (#324).
+val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
 val prebuiltContractBundle = providers.gradleProperty("contractBundle")
+    .map { ContractBundleFile.resolve(repositoryRoot, it) }
 tasks.processResources {
     if (prebuiltContractBundle.isPresent) {
         from(prebuiltContractBundle) {
