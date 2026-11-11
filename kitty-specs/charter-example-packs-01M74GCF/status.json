@@ -204,10 +204,19 @@
     },
     "WP07": {
       "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "lane": "in_progress",
       "last_event_id": "01M74S1TQCP8DB7RYHYT4XWZVD",
-      "last_transition_at": "2026-11-11T07:44:40.172420+00:00"
+      "last_transition_at": "2026-11-11T07:44:40.172420+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Forced: WP06, WP09 and WP10 are in review; WP07 is implemented in a side worktree in parallel and integrates only after their approval."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer"
     },
     "WP08": {
       "actor": "reviewer-renata",
