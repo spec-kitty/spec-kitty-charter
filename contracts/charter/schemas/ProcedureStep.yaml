@@ -6,6 +6,7 @@ required: [title, description, role, onSuccess, onFailure]
 properties:
   title:
     type: string
+    minLength: 1
     description: The step's title.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java

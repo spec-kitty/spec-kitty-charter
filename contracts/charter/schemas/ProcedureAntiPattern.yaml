@@ -6,6 +6,7 @@ required: [title, content, badExample, goodExample]
 properties:
   title:
     type: string
+    minLength: 1
     description: The anti-pattern's title.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
