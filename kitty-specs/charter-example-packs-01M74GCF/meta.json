@@ -27,6 +27,7 @@
   "purpose_context": "Charter tests read pinned open-packs content while open-packs authors against charter's schemas; every breaking contract change leaves one side red. ADR-0070 (accepted) moves the proof onto example packs charter owns and lets open-packs validate against a pinned charter release. Done on the PR #474 branch so that PR merges green.",
   "purpose_tldr": "Charter's tests prove the contract on charter-owned example packs, so a contract change can reach green without waiting for open-packs.",
   "slug": "charter-example-packs-01M74GCF",
+  "status_phase": "1",
   "target_branch": "claude/adr-open-packs-456-458-adf2fo",
   "topology": "single_branch",
   "topology_source": "explicit"
