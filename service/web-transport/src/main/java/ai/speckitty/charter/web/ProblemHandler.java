@@ -1,5 +1,6 @@
 package ai.speckitty.charter.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
@@ -8,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -17,9 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Answers every failure that is not a charter refusal with a closed {@code Problem} body: the Spring MVC
@@ -30,8 +37,58 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class ProblemHandler extends ResponseEntityExceptionHandler {
 
-    /** For Spring, which finds the advice by component scan. */
-    public ProblemHandler() {}
+    private static final UrlPathHelper PATHS = new UrlPathHelper();
+
+    private final String basePath;
+
+    /** The handler of a service whose API is under {@code /api/v1}. */
+    public ProblemHandler() {
+        this("/api/v1");
+    }
+
+    /**
+     * For Spring, which finds the advice by component scan.
+     *
+     * @param basePath the server prefix of the API, for example {@code /api/v1}; a trailing {@code /} is ignored
+     */
+    @Autowired
+    public ProblemHandler(@Value("${charter.api.base-path:/api/v1}") String basePath) {
+        this.basePath = basePath.endsWith("/") ? basePath.substring(0, basePath.length() - 1) : basePath;
+    }
+
+    /**
+     * A path outside the API that matches nothing ({@code GET /}, {@code GET /info}) is the 404 problem without a code,
+     * whose detail points to the API root (#454); a path inside the API that matches nothing stays the bare 404.
+     */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleNoResourceFoundException(
+            NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return outsideTheApi(request)
+                ? Problems.withDetail(status, headers, pointer())
+                : super.handleNoResourceFoundException(ex, headers, status, request);
+    }
+
+    /** As {@link #handleNoResourceFoundException}, for a dispatcher that reports no handler instead (#454). */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleNoHandlerFoundException(
+            NoHandlerFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return outsideTheApi(request)
+                ? Problems.withDetail(status, headers, pointer())
+                : super.handleNoHandlerFoundException(ex, headers, status, request);
+    }
+
+    private boolean outsideTheApi(WebRequest request) {
+        if (!(request instanceof ServletWebRequest servlet)) {
+            return false;
+        }
+        HttpServletRequest http = servlet.getRequest();
+        String path = PATHS.getPathWithinApplication(http);
+        return !path.equals(basePath) && !path.startsWith(basePath + "/");
+    }
+
+    private String pointer() {
+        return "This service answers under " + basePath + "/; start at GET " + basePath + "/.";
+    }
 
     /**
      * Answers an exception nothing else handles with the {@code internal_error} refusal, and logs it: the body
@@ -120,7 +177,7 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
      * {@code internal_error} detail says the failure is logged, and the base class logs only when the response
      * is already committed. The exceptions of {@link #unexpected} are logged there, so none is logged twice.
      *
-     * <p>A {@code 501} is no failure: today only a reserved operation answers it, by design (ADR-0020 D8). A handler that
+     * <p>A {@code 501} is no failure: only a reserved operation answers it, by design (ADR-0020 D8). A handler that
      * ever answers {@code 501} for a real gap must not rely on this exclusion. The 501 is logged
      * at {@code DEBUG} with the request, without a stack trace, and raises no operator alert (#406).
      */

@@ -11,8 +11,9 @@ import org.springframework.http.ResponseEntity;
  * The body of a failure that is not a charter refusal. A 500 is the {@code internal_error} refusal, as every 500
  * of the contract is a {@code CharterRefusal}. Any other status is a {@code Problem} of the status's title and
  * the status: no {@code code}, as no refusal applies, and no {@code detail} unless the service wrote it, so neither a
- * framework's wording nor an exception message reaches the wire. A refused request parameter is the one {@code 400}
- * with a detail ({@link InvalidParameter}, #411).
+ * framework's wording nor an exception message reaches the wire. The service writes a detail on two answers: the
+ * {@code 400} of a refused request parameter or precondition header ({@link InvalidParameter}, #411), and the
+ * {@code 404} of a path outside the API, which points to the API root (#454).
  */
 public final class Problems {
 
@@ -43,11 +44,24 @@ public final class Problems {
      * @return the {@code application/problem+json} response
      */
     public static ResponseEntity<Object> badRequest(String detail) {
-        Problem problem = new Problem(title(HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST.value());
+        return withDetail(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY, detail);
+    }
+
+    /**
+     * A {@code Problem} of a 4xx status without a code, whose detail the service wrote.
+     *
+     * @param status a 4xx status
+     * @param headers headers the response keeps; its content type is replaced
+     * @param detail the service's own sentence
+     * @return the {@code application/problem+json} response
+     */
+    public static ResponseEntity<Object> withDetail(HttpStatusCode status, HttpHeaders headers, String detail) {
+        HttpHeaders kept = new HttpHeaders();
+        kept.putAll(headers);
+        kept.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        Problem problem = new Problem(title(status), status.value());
         problem.setDetail(detail);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+        return ResponseEntity.status(status).headers(kept).body(problem);
     }
 
     /**

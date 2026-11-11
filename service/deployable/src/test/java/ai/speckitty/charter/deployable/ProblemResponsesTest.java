@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -312,6 +313,33 @@ class ProblemResponsesTest {
         mvc.perform(get("/error").header("Authorization", BEARER).requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 200))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/info", "/api", "/api/v2/"})
+    void aPathOutsideTheApiThatMatchesNothingIsA404ThatPointsToTheApiRoot(String path) throws Exception {
+        mvc.perform(get(path).header("Authorization", BEARER))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content()
+                        .json(
+                                "{\"title\":\"Not Found\",\"status\":404,\"detail\":\"This service answers under"
+                                        + " /api/v1/; start at GET /api/v1/.\"}",
+                                JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void aPathInsideTheApiThatMatchesNothingStaysTheBare404() throws Exception {
+        mvc.perform(get("/api/v1/pack").header("Authorization", BEARER))
+                .andExpect(status().isNotFound())
+                .andExpect(content().json("{\"title\":\"Not Found\",\"status\":404}", JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void theRootWithoutTheTokenIsStillTheBare401() throws Exception {
+        mvc.perform(get("/"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").doesNotExist());
     }
 
     @Test
