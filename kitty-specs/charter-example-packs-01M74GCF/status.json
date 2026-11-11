@@ -223,7 +223,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Forced: WP06, WP09 and WP10 are in review; WP07 is implemented in a side worktree in parallel and integrates only after their approval.",
-        "Forced: side-worktree implementation, cherry-picked (f5c885e24, d0adc6ece). verifyAll green; wholePackRoundTrip ignores -PopenPacksDir; driftTest catches real drift."
+        "Forced: side-worktree implementation, cherry-picked (f5c885e24, d0adc6ece). verifyAll green; wholePackRoundTrip ignores -PopenPacksDir; driftTest catches real drift.",
+        "verifyAll green (10246 tests, 0 fail); wholePackRoundTrip passes with /nonexistent openPacksDir; required jobs no longer pass open-packs to tests; drift workflow schedule/dispatch only, contents:read + job-scoped issues:write, SHAs match repo pins. Minor follow-up: no build-logic guard test pins open-packs-drift.yml triggers/permissions; done-grep hits are only URL-route/literal strings."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
