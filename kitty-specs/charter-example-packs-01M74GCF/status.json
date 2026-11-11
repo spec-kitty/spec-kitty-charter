@@ -1,7 +1,7 @@
 {
-  "event_count": 40,
-  "last_event_id": "01M74PNJT6XSAZQEX1YEHQSJR8",
-  "materialized_at": "2026-11-11T07:03:01.702662+00:00",
+  "event_count": 41,
+  "last_event_id": "01M74PNQPYDWQRDEJYV3VDZW7W",
+  "materialized_at": "2026-11-11T07:03:06.718977+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 1,
-    "in_review": 2,
+    "in_review": 3,
     "planned": 4
   },
   "work_packages": {
@@ -103,21 +103,23 @@
       }
     },
     "WP04": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01M74P9ZXD04GRJ580A4JKFR89",
-      "last_transition_at": "2026-11-11T06:56:41.901127+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M74PNQPYDWQRDEJYV3VDZW7W",
+      "last_transition_at": "2026-11-11T07:03:06.718977+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
         "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
+      "shell_pid": 7693,
+      "shell_pid_created_at": "1794380572.8",
       "subtasks": {
         "T013": "done",
         "T014": "done",
