@@ -1,0 +1,63 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: agent_profile:generic-agent
+  kind: agent_profile
+  label: Generic Agent
+- urn: agent_profile:implementer-ivan
+  kind: agent_profile
+  label: Implementer Ivan
+- urn: agent_profile:java-jenny
+  kind: agent_profile
+  label: Java Jenny
+- urn: agent_profile:python-pedro
+  kind: agent_profile
+  label: Python Pedro
+- urn: agent_profile:reviewer-renata
+  kind: agent_profile
+  label: Reviewer Renata
+edges:
+- source: agent_profile:implementer-ivan
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:java-jenny
+  target: agent_profile:implementer-ivan
+  relation: specializes_from
+- source: agent_profile:java-jenny
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:java-jenny
+  target: directive:DIRECTIVE_003
+  relation: requires
+  when: when an implementation choice departs from the plan
+  reason: An implementer records the decision it takes, so the reviewer reads why the code differs from the plan.
+- source: agent_profile:java-jenny
+  target: styleguide:java-conventions
+  relation: requires
+  reason: A language-specialist profile requires the conventions styleguide of each of its applies_to_languages (java).
+- source: agent_profile:java-jenny
+  target: styleguide:boring-code-review
+  relation: suggests
+  when: when answering review comments on the code it wrote
+  reason: An implementer-role profile reaches the review styleguide when it answers a review.
+- source: agent_profile:java-jenny
+  target: tactic:autonomous-operation-protocol
+  relation: suggests
+  when: when it works through a task without an operator at hand
+  reason: An implementer-role profile reaches the autonomous-operation tactic for unattended work.
+- source: agent_profile:java-jenny
+  target: procedure:adversarial-squad-deployment
+  relation: requires
+- source: agent_profile:python-pedro
+  target: agent_profile:implementer-ivan
+  relation: specializes_from
+- source: agent_profile:python-pedro
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:reviewer-renata
+  target: directive:DIRECTIVE_001
+  relation: requires
+- source: agent_profile:reviewer-renata
+  target: procedure:adversarial-squad-deployment
+  relation: requires

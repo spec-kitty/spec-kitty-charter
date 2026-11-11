@@ -1,0 +1,8 @@
+# A project override of org-base's open styleguide: the same id one level up (a layer override, ADR-0053).
+schema_version: '1.0'
+id: reasons-canvas-writing
+title: REASONS Canvas Writing (project override)
+scope: docs
+principles:
+- name: Lead with the summary
+  description: Every canvas section opens with one sentence a reader can act on.

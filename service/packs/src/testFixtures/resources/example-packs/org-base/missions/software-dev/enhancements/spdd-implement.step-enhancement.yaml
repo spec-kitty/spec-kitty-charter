@@ -1,0 +1,5 @@
+schema_version: "1.0"
+id: spdd-implement
+prompt_fragments:
+  - slot: spdd:reasons-block
+    path: spdd-implement.prompt-fragment.md

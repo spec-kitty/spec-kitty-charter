@@ -1,0 +1,10 @@
+# Example built-in pack (ADR-0070): every artifact kind, a locked generic fallback (ADR-0068).
+schema_version: "1.0"
+pack_id: 01ARWG13C000000000000000FG
+pack_version: 1.0.0
+parent_pack: null
+name: built-in
+# Declared Charter Pack tier (kernel.pack_tiers authority).
+pack_level: built-in
+mutability_policy: policy.yaml
+fallback_profile: generic-agent

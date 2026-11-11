@@ -1,0 +1,18 @@
+# Example project pack (ADR-0070): depends on org-base, overrides an open artifact, and names built-in's locked
+# generic profile as its fallback through the closure (ADR-0068 decision 2).
+schema_version: "1.0"
+pack_id: 01M74H0000000000000000PRJ1
+pack_version: 1.0.0
+parent_pack: null
+name: project
+pack_level: project
+depends_on:
+  - pack_id: 01M6Y9ACNAAD96XPNQS0XWP2FF
+    range: ">=1.0,<2"
+fallback_profile: generic-agent
+active_charter: charter.yaml
+requires_core: ">=4.0,<5"
+# Settles a contest over org-base's styleguide in favour of org-base (ADR-0048 decision 9).
+overrides:
+  - artifact: styleguide:reasons-canvas-writing
+    member: 01M6Y9ACNAAD96XPNQS0XWP2FF

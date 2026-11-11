@@ -1,0 +1,8 @@
+# A project specialist: primary role reviewer, alt-role implementer (ADR-0069).
+profile-id: project-reviewer
+name: Project Reviewer
+role: reviewer
+alt-roles: [implementer]
+purpose: Review the project's work against its directives.
+specialization:
+  primary-focus: Project review

@@ -1,0 +1,87 @@
+schema_version: "1.0"
+id: implement
+action: implement
+mission: software-dev
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action implement --json"
+    inputs:
+      - flag: --action
+        source: action
+      - flag: --mission
+        source: mission_slug
+        optional: true
+
+  - id: workspace
+    description: Create or enter the work package workspace
+    delegates_to:
+      kind: toolguide
+      candidates:
+        - execution-lanes
+    guidance: >
+      The execution-lanes toolguide describes the only supported git worktree
+      mechanism. Spec Kitty chooses the topology at `finalize-tasks` by Mission
+      size: small Missions run `single_branch` in the write checkout, and lane
+      topologies use the lane worktrees `spec-kitty implement` provides. Do not
+      create or reuse a lane worktree by hand.
+
+  - id: branching_paradigm
+    description: Apply trunk-based development when selected by the project charter
+    delegates_to:
+      kind: paradigm
+      candidates:
+        - trunk-based
+    guidance: >
+      Use this branch-management paradigm for trunk-based and shared-branch CI
+      workflows. Skip it when the charter selects the Git Flow procedure instead.
+
+  - id: branching_procedure
+    description: Apply Git Flow when the project charter selects that branching workflow
+    delegates_to:
+      kind: procedure
+      candidates:
+        - git-flow
+    guidance: >
+      Skip this step unless the project charter selects Git Flow. Follow its
+      feature, release, and hotfix branch workflow instead of trunk-based branching.
+
+  - id: execute
+    description: Implement the work package according to the prompt file
+    delegates_to:
+      kind: tactic
+      candidates:
+        - tdd-red-green-refactor
+        - acceptance-test-first
+        - change-apply-smallest-viable-diff
+
+  - id: supply_chain_security_check
+    description: >
+      Run the supply-chain-install-safety tactic's checklist, per
+      DIRECTIVE_051, for any dependency added or changed during
+      implementation, before the standard quality gate. Advisory in v1:
+      evidence is required, but this step does not gate the transition.
+    delegates_to:
+      kind: tactic
+      candidates:
+        - supply-chain-install-safety
+
+  - id: quality_gate
+    description: Run tests and type checks
+    delegates_to:
+      kind: directive
+      candidates:
+        - DIRECTIVE_030
+  - id: commit
+    description: Commit changes with co-author attribution
+    delegates_to:
+      kind: directive
+      candidates:
+        - DIRECTIVE_029
+        - DIRECTIVE_033
+    guidance: >
+      Use conventional commit format. Scope the subject with the mission slug.
+
+  - id: status_transition
+    description: Move WP to for_review
+    command: "spec-kitty agent tasks move-task {wp_id} --to for_review --mission {mission_slug}"

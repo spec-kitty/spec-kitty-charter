@@ -1,0 +1,51 @@
+schema_version: '1.0'
+id: work-package
+title: Work package
+description: The lanes a work package moves through.
+initial: planned
+states:
+- id: planned
+  title: Planned
+- id: in_progress
+  title: In progress
+  description: Someone is implementing it.
+- id: for_review
+  title: For review
+- id: blocked
+  title: Blocked
+- id: done
+  title: Done
+  terminal: true
+- id: canceled
+  title: Canceled
+  terminal: true
+transitions:
+- from: planned
+  to: in_progress
+  event: claim
+- from: in_progress
+  to: for_review
+  guard:
+  - ref: subtasks-ready
+  - ref: traceability-ready
+    config:
+      carrier: qa-carrier.yaml
+    blocking: false
+- from:
+  - for_review
+  - blocked
+  to: in_progress
+  event: changes_requested
+- from: for_review
+  to: done
+  guard:
+  - ref: subtasks-ready
+    blocking: true
+- from: '*'
+  to: canceled
+  event: cancel
+- from:
+  - planned
+  - in_progress
+  to: blocked
+  event: block

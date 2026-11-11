@@ -1,0 +1,27 @@
+schema_version: '1.0'
+id: action-item-attribution-gate
+title: Action Item Attribution Gate
+description: |
+  Ensure every action item in meeting minutes has a real, named owner before the minutes are returned or published.
+entry_condition: |
+  Action items are being extracted from a meeting transcript for minutes in either output format.
+exit_condition: |
+  Every action item, and every segment of a multi-action entry, names an owner, and the minutes validation check passed before the final response or any wiki publish.
+steps:
+- title: Name the owner of every action item
+  role: operator
+  on_success: Continue with the next action item.
+  on_failure: Stop and ask in the originating chat who owns the item.
+  description: |
+    Identify each item's owner by full name as it appears in the transcript. Write each item in the format the meeting-minutes-format styleguide defines (principle "Action items format").
+- title: Attribute every segment of a multi-action entry
+  description: |
+    Give every segment of an entry that joins several actions its own owner. Partial attribution within a segment is not acceptable.
+- title: Never invent an owner
+  description: |
+    When no owner was named in the meeting, leave the owner field empty and ask about the gap in the originating chat.
+- title: Run the minutes validation check before returning or publishing
+  description: |
+    Run the minutes validation check (the validation step of the meeting-minutes-pipeline procedure) before the final Markdown response and before any wiki publish. On an unattributed-action error, stop, list the unattributed items in the same chat and ask for clarification; never return or publish minutes with unowned actions.
+applies_to_languages:
+- markdown

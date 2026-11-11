@@ -1,0 +1,46 @@
+# The built-in `default` preset (ADR-0042 shape), naming only artifacts the example pack holds.
+schema_version: '1.0'
+id: default
+description: Every built-in artifact is effective; activates the built-in mission
+  types.
+activated_mission_types:
+- id: software-dev
+  must_have: true
+activated_directives:
+- id: DIRECTIVE_001
+  must_have: true
+- id: DIRECTIVE_003
+- id: DIRECTIVE_010
+activated_tactics:
+- id: adversarial-qa-handoff
+  must_have: true
+- id: architectural-gate-non-vacuity
+- id: autonomous-operation-protocol
+activated_styleguides:
+- id: boring-code-review
+  must_have: true
+- id: aggregate-design-rules
+activated_toolguides:
+- id: efficient-local-tooling
+  must_have: true
+activated_paradigms:
+- id: atomic-design
+  must_have: true
+activated_procedures:
+- id: action-item-attribution-gate
+  must_have: true
+- id: adversarial-squad-deployment
+activated_agent_profiles:
+- id: generic-agent
+  must_have: true
+- id: java-jenny
+activated_mission_step_contracts:
+- id: implement
+  must_have: true
+- id: plan
+activated_glossary_packs:
+- id: spec-kitty-core
+  must_have: true
+activated_anti_patterns:
+- id: indirection-for-repetition
+  must_have: true

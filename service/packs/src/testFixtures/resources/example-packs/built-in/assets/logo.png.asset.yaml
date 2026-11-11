@@ -1,0 +1,4 @@
+# A binary payload (ADR-0070 decision 2: binary payloads).
+id: logo
+mime: image/png
+path: logo.png

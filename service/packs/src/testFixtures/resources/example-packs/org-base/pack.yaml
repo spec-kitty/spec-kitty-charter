@@ -1,0 +1,12 @@
+# Authored pack descriptor for the opt-in SPDD/REASONS (org-tier) Charter Pack.
+# schema_version 1.0 includes the ADR-0066 prompt-slot and fragment rules.
+schema_version: "1.0"
+pack_id: 01M6Y9ACNAAD96XPNQS0XWP2FF
+pack_version: 1.0.0
+parent_pack: null
+name: org-base
+pack_level: org
+pack_drg: drg/fragment.yaml
+depends_on:
+  - pack_id: 01ARWG13C000000000000000FG
+    range: ">=1.0,<2"

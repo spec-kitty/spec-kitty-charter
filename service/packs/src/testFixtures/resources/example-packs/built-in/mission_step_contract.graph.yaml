@@ -1,0 +1,20 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: mission_step_contract:software-dev/implement
+  kind: mission_step_contract
+  label: implement
+- urn: mission_step_contract:software-dev/plan
+  kind: mission_step_contract
+  label: plan
+- urn: mission_step_contract:software-dev/review
+  kind: mission_step_contract
+  label: review
+- urn: mission_step_contract:software-dev/specify
+  kind: mission_step_contract
+  label: specify
+- urn: mission_step_contract:software-dev/tasks
+  kind: mission_step_contract
+  label: tasks
+edges: []

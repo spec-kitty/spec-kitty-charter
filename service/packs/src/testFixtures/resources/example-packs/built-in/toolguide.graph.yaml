@@ -1,0 +1,8 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: toolguide:efficient-local-tooling
+  kind: toolguide
+  label: Efficient Local Tooling
+edges: []

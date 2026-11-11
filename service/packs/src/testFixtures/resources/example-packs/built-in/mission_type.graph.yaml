@@ -1,0 +1,23 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: mission_type:software-dev
+  kind: mission_type
+  label: Software Development
+edges:
+- source: mission_type:software-dev
+  target: action:software-dev/implement
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/plan
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/review
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/specify
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/tasks
+  relation: requires

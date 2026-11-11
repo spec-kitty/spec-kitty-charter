@@ -1,0 +1,23 @@
+# A wrapper skill: it expands to a spec-kitty command and narrows issue-triage to a status read.
+schema_version: "1.0"
+id: triage-status
+title: Show the triage status
+description: Use to list the mission's work packages by lane before a triage pass.
+triggers: ["triage status"]
+form: wrapper
+expands_to:
+  target: cli:spec-kitty agent tasks status
+  args: "--mission {mission}"
+parameters:
+  - name: mission
+    required: false
+    description: The mission handle.
+    default: current
+invocation:
+  user_invocable: true
+  model_invocable: true
+  side_effects: []
+tools: [Bash]
+enhances: issue-triage
+version: 1.0.0
+maintainers: ["@spec-kitty/core"]

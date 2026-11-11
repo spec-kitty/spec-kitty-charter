@@ -1,0 +1,6 @@
+# A project-level preset: the project's directive in force.
+schema_version: "1.0"
+id: project
+description: The example project's own directive.
+activated_directives:
+  - id: PROJECT_001

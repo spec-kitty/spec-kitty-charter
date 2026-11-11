@@ -1,0 +1,14 @@
+schema_version: "1.0"
+id: atomic-design
+name: Atomic Design
+summary: >
+  Compose interfaces from a five-level hierarchy (atoms, molecules, organisms,
+  templates, pages) where each level owns its appropriate concern. State
+  ownership, reactive stream scope, and centralized store usage are bounded
+  by the same compositional levels that govern visual structure.
+# Named principles (ADR-0067).
+principles:
+  - name: Explicit over implicit
+    description: State the structure an agent must follow instead of leaving it to inference.
+  - name: Small, reviewable steps
+    description: Each step produces one artifact a reviewer can judge on its own.
