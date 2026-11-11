@@ -7,8 +7,11 @@ name: Mutation testing (nightly)
 # - `pitest --continue` runs every module even when one is below its floor; each module's checkMutationFloors
 #   fails naming the module, the group, the score and the floor, and writes
 #   build/reports/mutation-floors/floors.json.
-# - The job summary (scripts/ci/mutation_summary.py) shows every module and group, red or green, and "no report"
-#   for a module that wrote no floors.json.
+# - The job summary (scripts/ci/mutation_summary.py) shows every module and group, red or green, with its margin to
+#   the floor and its timed-out mutants (#389), and "no report" for a module that wrote no floors.json. The modules
+#   come from the build (`mutationModules`, #388), not from a list kept beside it.
+# - The rules of this paragraph are pinned by build-logic's MutationWorkflowGuardTest, and the root build fails any
+#   invocation in which verifyAll or a check depends on pitest (MutationIsolation, ADR-0060, #387).
 # - Every module's PIT report and floors.json go up as the `mutation-report` artifact, on a red run too, kept 14 days.
 # - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
 #   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
@@ -88,9 +91,17 @@ jobs:
 
       # --continue: a module below its floor does not stop the others, so every module reports.
       # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
+      # mutationModules writes build/reports/mutation-floors/modules.txt, the modules the summary expects (#388).
+      # The output is kept in pitest.log beside it and uploaded with the reports: a test that fails with no mutation
+      # applied leaves its module without a report, and the job log that named it can be gone before anyone reads it
+      # (#461). The summary quotes PIT's lines about such tests.
       - name: Mutation testing
         timeout-minutes: 80
-        run: ./gradlew pitest --continue -PrequireSymlinks=true
+        run: |
+          set -o pipefail
+          mkdir -p build/reports/mutation-floors
+          ./gradlew mutationModules pitest --continue -PrequireSymlinks=true 2>&1 \
+            | tee build/reports/mutation-floors/pitest.log
 
       # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
       # PIT, whatever its result, so they can never keep PIT from running.
@@ -104,7 +115,8 @@ jobs:
         id: summary
         if: always()
         run: |
-          python3 scripts/ci/mutation_summary.py > "$RUNNER_TEMP/mutation-summary.md"
+          python3 scripts/ci/mutation_summary.py --modules build/reports/mutation-floors/modules.txt \
+            --log build/reports/mutation-floors/pitest.log > "$RUNNER_TEMP/mutation-summary.md"
           delimiter="mutation_summary_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
           {
             echo "summary<<$delimiter"
@@ -112,9 +124,8 @@ jobs:
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
 
-      # Each module's HTML and XML report and its floors.json. A module that did not run simply adds nothing;
-      # the upload fails only when no module wrote anything at all.
-      # A single missing module is not checked here: the summary shows it as a "no report" row.
+      # Each module's HTML and XML report and its floors.json, with the module list and pitest.log. A module that did
+      # not run simply adds nothing: the summary shows it as a "no report" row.
       - name: Upload the mutation reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -123,6 +134,7 @@ jobs:
           path: |
             service/*/build/reports/pitest
             service/*/build/reports/mutation-floors
+            build/reports/mutation-floors
           if-no-files-found: error
           retention-days: 14
 
