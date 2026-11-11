@@ -31,3 +31,7 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · WP03: raised refusal codes `registration_timed_out` and `pack_storage_full` had no scenario and only synthetic unit tests; covered by service tests over example-pack copies.
 
 2026-11-11 · claude · WP03: charter.yaml and org-charter.yaml cannot sit in an example pack: the whole-pack load rejects files it does not model, so the coverage check skips those two schemas (derived from the loader, not a list).
+
+2026-11-11 · claude · WP04: the `open-packs` tag also hid the moved tests from `:packs:test`, so the tag had to go with the move; Error Prone fails on an unused helper; targeted Gradle runs take ~2 min, and counts were read from test-results XML.
+
+2026-11-11 · claude · The session clone was shallow: the contract rehearsal's compatibility check refuses a shallow clone, so reproducing CI's release-rehearsal red needed `git fetch --unshallow --tags`. The release-rehearsal red on PR #474 (lintContract, ApiRoot `_links` without x-source, only in the synthetic release) passes on main; diagnosis in progress.
