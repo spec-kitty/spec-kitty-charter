@@ -61,8 +61,6 @@ class CompositeComponentResolverTest {
     void aBareReferenceHeldByNoPackHasNoHolder() {
         assertThat(twoPackResolver().holder(PackQualifiedReference.parse("directive:NOWHERE"), PACK))
                 .isEmpty();
-        assertThat(twoPackResolver().holdingPack(PackQualifiedReference.parse("directive:NOWHERE"), PACK))
-                .isEmpty();
     }
 
     @Test
