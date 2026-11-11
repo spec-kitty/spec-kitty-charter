@@ -85,7 +85,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   transport or routing failure, not a charter refusal.
 - `Then the field at "<json-pointer>" is "<text>"`, `... is <integer>` and `... is true` or `... is false` — the
   member an RFC 6901 JSON Pointer names (for example `/page/hasNextPage` or `/items/0/id`), which must be there and
-  of that JSON type. `Then the field at "<json-pointer>" starts with "<text>"` — the same for the start of a string.
+  of that JSON type. `Then the field at "<json-pointer>" starts with "<text>"` and `... ends with "<text>"` — the
+  same for the start or the end of a string, where the rest is opaque (a remembered page cursor in a detail).
 - `Then the path of the Location header is the href of the link "<relation>"` — a created resource's `Location`
   (absolute or not) has, as its path, the `href` of that relation in the answer's `_links`.
 - `Then the answer has no link "<relation>"` — the body's `_links` has no member of that relation key.

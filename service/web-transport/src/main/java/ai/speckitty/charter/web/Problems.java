@@ -10,8 +10,9 @@ import org.springframework.http.ResponseEntity;
 /**
  * The body of a failure that is not a charter refusal. A 500 is the {@code internal_error} refusal, as every 500
  * of the contract is a {@code CharterRefusal}. Any other status is a {@code Problem} of the status's title and
- * the status and nothing else: no {@code code}, as no refusal applies, and no {@code detail}, so neither a
- * framework's wording nor an exception message reaches the wire.
+ * the status: no {@code code}, as no refusal applies, and no {@code detail} unless the service wrote it, so neither a
+ * framework's wording nor an exception message reaches the wire. A refused request parameter is the one {@code 400}
+ * with a detail ({@link InvalidParameter}, #411).
  */
 public final class Problems {
 
@@ -33,6 +34,20 @@ public final class Problems {
                 ? RefusalHandler.internalError().getBody()
                 : new Problem(title(status), status.value());
         return ResponseEntity.status(status).headers(kept).body(body);
+    }
+
+    /**
+     * The {@code 400} of a refused request parameter: a {@code Problem} without a code, whose detail the service wrote.
+     *
+     * @param detail the {@link InvalidParameter#detail()} of the parameter, or several joined
+     * @return the {@code application/problem+json} response
+     */
+    public static ResponseEntity<Object> badRequest(String detail) {
+        Problem problem = new Problem(title(HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST.value());
+        problem.setDetail(detail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
     }
 
     /**

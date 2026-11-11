@@ -412,6 +412,13 @@ public class CharterSteps {
         assertThat(field.asString()).startsWith(prefix);
     }
 
+    @Then("the field at {string} ends with {string}")
+    public void fieldAtEndsWith(String pointer, String suffix) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
+        assertThat(field.asString()).endsWith(suffix);
+    }
+
     /**
      * A created resource's {@code Location} names the resource its answer links as {@code relation}: the path of the
      * header (absolute or not) equals that link's {@code href}.
