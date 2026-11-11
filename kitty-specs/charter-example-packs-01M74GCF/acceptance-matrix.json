@@ -26,13 +26,13 @@
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "Coverage test fails when a schema property, artifact kind or refusal code lacks an example",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "ExamplePackCoverageTest, ExampleCoverage (service/packs), ExampleCoverageTest (service/deployable) @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:01.084756+00:00",
+      "notes": "Green in verifyAll."
     },
     {
       "criterion_id": "FR-004",
