@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.boot.SpringApplication;
@@ -31,7 +32,16 @@ public class CharterServiceApplication {
      * @param args Spring Boot command-line arguments, for example {@code --configRootLocation /srv/charter}
      */
     public static void main(String[] args) {
-        SpringApplication.run(CharterServiceApplication.class, joinConfigRootOption(args));
+        String[] joined;
+        try {
+            joined = joinConfigRootOption(args);
+        } catch (StartupRefusal refused) {
+            // Before Spring runs, so no failure analyzer reports it: the one line, and the exit code of a failed start.
+            System.err.println(refused.getMessage());
+            System.exit(1);
+            return;
+        }
+        SpringApplication.run(CharterServiceApplication.class, joined);
     }
 
     /**
@@ -40,7 +50,7 @@ public class CharterServiceApplication {
      *
      * @param args the command-line arguments
      * @return the arguments with {@code --configRootLocation <path>} written as {@code --configRootLocation=<path>}
-     * @throws IllegalArgumentException when {@code --configRootLocation} is the last argument
+     * @throws StartupRefusal when {@code --configRootLocation} is the last argument
      */
     static String[] joinConfigRootOption(String[] args) {
         List<String> joined = new ArrayList<>();
@@ -53,7 +63,7 @@ public class CharterServiceApplication {
                 joined.add(CONFIG_ROOT_OPTION + "=" + args[i + 1]);
                 i += 2;
             } else {
-                throw new IllegalArgumentException(CONFIG_ROOT_OPTION + " needs a path");
+                throw new StartupRefusal(CONFIG_ROOT_OPTION + " needs a path: --configRootLocation <path>");
             }
         }
         return joined.toArray(String[]::new);

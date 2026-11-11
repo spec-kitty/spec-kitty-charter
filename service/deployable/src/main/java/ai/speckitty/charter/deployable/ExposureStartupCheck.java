@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +111,7 @@ public class ExposureStartupCheck implements InitializingBean {
     /**
      * Checks the environment the service starts with.
      *
-     * @throws IllegalStateException when a rule is broken, naming the property
+     * @throws StartupRefusal when a rule is broken, naming the property
      */
     @Override
     public void afterPropertiesSet() {
@@ -128,12 +129,12 @@ public class ExposureStartupCheck implements InitializingBean {
                 "a management server of its own answers outside the request guard");
         String basePath = environment.getProperty(BASE_PATH_PROPERTY);
         if (basePath != null && !BASE_PATH.equals(basePath.strip())) {
-            throw new IllegalStateException(BASE_PATH_PROPERTY
+            throw new StartupRefusal(BASE_PATH_PROPERTY
                     + " must be /actuator when it is set: the request guard exempts only /actuator/health");
         }
         requireHealthOnly(environment);
         if (isOn(environment, DISCOVERY_PROPERTY)) {
-            throw new IllegalStateException(DISCOVERY_PROPERTY
+            throw new StartupRefusal(DISCOVERY_PROPERTY
                     + " must be false: the discovery page at /actuator would list the endpoints (ADR-0041 decision 7)");
         }
         refusePathMapping(environment);
@@ -143,11 +144,11 @@ public class ExposureStartupCheck implements InitializingBean {
         refuseHealthGroups(environment);
         refuseJmx(environment);
         if (isOn(environment, PROBES_PROPERTY)) {
-            throw new IllegalStateException(PROBES_PROPERTY
+            throw new StartupRefusal(PROBES_PROPERTY
                     + " must be false: the probe groups would be listed in the health answer (ADR-0041 decision 7)");
         }
         if (container && logsRequestDetails(environment)) {
-            throw new IllegalStateException(LOG_REQUEST_DETAILS_PROPERTY
+            throw new StartupRefusal(LOG_REQUEST_DETAILS_PROPERTY
                     + " must be false under the container profile: it logs request headers, the token among them");
         }
         if (container) {
@@ -174,7 +175,7 @@ public class ExposureStartupCheck implements InitializingBean {
     private static void requireLoopbackBind(Environment environment) {
         String address = environment.getProperty(ADDRESS_PROPERTY, "").strip();
         if (address.isEmpty() || !isLoopback(address)) {
-            throw new IllegalStateException(ADDRESS_PROPERTY
+            throw new StartupRefusal(ADDRESS_PROPERTY
                     + " must be a loopback address without the container profile: the local service never listens"
                     + " beyond this machine (ADR-0041 decision 4)");
         }
@@ -213,7 +214,7 @@ public class ExposureStartupCheck implements InitializingBean {
      */
     private static void refuseTraceOfTheRequestHeaders(Environment environment) {
         if ("trace".equals(levelOf(loggerLevels(environment), REQUEST_LOGGER))) {
-            throw new IllegalStateException(LOGGING_LEVEL_PROPERTY
+            throw new StartupRefusal(LOGGING_LEVEL_PROPERTY
                     + " must not put " + REQUEST_LOGGER + " at TRACE under the container profile, directly or through"
                     + " a parent logger such as org.apache.coyote: it logs request headers, the token among them"
                     + " (ADR-0041 decision 8)");
@@ -261,7 +262,7 @@ public class ExposureStartupCheck implements InitializingBean {
     private static void refuseAuthorizationInTheAccessLog(Environment environment) {
         String pattern = environment.getProperty(ACCESS_LOG_PATTERN_PROPERTY);
         if (pattern != null && AUTHORIZATION_IN_PATTERN.matcher(pattern).find()) {
-            throw new IllegalStateException(ACCESS_LOG_PATTERN_PROPERTY
+            throw new StartupRefusal(ACCESS_LOG_PATTERN_PROPERTY
                     + " must not log the Authorization header under the container profile: the token is in it"
                     + " (ADR-0041 decision 8)");
         }
@@ -273,7 +274,7 @@ public class ExposureStartupCheck implements InitializingBean {
                 .bind(HEALTH_GROUPS_PROPERTY, Bindable.mapOf(String.class, String.class))
                 .orElse(Map.of())
                 .isEmpty()) {
-            throw new IllegalStateException(HEALTH_GROUPS_PROPERTY
+            throw new StartupRefusal(HEALTH_GROUPS_PROPERTY
                     + " must not be set: the health answer would list the group (ADR-0041 decision 7)");
         }
     }
@@ -284,7 +285,7 @@ public class ExposureStartupCheck implements InitializingBean {
                 .bind(PATH_MAPPING_PROPERTY, Bindable.mapOf(String.class, String.class))
                 .orElse(Map.of())
                 .isEmpty()) {
-            throw new IllegalStateException(PATH_MAPPING_PROPERTY
+            throw new StartupRefusal(PATH_MAPPING_PROPERTY
                     + " must not be set: the request guard exempts only /actuator/health (ADR-0041 decision 7)");
         }
     }
@@ -292,14 +293,14 @@ public class ExposureStartupCheck implements InitializingBean {
     /** JMX stays off and exposes nothing, so health is never answered outside the request guard. */
     private static void refuseJmx(Environment environment) {
         if (isOn(environment, JMX_PROPERTY)) {
-            throw new IllegalStateException(
+            throw new StartupRefusal(
                     JMX_PROPERTY + " must be false: management endpoints answer over HTTP only (ADR-0041 decision 7)");
         }
         if (!Binder.get(environment)
                 .bind(JMX_EXPOSURE_PROPERTY, Bindable.listOf(String.class))
                 .orElse(List.of())
                 .isEmpty()) {
-            throw new IllegalStateException(JMX_EXPOSURE_PROPERTY
+            throw new StartupRefusal(JMX_EXPOSURE_PROPERTY
                     + " must not be set: management endpoints answer over HTTP only (ADR-0041 decision 7)");
         }
     }
@@ -310,21 +311,21 @@ public class ExposureStartupCheck implements InitializingBean {
                 .bind(EXPOSURE_PROPERTY, Bindable.listOf(String.class))
                 .orElse(List.of(HEALTH));
         if (exposed.size() != 1 || !HEALTH.equals(exposed.getFirst().strip().toLowerCase(Locale.ROOT))) {
-            throw new IllegalStateException(EXPOSURE_PROPERTY
+            throw new StartupRefusal(EXPOSURE_PROPERTY
                     + " must be health when it is set: only health is exposed over HTTP" + " (ADR-0041 decision 7)");
         }
     }
 
     private static void refuse(Environment environment, String property, String reason) {
         if (environment.containsProperty(property)) {
-            throw new IllegalStateException(property + " must not be set: " + reason);
+            throw new StartupRefusal(property + " must not be set: " + reason);
         }
     }
 
     private static void requireValue(Environment environment, String property, String expected, String reason) {
         String value = environment.getProperty(property);
         if (value != null && !expected.equals(value.strip().toLowerCase(Locale.ROOT))) {
-            throw new IllegalStateException(property + " must be " + expected + " when it is set: " + reason);
+            throw new StartupRefusal(property + " must be " + expected + " when it is set: " + reason);
         }
     }
 }

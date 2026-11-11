@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackRegistrationService;
@@ -89,7 +90,7 @@ public class RegistrationWiring {
      * guess another place: without one it refuses to start. Switched off, nothing is staged, and the directory is a
      * relative name that is neither created nor swept.
      *
-     * @throws IllegalStateException when registration is switched on and no configuration root is set, or the configured
+     * @throws StartupRefusal when registration is switched on and no configuration root is set, or the configured
      *     staging directory is unsafe to sweep
      */
     @Bean
@@ -98,7 +99,7 @@ public class RegistrationWiring {
         ConfigRoot configuredRoot = root.getIfAvailable();
         if (configuredRoot == null) {
             if (properties.enabled()) {
-                throw new IllegalStateException(
+                throw new StartupRefusal(
                         "charter.registration.enabled needs charter.config-root: registered packs"
                                 + " are staged and stored under it, and the service does not stage them in a directory it guesses.");
             }
@@ -120,19 +121,18 @@ public class RegistrationWiring {
         Path directory = realOrNormalised(configured);
         for (Path tree : KERNEL_TREES) {
             if (directory.startsWith(tree)) {
-                throw new IllegalStateException(STAGING_KEY + " must not be under /proc, /sys or /dev: " + configured);
+                throw new StartupRefusal(STAGING_KEY + " must not be under /proc, /sys or /dev: " + configured);
             }
         }
         Path config = realOrNormalised(root.root());
         if (config.startsWith(directory)) {
-            throw new IllegalStateException(
-                    STAGING_KEY + " must not be " + CONFIG_KEY + " or a directory that holds it: " + configured
-                            + ". The sweep removes what it finds in the staging directory.");
+            throw new StartupRefusal(STAGING_KEY + " must not be " + CONFIG_KEY + " or a directory that holds it: "
+                    + configured + ". The sweep removes what it finds in the staging directory.");
         }
         for (Path store : List.of(config.resolve(ConfigRoot.PACKS), config.resolve(ConfigRoot.ACTIVATIONS))) {
             if (directory.startsWith(store)) {
-                throw new IllegalStateException(STAGING_KEY + " must not be the pack or the activation store of "
-                        + CONFIG_KEY + ", nor lie inside one: " + configured);
+                throw new StartupRefusal(STAGING_KEY + " must not be the pack or the activation store of " + CONFIG_KEY
+                        + ", nor lie inside one: " + configured);
             }
         }
         return configured.toAbsolutePath().normalize();
