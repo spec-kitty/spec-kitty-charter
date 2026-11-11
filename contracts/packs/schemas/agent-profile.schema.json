@@ -287,9 +287,12 @@
       "items": {
         "type": "string",
         "pattern": "^[a-z][a-z0-9-]*$",
-        "maxLength": 64
+        "maxLength": 64,
+        "not": {
+          "const": "generic"
+        }
       },
-      "description": "Roles the profile can also fill, in authored order (ADR-0069). Distinct, and never repeating role (checked by the reader, reported as uniqueItems at the repeat)."
+      "description": "Roles the profile can also fill, in authored order (ADR-0069). Never the reserved 'generic' (ADR-0068). Distinct, and never repeating role (checked by the reader, reported as uniqueItems at the repeat)."
     },
     "avatar-image": {
       "anyOf": [

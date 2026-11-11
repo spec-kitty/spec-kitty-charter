@@ -33,6 +33,10 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     public static final String ALT_ROLES_DISTINCT =
             "An agent profile's alt-roles must be distinct and must not repeat its role.";
 
+    /** The rule text of an alt-role that is the reserved role {@value RoleBearer#GENERIC} (ADR-0068 decision 4). */
+    public static final String ALT_ROLES_NOT_GENERIC =
+            "An agent profile's alt-roles must not contain the reserved role generic.";
+
     /** The reserved role of a fallback profile (ADR-0068 decision 4); it never earns a role fit. */
     public static final String GENERIC_ROLE = RoleBearer.GENERIC;
 
@@ -51,6 +55,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
                     profile -> java.util.stream.Stream.concat(
                                     java.util.stream.Stream.of(profile.role), profile.altRoles.stream())
                             .allMatch(AgentProfile::wellFormedRole)))
+            .must(Constraints.of(ALT_ROLES_NOT_GENERIC, profile -> !profile.altRoles.contains(GENERIC_ROLE)))
             .must(Constraints.of(
                     ALT_ROLES_DISTINCT,
                     profile ->
@@ -213,14 +218,15 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     /**
      * How the profile fits a role a step asks for (ADR-0069 decision 4): {@link RoleFit#PRIMARY} for its role,
      * {@link RoleFit#ALT} for one of its alt-roles, otherwise {@link RoleFit#NONE}. A profile whose role is the reserved
-     * {@value #GENERIC_ROLE} fits no role: it is served only as a fallback (ADR-0068 decision 4).
+     * {@value #GENERIC_ROLE} fits no role, and no profile fits the role {@value #GENERIC_ROLE}: it is served only as a
+     * fallback (ADR-0068 decision 4).
      *
      * @param asked the role asked for
      * @return the fit
      */
     public RoleFit roleFit(String asked) {
         Objects.requireNonNull(asked, "asked");
-        if (GENERIC_ROLE.equals(role)) {
+        if (GENERIC_ROLE.equals(role) || GENERIC_ROLE.equals(asked)) {
             return RoleFit.NONE;
         }
         if (role.equals(asked)) {
