@@ -16,10 +16,11 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * The lazy, repository-backed DRG walk driver (ADR-0025 Decision 4). It visits a component's effective-origin
+ * The DRG walk driver (ADR-0025 Decision 4). It visits a component's effective-origin
  * {@link CharterArtifact#derivedRelationships() derived relationships}, resolving each neighbour on demand through the
- * {@link ComposeResolver}'s {@link ComponentResolver} of its pack, with a visited-URN cycle guard. It never
- * materialises the whole graph: it issues at most one resolver call per distinct reachable component (NFR-001).
+ * {@link ComposeResolver}'s {@link ComponentResolver} of its pack, with a visited-URN cycle guard. Over an
+ * {@link EdgeIndex} that resolution is an in-memory lookup of an edge already indexed at its source, and the walk
+ * visits each distinct reachable component once (NFR-001).
  *
  * <p>It lives in the application ring, where the ports exist (ADR-0006). It is plain orchestration over the resolver
  * and a {@link GraphWalker} visitor — no IO, no framework; the composition root constructs it.
@@ -113,18 +114,16 @@ public final class GraphWalk {
     }
 
     /**
-     * The place of the neighbour a relationship of {@code component} leads to. An effective-origin edge is either
-     * authored from this component or a bidirectional edge that names it as {@code to}; the neighbour is always the
-     * other endpoint. Its reference resolves to (holding pack, bare URN) before anything is compared: a qualified one
+     * The place of the neighbour a relationship of {@code component} leads to. An effective-origin edge is stored
+     * at its source, so it is authored from this component and the neighbour is its {@code to}. Its reference resolves to (holding pack, bare URN) before anything is compared: a qualified one
      * names its pack, a bare one is in the pack of the component that writes it.
      *
      * @return the neighbour's place, or empty when the compose holds no pack for its qualified reference; the
      *     compose's own refusal (a pack outside the writer's {@code depends_on} closure) is thrown, not returned
      */
     private Optional<Held> neighbourOf(CharterArtifact component, Relationship relationship) {
-        boolean forward = relationship.from().equals(component.urn());
-        Urn neighbour = forward ? relationship.to() : relationship.from();
-        Optional<String> qualifier = forward ? relationship.toPack() : relationship.fromPack();
+        Urn neighbour = relationship.to();
+        Optional<String> qualifier = relationship.toPack();
         Optional<PackIdentifier> holder = qualifier.isPresent()
                 ? resolvers.holdingPack(new PackQualifiedReference(qualifier, neighbour.toString()), component.packId())
                 : Optional.of(component.packId());
