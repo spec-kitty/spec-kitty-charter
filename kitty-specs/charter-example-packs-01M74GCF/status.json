@@ -97,7 +97,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree ../charter-WP03",
-        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
+        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green.",
+        "Approved. ExamplePackCoverageTest plus deployable ExampleCoverageTest; pack_storage_full and registration_timed_out are driven through the SpringBoot service via replaced FreeSpaceCheck and the job gate/clock seams, not asserted by name. Minor: example-pack completions are wide; check they stay canonical when open-packs shapes move."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
