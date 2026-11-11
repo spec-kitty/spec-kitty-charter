@@ -3,7 +3,7 @@ title: "ADR-0040: A file-kind rule declares its content form, and asset payloads
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
 updated: 2026-11-11T00:00:00Z
-decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (proposed, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -213,8 +213,10 @@ request for #193 asks for.
 
 Made by [#382](https://github.com/spec-kitty/spec-kitty-charter/issues/382), the follow-up the operator asked
 for when the SHARING-004 scenario (#374) pinned the old wording on 2026-11-05. The decision text below is
-unchanged, and decision 6 is annotated where it stands. It is in force for the code #496 ships, and stays Proposed
-pending the operator's acceptance.
+unchanged, and decision 6 is annotated where it stands.
+
+**Accepted** — 2026-11-11, by the operator, with the pull request for #496. Only this amendment is accepted; the record
+stays Proposed, pending the acceptance that the pull request for #193 asks for.
 
 - **Decision 6: an escape has a refusal of its own.** A sidecar `path` that leaves `assets/` as written
   (absolute in POSIX or Windows form, or with a `..` part: the lexical rule of validate mode's `ASSET_PATH_ESCAPE`)
