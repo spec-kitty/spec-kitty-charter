@@ -69,7 +69,8 @@ final class MeaningComparator {
     private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
             "styleguide", Set.of("tooling", "structural_lint_config"),
             "agent-profile", Set.of("excluding"),
-            "guard", Set.of("config_schema"));
+            "guard", Set.of("config_schema"),
+            "policy", Set.of("artifacts"));
 
     private MeaningComparator() {}
 
