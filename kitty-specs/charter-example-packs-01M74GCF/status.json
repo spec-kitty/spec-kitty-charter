@@ -1,7 +1,7 @@
 {
-  "event_count": 56,
-  "last_event_id": "01M74S0PS1ST10SDRRQ09FH2NC",
-  "materialized_at": "2026-11-11T07:44:03.361174+00:00",
+  "event_count": 57,
+  "last_event_id": "01M74S1TQCP8DB7RYHYT4XWZVD",
+  "materialized_at": "2026-11-11T07:44:40.172420+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 3,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -203,11 +203,11 @@
       }
     },
     "WP07": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M74H5CH9ARPVYGJA0H3D7PRN",
-      "last_transition_at": "2026-11-11T05:26:48.105920+00:00"
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "in_progress",
+      "last_event_id": "01M74S1TQCP8DB7RYHYT4XWZVD",
+      "last_transition_at": "2026-11-11T07:44:40.172420+00:00"
     },
     "WP08": {
       "actor": "reviewer-renata",
