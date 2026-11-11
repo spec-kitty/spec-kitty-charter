@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-11T05:50:08.277431+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: self-tests green in packs and deployable; 98 files"
+        "Ready for review: self-tests green in packs and deployable; 98 files",
+        "Review claimed"
       ],
       "provider": "__resolved_provider_absent__",
       "role": "reviewer",
