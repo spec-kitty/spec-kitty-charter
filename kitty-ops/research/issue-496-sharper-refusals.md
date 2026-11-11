@@ -72,10 +72,17 @@ merge, as charter.md asks of a contract change.
 - A sidecar or `body_path` that escapes only through a symbolic link is judged by the adapter's containment check in
   validate mode for assets; for `body_path` the rule is lexical only (core's semantics also resolve links).
 - The dead `planted/` corpus: reported to the orchestrator, not filed (Rule 1).
-- `CommitStorePackWriteStore.authored` skips graph documents it cannot read (squad, MEDIUM). Both removals that read
-  it run the impact check next, which refuses a pack with an unreadable graph document `pack_unreadable`, so no
-  removal passes; making `authored` fail closed itself is left as is.
-- Validate mode reports an escaping `body_path` at the node and keeps the fragment's other nodes, while the load
-  refuses the whole fragment, so the step-enhancement edge rules may be judged in one mode and not the other for a pack
-  with both faults.
 - Validate mode reports an escaping sidecar twice: the store's refusal and `ASSET_PATH_ESCAPE`, as before.
+
+## Pre-merge squad (folded)
+
+- Contract: both change fragments are `### Breaking` (a newly refused pack; a refused registration lists one
+  violation fewer per refused sidecar); a registration scenario pins that a missing payload still reads "does not
+  exist", once; the ADR-0040 amendment is in force for the code #496 ships; the 2026-11-05 fragment, PROMISES.md,
+  the logical model, the glossary and descriptors.md name the new rules.
+- Code: validate mode refuses the whole fragment as the load does (`FileSystemPackInspector.fragment`), so both judge
+  the same rules; `CommitStorePackWriteStore.authored` fails closed with `pack_unreadable` on any graph violation;
+  the placeholder check judges every source that supplies the token, not only the first, and its message says
+  "another source".
+- Not folded: validate mode still reports an escaping sidecar twice (the store's refusal and `ASSET_PATH_ESCAPE`), as
+  before this change; validate mode names only the first escaping node of a fragment, the load each one.
