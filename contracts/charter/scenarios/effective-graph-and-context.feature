@@ -769,6 +769,10 @@ Feature: The effective graph and the effective action context answer what the ac
     And the field at "/artifacts/1/_links/artifact/href" is "/api/v1/packs/main/artifacts/procedure/p"
     And the field at "/artifacts/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/styleguide/s"
     And the field at "/artifacts/4/_links/artifact/href" is "/api/v1/packs/main/artifacts/toolguide/g"
+    When I GET "/activations/a-1/graph"
+    Then the response status is 200
+    And the field at "/nodes/4/urn" is "procedure:p"
+    And the field at "/nodes/4/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/procedure/p"
     When I GET "/activations/a-1/artifacts/styleguide/s"
     Then the response status is 200
     And the response header "ETag" appears once

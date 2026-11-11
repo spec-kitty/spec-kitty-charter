@@ -61,6 +61,8 @@ Feature: Procedures are read by pack and under an activation (#484)
       anti_patterns:
         - title: Fixing before reproducing
           content: A fix without a failing test proves nothing.
+          bad_example: Patch the symptom and move on.
+          good_example: Write the failing test, then fix.
       notes: Keep the test.
       applies_to_languages:
         - java
@@ -98,7 +100,7 @@ Feature: Procedures are read by pack and under an activation (#484)
             {"title": "Write a test that fails on the defect", "description": "Reproduce the defect in a test before touching the code.", "role": "implementer", "onSuccess": "Fix the code.", "onFailure": "Ask the reporter for a reproduction."},
             {"title": "Fix the code until the test passes", "description": null, "role": "implementer", "onSuccess": null, "onFailure": null}
           ],
-          "antiPatterns": [{"title": "Fixing before reproducing", "content": "A fix without a failing test proves nothing.", "badExample": null, "goodExample": null}],
+          "antiPatterns": [{"title": "Fixing before reproducing", "content": "A fix without a failing test proves nothing.", "badExample": "Patch the symptom and move on.", "goodExample": "Write the failing test, then fix."}],
           "notes": "Keep the test.",
           "appliesToLanguages": ["java"]
         },
@@ -115,6 +117,9 @@ Feature: Procedures are read by pack and under an activation (#484)
     And the response header "Charter-Source-Fingerprint" appears once
     And the response header "ETag" appears once
     And the field at "/procedure/steps/0/role" is null
+    And the field at "/procedure/antiPatterns" holds exactly 0 items
+    And the field at "/procedure/notes" is null
+    And the field at "/procedure/appliesToLanguages" holds exactly 0 items
     When I GET "/packs/core/artifacts?kind=procedure"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
