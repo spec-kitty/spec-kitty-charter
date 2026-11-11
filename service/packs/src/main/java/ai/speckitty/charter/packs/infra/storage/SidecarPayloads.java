@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.PackPaths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,9 +11,11 @@ import java.util.Set;
 /**
  * The store's rule for an asset sidecar's payload (ADR-0040 decision 6), the one the load and validate mode both apply
  * so they refuse the same sidecars in the same words (#251). A sidecar's {@code path} must name, exactly, an asset file
- * the pack holds: one the listing classifies as an {@code asset-payload}, under {@code assets/}. A path that is missing,
- * spelled in another case, outside {@code assets/} or classified by another rule names none. Two sidecars may not name
- * one payload: the first, in {@link String} order of their files, owns it.
+ * the pack holds: one the listing classifies as an {@code asset-payload}, under {@code assets/}. A path that leaves
+ * {@code assets/} as written ({@link PackPaths#leavesRoot}) is refused as an escape, in the words of validate mode's
+ * {@code ASSET_PATH_ESCAPE}, whether or not a file is at its target (#382). A path that is missing, spelled in another
+ * case or classified by another rule names no payload. Two sidecars may not name one payload: the first, in
+ * {@link String} order of their files, owns it.
  */
 final class SidecarPayloads {
 
@@ -31,8 +34,8 @@ final class SidecarPayloads {
      * A sidecar the rule refuses, and why.
      *
      * @param file the sidecar's pack-relative path
-     * @param reason {@code payload assets/<path> does not exist} or {@code payload assets/<path> is already named by
-     *     asset <id>}
+     * @param reason {@code asset path '<path>' escapes the pack's assets/ root}, {@code payload assets/<path> does not
+     *     exist} or {@code payload assets/<path> is already named by asset <id>}
      */
     record Refused(String file, String reason) {}
 
@@ -50,7 +53,10 @@ final class SidecarPayloads {
         for (Sidecar sidecar : sidecars) {
             String payload = PackFileSet.ASSETS + sidecar.path();
             String claimant = namedBy.get(sidecar.path());
-            if (!payloads.contains(sidecar.path())) {
+            if (PackPaths.leavesRoot(sidecar.path())) {
+                refused.add(new Refused(
+                        sidecar.file(), "asset path '" + sidecar.path() + "' escapes the pack's assets/ root"));
+            } else if (!payloads.contains(sidecar.path())) {
                 refused.add(new Refused(sidecar.file(), "payload " + payload + " does not exist"));
             } else if (claimant != null) {
                 refused.add(

@@ -14,6 +14,8 @@ import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PackPolicyGraphTest {
 
@@ -82,6 +84,49 @@ class PackPolicyGraphTest {
 
         assertThat(build.graph().nodes())
                 .containsExactly(new DrgNode(B, Optional.of("B"), Optional.empty(), List.of(), Optional.of("b.md")));
+    }
+
+    /** #254: a fragment node's body_path is relative to the pack root, and one that leaves it is a graph fault. */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {"/etc/passwd", "../outside.md", "directives/../../outside.md", "C:\\x.md", "\\\\host\\x.md"})
+    void aFragmentNodeWhoseBodyPathLeavesThePackIsAFindingAndTheNodeIsDropped(String bodyPath) {
+        GraphBuild build = PackPolicy.graph(
+                "qa",
+                fragment(
+                        List.of(new RawNode(
+                                "b",
+                                "directives",
+                                Optional.of("B"),
+                                Optional.empty(),
+                                List.of(),
+                                Optional.of(bodyPath))),
+                        List.of()));
+
+        assertThat(build.graph().nodes()).isEmpty();
+        assertThat(build.findings())
+                .containsExactly(new PackFinding(
+                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        FRAGMENT,
+                        List.of("nodes", "0"),
+                        "qa/drg/fragment.yaml: node b body_path '" + bodyPath + "' escapes the pack root"));
+    }
+
+    @Test
+    void aFragmentNodeWhoseBodyPathStaysInsideThePackBinds() {
+        GraphBuild build = PackPolicy.graph(
+                "qa",
+                fragment(
+                        List.of(new RawNode(
+                                "b",
+                                "directives",
+                                Optional.empty(),
+                                Optional.empty(),
+                                List.of(),
+                                Optional.of("directives/b..md"))),
+                        List.of()));
+
+        assertThat(build.findings()).isEmpty();
     }
 
     @Test

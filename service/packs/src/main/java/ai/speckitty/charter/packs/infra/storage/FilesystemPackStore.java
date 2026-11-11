@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
@@ -653,12 +654,33 @@ final class FilesystemPackStore {
         for (String file : files) {
             Shape shape = file.equals(PackFileSet.FRAGMENT) ? Shape.FRAGMENT : Shape.SHARD;
             switch (readFile(directory.resolve(file), file, text -> strategy.readGraph(text, shape, file))) {
-                case FileRead.Read<GraphDocument> good -> documents.add(good.value());
+                case FileRead.Read<GraphDocument> good -> {
+                    List<PackElementViolation> escapes = bodyPathEscapes(good.value());
+                    if (escapes.isEmpty()) {
+                        documents.add(good.value());
+                    } else {
+                        violations.addAll(escapes);
+                    }
+                }
                 case FileRead.Unreadable<GraphDocument> bad -> violations.addAll(violationsOf(bad));
                 case FileRead.Absent<GraphDocument> absent -> {}
             }
         }
         return new GraphRead(documents, violations);
+    }
+
+    /**
+     * The fragment nodes whose {@code body_path} leaves the pack root (#254), each a graph fault of the fragment in
+     * {@link PackPolicy#bodyPathEscape}'s words, so the document is refused as validate mode reports it.
+     */
+    private static List<PackElementViolation> bodyPathEscapes(GraphDocument document) {
+        if (!(document instanceof GraphDocument.Fragment fragment)) {
+            return List.of();
+        }
+        return fragment.nodes().stream()
+                .flatMap(node -> PackPolicy.bodyPathEscape(node.id(), node.bodyPath()).stream())
+                .map(reason -> new PackElementViolation(document.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), reason))
+                .toList();
     }
 
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {

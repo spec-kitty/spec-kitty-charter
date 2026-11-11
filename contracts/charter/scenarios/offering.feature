@@ -280,8 +280,8 @@ Feature: The offering lists the configured packs in force
   Scenario: A configured pack holding an asset whose path leaves assets/ refuses the offering
     PR-CHARTER-SHARING-004 (#374): a shared asset that reaches outside its pack is not accepted as sound.
     The sidecar's path climbs out of assets/ and out of the pack to a file that does exist, the project's
-    charter.yaml, so a check that only looks on disk would accept it. It names no payload the pack holds
-    (ADR-0040 decision 6): the load path names the payload it looked for, and the offering refuses the pack.
+    charter.yaml, so a check that only looks on disk would accept it. The load path names the escape, whether or not a
+    file is at the target (#382, ADR-0040 decision 6 as amended), and the offering refuses the pack.
     Given the project configuration file "charter.yaml":
       """
       charter: outside the pack
@@ -303,8 +303,35 @@ Feature: The offering lists the configured packs in force
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    # The detail says "does not exist" for an escaping path too; a reason of its own for an escape is #382.
-    And the field "detail" of the response body is "the file assets/notes.md.asset.yaml of docs cannot be read: payload assets/../../../.kittify/charter.yaml does not exist"
+    And the field "detail" of the response body is "the file assets/notes.md.asset.yaml of docs cannot be read: asset path '../../../.kittify/charter.yaml' escapes the pack's assets/ root"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A configured pack whose fragment names a body_path outside the pack refuses the offering
+    #254: a fragment node's body_path is relative to the pack root. One that leaves it is a fault of the fragment, so
+    the graph document cannot be read and the offering refuses the pack, as for any graph document it cannot read.
+    Given the org pack "docs" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C0000000000000D0C5
+      pack_version: 1.0.0
+      parent_pack: null
+      name: docs-pack
+      pack_level: org
+      pack_drg: drg/fragment.yaml
+      """
+    And the org pack "docs" with the file "drg/fragment.yaml":
+      """
+      nodes:
+      - id: D1
+        kind: directives
+        title: D1
+        body_path: /etc/passwd
+      edges: []
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    # A composing read names no file for a graph fault (CharterRefusalCode); the registration names the escape.
+    And the field "detail" of the response body is "a graph document of docs cannot be read"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: An offering whose inputs change while it is answered is refused with stale_input
