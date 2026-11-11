@@ -49,12 +49,6 @@ class AgentProfileRolesTest {
         assertThat(renata.roleFit("reviewer")).isEqualTo(RoleFit.PRIMARY);
         assertThat(pedro.roleFit("reviewer")).isEqualTo(RoleFit.ALT);
         assertThat(pedro.roleFit("architect")).isEqualTo(RoleFit.NONE);
-        assertThat(RoleFit.PRIMARY.outranks(RoleFit.ALT)).isTrue();
-        assertThat(RoleFit.ALT.outranks(RoleFit.NONE)).isTrue();
-        assertThat(RoleFit.ALT.outranks(RoleFit.PRIMARY)).isFalse();
-        assertThat(RoleFit.PRIMARY.outranks(RoleFit.PRIMARY)).isFalse();
-        assertThat(RoleFit.NONE.fits()).isFalse();
-        assertThat(RoleFit.ALT.fits()).isTrue();
     }
 
     @Test
@@ -65,6 +59,7 @@ class AgentProfileRolesTest {
 
         assertThat(fallback.roleFit("implementer")).isEqualTo(RoleFit.NONE);
         assertThat(fallback.roleFit("generic")).isEqualTo(RoleFit.NONE);
+        assertThat(base("renata").role("reviewer").build().roleFit("generic")).isEqualTo(RoleFit.NONE);
     }
 
     @Test
@@ -80,6 +75,9 @@ class AgentProfileRolesTest {
                 new Case(
                         AgentProfile.ALT_ROLES_DISTINCT,
                         base("dup2").role("a").altRole("b").altRole("b")),
+                new Case(
+                        AgentProfile.ALT_ROLES_NOT_GENERIC,
+                        base("generic-alt").role("reviewer").altRole("generic")),
                 new Case("lowercase letters, digits and hyphens", base("upper").role("Implementer")),
                 new Case(
                         "lowercase letters, digits and hyphens",

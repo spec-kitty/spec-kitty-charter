@@ -69,6 +69,7 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
     @Override
     public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
         List<String> altRoles = strings(root, "alt-roles");
+        // rules() runs after schema validation, which is what guarantees the required role is present
         return AgentProfile.firstRepeatedAltRole(required(root, "role"), altRoles).stream()
                 .mapToObj(i -> new PackContents.SchemaViolation(
                         file,
