@@ -19,8 +19,8 @@ import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService
 import ai.speckitty.charter.missions.application.EffectiveStepContract;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
-import ai.speckitty.charter.missions.application.PackHolding;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
@@ -100,9 +100,9 @@ class EffectiveMissionTypesControllerTest {
                                         }
 
                                         @Override
-                                        public PackHolding revised(PackIdentifier pack, String type) {
-                                            return new PackHolding(
-                                                    EffectiveMissionTypesControllerTest.holding(), PACK_REVISION);
+                                        public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String type) {
+                                            MissionTypeHolding held = EffectiveMissionTypesControllerTest.holding();
+                                            return new PackRead<>(held, held.fingerprint(), PACK_REVISION);
                                         }
                                     },
                                     (contract, read) -> STEP_CONTRACT),
