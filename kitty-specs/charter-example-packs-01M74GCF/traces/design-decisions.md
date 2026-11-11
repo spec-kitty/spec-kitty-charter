@@ -20,3 +20,5 @@ Decisions recorded in decisions/ (DM records) and ADR-0070; this file logs the r
 
 2026-11-11 · reviewer-renata · WP02–WP04 approved. Restoring the built-in `impacts` edge turns wholePackRoundTrip red (2 of 8), so #477 is real and the move to project/ hides it; accepted as minor while #477 stays open. `delegation ≥1` is close to a presence check.
 2026-11-11 · claude · WP05: the project example's overrides edge onto org-base::styleguide:reasons-canvas-writing was refused as self_override once the full closure merged edges (the governance walk); the project styleguide already overrides by sharing its id one level up (ADR-0053), so the edge was removed and the project manifest re-stamped. PackDigestBaselineTest now pins only project (built-in and org-base hold enhancements/), with values computed on current code, not on pre-binding code.
+
+2026-11-11 · claude · WP09 closes with no code change; its evidence (grep and a green run without the synced trees) is the deliverable. The synced-tree readers are all in :deployable (WP06, WP10).
