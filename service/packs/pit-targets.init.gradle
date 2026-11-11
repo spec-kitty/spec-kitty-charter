@@ -2,12 +2,12 @@
 // classes instead of a module's whole PIT scope. A module's scope comes from charter.mutation-conventions
 // (ai.speckitty.charter.*) or, in packs, from its build file: domain, application, infra.storage, infra.fetch and
 // infra.archive, with their unit tests only; infra.api is not mutated. A narrowed packs run keeps the packs exclusions
-// (application.config, infra.fetch.config, infra.api, *WiredTest and the open-packs, whole-pack, timing, git-host and
+// (application.config, infra.fetch.config, infra.api, *WiredTest and the whole-pack, timing, git-host and
 // stress tags); pass the -P flags every packs run takes.
 //
 //   ./gradlew :packs:pitest --no-configuration-cache --max-workers=2 \
 //     -I service/packs/pit-targets.init.gradle \
-//     -PopenPacksDir=../spec-kitty-open-packs -PrequireSymlinks=true \
+//     -PrequireSymlinks=true \
 //     -Dpit.classes=ai.speckitty.charter.packs.domain.PackPolicy \
 //     -Dpit.tests='ai.speckitty.charter.packs.domain.*'
 //

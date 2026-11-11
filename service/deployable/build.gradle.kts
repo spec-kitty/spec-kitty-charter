@@ -135,45 +135,11 @@ tasks.test {
     })
 }
 
-// The open-packs corpus test of the profile read (WP04, T023): every agent profile of the pinned spec-kitty-open-packs
-// checkout is read through the whole service. Point -PopenPacksDir at a checkout (an absolute path, or one relative to
-// the repository root); by default the sibling ../spec-kitty-open-packs. It is not part of `test`, which has no checkout,
-// and `check` runs it; a missing or moved checkout fails the task, it never skips.
-val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
-val openPacksDir = providers.gradleProperty("openPacksDir")
-    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
-    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
-val openPacksRef = providers.gradleProperty("openPacksRef")
-
+// ProfileExamplesEdgeTest checks the contract's examples against the example packs' graph files (ADR-0070): the
+// contract directory is a declared input, handed over as charter.contractsDir, so the test never searches for it.
 tasks.test {
-    useJUnitPlatform { excludeTags("open-packs") }
+    val contracts = rootProject.layout.projectDirectory.dir("contracts/charter")
+    inputs.dir(contracts.dir("examples")).withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("contractExamples")
+    systemProperty("charter.contractsDir", contracts.asFile.absolutePath)
 }
-
-val openPacksProfiles = tasks.register<Test>("openPacksProfiles") {
-    group = "verification"
-    description = "Reads every agent profile of the pinned spec-kitty-open-packs checkout through the service (part of check)."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    // Not the Cucumber suite: it selects the contract scenarios by its own tag and finds none here.
-    useJUnitPlatform {
-        includeTags("open-packs")
-        includeEngines("junit-jupiter")
-    }
-    val dir = openPacksDir
-    inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
-    systemProperty("charter.openPacksDir", dir.get())
-    // The contract directory holds the examples that ProfileExamplesEdgeTest checks against the checkout's graph files.
-    val contracts = repositoryRoot.resolve("contracts/charter")
-    inputs.dir(contracts.resolve("examples")).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractExamples")
-    systemProperty("charter.contractsDir", contracts.path)
-    val ref = openPacksRef
-    inputs.property("openPacksRef", ref.orElse(""))
-    doFirst {
-        val pin = ref.orNull
-        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
-            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
-        }
-        systemProperty("charter.openPacksRef", pin)
-    }
-}
-tasks.check { dependsOn(openPacksProfiles) }

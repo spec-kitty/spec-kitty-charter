@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,9 +44,8 @@ import org.junit.jupiter.api.io.TempDir;
  * by meaning. A pinned refusal is one per file: the file's reasons in the store's order, joined by {@code "; "}, as the
  * gate pins them.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}) until WP07 moves it; it reads no checkout.
+ * <p>Runs in {@code :packs:test}; it reads no spec-kitty-open-packs checkout.
  */
-@Tag("open-packs")
 class WholePackExamplesRoundTripTest {
 
     private static final String BUILT_IN = "built-in";
@@ -291,7 +289,7 @@ class WholePackExamplesRoundTripTest {
 
         assertThat(loaded)
                 .containsExactly(
-                        Map.entry(BUILT_IN, new Counts(3, 4, 1, 6)),
+                        Map.entry(BUILT_IN, new Counts(3, 4, 1, 7)),
                         Map.entry(ExamplePacks.ORG, new Counts(0, 0, 0, 0)),
                         Map.entry(ExamplePacks.PROJECT, new Counts(0, 0, 0, 0)));
     }
@@ -431,9 +429,9 @@ class WholePackExamplesRoundTripTest {
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())
                 .as("every constituent: #194 binds procedures, so every listed kind is modelled")
-                .hasSize(21);
+                .hasSize(22);
         // Two top-level templates and 25 mission-type templates (#194).
-        assertThat(countsOf(loaded)).isEqualTo(new Counts(3, 4, 1, 6));
+        assertThat(countsOf(loaded)).isEqualTo(new Counts(3, 4, 1, 7));
         assertThat(loaded.pack().templates())
                 .filteredOn(template -> template.missionType().isEmpty())
                 .extracting(template -> template.id().value())

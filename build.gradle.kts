@@ -6,7 +6,7 @@ plugins {
 
 tasks.register("verifyAll") {
     group = "verification"
-    description = "Runs every module's check, including the contract validation and the open-packs round-trip."
+    description = "Runs every module's check, including the contract validation and the example-pack round-trip."
     dependsOn(subprojects.map { "${it.path}:check" })
     // The convention plugins' own tests, the contract normalizer's among them.
     dependsOn(gradle.includedBuild("build-logic").task(":check"))
