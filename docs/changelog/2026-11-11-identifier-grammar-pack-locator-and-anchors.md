@@ -20,22 +20,17 @@ Tidy-ups from the 2026-11-11 triage
 except in the one case named below.
 
 - **One identifier grammar.** `kernel.domain.IdentifierGrammar` holds the kebab slug, the letter-first slug,
-  the dotted key and the relative path. Each one checks its length cap (64, or 255 for a key or a path) before
-  it matches, and every repeat is possessive. The pack and mission identifier types check their ids through it,
-  so they cannot drop the cap or the possessive quantifiers. A step enhancement's id keeps its own pattern for
-  now: it has no cap yet, and ADR-0066's second phase changes that code
-  ([#444](https://github.com/spec-kitty/spec-kitty-charter/issues/444)). One deliberate tightening: a guard's
-  `builtin:<id>` now takes the slug grammar, so an id with a leading, trailing or double hyphen is refused as
-  neither spelling, where it used to be refused as not a built-in guard. Both are refused; no id on the closed list
-  changes. The unused `kernel.validation.Checks`
-  is gone ([#383](https://github.com/spec-kitty/spec-kitty-charter/issues/383)).
+  the dotted key and the relative path. Each checks its length cap (64, or 255 for a key or a path) before it
+  matches, and every repeat is possessive. The pack and mission identifier types check through it. A step
+  enhancement's id keeps its own pattern: ADR-0066's second phase changes that code ([#444](https://github.com/spec-kitty/spec-kitty-charter/issues/444)). One deliberate tightening: a
+  guard's `builtin:<id>` takes the slug grammar, so a leading, trailing or double hyphen is refused as neither
+  spelling, not as an unknown built-in; the closed list is unchanged. The unused `Checks` is gone ([#383](https://github.com/spec-kitty/spec-kitty-charter/issues/383)).
 - **One pack locator.** Reads, commits and writes resolve a pack id to its directory through `PackLocator`
-  ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). One fix came with it: a pack location
-  at the filesystem root no longer makes an id lookup on the read side refuse `500 pack_unreadable`. Like any
-  location that cannot declare the id, it is passed over, as the write side already did. The other way round, a
-  location whose `pack.yaml` is there but cannot be read (a directory, no read permission) is refused
-  `500 pack_unreadable` on all three sides, so it cannot hide behind a later location that declares the same id.
-  A missing `pack.yaml` or one that is no descriptor is still passed over.
+  ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). Two behaviours came with it. A pack
+  location at the filesystem root no longer makes an id lookup on the read side refuse `500 pack_unreadable`; it
+  is passed over, as the write side already did, like a missing `pack.yaml` or one that is no descriptor. A
+  `pack.yaml` that is there but cannot be read (a directory, no read permission) is refused
+  `500 pack_unreadable` on all three sides, so it cannot hide behind a later location that declares the id.
 - **A relative `-PcontractBundle` is relative to the repository root**, as `-PopenPacksDir` is. Before, it
   resolved against `service/deployable`, so the build packaged no bundle and still passed. A path that names no
   file, or a directory, now fails the build with `-PcontractBundle names no file: <path>`
