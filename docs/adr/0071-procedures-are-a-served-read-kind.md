@@ -3,7 +3,7 @@ title: "ADR-0071: Procedures are a served read kind"
 description: "The service reads procedures by pack and under an activation, on the seam of the kinds already served, with artifact_not_found and a revision ETag."
 doc_status: active
 updated: 2026-11-11T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-11'
 type: ADR
 kind: ADR
@@ -19,8 +19,8 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-11, on the pull request that closes
-[#484](https://github.com/spec-kitty/spec-kitty-charter/issues/484). It waits for operator approval.
+**Accepted**, 2026-11-11 (operator, on PR #486), on the pull request that closes
+[#484](https://github.com/spec-kitty/spec-kitty-charter/issues/484).
 
 ## Context
 
