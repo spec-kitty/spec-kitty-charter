@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -113,13 +113,13 @@ rules below are how this one is scoped to its worktree.
 - The service refuses to start without a token of at least 32 characters, unless
   `charter.insecure-no-token=true` is set (development only; it warns at every start). It refuses
   a token that comes from argv or a system property, including through `spring.application.json`
-  given on argv or with `-D`. The environment (`CHARTER_WORKTREE_TOKEN`) is the source; under the
+  given on argv or with `-D`, and a token given as a placeholder (`CHARTER_WORKTREE_TOKEN='${x}'`),
+  which would resolve it from such a source. The environment (`CHARTER_WORKTREE_TOKEN`) is the source; under the
   `container` profile a mounted file in the secrets directory is the other one.
 - The token proves the client to the service, not the service to the client. The launcher's
   process identity is what identifies the server. Residual risks, for the launcher's security
   review (#70): a process that squats the port receives the token, and a derived worktree id is
-  guessable. A `${x}` placeholder in the environment with its value on argv is not caught
-  either (hardening: #121).
+  guessable.
 - No secrets in responses.
 - **Version handshake.** An info endpoint reports the contract version, the service's build
   version (`serviceVersion`, from `gradle.properties`), the worktree and the current input fingerprint.

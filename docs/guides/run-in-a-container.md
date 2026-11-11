@@ -2,7 +2,7 @@
 title: Run the service in a container
 description: Run the charter service under the container profile with docker compose, with its token as a mounted secret file and nothing secret committed.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -71,6 +71,8 @@ of #234.
 
 - **File names.** A file is named after its property, in dot form. A file named in env-var style
   (`CHARTER_WORKTREE_TOKEN`) is refused.
+- **The token itself.** The file or env var holds the token, never a placeholder such as `${x}`: the service refuses
+  to start on one, since it could resolve the token from the command line.
 - **Precedence.** An env var outranks the file, and an empty env var hides the file. That is why `.env.example` lists
   the secrets only as comments.
 - **Why files.** An env var's value shows in `docker inspect` and in the process environment; a mounted file does
