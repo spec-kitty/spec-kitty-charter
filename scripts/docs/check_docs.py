@@ -247,6 +247,8 @@ def prose(line: str) -> str:
 
 CODE_SPAN_RE = re.compile(r"(`+)(.+?)(?<!`)\1(?!`)")
 UNDERSCORE_EMPHASIS_RE = re.compile(r"(?<!\w)(_{1,3})(?=\S)(.+?)(?<=\S)\1(?!\w)")
+# Only tag-shaped text is markup: `a < b and c > d` is prose and keeps what sits between its angle brackets.
+TAG_RE = re.compile(r"</?[A-Za-z][^<>\s]*(?:\s[^<>]*)?>")
 ESCAPED_RE = re.compile(r"\\([!-/:-@\[-`{-~])")
 # An escaped `_`, `<` or `>` is literal text, never emphasis or a tag; it is held aside while those are removed.
 LITERAL = {"_": "\ue000", "<": "\ue001", ">": "\ue002"}
@@ -260,7 +262,7 @@ def heading_text(heading: str) -> str:
         kind = i % 3  # split() yields: prose, the backtick run, the code span's content, prose, ...
         if kind == 0:
             part = ESCAPED_RE.sub(lambda m: LITERAL.get(m.group(1), m.group(1)), part)
-            part = re.sub(r"<[^>]+>", "", part)
+            part = TAG_RE.sub("", part)
             part = UNDERSCORE_EMPHASIS_RE.sub(r"\2", part).replace("*", "")
             for char, held in LITERAL.items():
                 part = part.replace(held, char)
@@ -274,11 +276,11 @@ def heading_text(heading: str) -> str:
 def slugify(heading: str) -> str:
     """The heading's id as the site builds it: github-slugger over the rendered text (#134).
 
-    The slugger lower-cases, drops punctuation but keeps `_` and `-`, and turns each space into `-`. Underscores
-    stay unless they mark emphasis, and a code span keeps what it shows, `<kind>` included.
+    The slugger lower-cases, drops punctuation but keeps `_` and `-`, and turns each space (not other whitespace)
+    into `-`. Underscores stay unless they mark emphasis, and a code span keeps what it shows, `<kind>` included.
     """
     text = re.sub(r"[^\w\s-]", "", heading_text(heading).strip().lower())
-    return re.sub(r"\s", "-", text)
+    return text.replace(" ", "-")
 
 
 def anchors_of(page: Page) -> set[str]:

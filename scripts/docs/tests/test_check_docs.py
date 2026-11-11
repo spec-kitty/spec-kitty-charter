@@ -354,6 +354,7 @@ SLUGGER_CASES = [
     ("Use \\<kind\\> here", "use-kind-here"),
     ("snake\\_case", "snake_case"),
     ("a \\*not\\* em", "a-not-em"),
+    ("Compare a < b and c > d, then <em>this</em>", "compare-a--b-and-c--d-then-this"),
 ]
 
 
