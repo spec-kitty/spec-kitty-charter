@@ -9,6 +9,8 @@ required: [id, schemaVersion, title, description, entryCondition, exitCondition,
 properties:
   id:
     type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    maxLength: 64
     description: The procedure's identity within its pack.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
@@ -21,24 +23,28 @@ properties:
       symbol: Procedure.schemaVersion
   title:
     type: string
+    minLength: 1
     description: The procedure's title.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
       symbol: Procedure.title
   description:
     type: string
+    minLength: 1
     description: What the procedure is for.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
       symbol: Procedure.description
   entryCondition:
     type: string
+    minLength: 1
     description: The condition under which the procedure starts.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
       symbol: Procedure.entryCondition
   exitCondition:
     type: string
+    minLength: 1
     description: The condition under which the procedure is done.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
@@ -62,6 +68,7 @@ properties:
       symbol: Procedure.antiPatterns
   notes:
     type: ['string', 'null']
+    minLength: 1
     description: Free-form notes of the procedure; null when the file declares none.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
