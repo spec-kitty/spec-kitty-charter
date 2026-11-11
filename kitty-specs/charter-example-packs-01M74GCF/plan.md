@@ -125,3 +125,36 @@ None: no new module, no new dependency.
   entry
 - **Sequencing/depends-on**: none
 - **Risks**: `charter generate` may rewrite more than the two clauses; review its diff.
+
+## Test inventory (exact; WP ownership in tasks.md)
+
+**A. Read the pinned checkout** (`OpenPacksCorpus`, `charter.openPacksDir`, tags `open-packs` / `whole-pack`):
+`WholePackRoundTripTest`, `WholePackOpenPacksRoundTripTest`, `WholePackExpectation`, `WholePackExpectationTest`,
+`WholePackReport` (WP02); `PackDoctrineCorpusRoundTripTest`, `MarkdownCorpusTest`, `ProcedureAndGuideCorpusTest`,
+`GlossaryPackAndSkillCorpusTest`, `GlossaryPackAndSkillSchemaTest`, `MissionTypeCorpusTest`,
+`MissionTypeHoldingCorpusTest`, `MissionStepContractCorpusTest`, `PromptSlotLoadChecksTest`,
+`PromptSlotsCanonicalCorpusTest` (WP04); `OpenPacksComposeTest`, `CompanionFilesTest`, `CompanionDigestTest`,
+`BinaryPayloadRevisionTest`, `PackDigestBaselineTest`, `PackManifestParityTest`, `PackFileKindTest`,
+`FileSystemPackInspectorTest`, `PackLevelSchemasTest`, `ProfileGovernanceCorpusTest` (WP05); `ProfileCorpusTest`,
+`ProfileExamplesEdgeTest`, `PackGraphEdges` (WP06); `OpenPacksCorpus` (WP07, deleted).
+
+**B. Read the synced `packs/qa` / `packs/internal` trees**: `ArtifactRemovalServiceTest`,
+`RelationshipRemovalServiceTest`, `ArtifactControllerTest`, `PackRemovalControllerTest`, `HypermediaTest`,
+`PackFileSetTest`, `PolicyRoundTripTest`, `StorageRootLocationsTest`, `GlossaryPackYamlTest`,
+`FileSystemPackSourcesTest`, `RetiredFilesTest` (WP09); `ConfigRootWiringTest`, `CharterWiringTest`,
+`ActivationListingFaultTest`, `RegularArtefactWiringTest`, `ProblemResponsesTest`, `bdd/OperationCoverageTest`,
+`bdd/LinkChecksTest`, `bdd/ContractConformanceTest` (WP10).
+
+Done when `grep -rE "OpenPacksCorpus|charter\.openPacksDir|packs/(qa|internal)" service/*/src/test` finds nothing.
+
+## Review folds (adversarial squad, 2026-11-11)
+
+- `ExamplePacks` copies the tree once per JVM to a temp directory (opening the jar's file system when the fixtures are
+  a jar), so every test gets a real directory; tests that mutate copy again into `@TempDir`.
+- `syncPacks` keeps the pinned checkout in required jobs (copy and digest check only); test tasks lose
+  `-PopenPacksDir` and the `charter.openPacksDir`/`openPacksRef` wiring, the default `test` task included.
+- The drift watch runs from its own `driftTest` source set, excluded from `check` and `verifyAll`, in a workflow with
+  `issues: write` and label-based de-duplication.
+- Pinned digests are recomputed over the example packs, with the regeneration command documented beside the pins.
+- WP08 edits the authored sources (`.kittify/charter/interview/answers.yaml`,
+  `.kittify/charter-packs/directive/002-...`), regenerates, and rejects any diff outside the two clauses.

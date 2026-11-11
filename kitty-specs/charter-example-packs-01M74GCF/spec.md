@@ -67,13 +67,13 @@ Each night a job runs the round trip over open-packs `main`; a failure opens or 
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Example packs | As a contributor, I want three charter-owned example packs (built-in, org-base, project) in the canonical shape covering every artifact kind, a three-level closure, policies, shards, an org fragment, step enhancements, prompt slots, mission types with lifecycles and guards, companions, binary payloads, a manifest, presets and a declared `generic` fallback, so that every rule has an example. | High | Open | [build] | no |
+| FR-001 | Example packs | As a contributor, I want three charter-owned example packs (built-in, org-base, project) in the canonical shape covering, as ADR-0070 decision 2 lists: every artifact kind at full shape, a closure of built-in, org and project levels with `depends_on`, cross-pack qualified references, a mutability policy with each level, presets, graph documents of both shapes (shards and an org fragment), step enhancements with prompt fragments, the prompt slots, mission types with lifecycles and guards, companion files and binary payloads, and a declared fallback profile, so that every rule has an example. | High | Open | [build] | no |
 | FR-002 | Round trip over examples | As a contributor, I want the whole-pack round trip to run over the example packs with empty expected-red lists, as a required check, so that fidelity is proven on content charter owns. | High | Open | [build] | no |
 | FR-003 | Coverage check | As a contributor, I want a test that fails when a pack schema property, an artifact kind or a raised refusal code has no example, so that the examples cannot thin out. | High | Open | [build] | no — paired with the all-covered control |
-| FR-004 | Tests move | As a contributor, I want each of the 28 tests that read open-packs to read the example packs and assert the same outcome, so that no coverage is lost. | High | Open | [build] | no |
+| FR-004 | Tests move | As a contributor, I want every test that reads open-packs content, directly (the pinned checkout, inventory A of plan.md) or through the synced `packs/qa` and `packs/internal` trees (inventory B), to read the example packs and assert the same rule, so that no coverage is lost; afterwards no test source references `OpenPacksCorpus`, `charter.openPacksDir` or the synced trees. | High | Open | [build] | no |
 | FR-005 | No required open-packs input | As a contributor, I want no required task or CI job to read open-packs (the `openPacksRoundTrip` and `openPacksProfiles` tasks, the round-trip checkout and the `openPacksDir` test inputs removed), so that a contract change is not blocked by it. | High | Open | [build] | no |
 | FR-006 | Nightly drift watch | As a maintainer, I want a scheduled, non-blocking job that runs the round trip over open-packs `main` and opens an issue on failure, so that drift is seen early. | Medium | Open | [build] | no |
-| FR-007 | Governance sync stays | As a maintainer, I want `syncPacks` and `openPacksRef` kept for this repository's own governance only, so that its org layer still works. | Medium | Open | [ratchet] | yes — paired with a check that `syncPacks -PcheckPacks=true` still passes |
+| FR-007 | Governance sync stays | As a maintainer, I want `syncPacks` and `openPacksRef` kept for this repository's own governance only (a pinned checkout used for the copy and digest check, never as test input), so that its org layer still works. | Medium | Open | [ratchet] | yes — paired with a check that `syncPacks -PcheckPacks=true` still passes |
 | FR-008 | Governance amended | As the operator, I want the charter companion's "Gates before merge" and PROJECT_002 amended as ADR-0070 says, so that the rules match the gates. | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
@@ -81,7 +81,8 @@ Each night a job runs the round trip over open-packs `main`; a failure opens or 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
 | NFR-001 | PR #474 green | Every required check on PR #474 passes on its final commit (0 failing required checks). | Reliability | High | Open |
-| NFR-002 | Example size | The three example packs together hold at most 150 files, each kind exampled at least once. | Maintainability | Medium | Open |
+| NFR-002 | Example size | The three example packs together hold at most 150 files: about 20 file kinds, each once at full shape and once where a level or rule needs a variant, plus shards, companions and policies; a reviewer can read them in one sitting. | Maintainability | Medium | Open |
+| NFR-003 | Test time | `:packs:test` plus `:deployable:test` take no longer than on `main` before the mission (measured on the same runner class). | Performance | Medium | Open |
 
 ### Constraints
 
@@ -110,3 +111,7 @@ Each night a job runs the round trip over open-packs `main`; a failure opens or 
 
 - The open-packs validation job is a follow-up issue in spec-kitty-open-packs (operator, decision above).
 - `charter.yaml` is regenerated with the installed CLI (`spec-kitty charter generate`).
+- A raised refusal code counts as exampled when a contract scenario produces it or a test produces it from an example
+  pack (or a mutated copy outside the example packs): request-level codes have no pack form (adversarial review, 2026-11-11).
+- `syncPacks` keeps a pinned open-packs checkout in required CI; it copies and digest-checks, and reads no shape, so a
+  contract change cannot break it (ADR-0070 decision 5).
