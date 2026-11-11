@@ -26,8 +26,9 @@ value:
         content: A fix without a failing test proves nothing.
         badExample: null
         goodExample: null
-    notes: null
-    appliesToLanguages: []
+    notes: Keep the test.
+    appliesToLanguages:
+      - java
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/procedure/test-first-bug-fixing
