@@ -11,6 +11,6 @@ kinds:
       The mutability policy file (ADR-0063) has no gate adapter: the gate writes through DomainRepositoryService, which
       does not write policy.yaml (only WholePackStore does, covered by PolicyRoundTripTest). The built-in example holds
       one, as the data model requires; the entry goes when the round trip models the kind.
-    issue: "ADR-0070 follow-up (to file)"
+    issue: "https://github.com/spec-kitty/spec-kitty-charter/issues/476"
 files: []
 empty_kinds: []
