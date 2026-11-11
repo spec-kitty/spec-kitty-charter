@@ -127,7 +127,8 @@
       "notes": [
         "Governance amended; open-packs#188 filed",
         "fold review",
-        "Generated copies now match authored clause order"
+        "Generated copies now match authored clause order",
+        "Re-review: generated directive 002 and charter.yaml now match authored clause order; no stale open-packs round-trip wording; ADR-0070 links open-packs#188."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
