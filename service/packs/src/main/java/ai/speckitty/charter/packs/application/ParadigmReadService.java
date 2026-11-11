@@ -67,7 +67,7 @@ public final class ParadigmReadService {
             try {
                 return packs.load(pack).paradigms();
             } catch (CharterRefusal refused) {
-                throw packRefusal(pack, refused);
+                throw PackRefusals.packRefusal(pack, refused);
             }
         });
     }
@@ -103,7 +103,7 @@ public final class ParadigmReadService {
             if (refused.code() == RefusalCode.PARADIGM_NOT_FOUND) {
                 throw refused;
             }
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
     }
 
@@ -111,20 +111,7 @@ public final class ParadigmReadService {
         try {
             return revisions.currentRevision(pack);
         } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
-    }
-
-    /**
-     * A pack the storage cannot read is, to the caller, a pack that is not there; an identifier no configured pack
-     * answers to is already refused {@code PACK_NOT_FOUND} by the storage and passes through. The original
-     * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even
-     * though the 404 body names nothing of it.
-     */
-    private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
-        if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-            return refused;
-        }
-        return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
     }
 }
