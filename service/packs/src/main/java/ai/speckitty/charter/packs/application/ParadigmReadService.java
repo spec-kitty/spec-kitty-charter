@@ -73,31 +73,17 @@ public final class ParadigmReadService {
     }
 
     /**
-     * One paradigm of a pack, with the digest of the inputs it was read from (FR-014).
-     *
-     * @param pack the pack's identity
-     * @param paradigm the paradigm's identity
-     * @return the paradigm and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, with
-     *     {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
-     *     {@link RefusalCode#PARADIGM_NOT_FOUND} when the pack has no such paradigm, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the paradigm was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Paradigm> paradigm(PackIdentifier pack, ParadigmIdentifier paradigm) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(paradigm, "paradigm");
-        return read.read(STALE_ONE, () -> loadOne(pack, paradigm));
-    }
-
-    /**
      * One paradigm of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
      * taken inside the one verified read, so they name the same state.
      *
      * @param pack the pack's identity
      * @param paradigm the paradigm's identity
      * @return the paradigm and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #paradigm(PackIdentifier, ParadigmIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, with
+     *     {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
+     *     {@link RefusalCode#PARADIGM_NOT_FOUND} when the pack has no such paradigm, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the paradigm was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Paradigm>> paradigmWithRevision(
             PackIdentifier pack, ParadigmIdentifier paradigm) {

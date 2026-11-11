@@ -73,31 +73,17 @@ public final class DirectiveReadService {
     }
 
     /**
-     * One directive of a pack, with the digest of the inputs it was read from (FR-006).
-     *
-     * @param pack the pack's identity
-     * @param directive the directive's identity
-     * @return the directive and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, with
-     *     {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
-     *     {@link RefusalCode#DIRECTIVE_NOT_FOUND} when the pack has no such directive, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the directive was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Directive> directive(PackIdentifier pack, DirectiveIdentifier directive) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(directive, "directive");
-        return read.read(STALE_ONE, () -> loadOne(pack, directive));
-    }
-
-    /**
      * One directive of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
      * taken inside the one verified read, so they name the same state.
      *
      * @param pack the pack's identity
      * @param directive the directive's identity
      * @return the directive and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #directive(PackIdentifier, DirectiveIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, with
+     *     {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
+     *     {@link RefusalCode#DIRECTIVE_NOT_FOUND} when the pack has no such directive, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the directive was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Directive>> directiveWithRevision(
             PackIdentifier pack, DirectiveIdentifier directive) {

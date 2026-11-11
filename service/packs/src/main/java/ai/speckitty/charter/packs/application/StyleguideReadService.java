@@ -73,30 +73,16 @@ public final class StyleguideReadService {
     }
 
     /**
-     * One styleguide of a pack, with the digest of the inputs it was read from (FR-013).
-     *
-     * @param pack the pack's identity
-     * @param styleguide the styleguide's identity
-     * @return the styleguide and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
-     *     {@link RefusalCode#STYLEGUIDE_NOT_FOUND} when the pack has no such styleguide, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the styleguide was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Styleguide> styleguide(PackIdentifier pack, StyleguideIdentifier styleguide) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(styleguide, "styleguide");
-        return read.read(STALE_ONE, () -> loadOne(pack, styleguide));
-    }
-
-    /**
      * One styleguide of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
      * taken inside the one verified read, so they name the same state.
      *
      * @param pack the pack's identity
      * @param styleguide the styleguide's identity
      * @return the styleguide and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #styleguide(PackIdentifier, StyleguideIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
+     *     {@link RefusalCode#STYLEGUIDE_NOT_FOUND} when the pack has no such styleguide, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the styleguide was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Styleguide>> styleguideWithRevision(
             PackIdentifier pack, StyleguideIdentifier styleguide) {

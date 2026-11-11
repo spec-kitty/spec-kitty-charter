@@ -66,7 +66,7 @@ class DirectiveReadServiceTest {
 
     @Test
     void readsOneDirectiveOfTheAskedPack() {
-        assertThat(service.directive(PACK_A, ALPHA).value()).isEqualTo(alpha);
+        assertThat(service.directiveWithRevision(PACK_A, ALPHA).value().value()).isEqualTo(alpha);
     }
 
     @Test
@@ -77,7 +77,7 @@ class DirectiveReadServiceTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(read.derivedRelationships()).isEmpty();
-        assertThat(service.directive(PACK_A, ALPHA).value().derivedRelationships())
+        assertThat(service.directiveWithRevision(PACK_A, ALPHA).value().value().derivedRelationships())
                 .isEmpty();
     }
 
@@ -91,7 +91,7 @@ class DirectiveReadServiceTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause()).isNull();
         });
-        assertThatThrownBy(() -> service.directive(ABSENT, ALPHA))
+        assertThatThrownBy(() -> service.directiveWithRevision(ABSENT, ALPHA))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
         // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
@@ -101,7 +101,7 @@ class DirectiveReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.directive(UNREADABLE, ALPHA))
+        assertThatThrownBy(() -> service.directiveWithRevision(UNREADABLE, ALPHA))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(r.getCause())
@@ -113,7 +113,7 @@ class DirectiveReadServiceTest {
 
     @Test
     void anAbsentDirectiveIsNotFoundAndDoesNotFallBackToAnotherPack() {
-        assertThatThrownBy(() -> service.directive(PACK_A, new DirectiveIdentifier("OTHER")))
+        assertThatThrownBy(() -> service.directiveWithRevision(PACK_A, new DirectiveIdentifier("OTHER")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DIRECTIVE_NOT_FOUND));
     }
@@ -122,7 +122,7 @@ class DirectiveReadServiceTest {
     void everyReadDigestsTwiceAndAnswersTheDigestItVerified() {
         assertThat(service.directivesOf(PACK_A).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(2);
-        assertThat(service.directive(PACK_A, ALPHA).fingerprint()).isEqualTo(D1);
+        assertThat(service.directiveWithRevision(PACK_A, ALPHA).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(4);
     }
 
@@ -132,7 +132,8 @@ class DirectiveReadServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the directives were read; read them again.");
-        assertThatThrownBy(() -> serviceWhoseInputsChange().directive(PACK_A, new DirectiveIdentifier("MISSING")))
+        assertThatThrownBy(() ->
+                        serviceWhoseInputsChange().directiveWithRevision(PACK_A, new DirectiveIdentifier("MISSING")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }

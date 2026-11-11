@@ -68,7 +68,7 @@ class ToolguideReadServiceTest {
 
     @Test
     void readsOneToolguideOfTheAskedPack() {
-        Toolguide read = service.toolguide(PACK_A, GIT).value();
+        Toolguide read = service.toolguideWithRevision(PACK_A, GIT).value().value();
         assertThat(read).isEqualTo(git);
         // Value-equality beyond identity: the round trip preserves every field, including the present optional.
         assertThat(read.tool()).isEqualTo(git.tool());
@@ -85,8 +85,9 @@ class ToolguideReadServiceTest {
     @Test
     void readsOneToolguideWithAnAbsentOptionalLastUpdated() {
         // SC-001 control: the present/absent optional round-trips both ways.
-        Toolguide read =
-                service.toolguide(PACK_A, new ToolguideIdentifier("make")).value();
+        Toolguide read = service.toolguideWithRevision(PACK_A, new ToolguideIdentifier("make"))
+                .value()
+                .value();
         assertThat(read.lastUpdated()).isEmpty();
     }
 
@@ -95,7 +96,7 @@ class ToolguideReadServiceTest {
         // ADR-0064: a toolguide's relationships are graph edges, never derived from a field.
         assertThat(service.toolguidesOf(PACK_A).value())
                 .allSatisfy(t -> assertThat(t.derivedRelationships()).isEmpty());
-        assertThat(service.toolguide(PACK_A, GIT).value().derivedRelationships())
+        assertThat(service.toolguideWithRevision(PACK_A, GIT).value().value().derivedRelationships())
                 .isEmpty();
     }
 
@@ -109,7 +110,7 @@ class ToolguideReadServiceTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause()).isNull();
         });
-        assertThatThrownBy(() -> service.toolguide(ABSENT, GIT))
+        assertThatThrownBy(() -> service.toolguideWithRevision(ABSENT, GIT))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
         // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
@@ -119,19 +120,21 @@ class ToolguideReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.toolguide(UNREADABLE, GIT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
-            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-            assertThat(r.getCause())
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-        });
+        assertThatThrownBy(() -> service.toolguideWithRevision(UNREADABLE, GIT))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getCause())
+                            .isInstanceOfSatisfying(
+                                    CharterRefusal.class,
+                                    c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                });
     }
 
     @Test
     void anAbsentToolguideIsNotFoundAndDoesNotFallBackToAnotherPack() {
         // Control: the present pack has git, so the refusal is the toolguide's absence, not a broken fixture.
-        assertThat(service.toolguide(PACK_A, GIT).value()).isEqualTo(git);
-        assertThatThrownBy(() -> service.toolguide(PACK_A, new ToolguideIdentifier("other")))
+        assertThat(service.toolguideWithRevision(PACK_A, GIT).value().value()).isEqualTo(git);
+        assertThatThrownBy(() -> service.toolguideWithRevision(PACK_A, new ToolguideIdentifier("other")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TOOLGUIDE_NOT_FOUND));
     }
@@ -140,7 +143,7 @@ class ToolguideReadServiceTest {
     void everyReadDigestsTwiceAndAnswersTheDigestItVerified() {
         assertThat(service.toolguidesOf(PACK_A).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(2);
-        assertThat(service.toolguide(PACK_A, GIT).fingerprint()).isEqualTo(D1);
+        assertThat(service.toolguideWithRevision(PACK_A, GIT).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(4);
     }
 
@@ -150,7 +153,8 @@ class ToolguideReadServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the toolguides were read; read them again.");
-        assertThatThrownBy(() -> serviceWhoseInputsChange().toolguide(PACK_A, new ToolguideIdentifier("missing")))
+        assertThatThrownBy(() ->
+                        serviceWhoseInputsChange().toolguideWithRevision(PACK_A, new ToolguideIdentifier("missing")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
