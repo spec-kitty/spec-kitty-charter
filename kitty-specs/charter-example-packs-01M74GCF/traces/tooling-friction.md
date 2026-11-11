@@ -52,3 +52,7 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · WP10 was a no-op like WP09: none of its eight :deployable classes reads the synced trees ("qa" is a temp-dir pack or a URL segment); :deployable:test passes, 1400/0, in a worktree without them. The only external-tree reader is the open-packs-tagged openPacksProfiles task (WP07).
 
 2026-11-11 · claude · WP06 integration: `--tests` filters were ignored (the whole module ran); :deployable:test has no contracts-directory input, so a test searches upward for it (WP07 to add); the first restamp test errored because org-base has no pack-manifest.yaml.
+
+2026-11-11 · claude · WP07: NullAway crashes on a new source set (driftTest) unless disabled there, as for testFixtures; actionlint is not installed in the session, so the new workflow was only parsed as YAML; stale test-results XML must be deleted before counting. WholePackExamplesRoundTripTest carried stale counts after WP05/WP06 grew the fixtures, visible only once its tag was dropped and it joined :packs:test.
+
+2026-11-11 · claude · WP07: the drift test fails today against the local open-packs checkout on a real `principles` shape drift (open-packs#66 not migrated yet), which shows the nightly watch works.
