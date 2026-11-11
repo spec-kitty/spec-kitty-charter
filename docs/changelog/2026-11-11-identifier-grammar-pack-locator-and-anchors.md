@@ -24,7 +24,10 @@ except in the one case named below.
   it matches, and every repeat is possessive. The pack and mission identifier types check their ids through it,
   so they cannot drop the cap or the possessive quantifiers. A step enhancement's id keeps its own pattern for
   now: it has no cap yet, and ADR-0066's second phase changes that code
-  ([#444](https://github.com/spec-kitty/spec-kitty-charter/issues/444)). The unused `kernel.validation.Checks`
+  ([#444](https://github.com/spec-kitty/spec-kitty-charter/issues/444)). One deliberate tightening: a guard's
+  `builtin:<id>` now takes the slug grammar, so an id with a leading, trailing or double hyphen is refused as
+  neither spelling, where it used to be refused as not a built-in guard. Both are refused; no id on the closed list
+  changes. The unused `kernel.validation.Checks`
   is gone ([#383](https://github.com/spec-kitty/spec-kitty-charter/issues/383)).
 - **One pack locator.** Reads, commits and writes resolve a pack id to its directory through `PackLocator`
   ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). One fix came with it: a pack location
