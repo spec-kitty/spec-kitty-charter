@@ -18,7 +18,8 @@ failures are judged against the charter's own model, contract and packs (epic #1
 2026-11-10 (operator, charter #456 to #458): the charter's model is the canonical data model, and
 legacy shapes get no compatibility. Amended 2026-11-11 (operator, ADR-0070): the round-trip gate
 runs over charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release.
-Amended 2026-11-11 (operator, issue triage): rules for filing and closing issues.
+Amended 2026-11-11 (operator, issue triage Op 01M75XTFKEJG0AGWB78QZMCC12): rules for filing and
+closing issues.
 
 ## What this repository is for
 
