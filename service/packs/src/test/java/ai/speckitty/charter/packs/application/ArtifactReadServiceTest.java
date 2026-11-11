@@ -213,7 +213,7 @@ class ArtifactReadServiceTest {
 
     @Test
     void aPositionNamesAServedKind() {
-        assertThatThrownBy(() -> position(ArtifactKind.PROCEDURE, "x")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> position(ArtifactKind.TEMPLATE, "x")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -289,7 +289,7 @@ class ArtifactReadServiceTest {
 
     @Test
     void aKindFilterThatIsNotServedIsRefusedBeforeAnyRead() {
-        assertThatThrownBy(() -> service.list(PACK, Optional.of(ArtifactKind.PROCEDURE), Optional.empty(), 50))
+        assertThatThrownBy(() -> service.list(PACK, Optional.of(ArtifactKind.TEMPLATE), Optional.empty(), 50))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(digests).hasValue(0);
     }
@@ -441,7 +441,7 @@ class ArtifactReadServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"procedure", "bogus", "Tactic", "tactics", ""})
+    @ValueSource(strings = {"template", "bogus", "Tactic", "tactics", ""})
     void aKindTheServiceDoesNotServeIsKindNotFound(String kind) {
         assertThatThrownBy(() -> service.item(PACK, kind, "alpha"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
@@ -510,6 +510,7 @@ class ArtifactReadServiceTest {
                         ArtifactKind.STYLEGUIDE,
                         ArtifactKind.PARADIGM,
                         ArtifactKind.TOOLGUIDE,
+                        ArtifactKind.PROCEDURE,
                         ArtifactKind.MISSION_STEP_CONTRACT)
                 .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.LISTED).containsAll(ArtifactReadService.ITEM_KINDS);
@@ -525,11 +526,14 @@ class ArtifactReadServiceTest {
                 .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
         // An agent profile answers artifact_not_found (the profiles mission's contract), pinned by its own test.
         for (ArtifactKind kind : ArtifactReadService.LISTED) {
-            if (kind != ArtifactKind.AGENT_PROFILE) {
+            if (kind != ArtifactKind.AGENT_PROFILE && kind != ArtifactKind.PROCEDURE) {
                 assertThat(ArtifactReadService.absentCode(kind).token()).isEqualTo(kind.token() + "_not_found");
             }
         }
-        assertThatThrownBy(() -> ArtifactReadService.absentCode(ArtifactKind.PROCEDURE))
+        assertThat(ArtifactReadService.absentCode(ArtifactKind.PROCEDURE))
+                .as("a kind served after the per-kind codes answers the generic one (#484)")
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+        assertThatThrownBy(() -> ArtifactReadService.absentCode(ArtifactKind.TEMPLATE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -795,11 +799,11 @@ class ArtifactReadServiceTest {
     void theReferencesReadRefusesAnUnknownKindAfterThePack() {
         ArtifactReadService counting = referenceFixture(() -> D1);
 
-        assertThatThrownBy(() -> counting.references(PACK, "procedure", "x"))
+        assertThatThrownBy(() -> counting.references(PACK, "template", "x"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND));
-        assertThat(codeOf(() -> counting.references(ABSENT, "procedure", "x"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+        assertThat(codeOf(() -> counting.references(ABSENT, "template", "x"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @Test
