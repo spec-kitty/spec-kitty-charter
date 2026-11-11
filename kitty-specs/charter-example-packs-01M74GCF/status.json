@@ -1,7 +1,7 @@
 {
-  "event_count": 34,
-  "last_event_id": "01M74P9MVYVR34F5BHWCCN9E6F",
-  "materialized_at": "2026-11-11T06:56:30.591021+00:00",
+  "event_count": 35,
+  "last_event_id": "01M74P9TCRTDNPZ88XAT6TEJRN",
+  "materialized_at": "2026-11-11T06:56:36.248526+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
-    "in_progress": 2,
+    "for_review": 2,
+    "in_progress": 1,
     "in_review": 0,
     "planned": 5
   },
@@ -81,10 +81,10 @@
       "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01M74JW2PYTB1Q3PQF6M97VKK5",
-      "last_transition_at": "2026-11-11T05:56:40.286581+00:00",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01M74P9TCRTDNPZ88XAT6TEJRN",
+      "last_transition_at": "2026-11-11T06:56:36.248526+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree ../charter-WP03"
