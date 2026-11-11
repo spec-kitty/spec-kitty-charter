@@ -26,7 +26,7 @@ except in the one case named below.
   guard's `builtin:<id>` takes the slug grammar, so a leading, trailing or double hyphen is refused as neither
   spelling, not as an unknown built-in; the closed list is unchanged. The unused `Checks` is gone ([#383](https://github.com/spec-kitty/spec-kitty-charter/issues/383)).
 - **One pack locator.** Reads, commits and writes resolve a pack id to its directory through `PackLocator`
-  ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). Two behaviours came with it. A pack
+  ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). Two behavior changes came with it. A pack
   location at the filesystem root no longer makes an id lookup on the read side refuse `500 pack_unreadable`; it
   is passed over, as the write side already did, like a missing `pack.yaml` or one that is no descriptor. A
   `pack.yaml` that is there but cannot be read (a directory, no read permission) is refused
