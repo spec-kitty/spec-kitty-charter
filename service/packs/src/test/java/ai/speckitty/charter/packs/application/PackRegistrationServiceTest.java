@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -888,15 +889,15 @@ class PackRegistrationServiceTest {
     }
 
     static CharterRefusal refusal(Runnable action) {
-        CharterRefusal[] caught = new CharterRefusal[1];
-        assertThatThrownBy(action::run).isInstanceOfSatisfying(CharterRefusal.class, r -> caught[0] = r);
-        return caught[0];
+        CharterRefusal caught = catchThrowableOfType(CharterRefusal.class, action::run);
+        assertThat(caught).as("the action is refused").isNotNull();
+        return caught;
     }
 
     static PreconditionException.Kind preconditionOf(Runnable action) {
-        PreconditionException.Kind[] caught = new PreconditionException.Kind[1];
-        assertThatThrownBy(action::run).isInstanceOfSatisfying(PreconditionException.class, e -> caught[0] = e.kind());
-        return caught[0];
+        PreconditionException caught = catchThrowableOfType(PreconditionException.class, action::run);
+        assertThat(caught).as("the action fails its precondition").isNotNull();
+        return caught.kind();
     }
 
     /** A pack as files: pack-relative path to text, in a stable order. */
