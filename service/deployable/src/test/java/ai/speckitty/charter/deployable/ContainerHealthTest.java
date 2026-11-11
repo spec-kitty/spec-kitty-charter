@@ -128,7 +128,7 @@ class ContainerHealthTest {
     private static boolean lostThePort(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof java.net.BindException
-                    || cause.getClass().getSimpleName().equals("PortInUseException")) {
+                    || cause instanceof org.springframework.boot.web.server.PortInUseException) {
                 return true;
             }
         }
