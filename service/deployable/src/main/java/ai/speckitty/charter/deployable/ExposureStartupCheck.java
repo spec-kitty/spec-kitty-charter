@@ -242,7 +242,7 @@ public class ExposureStartupCheck implements InitializingBean {
     }
 
     private static String normalized(String level) {
-        return level == null ? "" : level.strip().toLowerCase(Locale.ROOT);
+        return level.strip().toLowerCase(Locale.ROOT);
     }
 
     /** The level of the nearest configured logger at or above the name, root last; empty when none is set. */
