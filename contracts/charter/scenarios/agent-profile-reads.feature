@@ -418,6 +418,17 @@ Feature: A pack's agent profile is read with its governance
       intent: Review the project way.
       enforcement: required
       """
+    And the project pack "proj" with the file "procedures/project-flow.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: project-flow
+      title: Project flow
+      description: The way this project ships a change.
+      entry_condition: A change is ready.
+      exit_condition: The change is shipped.
+      steps:
+        - title: Ship it
+      """
     And the project pack "proj" with the file "proj.graph.yaml":
       """
       schema_version: '1.0'
@@ -426,6 +437,9 @@ Feature: A pack's agent profile is read with its governance
       edges:
       - source: agent_profile:proj-jenny
         target: directive:DIRECTIVE_010
+        relation: requires
+      - source: agent_profile:proj-jenny
+        target: procedure:project-flow
         relation: requires
       - source: directive:DIRECTIVE_010
         target: directive:PROJ_001
@@ -437,6 +451,7 @@ Feature: A pack's agent profile is read with its governance
       """
       directive:DIRECTIVE_010 requires via agent_profile:proj-jenny hops 1 in proj linked edge {}
       directive:PROJ_001 requires via directive:DIRECTIVE_010 hops 2 in proj linked edge {}
+      procedure:project-flow requires via agent_profile:proj-jenny hops 1 in proj linked edge {}
       """
     And the field at "/governance/0/packId" is "proj"
     And the field at "/governance/0/_links/artifact/href" is "/api/v1/packs/proj/artifacts/directive/DIRECTIVE_010"
