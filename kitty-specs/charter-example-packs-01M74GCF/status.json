@@ -109,7 +109,8 @@
       "last_transition_at": "2026-11-11T06:56:41.901127+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "implementing in worktree"
+        "implementing in worktree",
+        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
