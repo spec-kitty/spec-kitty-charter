@@ -11,7 +11,7 @@ get:
     this order: an unknown pack is a 404 pack_not_found, an unreadable pack a 500 pack_unreadable, an unknown mission
     type a 404 mission_type_not_found, and a name that does not decode to a skeleton of the type a 404
     skeleton_not_found; nothing outside the type's templates/ directory is ever read. The answer is one verified read
-    and carries the source fingerprint it verified; inputs that change while it is read are stale_input. No ETag.
+    and carries the source fingerprint it verified; inputs that change while it is read are stale_input. The answer carries the pack revision as its ETag, a concurrency token naming the pack (see the 200 ETag header).
   tags:
     - MissionTypes
   parameters:
@@ -28,6 +28,14 @@ get:
           $ref: ../headers/CharterWorktree.yaml
         Charter-Source-Fingerprint:
           $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: >-
+            The pack revision the answer was read at: a concurrency token naming the pack, not a cache validator. The
+            answer can carry content resolved from the packs this pack depends on, which the revision does not cover, so
+            the read takes no If-None-Match and never answers 304.
+          required: true
+          schema:
+            type: string
       content:
         application/json:
           schema:

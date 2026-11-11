@@ -7,7 +7,8 @@ description: >-
   governance, the entries its pack-scoped walk lists; no other kind does. A mission_step_contract is
   answered by the generic item read (getPackArtifact) in member missionStepContract. A mission_type is answered in
   member missionType by its own read, getPackMissionType, whose literal path the service prefers over the generic
-  one. Neither of the two answers an ETag: neither kind has a write.
+  one. Both reads carry the pack revision as their ETag, like every pack read of one artifact; neither kind has a
+  write, so it is a concurrency token for a DELETE, not a cache validator.
 type: object
 additionalProperties: false
 required:
