@@ -18,7 +18,8 @@ additionalProperties: false
 required:
   - profileId
   - name
-  - roles
+  - role
+  - altRoles
   - avatarImage
   - capabilities
   - model
@@ -61,16 +62,27 @@ properties:
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
       symbol: AgentProfile.schemaVersion
-  roles:
-    type: array
-    minItems: 1
-    description: The roles the profile fills, in the order the file declares them.
-    items:
-      type: string
-      pattern: '^[a-z][a-z0-9_-]*$'
+  role:
+    type: string
+    pattern: '^[a-z][a-z0-9-]*$'
+    maxLength: 64
+    description: >-
+      The profile's primary role (ADR-0069). A step asking for this role finds the profile a primary-role fit, which
+      outranks every alt-role fit. The reserved role generic marks a fallback profile and fits no role (ADR-0068).
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
-      symbol: AgentProfile.roles
+      symbol: AgentProfile.role
+  altRoles:
+    type: array
+    description: >-
+      The profile's alt-roles, in the order the file declares them; [] when it has none.
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9-]*$'
+      maxLength: 64
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
+      symbol: AgentProfile.altRoles
   avatarImage:
     type: ['string', 'null']
     description: A path or URL of the profile's avatar; null when the file declares none.

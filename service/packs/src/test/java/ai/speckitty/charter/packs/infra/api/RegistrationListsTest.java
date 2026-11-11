@@ -31,9 +31,9 @@ class RegistrationListsTest {
     void theListMembersOfEachRegistrationAreReadOffItsDto() {
         assertThat(RegistrationLists.of(DirectiveRegistration.class))
                 .containsExactly("explicitAllowances", "integrityRules", "validationCriteria");
-        assertThatThrownBy(() -> RegistrationLists.of(ParadigmRegistration.class))
-                .as("a paradigm registration has no list left (ADR-0064), so its guard names none")
-                .isInstanceOf(IllegalStateException.class);
+        assertThat(RegistrationLists.of(ParadigmRegistration.class))
+                .as("a paradigm registration's only list is its principles (ADR-0067)")
+                .containsExactly("principles");
         assertThat(RegistrationLists.of(StyleguideRegistration.class))
                 .containsExactly("antiPatterns", "appliesToLanguages", "patterns", "principles", "tooling");
         assertThat(RegistrationLists.of(ToolguideRegistration.class)).containsExactly("appliesToLanguages", "commands");
@@ -46,7 +46,7 @@ class RegistrationListsTest {
                 .contains("id", "integrityRules")
                 .doesNotContain("references", "relationships", "procedures");
         assertThat(RegistrationLists.members(ParadigmRegistration.class))
-                .containsExactlyInAnyOrder("id", "schemaVersion", "name", "summary");
+                .containsExactlyInAnyOrder("id", "schemaVersion", "name", "summary", "principles");
         assertThat(RegistrationLists.members(StyleguideRegistration.class)).doesNotContain("references");
         assertThat(RegistrationLists.members(ToolguideRegistration.class)).doesNotContain("references");
     }
@@ -127,5 +127,21 @@ class RegistrationListsTest {
 
     private static byte[] bytes(String json) {
         return json.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** ADR-0067: a principle item is closed; the guard names the first undeclared member by its place. */
+    @Test
+    void anUnknownMemberOfAPrincipleItemIsNamedByItsPlaceWhileADeclaredItemIsNot() {
+        java.util.Set<String> declared = java.util.Set.of("name", "description");
+        byte[] good = "{\"principles\":[{\"name\":\"a\",\"description\":\"b\"}],\"other\":{\"x\":1}}"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] bad = ("{\"name\":\"n\",\"principles\":[{\"name\":\"a\",\"description\":\"b\"},"
+                        + "{\"name\":\"c\",\"description\":\"d\",\"weight\":1}]}")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThat(RegistrationLists.firstUnknownInItems(good, null, "principles", declared))
+                .isEmpty();
+        assertThat(RegistrationLists.firstUnknownInItems(bad, null, "principles", declared))
+                .contains("principles[1].weight");
     }
 }

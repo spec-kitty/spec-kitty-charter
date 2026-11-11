@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.domain.PackContents;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,4 +43,16 @@ interface YamlFormat<D> {
      * @return the file text
      */
     String write(D dso);
+
+    /**
+     * The rules of a schema-valid document that the schema cannot state, each reported as a schema violation with a
+     * pointer (ADR-0067 decision 5, ADR-0069 decision 3); empty when the kind has none.
+     *
+     * @param root the schema-valid root mapping
+     * @param file the pack-relative file
+     * @return the violations, in document order
+     */
+    default List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
+        return List.of();
+    }
 }

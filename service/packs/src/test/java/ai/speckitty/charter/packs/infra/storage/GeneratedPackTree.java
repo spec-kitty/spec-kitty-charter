@@ -792,13 +792,15 @@ final class GeneratedPackTree {
         return switch (kind) {
             case TACTIC -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsteps:\n  - title: S\n";
             case DIRECTIVE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nintent: I\nenforcement: advisory\n";
-            case STYLEGUIDE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nscope: code\nprinciples: [p]\n";
+            case STYLEGUIDE ->
+                "id: " + id
+                        + "\nschema_version: '1.0'\ntitle: T\nscope: code\nprinciples: [{name: p, description: p.}]\n";
             case TOOLGUIDE ->
                 "id: " + id + "\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: " + id
                         + ".guide.md\nsummary: S\n";
             case PARADIGM -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsummary: S\n";
             case AGENT_PROFILE ->
-                "profile-id: " + id + "\nname: N\nroles: [r]\npurpose: P\nspecialization:\n  primary-focus: F\n";
+                "profile-id: " + id + "\nname: N\nrole: r\npurpose: P\nspecialization:\n  primary-focus: F\n";
             case MISSION_STEP_CONTRACT ->
                 "id: " + id + "\nschema_version: '1.0'\naction: a\nmission: m\nsteps:\n  - id: s\n    description: D\n";
             case GLOSSARY_PACK ->

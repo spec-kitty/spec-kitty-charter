@@ -1012,7 +1012,7 @@ class ArtifactReadServiceTest {
                 .schemaVersion("1.0")
                 .title("Title of " + id)
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer clarity")
+                .principle("Prefer clarity", "Prefer clarity, in one sentence.")
                 .build();
     }
 

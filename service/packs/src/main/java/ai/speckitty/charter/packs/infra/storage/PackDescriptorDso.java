@@ -29,6 +29,7 @@ import java.util.Optional;
  * @param dependencies the {@code depends_on} entries, in file order
  * @param overrides the {@code overrides} entries, in file order
  * @param schemaVersion the {@code schema_version} as written, when stated; empty for an unversioned descriptor
+ * @param fallbackProfile the {@code fallback_profile}, when stated (ADR-0068)
  */
 record PackDescriptorDso(
         String packId,
@@ -42,7 +43,8 @@ record PackDescriptorDso(
         Optional<String> mutabilityPolicy,
         List<PackDependency> dependencies,
         List<PackOverride> overrides,
-        Optional<String> schemaVersion) {
+        Optional<String> schemaVersion,
+        Optional<String> fallbackProfile) {
 
     /**
      * Checks the fields.
@@ -59,6 +61,7 @@ record PackDescriptorDso(
      * @param dependencies the declared dependencies
      * @param overrides the declared sibling conflicts this pack settles
      * @param schemaVersion the schema version
+     * @param fallbackProfile the fallback profile id
      */
     PackDescriptorDso {
         Objects.requireNonNull(packId, "packId");
@@ -73,8 +76,40 @@ record PackDescriptorDso(
         Objects.requireNonNull(dependencies, "dependencies");
         Objects.requireNonNull(overrides, "overrides");
         Objects.requireNonNull(schemaVersion, "schemaVersion");
+        Objects.requireNonNull(fallbackProfile, "fallbackProfile");
         dependencies = List.copyOf(dependencies);
         overrides = List.copyOf(overrides);
+    }
+
+    /** A descriptor that states no {@code fallback_profile}; the parameters are those of the canonical form. */
+    @SuppressWarnings("checkstyle:ParameterNumber") // one parameter per descriptor key, as the canonical form
+    PackDescriptorDso(
+            String packId,
+            String packVersion,
+            Optional<String> parentPack,
+            String name,
+            Optional<String> packLevel,
+            Optional<String> requiresCore,
+            Optional<String> activeCharter,
+            Optional<String> packDrg,
+            Optional<String> mutabilityPolicy,
+            List<PackDependency> dependencies,
+            List<PackOverride> overrides,
+            Optional<String> schemaVersion) {
+        this(
+                packId,
+                packVersion,
+                parentPack,
+                name,
+                packLevel,
+                requiresCore,
+                activeCharter,
+                packDrg,
+                mutabilityPolicy,
+                dependencies,
+                overrides,
+                schemaVersion,
+                Optional.empty());
     }
 
     /**
@@ -96,7 +131,8 @@ record PackDescriptorDso(
                 descriptor.paths().mutabilityPolicy(),
                 descriptor.dependencies(),
                 descriptor.overrides(),
-                descriptor.schemaVersion());
+                descriptor.schemaVersion(),
+                descriptor.fallbackProfile());
     }
 
     /**
@@ -115,6 +151,7 @@ record PackDescriptorDso(
                 new PackPaths(activeCharter, packDrg, mutabilityPolicy),
                 dependencies,
                 overrides,
-                schemaVersion);
+                schemaVersion,
+                fallbackProfile);
     }
 }

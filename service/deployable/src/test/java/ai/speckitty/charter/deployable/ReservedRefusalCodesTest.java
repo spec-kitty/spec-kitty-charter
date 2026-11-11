@@ -335,7 +335,13 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PROMPT_FRAGMENT_INVALID,
                 RefusalCode.PROMPT_SLOT_MISSING,
                 RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
-                RefusalCode.SKELETON_NOT_FOUND
+                RefusalCode.SKELETON_NOT_FOUND,
+                RefusalCode.FALLBACK_PROFILE_UNKNOWN,
+                RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
+                RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                RefusalCode.FALLBACK_PROFILE_MISSING,
+                RefusalCode.FALLBACK_PROFILE_CONFLICT,
+                RefusalCode.NO_PROFILE_MATCHED
             };
         }
     }

@@ -166,7 +166,7 @@ class StyleguideReadServiceTest {
                 .schemaVersion("1.0")
                 .title("Title of " + id)
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer clarity")
+                .principle("Prefer clarity", "Prefer clarity, in one sentence.")
                 .build();
     }
 
@@ -177,8 +177,8 @@ class StyleguideReadServiceTest {
                 .schemaVersion("1.0")
                 .title("Title of " + id)
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer immutability")
-                .principle("Fail fast")
+                .principle("Prefer immutability", "Prefer immutability, in one sentence.")
+                .principle("Fail fast", "Fail fast, in one sentence.")
                 .tooling(Map.of("spotless", "google-java-format"))
                 .appliesToLanguage("java")
                 .build();

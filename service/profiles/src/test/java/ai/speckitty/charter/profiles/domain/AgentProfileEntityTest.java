@@ -69,7 +69,7 @@ class AgentProfileEntityTest {
                 .name("Java Jenny")
                 .description(Optional.of("Java-specialist implementer applying ATDD/TDD discipline"))
                 .role("implementer")
-                .role("reviewer")
+                .altRole("reviewer")
                 .avatarImage(Optional.of("avatars/java-jenny.png"))
                 .capability("java-implementation")
                 .capability("junit-testing")
@@ -139,7 +139,8 @@ class AgentProfileEntityTest {
                 })
                 .as("routing and execution")
                 .satisfies(p -> {
-                    assertThat(p.roles()).containsExactly("implementer", "reviewer");
+                    assertThat(p.role()).isEqualTo("implementer");
+                    assertThat(p.altRoles()).containsExactly("reviewer");
                     assertThat(p.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
                     assertThat(p.routingPriority()).contains(80);
                     assertThat(p.maxConcurrentTasks()).contains(5);
@@ -235,7 +236,8 @@ class AgentProfileEntityTest {
         assertThat(profile.styleguideReferences())
                 .extracting(ArtifactReference::id)
                 .containsExactly("java-style", "test-style");
-        assertThat(profile.roles()).containsExactly("implementer", "reviewer");
+        assertThat(profile.role()).isEqualTo("implementer");
+        assertThat(profile.altRoles()).containsExactly("reviewer");
         assertThat(profile.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
         assertThat(profile.selfReviewSteps())
                 .extracting(SelfReviewStep::name)
@@ -300,7 +302,7 @@ class AgentProfileEntityTest {
                 .maxConcurrentTasks(Optional.of(1))
                 .sentinel(Optional.of(false))
                 .role("reviewer")
-                .role("implementer")
+                .altRole("implementer")
                 .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
                 .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
                 .build();
@@ -309,7 +311,8 @@ class AgentProfileEntityTest {
         assertThat(profile.routingPriority()).contains(0);
         assertThat(profile.maxConcurrentTasks()).contains(1);
         assertThat(profile.sentinel()).contains(false);
-        assertThat(profile.roles()).containsExactly("implementer", "reviewer", "implementer");
+        assertThat(profile.role()).isEqualTo("reviewer");
+        assertThat(profile.altRoles()).containsExactly("implementer");
         assertThat(profile.directiveReferences()).hasSize(2);
     }
 
@@ -325,27 +328,16 @@ class AgentProfileEntityTest {
     }
 
     @Test
-    @DisplayName("a role outside the schema pattern, or no role at all, is rejected")
+    @DisplayName("a role outside the kebab grammar is rejected while a kebab role builds (ADR-0069)")
     void rolesFollowTheSchema() {
-        assertThat(valid("p").role("qa_lead-2").build().roles()).contains("qa_lead-2");
+        assertThat(valid("p").role("qa-lead-2").build().role()).isEqualTo("qa-lead-2");
 
         assertThatThrownBy(() -> valid("p").role("Implementer").build())
                 .isInstanceOfSatisfying(
                         ConstraintBreachException.class,
                         breach -> assertThat(breach.constraintDescription())
-                                .isEqualTo("An agent profile's roles must be lowercase letters, digits, hyphens and"
-                                        + " underscores, starting with a letter."));
-        assertThatThrownBy(() -> AgentProfile.builder()
-                        .id(new AgentProfileIdentifier("p"))
-                        .packId(PACK)
-                        .name("n")
-                        .purpose("p")
-                        .specialization(new Specialization("f", Optional.empty(), Optional.empty(), Optional.empty()))
-                        .build())
-                .isInstanceOfSatisfying(
-                        ConstraintBreachException.class,
-                        breach -> assertThat(breach.constraintDescription())
-                                .isEqualTo("An agent profile needs at least one role."));
+                                .isEqualTo("An agent profile's role and alt-roles must be lowercase letters, digits and"
+                                        + " hyphens, starting with a letter, at most 64 characters."));
     }
 
     @Test
@@ -377,12 +369,12 @@ class AgentProfileEntityTest {
     void exclusionKeepsItsData() {
         Map<String, List<String>> values = new LinkedHashMap<>();
         values.put("capabilities", List.of("deploy"));
-        values.put("roles", List.of());
+        values.put("alt-roles", List.of());
 
         Exclusion.FieldValues exclusion = new Exclusion.FieldValues(values);
 
         assertThat(exclusion.values())
-                .containsExactly(Map.entry("capabilities", List.of("deploy")), Map.entry("roles", List.of()));
+                .containsExactly(Map.entry("capabilities", List.of("deploy")), Map.entry("alt-roles", List.of()));
         assertThat(valid("p")
                         .excluding(Optional.of(new Exclusion.WholeFields(List.of("capabilities"))))
                         .build()

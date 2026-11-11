@@ -118,8 +118,7 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
       """
       profile-id: lead
       name: lead
-      roles:
-        - implementer
+      role: implementer
       purpose: Leads.
       specialization:
         primary-focus: Leadership.

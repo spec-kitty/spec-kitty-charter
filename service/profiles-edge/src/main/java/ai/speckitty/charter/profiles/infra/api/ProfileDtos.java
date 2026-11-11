@@ -154,7 +154,8 @@ public class ProfileDtos {
         AgentProfile wire = new AgentProfile(
                 profile.localId(),
                 profile.name(),
-                profile.roles(),
+                profile.role(),
+                profile.altRoles(),
                 profile.avatarImage().orElse(null),
                 profile.capabilities(),
                 profile.model().orElse(null),

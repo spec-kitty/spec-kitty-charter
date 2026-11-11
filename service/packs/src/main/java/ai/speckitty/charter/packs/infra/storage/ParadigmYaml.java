@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.infra.storage;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.domain.PackContents;
+import java.util.List;
 import java.util.Map;
 
 /** The YAML form of the paradigm. */
@@ -26,7 +28,13 @@ enum ParadigmYaml implements YamlFormat<ParadigmDso> {
                 required(root, "id"),
                 required(root, "schema_version"),
                 required(root, "name"),
-                required(root, "summary"));
+                required(root, "summary"),
+                PrincipleYaml.read(root));
+    }
+
+    @Override
+    public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
+        return PrincipleYaml.rules(root, file);
     }
 
     @Override
@@ -36,6 +44,7 @@ enum ParadigmYaml implements YamlFormat<ParadigmDso> {
                 .scalar("schema_version", paradigm.schemaVersion())
                 .scalar("name", paradigm.name())
                 .scalar("summary", paradigm.summary())
+                .mappings(PrincipleYaml.KEY, PrincipleYaml.write(paradigm.principles()))
                 .dump();
     }
 }

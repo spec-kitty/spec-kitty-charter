@@ -61,7 +61,7 @@ class DoctrineValidationParityTest {
     private static Styleguide styleguide(
             String schema,
             String title,
-            List<String> principles,
+            List<String> principleNames,
             Optional<List<StyleguidePattern>> patterns,
             Optional<List<StyleguideAntiPattern>> antiPatterns) {
         Styleguide.Builder builder = Styleguide.builder()
@@ -70,7 +70,7 @@ class DoctrineValidationParityTest {
                 .schemaVersion(schema)
                 .title(title)
                 .scope(StyleguideScope.CODE);
-        principles.forEach(builder::principle);
+        principleNames.forEach(name -> builder.principle(name, name + "."));
         patterns.ifPresent(builder::patterns);
         antiPatterns.ifPresent(builder::antiPatterns);
         return builder.build();

@@ -63,8 +63,7 @@ class ProfileRoutingTest {
         write(created, "packs/built-in/agent_profiles/java-jenny.agent.yaml", """
                 profile-id: java-jenny
                 name: Java Jenny
-                roles:
-                  - implementer
+                role: implementer
                 purpose: Deliver Java.
                 specialization:
                   primary-focus: Java

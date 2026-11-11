@@ -112,7 +112,7 @@ class ProblemResponsesTest {
                 "directive | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
                         + "\"enforcement\":\"required\",\"integrityRules\":null}",
                 "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
-                        + "\"principles\":[\"p\"],\"patterns\":null}",
+                        + "\"principles\":[{\"name\":\"p\",\"description\":\"p.\"}],\"patterns\":null}",
                 "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
                         + "\"principles\":null}",
                 "toolguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
@@ -165,11 +165,13 @@ class ProblemResponsesTest {
      */
     @Test
     void aNullRequiredFieldInsideAListItemIsABadRequestProblemNotAServerError() throws Exception {
-        mvc.perform(post("/api/v1/packs/qa/artifacts/styleguide")
-                        .header("Authorization", BEARER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
-                                + "\"principles\":[\"p\"],\"patterns\":[{\"name\":null,\"description\":\"d\"}]}"))
+        mvc.perform(
+                        post("/api/v1/packs/qa/artifacts/styleguide")
+                                .header("Authorization", BEARER)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
+                                                + "\"principles\":[{\"name\":\"p\",\"description\":\"p.\"}],\"patterns\":[{\"name\":null,\"description\":\"d\"}]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(result ->
                         assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
@@ -193,7 +195,7 @@ class ProblemResponsesTest {
                 "paradigm | directiveRefs | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\",\"summary\":\"s\","
                         + "\"directiveRefs\":[\"D\"]}",
                 "styleguide | references | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
-                        + "\"principles\":[\"p\"],\"references\":[\"r\"]}",
+                        + "\"principles\":[{\"name\":\"p\",\"description\":\"p.\"}],\"references\":[\"r\"]}",
                 "toolguide | references | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
                         + "\"summary\":\"s\",\"guide\":\"## Overview\",\"references\":[\"r\"]}"
             })

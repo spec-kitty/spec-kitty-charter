@@ -6,6 +6,8 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,7 +42,8 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
                 required(root, "name"),
                 optional(root, "description"),
                 optional(root, "schema-version"),
-                strings(root, "roles"),
+                required(root, "role"),
+                strings(root, "alt-roles"),
                 optional(root, "avatar-image"),
                 strings(root, "capabilities"),
                 integer(root, "routing-priority"),
@@ -64,13 +67,28 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
     }
 
     @Override
+    public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
+        List<String> altRoles = strings(root, "alt-roles");
+        return AgentProfile.firstRepeatedAltRole(required(root, "role"), altRoles).stream()
+                .mapToObj(i -> new PackContents.SchemaViolation(
+                        file,
+                        List.of("alt-roles", String.valueOf(i)),
+                        "uniqueItems",
+                        Optional.empty(),
+                        Optional.of(altRoles.get(i)),
+                        Map.of()))
+                .toList();
+    }
+
+    @Override
     public String write(AgentProfileDso profile) {
         YamlDumpEmitter out = new YamlDumpEmitter()
                 .scalar("profile-id", profile.profileId())
                 .scalar("name", profile.name())
                 .scalar("description", profile.description())
                 .scalar("schema-version", profile.schemaVersion())
-                .strings("roles", profile.roles())
+                .scalar("role", profile.role())
+                .strings("alt-roles", profile.altRoles())
                 .scalar("avatar-image", profile.avatarImage())
                 .strings("capabilities", profile.capabilities());
         profile.routingPriority().ifPresent(value -> out.present("routing-priority", value));

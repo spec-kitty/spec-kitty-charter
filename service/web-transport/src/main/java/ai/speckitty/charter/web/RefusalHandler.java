@@ -338,7 +338,8 @@ public class RefusalHandler {
                     RELATIONSHIP_NOT_FOUND,
                     REGISTRATION_NOT_FOUND,
                     MISSION_STEP_CONTRACT_NOT_FOUND,
-                    SKELETON_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    SKELETON_NOT_FOUND,
+                    NO_PROFILE_MATCHED -> HttpStatus.NOT_FOUND;
             case VALIDATION_FAILED,
                     ACTIVATION_INVALID,
                     PACK_SOURCE_REFUSED,
@@ -346,7 +347,12 @@ public class RefusalHandler {
                     ENHANCES_CYCLE,
                     CONFLICTING_RELATIONS,
                     SELF_OVERRIDE,
-                    OVERRIDE_CYCLE -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    OVERRIDE_CYCLE,
+                    FALLBACK_PROFILE_UNKNOWN,
+                    FALLBACK_PROFILE_NOT_LOCKED,
+                    FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                    FALLBACK_PROFILE_MISSING,
+                    FALLBACK_PROFILE_CONFLICT -> HttpStatus.UNPROCESSABLE_CONTENT;
             case REGISTRATION_CONFLICT,
                     GOVERNANCE_POLICY_VIOLATION,
                     ARTIFACT_REQUIRED,

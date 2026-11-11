@@ -241,7 +241,8 @@ class ProfileCorpusTest {
         wire.put("name", yaml.get("name"));
         putIfDeclared(wire, "description", yaml, "description");
         putIfDeclared(wire, "schemaVersion", yaml, "schema-version");
-        wire.put("roles", list(yaml, "roles"));
+        wire.put("role", yaml.get("role"));
+        wire.put("altRoles", list(yaml, "alt-roles"));
         wire.put("avatarImage", yaml.get("avatar-image"));
         wire.put("capabilities", list(yaml, "capabilities"));
         putIfDeclared(wire, "routingPriority", yaml, "routing-priority");

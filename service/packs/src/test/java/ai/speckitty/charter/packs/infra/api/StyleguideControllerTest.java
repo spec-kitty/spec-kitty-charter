@@ -103,7 +103,7 @@ class StyleguideControllerTest {
     @Test
     void aBodyWithAnUnknownScopeIsA422() throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"nonsense\","
-                + "\"principles\":[\"Prefer clarity\"]}";
+                + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}]}";
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
@@ -117,9 +117,11 @@ class StyleguideControllerTest {
     @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
     void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
-                + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":null}";
+                + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],\"" + list
+                + "\":null}";
         if (list.equals("principles")) {
-            bad = bad.replace("\"principles\":[\"Prefer clarity\"],", "");
+            bad = bad.replace(
+                    "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],", "");
         }
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -142,9 +144,11 @@ class StyleguideControllerTest {
     @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
     void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
-                + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":[null]}";
+                + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],\"" + list
+                + "\":[null]}";
         if (list.equals("principles")) {
-            bad = bad.replace("\"principles\":[\"Prefer clarity\"],", "");
+            bad = bad.replace(
+                    "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],", "");
         }
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -177,7 +181,7 @@ class StyleguideControllerTest {
 
     private static String body(String id) {
         return "{\"id\":\"" + id
-                + "\",\"schemaVersion\":\"1.0\",\"title\":\"Title\",\"scope\":\"code\",\"principles\":[\"Prefer clarity\"]}";
+                + "\",\"schemaVersion\":\"1.0\",\"title\":\"Title\",\"scope\":\"code\",\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}]}";
     }
 
     private static Styleguide styleguide(String id, String title) {
@@ -187,7 +191,7 @@ class StyleguideControllerTest {
                 .schemaVersion("1.0")
                 .title(title)
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer clarity")
+                .principle("Prefer clarity", "Prefer clarity, in one sentence.")
                 .build();
     }
 

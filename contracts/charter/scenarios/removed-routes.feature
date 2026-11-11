@@ -71,11 +71,11 @@ Feature: The per-kind routes are gone, with no alias
     Examples:
       | method | path                    | kind       | body                                                                                                                                         |
       | POST   | /packs/qa/directives    | directive  | {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}                                      |
-      | POST   | /packs/qa/styleguides   | styleguide | {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}                  |
+      | POST   | /packs/qa/styleguides   | styleguide | {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}                  |
       | POST   | /packs/qa/paradigms     | paradigm   | {"id": "clean", "schemaVersion": "1.0", "name": "Clean", "summary": "inward"}                                                                |
       | POST   | /packs/qa/toolguides    | toolguide  | {"id": "git", "schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "## Overview\\n\\nUse git.", "summary": "Using git."} |
       | PUT    | /packs/qa/directives/x  | directive  | {"schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}                                                     |
-      | PUT    | /packs/qa/styleguides/x | styleguide | {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}                                     |
+      | PUT    | /packs/qa/styleguides/x | styleguide | {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}]}                                     |
       | PUT    | /packs/qa/paradigms/x   | paradigm   | {"schemaVersion": "1.0", "name": "Clean", "summary": "inward"}                                                                               |
       | PUT    | /packs/qa/toolguides/x  | toolguide  | {"schemaVersion": "1.0", "tool": "x", "title": "How to use x", "guide": "## Overview\\n\\nUse x.", "summary": "Using x."}                     |
 

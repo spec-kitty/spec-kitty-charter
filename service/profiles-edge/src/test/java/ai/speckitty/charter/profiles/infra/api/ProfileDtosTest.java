@@ -144,7 +144,7 @@ class ProfileDtosTest {
         assertSameShape(schema, schema, wire(FullProfile.full()), "", problems);
 
         assertThat(problems).isEmpty();
-        assertThat(names(schema.get("properties"))).hasSize(25);
+        assertThat(names(schema.get("properties"))).hasSize(26);
     }
 
     @Test
@@ -178,7 +178,7 @@ class ProfileDtosTest {
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(names(wire(FullProfile.full()))).containsAll(accessors);
-        assertThat(accessors).as("accessors of the domain profile").hasSize(25);
+        assertThat(accessors).as("accessors of the domain profile").hasSize(26);
     }
 
     // ---- what each field says --------------------------------------------------------------------------------------
@@ -191,7 +191,11 @@ class ProfileDtosTest {
         assertThat(wire.get("name").asString()).isEqualTo("Full");
         assertThat(wire.get("description").asString()).isEqualTo("Every field");
         assertThat(wire.get("schemaVersion").asString()).isEqualTo("2");
-        assertThat(wire.get("roles")).hasSize(2);
+        assertThat(wire.get("role").asString()).isEqualTo("implementer");
+        assertThat(wire.get("altRoles")).hasSize(1);
+        assertThat(wire.has("roles"))
+                .as("the retired positional list (ADR-0069)")
+                .isFalse();
         assertThat(wire.get("avatarImage").asString()).isEqualTo("avatars/full.png");
         assertThat(wire.get("capabilities").get(1).asString()).isEqualTo("cap-two");
         assertThat(wire.get("routingPriority").asInt()).isEqualTo(80);
@@ -366,7 +370,7 @@ class ProfileDtosTest {
 
         assertThat(excluding.get("wholeFields").isNull()).isTrue();
         assertThat(excluding.get("fieldValues")).hasSize(2);
-        assertThat(excluding.get("fieldValues").get(0).get("field").asString()).isEqualTo("roles");
+        assertThat(excluding.get("fieldValues").get(0).get("field").asString()).isEqualTo("alt-roles");
         assertThat(excluding.get("fieldValues").get(0).get("values").get(0).asString())
                 .isEqualTo("reviewer");
         assertThat(excluding.get("fieldValues").get(1).get("field").asString()).isEqualTo("capabilities");

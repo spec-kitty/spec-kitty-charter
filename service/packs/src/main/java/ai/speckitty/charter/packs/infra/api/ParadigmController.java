@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.Principle;
 import ai.speckitty.charter.web.RefusalHandler;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -50,8 +51,7 @@ public class ParadigmController implements ParadigmsApi {
     public ResponseEntity<Artifact> registerPackParadigm(String packId, ParadigmRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
-        ai.speckitty.charter.packs.domain.Paradigm paradigm =
-                assemble(pack, id, body.getSchemaVersion(), body.getName(), body.getSummary());
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(pack, id, body);
         ParadigmRegistrationService.Registered result = registrations.registerParadigm(pack, paradigm, false, null);
         Artifact written =
                 ArtifactDtos.envelope(ArtifactKind.PARADIGM, pack, id, links).paradigm(ArtifactDtos.paradigm(paradigm));
@@ -64,8 +64,7 @@ public class ParadigmController implements ParadigmsApi {
     public ResponseEntity<Artifact> putPackParadigm(
             String packId, String artifactId, ParadigmRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
-        ai.speckitty.charter.packs.domain.Paradigm paradigm =
-                assemble(pack, artifactId, body.getSchemaVersion(), body.getName(), body.getSummary());
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(pack, artifactId, body);
         ParadigmRegistrationService.Registered result = registrations.registerParadigm(pack, paradigm, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
@@ -84,14 +83,19 @@ public class ParadigmController implements ParadigmsApi {
     }
 
     private static ai.speckitty.charter.packs.domain.Paradigm assemble(
-            PackIdentifier pack, String id, String schemaVersion, String name, String summary) {
+            PackIdentifier pack, String id, ParadigmRegistration body) {
         try {
             var builder = ai.speckitty.charter.packs.domain.Paradigm.builder()
                     .id(new ParadigmIdentifier(id))
                     .packId(pack)
-                    .schemaVersion(schemaVersion)
-                    .name(name)
-                    .summary(summary);
+                    .schemaVersion(body.getSchemaVersion())
+                    .name(body.getName())
+                    .summary(body.getSummary());
+            if (body.getPrinciples() != null) {
+                builder.principles(body.getPrinciples().stream()
+                        .map(item -> new Principle(item.getName(), item.getDescription()))
+                        .toList());
+            }
             return builder.build();
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
