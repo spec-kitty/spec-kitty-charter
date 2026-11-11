@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,44 +20,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * The mission type read serves the pinned open-packs {@code software-dev} as stored (#99, T016, SC-001): the composite
- * read over the production store holds every step the checkout's type declares (in sequence, then on demand), and each
- * step's prompt and guidelines are the files of the checkout byte for byte, the bare {@code spdd} slot markers
+ * The mission type read serves the example {@code software-dev} as stored (#99, T016, SC-001): the composite
+ * read over the production store holds every step the example's type declares (in sequence, then on demand), and each
+ * step's prompt and guidelines are the files of the example pack byte for byte, the bare {@code spdd} slot markers
  * included. It holds the skeletons the type's {@code templates/} directory holds and the step contracts bound to it.
- * The expectations derive from the checkout, so a corpus change at a new pin needs no edit here.
+ * The expectations derive from the example pack, so a corpus change at a new pin needs no edit here.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("The pinned software-dev is served byte for byte (#99)")
+@DisplayName("The example software-dev is served byte for byte (#99)")
 class MissionTypeHoldingCorpusTest {
 
     private static final PackIdentifier BUILT_IN = new PackIdentifier("built-in");
     private static final String TYPE = "software-dev";
 
-    /** Fail with the pin's own message rather than as a mismatch when the checkout is at another commit. */
-    @BeforeAll
-    static void theCheckoutIsAtThePin() {
-        OpenPacksCorpus.assertPinned();
-    }
-
     @Test
     @DisplayName("every step's prompt and guidelines are the stored files, byte for byte")
     void everyStepOfSoftwareDevIsServedByteForByte() throws IOException {
-        // The built-in pack alone: the other packs of the checkout have no pack.yaml, which the first digest refuses.
+        // The built-in pack alone: the other packs of the example pack have no pack.yaml, which the first digest
+        // refuses.
         List<PackLocation> locations = List.of(new PackLocation(
-                "built-in", PackLevel.BUILT_IN, OpenPacksCorpus.packsDirectory().resolve("built-in")));
+                "built-in", PackLevel.BUILT_IN, ExamplePacks.packsDirectory().resolve("built-in")));
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         MissionTypeHoldingRead reads = new MissionTypeHoldingRead(
                 store, store, new ConsistentRead(new FileSystemPackSources(() -> locations)), store);
-        Path mission = OpenPacksCorpus.packsDirectory().resolve("built-in/missions/" + TYPE);
+        Path mission = ExamplePacks.packsDirectory().resolve("built-in/missions/" + TYPE);
         Path steps = mission.resolve("steps");
 
         MissionTypeHoldingRead.Holding holding = reads.holding(BUILT_IN, TYPE);
@@ -68,7 +60,7 @@ class MissionTypeHoldingCorpusTest {
         List<String> onDemand = declaredStepIds(mission, "on_demand_steps:");
         List<String> declared = new ArrayList<>(sequence);
         declared.addAll(onDemand);
-        assertThat(sequence).as("sequence steps the checkout's type declares").isNotEmpty();
+        assertThat(sequence).as("sequence steps the example's type declares").isNotEmpty();
         assertThat(type.steps()).extracting(MissionStep::id).as("the sequence").containsExactlyElementsOf(sequence);
         assertThat(type.onDemandSteps())
                 .extracting(MissionStep::id)
@@ -78,7 +70,7 @@ class MissionTypeHoldingCorpusTest {
                 .as("a file set per declared step")
                 .containsExactlyInAnyOrderElementsOf(declared);
         assertThat(filesOf(steps, ".prompt.md"))
-                .as("every prompt the checkout holds belongs to a declared step")
+                .as("every prompt the example pack holds belongs to a declared step")
                 .isSubsetOf(declared);
         for (MissionStep step : all) {
             PackCompanionFiles.StepFiles files = holding.stepFiles().get(step.id());
@@ -88,7 +80,7 @@ class MissionTypeHoldingCorpusTest {
         }
         List<String> templates = filesOf(mission.resolve("templates"), "-template.md");
         assertThat(templates)
-                .as("skeletons the checkout's templates/ directory holds")
+                .as("skeletons the example's templates/ directory holds")
                 .isNotEmpty();
         assertThat(holding.skeletons())
                 .extracting(Template::localId)
@@ -96,7 +88,9 @@ class MissionTypeHoldingCorpusTest {
                         .map(name -> TYPE + "/" + name + "-template.md")
                         .toList());
         List<String> bound = boundContractActions(mission.getParent().resolve("built_in_step_contracts"));
-        assertThat(bound).as("step contracts the checkout binds to the type").isNotEmpty();
+        assertThat(bound)
+                .as("step contracts the example pack binds to the type")
+                .isNotEmpty();
         assertThat(holding.stepContracts())
                 .extracting(MissionStepContract::action)
                 .containsExactlyInAnyOrderElementsOf(bound);
@@ -147,7 +141,7 @@ class MissionTypeHoldingCorpusTest {
         return actions;
     }
 
-    /** The bytes the read holds are the file's, and a file the checkout lacks is held as none. */
+    /** The bytes the read holds are the file's, and a file the example pack lacks is held as none. */
     private static void assertStored(Optional<Payload> held, Path file) throws IOException {
         if (Files.isRegularFile(file)) {
             assertThat(held).as(file.toString()).contains(Payload.of(Files.readAllBytes(file)));

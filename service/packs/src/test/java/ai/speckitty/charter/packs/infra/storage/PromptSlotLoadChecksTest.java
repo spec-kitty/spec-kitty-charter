@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackPolicy.PromptSlotFault;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -472,12 +472,10 @@ class PromptSlotLoadChecksTest {
     }
 
     @Test
-    @Tag("open-packs")
     @DisplayName(
-            "the five pinned built-in prompts that hold slots parse alike from the raw text and the stored document")
+            "the five example built-in prompts that hold slots parse alike from the raw text and the stored document")
     void theBuiltInPromptsAgreeOnTheLoadPath() throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path packs = OpenPacksCorpus.packsDirectory();
+        Path packs = ExamplePacks.packsDirectory();
         List<MissionTypeDso> types = new FilesystemPackStore(packs, strategy)
                 .read(new PackIdentifier("built-in"), List.of(MissionTypeBinding.INSTANCE))
                 .dsos(MissionTypeBinding.INSTANCE);
@@ -498,6 +496,8 @@ class PromptSlotLoadChecksTest {
                 }
             }
         }
-        assertThat(withSlots).as("the prompts that declare a slot at the pin").hasSize(5);
+        assertThat(withSlots)
+                .as("the prompts that declare a slot in the examples")
+                .hasSize(5);
     }
 }

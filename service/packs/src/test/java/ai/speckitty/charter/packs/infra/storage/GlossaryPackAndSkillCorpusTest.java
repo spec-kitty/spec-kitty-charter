@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.MeaningComparator.Difference;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,22 +16,19 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Every glossary pack and every skill of the pinned open-packs checkout round-trips by meaning (ADR-0036), a skill with
+ * Every glossary pack and every skill of the example packs round-trips by meaning (ADR-0036), a skill with
  * its prompt body byte for byte (ADR-0039). Each file is read through the store, so a skill's body is read as its
  * companion, mapped to the domain and back, written with its companion into a fresh pack, read again, and compared
- * with its source. It covers the packs no pack-level gate loads: the #187 gate covers only the built-in pack, which has
- * no skill, and {@code qa} has no {@code pack.yaml}.
+ * with its source. It covers the org example pack's skill, which the #187 built-in gate does
+ * not load.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("Every pinned glossary pack and skill round-trips by meaning, a skill with its body (#192)")
+@DisplayName("Every example glossary pack and skill round-trips by meaning, a skill with its body (#192)")
 class GlossaryPackAndSkillCorpusTest {
 
     private static final PackIdentifier PROBE = new PackIdentifier("probe");
@@ -41,7 +39,7 @@ class GlossaryPackAndSkillCorpusTest {
     Path host;
 
     @Test
-    @DisplayName("the 4 pinned glossary packs read, write and read back with their meaning unchanged")
+    @DisplayName("the example glossary pack read, write and read back with their meaning unchanged")
     void everyGlossaryPackRoundTrips() throws IOException {
         List<Path> files = files(".glossary-pack.yaml");
         List<String> problems = new ArrayList<>();
@@ -55,17 +53,13 @@ class GlossaryPackAndSkillCorpusTest {
 
         assertThat(problems).as("glossary packs that do not round-trip").isEmpty();
         assertThat(files)
-                .as("pinned glossary packs: built-in, event-driven, internal and qa")
+                .as("example glossary packs: the built-in one")
                 .extracting(path -> path.getFileName().toString())
-                .containsExactlyInAnyOrder(
-                        "spec-kitty-core.glossary-pack.yaml",
-                        "evd-glossary.glossary-pack.yaml",
-                        "spk-internal-glossary.glossary-pack.yaml",
-                        "qa-glossary.glossary-pack.yaml");
+                .containsExactlyInAnyOrder("spec-kitty-core.glossary-pack.yaml");
     }
 
     @Test
-    @DisplayName("the 5 pinned skills and their bodies are read and written as pairs, the body byte for byte")
+    @DisplayName("the example skill and their bodies are read and written as pairs, the body byte for byte")
     void everySkillRoundTripsWithItsBody() throws IOException {
         List<Path> files = files(".skill.yaml");
         List<String> problems = new ArrayList<>();
@@ -92,14 +86,9 @@ class GlossaryPackAndSkillCorpusTest {
 
         assertThat(problems).as("skills that do not round-trip").isEmpty();
         assertThat(files)
-                .as("pinned skills: the internal pack's five")
+                .as("example skills: the org pack's one")
                 .extracting(path -> path.getFileName().toString())
-                .containsExactlyInAnyOrder(
-                        "issue-triage.skill.yaml",
-                        "land-pr.skill.yaml",
-                        "mission-from-issue.skill.yaml",
-                        "report-debrief.skill.yaml",
-                        "semi-auto.skill.yaml");
+                .containsExactlyInAnyOrder("issue-triage.skill.yaml");
     }
 
     @Test
@@ -240,7 +229,7 @@ class GlossaryPackAndSkillCorpusTest {
     }
 
     private static List<Path> files(String suffix) throws IOException {
-        try (Stream<Path> walk = Files.walk(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> walk = Files.walk(ExamplePacks.packsDirectory())) {
             return walk.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(suffix))
                     .sorted()

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.MeaningComparator.Difference;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,19 +16,15 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Every mission step contract of the pinned open-packs checkout round-trips by meaning (ADR-0036): read, mapped to the
- * domain and back, written, and compared with its source text. It covers the {@code qa} pack too, which no pack-level
- * gate loads because it has no {@code pack.yaml}.
+ * Every mission step contract of the example packs round-trips by meaning (ADR-0036): read, mapped to the
+ * domain and back, written, and compared with its source text.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("Every pinned mission step contract round-trips by meaning (#191)")
+@DisplayName("Every example mission step contract round-trips by meaning (#191)")
 class MissionStepContractCorpusTest {
 
     private static final String KIND = "mission-step-contract";
@@ -36,7 +33,7 @@ class MissionStepContractCorpusTest {
     private final SerializationStrategy yaml = new YamlSerializationStrategy();
 
     @Test
-    @DisplayName("the 28 pinned step contracts read, write and read back with their meaning unchanged")
+    @DisplayName("the 5 example step contracts read, write and read back with their meaning unchanged")
     void everyPinnedContractRoundTrips() throws IOException {
         List<Path> files = contracts();
         List<String> problems = new ArrayList<>();
@@ -53,7 +50,7 @@ class MissionStepContractCorpusTest {
         }
 
         assertThat(problems).as("step contracts that do not round-trip").isEmpty();
-        assertThat(files).as("pinned step contracts: 21 built-in and 7 qa").hasSize(28);
+        assertThat(files).as("example step contracts: 5 built-in").hasSize(5);
     }
 
     @Test
@@ -74,9 +71,9 @@ class MissionStepContractCorpusTest {
         }
 
         assertThat(gates).as("gate bindings").isGreaterThanOrEqualTo(1);
-        assertThat(guidance).as("steps with guidance").isGreaterThanOrEqualTo(10);
-        assertThat(commands).as("steps with a command").isGreaterThanOrEqualTo(46);
-        assertThat(delegations).as("steps with a delegation").isGreaterThanOrEqualTo(101);
+        assertThat(guidance).as("steps with guidance").isGreaterThanOrEqualTo(5);
+        assertThat(commands).as("steps with a command").isGreaterThanOrEqualTo(10);
+        assertThat(delegations).as("steps with a delegation").isGreaterThanOrEqualTo(1);
     }
 
     /**
@@ -154,7 +151,7 @@ class MissionStepContractCorpusTest {
     }
 
     private static List<Path> contracts() throws IOException {
-        try (Stream<Path> walk = Files.walk(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> walk = Files.walk(ExamplePacks.packsDirectory())) {
             return walk.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".step-contract.yaml"))
                     .sorted()

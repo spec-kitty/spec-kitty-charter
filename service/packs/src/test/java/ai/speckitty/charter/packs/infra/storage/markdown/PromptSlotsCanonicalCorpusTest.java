@@ -10,7 +10,7 @@ import ai.speckitty.charter.kernel.markdown.PromptSlots.Parse;
 import ai.speckitty.charter.kernel.markdown.PromptSlots.Slot;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
-import ai.speckitty.charter.packs.infra.storage.OpenPacksCorpus;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec.Parsed;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,43 +22,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
  * The slot grammar reads the canonical text (ADR-0066 A5, T-05): load, validate mode and the read all parse
  * {@code MarkdownCodec.write(document)}, not the raw file. This test shows that the canonical render loses no marker,
- * no id, no order and no emptiness, over every built-in step prompt of the pinned open-packs checkout and over fixtures
+ * no id, no order and no emptiness, over every built-in step prompt of the example packs and over fixtures
  * that the render does change. A mutant canonicaliser that drops a comment makes the property fail, so it is not
  * vacuous.
  *
- * <p>At the pin (open-packs a2a9379) the five software-dev {@code spdd:reasons-block} slots are empty: open-packs
- * 170dbc3 moved their REASONS text into the opt-in {@code spdd} pack as prompt fragments (ADR-0066 amendment), one
+ * <p>The five built-in software-dev {@code spdd:reasons-block} slots are empty: the org example pack fills them
+ * through prompt fragments (ADR-0066 amendment), one
  * {@code spdd-<step>.prompt-fragment.md} per step under {@code missions/software-dev/enhancements/}. The positive
- * control therefore splices each pinned fragment, below its H1 title, into its slot, so the parser is still shown to
- * find real, non-empty pinned content, in the raw and in the canonical text.
+ * control therefore splices each example fragment, below its H1 title, into its slot, so the parser is still shown to
+ * find real, non-empty example content, in the raw and in the canonical text.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
 @DisplayName("PromptSlots reads the same slots from a prompt and from its canonical render (T-05)")
 class PromptSlotsCanonicalCorpusTest {
 
-    /** The slot every pinned marker declares. */
+    /** The slot every example marker declares. */
     private static final SlotId REASONS = new SlotId("spdd:reasons-block");
 
-    /** The step prompts that carry the slot at the pin. */
+    /** The step prompts that carry the slot in the examples. */
     private static final List<String> SLOT_PROMPTS = List.of(
             "implement.prompt.md", "plan.prompt.md", "review.prompt.md", "specify.prompt.md", "tasks.prompt.md");
 
     /** The software-dev step prompts of the built-in pack. */
-    private static final String SOFTWARE_DEV_STEPS = "packs/built-in/missions/software-dev/steps/";
+    private static final String SOFTWARE_DEV_STEPS = "built-in/missions/software-dev/steps/";
 
-    /** Where the spdd pack holds the step enhancements and prompt fragments that fill the slot (open-packs 170dbc3). */
-    private static final String SPDD_ENHANCEMENTS = "packs/spdd/missions/software-dev/enhancements/";
+    /** Where the spdd pack holds the step enhancements and prompt fragments that fill the slot (org example pack). */
+    private static final String SPDD_ENHANCEMENTS = "org-base/missions/software-dev/enhancements/";
 
     private static final String REASONS_START = "<!-- spdd:reasons-block:start -->";
     private static final String REASONS_END = "<!-- spdd:reasons-block:end -->";
@@ -96,11 +92,6 @@ class PromptSlotsCanonicalCorpusTest {
             <!-- c:d:end -->
             """;
 
-    @BeforeAll
-    static void pinned() {
-        OpenPacksCorpus.assertPinned();
-    }
-
     /** The text with its first comment removed: a canonicaliser that loses a marker. */
     private static String dropFirstComment(String text) {
         int open = text.indexOf("<!--");
@@ -134,7 +125,7 @@ class PromptSlotsCanonicalCorpusTest {
     }
 
     private static List<Path> builtInPrompts() throws IOException {
-        Path missions = OpenPacksCorpus.root().resolve("packs/built-in/missions");
+        Path missions = ExamplePacks.pack(ExamplePacks.BUILT_IN).resolve("missions");
         try (Stream<Path> walk = Files.walk(missions)) {
             return walk.filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".prompt.md"))
@@ -148,7 +139,8 @@ class PromptSlotsCanonicalCorpusTest {
         Map<String, String> texts = new LinkedHashMap<>();
         for (Path file : builtInPrompts()) {
             texts.put(
-                    OpenPacksCorpus.root().relativize(file).toString(), Files.readString(file, StandardCharsets.UTF_8));
+                    ExamplePacks.packsDirectory().relativize(file).toString(),
+                    Files.readString(file, StandardCharsets.UTF_8));
         }
         return texts;
     }
@@ -167,7 +159,7 @@ class PromptSlotsCanonicalCorpusTest {
     void pinnedPromptsAgree() throws IOException {
         Map<String, String> prompts = prompts();
 
-        assertThat(prompts).as("built-in step prompts at the pin").isNotEmpty();
+        assertThat(prompts).as("built-in step prompts in the examples").isNotEmpty();
         prompts.forEach((name, raw) -> assertAgrees(raw, MarkdownCodec::write));
     }
 
@@ -213,8 +205,8 @@ class PromptSlotsCanonicalCorpusTest {
     }
 
     @Test
-    @DisplayName("the pinned built-in prompts hold 10 markers over 5 prompts, all empty spdd:reasons-block (the REASONS"
-            + " text moved into the spdd pack at open-packs 170dbc3)")
+    @DisplayName("the example built-in prompts hold 10 markers over 5 prompts, all empty spdd:reasons-block (the org"
+            + " example pack fills them)")
     void pinnedCorpusFacts() throws IOException {
         Map<String, String> withSlots = new LinkedHashMap<>();
         List<Slot> slots = new ArrayList<>();
@@ -246,10 +238,10 @@ class PromptSlotsCanonicalCorpusTest {
     }
 
     @Test
-    @DisplayName("positive control: each pinned spdd prompt fragment, spliced into its built-in slot, reads as a"
+    @DisplayName("positive control: each example spdd prompt fragment, spliced into its built-in slot, reads as a"
             + " non-empty spdd:reasons-block in the raw and the canonical text")
     void pinnedFragmentsFillTheSlots() throws IOException {
-        Path root = OpenPacksCorpus.root();
+        Path root = ExamplePacks.packsDirectory();
         List<Slot> slots = new ArrayList<>();
         List<Fault> faults = new ArrayList<>();
         for (String prompt : SLOT_PROMPTS) {

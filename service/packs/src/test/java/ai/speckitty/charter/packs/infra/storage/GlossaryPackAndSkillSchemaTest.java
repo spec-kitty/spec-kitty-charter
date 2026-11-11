@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,18 +15,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The {@code glossary-pack} and {@code skill} schemas (FR-006, FR-007): every pinned file of either kind validates,
+ * The {@code glossary-pack} and {@code skill} schemas (FR-006, FR-007): every example file of either kind validates,
  * every object in both is closed, and the keywords the skill schema brings ({@code not}, {@code maxLength}) yield a
  * stable violation detail.
  *
- * <p>The open-packs corpus test runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies
- * the checkout (its {@code internal} and {@code qa} packs among them); the rest runs under {@code :packs:test}.
+ * <p>The example-pack check reads the charter-owned example packs (ADR-0070).
  */
 @DisplayName("Glossary-pack and skill schemas (#192)")
 class GlossaryPackAndSkillSchemaTest {
@@ -95,16 +94,15 @@ class GlossaryPackAndSkillSchemaTest {
         return findings.get(0).detail();
     }
 
-    // ---- the pinned files ------------------------------------------------------------------------
+    // ---- the example files ------------------------------------------------------------------------
 
     @Test
-    @Tag("open-packs")
-    @DisplayName("every pinned glossary pack and skill of the open-packs checkout validates")
-    void everyPinnedFileOfTheOpenPacksCheckoutValidates() throws IOException {
-        List<Path> files = filesOfBothKinds(OpenPacksCorpus.packsDirectory());
+    @DisplayName("every glossary pack and skill of the example packs validates")
+    void everyFileOfTheExamplePacksValidates() throws IOException {
+        List<Path> files = filesOfBothKinds(ExamplePacks.packsDirectory());
 
         assertThat(problems(files)).as("files that do not validate").isEmpty();
-        assertThat(files).as("4 glossary packs and 5 skills").hasSize(9);
+        assertThat(files).as("1 glossary pack and 1 skill").hasSize(2);
     }
 
     private static List<String> problems(List<Path> files) throws IOException {
