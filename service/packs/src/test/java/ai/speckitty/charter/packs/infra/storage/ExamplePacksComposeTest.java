@@ -44,6 +44,13 @@ class ExamplePacksComposeTest {
               relation: impacts
               impacts: 0.5
             """;
+    private static final String OVERRIDES_EDGE = """
+            - source: skill:project-triage
+              target: org-base::skill:issue-triage
+              relation: overrides
+            """;
+    private static final String ORG_OVERRIDE =
+            "overrides:\n  - artifact: styleguide:reasons-canvas-writing\n    member: " + ORG_PACK_ID + "\n";
     private static final String DIGEST = "sha256:" + "a".repeat(64);
 
     @TempDir
@@ -133,6 +140,32 @@ class ExamplePacksComposeTest {
     }
 
     @Test
+    @DisplayName("the project's qualified overrides edge with its depends_on removed is refused, naming project (#479)")
+    void aQualifiedOverridesEdgeWithoutItsDependencyIsRefused() throws IOException {
+        // With the depends_on in place the edge composes (everyExamplePackTogether). Without it, org-base really is
+        // outside the project's closure, and the refusal says so of the overrides edge alone.
+        PackLocation independent = changed(
+                ExamplePacks.PROJECT,
+                "pack.yaml",
+                ORG_DEPENDENCY,
+                "",
+                "pack.yaml",
+                ORG_OVERRIDE,
+                "",
+                "project.graph.yaml",
+                IMPACTS_EDGE,
+                "");
+
+        assertThatThrownBy(() -> offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+                    assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactly("project", "org-base");
+                })
+                .hasMessageContaining("writes the reference `org-base::skill:issue-triage`")
+                .hasMessageContaining("is outside its depends_on closure");
+    }
+
+    @Test
     @DisplayName("qualified references with the depends_on removed are refused")
     void aRemovedDependencyIsRefused() throws IOException {
         PackLocation independent = changed(ExamplePacks.ORG, "pack.yaml", BUILT_IN_DEPENDENCY, "");
@@ -165,19 +198,20 @@ class ExamplePacksComposeTest {
     @Test
     @DisplayName("a pack that writes no reference, without its depends_on, composes and serves no edge")
     void aPackWithoutReferencesOrDependencyIsNotRefused() throws IOException {
-        // The project example writes its reference to org-base in project.graph.yaml and its pack.yaml overrides: with
-        // them and
-        // its depends_on gone, nothing refuses, so only the served edge can tell the dependency left.
+        // The project example writes its references to org-base in project.graph.yaml, an impacts and an overrides
+        // edge,
+        // and in its pack.yaml overrides. With them and its depends_on gone, nothing refuses, so only the served edge
+        // can tell that the dependency left.
         PackLocation independent = changed(
                 ExamplePacks.PROJECT,
                 "pack.yaml",
                 ORG_DEPENDENCY,
                 "",
                 "pack.yaml",
-                "overrides:\n  - artifact: styleguide:reasons-canvas-writing\n    member: " + ORG_PACK_ID + "\n",
+                ORG_OVERRIDE,
                 "",
                 "project.graph.yaml",
-                IMPACTS_EDGE,
+                IMPACTS_EDGE + OVERRIDES_EDGE,
                 "");
 
         List<OfferingEntry> served = offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent);
