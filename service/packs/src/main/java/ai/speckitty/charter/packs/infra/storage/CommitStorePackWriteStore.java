@@ -60,7 +60,7 @@ import org.springframework.stereotype.Service;
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore, PackRemovalStore {
 
-    private final DomainRepositoryService.Locations locations;
+    private final Locations locations;
     private final SerializationStrategy strategy;
     private final PackCommitStore commitStore;
     private final RegistryWriteLock registryLock;
@@ -75,8 +75,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param strategy the serialization format (used to read a descriptor when resolving by declared id)
      * @param commitStore WP04's aggregate-commit store
      */
-    public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
+    public CommitStorePackWriteStore(Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
         this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared());
     }
 
@@ -92,7 +91,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      */
     @Autowired
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             ObjectProvider<RegistrationImpact> impact) {
@@ -117,7 +116,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param generation the write generation a commit's swap is bracketed with
      */
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,
@@ -143,7 +142,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param impact the impact check every write is judged with
      */
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,

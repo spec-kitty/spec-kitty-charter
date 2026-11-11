@@ -1,7 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage.config;
 
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -84,7 +84,7 @@ public class StorageConfiguration {
      * @throws IllegalStateException when a retired property ({@code charter.packs}, {@code charter.storage.*}) is set
      */
     @Bean
-    DomainRepositoryService.Locations storageLocations(ObjectProvider<ConfigRoot> root, Environment environment) {
+    Locations storageLocations(ObjectProvider<ConfigRoot> root, Environment environment) {
         rejectRetired(environment);
         ConfigRoot configured = root.getIfAvailable();
         return configured == null ? List::of : new StorageRootLocations(configured.packs());

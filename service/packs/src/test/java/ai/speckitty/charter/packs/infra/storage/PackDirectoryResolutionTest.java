@@ -51,7 +51,7 @@ class PackDirectoryResolutionTest {
 
     /** The directory each of the three resolves {@code pack} to, read through what each exposes. */
     private void assertAllResolve(List<PackLocation> configured, String pack, Path expected) {
-        DomainRepositoryService.Locations locations = () -> configured;
+        Locations locations = () -> configured;
         PackCommitStore commitStore = new PackCommitStore(locations, strategy);
         PackIdentifier id = new PackIdentifier(pack);
 
@@ -68,7 +68,7 @@ class PackDirectoryResolutionTest {
     }
 
     private void assertAllRefuse(List<PackLocation> configured, String pack, RefusalCode code) {
-        DomainRepositoryService.Locations locations = () -> configured;
+        Locations locations = () -> configured;
         PackCommitStore commitStore = new PackCommitStore(locations, strategy);
         PackIdentifier id = new PackIdentifier(pack);
 

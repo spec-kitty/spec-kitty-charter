@@ -153,7 +153,7 @@ class PresetRoundTripTest {
     void aRegistrationLeavesThePresetsByteIdentical(@TempDir Path host) throws IOException, URISyntaxException {
         Path pack = fixture(host);
         Map<String, byte[]> before = presetBytes(pack);
-        DomainRepositoryService.Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
+        Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations, strategy);
         CommitStorePackWriteStore writeStore =

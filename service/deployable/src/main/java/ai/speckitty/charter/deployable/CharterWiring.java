@@ -5,9 +5,9 @@ import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import java.io.IOException;
@@ -57,7 +57,7 @@ public class CharterWiring {
      * {@code <config-root>/packs}, so the two can never disagree.
      */
     @Bean
-    PackLocations packLocations(DomainRepositoryService.Locations storage) {
+    PackLocations packLocations(Locations storage) {
         return storage::all;
     }
 

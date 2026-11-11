@@ -1,6 +1,6 @@
 package ai.speckitty.charter.deployable.bdd;
 
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import java.nio.file.Path;
@@ -12,7 +12,7 @@ import java.util.Optional;
  * The pack locations of a scenario: the packs its steps wrote, a set fixed by name and level, and the pack domain of its
  * directory, {@code <root>/packs}, where a whole-pack registration writes and reads what it stored.
  */
-final class ScenarioLocations implements DomainRepositoryService.Locations {
+final class ScenarioLocations implements Locations {
 
     private static final String DOMAIN = "packs";
 

@@ -7,7 +7,7 @@ import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.config.StorageConfiguration;
 import java.io.IOException;
@@ -64,8 +64,7 @@ class CharterWiringTest {
             pack(root, "audit", "org");
             assertThat(context.getBean(CharterWiring.PackLocations.class).get())
                     .hasSize(before.size() + 1)
-                    .isEqualTo(context.getBean(DomainRepositoryService.Locations.class)
-                            .all());
+                    .isEqualTo(context.getBean(Locations.class).all());
         });
     }
 

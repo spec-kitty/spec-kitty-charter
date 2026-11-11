@@ -118,7 +118,7 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
-    private final DomainRepositoryService.Locations locations;
+    private final Locations locations;
     private final SerializationStrategy strategy;
     private final DirectoryRename rename;
     private final RegistryWriteLock registryLock;
@@ -131,7 +131,7 @@ public final class PackCommitStore implements WholePackWriteStore {
      * @param strategy the serialization format
      */
     @Autowired
-    public PackCommitStore(DomainRepositoryService.Locations locations, SerializationStrategy strategy) {
+    public PackCommitStore(Locations locations, SerializationStrategy strategy) {
         this(locations, strategy, MOVE_ASIDE, RegistryWriteLock.shared(), PackWriteGeneration.shared());
     }
 
@@ -145,7 +145,7 @@ public final class PackCommitStore implements WholePackWriteStore {
      * @param generation the write generation a whole-pack swap is bracketed with
      */
     public PackCommitStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             RegistryWriteLock registryLock,
             PackWriteGeneration generation) {
@@ -159,8 +159,7 @@ public final class PackCommitStore implements WholePackWriteStore {
      * @param strategy the serialization format
      * @param rename the directory-swap step
      */
-    PackCommitStore(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, DirectoryRename rename) {
+    PackCommitStore(Locations locations, SerializationStrategy strategy, DirectoryRename rename) {
         this(locations, strategy, rename, RegistryWriteLock.shared(), PackWriteGeneration.shared());
     }
 
@@ -174,7 +173,7 @@ public final class PackCommitStore implements WholePackWriteStore {
      * @param generation the write generation a whole-pack swap is bracketed with
      */
     PackCommitStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             DirectoryRename rename,
             RegistryWriteLock registryLock,
