@@ -17,8 +17,8 @@ audience:
 
 # Charter example packs replace the open-packs corpus
 
-The plan for [ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/) (Proposed). Nothing here
-starts before the ADR is accepted.
+The plan for [ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/) (Accepted 2026-11-11). It runs on the
+PR #474 branch, so that PR merges green.
 
 ## Today
 

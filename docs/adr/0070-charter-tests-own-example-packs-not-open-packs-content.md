@@ -1,9 +1,9 @@
 ---
 title: "ADR-0070: Charter tests its own example packs; open-packs proves its content against a pinned charter"
 description: "The contract tests stop reading pinned open-packs content: charter-owned example packs carry the round trip, and open-packs validates its packs against a charter release."
-doc_status: draft
+doc_status: active
 updated: 2026-11-11T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-11'
 type: ADR
 kind: ADR
@@ -25,7 +25,7 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-11. Raised by Stijn Dejongh (operator) on
+**Accepted**, 2026-11-11 (operator, on PR #474). Raised by Stijn Dejongh (operator) on
 [PR #474](https://github.com/spec-kitty/spec-kitty-charter/pull/474), whose three breaking contract changes
 (ADR-0067 to ADR-0069) could not reach green in either repository. If accepted, it amends the charter's "Gates before
 merge" (the whole-pack round trip, operator ruling of 2026-11-05, epic #186) and the open-packs clause of PROJECT_002,

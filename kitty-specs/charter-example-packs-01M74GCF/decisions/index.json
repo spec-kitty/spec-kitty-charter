@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-11T05:13:23.139389Z",
+      "decision_id": "01M74GCTE3RK2PW94VYTF54E96",
+      "final_answer": null,
+      "input_key": "open_packs_side_scope",
+      "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+      "mission_slug": "charter-example-packs-01M74GCF",
+      "opened_by": "cli",
+      "options": [
+        "Follow-up issue in open-packs (charter side only here)",
+        "Build it here as a second PR in open-packs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0070 decision 3 needs a validation job in spec-kitty-open-packs CI. This mission runs on the charter PR #474 branch. Should the open-packs job be built in this mission (a second PR in open-packs), or filed as a follow-up issue there?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.open-packs-side",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+  "version": 1
+}
