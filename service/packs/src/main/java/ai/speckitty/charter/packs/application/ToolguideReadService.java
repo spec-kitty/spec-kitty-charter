@@ -71,26 +71,9 @@ public final class ToolguideReadService {
             try {
                 return packs.load(pack).toolguides();
             } catch (CharterRefusal refused) {
-                throw packRefusal(pack, refused);
+                throw PackRefusals.packRefusal(pack, refused);
             }
         });
-    }
-
-    /**
-     * One toolguide of a pack, with the digest of the inputs it was read from. Its relationships are empty (FR-015).
-     *
-     * @param pack the pack's identity
-     * @param toolguide the toolguide's identity
-     * @return the toolguide and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
-     *     with {@link RefusalCode#TOOLGUIDE_NOT_FOUND} when the pack has no such toolguide, with
-     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Toolguide> toolguide(PackIdentifier pack, ToolguideIdentifier toolguide) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(toolguide, "toolguide");
-        return read.read(STALE_ONE, () -> loadOne(pack, toolguide));
     }
 
     /**
@@ -100,7 +83,10 @@ public final class ToolguideReadService {
      * @param pack the pack's identity
      * @param toolguide the toolguide's identity
      * @return the toolguide and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #toolguide(PackIdentifier, ToolguideIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
+     *     with {@link RefusalCode#TOOLGUIDE_NOT_FOUND} when the pack has no such toolguide, with
+     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Toolguide>> toolguideWithRevision(
             PackIdentifier pack, ToolguideIdentifier toolguide) {
@@ -120,7 +106,7 @@ public final class ToolguideReadService {
             if (refused.code() == RefusalCode.TOOLGUIDE_NOT_FOUND) {
                 throw refused;
             }
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
     }
 
@@ -128,20 +114,7 @@ public final class ToolguideReadService {
         try {
             return revisions.currentRevision(pack);
         } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
-    }
-
-    /**
-     * A pack the storage cannot read is, to the caller, a pack that is not there; an identifier no configured pack
-     * answers to is already refused {@code PACK_NOT_FOUND} by the storage and passes through. The original
-     * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even though
-     * the 404 body names nothing of it. Any other refusal passes through.
-     */
-    private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
-        if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-            return refused;
-        }
-        return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
     }
 }

@@ -43,6 +43,7 @@ public final class MissionTypeHoldingRead {
     private final PackDescriptorRepository descriptors;
     private final ConsistentRead read;
     private final PackCompanionFiles companions;
+    private final PackRevisions revisions;
 
     /**
      * What one pack holds of one mission type, read at one fingerprint.
@@ -85,17 +86,20 @@ public final class MissionTypeHoldingRead {
      * @param descriptors the port that reads a pack's descriptor, judged before the type
      * @param read the verifier that digests the inputs before and after the read
      * @param companions the port that reads the stored step files of a mission type
+     * @param revisions the pack revision, read inside the verified read of a pack-scoped read for its {@code ETag}
      */
     @Autowired
     public MissionTypeHoldingRead(
             PackRepository packs,
             PackDescriptorRepository descriptors,
             ConsistentRead read,
-            PackCompanionFiles companions) {
+            PackCompanionFiles companions,
+            PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
         this.companions = Objects.requireNonNull(companions, "companions");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -112,31 +116,54 @@ public final class MissionTypeHoldingRead {
     public Holding holding(PackIdentifier pack, String missionTypeId) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(missionTypeId, "missionTypeId");
-        ConsistentRead.Verified<Held> verified = read.read(STALE, () -> {
-            if (descriptors.find(pack).isEmpty()) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml");
-            }
-            Pack held = packs.load(pack);
-            CharterArtifact type = held.artifacts(ArtifactKind.MISSION_TYPE).stream()
-                    .filter(candidate -> candidate.localId().equals(missionTypeId))
-                    .findFirst()
-                    .orElseThrow(() -> new CharterRefusal(
-                            RefusalCode.MISSION_TYPE_NOT_FOUND,
-                            "Pack " + pack.value() + " has no mission type " + missionTypeId + "."));
-            List<Template> skeletons = held.templates().stream()
-                    .filter(template -> template.missionType().equals(Optional.of(missionTypeId)))
-                    .sorted(Comparator.comparing(Template::localId, MissionTypeHoldingRead::byCodePoint))
-                    .toList();
-            List<MissionStepContract> contracts =
-                    held.artifacts(ArtifactKind.MISSION_STEP_CONTRACT, MissionStepContract.class).stream()
-                            .filter(contract -> contract.mission().equals(missionTypeId))
-                            .sorted(Comparator.comparing(
-                                    MissionStepContract::localId, MissionTypeHoldingRead::byCodePoint))
-                            .toList();
-            return new Held(type, skeletons, contracts, companions.stepFiles(pack, type));
-        });
-        Held held = verified.value();
-        return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), verified.fingerprint());
+        ConsistentRead.Verified<Held> verified = read.read(STALE, () -> load(pack, missionTypeId));
+        return holdingOf(verified.value(), verified.fingerprint());
+    }
+
+    /**
+     * What a pack holds of one mission type with the pack revision it was read at, for a pack-scoped read's body and
+     * {@code ETag}: both are taken inside the one verified read, so they name the same state. Only the pack-scoped
+     * reads ask for it; a read under an activation answers its own tag and never computes a pack revision.
+     *
+     * @param pack the pack's identity
+     * @param missionTypeId the mission type's id
+     * @return the holding, with the verified fingerprint, and the pack's revision
+     * @throws CharterRefusal as {@link #holding(PackIdentifier, String)} does
+     */
+    public Revised<Holding> revised(PackIdentifier pack, String missionTypeId) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(missionTypeId, "missionTypeId");
+        ConsistentRead.Verified<Revised<Held>> verified =
+                read.read(STALE, () -> new Revised<>(load(pack, missionTypeId), revisions.currentRevision(pack)));
+        Revised<Held> held = verified.value();
+        return new Revised<>(holdingOf(held.value(), verified.fingerprint()), held.revision());
+    }
+
+    private Held load(PackIdentifier pack, String missionTypeId) {
+        if (descriptors.find(pack).isEmpty()) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml");
+        }
+        Pack held = packs.load(pack);
+        CharterArtifact type = held.artifacts(ArtifactKind.MISSION_TYPE).stream()
+                .filter(candidate -> candidate.localId().equals(missionTypeId))
+                .findFirst()
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.MISSION_TYPE_NOT_FOUND,
+                        "Pack " + pack.value() + " has no mission type " + missionTypeId + "."));
+        List<Template> skeletons = held.templates().stream()
+                .filter(template -> template.missionType().equals(Optional.of(missionTypeId)))
+                .sorted(Comparator.comparing(Template::localId, MissionTypeHoldingRead::byCodePoint))
+                .toList();
+        List<MissionStepContract> contracts =
+                held.artifacts(ArtifactKind.MISSION_STEP_CONTRACT, MissionStepContract.class).stream()
+                        .filter(contract -> contract.mission().equals(missionTypeId))
+                        .sorted(Comparator.comparing(MissionStepContract::localId, MissionTypeHoldingRead::byCodePoint))
+                        .toList();
+        return new Held(type, skeletons, contracts, companions.stepFiles(pack, type));
+    }
+
+    private static Holding holdingOf(Held held, String fingerprint) {
+        return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), fingerprint);
     }
 
     /** What the verified read loaded, before it carries its fingerprint. */

@@ -84,7 +84,7 @@ class RegistryLockOrderTest {
                 StandardCharsets.UTF_8);
         StorageRootLocations real = new StorageRootLocations(host);
         List<Boolean> listedMidSwap = new CopyOnWriteArrayList<>();
-        DomainRepositoryService.Locations watching = () -> {
+        Locations watching = () -> {
             listedMidSwap.add(!Files.exists(packDir));
             return real.all();
         };

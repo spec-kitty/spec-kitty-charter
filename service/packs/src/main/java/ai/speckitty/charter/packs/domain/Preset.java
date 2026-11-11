@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.validation.Constraint;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -43,11 +43,6 @@ public record Preset(String id, String description, Map<ArtifactKind, List<Prese
                     .filter(ArtifactKind::activatable)
                     .collect(Collectors.toCollection(() -> EnumSet.noneOf(ArtifactKind.class))));
 
-    /** The id grammar of a preset, as the {@code preset} schema has it. */
-    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+");
-
-    private static final int MAX_ID_LENGTH = 64;
-
     /**
      * Checks every invariant, failing fast on the first breach with a message that names the preset and what breaks
      * it, so two bad presets in one load are told apart. The ruleset is built per preset because each message names
@@ -58,8 +53,7 @@ public record Preset(String id, String description, Map<ArtifactKind, List<Prese
         List<Constraint<String>> rules = new ArrayList<>();
         rules.add(Constraints.of(
                 preset + "the id must be lowercase words joined by single hyphens, at most 64 characters.",
-                candidate -> candidate.length() <= MAX_ID_LENGTH
-                        && ID.matcher(candidate).matches()));
+                IdentifierGrammar::isLetterFirstSlug));
         rules.add(Constraints.of(preset + "the description must not be blank.", candidate -> !description.isBlank()));
         for (Map.Entry<ArtifactKind, List<PresetItem>> list : artifacts.entrySet()) {
             String plural = list.getKey().plural();

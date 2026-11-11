@@ -18,7 +18,6 @@ import ai.speckitty.charter.packs.application.WriteFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,8 +44,8 @@ import org.springframework.stereotype.Service;
  * shard). It lives in {@code infra.storage}, so it may compose both; the registration services depend only on the
  * port, keeping the onion dependency rule intact (ADR-0006).
  *
- * <p>It resolves a pack identifier to its live directory exactly as {@link DomainRepositoryService} and
- * {@link PackCommitStore} do (a configured name wins, otherwise the location whose {@code pack.yaml} declares the
+ * <p>It resolves a pack identifier to its live directory through {@link PackLocator}, as {@link DomainRepositoryService}
+ * and {@link PackCommitStore} do (a configured name wins, otherwise the location whose {@code pack.yaml} declares the
  * {@code pack_id}), and reads the revision and the shard text from that directory. It never mutates the pack itself;
  * {@link #commit} delegates the stage-and-swap to {@link PackCommitStore}, under the same per-pack in-JVM write lock
  * ({@link PackWriteLocks}) {@link #exclusively} holds across a registration's load, precondition and commit. That lock is
@@ -61,7 +60,7 @@ import org.springframework.stereotype.Service;
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore, PackRemovalStore {
 
-    private final DomainRepositoryService.Locations locations;
+    private final Locations locations;
     private final SerializationStrategy strategy;
     private final PackCommitStore commitStore;
     private final RegistryWriteLock registryLock;
@@ -76,8 +75,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param strategy the serialization format (used to read a descriptor when resolving by declared id)
      * @param commitStore WP04's aggregate-commit store
      */
-    public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
+    public CommitStorePackWriteStore(Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
         this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared());
     }
 
@@ -93,7 +91,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      */
     @Autowired
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             ObjectProvider<RegistrationImpact> impact) {
@@ -118,7 +116,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param generation the write generation a commit's swap is bracketed with
      */
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,
@@ -144,7 +142,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
      * @param impact the impact check every write is judged with
      */
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,
@@ -223,7 +221,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     private <T> T exclusivelyAt(PackIdentifier pack, Function<PackLocation, T> work) {
         return registryLock.exclusively(() -> {
             PackLocation location = location(pack);
-            return underPackLock(normalized(location), () -> work.apply(location));
+            return underPackLock(PackLocator.directoryOf(location), () -> work.apply(location));
         });
     }
 
@@ -339,44 +337,13 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         });
     }
 
-    /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */
+    /** The pack's live directory, at the location {@link PackLocator} resolves. */
     private Path resolve(PackIdentifier pack) {
-        return normalized(location(pack));
+        return PackLocator.directoryOf(location(pack));
     }
 
-    /** The configured location of a pack: the one of that name, otherwise the one whose {@code pack.yaml} declares the id. */
+    /** The configured location of a pack, as {@link PackLocator} resolves it. */
     private PackLocation location(PackIdentifier pack) {
-        List<PackLocation> configured = locations.all();
-        for (PackLocation location : configured) {
-            if (location.name().equals(pack.value())) {
-                return location;
-            }
-        }
-        for (PackLocation location : configured) {
-            if (declaresId(normalized(location), pack)) {
-                return location;
-            }
-        }
-        // The identifier matches no configured pack: the caller asked wrongly (CharterRefusalCode pack_not_found).
-        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
-    }
-
-    private static Path normalized(PackLocation location) {
-        return location.root().toAbsolutePath().normalize();
-    }
-
-    private boolean declaresId(Path directory, PackIdentifier pack) {
-        Path parent = directory.getParent();
-        if (parent == null || directory.getFileName() == null) {
-            return false;
-        }
-        try {
-            return new FilesystemPackStore(parent, strategy)
-                    .readDescriptor(new PackIdentifier(directory.getFileName().toString()))
-                    .packId()
-                    .equals(pack.value());
-        } catch (CharterRefusal | UncheckedIOException unreadable) {
-            return false;
-        }
+        return PackLocator.locate(locations, strategy, pack);
     }
 }

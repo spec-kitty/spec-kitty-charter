@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-11T18:09:23.542387Z",
+      "decision_id": "01M75WSQJP5JPZEX1XVJKHMEMQ",
+      "final_answer": "Confirmed",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M75WRS0Y5BQV0ATEYNA0QJZX",
+      "mission_slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+      "opened_by": "cli",
+      "options": [
+        "Confirmed",
+        "Change it",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Confirm the Intent Summary for #487 and #488 as stated",
+      "rationale": null,
+      "resolved_at": "2026-11-11T18:10:50.706632Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.intent-confirmation",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T18:12:11.878682Z",
+      "decision_id": "01M75WYVZ6HM5BAME9XTVWGPYY",
+      "final_answer": "Confirmed",
+      "input_key": "mission_type_revision",
+      "mission_id": "01M75WRS0Y5BQV0ATEYNA0QJZX",
+      "mission_slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+      "opened_by": "cli",
+      "options": [
+        "Confirmed",
+        "Change it",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Confirm the Engineering Alignment, incl. carrying the pack revision only on the pack-scoped mission-type holding read",
+      "rationale": null,
+      "resolved_at": "2026-11-11T18:14:12.462055Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.mission-type-revision",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M75WRS0Y5BQV0ATEYNA0QJZX",
+  "version": 1
+}

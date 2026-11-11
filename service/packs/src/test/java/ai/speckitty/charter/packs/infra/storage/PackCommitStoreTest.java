@@ -54,7 +54,7 @@ class PackCommitStoreTest {
     private static final String SHARD =
             "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\nnodes: []\nedges: []\n";
 
-    private static DomainRepositoryService.Locations locations(Path packDir) {
+    private static Locations locations(Path packDir) {
         return () -> List.of(new PackLocation("pack-a", PackLevel.ORG, packDir));
     }
 

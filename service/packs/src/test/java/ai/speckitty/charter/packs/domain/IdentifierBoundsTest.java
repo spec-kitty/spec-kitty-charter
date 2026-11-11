@@ -96,19 +96,9 @@ class IdentifierBoundsTest {
     }
 
     static Stream<Arguments> kebabVerdicts() {
-        // Verdicts pinned from the pattern before the possessive rewrite: the language below the cap is unchanged.
+        // The grammar's own verdicts are IdentifierGrammarTest's; these say which grammar each type delegates to.
         return Stream.of(
-                Arguments.of("", false, false),
-                Arguments.of("-", false, false),
-                Arguments.of("a-", false, false),
-                Arguments.of("-a", false, false),
-                Arguments.of("a--b", false, false),
-                Arguments.of("A", false, false),
-                Arguments.of("a_b", false, false),
-                Arguments.of("a-b", true, true),
-                Arguments.of("a1-2b-c3", true, true),
-                Arguments.of("1a", true, false),
-                Arguments.of("1-a", true, false));
+                Arguments.of("a-b", true, true), Arguments.of("1a", true, false), Arguments.of("a--b", false, false));
     }
 
     @ParameterizedTest(name = "\"{0}\": digit-first kinds {1}, letter-first kinds {2}")
@@ -122,27 +112,6 @@ class IdentifierBoundsTest {
         if (!id.isEmpty()) {
             assertVerdict(IdentifierBoundsTest::newPreset, id, letterFirstValid);
         }
-    }
-
-    static Stream<Arguments> entryVerdicts() {
-        return Stream.of(
-                Arguments.of("bin/tool.sh", true),
-                Arguments.of("lint.py", true),
-                Arguments.of("a/b/c", true),
-                Arguments.of("_x/y-z.v1", true),
-                Arguments.of("a/", false),
-                Arguments.of("/a", false),
-                Arguments.of("a//b", false),
-                Arguments.of(".hidden/x", false),
-                Arguments.of("a/.b", false),
-                Arguments.of("a b", false));
-    }
-
-    @ParameterizedTest(name = "\"{0}\" valid: {1}")
-    @MethodSource("entryVerdicts")
-    @DisplayName("short executable entries keep their verdict")
-    void shortExecutableEntriesKeepTheirVerdict(String entry, boolean valid) {
-        assertVerdict(IdentifierBoundsTest::newExecutable, entry, valid);
     }
 
     private static void assertVerdict(Consumer<String> construct, String text, boolean valid) {

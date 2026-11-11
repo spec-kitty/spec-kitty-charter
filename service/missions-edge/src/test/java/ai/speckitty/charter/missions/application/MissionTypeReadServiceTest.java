@@ -33,6 +33,7 @@ class MissionTypeReadServiceTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("main");
     private static final String FINGERPRINT = "sha256:" + "a".repeat(64);
+    private static final String REVISION = "sha256:" + "9".repeat(64);
     private static final String PROMPT =
             "---\ndescription: Create it\n---\n# Specify\n\n<!-- spdd:reasons-block:start -->\n";
 
@@ -42,19 +43,29 @@ class MissionTypeReadServiceTest {
             new MissionTypeHolding.BoundContract("specify-a", "specify"),
             new MissionTypeHolding.BoundContract("plan-only", "plan")));
 
-    private final MissionTypeReadService reads = new MissionTypeReadService((pack, type) -> {
-        asked.add(pack.value() + " " + type);
-        if (!type.equals("software-dev")) {
-            throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "Pack main has no mission type " + type + ".");
+    private final MissionTypeReadService reads = new MissionTypeReadService(new PackMissionTypes() {
+        @Override
+        public MissionTypeHolding holding(PackIdentifier pack, String type) {
+            throw new AssertionError("a pack-scoped read asks for the revised holding, in one verified read");
         }
-        return holding;
+
+        @Override
+        public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String type) {
+            asked.add(pack.value() + " " + type);
+            if (!type.equals("software-dev")) {
+                throw new CharterRefusal(
+                        RefusalCode.MISSION_TYPE_NOT_FOUND, "Pack main has no mission type " + type + ".");
+            }
+            return new PackRead<>(holding, holding.fingerprint(), REVISION);
+        }
     });
 
     @Test
     void theTypeListsItsStepsThenItsOnDemandStepsAndItsSkeletonsByNameInCodePointOrder() {
-        Fingerprinted<MissionTypeView> read = reads.missionType(PACK, "software-dev");
+        PackRead<MissionTypeView> read = reads.missionType(PACK, "software-dev");
 
         assertThat(read.fingerprint()).isEqualTo(FINGERPRINT);
+        assertThat(read.revision()).isEqualTo(REVISION);
         assertThat(read.value().type().localId()).isEqualTo("software-dev");
         assertThat(read.value().steps())
                 .containsExactly(
@@ -82,7 +93,10 @@ class MissionTypeReadServiceTest {
 
     @Test
     void aStepWithoutAGuidelinesFileHasNoGuidelinesAndAnOnDemandStepIsMarked() {
-        StepView step = reads.step(PACK, "software-dev", "retrospect").value();
+        PackRead<StepView> read = reads.step(PACK, "software-dev", "retrospect");
+        StepView step = read.value();
+
+        assertThat(read.revision()).as("the step answers the pack revision").isEqualTo(REVISION);
 
         assertThat(step.onDemand()).isTrue();
         assertThat(step.prompt()).contains("# Retrospect\n");
@@ -129,8 +143,9 @@ class MissionTypeReadServiceTest {
 
     @Test
     void aUtf8SkeletonIsServedAsTextWithTheDigestAndSizeOfItsBytes() {
-        Fingerprinted<SkeletonView> read = reads.skeleton(PACK, "software-dev", "spec-template.md");
+        PackRead<SkeletonView> read = reads.skeleton(PACK, "software-dev", "spec-template.md");
 
+        assertThat(read.revision()).isEqualTo(REVISION);
         SkeletonView skeleton = read.value();
         assertThat(skeleton.name()).isEqualTo("spec-template.md");
         assertThat(skeleton.path()).isEqualTo("templates/spec-template.md");

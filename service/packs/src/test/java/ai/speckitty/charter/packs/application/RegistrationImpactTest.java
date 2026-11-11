@@ -945,7 +945,7 @@ class RegistrationImpactTest {
                             .directive("DEP_" + i, "Own"));
         }
         java.util.concurrent.atomic.AtomicInteger listings = new java.util.concurrent.atomic.AtomicInteger();
-        ai.speckitty.charter.packs.infra.storage.DomainRepositoryService.Locations counting = () -> {
+        ai.speckitty.charter.packs.infra.storage.Locations counting = () -> {
             listings.incrementAndGet();
             return rig.locations.all();
         };

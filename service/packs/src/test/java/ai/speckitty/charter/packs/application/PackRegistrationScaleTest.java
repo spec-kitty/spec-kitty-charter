@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -128,7 +129,7 @@ class PackRegistrationScaleTest {
     /** The service over repositories whose every listing is counted; the writes go to the rig's own store. */
     private static PackRegistrationService serviceCountingListings(Rig rig, AtomicInteger listings) {
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
-        DomainRepositoryService.Locations counting = () -> {
+        Locations counting = () -> {
             listings.incrementAndGet();
             return rig.locations.all();
         };

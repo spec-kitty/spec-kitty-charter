@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.Objects;
@@ -24,11 +25,6 @@ public record ExpectedArtifact(
         String pathPattern,
         boolean blocking,
         Optional<String> templatePath) {
-
-    private static final Pattern KEY = Pattern.compile("[a-z][a-z0-9-]*+(?:\\.[a-z0-9_-]++)++");
-
-    /** The longest artifact key accepted, checked before the pattern (#440). */
-    private static final int MAX_KEY_LENGTH = 255;
 
     private static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
     private static final Pattern DRIVE = Pattern.compile("[A-Za-z]:");
@@ -81,7 +77,7 @@ public record ExpectedArtifact(
      * @return {@code true} when it is
      */
     static boolean isDottedKey(String key) {
-        return key.length() <= MAX_KEY_LENGTH && KEY.matcher(key).matches();
+        return IdentifierGrammar.isDottedKey(key);
     }
 
     /**

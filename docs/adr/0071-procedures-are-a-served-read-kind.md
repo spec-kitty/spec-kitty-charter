@@ -47,9 +47,16 @@ read the procedure it named.
    `/references` (ADR-0064). The schema has no reference member.
 4. **Absence is `artifact_not_found`.** The per-kind not-found codes are kept for the five kinds that have them; a kind
    served after them uses the generic code, as `agent_profile` does. No refusal code is added.
-5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no `PUT` yet. A tactic has none.
+5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no `PUT` yet. A tactic has none *(superseded by the Amendment 2026-11-11 below, #487)*.
    The revision is a correct validator of the read, it is the `If-Match` of a removal, and a later procedure write will
    need it as well.
+
+   **Amendment 2026-11-11** ([#487](https://github.com/spec-kitty/spec-kitty-charter/issues/487)). The tactic, the
+   mission step contract and the mission-type family (the mission type, its steps and its skeletons) now carry the
+   pack revision as their `ETag` too, so every pack read of one thing does and the asymmetry is gone. For the
+   mission-type family the tag is a concurrency token naming the pack, not a cache validator: the answer can carry
+   content resolved from dependency packs that the revision does not cover, so no pack read takes `If-None-Match`.
+
 6. **An action context or graph entry of a procedure links its reads** (`effective-artifact`, and `artifact` where the
    entry names its pack), as entries of every listed kind do. It is a response addition for clients that already
    received the entry without links.

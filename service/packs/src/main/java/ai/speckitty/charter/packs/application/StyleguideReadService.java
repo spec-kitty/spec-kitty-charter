@@ -67,26 +67,9 @@ public final class StyleguideReadService {
             try {
                 return packs.load(pack).styleguides();
             } catch (CharterRefusal refused) {
-                throw packRefusal(pack, refused);
+                throw PackRefusals.packRefusal(pack, refused);
             }
         });
-    }
-
-    /**
-     * One styleguide of a pack, with the digest of the inputs it was read from (FR-013).
-     *
-     * @param pack the pack's identity
-     * @param styleguide the styleguide's identity
-     * @return the styleguide and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
-     *     {@link RefusalCode#STYLEGUIDE_NOT_FOUND} when the pack has no such styleguide, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the styleguide was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Styleguide> styleguide(PackIdentifier pack, StyleguideIdentifier styleguide) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(styleguide, "styleguide");
-        return read.read(STALE_ONE, () -> loadOne(pack, styleguide));
     }
 
     /**
@@ -96,7 +79,10 @@ public final class StyleguideReadService {
      * @param pack the pack's identity
      * @param styleguide the styleguide's identity
      * @return the styleguide and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #styleguide(PackIdentifier, StyleguideIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
+     *     {@link RefusalCode#STYLEGUIDE_NOT_FOUND} when the pack has no such styleguide, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the styleguide was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Styleguide>> styleguideWithRevision(
             PackIdentifier pack, StyleguideIdentifier styleguide) {
@@ -116,7 +102,7 @@ public final class StyleguideReadService {
             if (refused.code() == RefusalCode.STYLEGUIDE_NOT_FOUND) {
                 throw refused;
             }
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
     }
 
@@ -124,20 +110,7 @@ public final class StyleguideReadService {
         try {
             return revisions.currentRevision(pack);
         } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
-    }
-
-    /**
-     * A pack the storage cannot read is, to the caller, a pack that is not there; an identifier no configured pack
-     * answers to is already refused {@code PACK_NOT_FOUND} by the storage and passes through. The original
-     * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even
-     * though the 404 body names nothing of it.
-     */
-    private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
-        if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-            return refused;
-        }
-        return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
     }
 }

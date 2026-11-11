@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * <p>A refused entry is logged as a warning once for each reason, naming the entry and why, not on every listing; an
  * entry that is served again is warned again if it is refused later.
  */
-public final class StorageRootLocations implements DomainRepositoryService.Locations {
+public final class StorageRootLocations implements Locations {
 
     private static final String ASIDE_MARKER = ".pack-old-";
 

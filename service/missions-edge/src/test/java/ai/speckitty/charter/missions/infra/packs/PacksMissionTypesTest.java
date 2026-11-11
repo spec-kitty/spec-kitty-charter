@@ -9,12 +9,14 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
+import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
@@ -40,6 +42,7 @@ class PacksMissionTypesTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("main");
     private static final String FINGERPRINT = "sha256:" + "c".repeat(64);
+    private static final PackRevision REVISION = PackRevision.compute(List.of("main"));
 
     @Test
     void theHoldingIsTheMissionsSlicesOwnAtTheReadsFingerprint() {
@@ -89,18 +92,24 @@ class PacksMissionTypesTest {
                 new PackCompanionFiles.StepFiles(
                         Optional.of(Payload.of("# Specify\n".getBytes(StandardCharsets.UTF_8))), Optional.empty()));
 
-        MissionTypeHolding holding = new PacksMissionTypes(read(pack, files)).holding(PACK, "software-dev");
+        PacksMissionTypes adapter = new PacksMissionTypes(read(pack, files));
+        MissionTypeHolding holding = adapter.holding(PACK, "software-dev");
+        PackRead<MissionTypeHolding> revised = adapter.revised(PACK, "software-dev");
 
-        assertThat(holding.type()).isSameAs(type);
-        assertThat(holding.skeletons())
+        assertThat(revised.revision()).as("the pack revision's token").isEqualTo(REVISION.token());
+
+        MissionTypeHolding routed = revised.value();
+        assertThat(routed).isEqualTo(holding);
+        assertThat(routed.type()).isSameAs(type);
+        assertThat(routed.skeletons())
                 .containsExactly(new MissionTypeHolding.StoredSkeleton(
                         "divio/x.md", StoredFile.of(new byte[] {(byte) 0xff, 1})));
-        assertThat(holding.stepContracts())
+        assertThat(routed.stepContracts())
                 .containsExactly(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
-        assertThat(holding.stepFiles().get("specify").prompt())
+        assertThat(routed.stepFiles().get("specify").prompt())
                 .contains(StoredFile.of("# Specify\n".getBytes(StandardCharsets.UTF_8)));
-        assertThat(holding.stepFiles().get("specify").guidelines()).isEmpty();
-        assertThat(holding.fingerprint()).isEqualTo(FINGERPRINT);
+        assertThat(routed.stepFiles().get("specify").guidelines()).isEmpty();
+        assertThat(routed.fingerprint()).isEqualTo(FINGERPRINT);
     }
 
     @Test
@@ -163,7 +172,8 @@ class PacksMissionTypesTest {
                 throw new UnsupportedOperationException();
             }
         };
-        return new MissionTypeHoldingRead(id -> pack, descriptors, new ConsistentRead(() -> FINGERPRINT), files);
+        return new MissionTypeHoldingRead(
+                id -> pack, descriptors, new ConsistentRead(() -> FINGERPRINT), files, id -> REVISION);
     }
 
     private static PackDescriptor descriptor() {

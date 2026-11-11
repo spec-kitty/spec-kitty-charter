@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
+import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.GateBinding;
 import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 class StepContractDtoTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("main");
+    private static final PackRevision REVISION = PackRevision.compute(List.of("committed"));
     private static final Hypermedia LINKS = new Hypermedia("/api/v1");
     private static final String BASE = "/api/v1/packs/main/artifacts";
 
@@ -82,7 +84,7 @@ class StepContractDtoTest {
     @Test
     void aHeldStepContractLinksItsMissionTypeItsStepAndItsHeldCandidatesOnly() {
         Artifact envelope = answered(new ArtifactReadService.Item.OfMissionStepContract(
-                contract(), true, true, Set.of(new ArtifactPosition(ArtifactKind.DIRECTIVE, "GUARD"))));
+                contract(), true, true, Set.of(new ArtifactPosition(ArtifactKind.DIRECTIVE, "GUARD")), REVISION));
 
         assertThat(envelope.getKind()).isEqualTo("mission_step_contract");
         assertThat(envelope.getMissionType()).isNull();
@@ -146,10 +148,12 @@ class StepContractDtoTest {
 
     @Test
     void aStepContractWhoseMissionTypeOrStepIsNotHeldHasNoSuchLink() {
-        assertThat(answered(new ArtifactReadService.Item.OfMissionStepContract(contract(), false, false, Set.of()))
+        assertThat(answered(new ArtifactReadService.Item.OfMissionStepContract(
+                                contract(), false, false, Set.of(), REVISION))
                         .getLinks())
                 .containsOnlyKeys("self", "collection");
-        assertThat(answered(new ArtifactReadService.Item.OfMissionStepContract(contract(), true, false, Set.of()))
+        assertThat(answered(new ArtifactReadService.Item.OfMissionStepContract(
+                                contract(), true, false, Set.of(), REVISION))
                         .getLinks())
                 .as("the type is held, the step is not")
                 .containsOnlyKeys("self", "collection", "mission-type");

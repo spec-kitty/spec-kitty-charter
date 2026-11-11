@@ -102,7 +102,7 @@ public class ArtifactController implements ArtifactsApi {
         var verified = reads.item(new PackIdentifier(packId), kind, artifactId);
         ResponseEntity.BodyBuilder answer =
                 ResponseEntity.ok().headers(CharterHeaders.fingerprint(verified.fingerprint()));
-        verified.value().revision().ifPresent(revision -> answer.eTag(revision.token()));
+        answer.eTag(verified.value().revision().token());
         return answer.body(ArtifactDtos.artifact(
                 verified.value(),
                 guides,

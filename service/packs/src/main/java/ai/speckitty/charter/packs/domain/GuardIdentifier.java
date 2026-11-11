@@ -1,8 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
-import java.util.regex.Pattern;
 
 /**
  * The identity of a {@link Guard} within its pack. Guard ids are kebab-case, per the schema pattern
@@ -12,17 +12,10 @@ import java.util.regex.Pattern;
  */
 public record GuardIdentifier(String value) {
 
-    private static final Pattern PATTERN = Pattern.compile("^[a-z0-9]++(?:-[a-z0-9]++)*+$");
-
-    /** The longest identifier accepted, checked before the pattern (#440). */
-    private static final int MAX_LENGTH = 64;
-
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "A guard identifier must match ^[a-z0-9]+(-[a-z0-9]+)*$ and be at most 64 characters.",
-                    text -> text != null
-                            && text.length() <= MAX_LENGTH
-                            && PATTERN.matcher(text).matches()));
+                    IdentifierGrammar::isSlug));
 
     /**
      * Checks that the identifier matches the schema pattern.

@@ -66,7 +66,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
  * 2026-10-31): the list and the item of every kind refuse it {@link RefusalCode#PACK_UNREADABLE}, never
- * {@code PACK_NOT_FOUND}, since it is configured. The item judges the descriptor before it delegates to the kind's read,
+ * {@code PACK_NOT_FOUND}, since it is configured. Once the descriptor is judged, a pack aggregate or revision the
+ * kind's read cannot read is refused {@link RefusalCode#PACK_NOT_FOUND}, the same for every kind. The item judges the descriptor before it delegates to the kind's read,
  * which reads one file and would otherwise answer the artifact of a pack that cannot be read as a whole. The check and
  * the kind's read run inside one outer verified read, and the answer carries the kind's fingerprint only when it equals
  * the outer digests: all four digests agree, so the 200 or the refusal is the one the fingerprinted inputs give. A
@@ -169,6 +170,7 @@ public final class ArtifactReadService {
     private final CompositeComponentResolver components;
     private final PackEdgeRepository graphs;
     private final MissionTypeSteps steps;
+    private final PackRevisions revisions;
 
     /**
      * One artifact as the list names it.
@@ -210,7 +212,7 @@ public final class ArtifactReadService {
         }
     }
 
-    /** One artifact read by kind, typed by its kind, with the pack revision the writable kinds carry for an ETag. */
+    /** One artifact read by kind, typed by its kind, with the pack revision every item carries for an ETag. */
     public sealed interface Item {
 
         /**
@@ -223,19 +225,20 @@ public final class ArtifactReadService {
         /**
          * The pack revision the artifact was read at.
          *
-         * @return the revision of a writable kind; empty for a tactic or a mission step contract, which have no write
+         * @return the revision the item was read at, inside the item's verified read
          */
-        Optional<PackRevision> revision();
+        PackRevision revision();
 
         /**
-         * A tactic.
+         * A tactic and its revision. A tactic has no write; the revision validates the read.
          *
          * @param artifact the tactic
+         * @param at the revision it was read at
          */
-        record OfTactic(Tactic artifact) implements Item {
+        record OfTactic(Tactic artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.empty();
+            public PackRevision revision() {
+                return at;
             }
         }
 
@@ -247,8 +250,8 @@ public final class ArtifactReadService {
          */
         record OfDirective(Directive artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.of(at);
+            public PackRevision revision() {
+                return at;
             }
         }
 
@@ -260,8 +263,8 @@ public final class ArtifactReadService {
          */
         record OfStyleguide(Styleguide artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.of(at);
+            public PackRevision revision() {
+                return at;
             }
         }
 
@@ -273,8 +276,8 @@ public final class ArtifactReadService {
          */
         record OfParadigm(Paradigm artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.of(at);
+            public PackRevision revision() {
+                return at;
             }
         }
 
@@ -286,8 +289,8 @@ public final class ArtifactReadService {
          */
         record OfToolguide(Toolguide artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.of(at);
+            public PackRevision revision() {
+                return at;
             }
         }
 
@@ -299,25 +302,28 @@ public final class ArtifactReadService {
          */
         record OfProcedure(Procedure artifact, PackRevision at) implements Item {
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.of(at);
+            public PackRevision revision() {
+                return at;
             }
         }
 
         /**
          * A mission step contract and what its pack holds of what it names, read in the same verified read: its links
-         * point only at what the pack holds. It has no write, so no revision.
+         * point only at what the pack holds. It has no write; the revision, read in the same verified read, validates
+         * the read.
          *
          * @param artifact the step contract
          * @param missionTypeHeld whether the pack holds the mission type its {@code mission} names
          * @param stepHeld whether that mission type is held and declares the step its {@code action} names
          * @param heldCandidates the delegation candidates of a listed kind that the pack holds, as positions
+         * @param at the revision it was read at
          */
         record OfMissionStepContract(
                 MissionStepContract artifact,
                 boolean missionTypeHeld,
                 boolean stepHeld,
-                Set<ArtifactPosition> heldCandidates)
+                Set<ArtifactPosition> heldCandidates,
+                PackRevision at)
                 implements Item {
 
             /**
@@ -327,15 +333,17 @@ public final class ArtifactReadService {
              * @param missionTypeHeld whether its mission type is held
              * @param stepHeld whether its step is held
              * @param heldCandidates its held delegation candidates
+             * @param at the revision it was read at
              */
             public OfMissionStepContract {
                 Objects.requireNonNull(artifact, "artifact");
+                Objects.requireNonNull(at, "at");
                 heldCandidates = Set.copyOf(heldCandidates);
             }
 
             @Override
-            public Optional<PackRevision> revision() {
-                return Optional.empty();
+            public PackRevision revision() {
+                return at;
             }
         }
     }
@@ -356,6 +364,8 @@ public final class ArtifactReadService {
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
      * @param steps the port that names the steps a mission type declares, for a step contract's step
+     * @param revisions the pack revision a step contract item reads inside its verified read, for its {@code ETag}; the
+     *     other kinds take theirs from their own read service
      */
     @Autowired
     public ArtifactReadService(
@@ -371,7 +381,8 @@ public final class ArtifactReadService {
             OfferingReadService offerings,
             CompositeComponentResolver components,
             PackEdgeRepository graphs,
-            MissionTypeSteps steps) {
+            MissionTypeSteps steps,
+            PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
@@ -385,6 +396,7 @@ public final class ArtifactReadService {
         this.components = Objects.requireNonNull(components, "components");
         this.graphs = Objects.requireNonNull(graphs, "graphs");
         this.steps = Objects.requireNonNull(steps, "steps");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -437,7 +449,8 @@ public final class ArtifactReadService {
      *     whatever the kind; with {@link RefusalCode#PACK_UNREADABLE} when the configured pack has no readable
      *     {@code pack.yaml}, whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no listed kind, or names
      *     a listed kind outside {@link #ITEM_KINDS} ({@code agent_profile} or {@code mission_type}), which its literal route renders; with the
-     *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_UNREADABLE} or
+     *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_NOT_FOUND}
+     *     when the kind's read cannot read the pack aggregate or its revision; with {@link RefusalCode#PACK_UNREADABLE} or
      *     {@link RefusalCode#STALE_INPUT} as every verified read refuses
      */
     public ConsistentRead.Verified<Item> item(PackIdentifier pack, String kindToken, String id) {
@@ -575,7 +588,7 @@ public final class ArtifactReadService {
      */
     private ConsistentRead.Verified<Item> stepContract(PackIdentifier pack, String id) {
         return read.read(STALE_ONE, () -> {
-            Pack held = packs.load(pack);
+            Pack held = PackRefusals.asPackNotFound(pack, () -> packs.load(pack));
             MissionStepContract contract =
                     (MissionStepContract) heldIn(held, pack, ArtifactKind.MISSION_STEP_CONTRACT, id);
             Optional<CharterArtifact> type = held.artifacts(ArtifactKind.MISSION_TYPE).stream()
@@ -584,7 +597,12 @@ public final class ArtifactReadService {
             boolean step = type.map(steps::stepIds)
                     .map(ids -> ids.contains(contract.action()))
                     .orElse(false);
-            return new Item.OfMissionStepContract(contract, type.isPresent(), step, heldCandidates(held, contract));
+            return new Item.OfMissionStepContract(
+                    contract,
+                    type.isPresent(),
+                    step,
+                    heldCandidates(held, contract),
+                    PackRefusals.asPackNotFound(pack, () -> revisions.currentRevision(pack)));
         });
     }
 
@@ -622,7 +640,9 @@ public final class ArtifactReadService {
                         ArtifactKind.TACTIC,
                         id,
                         TacticIdentifier::new,
-                        tactic -> as(tactics.tactic(pack, tactic), Item.OfTactic::new));
+                        tactic -> as(
+                                tactics.tacticWithRevision(pack, tactic),
+                                revised -> new Item.OfTactic(revised.value(), revised.revision())));
             case DIRECTIVE ->
                 readAs(
                         pack,

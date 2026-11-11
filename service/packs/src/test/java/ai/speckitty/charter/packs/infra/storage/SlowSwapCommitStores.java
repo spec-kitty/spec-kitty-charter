@@ -24,12 +24,12 @@ public final class SlowSwapCommitStores {
      * @return the commit store
      */
     public static PackCommitStore pausingMidSwap(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, Consumer<Path> midSwap) {
+            Locations locations, SerializationStrategy strategy, Consumer<Path> midSwap) {
         return pausingMidSwap(locations, strategy, midSwap, RegistryWriteLock.shared(), PackWriteGeneration.shared());
     }
 
     /**
-     * As {@link #pausingMidSwap(DomainRepositoryService.Locations, SerializationStrategy, Consumer)}, over a registry lock
+     * As {@link #pausingMidSwap(Locations, SerializationStrategy, Consumer)}, over a registry lock
      * and a write generation of the test's own.
      *
      * @param locations the configured packs
@@ -40,7 +40,7 @@ public final class SlowSwapCommitStores {
      * @return the commit store
      */
     public static PackCommitStore pausingMidSwap(
-            DomainRepositoryService.Locations locations,
+            Locations locations,
             SerializationStrategy strategy,
             Consumer<Path> midSwap,
             RegistryWriteLock lock,

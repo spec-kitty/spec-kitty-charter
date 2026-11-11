@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
  * the one bean of the port, asks the packs slice in one verified read; the answer is missions-owned and carries the
  * verified fingerprint as a string.
  */
-@FunctionalInterface
 public interface PackMissionTypes {
 
     /**
@@ -21,4 +20,15 @@ public interface PackMissionTypes {
      *     changed while they were read
      */
     MissionTypeHolding holding(PackIdentifier pack, String missionTypeId);
+
+    /**
+     * What a pack holds of one mission type with the pack revision it was read at, in one verified read: only the
+     * pack-scoped reads ask for it.
+     *
+     * @param pack the pack's identity, as the request names it
+     * @param missionTypeId the mission type's id
+     * @return the holding, the verified fingerprint it carries and the pack revision
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #holding} refuses
+     */
+    PackRead<MissionTypeHolding> revised(PackIdentifier pack, String missionTypeId);
 }

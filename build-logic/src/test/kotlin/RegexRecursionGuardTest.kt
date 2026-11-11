@@ -57,6 +57,18 @@ class RegexRecursionGuardTest {
                 + " [^/]* and Pattern.quote(...); PackFileKindTest#aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments"
                 + " proves a very deep path does not overflow",
         ),
+        "packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java:SPELLING" to Allowed(
+            "cannot judge `\"builtin:(\" + IdentifierGrammar.SLUG + \")|(?:(\" + IdentifierGrammar.SLUG\n" +
+                "            + \")::)?asset:([A-Za-z0-9_/.-]++)\"`",
+            "IdentifierGrammar.SLUG is the kernel's shared kebab grammar (#444), possessive, and judged by this guard"
+                + " where IdentifierGrammar compiles it; here it sits in capture groups, one optional, none repeated",
+        ),
+        "missions/src/main/java/ai/speckitty/charter/missions/domain/GuardReference.java:SPELLING" to Allowed(
+            "cannot judge `\"(?:(\" + IdentifierGrammar.SLUG + \")\" + SEPARATOR + \")?(\" + IdentifierGrammar.SLUG" +
+                " + \")\"`",
+            "IdentifierGrammar.SLUG is the kernel's shared kebab grammar (#444), possessive, and judged by this guard"
+                + " where IdentifierGrammar compiles it; here it sits in capture groups, one optional, none repeated",
+        ),
     )
 
     @Test

@@ -71,11 +71,17 @@ Feature: A pack's artifacts are read through one generic list and one generic it
 
   # ---- one artifact per kind ------------------------------------------------------------------------------------
 
-  Scenario: A tactic is read in the envelope, with no ETag
-    When I GET "/packs/qa/artifacts/tactic/rehearse"
+  Scenario: A tactic is read in the envelope, with the pack revision as its ETag
+    #487: the tactic's ETag is the pack revision, the same tag a directive of the same pack answers.
+    When I GET "/packs/qa/artifacts/directive/GUARD"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    When I remember the header "ETag"
+    And I GET "/packs/qa/artifacts/tactic/rehearse"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
-    And the response has no "ETag" header
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
     And the response body is:
       """
       {

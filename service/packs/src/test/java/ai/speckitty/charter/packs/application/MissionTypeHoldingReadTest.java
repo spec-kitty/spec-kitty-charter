@@ -40,7 +40,11 @@ class MissionTypeHoldingReadTest {
     private static final String D1 = "sha256:" + "1".repeat(64);
     private static final String D2 = "sha256:" + "2".repeat(64);
 
+    private static final PackRevision REVISION = PackRevision.compute(List.of("main at one state"));
+
     private final List<String> asked = new ArrayList<>();
+    private final List<String> revisionsAsked = new ArrayList<>();
+    private boolean revisionUnreadable;
 
     private final Pack main = Pack.builder()
             .id(PACK)
@@ -78,6 +82,54 @@ class MissionTypeHoldingReadTest {
         assertThat(holding.stepFiles().get("specify").prompt()).isPresent();
         assertThat(asked).containsExactly("main software-dev");
         assertThat(holding.fingerprint()).isEqualTo(D1);
+    }
+
+    @Test
+    void theHoldingReadNeverComputesAPackRevision() {
+        read(() -> D1).holding(PACK, "software-dev");
+
+        assertThat(revisionsAsked)
+                .as("an activation read shares this read and answers no pack revision")
+                .isEmpty();
+    }
+
+    @Test
+    void theRevisedReadHoldsTheSameHoldingAndThePackRevisionInsideOneVerifiedRead() {
+        AtomicInteger digests = new AtomicInteger();
+        MissionTypeHoldingRead reads = read(() -> {
+            assertThat(revisionsAsked)
+                    .as("the revision is read between the two digests")
+                    .hasSize(digests.getAndIncrement());
+            return D1;
+        });
+
+        Revised<MissionTypeHoldingRead.Holding> revised = reads.revised(PACK, "software-dev");
+
+        assertThat(revised.revision()).isEqualTo(REVISION);
+        assertThat(revised.value().fingerprint()).isEqualTo(D1);
+        assertThat(revised.value().stepContracts())
+                .extracting(MissionStepContract::localId)
+                .containsExactly("another", "specify");
+        assertThat(revisionsAsked).containsExactly("main");
+    }
+
+    @Test
+    void theRevisedReadRefusesAsTheHoldingReadAndChangesStaleInput() {
+        assertThat(codeOf(() -> read(() -> D1).revised(new PackIdentifier("nope"), "x")))
+                .isEqualTo(RefusalCode.PACK_NOT_FOUND);
+        assertThat(codeOf(() -> read(() -> D1).revised(PACK, "research-x")))
+                .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
+        AtomicInteger digests = new AtomicInteger();
+        assertThat(codeOf(() ->
+                        read(() -> digests.incrementAndGet() == 1 ? D1 : D2).revised(PACK, "software-dev")))
+                .isEqualTo(RefusalCode.STALE_INPUT);
+    }
+
+    @Test
+    void aRevisionTheStorageCannotReadIsAnUnreadablePack() {
+        revisionUnreadable = true;
+
+        assertThat(codeOf(() -> read(() -> D1).revised(PACK, "software-dev"))).isEqualTo(RefusalCode.PACK_UNREADABLE);
     }
 
     @Test
@@ -141,7 +193,14 @@ class MissionTypeHoldingReadTest {
                 throw new UnsupportedOperationException();
             }
         };
-        return new MissionTypeHoldingRead(packs, descriptors, new ConsistentRead(sources), companions);
+        PackRevisions revisions = pack -> {
+            revisionsAsked.add(pack.value());
+            if (revisionUnreadable) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml unreadable");
+            }
+            return REVISION;
+        };
+        return new MissionTypeHoldingRead(packs, descriptors, new ConsistentRead(sources), companions, revisions);
     }
 
     private static RefusalCode codeOf(Runnable read) {

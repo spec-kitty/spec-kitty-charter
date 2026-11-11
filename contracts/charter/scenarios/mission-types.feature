@@ -205,10 +205,12 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     "~1", is named a~01b.md ('~' escaped to '~0' first), which pins the order of the escaping and of the decoding.
     When I GET "/packs/main/artifacts/directive/GUARD"
     Then the response status is 200
+    And I remember the header "ETag"
     When I GET "/packs/main/artifacts/mission_type/software-dev"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
-    And the response has no "ETag" header
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
     And the response body is:
       """
       {
@@ -274,10 +276,14 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     FR-003, US1 AS3. The prompt is the stored file, its frontmatter and the bare spdd slot markers included; the
     guidelines likewise. The step links its mission type, the step contract whose mission and action are the type and
     the step, and, on its expected output artifact, the skeleton its templatePath names.
+    When I GET "/packs/main/artifacts/directive/GUARD"
+    Then the response status is 200
+    And I remember the header "ETag"
     When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
-    And the response has no "ETag" header
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
     And the field at "/id" is "specify"
     And the field at "/title" is "Specification"
     And the field at "/description" is "Define user scenarios and acceptance criteria"
@@ -363,10 +369,14 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
   Scenario: A flat skeleton is served as text with its digest and size, linked to its mission type
     FR-005, US3 AS1. The content is the stored bytes as text, since they are valid UTF-8; sha256 and size are those
     of the stored bytes.
+    When I GET "/packs/main/artifacts/directive/GUARD"
+    Then the response status is 200
+    And I remember the header "ETag"
     When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
-    And the response has no "ETag" header
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
     And the response body is:
       """
       {
@@ -414,12 +424,16 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
   Scenario: A step contract is read through the generic item read, linked to its mission type, its step and its delegates
     FR-001, FR-004, US2 AS1. A delegation candidate of a served kind that the pack holds links to its pack-scoped read;
     one the pack does not hold (NOPE), including a procedure the pack does not hold, has no link. A step
-    without inputs answers an empty list. No ETag: the kind has no write. A step contract whose mission names a mission
+    without inputs answers an empty list. Its ETag is the pack revision, as a directive's is (#487). A step contract whose mission names a mission
     type the pack does not hold still reads, without mission-type and step links.
+    When I GET "/packs/main/artifacts/directive/GUARD"
+    Then the response status is 200
+    And I remember the header "ETag"
     When I GET "/packs/main/artifacts/mission_step_contract/specify"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
-    And the response has no "ETag" header
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
     And the response body is:
       """
       {
@@ -632,7 +646,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the problem code is "pack_unreadable"
 
   Scenario: A step contract is removed as the five kinds are, and its mission type stays
-    FR-010, US6 AS1, D10. Neither mission kind answers an ETag, so a DELETE sends If-Match: * (or the pack revision) as
+    FR-010, US6 AS1, D10. A DELETE sends If-Match: * or the ETag the item read answered (the pack revision, #487), as
     for any kind. The removal answers 204 with the pack's new revision; the next DELETE of the id is its kind's
     not-found code.
     Given registration is switched on
@@ -659,6 +673,73 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
     Then the response status is 404
     And the problem code is "mission_step_contract_not_found"
+
+  Scenario: Every pack read of one thing carries the pack revision, which moves when the pack changes
+    #487, FR-005, FR-006. The mission type, step, skeleton, step contract and tactic reads answer the pack revision as
+    their ETag, equal to a directive's, and a different one once a DELETE has changed the
+    pack. It is a concurrency token, not a cache validator: no read takes If-None-Match.
+    Given registration is switched on
+    And the org pack "main" with the file "tactics/rehearse.tactic.yaml":
+      """
+      id: rehearse
+      schema_version: '1.0'
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: discover
+      action: discover
+      mission: documentation
+      steps:
+        - id: first
+          description: The first step
+      """
+    When I GET "/packs/main/artifacts/directive/GUARD"
+    Then the response status is 200
+    And I remember the header "ETag"
+    When I GET "/packs/main/artifacts/mission_type/software-dev"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
+    When I GET "/packs/main/artifacts/mission_step_contract/specify"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
+    When I GET "/packs/main/artifacts/tactic/rehearse"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" is the remembered header
+    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
+    Then the response status is 204
+    When I GET "/packs/main/artifacts/mission_type/software-dev"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/mission_step_contract/specify"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/tactic/rehearse"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "ETag" differs from the remembered header
 
   Scenario: A mission type is removed with its step files and its skeletons, and every read of it is then not found
     FR-010, US6 AS1, D10: the type, its step prompt and guidelines files and its skeletons go as one removal under one

@@ -1,0 +1,33 @@
+{
+  "baseline_merge_commit": "eb197f9461eb08f2884337ac89d96e21344e5d55",
+  "create_return_branch": "claude/feat-487-488-pack-item-etags",
+  "created_at": "2026-11-11T18:08:53.607697+00:00",
+  "flattened": true,
+  "friendly_name": "Pack item ETags and resolver retirement",
+  "merged_at": "2026-11-11T19:15:46.956171+00:00",
+  "merged_commit": "5ab145714c021cc0cf95ec78e3dc54bb96a6ad61",
+  "mid8": "01M75WRS",
+  "mission_branch": "kitty/mission-pack-item-etags-and-resolver-retirement-01M75WRS",
+  "mission_id": "01M75WRS0Y5BQV0ATEYNA0QJZX",
+  "mission_number": 22,
+  "mission_slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Clients can use one rule for pack-scoped reads: each read of a single thing names the pack revision it was read at. The service also drops a component resolver path no request reaches, so its code says what the live graph walks do (issues #487 and #488).",
+  "purpose_tldr": "Every pack read of one artifact carries the pack revision as its ETag, and an unused graph-walk path is removed.",
+  "slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+  "status_phase": "1",
+  "target_branch": "claude/feat-487-488-pack-item-etags",
+  "topology_decision": {
+    "code_lane_count": 4,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 4
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-11T18:27:46.643375+00:00"
+}

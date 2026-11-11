@@ -1,271 +1,174 @@
 package ai.speckitty.charter.packs.application;
 
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.edge;
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.pack;
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.GraphWalker;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.ComponentResolver;
-import ai.speckitty.charter.packs.domain.ComposeResolver;
+import ai.speckitty.charter.packs.application.EdgeIndexTest.Closure;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * NFR-001 / FR-004: the walk is lazy and bounded. It resolves each neighbour on demand through the
- * {@link ComponentResolver} port, visits every reachable component once, guards against cycles, continues past an
- * unwired kind (D6), and honours a visitor's {@link Descent}. A counting resolver and a recording visitor give every
- * scenario a same-fixture positive control, so no assertion passes vacuously.
+ * NFR-001 / FR-004: the walk over an {@link EdgeIndex} visits every reachable component once, guards against cycles,
+ * passes over a neighbour the closure does not hold, keeps a bare reference in the pack that writes it, and honours a
+ * visitor's {@link Descent}. A recording visitor gives every scenario a same-fixture positive control.
  */
 @DisplayName("Graph walk")
 class GraphWalkTest {
 
     @Test
-    @DisplayName("a chain A->B->C visits every component once and resolves each distinct neighbour exactly once")
-    void chainVisitsEachComponentOnceWithOneResolvePerNeighbour() {
-        Urn a = urn("a");
-        Urn b = urn("b");
-        Urn c = urn("c");
-        Node nodeA = new Node(a, List.of(Relationship.of(a, b, RelationType.REQUIRES)));
-        Node nodeB = new Node(b, List.of(Relationship.of(b, c, RelationType.REQUIRES)));
-        Node nodeC = new Node(c, List.of());
-        // An unreachable component sits in the resolver's map but must never be fetched (bounded reads).
-        Urn unreachable = urn("z");
-        CountingResolver resolver = resolverOf(nodeB, nodeC, new Node(unreachable, List.of()));
+    @DisplayName("a chain A->B->C visits every reachable component once and never an unreachable one")
+    void chainVisitsEachReachableComponentOnce() {
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:b", "directive:c", "directive:z"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:b"),
+                        edge("directive:b", RelationType.REQUIRES, "directive:c"))
+                .index();
         Recorder recorder = new Recorder();
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a, b, c);
-        // exactly one resolve per distinct reachable neighbour (B and C); A was given, not resolved
-        assertThat(resolver.requested).containsExactly(b, c);
-        assertThat(resolver.requested).doesNotContain(unreachable);
-        assertThat(resolver.requested).hasSizeLessThan(resolver.mapSize());
+        assertThat(recorder.visited).containsExactly(urn("directive:a"), urn("directive:b"), urn("directive:c"));
     }
 
     @Test
-    @DisplayName("a cycle A->B->A terminates and resolves each neighbour at most once")
+    @DisplayName("a cycle A->B->A terminates")
     void cycleTerminates() {
-        Urn a = urn("a");
-        Urn b = urn("b");
-        Node nodeA = new Node(a, List.of(Relationship.of(a, b, RelationType.REQUIRES)));
-        Node nodeB = new Node(b, List.of(Relationship.of(b, a, RelationType.REQUIRES)));
-        CountingResolver resolver = resolverOf(nodeA, nodeB);
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:b"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:b"),
+                        edge("directive:b", RelationType.REQUIRES, "directive:a"))
+                .index();
         Recorder recorder = new Recorder();
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a, b);
-        // B is resolved once; A is never resolved (it is the start and already visited when the cycle closes)
-        assertThat(resolver.requested).containsExactly(b);
+        assertThat(recorder.visited).containsExactly(urn("directive:a"), urn("directive:b"));
     }
 
     @Test
-    @DisplayName("a bidirectional edge authored from the far side is crossed to that far side")
-    void bidirectionalEdgeAuthoredFromTheFarSideIsCrossedBackwards() {
-        Urn a = urn("a");
-        Urn b = urn("b");
-        // B authored "B impacts A"; impacts is bidirectional, so A is an effective origin of it and the walk from A
-        // must reach B, not turn back to A.
-        Relationship impacts = Relationship.of(b, a, RelationType.IMPACTS);
-        Node nodeA = new Node(a, List.of(impacts));
-        Node nodeB = new Node(b, List.of(impacts));
-        CountingResolver resolver = resolverOf(nodeA, nodeB);
+    @DisplayName("a neighbour the closure does not hold is passed over and the walk continues to the other neighbours")
+    void aNeighbourTheClosureDoesNotHoldIsSkippedAndTheWalkContinues() {
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:wired"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:unheld"),
+                        edge("directive:a", RelationType.SUGGESTS, "directive:wired"))
+                .index();
         Recorder recorder = new Recorder();
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a, b);
-        assertThat(resolver.requested).containsExactly(b);
+        assertThat(recorder.visited).containsExactly(urn("directive:a"), urn("directive:wired"));
+        assertThat(recorder.crossed)
+                .as("the edge to the unheld neighbour is still announced")
+                .hasSize(2);
     }
 
     @Test
-    @DisplayName("a relationship to an unwired kind resolves empty and the walk continues to its other neighbours")
-    void unwiredNeighbourIsSkippedAndTheWalkContinues() {
-        Urn a = urn("a");
-        Urn wired = urn("wired");
-        Urn unwired = new Urn(NodeKind.PROCEDURE, "p-1");
-        Node nodeA = new Node(
-                a,
-                List.of(
-                        Relationship.of(a, unwired, RelationType.REQUIRES),
-                        Relationship.of(a, wired, RelationType.SUGGESTS)));
-        Node nodeWired = new Node(wired, List.of());
-        // the resolver has no entry for the unwired kind, so it returns empty for it (D6)
-        CountingResolver resolver = resolverOf(nodeWired);
-        Recorder recorder = new Recorder();
-
-        new GraphWalk(resolver).walk(nodeA, recorder);
-
-        assertThat(resolver.requested).containsExactly(unwired, wired);
-        assertThat(recorder.visited).containsExactly(a, wired);
-    }
-
-    @Test
-    @DisplayName("Descent.STOP from a node halts the whole walk before any neighbour is resolved")
+    @DisplayName("Descent.STOP from a node halts the whole walk before any neighbour is visited")
     void stopHaltsTheWalk() {
-        Urn a = urn("a");
-        Urn b = urn("b");
-        Node nodeA = new Node(a, List.of(Relationship.of(a, b, RelationType.REQUIRES)));
-        CountingResolver resolver = resolverOf(new Node(b, List.of()));
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:b"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:b"))
+                .index();
         Recorder recorder = new Recorder();
         recorder.nodeDescent = Descent.STOP;
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a);
-        assertThat(resolver.requested).isEmpty();
+        assertThat(recorder.visited).containsExactly(urn("directive:a"));
     }
 
     @Test
     @DisplayName("Descent.SKIP on a node does not descend into its relationships but does not stop the walk")
     void skipDoesNotDescend() {
-        Urn a = urn("a");
-        Urn b = urn("b");
-        Node nodeA = new Node(a, List.of(Relationship.of(a, b, RelationType.REQUIRES)));
-        CountingResolver resolver = resolverOf(new Node(b, List.of()));
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:b"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:b"))
+                .index();
         Recorder recorder = new Recorder();
         recorder.nodeDescent = Descent.SKIP;
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a);
-        // SKIP means we never cross any of A's relationships, so no neighbour is resolved
-        assertThat(resolver.requested).isEmpty();
+        assertThat(recorder.visited).containsExactly(urn("directive:a"));
         assertThat(recorder.crossed).isEmpty();
     }
 
     @Test
     @DisplayName("Descent.SKIP on a relationship skips that neighbour but keeps walking the siblings")
     void skipOnRelationshipKeepsSiblings() {
-        Urn a = urn("a");
-        Urn skipped = urn("skipped");
-        Urn kept = urn("kept");
-        Node nodeA = new Node(
-                a,
-                List.of(
-                        Relationship.of(a, skipped, RelationType.REQUIRES),
-                        Relationship.of(a, kept, RelationType.SUGGESTS)));
-        CountingResolver resolver = resolverOf(new Node(skipped, List.of()), new Node(kept, List.of()));
+        EdgeIndex index = new Closure()
+                .pack(
+                        "p",
+                        List.of("directive:a", "directive:skipped", "directive:kept"),
+                        edge("directive:a", RelationType.REQUIRES, "directive:skipped"),
+                        edge("directive:a", RelationType.SUGGESTS, "directive:kept"))
+                .index();
         Recorder recorder = new Recorder();
-        recorder.skipRelationshipTo = skipped;
+        recorder.skipRelationshipTo = urn("directive:skipped");
 
-        new GraphWalk(resolver).walk(nodeA, recorder);
+        walkFrom(index, "p", "directive:a", recorder);
 
-        assertThat(recorder.visited).containsExactly(a, kept);
-        assertThat(resolver.requested).containsExactly(kept);
+        assertThat(recorder.visited).containsExactly(urn("directive:a"), urn("directive:kept"));
     }
 
     @Test
-    @DisplayName("a walk across packs keys its visited set by (holding pack, bare urn), keeps a bare reference in the"
-            + " pack of the artifact that writes it and reads a reverse edge's pack from its from side")
+    @DisplayName("a walk across packs keys its visited set by (holding pack, bare urn) and keeps a bare reference in"
+            + " the pack of the artifact that writes it")
     void crossPackWalkTerminatesAndResolvesBareReferencesInTheHoldingPack() {
-        PackIdentifier packA = new PackIdentifier("pack-a");
-        PackIdentifier packB = new PackIdentifier("pack-b");
-        Urn x = urn("X");
-        Urn y = urn("Y");
-        Urn z = urn("Z");
         // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again and a::Y, the Y that
-        // pack a holds beside pack b's own Y; absent::W is passed over. X also holds an edge authored from b::R that
-        // names X as its bare "to": it is crossed backwards, and R is found in the pack its "from" side names.
-        Urn r = urn("R");
-        Relationship reverse = new Relationship(
-                r, Optional.of("b"), x, Optional.empty(), RelationType.REQUIRES, Optional.empty(), Optional.empty());
-        Node nodeX = new Node(packA, x, List.of(qualified(x, y, "b"), qualified(x, urn("W"), "absent"), reverse));
-        Node nodeY = new Node(packB, y, List.of(qualified(y, x, "a"), Relationship.of(y, z, RelationType.REQUIRES)));
-        Node nodeZ = new Node(packB, z, List.of(qualified(z, x, "a"), qualified(z, y, "a")));
-        Node nodeYofA = new Node(packA, y, List.of());
-        Node nodeR = new Node(packB, r, List.of());
-        // Z exists only in pack b, so a bare reference that stayed in pack a would never find it
-        Map<PackIdentifier, Map<Urn, CharterArtifact>> packs =
-                Map.of(packA, Map.of(x, nodeX, y, nodeYofA), packB, Map.of(y, nodeY, z, nodeZ, r, nodeR));
-        List<String> asked = new ArrayList<>();
-        ComposeResolver compose = new ComposeResolver() {
-            @Override
-            public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referring) {
-                return switch (reference.packName().orElseThrow()) {
-                    case "a" -> Optional.of(packA);
-                    case "b" -> Optional.of(packB);
-                    default -> Optional.empty();
-                };
-            }
-
-            @Override
-            public ComponentResolver inPack(PackIdentifier pack) {
-                return urn -> {
-                    asked.add(pack.value() + "/" + urn);
-                    return Optional.ofNullable(packs.get(pack).get(urn));
-                };
-            }
-        };
+        // pack a holds beside pack b's own Y.
+        EdgeIndex index = new Closure()
+                .pack(
+                        "a",
+                        List.of("b"),
+                        List.of("directive:X", "directive:Y"),
+                        edge("directive:X", RelationType.REQUIRES, "b::directive:Y"))
+                .pack(
+                        "b",
+                        List.of("a"),
+                        List.of("directive:Y", "directive:Z"),
+                        edge("directive:Y", RelationType.REQUIRES, "a::directive:X"),
+                        edge("directive:Y", RelationType.REQUIRES, "directive:Z"),
+                        edge("directive:Z", RelationType.REQUIRES, "a::directive:X"),
+                        edge("directive:Z", RelationType.REQUIRES, "a::directive:Y"))
+                .index();
         Recorder recorder = new Recorder();
 
-        new GraphWalk(compose).walk(nodeX, recorder);
+        walkFrom(index, "a", "directive:X", recorder);
 
-        // pack b's Y and pack a's Y are two components of one bare urn: both are visited, neither shadows the other
-        assertThat(recorder.visited).containsExactly(x, y, z, y, r);
-        // X is the start and is never resolved again; each of the others is resolved once, in its own pack
-        assertThat(asked)
-                .containsExactly(
-                        "pack-b/directive:Y", "pack-b/directive:Z", "pack-a/directive:Y", "pack-b/directive:R");
+        // pack b's Y and pack a's Y are two components of one bare urn: both are visited, neither shadows the other.
+        // Z exists only in pack b, so a bare reference that stayed in pack a would never find it.
+        assertThat(recorder.visited)
+                .containsExactly(urn("directive:X"), urn("directive:Y"), urn("directive:Z"), urn("directive:Y"));
     }
 
-    private static Relationship qualified(Urn from, Urn to, String pack) {
-        return new Relationship(
-                from,
-                Optional.empty(),
-                to,
-                Optional.of(pack),
-                RelationType.REQUIRES,
-                Optional.empty(),
-                Optional.empty());
-    }
-
-    private static Urn urn(String id) {
-        return new Urn(NodeKind.DIRECTIVE, id);
-    }
-
-    private static CountingResolver resolverOf(Node... nodes) {
-        Map<Urn, CharterArtifact> map = new HashMap<>();
-        for (Node node : nodes) {
-            map.put(node.urn(), node);
-        }
-        return new CountingResolver(map);
-    }
-
-    /** A resolver that records every URN it is asked for and returns empty for anything it does not hold (D6). */
-    private static final class CountingResolver implements ComponentResolver {
-        private final Map<Urn, CharterArtifact> store;
-        private final List<Urn> requested = new ArrayList<>();
-
-        CountingResolver(Map<Urn, CharterArtifact> store) {
-            this.store = store;
-        }
-
-        @Override
-        public Optional<CharterArtifact> resolve(Urn urn) {
-            requested.add(urn);
-            return Optional.ofNullable(store.get(urn));
-        }
-
-        int mapSize() {
-            return store.size();
-        }
+    private static void walkFrom(EdgeIndex index, String pack, String start, GraphWalker visitor) {
+        new GraphWalk(index).walk(index.nodeAt(new EdgeIndex.Place(pack(pack), urn(start))), visitor);
     }
 
     /** Records the order components are visited and relationships crossed, and drives the configured descent. */
-    private static final class Recorder implements ai.speckitty.charter.kernel.domain.GraphWalker {
+    private static final class Recorder implements GraphWalker {
         private final List<Urn> visited = new ArrayList<>();
         private final List<Relationship> crossed = new ArrayList<>();
         private Descent nodeDescent = Descent.CONTINUE;
@@ -284,64 +187,6 @@ class GraphWalkTest {
                 return Descent.SKIP;
             }
             return Descent.CONTINUE;
-        }
-    }
-
-    /** A controllable {@link CharterArtifact} whose {@code urn()} and {@code relationships()} are given outright. */
-    private static final class Node implements CharterArtifact {
-        private final Urn urn;
-        private final List<Relationship> relationships;
-
-        private final PackIdentifier pack;
-
-        Node(Urn urn, List<Relationship> relationships) {
-            this(new PackIdentifier("01TESTPACK"), urn, relationships);
-        }
-
-        Node(PackIdentifier pack, Urn urn, List<Relationship> relationships) {
-            this.pack = pack;
-            this.urn = urn;
-            this.relationships = List.copyOf(relationships);
-        }
-
-        @Override
-        public ArtifactKind kind() {
-            return urn.kind().artifactKind().orElseThrow();
-        }
-
-        @Override
-        public PackIdentifier packId() {
-            return pack;
-        }
-
-        @Override
-        public String localId() {
-            return urn.id();
-        }
-
-        @Override
-        public Optional<String> schemaVersion() {
-            return Optional.of("1.0");
-        }
-
-        @Override
-        public String label() {
-            return urn.id();
-        }
-
-        @Override
-        public Optional<String> description() {
-            return Optional.empty();
-        }
-
-        @Override
-        public List<Relationship> derivedRelationships() {
-            return relationships;
-        }
-
-        @Override
-        public Urn urn() {
-            return urn;
         }
     }
 }

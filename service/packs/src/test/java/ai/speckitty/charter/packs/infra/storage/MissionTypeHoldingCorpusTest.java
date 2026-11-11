@@ -8,6 +8,7 @@ import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
+import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.Payload;
@@ -46,7 +47,11 @@ class MissionTypeHoldingCorpusTest {
                 "built-in", PackLevel.BUILT_IN, ExamplePacks.packsDirectory().resolve("built-in")));
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         MissionTypeHoldingRead reads = new MissionTypeHoldingRead(
-                store, store, new ConsistentRead(new FileSystemPackSources(() -> locations)), store);
+                store,
+                store,
+                new ConsistentRead(new FileSystemPackSources(() -> locations)),
+                store,
+                pack -> PackRevision.compute(List.of(pack.value())));
         Path mission = ExamplePacks.packsDirectory().resolve("built-in/missions/" + TYPE);
         Path steps = mission.resolve("steps");
 

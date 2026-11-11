@@ -214,7 +214,7 @@ class PerArtifactImpactTest {
                 rig.stage(Packs.of(MID_ID, "target", "1.0.0", "org").directive("T_ONE", "One")),
                 Preconditions.none());
         java.util.concurrent.atomic.AtomicInteger listings = new java.util.concurrent.atomic.AtomicInteger();
-        ai.speckitty.charter.packs.infra.storage.DomainRepositoryService.Locations counting = () -> {
+        ai.speckitty.charter.packs.infra.storage.Locations counting = () -> {
             listings.incrementAndGet();
             return rig.locations.all();
         };

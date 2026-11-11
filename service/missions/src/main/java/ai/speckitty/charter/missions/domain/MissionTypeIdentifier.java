@@ -1,8 +1,8 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
-import java.util.regex.Pattern;
 
 /**
  * The identity of a {@link MissionType} within its pack: the schema's {@code id}, a letter-first kebab slug that is
@@ -12,18 +12,10 @@ import java.util.regex.Pattern;
  */
 public record MissionTypeIdentifier(String value) {
 
-    /** The id grammar of a mission type and of a step, as the {@code mission-type} schema has it. */
-    static final Pattern ID = Pattern.compile("[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+");
-
-    /** The longest mission type or step id accepted, checked before the pattern (#440). */
-    static final int MAX_LENGTH = 64;
-
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "A mission type identifier is a letter-first kebab slug of at most 64 characters.",
-                    text -> text != null
-                            && text.length() <= MAX_LENGTH
-                            && ID.matcher(text).matches()));
+                    IdentifierGrammar::isLetterFirstSlug));
 
     /**
      * Checks the identifier's grammar.
