@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 public sealed interface GuardImplementation permits GuardImplementation.Builtin, GuardImplementation.AssetBacked {
 
     /** {@code builtin:<id>}, {@code asset:<id>} or {@code <pack>::asset:<id>}. */
-    Pattern SPELLING =
-            Pattern.compile("builtin:([a-z0-9-]++)|(?:(" + IdentifierGrammar.SLUG + ")::)?asset:([A-Za-z0-9_/.-]++)");
+    Pattern SPELLING = Pattern.compile("builtin:(" + IdentifierGrammar.SLUG + ")|(?:(" + IdentifierGrammar.SLUG
+            + ")::)?asset:([A-Za-z0-9_/.-]++)");
 
     /** The longest pack name an asset-backed spelling may qualify with (#440). */
     int MAX_PACK_LENGTH = IdentifierGrammar.MAX_SLUG_LENGTH;
