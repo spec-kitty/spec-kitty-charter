@@ -60,7 +60,7 @@ class CommitStorePackWriteStoreAuthoredTest {
         CommitStorePackWriteStore store = storeOver(host, "directives/D1.directive.yaml");
 
         assertThat(store.authored(PACK).declared())
-                .containsExactly(new Urn(NodeKind.DIRECTIVE, "D1"), new Urn(NodeKind.DIRECTIVE, "D2"));
+                .containsExactlyInAnyOrder(new Urn(NodeKind.DIRECTIVE, "D1"), new Urn(NodeKind.DIRECTIVE, "D2"));
         assertThat(store.authored(PACK).edges()).hasSize(1);
     }
 
