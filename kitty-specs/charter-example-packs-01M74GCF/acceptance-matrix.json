@@ -36,13 +36,13 @@
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "Tests that read open-packs content (pinned checkout, packs/qa, packs/internal) now read example packs",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "grep of service/*/src/test: remaining packs/qa refs are @TempDir fixtures (CharterWiringTest, ActivationListingFaultTest); verifyAll green @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:04.900848+00:00",
+      "notes": "No test reads the synced trees."
     },
     {
       "criterion_id": "FR-005",
