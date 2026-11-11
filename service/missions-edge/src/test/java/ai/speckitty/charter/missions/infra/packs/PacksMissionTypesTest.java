@@ -98,16 +98,18 @@ class PacksMissionTypesTest {
 
         assertThat(revised.revision()).as("the pack revision's token").isEqualTo(REVISION.token());
 
-        assertThat(holding.type()).isSameAs(type);
-        assertThat(holding.skeletons())
+        MissionTypeHolding routed = revised.value();
+        assertThat(routed).isEqualTo(holding);
+        assertThat(routed.type()).isSameAs(type);
+        assertThat(routed.skeletons())
                 .containsExactly(new MissionTypeHolding.StoredSkeleton(
                         "divio/x.md", StoredFile.of(new byte[] {(byte) 0xff, 1})));
-        assertThat(holding.stepContracts())
+        assertThat(routed.stepContracts())
                 .containsExactly(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
-        assertThat(holding.stepFiles().get("specify").prompt())
+        assertThat(routed.stepFiles().get("specify").prompt())
                 .contains(StoredFile.of("# Specify\n".getBytes(StandardCharsets.UTF_8)));
-        assertThat(holding.stepFiles().get("specify").guidelines()).isEmpty();
-        assertThat(holding.fingerprint()).isEqualTo(FINGERPRINT);
+        assertThat(routed.stepFiles().get("specify").guidelines()).isEmpty();
+        assertThat(routed.fingerprint()).isEqualTo(FINGERPRINT);
     }
 
     @Test
