@@ -5,9 +5,9 @@ import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.MissionSkeleton;
 import ai.speckitty.charter.api.model.MissionStep;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.missions.application.Fingerprinted;
 import ai.speckitty.charter.missions.application.MissionTypeReadService;
 import ai.speckitty.charter.missions.application.MissionTypeView;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.SkeletonView;
 import ai.speckitty.charter.missions.application.StepView;
 import java.util.Objects;
@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
  * {@link MissionTypeReadService}. The literal paths are more specific than the generic
  * {@code /packs/{packId}/artifacts/{kind}/{artifactId}}, so Spring routes a {@code mission_type} item here. A refusal
  * the service throws is answered by the shared {@code RefusalHandler}; a path parameter that breaks the generated
- * interface's bounds is a 400 without a code. Each 200 carries the source fingerprint its read verified and no ETag:
- * neither a mission type nor its parts has a write here.
+ * interface's bounds is a 400 without a code. Each 200 carries the source fingerprint its read verified and, as its
+ * {@code ETag}, the pack revision read inside the same verified read; a refusal carries no {@code ETag}.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -44,7 +44,7 @@ public class MissionTypeController implements MissionTypesApi {
 
     @Override
     public ResponseEntity<Artifact> getPackMissionType(String packId, String missionTypeId) {
-        Fingerprinted<MissionTypeView> read = reads.missionType(new PackIdentifier(packId), missionTypeId);
+        PackRead<MissionTypeView> read = reads.missionType(new PackIdentifier(packId), missionTypeId);
         MissionLinks.Scope scope = links.pack(packId);
         return MissionBodies.ok(read)
                 .body(MissionBodies.missionType(
@@ -53,14 +53,14 @@ public class MissionTypeController implements MissionTypesApi {
 
     @Override
     public ResponseEntity<MissionStep> getPackMissionStep(String packId, String missionTypeId, String stepId) {
-        Fingerprinted<StepView> read = reads.step(new PackIdentifier(packId), missionTypeId, stepId);
+        PackRead<StepView> read = reads.step(new PackIdentifier(packId), missionTypeId, stepId);
         return MissionBodies.ok(read).body(MissionBodies.step(read.value(), links.pack(packId)));
     }
 
     @Override
     public ResponseEntity<MissionSkeleton> getPackMissionSkeleton(
             String packId, String missionTypeId, String skeletonName) {
-        Fingerprinted<SkeletonView> read = reads.skeleton(new PackIdentifier(packId), missionTypeId, skeletonName);
+        PackRead<SkeletonView> read = reads.skeleton(new PackIdentifier(packId), missionTypeId, skeletonName);
         return MissionBodies.ok(read).body(MissionBodies.skeleton(read.value(), links.pack(packId)));
     }
 }

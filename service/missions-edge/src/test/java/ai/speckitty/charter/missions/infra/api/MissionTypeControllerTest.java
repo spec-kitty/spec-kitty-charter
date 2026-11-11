@@ -6,16 +6,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.api.ArtifactsApi;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeReadService;
+import ai.speckitty.charter.missions.application.PackHolding;
+import ai.speckitty.charter.missions.application.PackMissionTypes;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +42,30 @@ import org.springframework.web.bind.annotation.RestController;
 class MissionTypeControllerTest {
 
     private static final String FINGERPRINT = "sha256:" + "b".repeat(64);
+    private static final String REVISION = "sha256:" + "d".repeat(64);
+    private static final String ETAG = "\"" + REVISION + "\"";
 
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
                     new MissionTypeController(
-                            new MissionTypeReadService((pack, type) -> holding(pack)), new MissionLinks("/api/v1")),
+                            new MissionTypeReadService(new PackMissionTypes() {
+                                @Override
+                                public MissionTypeHolding holding(PackIdentifier pack, String type) {
+                                    throw new AssertionError("a pack-scoped read asks for the revised holding");
+                                }
+
+                                @Override
+                                public PackHolding revised(PackIdentifier pack, String type) {
+                                    if (!type.equals("software-dev")) {
+                                        throw new CharterRefusal(
+                                                RefusalCode.MISSION_TYPE_NOT_FOUND,
+                                                "Pack main has no mission type " + type + ".");
+                                    }
+                                    return new PackHolding(MissionTypeControllerTest.holding(pack), REVISION);
+                                }
+                            }),
+                            new MissionLinks("/api/v1")),
                     new GenericItemRead())
+            .setControllerAdvice(new RefusalHandler())
             .build();
 
     @Test
@@ -62,7 +86,7 @@ class MissionTypeControllerTest {
     void theMissionTypeAnswerCarriesTheFingerprintAndItsLinks() throws Exception {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev"))
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
-                .andExpect(header().doesNotExist("ETag"))
+                .andExpect(header().string("ETag", ETAG))
                 .andExpect(jsonPath("$.packId").value("main"))
                 .andExpect(
                         jsonPath("$._links.self.href").value("/api/v1/packs/main/artifacts/mission_type/software-dev"))
@@ -83,6 +107,7 @@ class MissionTypeControllerTest {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
+                .andExpect(header().string("ETag", ETAG))
                 .andExpect(jsonPath("$.prompt").value("# Specify\n"))
                 .andExpect(jsonPath("$._links.self.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
@@ -101,6 +126,7 @@ class MissionTypeControllerTest {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
+                .andExpect(header().string("ETag", ETAG))
                 .andExpect(jsonPath("$.name").value("divio~1x.md"))
                 .andExpect(jsonPath("$.path").value("templates/divio/x.md"))
                 .andExpect(jsonPath("$.encoding").value("text"))
@@ -109,6 +135,16 @@ class MissionTypeControllerTest {
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
                 .andExpect(jsonPath("$._links.mission-type.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev"));
+    }
+
+    @Test
+    void aRefusalAnswersNoETag() throws Exception {
+        for (String path : List.of(
+                "/api/v1/packs/main/artifacts/mission_type/research-x",
+                "/api/v1/packs/main/artifacts/mission_type/software-dev/steps/nope",
+                "/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/nope.md")) {
+            mvc.perform(get(path)).andExpect(status().isNotFound()).andExpect(header().doesNotExist("ETag"));
+        }
     }
 
     /** A stand-in of the packs slice's generic item read, at the generated interface's path. */

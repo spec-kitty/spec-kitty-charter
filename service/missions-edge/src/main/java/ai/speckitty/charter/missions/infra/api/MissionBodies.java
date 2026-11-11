@@ -17,11 +17,13 @@ import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
 import ai.speckitty.charter.api.model.MissionStepSummary;
 import ai.speckitty.charter.api.model.MissionType;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.missions.application.EffectiveStepContractView;
 import ai.speckitty.charter.missions.application.Fingerprinted;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeView;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.SkeletonView;
 import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StepView;
@@ -229,7 +231,20 @@ final class MissionBodies {
     }
 
     /**
-     * A 200 that carries the one fingerprint its read verified and no ETag.
+     * A pack-scoped 200: the one fingerprint its read verified, and the pack revision it was read at as its
+     * {@code ETag}.
+     *
+     * @param read the read
+     * @return the response builder
+     */
+    static ResponseEntity.BodyBuilder ok(PackRead<?> read) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HeaderNames.SOURCE_FINGERPRINT, read.fingerprint());
+        return ResponseEntity.ok().headers(headers).eTag(EntityTags.quote(read.revision()));
+    }
+
+    /**
+     * A 200 that carries the one fingerprint its read verified; the caller sets its own tag.
      *
      * @param read the read
      * @return the response builder
