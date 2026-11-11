@@ -15,3 +15,15 @@ Two usage patterns:
   After finishing the work, close the Op with the command printed in the capsule
   (`spec-kitty profile-invocation complete --invocation-id <id> --outcome <done|failed|abandoned>`).
 <!-- /spec-kitty:orientation -->
+
+## Model rules for agents (operator, 2026-11-10)
+
+Read `.kittify/charter/charter.md` before planning. Two rules from it that sessions have missed:
+
+- **The charter's model is canonical.** When a shape changes, define the rationalized shape and
+  replace the old one outright: no deprecation window, no legacy reader beside the new one, no
+  "core first" ordering. `spec-kitty-open-packs` follows the model; core aligns later through the
+  generated client.
+- **Tests and examples use only the canonical shape**, except tests of error handling (an invalid
+  pack or invalid content). Update fixtures, example packs and contract examples with the model;
+  never exclude a field from a parity or round-trip check to make a test pass.
