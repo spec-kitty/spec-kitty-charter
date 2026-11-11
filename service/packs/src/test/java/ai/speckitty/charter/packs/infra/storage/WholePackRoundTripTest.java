@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Status;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
@@ -43,7 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The whole-pack round-trip gate (#187): every file of the pinned built-in pack is read into the domain, written to a
+ * The whole-pack round-trip gate (#187): every file of the built-in example pack (ADR-0070) is read into the domain, written to a
  * fresh directory through the storage service, read back, and compared with its source by meaning. The observed result
  * must equal the checked-in expectation exactly, both ways (see {@link WholePackExpectation}). The report lands in
  * {@code build/reports/whole-pack/report.md}.
@@ -80,8 +81,7 @@ class WholePackRoundTripTest {
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        Path pack = ExamplePacks.pack(BUILT_IN);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         WholePackRoundTrip roundTrip = new DomainRoundTrip(new YamlSerializationStrategy());
         Map<String, List<String>> information = new TreeMap<>();
@@ -98,13 +98,12 @@ class WholePackRoundTripTest {
                 report,
                 WholePackReport.render(
                         evaluation,
-                        "spec-kitty-open-packs packs/built-in",
-                        System.getProperty("charter.openPacksRef", "?"),
+                        "charter example pack built-in",
+                        "service/packs/src/testFixtures/resources/example-packs",
                         information),
                 StandardCharsets.UTF_8);
         System.out.println(WholePackReport.kindTable(evaluation));
 
-        OpenPacksCorpus.assertPinned(); // the run left the checkout untouched (NFR-004)
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
@@ -130,8 +129,8 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * #193, exact: every built-in sidecar, every asset file and every template round-trips, the sidecars since
-     * spec-kitty/spec-kitty-open-packs#75 anchored their {@code path} at {@code assets/}. A no-op adapter cannot match:
+     * #193, exact: every built-in sidecar, every asset file and every template round-trips, each sidecar anchoring
+     * its {@code path} at {@code assets/}. A no-op adapter cannot match:
      * each sidecar must name a payload that is in the census as one.
      */
     private static void assertAssetsAndTemplates(
@@ -140,17 +139,17 @@ class WholePackRoundTripTest {
             Evaluation evaluation,
             Map<String, Optional<String>> observed) {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
-        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.GREEN, 6));
-        assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
-        // Two top-level templates and 25 mission-type templates (#194).
-        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 27));
+        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.GREEN, 3));
+        assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 4));
+        // Two top-level templates and four mission-type templates (#194).
+        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 6));
         assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
         assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("asset"))
                 .map(Map.Entry::getKey)
                 .toList();
-        assertThat(sidecars).hasSize(6).allSatisfy(sidecar -> {
+        assertThat(sidecars).hasSize(3).allSatisfy(sidecar -> {
             String named = String.valueOf(((Map<?, ?>) Yaml.load(read(pack.resolve(sidecar)))).get("path"));
             assertThat(census).as(sidecar).containsEntry(PackFileSet.ASSETS + named, "asset-payload");
             assertThat(observed.get(sidecar)).as(sidecar).isEmpty();
@@ -159,27 +158,19 @@ class WholePackRoundTripTest {
 
     /**
      * The mission templates under {@code missions/<type>/templates/} census as {@code template} (#194, ADR-0044, which
-     * ADR-0040 deferred them to), beside the pack's top-level {@code templates/}; their orientation READMEs are
-     * excluded.
+     * ADR-0040 deferred them to), beside the pack's top-level {@code templates/}: every file there is one.
      */
     @Test
     void missionTemplatesAreTemplates() {
-        OpenPacksCorpus.assertPinned();
-        SortedMap<String, String> census =
-                WholePackCensus.of(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN));
+        SortedMap<String, String> census = WholePackCensus.of(ExamplePacks.pack(BUILT_IN));
 
         List<String> missionTemplates = census.keySet().stream()
                 .filter(path -> path.matches("missions/[^/]+/templates/.+"))
                 .toList();
         assertThat(missionTemplates)
-                .filteredOn(path -> census.get(path).equals("template"))
-                .as("every mission template but the orientation READMEs, which are excluded")
-                .hasSize(25)
-                .noneSatisfy(path -> assertThat(path).endsWith("README.md"));
-        assertThat(missionTemplates)
-                .filteredOn(path -> path.endsWith("README.md"))
-                .isNotEmpty()
-                .allSatisfy(path -> assertThat(census.get(path)).as(path).isNotEqualTo("template"));
+                .as("the four software-dev mission templates")
+                .hasSize(4)
+                .allSatisfy(path -> assertThat(census.get(path)).as(path).isEqualTo("template"));
         assertThat(census.entrySet().stream()
                         .filter(entry -> entry.getKey().startsWith("templates/"))
                         .map(Map.Entry::getValue)
@@ -195,8 +186,7 @@ class WholePackRoundTripTest {
      */
     @Test
     void aLossyBodyWriterTurnsPackMdRedBesideAGreenFaithfulRun(@TempDir Path temp) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        Path pack = ExamplePacks.pack(BUILT_IN);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         SerializationStrategy yaml = new YamlSerializationStrategy();
         AtomicReference<PackDocument> loaded = new AtomicReference<>();
@@ -262,8 +252,7 @@ class WholePackRoundTripTest {
      */
     @Test
     void aLossyByteWriterTurnsEveryAssetFileAndTemplateRed(@TempDir Path temp) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        Path pack = ExamplePacks.pack(BUILT_IN);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         SerializationStrategy yaml = new YamlSerializationStrategy();
         AtomicReference<Pack> loaded = new AtomicReference<>();
@@ -295,8 +284,8 @@ class WholePackRoundTripTest {
                 .as("bytes-kind outcomes: the loaded pack's asset files plus templates")
                 .hasSize(loaded.get().assetFiles().size()
                         + loaded.get().templates().size())
-                .as("7 asset files, 2 top-level templates and 25 mission-type templates (#194)")
-                .hasSize(7 + 2 + 25);
+                .as("4 asset files, 2 top-level templates and 4 mission-type templates (#194)")
+                .hasSize(4 + 2 + 4);
         assertThat(bytesKind)
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
         // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.
@@ -487,14 +476,13 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * Positive control over the real corpus: a writer that drops every tactic's {@code purpose} must turn each tactic
+     * Positive control over the built-in example pack: a writer that drops every tactic's {@code purpose} must turn each tactic
      * that declares one, and round-trips with the faithful writer, red, with its first difference at {@code purpose}.
      * If this passes, the gate can see a lossy writer end to end.
      */
     @Test
     void aLossyWriterTurnsTheRealCorpusRed(@TempDir Path temp) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        Path pack = ExamplePacks.pack(BUILT_IN);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         SerializationStrategy yaml = new YamlSerializationStrategy();
         SerializationStrategy lossy = (SerializationStrategy) Proxy.newProxyInstance(
@@ -524,7 +512,7 @@ class WholePackRoundTripTest {
                 .filter(path -> read(pack.resolve(path)).lines().anyMatch(line -> line.startsWith("purpose:")))
                 .filter(path -> faithful.get(path).isEmpty())
                 .toList();
-        assertThat(withPurpose).as("green tactics that declare a purpose").hasSizeGreaterThan(100);
+        assertThat(withPurpose).as("green tactics that declare a purpose").hasSize(3);
         assertThat(withPurpose)
                 .allSatisfy(path -> assertThat(observed.get(path))
                         .as(path)

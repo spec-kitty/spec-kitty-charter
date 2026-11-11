@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -28,34 +29,26 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack that has a
- * {@code pack.yaml} loads with exactly the violations pinned for it as
- * known failures in {@code whole-pack/known-failures.yaml} (none at this pin), and every pack
- * that loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files,
- * the templates, the presets, the pack document and every DRG document. The files are compared too: asset sidecars and
- * presets by meaning (ADR-0036), the pack document by its Markdown model (#260), asset files and templates by SHA-256.
+ * The whole-pack seam over the charter-owned example packs (ADR-0070; #189, SC-002; #193 FR-010, NFR-001): every
+ * example pack loads with no violation (the built-in pack's known failures in {@code whole-pack/known-failures.yaml}
+ * are none), and every pack writes to a fresh directory and reloads with the same meaning: every bound kind, the asset
+ * files, the templates, the presets, the pack document and every DRG document. The files are compared too: asset
+ * sidecars and presets by meaning (ADR-0036), the pack document by its Markdown model (#260), asset files and templates
+ * by SHA-256.
  *
- * <p>The built-in pack's six sidecars anchor {@code path} at {@code assets/} since open-packs#75, so nothing is pinned
- * against it and it round-trips as it stands. The manifest's derived fields are verified on both sides
- * ({@link PackManifests#stale}) and the rest of it compared by meaning. A pinned refusal is one per file: the file's
- * reasons in the store's order, joined by {@code "; "}, as the gate pins them.
+ * <p>The manifest's derived fields are verified on both sides ({@link PackManifests#stale}) and the rest of it compared
+ * by meaning. A pinned refusal is one per file: the file's reasons in the store's order, joined by {@code "; "}, as the
+ * gate pins them.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout.
+ * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}) until WP07 moves it; it reads no checkout.
  */
 @Tag("open-packs")
-class WholePackOpenPacksRoundTripTest {
-
-    /** Fail with the pin's own message rather than as a count or diff mismatch when the checkout is at another commit. */
-    @BeforeAll
-    static void theCheckoutIsAtThePin() {
-        OpenPacksCorpus.assertPinned();
-    }
+class WholePackExamplesRoundTripTest {
 
     private static final String BUILT_IN = "built-in";
     private static final String SIDECAR_SUFFIX = ".asset.yaml";
@@ -70,7 +63,7 @@ class WholePackOpenPacksRoundTripTest {
 
     private static List<Path> packDirectories() throws IOException {
         List<Path> packs = new ArrayList<>();
-        try (Stream<Path> dirs = Files.list(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> dirs = Files.list(ExamplePacks.packsDirectory())) {
             dirs.filter(dir -> Files.isRegularFile(dir.resolve(PackFileSet.PACK_YAML)))
                     .sorted()
                     .forEach(packs::add);
@@ -107,7 +100,7 @@ class WholePackOpenPacksRoundTripTest {
         return out;
     }
 
-    // ---- every real pack -----------------------------------------------------------------------------------------
+    // ---- every example pack --------------------------------------------------------------------------------------
 
     @Test
     void everyRealPackLoadsWithItsPinnedRefusalsAndEveryCleanPackRoundTripsWhole(@TempDir Path host)
@@ -141,8 +134,7 @@ class WholePackOpenPacksRoundTripTest {
      * failures ({@code known-failures.yaml}), which can only pin the open-packs built-in pack, and hold none at this pin.
      */
     private List<String> unpinned(Path pack, WholePackStore.LoadedPack loaded) {
-        Set<String> pinned =
-                pack.equals(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN)) ? pinnedRefusals() : Set.of();
+        Set<String> pinned = pack.equals(ExamplePacks.pack(BUILT_IN)) ? pinnedRefusals() : Set.of();
         Set<String> actual = refusalsByFile(loaded);
         List<String> out = new ArrayList<>();
         actual.stream()
@@ -272,55 +264,44 @@ class WholePackOpenPacksRoundTripTest {
                 : List.of(pack + "/" + file + " is written with sha256 " + written + ", not " + source);
     }
 
-    // ---- pinned counts -------------------------------------------------------------------------------------------
+    // ---- counts -------------------------------------------------------------------------------------------------
 
     /**
-     * Acceptance check 1: what the open packs hold of our kinds at the pin. A pack with a {@code pack.yaml} is included
-     * from its whole-pack load; the
-     * {@code qa} and {@code event-driven} packs have none, so no store loads them, and they are counted from the
-     * {@link PackFileSet} listing any load reads. The internal pack's whole-pack load time is logged (NFR-004), not
+     * What each example pack holds of the asset and template kinds, counted three ways that must agree: from the loaded
+     * aggregate, from the {@link PackFileSet} listing, and from the files without the store. Built-in carries the
+     * sidecars, one binary payload and the templates (ADR-0070); its whole-pack load time is logged (NFR-004), not
      * asserted.
      */
     @Test
     void theAssetAndTemplateCountsOfEveryPackArePinned() throws IOException {
-        Path openPacks = OpenPacksCorpus.packsDirectory();
-        long start = System.nanoTime();
-        WholePackStore.LoadedPack internal = store.load(openPacks.resolve("internal"));
-        long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
-        System.out.println("NFR-004 whole-pack load of open-packs internal: " + elapsedMillis + " ms ("
-                + internal.pack().assetFiles().stream()
-                        .mapToInt(file -> file.payload().size())
-                        .sum()
-                + " payload bytes)");
+        Map<String, Counts> loaded = new LinkedHashMap<>();
+        for (Path pack : packDirectories()) {
+            long start = System.nanoTime();
+            WholePackStore.LoadedPack read = store.load(pack);
+            System.out.println("NFR-004 whole-pack load of example " + pack.getFileName() + ": "
+                    + (System.nanoTime() - start) / 1_000_000 + " ms");
+            Counts counts = countsOf(read);
+            assertThat(listed(pack)).as("%s listed", pack.getFileName()).isEqualTo(counts);
+            assertThat(countedOnDisk(pack)).as("%s on disk", pack.getFileName()).isEqualTo(counts);
+            loaded.put(String.valueOf(pack.getFileName()), counts);
+            if (pack.equals(ExamplePacks.pack(BUILT_IN))) {
+                assertThat(binaryExtensions(read)).containsExactly(".png");
+            }
+        }
 
-        assertThat(countsOf(internal)).isEqualTo(new Counts(10, 10, 4, 0));
-        assertThat(binaryExtensions(internal)).containsExactly(".otf", ".otf", ".otf", ".png");
-        // qa's mission type holds ten templates (#194: a mission type's templates are templates).
-        assertThat(listed(openPacks.resolve("qa"))).isEqualTo(new Counts(3, 3, 0, 10));
-        assertThat(listed(openPacks.resolve("event-driven"))).isEqualTo(new Counts(1, 1, 0, 0));
-        assertThat(listed(openPacks.resolve("internal"))).isEqualTo(countsOf(internal));
-
-        // The counts read from the files, without the store, match what the store and the listing report.
-        Counts internalOnDisk = countedOnDisk(openPacks.resolve("internal"));
-        assertThat(internalOnDisk.sidecars()).as("internal holds sidecars").isPositive();
-        assertThat(countsOf(internal)).as("internal").isEqualTo(internalOnDisk);
-        Counts qaOnDisk = countedOnDisk(openPacks.resolve("qa"));
-        assertThat(qaOnDisk.sidecars()).as("qa holds sidecars").isPositive();
-        assertThat(listed(openPacks.resolve("qa"))).as("qa").isEqualTo(qaOnDisk);
+        assertThat(loaded)
+                .containsExactly(
+                        Map.entry(BUILT_IN, new Counts(3, 4, 1, 6)),
+                        Map.entry(ExamplePacks.ORG, new Counts(0, 0, 0, 0)),
+                        Map.entry(ExamplePacks.PROJECT, new Counts(0, 0, 0, 0)));
     }
 
-    /**
-     * #194: what built-in and internal hold of procedures and toolguides at the pin, each toolguide with its guide.
-     * {@code qa} is counted file by file by {@code ProcedureAndGuideCorpusTest}.
-     */
+    /** #194: what each example pack holds of procedures and toolguides, each toolguide with its guide. */
     @Test
-    void theProcedureAndToolguideCountsOfEveryWholePackArePinned() {
-        Path openPacks = OpenPacksCorpus.packsDirectory();
-        Map<String, Path> packs = new LinkedHashMap<>();
-        packs.put(BUILT_IN, openPacks.resolve(BUILT_IN));
-        packs.put("internal", openPacks.resolve("internal"));
+    void theProcedureAndToolguideCountsOfEveryWholePackArePinned() throws IOException {
         Map<String, List<Integer>> counts = new LinkedHashMap<>();
-        packs.forEach((name, pack) -> {
+        for (Path pack : packDirectories()) {
+            String name = String.valueOf(pack.getFileName());
             WholePackStore.LoadedPack loaded = store.load(pack);
             List<Toolguide> toolguides = loaded.pack().artifacts(ArtifactKind.TOOLGUIDE).stream()
                     .map(Toolguide.class::cast)
@@ -331,9 +312,13 @@ class WholePackOpenPacksRoundTripTest {
             counts.put(
                     name,
                     List.of(loaded.pack().artifacts(ArtifactKind.PROCEDURE).size(), toolguides.size()));
-        });
+        }
 
-        assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(66, 19)), Map.entry("internal", List.of(17, 3)));
+        assertThat(counts)
+                .containsExactly(
+                        Map.entry(BUILT_IN, List.of(2, 1)),
+                        Map.entry(ExamplePacks.ORG, List.of(0, 0)),
+                        Map.entry(ExamplePacks.PROJECT, List.of(0, 0)));
     }
 
     /** The counts as {@link PackFileSet} lists the files, without the store. */
@@ -422,17 +407,17 @@ class WholePackOpenPacksRoundTripTest {
         }
     }
 
-    // ---- built-in, as pinned ------------------------------------------------------------------------------------
+    // ---- built-in ----------------------------------------------------------------------------------------------
 
     /**
-     * Acceptance checks 2 and 3, now on the real pack: built-in loads clean with every kind it holds, nothing is pinned
+     * Acceptance checks 2 and 3, on the built-in example pack: built-in loads clean with every kind it holds, nothing is pinned
      * against it, and it round-trips whole with its manifest fresh on both sides. A copy with one sidecar put back to the
      * old root anchor is refused for exactly that file, so a load that stopped judging payloads cannot pass here.
      */
     @Test
     void theBuiltInPackRoundTripsWholeWhileASidecarPutBackToTheRootAnchorIsRefused(@TempDir Path host)
             throws IOException {
-        Path builtIn = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        Path builtIn = ExamplePacks.pack(BUILT_IN);
         long start = System.nanoTime();
         WholePackStore.LoadedPack loaded = store.load(builtIn);
         System.out.println("NFR-004 whole-pack load of the built-in pack, manifest included: "
@@ -446,9 +431,9 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())
                 .as("every constituent: #194 binds procedures, so every listed kind is modelled")
-                .hasSize(310);
+                .hasSize(21);
         // Two top-level templates and 25 mission-type templates (#194).
-        assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 27));
+        assertThat(countsOf(loaded)).isEqualTo(new Counts(3, 4, 1, 6));
         assertThat(loaded.pack().templates())
                 .filteredOn(template -> template.missionType().isEmpty())
                 .extracting(template -> template.id().value())
@@ -458,14 +443,13 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(payloadsLeftUnmodelled(builtIn, loaded)).isEmpty();
 
         Path copy = copyTree(builtIn, host.resolve("root-anchored").resolve(BUILT_IN));
-        String file = "assets/audiences/line_manager.md" + SIDECAR_SUFFIX;
+        String file = "assets/logo.png" + SIDECAR_SUFFIX;
         String sidecar = Files.readString(copy.resolve(file));
-        assertThat(sidecar).contains("\npath: audiences/line_manager.md");
+        assertThat(sidecar).contains("\npath: logo.png");
         Files.writeString(copy.resolve(file), sidecar.replace("\npath: ", "\npath: assets/"));
 
         assertThat(refusalsByFile(store.load(copy)))
-                .containsExactly(
-                        file + ": " + REFUSED + "payload assets/assets/audiences/line_manager.md does not exist");
+                .containsExactly(file + ": " + REFUSED + "payload assets/assets/logo.png does not exist");
     }
 
     private static Path copyTree(Path source, Path target) throws IOException {
@@ -502,8 +486,8 @@ class WholePackOpenPacksRoundTripTest {
     }
 
     /**
-     * #190: every agent-profile file of every real pack is in the aggregate, so a walk that missed them cannot pass.
-     * Every pack has a {@code pack.yaml} at this pin, so {@code qa}'s profiles are counted here too.
+     * #190: every agent-profile file of every example pack is in the aggregate, so a walk that missed them cannot
+     * pass.
      */
     @Test
     void everyAgentProfileFileOfARealPackLoadsAsAProfile() throws IOException {
@@ -525,7 +509,7 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(loaded).isEqualTo(onDisk);
         assertThat(loaded.values().stream().mapToInt(Integer::intValue).sum())
-                .as("the 26 built-in profiles and qa's 5")
-                .isEqualTo(31);
+                .as("built-in's five profiles, org-base's one and project's one")
+                .isEqualTo(7);
     }
 }

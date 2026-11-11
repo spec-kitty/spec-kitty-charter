@@ -1,0 +1,11 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: drg-migration-v1
+nodes:
+- urn: step_enhancement:plan-risk-notes
+  kind: step_enhancement
+  label: plan-risk-notes
+edges:
+- source: step_enhancement:plan-risk-notes
+  target: action:software-dev/plan
+  relation: enhances

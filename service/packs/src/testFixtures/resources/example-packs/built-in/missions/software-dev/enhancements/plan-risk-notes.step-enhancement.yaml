@@ -1,0 +1,5 @@
+schema_version: "1.0"
+id: plan-risk-notes
+prompt_fragments:
+  - slot: spdd:reasons-block
+    path: plan-risk-notes.prompt-fragment.md
