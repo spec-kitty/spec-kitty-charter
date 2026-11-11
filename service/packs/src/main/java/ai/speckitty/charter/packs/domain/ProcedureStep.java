@@ -27,7 +27,7 @@ public record ProcedureStep(
         Optional<String> onSuccess,
         Optional<String> onFailure) {
 
-    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9-]*$");
+    private static final Pattern ROLE_SHAPE = Pattern.compile("^[a-z][a-z0-9-]*$");
 
     private static final ModularRuleset<String> TITLE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of("A procedure step needs a title that is not blank.", text -> !text.isBlank()));
@@ -35,7 +35,8 @@ public record ProcedureStep(
     private static final ModularRuleset<Optional<String>> ROLE_RULES = ModularRuleset.<Optional<String>>emptyRules()
             .must(Constraints.of(
                     "A procedure step role must match ^[a-z][a-z0-9-]*$.",
-                    token -> token.map(text -> ROLE.matcher(text).matches()).orElse(true)));
+                    token -> token.map(text -> ROLE_SHAPE.matcher(text).matches())
+                            .orElse(true)));
 
     /**
      * Checks that required fields are present and the role, when present, is a role token.

@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 public final class CascadeScope {
 
     /** The contract's token for every kind. */
-    public static final String ALL = "all";
+    public static final String ALL_TOKEN = "all";
 
     private static final CascadeScope NONE = new CascadeScope(false, Set.of());
 
@@ -67,8 +67,8 @@ public final class CascadeScope {
         if (tokens.isEmpty()) {
             return new Parsed(NONE, List.of());
         }
-        if (tokens.contains(ALL)) {
-            return tokens.stream().allMatch(ALL::equals)
+        if (tokens.contains(ALL_TOKEN)) {
+            return tokens.stream().allMatch(ALL_TOKEN::equals)
                     ? new Parsed(all(), List.of())
                     : refused(new RefusalViolation(
                             "/cascade",

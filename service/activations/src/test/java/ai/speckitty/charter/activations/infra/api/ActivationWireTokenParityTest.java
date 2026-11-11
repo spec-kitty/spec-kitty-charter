@@ -57,12 +57,12 @@ class ActivationWireTokenParityTest {
                     Arrays.stream(ArtifactKind.values())
                             .filter(ArtifactKind::activatable)
                             .map(ArtifactKind::token),
-                    Stream.of(CascadeScope.ALL))
+                    Stream.of(CascadeScope.ALL_TOKEN))
             .toList();
 
     private static List<Pair> pairs() {
         return List.of(
-                // No Java enum stands behind CascadeKind: it is ArtifactKind.activatable plus CascadeScope.ALL.
+                // No Java enum stands behind CascadeKind: it is ArtifactKind.activatable plus CascadeScope.ALL_TOKEN.
                 new Pair("CascadeKind", ACTIVATABLE_AND_ALL, CASCADE_KINDS, token -> member(CASCADE_KINDS, token)),
                 new Pair(
                         "EffectiveArtifactState",

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  */
 public record Revision(String token) {
 
-    private static final Pattern TOKEN = Pattern.compile("sha256:[0-9a-f]{64}");
+    private static final Pattern TOKEN_SHAPE = Pattern.compile("sha256:[0-9a-f]{64}");
 
     /**
      * Checks the token.
@@ -25,7 +25,7 @@ public record Revision(String token) {
      */
     public Revision {
         Objects.requireNonNull(token, "token");
-        if (!TOKEN.matcher(token).matches()) {
+        if (!TOKEN_SHAPE.matcher(token).matches()) {
             throw new IllegalArgumentException("A revision is sha256: and 64 lowercase hex characters.");
         }
     }
@@ -47,7 +47,7 @@ public record Revision(String token) {
      * @return the revision; empty when the text is not one
      */
     public static Optional<Revision> parse(String text) {
-        return TOKEN.matcher(text).matches() ? Optional.of(new Revision(text)) : Optional.empty();
+        return TOKEN_SHAPE.matcher(text).matches() ? Optional.of(new Revision(text)) : Optional.empty();
     }
 
     private static MessageDigest sha256() {

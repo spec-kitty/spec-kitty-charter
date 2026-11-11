@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public sealed interface GuardImplementation permits GuardImplementation.Builtin, GuardImplementation.AssetBacked {
 
     /** {@code builtin:<id>}, {@code asset:<id>} or {@code <pack>::asset:<id>}. */
-    Pattern SPELLING = Pattern.compile("builtin:(" + IdentifierGrammar.SLUG + ")|(?:(" + IdentifierGrammar.SLUG
+    Pattern SPELLING_SHAPE = Pattern.compile("builtin:(" + IdentifierGrammar.SLUG + ")|(?:(" + IdentifierGrammar.SLUG
             + ")::)?asset:([A-Za-z0-9_/.-]++)");
 
     /** The longest pack name an asset-backed spelling may qualify with (#440). */
@@ -34,7 +34,7 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
             throw new IllegalArgumentException(
                     "implemented_by names a pack longer than " + MAX_PACK_LENGTH + " characters");
         }
-        Matcher m = SPELLING.matcher(text);
+        Matcher m = SPELLING_SHAPE.matcher(text);
         if (!m.matches()) {
             throw new IllegalArgumentException("implemented_by '" + text + "' is neither builtin:<id> nor asset:<id>");
         }
