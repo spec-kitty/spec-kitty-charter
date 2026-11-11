@@ -21,4 +21,16 @@ object ContractBundleFile {
         }
         return repositoryRoot.toPath().toAbsolutePath().resolve(contractBundle).normalize().toFile()
     }
+
+    /**
+     * The bundle file itself, for the build to package.
+     *
+     * @param bundle what [resolve] returned
+     * @throws IllegalStateException when nothing there is a regular file: packaging a missing bundle would pass the build
+     * and ship a service with no contract document
+     */
+    fun requireFile(bundle: File): File {
+        check(bundle.isFile) { "-PcontractBundle names no file: ${bundle.path}" }
+        return bundle
+    }
 }
