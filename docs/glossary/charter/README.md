@@ -959,7 +959,7 @@ A named, ordered list of mission-action steps with declared entry conditions, ex
 
 ## Asset
 
-A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040). Decided, not built yet: an optional `executable` block makes the asset able to implement a guard (ADR-0054 decision 5).
+A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused, and so is one whose `path` leaves `assets/`, as an escape. Its `mime` is metadata and never decides how the payload is read (ADR-0040). Decided, not built yet: an optional `executable` block makes the asset able to implement a guard (ADR-0054 decision 5).
 
 **Meta:**
 

@@ -332,8 +332,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * The unmodelled files that no violation of the pack already accounts for: one fault, one violation. An
-     * enhancement file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the
+     * The unmodelled files that no violation of the pack already accounts for: one fault, one violation. A file the
+     * store refused with a violation of its own (an asset sidecar whose payload it does not hold, #382) is not listed
+     * again as unmodelled. An enhancement file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the
      * model, so it is unmodelled, and so are the fragments beside it; but the fault is already reported at the
      * enhancement, so neither the file nor the fragments of its directory are listed again. A genuinely unmodelled file
      * elsewhere stays listed, and so does an orphan fragment beside an enhancement that is held.
@@ -348,7 +349,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             }
         }
         return unmodelled.stream()
-                .filter(file -> !(file.endsWith(ENHANCEMENT_SUFFIX) && reportedFiles.contains(file)))
+                .filter(file -> !reportedFiles.contains(file))
                 .filter(file -> !(FRAGMENT_FILE.matcher(file).matches()
                         && refusedDirectories.contains(file.substring(0, file.lastIndexOf('/') + 1))))
                 .toList();

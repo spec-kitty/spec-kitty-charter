@@ -34,6 +34,8 @@ files:
   - PackRegistrationStatus.accepted.yaml
   - PackRegistrationStatus.succeeded.yaml
   - PackRegistrationStatus.version-conflict.yaml
+  - PackRegistrationStatus.asset-path-escape.yaml
+  - PackRegistrationStatus.fragment-body-path-escape.yaml
   - Artifact.mission-type.yaml
   - Artifact.mission-step-contract.yaml
   - MissionStep.specify.yaml
