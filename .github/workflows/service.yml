@@ -2,7 +2,7 @@ name: service
 
 # The charter service build: the charter's own contract checks (lint, bundle, closed response
 # objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
-# contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
+# contracts, the example-pack round-trip, the aggregated Javadoc and coverage
 # (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
 # The git-source job runs the real-git tests of the git source (:packs:gitHostTest, tag `git-host`) on a git of 2.50.1 or
 # later, which verifyAll leaves out.
@@ -107,13 +107,13 @@ jobs:
 
       # packs/internal and packs/qa are not committed: sync them from the checkout above and verify their digests
       # against packs/open-packs.lock.yaml. Fails closed, so a pin bump without the lockfile update is red. The tests
-      # read the open-packs checkout directly; this step is what guards the lockfile and the sync itself.
+      # read the charter-owned example packs (ADR-0070), never this checkout; the sync is for governance only.
       - name: Sync and verify the packs
         run: ./gradlew syncPacks -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
 
       # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
       - name: Verify
-        run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew verifyAll -PrequireSymlinks=true
 
       # The aggregated Javadoc (:charter-reports:aggregateJavadoc), published by docs-site.yml.
       - name: Upload the Javadoc

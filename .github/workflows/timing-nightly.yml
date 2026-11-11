@@ -6,13 +6,13 @@ name: CPU-time budgets (nightly)
 # budget measures the runner as much as the code. This workflow has only the schedule and workflow_dispatch
 # triggers, so no pull-request run invokes it or waits for it.
 # - The budgets run alone on the runner (./gradlew :packs:timingBudgets :activations:timingBudgets --no-parallel), with
-#   the same open-packs and symlink properties as service.yml's Verify. Their correctness checks gate in Verify.
+#   the same symlink property as service.yml's Verify. Their correctness checks gate in Verify.
 # - A failure in the report-only budget step never fails the job: the next step raises a warning and a job-summary
 #   line. The budgets are pull-only: no issue is opened and nobody is notified of an overrun; a slowdown that persists
 #   across nights, seen on the Actions page, is the signal to file an issue. The test classes compile in a gating step
 #   first, so breakage before the measurements (compile, dependency verification)
 #   fails the job rather than being reported as a budget failure.
-# spec-kitty-open-packs is checked out at the pin and synced, as in service.yml: the packs tests read it.
+# spec-kitty-open-packs is checked out at the pin and synced, as in service.yml, for governance; the tests read the example packs (ADR-0070).
 
 on:
   schedule:
@@ -73,13 +73,13 @@ jobs:
       # Compiled first and outside the report-only step, so a compile error or a dependency-verification failure fails
       # the job instead of reading as a budget over its limit. A red nightly notifies like any failed scheduled run.
       - name: Compile the budget tests
-        run: ./gradlew :packs:testClasses :activations:testClasses -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew :packs:testClasses :activations:testClasses -PrequireSymlinks=true
 
       # Report-only (ADR-0057): a budget over its limit never fails the job; the next step makes it visible.
       - name: Check the CPU-time budgets (report-only)
         id: timing
         continue-on-error: true
-        run: ./gradlew :packs:timingBudgets :activations:timingBudgets --no-parallel -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew :packs:timingBudgets :activations:timingBudgets --no-parallel -PrequireSymlinks=true
 
       - name: Report a CPU-time budget over its limit
         if: steps.timing.outcome == 'failure'

@@ -32,17 +32,16 @@ How to build the charter service and run every check CI runs.
 - **Java 25.** Gradle never downloads a toolchain (`org.gradle.java.installations.auto-download=false`).
   A machine without Java 25 can pass `-Pcharter.javaVersion=21` for a local build; CI never
   does.
-- **A `spec-kitty-open-packs` checkout**, by default beside this repository
-  (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`: an absolute path, or
-  one relative to the repository root. The checkout must be
-  clean and at the `openPacksRef` in `gradle.properties` (the pinned commit); the build refuses otherwise, and prints the
-  command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
-  stash or clean the checkout).
-- **The synced packs**, once per worktree: `./gradlew syncPacks`. `packs/internal` and `packs/qa` are not
-  committed; they are copied from that open-packs checkout at the pin and checked against
-  `packs/open-packs.lock.yaml`. They are needed for this repository's own Spec Kitty governance
-  (`.kittify/config.yaml` and the `qa-*` agent profiles), not for `verifyAll`: the build and its tests read the
-  open-packs checkout directly. See [Syncing the packs](#syncing-the-packs).
+- **No open-packs checkout for the build.** `verifyAll` and every required check read the charter-owned example packs
+  in `service/packs/src/testFixtures/resources/example-packs` ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)).
+  A `spec-kitty-open-packs` checkout (by default beside this repository, `../spec-kitty-open-packs`, or anywhere with
+  `-PopenPacksDir=<path>`, absolute or relative to the repository root) is needed only for two things:
+  `./gradlew syncPacks`, for this repository's own Spec Kitty governance, and the nightly
+  [open-packs drift watch](#the-open-packs-drift-watch) (`.github/workflows/open-packs-drift.yml`).
+- **The synced packs**, once per worktree, for governance only: `./gradlew syncPacks`. `packs/internal` and `packs/qa`
+  are not committed; they are copied from the open-packs checkout at the `openPacksRef` pin in `gradle.properties` and
+  checked against `packs/open-packs.lock.yaml`. They are needed for this repository's own Spec Kitty governance
+  (`.kittify/config.yaml` and the `qa-*` agent profiles), not for `verifyAll`. See [Syncing the packs](#syncing-the-packs).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
   last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
   you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
@@ -80,8 +79,9 @@ How to build the charter service and run every check CI runs.
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
 | `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
-| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the pinned `internal` and `qa` packs are read from the same checkout. It fails, never skips, without a checkout |
-| `:deployable:openPacksProfiles` | Every agent profile of the pinned open-packs checkout is read through the whole service (part of `check`, so `verifyAll`). It fails, never skips, without a checkout |
+| `:packs:test`, `:deployable:test` (example packs) | The corpus tests over the charter-owned example packs ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)): every artifact file reads back equal after a write, and the coverage tests (`ExamplePackCoverageTest`, `ExampleCoverageTest`) fail when the examples stop exercising a kind, field or edge the model has |
+| `:packs:wholePackRoundTrip` | The whole-pack round-trip gate over the example packs (not part of `check`; CI requires it, see [below](#the-whole-pack-round-trip-gate)) |
+| `:packs:driftTest` | Not required and not run by `check` (which only compiles and lints it): the nightly [open-packs drift watch](#the-open-packs-drift-watch) |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -127,7 +127,6 @@ PIT mutates the service's logic and checks each module's mutation score against 
 It is its own task, never part of `check` or `verifyAll`:
 
 ```bash
-# packs reads the synced open-packs checkout (-PopenPacksDir; see "Syncing the packs")
 ./gradlew pitest --continue                            # every mutated module
 ./gradlew :kernel:pitest                               # one module
 ```
@@ -152,7 +151,7 @@ Kernel, missions and profiles apply the plugin through `charter.domain-conventio
 profiles-edge apply it directly (profiles-edge cannot take the domain convention: its rings carry external
 dependencies).
 Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
-PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
+PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `whole-pack`, `git-host` or
 `timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
 before `infra.fetch` joined it and about 2 minutes more with it; kernel, missions and profiles together take about
 3 minutes, so the whole run takes about 51 minutes. That figure is approximate and does not count `profiles-edge`
@@ -208,8 +207,8 @@ git clone https://github.com/spec-kitty/spec-kitty-open-packs.git ../spec-kitty-
 `syncPacks` runs `scripts/packs/sync_packs.py`, which also runs as a bare `python3 scripts/packs/sync_packs.py`. It reads
 `packs/internal` and `packs/qa` at `openPacksRef` with `git archive`, never from the checkout's working tree, so a dirty
 checkout cannot leak in. It then compares each tree's digest with `packs/open-packs.lock.yaml`, whose header defines the
-algorithm. A mismatch fails and leaves the synced trees as they were. The tests read the open-packs checkout directly
-and need no synced copy; CI runs the sync to guard the lockfile.
+algorithm. A mismatch fails and leaves the synced trees as they were. The tests read the charter-owned example packs and
+need neither the checkout nor a synced copy; CI runs the sync to guard the lockfile.
 
 Bumping the pin is one commit:
 
@@ -222,14 +221,26 @@ Bumping the pin is one commit:
 
 Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-kitty-open-packs and arrives with a pin bump.
 
+## The open-packs drift watch
+
+```bash
+./gradlew :packs:driftTest -PopenPacksDir=<path>   # any spec-kitty-open-packs checkout, usually main
+```
+
+`driftTest` is its own source set ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)):
+`check` compiles and lints it but never runs it, and no required check runs it. It puts every pack of the checkout
+through the whole-pack round trip below, with no expected-red baseline, and also reports the files the store does not
+model and the load warnings. The nightly `.github/workflows/open-packs-drift.yml` runs it against open-packs `main` and
+opens or comments on an `open-packs-drift` issue when it is red.
+
 ## The whole-pack round-trip gate
 
 ```bash
-./gradlew :packs:wholePackRoundTrip          # needs the pinned spec-kitty-open-packs checkout
+./gradlew :packs:wholePackRoundTrip          # reads the example packs; no open-packs checkout
 ```
 
 The gate ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187), epic
-[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of the pinned built-in pack
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of the built-in example pack
 into the domain, writes it to a fresh directory through the storage service, reads it back, and compares each
 written file with its source **by meaning**, as [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
 defines it: quoting, comments, layout and key order do not count, and for a declared field an absent value, `null`
