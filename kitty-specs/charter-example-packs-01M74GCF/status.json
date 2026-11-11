@@ -65,7 +65,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree ../charter-WP02",
-        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
+        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green.",
+        "Approved. Round trip over example packs green (8 tests). Expected-red holds only policy (#476); exclusions emptied, empty_kinds empty. Minor: the impacts edge moved to project/ (not round-tripped) and built-in edge became suggests to dodge #477; failing control confirmed: restoring impacts in built-in turns theBuiltInPackRoundTripsAsExpected red. Keep #476/#477 open."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
