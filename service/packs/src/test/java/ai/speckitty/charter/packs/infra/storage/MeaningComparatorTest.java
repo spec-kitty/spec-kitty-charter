@@ -67,6 +67,9 @@ class MeaningComparatorTest {
                     .isPresent();
             assertThat(compare("agent-profile", "id: x\nexcluding:\n  alt-roles: []\n", "id: x\n"))
                     .isPresent();
+            assertThat(compare(
+                            "policy", "schema_version: 1\nartifacts:\n  agent_profile:x: []\n", "schema_version: 1\n"))
+                    .isPresent();
             // and a declared object with one value is not empty
             assertThat(compare("agent-profile", "id: x\nctx:\n  frameworks: [spring]\n", "id: x\n"))
                     .isPresent();
