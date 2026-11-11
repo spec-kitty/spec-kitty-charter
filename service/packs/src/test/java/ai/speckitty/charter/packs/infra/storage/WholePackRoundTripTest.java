@@ -192,6 +192,9 @@ class WholePackRoundTripTest {
             throw new UncheckedIOException(e);
         }
         SortedMap<String, String> withReadme = WholePackCensus.of(copy);
+        assertThat(withReadme)
+                .as("the planted README is in the census, so the next line is not a vacuous null check")
+                .containsKey("missions/software-dev/templates/README.md");
         assertThat(withReadme.get("missions/software-dev/templates/README.md"))
                 .as("an orientation README is not a template")
                 .isNotEqualTo("template");
@@ -532,13 +535,20 @@ class WholePackRoundTripTest {
         Map<String, Optional<String>> observed = observe(
                 new DomainRoundTrip(lossy), pack, temp.resolve("lossy"), census, new TreeMap<>(), new TreeSet<>());
 
-        List<String> withPurpose = census.entrySet().stream()
+        List<String> declaringPurpose = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("tactic"))
                 .map(Map.Entry::getKey)
                 .filter(path -> read(pack.resolve(path)).lines().anyMatch(line -> line.startsWith("purpose:")))
+                .toList();
+        List<String> withPurpose = declaringPurpose.stream()
                 .filter(path -> faithful.get(path).isEmpty())
                 .toList();
-        assertThat(withPurpose).as("green tactics that declare a purpose").hasSize(3);
+        assertThat(declaringPurpose)
+                .as("tactics of the example pack that declare a purpose")
+                .isNotEmpty();
+        assertThat(withPurpose)
+                .as("every one of them is green in the faithful run")
+                .isEqualTo(declaringPurpose);
         assertThat(withPurpose)
                 .allSatisfy(path -> assertThat(observed.get(path))
                         .as(path)
