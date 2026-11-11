@@ -14,8 +14,7 @@ intent: >-
   (operator ruling, epic #186, 2026-10-28); the core-oracle and
   core-compatibility clauses return when the service is incorporated into
   core, and that work is planned then. Also never traded away:
-  spec-kitty-open-packs YAML content always round-trips without loss of
-  meaning (ADR-0036: meaning, not bytes, so formatting and comments may
+  pack YAML always round-trips without loss of meaning, proven on charter's own example packs (spec-kitty-open-packs proves its content against a pinned charter release, ADR-0070), (ADR-0036: meaning, not bytes, so formatting and comments may
   change), and no unverified dependency enters the build. No exception is
   granted for the first two failures.
 enforcement: required
@@ -36,11 +35,10 @@ procedures:
     the contract's versioning rules (ADR-0022): a break lands only on a 0.x
     minor with a `### Breaking` CHANGELOG entry, and no released contract is
     broken incompatibly.
-  - Keep the open-packs round trip (openPacksRoundTrip) green and never
-    skipped; a change that cannot round-trip every open-packs YAML file, by
-    meaning (ADR-0036), does not merge. A file on the gate's self-expiring
-    known-failure list, keyed to an open spec-kitty-open-packs issue, waits on
-    an upstream pack fix and is not a skip; the gate fails once it passes.
+  - Keep the whole-pack round trip over charter's example packs green and never
+    skipped; a change that cannot round-trip every example-pack file, by meaning
+    (ADR-0036), does not merge. A shape change updates the example packs in the
+    same commit (ADR-0070); no test reads spec-kitty-open-packs content.
   - Admit a dependency only with strict SHA-256 entries in
     gradle/verification-metadata.xml.
   - For any other risk, an exception names its scope, the reason, the approver
@@ -50,7 +48,7 @@ integrity_rules:
   - An exception, waiver, skip or deferral that touches fidelity to the
     charter's own model, contract and packs, or the contract's versioning
     rules, is invalid regardless of who approves it.
-  - Skipping or quarantining the open-packs round trip, or disabling
+  - Skipping or quarantining the whole-pack round trip over charter's example packs, or disabling
     dependency verification, to reach green is non-compliant.
   - An exception for any other risk without scope, reason, approver and sunset
     or review date is non-compliant.

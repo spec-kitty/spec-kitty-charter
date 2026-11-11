@@ -6,7 +6,7 @@ purpose: Report test runs exactly as they ran.
 schema_version: '1.0'
 steps:
 - description: No test or scenario is skipped, disabled or quarantined to make a
-    run pass; the open-packs round trip is never skipped.
+    run pass; the whole-pack round trip over charter's example packs is never skipped.
   title: Never reach green by skipping
 - description: A pull request's Tests run section states what was run, the pass,
     fail and skip counts, and anything that did not run; a missing report is 

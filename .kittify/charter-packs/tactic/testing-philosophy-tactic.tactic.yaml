@@ -10,10 +10,10 @@ steps:
     contracts/charter/scenarios/; a failing scenario or unit test comes before 
     production code.
   title: Specify behavior by example first
-- description: Every spec-kitty-open-packs YAML file round-trips through the 
-    file-based layer (openPacksRoundTrip), with per-pack diagnostics asserted; 
-    it is never skipped.
-  title: Round-trip the real corpus
+- description: Every file of charter's own example packs round-trips through the
+    file-based layer (wholePackRoundTrip); it is never skipped, and no test reads
+    spec-kitty-open-packs content (ADR-0070).
+  title: Round-trip the example packs
 - description: No fake green, no skipped or quarantined tests to reach green; 
     assertions on outcomes, not implementation details.
   title: Keep tests meaningful

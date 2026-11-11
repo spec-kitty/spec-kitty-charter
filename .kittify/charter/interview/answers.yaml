@@ -17,15 +17,16 @@ answers:
   testing_requirements: >-
     Test first: a failing scenario in contracts/charter/scenarios/ or a
     failing unit test comes before production code. Every contract operation
-    is pinned by BDD scenarios; every spec-kitty-open-packs YAML file
-    round-trips through the file-based layer (openPacksRoundTrip, never
-    skipped). Tests must be meaningful: no fake green, no skipped or
+    is pinned by BDD scenarios; every file of charter's own example packs
+    round-trips through the file-based layer (wholePackRoundTrip, never
+    skipped); tests read only charter-owned example packs, never
+    spec-kitty-open-packs content (ADR-0070). Tests must be meaningful: no fake green, no skipped or
     quarantined tests to reach green, assertions on outcomes rather than
     implementation details, and test quality is reviewed like production code.
   quality_gates: >-
     Before merge: ./gradlew verifyAll on Java 25 (contract validation and
-    generation, unit tests, the ArchUnit gate, BDD scenarios, the open-packs
-    round-trip) with strict SHA-256 dependency verification; CI never builds
+    generation, unit tests, the ArchUnit gate, BDD scenarios, the whole-pack
+    round trip over charter's example packs, ADR-0070) with strict SHA-256 dependency verification; CI never builds
     with -Pcharter.javaVersion=21. A Java linter / style check on the
     hand-written sources (to be wired into verifyAll; until then reviewers
     apply the java-conventions styleguide). The docs checks: check_docs.py
@@ -61,8 +62,9 @@ answers:
     (operator ruling, epic #186, 2026-10-28); the core-oracle and
     core-compatibility clauses return when the service is incorporated into
     core, and that work is planned then. Also never lose the meaning of
-    open-packs YAML content in a round trip (equality of meaning, not of
-    bytes: ADR-0036), and never admit an unverified dependency. These are not
+    pack YAML in a round trip (equality of meaning, not of bytes: ADR-0036),
+    proven on charter's example packs; spec-kitty-open-packs proves its own
+    content against a pinned charter release (ADR-0070), and never admit an unverified dependency. These are not
     traded for speed.
   amendment_process: >-
     Charter changes are proposed by pull request, through /spec-kitty.charter,

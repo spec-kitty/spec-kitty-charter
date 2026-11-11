@@ -109,3 +109,4 @@ Not chosen: an optional red is ignored, and charter keeps a dependency it does n
 - [PR #474](https://github.com/spec-kitty/spec-kitty-charter/pull/474), ADR-0067, ADR-0068, ADR-0069
 - [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (round trip as equality of meaning)
 - [The example-packs plan](/plans/charter-example-packs/)
+- The open-packs validation job (decision 3): [spec-kitty-open-packs#188](https://github.com/spec-kitty/spec-kitty-open-packs/issues/188)
