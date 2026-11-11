@@ -1,20 +1,20 @@
 {
-  "event_count": 43,
-  "last_event_id": "01M74PPC59D0FM0FP5AG8J74Z6",
-  "materialized_at": "2026-11-11T07:03:27.657586+00:00",
+  "event_count": 44,
+  "last_event_id": "01M74PPJWGJ1XWGTB80V4D8KNV",
+  "materialized_at": "2026-11-11T07:03:34.544820+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 4,
+    "approved": 5,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 1,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 4
   },
   "work_packages": {
@@ -122,15 +122,21 @@
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01M74PNQPYDWQRDEJYV3VDZW7W",
-      "last_transition_at": "2026-11-11T07:03:06.718977+00:00",
+      "lane": "approved",
+      "last_event_id": "01M74PPJWGJ1XWGTB80V4D8KNV",
+      "last_transition_at": "2026-11-11T07:03:34.544820+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
         "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/charter-example-packs-01M74GCF/tasks/WP04-artifact-and-mission-corpus-tests/review-cycle-1.md",
+        "reference": "review-cycle://charter-example-packs-01M74GCF/WP04-artifact-and-mission-corpus-tests/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 7693,
       "shell_pid_created_at": "1794380572.8",
