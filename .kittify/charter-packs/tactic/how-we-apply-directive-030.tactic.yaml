@@ -10,7 +10,7 @@ schema_version: '1.0'
 steps:
 - description: './gradlew verifyAll on Java 25 passes before a pull request merges:
     it runs contract validation and generation, unit tests, the ArchUnit gate, the
-    BDD scenarios and the open-packs round trip, with strict SHA-256 dependency verification.
+    BDD scenarios and the whole-pack round trip over charter's example packs, with strict SHA-256 dependency verification.
     CI never builds with -Pcharter.javaVersion=21.'
   title: Run the full verification before merge
 - description: Error Prone with NullAway in JSpecify mode and Javadoc doclint as
