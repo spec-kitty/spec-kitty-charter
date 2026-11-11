@@ -71,7 +71,7 @@ public final class ToolguideReadService {
             try {
                 return packs.load(pack).toolguides();
             } catch (CharterRefusal refused) {
-                throw packRefusal(pack, refused);
+                throw PackRefusals.packRefusal(pack, refused);
             }
         });
     }
@@ -106,7 +106,7 @@ public final class ToolguideReadService {
             if (refused.code() == RefusalCode.TOOLGUIDE_NOT_FOUND) {
                 throw refused;
             }
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
     }
 
@@ -114,20 +114,7 @@ public final class ToolguideReadService {
         try {
             return revisions.currentRevision(pack);
         } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
+            throw PackRefusals.packRefusal(pack, refused);
         }
-    }
-
-    /**
-     * A pack the storage cannot read is, to the caller, a pack that is not there; an identifier no configured pack
-     * answers to is already refused {@code PACK_NOT_FOUND} by the storage and passes through. The original
-     * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even though
-     * the 404 body names nothing of it. Any other refusal passes through.
-     */
-    private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
-        if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-            return refused;
-        }
-        return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
     }
 }

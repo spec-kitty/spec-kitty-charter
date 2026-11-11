@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -589,7 +588,7 @@ public final class ArtifactReadService {
      */
     private ConsistentRead.Verified<Item> stepContract(PackIdentifier pack, String id) {
         return read.read(STALE_ONE, () -> {
-            Pack held = asPackNotFound(pack, () -> packs.load(pack));
+            Pack held = PackRefusals.asPackNotFound(pack, () -> packs.load(pack));
             MissionStepContract contract =
                     (MissionStepContract) heldIn(held, pack, ArtifactKind.MISSION_STEP_CONTRACT, id);
             Optional<CharterArtifact> type = held.artifacts(ArtifactKind.MISSION_TYPE).stream()
@@ -603,24 +602,8 @@ public final class ArtifactReadService {
                     type.isPresent(),
                     step,
                     heldCandidates(held, contract),
-                    asPackNotFound(pack, () -> revisions.currentRevision(pack)));
+                    PackRefusals.asPackNotFound(pack, () -> revisions.currentRevision(pack)));
         });
-    }
-
-    /**
-     * The item route's one pack mapping, the one each kind's own read applies: a pack the storage cannot read (its
-     * aggregate or its revision) is, to the caller, a pack that is not there. The original refusal is kept as the
-     * cause; any other refusal passes through.
-     */
-    private static <T> T asPackNotFound(PackIdentifier pack, Supplier<T> load) {
-        try {
-            return load.get();
-        } catch (CharterRefusal refused) {
-            if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refused;
-            }
-            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
-        }
     }
 
     /** The delegation candidates of a step contract whose kind is listed and that the pack holds. */
