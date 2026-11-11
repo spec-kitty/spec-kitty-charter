@@ -555,10 +555,9 @@ Feature: The effective graph and the effective action context answer what the ac
 
   Scenario: The context holds every kind the action scopes and the activation selects, and nothing else (#484)
     #484: an action scopes a directive, a tactic, a procedure, a styleguide and a toolguide, each selected, so each is an
-    entry, active and selected. Beside each sits a control the context must not list: the directive DX and the procedure
-    px are selected but no step scopes them; the tactic t2 is scoped but not selected; the styleguide and the toolguide
-    each have both controls, s2 and g2 scoped but not selected, s3 and g3 selected but not scoped. The answer lists the
-    five in URN order and none of the seven.
+    entry, active and selected. Beside each sits both controls the context must not list: DY, t2, py, s2 and g2 are
+    scoped but not selected; DX, t3, px, s3 and g3 are selected but no step scopes them. The answer lists the five in
+    URN order and none of the ten, and the activation reads each unselected one as inactive, not selected.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -594,6 +593,14 @@ Feature: The effective graph and the effective action context answer what the ac
       intent: DX
       enforcement: required
       """
+    And the org pack "main" with the file "directives/DY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DY
+      title: DY
+      intent: DY
+      enforcement: required
+      """
     And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
@@ -607,6 +614,14 @@ Feature: The effective graph and the effective action context answer what the ac
       schema_version: '1.0'
       id: t2
       name: t2
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/t3.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: t3
+      name: t3
       steps:
         - title: Only step
       """
@@ -628,6 +643,17 @@ Feature: The effective graph and the effective action context answer what the ac
       id: px
       title: px
       description: px
+      entry_condition: A defect is reported.
+      exit_condition: The defect is fixed.
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "procedures/py.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: py
+      title: py
+      description: py
       entry_condition: A defect is reported.
       exit_condition: The defect is fixed.
       steps:
@@ -727,6 +753,9 @@ Feature: The effective graph and the effective action context answer what the ac
         target: directive:D
         relation: scope
       - source: action:software-dev/implement
+        target: directive:DY
+        relation: scope
+      - source: action:software-dev/implement
         target: tactic:t
         relation: scope
       - source: action:software-dev/implement
@@ -734,6 +763,9 @@ Feature: The effective graph and the effective action context answer what the ac
         relation: scope
       - source: action:software-dev/implement
         target: procedure:p
+        relation: scope
+      - source: action:software-dev/implement
+        target: procedure:py
         relation: scope
       - source: action:software-dev/implement
         target: styleguide:s
@@ -750,7 +782,7 @@ Feature: The effective graph and the effective action context answer what the ac
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "DX"], "tactic": ["t"], "procedure": ["p", "px"], "styleguide": ["s", "s3"], "toolguide": ["g", "g3"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "DX"], "tactic": ["t", "t3"], "procedure": ["p", "px"], "styleguide": ["s", "s3"], "toolguide": ["g", "g3"]}}
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
     Then the response status is 200
@@ -786,6 +818,14 @@ Feature: The effective graph and the effective action context answer what the ac
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/state" is "inactive"
+    And the field at "/reason" is "not_selected"
+    When I GET "/activations/a-1/artifacts/procedure/py"
+    Then the response status is 200
+    And the field at "/state" is "inactive"
+    And the field at "/reason" is "not_selected"
+    When I GET "/activations/a-1/artifacts/directive/DY"
+    Then the response status is 200
     And the field at "/state" is "inactive"
     And the field at "/reason" is "not_selected"
     When I GET "/activations/a-1/artifacts?kind=styleguide&state=active"

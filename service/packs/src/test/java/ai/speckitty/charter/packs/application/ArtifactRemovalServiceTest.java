@@ -919,6 +919,71 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa")).containsKey("agent_profiles/jenny.agent.yaml");
     }
 
+    private static final String LANDING = """
+            schema_version: "1.0"
+            id: landing
+            title: Landing
+            description: Land a change.
+            entry_condition: A change is ready to land.
+            exit_condition: The change has landed.
+            steps:
+            - title: Land the change
+              role: implementer
+            """;
+
+    private static Packs qaWithAProcedure() {
+        return qa().file("procedures/landing.procedure.yaml", LANDING);
+    }
+
+    @Test
+    void aProcedureIsRemovedWithThePackRevisionAndALaterReadFindsNone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithAProcedure()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        PackRevision before = rig.writeStore.currentRevision(QA);
+        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.PROCEDURE)).hasSize(1);
+
+        PackRevision after = removals.service.remove(QA, "procedure", "landing", before.token());
+
+        assertThat(after).isNotEqualTo(before).isEqualTo(rig.writeStore.currentRevision(QA));
+        assertThat(removals.filesOf("qa"))
+                .doesNotContainKey("procedures/landing.procedure.yaml")
+                .as("the control: the rest of the pack is there")
+                .containsKeys("directives/D1.directive.yaml", "tactics/t.tactic.yaml", "pack.yaml");
+        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.PROCEDURE))
+                .as("a later read finds none")
+                .isEmpty();
+        assertThat(refusal(() -> removals.remove("qa", "procedure", "landing")).code())
+                .as("and a second removal is the procedure's not-found")
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+    }
+
+    @Test
+    void aProcedureAnEdgeStillNamesIsRefusedAndRemovedOnceTheEdgeIsGone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithAProcedure()
+                        .file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(Relationship.of(
+                                        urn("directive:D2"), urn("procedure:landing"), RelationType.REQUIRES))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "procedure", "landing"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(removals.filesOf("qa")).as("nothing changed").isEqualTo(before);
+
+        removals.remove("qa", "directive", "D2");
+        removals.remove("qa", "procedure", "landing");
+        assertThat(removals.filesOf("qa"))
+                .as("the control: with the edge's source gone, the procedure goes")
+                .doesNotContainKey("procedures/landing.procedure.yaml");
+    }
+
     // ---- the precondition
     // ---------------------------------------------------------------------------------------------
 
