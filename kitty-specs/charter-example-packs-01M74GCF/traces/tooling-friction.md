@@ -28,10 +28,12 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 
 2026-11-11 · claude · WP01 slipped past review with 3 HexagonalArchitectureTest violations in the testFixtures ExamplePacks (missing @NullMarked, dependency on infra.storage.PackLocation): the WP01 verification ran :packs and the deployable classpath test, not the whole :deployable:test. Fixed in WP03. Lesson: review runs the owning modules' full suites.
 
-2026-11-11 · claude · WP03: raised refusal codes `registration_timed_out` and `pack_storage_full` had no scenario and only synthetic unit tests; covered by service tests over example-pack copies.
+2026-11-11 · claude · WP03: raised refusal codes `registration_timed_out` and `pack_storage_full` had no scenario and only synthetic unit tests. No configuration property sets the storage limit or the registration timeout, so ExampleCoverageTest reaches them by replacing beans (a FreeSpaceCheck volume reporting 1 MiB free; a job held at the gate past the 90 s deadline). Suggested fix: configurable limits.
 
 2026-11-11 · claude · WP03: charter.yaml and org-charter.yaml cannot sit in an example pack: the whole-pack load rejects files it does not model, so the coverage check skips those two schemas (derived from the loader, not a list).
 
 2026-11-11 · claude · WP04: the `open-packs` tag also hid the moved tests from `:packs:test`, so the tag had to go with the move; Error Prone fails on an unused helper; targeted Gradle runs take ~2 min, and counts were read from test-results XML.
 
 2026-11-11 · claude · The session clone was shallow: the contract rehearsal's compatibility check refuses a shallow clone, so reproducing CI's release-rehearsal red needed `git fetch --unshallow --tags`. The release-rehearsal red on PR #474 (lintContract, ApiRoot `_links` without x-source, only in the synthetic release) passes on main; diagnosis in progress.
+
+2026-11-11 · claude · WP03:  test sources compile only under , so a -only run missed a broken caller of the changed ExamplePacks API.
