@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -24,13 +25,6 @@ public record Executable(ExecutableRuntime runtime, Optional<String> minVersion,
 
     private static final Pattern VERSION = Pattern.compile("[0-9]+(\\.[0-9]+){0,2}");
 
-    /** A relative path of plain segments: no leading slash, no {@code ..} or hidden segment, no space or backslash. */
-    private static final Pattern RELATIVE_PATH =
-            Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_.-]*+(?:/[A-Za-z0-9_][A-Za-z0-9_.-]*+)*+");
-
-    /** The longest entry accepted, checked before the pattern (#440). */
-    private static final int MAX_ENTRY_LENGTH = 255;
-
     private static final ModularRuleset<Executable> RULES = ModularRuleset.<Executable>emptyRules()
             .must(Constraints.of(
                     "An executable's min_version is dotted numbers.",
@@ -38,8 +32,7 @@ public record Executable(ExecutableRuntime runtime, Optional<String> minVersion,
             .must(Constraints.of(
                     "An executable's entry is a relative path inside the pack's assets: no absolute path, no .. or"
                             + " hidden segment, no whitespace, at most 255 characters.",
-                    e -> e.entry.length() <= MAX_ENTRY_LENGTH
-                            && RELATIVE_PATH.matcher(e.entry).matches()))
+                    e -> IdentifierGrammar.isRelativePath(e.entry)))
             .must(Constraints.of(
                     "An executable's entry is exactly one argv element: its args do not repeat it.",
                     e -> !e.args.contains(e.entry)))

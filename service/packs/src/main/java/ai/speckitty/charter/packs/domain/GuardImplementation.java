@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -13,10 +14,10 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
 
     /** {@code builtin:<id>}, {@code asset:<id>} or {@code <pack>::asset:<id>}. */
     Pattern SPELLING =
-            Pattern.compile("builtin:([a-z0-9-]++)|(?:([a-z0-9]++(?:-[a-z0-9]++)*+)::)?asset:([A-Za-z0-9_/.-]++)");
+            Pattern.compile("builtin:([a-z0-9-]++)|(?:(" + IdentifierGrammar.SLUG + ")::)?asset:([A-Za-z0-9_/.-]++)");
 
     /** The longest pack name an asset-backed spelling may qualify with (#440). */
-    int MAX_PACK_LENGTH = 64;
+    int MAX_PACK_LENGTH = IdentifierGrammar.MAX_SLUG_LENGTH;
 
     /**
      * Reads the authored spelling.
