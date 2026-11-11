@@ -17,7 +17,7 @@ audience:
 
 # Next slices after the 2026-11-11 triage
 
-The issue triage of 2026-11-11 left 152 open issues. Each has a type, a priority and a milestone.
+The issue triage of 2026-11-11 left 152 open issues at its close. Each has a type, a priority and a milestone.
 This page records which slice runs next and which quick-win slices run beside it. Each slice has
 an issue, and the issues it holds are native sub-issues of it where they had no other open
 parent. The order of the main slices is the [roadmap](/plans/roadmap/)'s "Toward a service core
@@ -84,7 +84,7 @@ Mission.
 
 | Slice | Issue | Holds | Why it is quick |
 | --- | --- | --- | --- |
-| A close-out | #492 | #488, #489, #443, #487; decide #104, then close #96 | Procedures shipped in PR #486; this is follow-through, and it closes slice A |
+| A close-out | #492 | #489, #443 (#487, #488 close with PR #500); decide #104, then close #96 | Procedures shipped in PR #486; this is follow-through, and it closes slice A |
 | Contract clean-up before 0.1.0 | #493 (under #468) | #411, #454; also #312, and the body rewrites of #9 and #72 | Contained changes; 0.1.0 then waits only on slices A to C |
 | Green nightly runs | #494 | #461, #463, #465, #387, #388, #389 | The mutation nightly is red because two tests fail under PIT with no mutation applied; Sonar needs clicks and two rulings |
 | Dead code and duplicated logic | #495 | #383, #444, #324, #134; also #184 | Behavior-preserving, with file:line evidence |
