@@ -1,0 +1,110 @@
+name: Open-packs drift (nightly)
+
+# The nightly open-packs drift watch (ADR-0070): charter's tests read the charter-owned example packs, never
+# spec-kitty-open-packs, so this workflow is the only place charter's loader meets open-packs content. It checks out
+# open-packs `main` and runs `:packs:driftTest`, which puts every pack with a pack.yaml through the gate's whole-pack
+# round trip (load, write, compare by meaning) and also reports unmodelled files and load warnings. It has no
+# expected-red baseline, so it can be red against today's open-packs.
+# - Schedule and workflow_dispatch only: no pull_request or push trigger, not a required check, and not in ci.yml's
+#   path routers. `driftTest` is its own source set: `check` and `verifyAll` compile and lint it but never run it.
+# - A drift (the test failed) or a build failure (the drift test did not compile or Gradle failed before it ran) opens
+#   one issue labelled `open-packs-drift`, or comments on the open one, and says which of the two it was.
+
+on:
+  schedule:
+    # Nightly, off the hour.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: open-packs-drift-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      build: ${{ steps.build.outcome }}
+      drift: ${{ steps.drift.outcome }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Check out spec-kitty-open-packs main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: spec-kitty/spec-kitty-open-packs
+          ref: main
+          path: .open-packs
+          persist-credentials: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Build the drift test
+        id: build
+        run: ./gradlew :packs:driftTestClasses
+
+      - name: Load every open-packs pack
+        id: drift
+        run: ./gradlew :packs:driftTest -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+
+      - name: Upload the drift report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: open-packs-drift-report
+          path: service/packs/build/reports/tests/driftTest
+          if-no-files-found: warn
+          retention-days: 14
+
+  # One open issue labelled `open-packs-drift` at a time, opened on the first red night and commented on after that.
+  alert:
+    needs: drift
+    if: always() && needs.drift.result != 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open or comment on the open-packs-drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BUILD: ${{ needs.drift.outputs.build }}
+          DRIFT: ${{ needs.drift.outputs.drift }}
+        run: |
+          set -euo pipefail
+          label=open-packs-drift
+          gh label create "$label" --repo "$REPO" --force --color FBCA04 \
+            --description "Charter's loader rejects spec-kitty-open-packs main (open-packs-drift.yml)"
+          if [ "$DRIFT" = failure ]; then
+            kind="Drift: a pack of spec-kitty-open-packs main does not round-trip through charter's loader."
+          else
+            kind="Build failure (build step: ${BUILD:-not run}, drift step: ${DRIFT:-not run}), not a drift verdict."
+          fi
+          body="$RUNNER_TEMP/drift-issue.md"
+          printf '%s\n\nRun: %s (report artifact: `open-packs-drift-report`).\n' "$kind" "$RUN_URL" > "$body"
+          # A plain label filter, not --search: the search API is eventually consistent.
+          issue="$(gh issue list --repo "$REPO" --label "$label" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --repo "$REPO" --body-file "$body"
+          else
+            gh issue create --repo "$REPO" --label "$label" \
+              --title "Open-packs drift: charter's loader rejects spec-kitty-open-packs main" --body-file "$body"
+          fi

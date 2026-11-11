@@ -16,7 +16,7 @@ name: Mutation testing (nightly)
 #   can be proven without breaking a floor.
 # - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the nightly red
 #   but can never stop PIT from running. Pull requests run the same tests (docs-cleanliness.yml, through ci.yml).
-# spec-kitty-open-packs is checked out at the pin and synced, as in service.yml: the packs storage tests read it.
+# spec-kitty-open-packs is checked out at the pin and synced, as in service.yml, for governance; the tests read the example packs (ADR-0070).
 
 on:
   schedule:
@@ -90,7 +90,7 @@ jobs:
       # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
       - name: Mutation testing
         timeout-minutes: 80
-        run: ./gradlew pitest --continue -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew pitest --continue -PrequireSymlinks=true
 
       # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
       # PIT, whatever its result, so they can never keep PIT from running.

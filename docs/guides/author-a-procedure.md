@@ -72,8 +72,8 @@ Review does not need to look for any of the following, because loading the pack 
 
 A load skips a file that breaks any of these and records a violation, so the rest of the pack still loads. In
 validate mode (`FileSystemPackInspector`, the seam for the pack doctor) the finding is `artifact_schema_error`. In
-CI, `:packs:openPacksRoundTrip` round-trips every procedure in the pinned spec-kitty-open-packs packs as part of
-`verifyAll`. It checks schema validity and round-trip fidelity only.
+CI, the corpus tests of `:packs:test` round-trip every procedure in charter's example packs
+(`service/packs/src/testFixtures/resources/example-packs`, ADR-0070) as part of `verifyAll`. It checks schema validity and round-trip fidelity only.
 
 ## What loading cannot see
 

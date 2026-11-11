@@ -115,10 +115,14 @@ jobs:
       # Builds the classes and the aggregated JaCoCo report the scan reads.
       - name: Verify
         id: build
-        if: steps.sonar_token.outputs.enabled == 'true' && steps.sync.outcome == 'success'
+        # The tests read the charter-owned example packs (ADR-0070), not the open-packs checkout, so the build does not
+        # wait on the sync; the sync above only guards packs/internal and packs/qa against their lockfile.
+        if: >-
+          steps.sonar_token.outputs.enabled == 'true'
+          && steps.java.outcome == 'success' && steps.gradle.outcome == 'success'
         continue-on-error: true
         timeout-minutes: 20
-        run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew verifyAll -PrequireSymlinks=true
 
       # The scan runs only on a build that produced the coverage report: without it the analysis would report
       # zero coverage. It also resolves the Gradle cache path, which `args` cannot expand.

@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.errorprone
+
 // The pack vertical slice: domain, application, infra.storage, infra.api under ai.speckitty.charter.packs.
 // WP05 activated the infra.storage dependencies; WP06 activated the infra.api ones.
 plugins {
@@ -105,44 +107,8 @@ tasks.processResources {
     }
 }
 
-// The pinned spec-kitty-open-packs checkout the corpus tests read. Point -PopenPacksDir at a checkout; by default the
-// sibling directory ../spec-kitty-open-packs. A relative path resolves against the repository root, not this project
-// (OpenPacksCheckout, #322), and the tests get it absolute. A missing checkout fails the task, it never skips.
 val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
-val openPacksDir = providers.gradleProperty("openPacksDir")
-    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
-    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
-
-// The pin: gradle.properties (openPacksRef) is its single source of truth, read here and by CI. It is validated
-// when the task runs, never at configuration time, and is a task input so a new pin is never answered from the cache.
-val openPacksRef = providers.gradleProperty("openPacksRef")
-
 val testSourceSet = sourceSets.test.get()
-val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
-    group = "verification"
-    description = "Corpus checks over the pinned spec-kitty-open-packs checkout (part of check)."
-    testClassesDirs = testSourceSet.output.classesDirs
-    classpath = testSourceSet.runtimeClasspath
-    useJUnitPlatform {
-        includeTags("open-packs")
-        excludeTags("whole-pack", "timing")
-    }
-    val dir = openPacksDir
-    inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
-    systemProperty("charter.openPacksDir", dir.get())
-    // MissionTypeCorpusTest reads this repository's own build files. packs/internal and packs/qa are not read from the
-    // repository: they are synced from this same checkout (./gradlew syncPacks), and the tests read the checkout.
-    systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
-    val ref = openPacksRef
-    inputs.property("openPacksRef", ref.orElse(""))
-    doFirst {
-        val pin = ref.orNull
-        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
-            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
-        }
-        systemProperty("charter.openPacksRef", pin)
-    }
-}
 
 // The whole-pack round-trip gate (#187): every file of the pinned built-in pack is read into the domain, written back,
 // read again and compared with its source by meaning, against the checked-in expected-red baseline
@@ -158,21 +124,9 @@ tasks.register<Test>("wholePackRoundTrip") {
         includeTags("whole-pack")
         excludeTags("timing")
     }
-    val dir = openPacksDir
-    inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
-    systemProperty("charter.openPacksDir", dir.get())
     val report = wholePackReport
     outputs.file(report).withPropertyName("wholePackReport")
     systemProperty("charter.wholePackReport", report.get().asFile.absolutePath)
-    val ref = openPacksRef
-    inputs.property("openPacksRef", ref.orElse(""))
-    doFirst {
-        val pin = ref.orNull
-        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
-            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
-        }
-        systemProperty("charter.openPacksRef", pin)
-    }
 }
 
 // The real-git tests of the git source (WP18, T093, T152): bare repositories served over https by `git http-backend`
@@ -213,7 +167,7 @@ tasks.register<Test>("timingBudgets") {
     // that costs the next one's measured thread about 10% (ResolverCostBoundTest before PackFileSetBudgetTest).
     setForkEvery(1)
     // Never beside this module's other test tasks, when they are named in the same invocation.
-    mustRunAfter(tasks.test, openPacksRoundTrip)
+    mustRunAfter(tasks.test)
     doNotTrackState("a budget measured on another run says nothing about this one (#316)")
     // The generated trees plant symbolic links. A budget that skips is never meaningful, so a file system without them
     // fails here, whatever -PrequireSymlinks says.
@@ -230,7 +184,7 @@ val repositoryDir = rootProject.layout.projectDirectory
 // `git-host` (WP18's real-git tests) needs the host git binary and runs in its own CI job, so neither `test` nor `check`
 // runs it. `stress` (the 100-run concurrency tests of WP12, WP14 and WP19) still runs in `test` and `check`, and only PIT
 // leaves it out (pitest, below): a mutant would multiply its cost by the mutant count.
-val unitTestExcludedTags = listOf("open-packs", "whole-pack", "timing", "git-host")
+val unitTestExcludedTags = listOf("whole-pack", "timing", "git-host")
 // The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
 // (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
 val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
@@ -269,15 +223,40 @@ tasks.test {
     systemProperties(unitTestSystemProperties)
     readsTheUnitTestInputs()
 }
-// The open-packs tests report no coverage: jacocoTestReport depends on `test`, which excludes the open-packs tag, and
-// this repository sets no coverage threshold (the charter's min_coverage is 0). The tag narrows the report, not a gate.
-tasks.check { dependsOn(openPacksRoundTrip) }
+
+// The nightly open-packs drift watch (ADR-0070, .github/workflows/open-packs-drift.yml): the driftTest source set runs
+// every pack of a spec-kitty-open-packs checkout through the whole-pack round trip the gate uses (its helpers come from
+// the test source set). `check` (so verifyAll) compiles and lints the source set but never runs it, and no required job
+// runs the driftTest task; -PopenPacksDir points at the checkout (default: the sibling ../spec-kitty-open-packs).
+val driftTestSourceSet = sourceSets.create("driftTest") {
+    compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+    runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+}
+configurations[driftTestSourceSet.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
+configurations[driftTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
+configurations[driftTestSourceSet.compileOnlyConfigurationName].extendsFrom(configurations.testCompileOnly.get())
+// Test code: the same rules as compileTestJava (charter.hand-written), NullAway off.
+tasks.named<JavaCompile>(driftTestSourceSet.compileJavaTaskName) {
+    options.errorprone { disable("NullAway") }
+}
+val openPacksDir = providers.gradleProperty("openPacksDir")
+    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
+    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
+tasks.register<Test>("driftTest") {
+    group = "verification"
+    description = "Round-trips every pack of a spec-kitty-open-packs checkout by meaning (nightly drift watch); not run by check."
+    testClassesDirs = driftTestSourceSet.output.classesDirs
+    classpath = driftTestSourceSet.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("charter.openPacksDir", openPacksDir.get())
+    doNotTrackState("open-packs main moves; a cached pass says nothing about today's tree")
+}
 
 // The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
 // (infra.storage.config included), infra.fetch, and since WP13 infra.archive (the archive extractor, which carries the upload's
 // safety rules; floor group infra.archive), but never the Spring wiring (application.config, infra.fetch.config) nor the
 // inbound REST adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests
-// (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out (open-packs,
+// (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out (
 // whole-pack, timing, git-host, and stress for PIT alone) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
 // one work package's classes.
 val packsPackage = "ai.speckitty.charter.packs"

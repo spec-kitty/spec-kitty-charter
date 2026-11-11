@@ -1,7 +1,7 @@
 import java.io.File
 
 /**
- * Where the build looks for the spec-kitty-open-packs checkout that the corpus tests read (#322). The `openPacksDir`
+ * Where the build looks for the spec-kitty-open-packs checkout that the nightly drift test reads (#322, ADR-0070). The `openPacksDir`
  * Gradle property names it; a relative path is resolved against the repository root, the directory `./gradlew` is run
  * from, never against the directory of the project that reads it. Without the property, the checkout is the sibling
  * of the repository root, `../spec-kitty-open-packs`.
