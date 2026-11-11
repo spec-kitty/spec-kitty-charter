@@ -26,3 +26,5 @@ commands:
 - gh --body-file
 - git commit -F
 last_updated: '2026-07-28'
+applies_to_languages:
+- shell

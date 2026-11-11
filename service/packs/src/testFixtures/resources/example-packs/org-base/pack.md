@@ -1,3 +1,7 @@
+---
+audience: org
+maintainers: ["@spec-kitty/core"]
+---
 # SPDD / REASONS Charter Pack
 
 Structured-Prompt-Driven Development (SPDD) treats structured prompts and REASONS canvases as

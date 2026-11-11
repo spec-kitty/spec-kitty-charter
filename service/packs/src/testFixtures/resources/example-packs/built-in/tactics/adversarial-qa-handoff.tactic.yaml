@@ -26,3 +26,7 @@ failure_modes:
   - "Handoff says tests pass but omits which tests were run."
   - "The implementation handles only the happy path while edge cases remain implicit."
   - "Large unrelated diffs hide the actual behavior change."
+applies_to_languages:
+  - java
+  - python
+notes: Pair with the reviewer profile; the handoff note is the evidence the reviewer reads first.

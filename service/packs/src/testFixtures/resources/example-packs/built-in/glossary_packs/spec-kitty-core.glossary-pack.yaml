@@ -15,6 +15,8 @@ terms:
     path, and dependency state. Passed to agents at step boundaries.
   status: active
   surface: action context
+  banned_synonyms:
+  - step bag
 - confidence: 0.85
   definition: A bounded set of profile-loaded delegates, dispatched at an SDD
     point-cut, each casting a distinct doctrine lens chosen for that

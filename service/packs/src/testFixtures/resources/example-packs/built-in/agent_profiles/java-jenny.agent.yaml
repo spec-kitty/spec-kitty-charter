@@ -188,3 +188,15 @@ tactic-references:
     rationale: ATDD outside-in from acceptance criteria; migrated from a misfiled operating-procedures entry (it names a tactic, not a procedure).
   - id: tdd-red-green-refactor
     rationale: Unit-level red-green-refactor discipline; migrated from a misfiled operating-procedures entry (it names a tactic, not a procedure).
+styleguide-references:
+  - id: boring-code-review
+    rationale: Reviews keep the code obvious.
+toolguide-references:
+  - id: efficient-local-tooling
+    rationale: Searches and edits the repository with the fast local tools.
+excluding:
+  - frontend
+model: claude-opus
+effort: high
+avatar-image: avatars/java-jenny.png
+sentinel: false

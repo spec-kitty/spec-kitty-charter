@@ -44,6 +44,12 @@ edges:
 - source: paradigm:structured-prompt-driven-development
   target: styleguide:reasons-canvas-writing
   relation: suggests
+  when: writing a REASONS canvas
+  reason: the canvas has its own writing rules
+- source: directive:DIRECTIVE_038
+  target: styleguide:reasons-canvas-writing
+  relation: impacts
+  impacts: 0.5
 - source: step_enhancement:spdd-specify
   target: built-in::action:software-dev/specify
   relation: enhances

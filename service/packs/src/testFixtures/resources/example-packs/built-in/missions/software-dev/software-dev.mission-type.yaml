@@ -19,10 +19,13 @@ path_conventions:
   tests: tests/
   deliverables: contracts/
   documentation: docs/
+  data: data/
 expected_output_artifacts:
 - artifact_key: evidence.research
   artifact_class: evidence
   path_pattern: research.md
+  blocking: true
+  template_path: templates/research-template.md
 - artifact_key: evidence.gap-analysis
   artifact_class: evidence
   path_pattern: gap-analysis.md
@@ -134,6 +137,7 @@ on_demand_steps:
   title: Charter
   description: Interview the operator and compile the project charter that governs every mission.
   prompt_path: steps/charter.prompt.md
+  guidelines_path: steps/charter.guidelines.md
 - id: tasks-finalize
   title: Finalize Tasks
   description: Validate WP dependencies, finalize WP frontmatter, generate tasks.md and commit the task artifacts.
@@ -154,6 +158,7 @@ on_demand_steps:
     artifact_class: output
     path_pattern: tasks.md
     blocking: true
+    template_path: templates/tasks-template.md
 - id: tasks-outline
   title: Task Outline
   description: 'Write the work package manifest, wps.yaml: each WP''s scope, dependencies and owned files.'

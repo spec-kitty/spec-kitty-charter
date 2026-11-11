@@ -66,3 +66,8 @@ anti_patterns:
 
 tooling:
   linters: "Boring-code-review is a review discipline, not a lint rule; apply it in human or agent code review."
+applies_to_languages:
+  - python
+structural_lint_config:
+  max_helper_lines: 3
+  allow_wrappers: false

@@ -10,3 +10,9 @@ depends_on:
   - pack_id: 01M6Y9ACNAAD96XPNQS0XWP2FF
     range: ">=1.0,<2"
 fallback_profile: generic-agent
+active_charter: charter.yaml
+requires_core: ">=4.0,<5"
+# Settles a contest over org-base's styleguide in favour of org-base (ADR-0048 decision 9).
+overrides:
+  - artifact: styleguide:reasons-canvas-writing
+    member: 01M6Y9ACNAAD96XPNQS0XWP2FF

@@ -15,7 +15,12 @@ activated_styleguides:
   - id: reasons-canvas-writing
 activated_step_enhancements:
   - id: spdd-specify
+    must_have: true
   - id: spdd-plan
   - id: spdd-tasks
   - id: spdd-implement
   - id: spdd-review
+activated_skills:
+  - id: issue-triage
+    must_have: true
+  - id: triage-status

@@ -6,6 +6,12 @@ steps:
   - id: bootstrap
     description: Load charter context for this action
     command: "spec-kitty charter context --action implement --json"
+    inputs:
+      - flag: --action
+        source: action
+      - flag: --mission
+        source: mission_slug
+        optional: true
 
   - id: workspace
     description: Create or enter the work package workspace

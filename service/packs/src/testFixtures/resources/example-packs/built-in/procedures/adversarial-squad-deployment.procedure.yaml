@@ -34,6 +34,8 @@ steps:
 anti_patterns:
 - title: Persona without profile
   content: Naming a persona without loading its agent profile — a persona label is not a lens.
+  bad_example: Deploy "a security expert" with no profile loaded.
+  good_example: Load the security reviewer profile, then deploy it as the security lens.
 - title: Unbounded squad
   content: Dozens of delegates for a question that a small, distinct set of lenses would answer; more delegates is not better.
 - title: Casting by habit

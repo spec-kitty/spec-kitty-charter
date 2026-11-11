@@ -8,4 +8,15 @@ nodes:
 - urn: styleguide:boring-code-review
   kind: styleguide
   label: Boring Code Review
-edges: []
+  provenance: styleguides/boring-code-review.styleguide.yaml
+  tags: [review, simplicity]
+- urn: anti_pattern:indirection-for-repetition
+  kind: anti_pattern
+  label: Indirection to remove a few repeated lines
+edges:
+- source: styleguide:boring-code-review
+  target: anti_pattern:indirection-for-repetition
+  relation: impacts
+  when: reviewing a new helper or wrapper
+  reason: the styleguide names this anti-pattern
+  impacts: 0.5
