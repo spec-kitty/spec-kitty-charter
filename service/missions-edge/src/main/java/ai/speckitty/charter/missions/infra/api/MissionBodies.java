@@ -17,7 +17,6 @@ import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
 import ai.speckitty.charter.api.model.MissionStepSummary;
 import ai.speckitty.charter.api.model.MissionType;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.missions.application.EffectiveStepContractView;
 import ai.speckitty.charter.missions.application.Fingerprinted;
@@ -240,7 +239,7 @@ final class MissionBodies {
     static ResponseEntity.BodyBuilder ok(PackRead<?> read) {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HeaderNames.SOURCE_FINGERPRINT, read.fingerprint());
-        return ResponseEntity.ok().headers(headers).eTag(EntityTags.quote(read.revision()));
+        return ResponseEntity.ok().headers(headers).eTag(read.revision());
     }
 
     /**
