@@ -27,3 +27,13 @@ Read `.kittify/charter/charter.md` before planning. Two rules from it that sessi
 - **Tests and examples use only the canonical shape**, except tests of error handling (an invalid
   pack or invalid content). Update fixtures, example packs and contract examples with the model;
   never exclude a field from a parity or round-trip check to make a test pass.
+
+## Issue rules for agents (operator, 2026-11-11)
+
+Read `docs/development/issue-tracker.md` before you file or close an issue. In short:
+
+- Fold or drop a squad finding below MEDIUM; file an issue only for a correctness, data or
+  security risk, with the `follow-up` label.
+- At every closeout and landing, close the issues the work delivered (`Closes #N`, or close them
+  with evidence) and tick the parent epic.
+- Pack content goes to `spec-kitty-open-packs`; core work is not filed here until incorporation.
