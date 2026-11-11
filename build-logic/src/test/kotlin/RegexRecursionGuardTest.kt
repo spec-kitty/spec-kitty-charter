@@ -57,7 +57,7 @@ class RegexRecursionGuardTest {
                 + " [^/]* and Pattern.quote(...); PackFileKindTest#aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments"
                 + " proves a very deep path does not overflow",
         ),
-        "packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java:SPELLING" to Allowed(
+        "packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java:SPELLING_SHAPE" to Allowed(
             "cannot judge `\"builtin:(\" + IdentifierGrammar.SLUG + \")|(?:(\" + IdentifierGrammar.SLUG\n" +
                 "            + \")::)?asset:([A-Za-z0-9_/.-]++)\"`",
             "IdentifierGrammar.SLUG is the kernel's shared kebab grammar (#444), possessive, and judged by this guard"

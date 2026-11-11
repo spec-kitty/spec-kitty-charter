@@ -41,7 +41,7 @@ public record MissionStep(
      */
     public static final int DESCRIPTION_MAX_LENGTH = 160;
 
-    private static final Pattern ROLE = Pattern.compile("[a-z][a-z0-9-]*");
+    private static final Pattern ROLE_SHAPE = Pattern.compile("[a-z][a-z0-9-]*");
 
     private static final ModularRuleset<String> ID_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
@@ -56,7 +56,7 @@ public record MissionStep(
     private static final ModularRuleset<String> ROLE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "A mission step's role is a lower-case role token.",
-                    role -> ROLE.matcher(role).matches()));
+                    role -> ROLE_SHAPE.matcher(role).matches()));
     private static final ModularRuleset<StepDocument> GUIDELINES_RULES = ModularRuleset.<StepDocument>emptyRules()
             .must(Constraints.of(
                     "A mission step's guidelines carry no detailed description; only its prompt does.",

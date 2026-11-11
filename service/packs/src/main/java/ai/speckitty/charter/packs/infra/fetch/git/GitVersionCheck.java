@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 public final class GitVersionCheck {
 
     /** The oldest git the source runs (C-008, NFR-011). */
-    public static final GitVersion MINIMUM = new GitVersion(2, 50, 1);
+    public static final GitVersion MINIMUM_VERSION = new GitVersion(2, 50, 1);
 
     private static final String BINARY = "git";
     private static final long ASK_SECONDS = 10;
@@ -63,14 +63,14 @@ public final class GitVersionCheck {
     }
 
     /**
-     * Resolves git and checks its version against {@link #MINIMUM}.
+     * Resolves git and checks its version against {@link #MINIMUM_VERSION}.
      *
      * @param executable the configured absolute path of git, or null to look on the path
      * @param path the {@code PATH} to look on
      * @return the check
      */
     public static GitVersionCheck resolve(@Nullable Path executable, @Nullable String path) {
-        return resolve(executable, path, MINIMUM);
+        return resolve(executable, path, MINIMUM_VERSION);
     }
 
     /**

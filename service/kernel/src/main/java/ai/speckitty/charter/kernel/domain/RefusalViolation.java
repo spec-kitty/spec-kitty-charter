@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  */
 public record RefusalViolation(String pointer, String code, String detail) {
 
-    private static final Pattern CODE = Pattern.compile("[a-z][a-z0-9_]*");
+    private static final Pattern CODE_SHAPE = Pattern.compile("[a-z][a-z0-9_]*");
 
     /**
      * Checks the fields.
@@ -28,7 +28,7 @@ public record RefusalViolation(String pointer, String code, String detail) {
         Objects.requireNonNull(pointer, "pointer");
         Objects.requireNonNull(code, "code");
         Objects.requireNonNull(detail, "detail");
-        if (!CODE.matcher(code).matches()) {
+        if (!CODE_SHAPE.matcher(code).matches()) {
             throw new IllegalArgumentException("A violation code is a snake-case token, not '" + code + "'.");
         }
     }

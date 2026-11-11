@@ -30,9 +30,10 @@ import org.jspecify.annotations.Nullable;
 final class ZipReader {
 
     static final String SPOOL_NAME = "upload.zip.spool";
-    private static final int UNIX_TYPE_MASK = 0170000;
-    private static final int UNIX_FILE = 0100000;
-    private static final int UNIX_DIRECTORY = 040000;
+    // The st_mode type bits, in octal as stat.h writes them; the 0_ prefix marks the octal as intended (#465).
+    private static final int UNIX_TYPE_MASK = 0_170000;
+    private static final int UNIX_FILE = 0_100000;
+    private static final int UNIX_DIRECTORY = 0_40000;
     private static final ZipShort UNICODE_PATH = new ZipShort(0x7075);
     private static final ZipShort UNICODE_COMMENT = new ZipShort(0x6375);
 

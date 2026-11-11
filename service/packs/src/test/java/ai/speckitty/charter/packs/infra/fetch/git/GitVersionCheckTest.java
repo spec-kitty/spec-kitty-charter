@@ -101,7 +101,7 @@ class GitVersionCheckTest {
     void versionsCompareByNumberNotByText() {
         assertThat(new GitVersion(2, 9, 0)).isLessThan(new GitVersion(2, 10, 0));
         assertThat(new GitVersion(2, 50, 1)).isEqualByComparingTo(new GitVersion(2, 50, 1));
-        assertThat(new GitVersion(2, 50, 2)).isGreaterThan(GitVersionCheck.MINIMUM);
+        assertThat(new GitVersion(2, 50, 2)).isGreaterThan(GitVersionCheck.MINIMUM_VERSION);
         assertThat(new GitVersion(3, 0, 0)).isGreaterThan(new GitVersion(2, 99, 99));
     }
 
@@ -214,8 +214,8 @@ class GitVersionCheckTest {
 
     @Test
     void theMinimumIsTwoFiftyOne() {
-        assertThat(GitVersionCheck.MINIMUM).isEqualTo(new GitVersion(2, 50, 1));
-        assertThat(Optional.of(GitVersionCheck.MINIMUM).map(GitVersion::toString))
+        assertThat(GitVersionCheck.MINIMUM_VERSION).isEqualTo(new GitVersion(2, 50, 1));
+        assertThat(Optional.of(GitVersionCheck.MINIMUM_VERSION).map(GitVersion::toString))
                 .contains("2.50.1");
     }
 

@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  */
 public record EffectiveTag(String token) {
 
-    private static final Pattern TOKEN = Pattern.compile("sha256:[0-9a-f]{64}");
+    private static final Pattern TOKEN_SHAPE = Pattern.compile("sha256:[0-9a-f]{64}");
 
     /**
      * The domain tag, with the tag's version: it is bumped in any change that alters what the reads answer for the same
@@ -156,7 +156,7 @@ public record EffectiveTag(String token) {
      */
     public EffectiveTag {
         Objects.requireNonNull(token, "token");
-        if (!TOKEN.matcher(token).matches()) {
+        if (!TOKEN_SHAPE.matcher(token).matches()) {
             throw new IllegalArgumentException("An effective tag is sha256: and 64 lowercase hex characters.");
         }
     }
