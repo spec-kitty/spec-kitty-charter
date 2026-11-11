@@ -56,13 +56,13 @@
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "Scheduled non-blocking drift job runs round trip over open-packs main and opens/comments an issue on failure",
+      "proof_type": "inspection",
+      "evidence": ".github/workflows/open-packs-drift.yml (schedule, :packs:driftTest, open-packs-drift label issue); drift test confirmed to catch real drift @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:12.188668+00:00",
+      "notes": "Not a required check."
     },
     {
       "criterion_id": "FR-007",
