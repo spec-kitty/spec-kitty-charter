@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -129,6 +130,27 @@ public final class OpenPacksCorpus {
                     .sorted()
                     .toList();
         }
+    }
+
+    /** The step ids a mission-type file declares: the sequence, then the on-demand steps, each in file order. */
+    record DeclaredSteps(List<String> sequence, List<String> onDemand) {}
+
+    /** What the mission-type file declares under {@code steps} and {@code on_demand_steps}, read as YAML without the store. */
+    static DeclaredSteps declaredSteps(Path missionTypeFile) throws IOException {
+        Map<?, ?> document = (Map<?, ?>) Yaml.load(Files.readString(missionTypeFile, StandardCharsets.UTF_8));
+        return new DeclaredSteps(stepIds(document, "steps"), stepIds(document, "on_demand_steps"));
+    }
+
+    private static List<String> stepIds(Map<?, ?> document, String key) {
+        List<String> ids = new ArrayList<>();
+        if (document.get(key) instanceof List<?> steps) {
+            for (Object step : steps) {
+                if (step instanceof Map<?, ?> fields) {
+                    ids.add(String.valueOf(fields.get("id")));
+                }
+            }
+        }
+        return ids;
     }
 
     /** The built-in pack, then every other directory under {@code packs/} as an org pack, sorted by name. */
