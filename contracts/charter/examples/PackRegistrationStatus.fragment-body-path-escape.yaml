@@ -1,0 +1,19 @@
+summary: A registration refused because a fragment node's body_path leaves the pack root (#254).
+value:
+  registrationId: 01M7650000000000000000ESC2
+  state: refused
+  packId: acme
+  acceptedAt: '2026-11-11T10:00:00Z'
+  finishedAt: '2026-11-11T10:00:01Z'
+  problem:
+    title: Validation failed
+    status: 422
+    code: validation_failed
+    detail: 'The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.'
+    violations:
+    - pointer: drg/fragment.yaml
+      code: drg_schema_error
+      detail: "drg/fragment.yaml: node A body_path '../outside.directive.yaml' escapes the pack root"
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M7650000000000000000ESC2

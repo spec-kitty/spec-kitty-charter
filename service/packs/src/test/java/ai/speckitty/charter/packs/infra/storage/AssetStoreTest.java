@@ -267,7 +267,7 @@ class AssetStoreTest {
 
     /**
      * Analysis U2: a {@code path} that climbs out of {@code assets/} or is absolute names no asset file, even when a
-     * file sits where it points: refused, naming the path.
+     * file sits where it points: refused as an escape, naming the path (#382).
      */
     @Test
     void aPathThatEscapesTheAssetsDirectoryIsRefusedNamingThePath(@TempDir Path host) throws IOException {
@@ -282,9 +282,10 @@ class AssetStoreTest {
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
 
         assertThat(ids(read)).containsExactly("in");
-        assertThat(reasonFor(read, "assets/climb.asset.yaml")).isEqualTo("payload assets/../outside.md does not exist");
+        assertThat(reasonFor(read, "assets/climb.asset.yaml"))
+                .isEqualTo("asset path '../outside.md' escapes the pack's assets/ root");
         assertThat(reasonFor(read, "assets/absolute.asset.yaml"))
-                .isEqualTo("payload assets/" + absolute + " does not exist");
+                .isEqualTo("asset path '" + absolute + "' escapes the pack's assets/ root");
     }
 
     static String sha256(Path file) throws IOException {

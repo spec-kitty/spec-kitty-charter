@@ -394,8 +394,7 @@ class GuardWiringTest {
     }
 
     @Test
-    void aPlaceholderInAMountedTokenFileRefusesTheStart(@TempDir Path secrets, CapturedOutput output)
-            throws Exception {
+    void aPlaceholderInAMountedTokenFileRefusesTheStart(@TempDir Path secrets, CapturedOutput output) throws Exception {
         Files.writeString(secrets.resolve("charter.worktree-token"), "${x}");
         runner.withSystemProperties("x=" + TOKEN)
                 .withInitializer(context -> context.getEnvironment()
