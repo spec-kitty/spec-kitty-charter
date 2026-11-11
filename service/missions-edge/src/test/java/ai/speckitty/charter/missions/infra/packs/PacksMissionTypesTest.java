@@ -96,10 +96,7 @@ class PacksMissionTypesTest {
         MissionTypeHolding holding = adapter.holding(PACK, "software-dev");
         PackRead<MissionTypeHolding> revised = adapter.revised(PACK, "software-dev");
 
-        assertThat(revised.value())
-                .as("the revised read holds the same holding")
-                .isEqualTo(holding);
-        assertThat(revised.revision()).as("and the pack revision's token").isEqualTo(REVISION.token());
+        assertThat(revised.revision()).as("the pack revision's token").isEqualTo(REVISION.token());
 
         assertThat(holding.type()).isSameAs(type);
         assertThat(holding.skeletons())

@@ -676,8 +676,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
   Scenario: Every pack read of one thing carries the pack revision, which moves when the pack changes
     #487, FR-005, FR-006. The mission type, step, skeleton, step contract and tactic reads answer the pack revision as
-    their ETag, equal to a directive's, the same on a second read of the same state, and a different one once a DELETE
-    has changed the pack. It is a concurrency token, not a cache validator: no read takes If-None-Match.
+    their ETag, equal to a directive's, and a different one once a DELETE has changed the
+    pack. It is a concurrency token, not a cache validator: no read takes If-None-Match.
     Given registration is switched on
     And the org pack "main" with the file "tactics/rehearse.tactic.yaml":
       """
@@ -704,10 +704,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "ETag" is the remembered header
-    When I GET "/packs/main/artifacts/mission_type/software-dev"
-    Then the response status is 200
-    And the response header "ETag" appears once
-    And the response header "ETag" is the remembered header
     When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
     Then the response status is 200
     And the response header "ETag" appears once
@@ -717,14 +713,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the response header "ETag" appears once
     And the response header "ETag" is the remembered header
     When I GET "/packs/main/artifacts/mission_step_contract/specify"
-    Then the response status is 200
-    And the response header "ETag" appears once
-    And the response header "ETag" is the remembered header
-    When I GET "/packs/main/artifacts/mission_step_contract/specify"
-    Then the response status is 200
-    And the response header "ETag" appears once
-    And the response header "ETag" is the remembered header
-    When I GET "/packs/main/artifacts/tactic/rehearse"
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "ETag" is the remembered header

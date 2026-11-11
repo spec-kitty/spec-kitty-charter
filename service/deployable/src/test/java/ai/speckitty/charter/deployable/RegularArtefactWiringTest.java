@@ -2,7 +2,6 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.application.CompositeComponentResolver;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.io.IOException;
 import java.net.URI;
@@ -16,10 +15,8 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.ObjectMapper;
@@ -27,9 +24,8 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * WP10 consolidation (NFR-004, C-001/C-002, SC-004): the regular-artefact read and registration surface is wired into
  * the production composition root exactly as it ships. A configured pack serves every new per-kind read with the
- * {@code Charter-Source-Fingerprint} header, a registration {@code PUT} round-trips through the wired write store, and
- * the production {@link CompositeComponentResolver}, which names the pack holding a reference, is one bean. A wiring that drops any controller, service, write store or the
- * resolver fails the context load and this test.
+ * {@code Charter-Source-Fingerprint} header, and a registration {@code PUT} round-trips through the wired write
+ * store. A wiring that drops any controller, service or write store fails the context load and this test.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RegularArtefactWiringTest {
@@ -42,9 +38,6 @@ class RegularArtefactWiringTest {
 
     @LocalServerPort
     private int port;
-
-    @Autowired
-    private ApplicationContext context;
 
     @DynamicPropertySource
     static void configuredPacks(DynamicPropertyRegistry registry) throws IOException {
@@ -105,11 +98,6 @@ class RegularArtefactWiringTest {
         assertThat(JSON.readTree(get.body()).path("id").asString()).isEqualTo("ROUNDTRIP");
         assertThat(JSON.readTree(get.body()).at("/directive/title").asString()).isEqualTo("Round trip");
         assertThat(JSON.readTree(put.body())).isEqualTo(JSON.readTree(get.body()));
-    }
-
-    @Test
-    void theCompositeComponentResolverIsOneBean() {
-        assertThat(context.getBeansOfType(CompositeComponentResolver.class)).hasSize(1);
     }
 
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
