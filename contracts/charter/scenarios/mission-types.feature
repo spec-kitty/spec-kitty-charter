@@ -862,3 +862,15 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 200
     When I DELETE "/packs/main/artifacts/mission_step_contract/orphan" with the header "If-Match": "*"
     Then the response status is 204
+
+  Scenario Outline: A mission type id that is no slug is a 400 Problem without a code that says why (<case>)
+    #411: the detail names the path parameter, its value (cut after 64 code points) and the rule it breaks.
+    When I GET "/packs/main/artifacts/mission_type/<id>"
+    Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" is "The path parameter missionTypeId is \"<shown>\", which <reason>."
+
+    Examples:
+      | case                 | id   | shown | reason                                    |
+      | longer than 64       | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… | is longer than 64 character(s)            |
+      | an upper-case letter | Main | Main | does not match ^[a-z0-9][a-z0-9_-]*$     |

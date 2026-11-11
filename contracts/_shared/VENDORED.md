@@ -28,6 +28,9 @@ core included, adapt. A refresh from core never overwrites a change listed below
   so the member must be declared on `Problem`. The service writes it only on the refusals of the pack composition
   (`GET /offering`, and the artifact reads that raise a reference refusal): the packs the refusal names, the pack
   that broke the rule first.
+- `schemas/Problem.yaml`'s `detail` description states the service's rule for a parameter `400` without a code: the
+  detail names where the parameter is, its name, the value it carried and what it accepts (#411). The member itself
+  is unchanged.
 - `schemas/PageInfo.yaml` cites each property, and the schema itself, with an `x-derived` (#126,
   research R-16; #125): the charter's `resource-property-cited` lint judges every titled object
   schema of the bundle, and `ArtifactPage.page` and the effective artifact listing bring `PageInfo`

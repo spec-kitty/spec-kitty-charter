@@ -48,11 +48,10 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.web.InvalidParameter;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
 
 /**
  * The wire form of the effective reads and of the page cursor: an item in the contract's shape, the {@code summary} of
@@ -261,8 +260,10 @@ class EffectiveReadMapperTest {
             assertThatThrownBy(() -> EffectiveCursor.decode(malformed))
                     .as(malformed)
                     .isInstanceOfSatisfying(
-                            ErrorResponseException.class,
-                            refused -> assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+                            InvalidParameter.class,
+                            refused -> assertThat(refused.detail())
+                                    .isEqualTo("The query parameter pageCursor is \"" + malformed
+                                            + "\", which is not a cursor this list gave."));
         }
     }
 

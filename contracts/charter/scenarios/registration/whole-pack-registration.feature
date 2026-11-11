@@ -244,6 +244,8 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the problem has no code
     When I PUT "/packs/acme" with the archive "v1" and the headers "If-None-Match": "*" and "If-Match": "*"
     Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" is "The headers If-Match and If-None-Match exclude each other, and the request sends both."
 
   # bound by: WP16 (US1 AS6, second clause: the revision moves after the 202)
   Scenario: A revision that moves after the registration was accepted ends it refused with 412
@@ -617,17 +619,18 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I PUT "/packs/<packId>" with the archive "v1"
     Then the response status is 400
     And the problem has no code
+    And the field at "/detail" is "The path parameter packId is \"<shown>\", which does not match ^[a-z0-9][a-z0-9-]{0,62}$."
     And the response has no "Location" header
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
 
     Examples: ids the grammar ^[a-z0-9][a-z0-9-]{0,62}$ refuses
-      | packId                                                            |
-      | Acme                                                              |
-      | -acme                                                             |
-      | acme_x                                                            |
-      | acme.x                                                            |
-      | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+      | packId | shown |
+      | Acme | Acme |
+      | -acme | -acme |
+      | acme_x | acme_x |
+      | acme.x | acme.x |
+      | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… |
 
   # bound by: WP16 (ADR-0065 D12, WP12 and WP14 hand-offs: a write that meets a busy registry is told to retry, not answered 500)
   Scenario: A per-artifact write that meets a busy registry answers 503 with Retry-After, and succeeds once it is free

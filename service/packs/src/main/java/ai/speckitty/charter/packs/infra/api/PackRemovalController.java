@@ -6,16 +6,15 @@ import ai.speckitty.charter.packs.application.ArtifactRemovalService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.RelationshipRemovalService;
 import ai.speckitty.charter.packs.application.RevisionTrail;
+import ai.speckitty.charter.web.InvalidParameter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The inbound adapter of the two {@code DELETE}s of a pack (ADR-0065 D4, IC-06): {@code deletePackArtifact} and
@@ -52,7 +51,7 @@ final class PackRemovalController {
     ResponseEntity<Void> deleteRelationship(String packId, String from, String to, @Nullable String ifMatch) {
         AuditContext audit = AuditContext.of(currentRequest());
         PackRevision revision = relationships.remove(
-                new PackIdentifier(packId), reference(from), reference(to), ifMatch, trailOf(audit));
+                new PackIdentifier(packId), reference("from", from), reference("to", to), ifMatch, trailOf(audit));
         return noContent(revision);
     }
 
@@ -87,15 +86,13 @@ final class PackRemovalController {
         return ResponseEntity.noContent().eTag(revision.token()).build();
     }
 
-    /** A query parameter that is no reference is a malformed request, a plain {@code 400}. */
-    private static PackQualifiedReference reference(String text) {
+    /** A query parameter that is no reference is a malformed request: a {@code 400} whose detail names it (#411). */
+    private static PackQualifiedReference reference(String name, String text) {
         try {
             return PackQualifiedReference.parse(text);
         } catch (IllegalArgumentException malformed) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "'" + text + "' is no <kind>:<id> or <pack>::<kind>:<id> reference",
-                    malformed);
+            throw new InvalidParameter(
+                    InvalidParameter.In.QUERY, name, text, "which is no <kind>:<id> or <pack>::<kind>:<id> reference");
         }
     }
 }

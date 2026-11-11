@@ -5,13 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
+import ai.speckitty.charter.web.InvalidParameter;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.web.ErrorResponseException;
 
 /** The opaque page cursor: base64url of {@code <kind>/<id>}, and every way a cursor is refused as a 400. */
 class ArtifactCursorTest {
@@ -46,14 +46,24 @@ class ArtifactCursorTest {
     void aCursorForAnotherKindThanTheFilterIsA400() {
         String directive = ArtifactCursor.encode(new ArtifactPosition(ArtifactKind.DIRECTIVE, "GUARD"));
 
-        assertBadRequest(() -> ArtifactCursor.decode(directive, Optional.of(ArtifactKind.TACTIC)));
+        assertThatThrownBy(() -> ArtifactCursor.decode(directive, Optional.of(ArtifactKind.TACTIC)))
+                .isInstanceOfSatisfying(
+                        InvalidParameter.class,
+                        refused -> assertThat(refused.detail())
+                                .isEqualTo("The query parameter pageCursor is \"" + directive
+                                        + "\", which names a directive, not a tactic as the kind filter asks."));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"***", "not base64", "dGFjdGlj", "dGVtcGxhdGUveA", "dGFjdGljLw", "Ym9ndXMveA", "L3g"})
     void aCursorThatIsNotBase64urlOfAServedKindAndAnIdIsA400(String cursor) {
         // not base64url; "tactic" (no slash); "template/x" (not served); "tactic/" (no id); "bogus/x"; "/x".
-        assertBadRequest(() -> ArtifactCursor.decode(cursor, Optional.empty()));
+        assertThatThrownBy(() -> ArtifactCursor.decode(cursor, Optional.empty()))
+                .isInstanceOfSatisfying(
+                        InvalidParameter.class,
+                        refused -> assertThat(refused.detail())
+                                .isEqualTo("The query parameter pageCursor is \"" + cursor
+                                        + "\", which is not a cursor this list gave."));
     }
 
     @Test
@@ -62,15 +72,13 @@ class ArtifactCursorTest {
                 .withoutPadding()
                 .encodeToString(new byte[] {'t', 'a', 'c', 't', 'i', 'c', '/', (byte) 0xC3, (byte) 0x28});
 
-        assertBadRequest(() -> ArtifactCursor.decode(cursor, Optional.empty()));
+        assertThatThrownBy(() -> ArtifactCursor.decode(cursor, Optional.empty()))
+                .isInstanceOfSatisfying(
+                        InvalidParameter.class,
+                        refused -> assertThat(refused.detail())
+                                .isEqualTo("The query parameter pageCursor is \"" + cursor
+                                        + "\", which is not a cursor this list gave."));
         assertThat(new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.ISO_8859_1))
                 .startsWith("tactic/");
-    }
-
-    private static void assertBadRequest(Runnable decode) {
-        assertThatThrownBy(decode::run)
-                .isInstanceOfSatisfying(
-                        ErrorResponseException.class,
-                        refused -> assertThat(refused.getStatusCode().value()).isEqualTo(400));
     }
 }

@@ -4,16 +4,21 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
+import java.util.List;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -42,21 +47,64 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * A request parameter a controller refuses, such as a kind filter that names no listed kind or a malformed page
+     * cursor: the 400 problem without a code, whose detail names the parameter, its value and what it accepts (#411).
+     *
+     * @param refused the refusal
+     * @return the {@code application/problem+json} 400
+     */
+    @ExceptionHandler(InvalidParameter.class)
+    public ResponseEntity<Object> refusedParameter(InvalidParameter refused) {
+        return Problems.badRequest(refused.detail());
+    }
+
+    /**
      * A request parameter that breaks a bound the contract declares (a {@code pageSize} of 0, an empty path segment) is
-     * a malformed request: the plain 400 problem, without a code or a detail, so no violation text reaches the wire.
-     * The generated interfaces are {@code @Validated}, so the method validation proxy refuses the call before any
-     * controller runs, with this exception; every controller gets the same answer. A violation that is not on a
-     * parameter, such as one on a return value, is the service's own failure: the 500 {@code internal_error}, logged.
+     * a malformed request: the 400 problem without a code, whose detail names each broken parameter in the service's own
+     * words ({@link InvalidParameter}, #411), so no validator message reaches the wire. The generated interfaces are
+     * {@code @Validated}, so the method validation proxy refuses the call before any controller runs, with this
+     * exception; every controller gets the same answer. A violation that is not on a parameter, such as one on a return
+     * value, is the service's own failure: the 500 {@code internal_error}, logged.
      *
      * @param invalid the violations
      * @return the {@code application/problem+json} 400, or the 500 when a violation is not on a parameter
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> invalidParameter(ConstraintViolationException invalid) {
-        if (invalid.getConstraintViolations().stream().allMatch(ProblemHandler::onParameter)) {
-            return Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY);
+        if (!invalid.getConstraintViolations().stream().allMatch(ProblemHandler::onParameter)) {
+            return unexpected(invalid);
         }
-        return unexpected(invalid);
+        List<String> details = InvalidParameter.details(invalid.getConstraintViolations());
+        return details.isEmpty()
+                ? Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY)
+                : Problems.badRequest(String.join(" ", details));
+    }
+
+    /**
+     * A query, path or header value that cannot be converted to its parameter's type ({@code pageSize=abc}): the 400
+     * problem whose detail names the parameter and its value (#411).
+     */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (ex instanceof MethodArgumentTypeMismatchException mismatch && mismatch.getRequiredType() != null) {
+            Optional<InvalidParameter> refused =
+                    InvalidParameter.ofType(mismatch.getParameter(), mismatch.getValue(), mismatch.getRequiredType());
+            if (refused.isPresent()) {
+                return refusedParameter(refused.get());
+            }
+        }
+        return super.handleTypeMismatch(ex, headers, status, request);
+    }
+
+    /** A required query parameter the request does not carry: the 400 problem that names it (#411). */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        return refusedParameter(InvalidParameter.missing(InvalidParameter.In.QUERY, ex.getParameterName()));
     }
 
     private static boolean onParameter(ConstraintViolation<?> violation) {
