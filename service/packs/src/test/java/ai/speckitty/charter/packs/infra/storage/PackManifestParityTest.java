@@ -30,7 +30,7 @@ class PackManifestParityTest {
     private Path scratch;
 
     @ParameterizedTest(name = "{0}: {1} constituent and {2} preset hashes are reproduced")
-    @CsvSource({"built-in, 21, 2", "project, 4, 1"})
+    @CsvSource({"built-in, 22, 2", "project, 4, 1"})
     @DisplayName("every hash of an example manifest is reproduced")
     void everyHashIsReproduced(String name, int constituents, int presets) {
         Path pack = ExamplePacks.pack(name);

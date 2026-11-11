@@ -41,7 +41,7 @@ class FileSystemPackInspectorTest {
     private static final FileSystemPackInspector INSPECTOR = new FileSystemPackInspector();
 
     /** The files validate mode classifies in the built-in example pack. */
-    private static final int EXAMPLE_BUILT_IN_FILES = 62;
+    private static final int EXAMPLE_BUILT_IN_FILES = 63;
 
     private static PackRoot root(Path dir) {
         return new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString());
