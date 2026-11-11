@@ -25,7 +25,7 @@ get:
     pack_unreadable. The answer is verified against
     the source fingerprint and carries it; inputs that change while it is read are stale_input. A
     directive, a styleguide, a paradigm or a toolguide also carries the pack revision as its ETag, for
-    a later write; a procedure carries it too, as a validator of the read, although it has no write yet; a tactic or a mission_step_contract, which has no write, carries none, and neither does a
+    a later write; a procedure carries it too, as a validator of the read, although it has no PUT yet (its removal takes it as If-Match); a tactic or a mission_step_contract, which has no write, carries none, and neither does a
     mission_type. There is no write on this templated
     path: a writable kind is replaced on its own path, PUT /packs/{packId}/artifacts/<kind>/{artifactId},
     and a PUT to the item of a kind that has no write (a tactic) is a 405 Problem without a code, not
@@ -90,7 +90,8 @@ delete:
     that names no kind the service serves is 404 kind_not_found; then an id the pack does not hold is the
     not-found code of its kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
     toolguide_not_found, mission_type_not_found or mission_step_contract_not_found), the code the item read answers on
-    the same path, and artifact_not_found for an agent_profile, which getPackAgentProfile answers likewise. An agent
+    the same path, and artifact_not_found for a procedure, as the item read answers it, and for an agent_profile,
+    which getPackAgentProfile answers likewise. An agent
     profile is removed as the writable kinds are, with the If-Match of the ETag getPackAgentProfile gave. A mission
     type is removed with its step prompt and guidelines files and its skeletons, the files
     under its templates/, as one removal under one impact check: every check below judges them together (#99, D10). The
@@ -146,7 +147,7 @@ delete:
       description: >-
         The pack, the kind or the artifact the path names is not there: 404 pack_not_found, kind_not_found or
         the not-found code of the kind (directive_not_found, tactic_not_found and so on, as on getPackArtifact;
-        artifact_not_found for an agent_profile; mission_type_not_found for a mission type, as on getPackMissionType;
+        artifact_not_found for a procedure or an agent_profile; mission_type_not_found for a mission type, as on getPackMissionType;
         mission_step_contract_not_found for a step contract), each its own code. The pack is judged first, then the
         kind, then the id.
       headers:

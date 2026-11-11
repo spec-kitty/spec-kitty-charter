@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
  * carries the digest both agree on.
  *
  * <p>A procedure carries no relationship: what its steps reference is authored in the pack's graph documents and read
- * through the references read ({@link ArtifactReadService#references}), ADR-0064. It has no write either; the pack
- * revision it is read with is the validator of the read's {@code ETag}.
+ * through the references read ({@link ArtifactReadService#references}), ADR-0064. It has no PUT either (removal is the generic one); the
+ * pack revision it is read with is the validator of the read's {@code ETag} and the {@code If-Match} of a removal.
  *
  * <p>A pack the load cannot resolve is refused {@link RefusalCode#PACK_NOT_FOUND}; an absent procedure is refused
  * {@link RefusalCode#ARTIFACT_NOT_FOUND}, the code of a kind served after the per-kind codes (as the agent profile).

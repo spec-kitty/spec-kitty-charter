@@ -8,6 +8,7 @@ decision_date: '2026-11-11'
 type: ADR
 kind: ADR
 related:
+  - adr/0030-removal-is-distinct-from-deactivation
   - adr/0064-graph-documents-are-the-only-source-of-relationships
   - adr/0070-charter-tests-own-example-packs-not-open-packs-content
 audience:
@@ -36,7 +37,7 @@ read the procedure it named.
 
 1. **`procedure` joins the served kinds** of `ArtifactReadService.SERVED`, after `toolguide` and before
    `agent_profile`. Being listed gives it the generic list and its filter, the item read, the references read,
-   the activation reads and listing, and the links of graph and context entries, all through the existing
+   the removal (`DELETE /packs/{packId}/artifacts/procedure/{artifactId}`), the activation reads and listing, and the links of graph and context entries, all through the existing
    gates. No per-kind route is added.
 2. **The read follows the toolguide seam**: a `ProcedureRepository` port that `DomainRepositoryService` implements
    over `ProcedureBinding`, and a `ProcedureReadService` that reads in one `ConsistentRead`.
@@ -46,9 +47,9 @@ read the procedure it named.
    `/references` (ADR-0064). The schema has no reference member.
 4. **Absence is `artifact_not_found`.** The per-kind not-found codes are kept for the five kinds that have them; a kind
    served after them uses the generic code, as `agent_profile` does. No refusal code is added.
-5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no write yet. A tactic has none.
-   The revision is a correct validator of the read, and a later procedure write will need it as `If-Match`.
-
+5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no `PUT` yet. A tactic has none.
+   The revision is a correct validator of the read, it is the `If-Match` of a removal, and a later procedure write will
+   need it as well.
 6. **An action context or graph entry of a procedure links its reads** (`effective-artifact`, and `artifact` where the
    entry names its pack), as entries of every listed kind do. It is a response addition for clients that already
    received the entry without links.
@@ -59,4 +60,6 @@ read the procedure it named.
 - #350 (an `action:` URN in a procedure reference id) no longer applies to the reader: the procedure schema has no
   `Reference` member since ADR-0064. Operator ruling, 2026-11-11: #350 is retargeted to the graph-document edges of a
   procedure, and stays open.
+- Operator ruling, 2026-11-11: a procedure can be removed. Listing it among the served kinds enables the generic
+  removal (ADR-0030), with the usual referrer, closure and `If-Match` checks; the ruling accepts that.
 - Other kernel kinds (`template`, `asset` and the rest) stay unserved and keep `kind_not_found`.

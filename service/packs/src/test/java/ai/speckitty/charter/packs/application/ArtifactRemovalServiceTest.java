@@ -206,6 +206,7 @@ class ArtifactRemovalServiceTest {
         "qa, template, D3, KIND_NOT_FOUND",
         "qa, directive, NOPE, DIRECTIVE_NOT_FOUND",
         "qa, tactic, NOPE, TACTIC_NOT_FOUND",
+        "qa, procedure, NOPE, ARTIFACT_NOT_FOUND",
     })
     void aPathThatNamesNothingThePackHoldsIsA404WithItsOwnCodeAndTheNextDeleteStillWorks(
             String pack, String kind, String id, RefusalCode code, @TempDir Path host) {

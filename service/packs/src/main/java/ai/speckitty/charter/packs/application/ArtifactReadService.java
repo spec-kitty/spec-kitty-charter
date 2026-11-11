@@ -292,7 +292,7 @@ public final class ArtifactReadService {
         }
 
         /**
-         * A procedure and its revision. A procedure has no write; the revision validates the read (#484).
+         * A procedure and its revision. A procedure has no PUT; the revision validates the read and is the If-Match of a removal (#484).
          *
          * @param artifact the procedure
          * @param at the revision it was read at

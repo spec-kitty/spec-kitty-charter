@@ -164,6 +164,34 @@ Feature: One artifact or one registered relationship is removed from a pack
     When I GET "/packs/qa/artifacts/directive/D2"
     Then the response status is 200
 
+  # bound by: #484 (operator ruling 2026-11-11: a procedure is removed as the served kinds are; the item's ETag is the
+  # pack revision, so it is a valid If-Match)
+  Scenario: A procedure is deleted with the ETag its own read gave, and a later read and the list no longer hold it
+    Given the org pack "qa" with the file "procedures/refactoring.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: refactoring
+      title: Refactoring
+      description: Change the structure, not the behavior.
+      entry_condition: The tests pass.
+      exit_condition: The tests still pass.
+      steps:
+        - title: Take one small step
+      """
+    When I GET "/packs/qa/artifacts/procedure/refactoring"
+    Then the response status is 200
+    And I remember the ETag
+    When I DELETE "/packs/qa/artifacts/procedure/refactoring" with the remembered ETag
+    Then the response status is 204
+    When I GET "/packs/qa/artifacts/procedure/refactoring"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    When I GET "/packs/qa/artifacts?kind=procedure"
+    Then the response status is 200
+    And the field at "/items/0" is absent
+    When I GET "/packs/qa/artifacts/directive/D2"
+    Then the response status is 200
+
   # bound by: WP05 of agent-profile-reads (a profile is refused as a directive is: an edge of the pack that points at it)
   Scenario: An agent profile another artifact of the pack points at is not deleted, and the refusal names the referrer
     Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
@@ -206,6 +234,7 @@ Feature: One artifact or one registered relationship is removed from a pack
       | /packs/qa/artifacts/template/D3        | kind_not_found      |
       | /packs/qa/artifacts/directive/NOPE     | directive_not_found |
       | /packs/qa/artifacts/agent_profile/NOPE | artifact_not_found  |
+      | /packs/qa/artifacts/procedure/NOPE     | artifact_not_found  |
 
   # bound by: WP19 (US2 AS2: another pack's edge refers to the artifact; the refusal changes nothing)
   Scenario: An artifact another pack refers to is not deleted, and the refusal names the referrer
