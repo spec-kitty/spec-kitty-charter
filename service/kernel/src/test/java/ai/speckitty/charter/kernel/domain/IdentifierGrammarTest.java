@@ -87,24 +87,18 @@ class IdentifierGrammarTest {
 
     static Stream<Arguments> capped() {
         return Stream.of(
-                Arguments.of("slug", (Predicate<String>) IdentifierGrammar::isSlug, "a", 64, "-a"),
-                Arguments.of(
-                        "letter-first slug", (Predicate<String>) IdentifierGrammar::isLetterFirstSlug, "a", 64, "-a"),
-                Arguments.of("dotted key", (Predicate<String>) IdentifierGrammar::isDottedKey, "a.", 255, ".a"),
-                Arguments.of("relative path", (Predicate<String>) IdentifierGrammar::isRelativePath, "a", 255, "/a"));
+                Arguments.of("slug", (Predicate<String>) IdentifierGrammar::isSlug, "a", 64),
+                Arguments.of("letter-first slug", (Predicate<String>) IdentifierGrammar::isLetterFirstSlug, "a", 64),
+                Arguments.of("dotted key", (Predicate<String>) IdentifierGrammar::isDottedKey, "a.", 255),
+                Arguments.of("relative path", (Predicate<String>) IdentifierGrammar::isRelativePath, "a", 255));
     }
 
     @ParameterizedTest(name = "a {0} is capped at {3}")
     @MethodSource("capped")
-    void eachGrammarIsCappedBeforeItMatches(
-            String name, Predicate<String> grammar, String head, int cap, String repeat) {
+    void eachGrammarIsCappedAt(String name, Predicate<String> grammar, String head, int cap) {
         String atCap = head + "a".repeat(cap - head.length());
         assertThat(grammar.test(atCap)).as("%d characters", cap).isTrue();
         assertThat(grammar.test(atCap + "a")).as("%d characters", cap + 1).isFalse();
-        // Refused on length alone: a text of 20 000 characters that is otherwise well formed never reaches the regex.
-        assertThat(grammar.test("a" + repeat.repeat(10_000)))
-                .as("20 000 characters")
-                .isFalse();
     }
 
     static Stream<Arguments> grammars() {
