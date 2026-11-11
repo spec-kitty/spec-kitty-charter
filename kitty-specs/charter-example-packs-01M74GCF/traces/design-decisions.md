@@ -22,3 +22,7 @@ Decisions recorded in decisions/ (DM records) and ADR-0070; this file logs the r
 2026-11-11 · claude · WP05: the project example's overrides edge onto org-base::styleguide:reasons-canvas-writing was refused as self_override once the full closure merged edges (the governance walk); the project styleguide already overrides by sharing its id one level up (ADR-0053), so the edge was removed and the project manifest re-stamped. PackDigestBaselineTest now pins only project (built-in and org-base hold enhancements/), with values computed on current code, not on pre-binding code.
 
 2026-11-11 · claude · WP09 closes with no code change; its evidence (grep and a green run without the synced trees) is the deliverable. The synced-tree readers are all in :deployable (WP06, WP10).
+
+2026-11-11 · claude · WP06's replacement project edge `skill:project-triage overrides org-base::skill:issue-triage` was refused at integration ("org-base is outside its depends_on closure"), so project.graph.yaml keeps WP05's version with no overrides edge; cross-level overrides edges stay covered by ClosureViewMergedTest's synthetic fixtures. Reviewers to confirm the project pack's depends_on.
+
+2026-11-11 · claude · WP10 closes with no code change; evidence in the tracer.

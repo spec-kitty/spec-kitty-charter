@@ -48,3 +48,7 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · Integrating side-worktree commits conflicts on the append-only tracer files every time (each WP appends); resolved by keeping both sides. Suggested fix: per-WP tracer fragments, or a union merge driver for traces/*.md (.gitattributes `merge=union`).
 
 2026-11-11 · claude · WP09 was a no-op: none of the 11 :packs classes in plan inventory B reads the synced `packs/qa` or `packs/internal` trees (their "qa" is only a pack name in temp dirs, mocks and URLs). They passed in a worktree where the trees were never synced (180 tests, 0 failed, 3 skipped by the root-permission assumption). The inventory was classified by name, not by what the tests read. Lesson: build a test inventory from what the code reads (system properties, paths), not from names.
+
+2026-11-11 · claude · WP10 was a no-op like WP09: none of its eight :deployable classes reads the synced trees ("qa" is a temp-dir pack or a URL segment); :deployable:test passes, 1400/0, in a worktree without them. The only external-tree reader is the open-packs-tagged openPacksProfiles task (WP07).
+
+2026-11-11 · claude · WP06 integration: `--tests` filters were ignored (the whole module ran); :deployable:test has no contracts-directory input, so a test searches upward for it (WP07 to add); the first restamp test errored because org-base has no pack-manifest.yaml.
