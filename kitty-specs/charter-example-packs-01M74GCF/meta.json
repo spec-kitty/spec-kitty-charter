@@ -13,5 +13,7 @@
   "slug": "charter-example-packs-01M74GCF",
   "target_branch": "claude/adr-open-packs-456-458-adf2fo",
   "topology": "single_branch",
-  "topology_source": "explicit"
+  "topology_source": "explicit",
+  "contracts": "none",
+  "contracts_rationale": "Test, fixture, build, CI and governance change only; no API surface is added or changed."
 }
