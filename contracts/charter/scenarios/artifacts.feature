@@ -1,7 +1,7 @@
 @contract @artifacts
 Feature: A pack's artifacts are read through one generic list and one generic item
   A client lists a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm,
-  toolguide and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
+  toolguide, procedure and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
   and first/next links (FR-003), and reads one artifact in a closed envelope that holds exactly the
   member its kind names (FR-004). The list is ordered by the served-kind order, then by id in
   code-point order, and its cursor is a position: a page holds the artifacts strictly after it. An

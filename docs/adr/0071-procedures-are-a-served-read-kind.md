@@ -35,8 +35,8 @@ read the procedure it named.
 ## Decision
 
 1. **`procedure` joins the served kinds** of `ArtifactReadService.SERVED`, after `toolguide` and before
-   `agent_profile`. Being listed gives it the generic list and its filter, the item read, the references read, the
-   removal, the activation reads and listing, and the links of graph and context entries, all through the existing
+   `agent_profile`. Being listed gives it the generic list and its filter, the item read, the references read,
+   the activation reads and listing, and the links of graph and context entries, all through the existing
    gates. No per-kind route is added.
 2. **The read follows the toolguide seam**: a `ProcedureRepository` port that `DomainRepositoryService` implements
    over `ProcedureBinding`, and a `ProcedureReadService` that reads in one `ConsistentRead`.
@@ -48,6 +48,10 @@ read the procedure it named.
    served after them uses the generic code, as `agent_profile` does. No refusal code is added.
 5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no write yet. A tactic has none.
    The revision is a correct validator of the read, and a later procedure write will need it as `If-Match`.
+
+6. **An action context or graph entry of a procedure links its reads** (`effective-artifact`, and `artifact` where the
+   entry names its pack), as entries of every listed kind do. It is a response addition for clients that already
+   received the entry without links.
 
 ## Consequences
 

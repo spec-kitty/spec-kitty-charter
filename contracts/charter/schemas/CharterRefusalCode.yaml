@@ -11,7 +11,7 @@ description: >-
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
-  toolguide, agent_profile and mission_step_contract; a mission_type item is read by getPackMissionType), on the generic artifact item read, listArtifactReferences, deletePackArtifact and getEffectiveArtifact,
+  toolguide, procedure, agent_profile and mission_step_contract; a mission_type item is read by getPackMissionType), on the generic artifact item read, listArtifactReferences, deletePackArtifact and getEffectiveArtifact,
   the last three over the listed kinds, agent_profile, mission_type and mission_step_contract included; the pack (or the activation) is judged first, so an unknown pack
   with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
   missing or invalid is pack_unreadable (500) on the offering and on every artifact read (operator
