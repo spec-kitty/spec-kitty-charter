@@ -13,8 +13,8 @@ import java.util.Optional;
  * <p>An implementation answers from a compose resolved once, for the read it serves, and decides "which pack does this
  * reference mean" by the compose's one rule ({@link PackCompositionResolver#holderOf}), never by a rule of its own.
  *
- * <p>This is a reserved seam for the effective-graph reads: {@link
- * ai.speckitty.charter.packs.application.GraphWalk} takes it, and no read of the service is wired through it yet.
+ * <p>{@link ai.speckitty.charter.packs.application.GraphWalk} takes it; the one implementation is the
+ * {@link ai.speckitty.charter.packs.application.EdgeIndex}.
  */
 public interface ComposeResolver {
 
