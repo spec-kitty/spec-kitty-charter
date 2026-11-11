@@ -121,6 +121,14 @@ class PackDirectoryResolutionTest {
     }
 
     @Test
+    void aLocationWithNoParentDirectoryIsPassedOverAsOneThatCannotDeclareTheId() throws IOException {
+        Path root = host.getRoot();
+        Path declares = pack("declares", ID_A);
+
+        assertAllResolve(List.of(at("root", root), at("p", declares)), ID_A, declares);
+    }
+
+    @Test
     void anIdNoLocationNamesOrDeclaresIsNotFound() throws IOException {
         Path other = pack("other", ID_B);
 
