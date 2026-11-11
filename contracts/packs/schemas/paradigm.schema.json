@@ -4,10 +4,10 @@
   "$defs": {
     "Principle": {
       "additionalProperties": false,
-      "description": "One core idea of a paradigm (ADR-0067): a short name and one or two sentences.",
+      "description": "One core idea of a paradigm or a styleguide (ADR-0067): a short name and one or two sentences.",
       "properties": {
         "name": {
-          "description": "The principle's short name; unique within the paradigm, ignoring case and surrounding whitespace.",
+          "description": "The principle's short name; unique within its list, ignoring case and surrounding whitespace.",
           "maxLength": 64,
           "minLength": 1,
           "pattern": "\\S",

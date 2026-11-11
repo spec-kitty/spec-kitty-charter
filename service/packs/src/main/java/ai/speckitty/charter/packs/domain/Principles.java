@@ -29,10 +29,15 @@ public final class Principles {
      */
     public static boolean wellFormed(List<Principle> principles) {
         return principles.stream()
-                .allMatch(p -> !p.name().isBlank()
-                        && p.name().length() <= Principle.NAME_MAX
-                        && !p.description().isBlank()
-                        && p.description().length() <= Principle.DESCRIPTION_MAX);
+                .allMatch(p -> !Principle.isBlank(p.name())
+                        && codePoints(p.name()) <= Principle.NAME_MAX
+                        && !Principle.isBlank(p.description())
+                        && codePoints(p.description()) <= Principle.DESCRIPTION_MAX);
+    }
+
+    /** Characters as the schema's {@code maxLength} counts them: code points, not UTF-16 units. */
+    private static int codePoints(String text) {
+        return text.codePointCount(0, text.length());
     }
 
     /**
