@@ -21,3 +21,13 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · Parallel WPs on a single_branch mission: work packages are implemented in separate git worktrees (wip/WPnn) and cherry-picked, because a single_branch mission has one write checkout and the 4-core host takes two Gradle builds at once. WPs that touch the shared example packs (WP02, WP03, WP04) need serial integration; pack-manifest.yaml hashes must be regenerated after merging example-pack edits.
 
 2026-11-11 · claude · The whole-pack round trip writes through DomainRepositoryService, which never writes policy.yaml, so the gate keeps `policy` in expected-red `kinds` (filed as #476).
+
+2026-11-11 · claude · WP03: PackSchemas and PackFileKind are package-private, so the coverage check re-reads the bundled schema resources and approximates the Markdown parsing. Suggested fix: a test-visible schema/file-kind catalogue.
+
+2026-11-11 · claude · WP03: Error Prone (StringSplitter, EscapedEntity) and Checkstyle (ModifiedControlVariable) forced rewrites; the graph rule that `impacts` is allowed only on `relation: impacts` surfaced only through load findings. Gradle runs take minutes, so they were run in the background.
+
+2026-11-11 · claude · WP01 slipped past review with 3 HexagonalArchitectureTest violations in the testFixtures ExamplePacks (missing @NullMarked, dependency on infra.storage.PackLocation): the WP01 verification ran :packs and the deployable classpath test, not the whole :deployable:test. Fixed in WP03. Lesson: review runs the owning modules' full suites.
+
+2026-11-11 · claude · WP03: raised refusal codes `registration_timed_out` and `pack_storage_full` had no scenario and only synthetic unit tests; covered by service tests over example-pack copies.
+
+2026-11-11 · claude · WP03: charter.yaml and org-charter.yaml cannot sit in an example pack: the whole-pack load rejects files it does not model, so the coverage check skips those two schemas (derived from the loader, not a list).
