@@ -18,7 +18,7 @@ name: service-release
 # someone who can push tags: a tag ruleset on service-v* limits who can publish.
 #
 # The build it calls (service.yml) also checks out spec-kitty-open-packs at the commit pinned in gradle.properties
-# (openPacksRef): test data for verifyAll's round-trip, read-only and never part of an asset.
+# (openPacksRef) to sync packs/internal and packs/qa for governance; no test reads it, and it is never part of an asset.
 #
 # A manual run (workflow_dispatch) is a rehearsal: it judges the chosen ref under the tag it is given, builds the
 # assets and uploads them as the workflow artifact `service-release`. It never creates a release; on a ref whose

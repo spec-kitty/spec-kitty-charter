@@ -1,7 +1,7 @@
 name: whole-pack
 
-# The whole-pack round-trip gate (#187, epic #186): every file of the pinned spec-kitty-open-packs built-in pack is read
-# into the domain, written back, read again and compared with its source by meaning, against the checked-in
+# The whole-pack round-trip gate (#187, epic #186): every file of the charter-owned example built-in pack (ADR-0070,
+# service/packs/src/testFixtures) is read into the domain, written back, read again and compared with its source by meaning, against the checked-in
 # expected-red baseline (service/packs/src/test/resources/whole-pack). It uploads the report as `whole-pack-report`.
 #
 # A required check (epic #186, operator ruling of 2026-11-05): ci.yml calls this workflow for its `wholepack` group, so
@@ -43,24 +43,6 @@ jobs:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      # The pin lives in gradle.properties only (openPacksRef); Gradle reads it too.
-      - name: Read the open-packs pin
-        id: open-packs-pin
-        run: |
-          ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
-          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
-            echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
-            exit 1
-          fi
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
-      - name: Check out spec-kitty-open-packs
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          repository: spec-kitty/spec-kitty-open-packs
-          ref: ${{ steps.open-packs-pin.outputs.ref }}
-          path: .open-packs
-
       - name: Set up Java 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
@@ -70,10 +52,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
-      # A path relative to the repository root, as the docs give it, so CI covers that resolution (#322); service.yml
-      # passes an absolute one.
       - name: Whole-pack round trip
-        run: ./gradlew :packs:wholePackRoundTrip -PopenPacksDir=.open-packs
+        run: ./gradlew :packs:wholePackRoundTrip
 
       - name: Show the report
         if: always()
