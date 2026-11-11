@@ -5,8 +5,10 @@ description: >-
   list. An agent_profile is read whole by getPackAgentProfile, not by the templated item read. A
   mission_step_contract is read through the generic item read; a mission_type is listed and filtered
   here, and its item is answered by getPackMissionType. Under an activation getEffectiveMissionType and
-  getEffectiveMissionStepContract answer them. In a pack both carry the pack revision as their ETag;
-  under an activation neither mission_type nor mission_step_contract answers an ETag. A procedure is read through the generic item read, by pack and under an activation. Other kernel kinds (template and the rest) are not served yet. It types
+  getEffectiveMissionStepContract answer them. In a pack, the item read of every listed kind carries the
+  pack revision as its ETag (#487); under an activation neither mission_type nor mission_step_contract
+  answers one. A procedure is read through the generic item read, by pack and under an activation.
+  Other kernel kinds (template and the rest) are not served yet. It types
   only the request's ?kind= filter; a response's kind is an open slug, so a kind served later is
   additive for a client.
 type: string
