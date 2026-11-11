@@ -135,6 +135,7 @@ jobs:
             service/*/build/reports/pitest
             service/*/build/reports/mutation-floors
             build/reports/mutation-floors
+          # Stays an error though pitest.log is present once PIT ran: if an earlier step failed, nothing is there to keep.
           if-no-files-found: error
           retention-days: 14
 
