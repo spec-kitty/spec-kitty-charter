@@ -3,16 +3,25 @@ work_package_id: WP05
 title: Re-point the composition, file and digest tests
 dependencies:
 - WP01
+requirement_refs:
+- FR-004
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T017
 - T018
 - T019
 - T020
-requirement_refs:
-- FR-004
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
+history:
+- at: '2026-11-11T05:30:00Z'
+  actor: claude
+  action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/
+create_intent: []
 execution_mode: code_change
 owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/OpenPacksComposeTest.java
@@ -25,15 +34,9 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackLevelSchemasTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProfileGovernanceCorpusTest.java
-authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/
-create_intent: []
-agent_profile: java-jenny
 role: implementer
-agent: claude
-history:
-- at: '2026-11-11T05:30:00Z'
-  actor: claude
-  action: created by /spec-kitty.tasks
+tags: []
+tracker_refs: []
 ---
 
 # WP05 — Re-point the composition, file and digest tests
@@ -72,7 +75,7 @@ spec-kitty agent action implement WP05 --agent claude --mission charter-example-
 
 ## Subtask T019 — Digest and manifest tests
 
-`PackDigestBaselineTest`: record the digests of the three example packs (computed once, pinned with a comment saying how to recompute). `PackManifestParityTest`: the example built-in manifest's hashes reproduce.
+`PackDigestBaselineTest` proves a pack with no `enhancements/` keeps the fingerprint it had before the step-enhancement binding: pin the digests of the example packs that hold no `enhancements/` (computed with `digestOfPack`), with a comment giving the command to recompute after an intended example change. Known-failure and count assertions in `OpenPacksComposeTest` become rules over the examples (no known failures; the served packs equal the three examples). `PackManifestParityTest`: the example built-in manifest's hashes reproduce.
 
 ## Subtask T020 — File-kind, inspector, level-schema and governance tests
 
@@ -80,9 +83,9 @@ spec-kitty agent action implement WP05 --agent claude --mission charter-example-
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- Each listed class reads `ExamplePacks` only; per-class old/new assertion table with one failing control each.
+- `PackDigestBaselineTest` pins the example packs' digests with the regeneration command beside the pins.
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 

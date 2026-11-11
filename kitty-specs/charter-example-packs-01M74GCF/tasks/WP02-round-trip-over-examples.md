@@ -3,16 +3,26 @@ work_package_id: WP02
 title: Whole-pack round trip over the example packs
 dependencies:
 - WP01
+requirement_refs:
+- FR-002
+- SC-001
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T006
 - T007
 - T008
 - T009
-requirement_refs:
-- FR-002
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
+history:
+- at: '2026-11-11T05:30:00Z'
+  actor: claude
+  action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePack
+create_intent: []
 execution_mode: code_change
 owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java
@@ -21,15 +31,9 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackReport.java
 - service/packs/src/test/resources/whole-pack/**
-authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePack
-create_intent: []
-agent_profile: java-jenny
 role: implementer
-agent: claude
-history:
-- at: '2026-11-11T05:30:00Z'
-  actor: claude
-  action: created by /spec-kitty.tasks
+tags: []
+tracker_refs: []
 ---
 
 # WP02 — Whole-pack round trip over the example packs
@@ -83,9 +87,11 @@ once WP07 lands (record the command in the WP review).
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- `whole-pack/expected-red.yaml`, `known-failures.yaml` and `exclusions.yaml` are empty (or list only a documented exclusion).
+- `./gradlew :packs:wholePackRoundTrip` passes with no `-PopenPacksDir`.
+- `whole-pack.yml` still runs `wholePackRoundTrip` as the required gate (checked in WP07).
+- Removing one example file makes the gate fail naming it (failing control recorded).
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 

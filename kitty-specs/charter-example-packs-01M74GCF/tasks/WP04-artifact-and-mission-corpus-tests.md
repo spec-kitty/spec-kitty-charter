@@ -3,16 +3,25 @@ work_package_id: WP04
 title: Re-point the artifact, mission-type and prompt-slot tests
 dependencies:
 - WP01
+requirement_refs:
+- FR-004
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T013
 - T014
 - T015
 - T016
-requirement_refs:
-- FR-004
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
+history:
+- at: '2026-11-11T05:30:00Z'
+  actor: claude
+  action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/
+create_intent: []
 execution_mode: code_change
 owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDoctrineCorpusRoundTripTest.java
@@ -21,18 +30,13 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackAndSkillCorpusTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackAndSkillSchemaTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeCorpusTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeHoldingCorpusTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractCorpusTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PromptSlotLoadChecksTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/markdown/PromptSlotsCanonicalCorpusTest.java
-authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/
-create_intent: []
-agent_profile: java-jenny
 role: implementer
-agent: claude
-history:
-- at: '2026-11-11T05:30:00Z'
-  actor: claude
-  action: created by /spec-kitty.tasks
+tags: []
+tracker_refs: []
 ---
 
 # WP04 — Re-point the artifact, mission-type and prompt-slot tests
@@ -67,7 +71,7 @@ spec-kitty agent action implement WP04 --agent claude --mission charter-example-
 
 ## Subtask T014 — Mission-type and step-contract tests
 
-`MissionTypeCorpusTest`, `MissionStepContractCorpusTest`: assertions about real mission types (`software-dev`, counts, cave-kitty) become assertions about the example mission type; keep each rule's assertion (lifecycle states, guards, step ids).
+`MissionTypeCorpusTest`, `MissionTypeHoldingCorpusTest` (keys on `built-in`/`software-dev`), `MissionStepContractCorpusTest`: assertions about real mission types (`software-dev`, counts, cave-kitty) become assertions about the example mission type; keep each rule's assertion (lifecycle states, guards, step ids).
 
 ## Subtask T015 — Prompt-slot tests
 
@@ -79,9 +83,9 @@ They now run in `:packs:test`. Run each class red-first against an incomplete ex
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- Each listed class reads `ExamplePacks` only; a table in the WP review gives, per class, the old assertion, the new one and one failing control.
+- `MissionTypeHoldingCorpusTest` is included and keyed on the example `software-dev` mission type.
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 

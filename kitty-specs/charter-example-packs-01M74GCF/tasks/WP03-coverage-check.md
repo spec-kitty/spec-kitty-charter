@@ -3,31 +3,35 @@ work_package_id: WP03
 title: Coverage check over the example packs
 dependencies:
 - WP01
+requirement_refs:
+- FR-003
+- SC-003
+- C-002
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T010
 - T011
 - T012
-requirement_refs:
-- FR-003
-- SC-003
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
-execution_mode: code_change
-owned_files:
-- service/packs/src/test/java/ai/speckitty/charter/packs/examples/**
-- service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java
-authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/examples/
-create_intent:
-- service/packs/src/test/java/ai/speckitty/charter/packs/examples/ExamplePackCoverageTest.java
-- service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java
-agent_profile: java-jenny
-role: implementer
-agent: claude
 history:
 - at: '2026-11-11T05:30:00Z'
   actor: claude
   action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/examples/
+create_intent:
+- service/packs/src/test/java/ai/speckitty/charter/packs/examples/ExamplePackCoverageTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java
+execution_mode: code_change
+owned_files:
+- service/packs/src/test/java/ai/speckitty/charter/packs/examples/**
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java
+role: implementer
+tags: []
+tracker_refs: []
 ---
 
 # WP03 — Coverage check over the example packs
@@ -74,9 +78,9 @@ Read the scenarios the way `errors.feature` does. A code covered by neither fail
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- Removing one property from an example makes the check fail naming `<kind>: <pointer>`; restoring it passes (recorded).
+- Every `raised: true` refusal code is produced by a contract scenario or by a test over an example pack (or its mutated copy in a temp directory); mutated copies never live in the example packs (C-002).
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 

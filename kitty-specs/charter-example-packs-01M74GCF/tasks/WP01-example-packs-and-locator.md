@@ -2,34 +2,37 @@
 work_package_id: WP01
 title: Example packs and the ExamplePacks locator
 dependencies: []
+requirement_refs:
+- FR-001
+- NFR-002
+- C-002
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
 - T003
 - T004
 - T005
-requirement_refs:
-- FR-001
-- NFR-002
-- C-002
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
+history:
+- at: '2026-11-11T05:30:00Z'
+  actor: claude
+  action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/packs/src/testFixtures/
+create_intent:
+- service/packs/src/testFixtures/java/ai/speckitty/charter/packs/examples/ExamplePacks.java
 execution_mode: code_change
 owned_files:
 - service/packs/src/testFixtures/**
 - service/packs/build.gradle.kts
 - service/deployable/build.gradle.kts
-authoritative_surface: service/packs/src/testFixtures/
-create_intent:
-- service/packs/src/testFixtures/java/ai/speckitty/charter/packs/examples/ExamplePacks.java
-agent_profile: java-jenny
 role: implementer
-agent: claude
-history:
-- at: '2026-11-11T05:30:00Z'
-  actor: claude
-  action: created by /spec-kitty.tasks
+tags: []
+tracker_refs: []
 ---
 
 # WP01 — Example packs and the ExamplePacks locator
@@ -63,7 +66,12 @@ spec-kitty agent action implement WP01 --agent claude --mission charter-example-
 - In `service/packs/build.gradle.kts` add `` `java-test-fixtures` `` to the plugins block; give the test-fixtures source
   set the same Checkstyle/Spotless/Error Prone treatment the test source set has (follow `build-logic` conventions).
 - In `service/deployable/build.gradle.kts` add `testImplementation(testFixtures(project(":packs")))`.
-- Verify: `./gradlew :packs:compileTestFixturesJava :deployable:compileTestJava` passes; no new artifact appears in
+- Confirm the convention plugins (`build-logic/src/main/kotlin/charter.hand-written.gradle.kts`) apply Checkstyle,
+  Error Prone and NullAway to `compileTestFixturesJava`/`checkstyleTestFixtures` with the test severities; exclude the
+  fixtures from PIT (`charter.mutation-conventions`).
+- This WP makes only the additive change to the two build files; WP07 removes the open-packs wiring from them later
+  (recorded out-of-map edit, sequenced after this WP).
+- Verify: `./gradlew :packs:check :deployable:compileTestJava` passes; no new artifact appears in
   `gradle/verification-metadata.xml` (the plugin ships with Gradle).
 
 ## Subtask T002 — Author the `built-in` example pack
@@ -71,7 +79,7 @@ spec-kitty agent action implement WP01 --agent claude --mission charter-example-
 Under `service/packs/src/testFixtures/resources/example-packs/built-in/`, canonical shapes only:
 - `pack.yaml` (`schema_version: "1.0"`, built-in level, `mutability_policy: policy.yaml`, `fallback_profile: generic-agent`).
 - `policy.yaml` locking `agent_profile:generic-agent`, a kind default and one `extendable` artifact.
-- One file of every artifact kind at full shape: directive, tactic, styleguide (named principles), toolguide (+ guide
+- A `software-dev` mission type (tests key on that id) and one file of every artifact kind at full shape: directive, tactic, styleguide (named principles), toolguide (+ guide
   companion), paradigm (with principles), procedure, agent profiles (`generic-agent` with `role: generic`, a
   `role`/`alt-roles` implementer, a reviewer), mission type with lifecycle and guard, mission step contract, step prompts
   with empty slots, a skill with body, a glossary pack, an asset (one binary payload), a template, presets.
@@ -93,16 +101,19 @@ org-base, and `fallback_profile` naming built-in's locked `generic-agent` (closu
 ## Subtask T005 — Write `ExamplePacks` and its self-test
 
 `ai.speckitty.charter.packs.examples.ExamplePacks` (test fixtures): `root()`, `packsDirectory()`, `packs()` (the
-`PackLocation`s of the three packs, configured with their levels), `pack(String name)`. It copies nothing; it resolves
-the classpath resource directory to a `Path`. A self-test in `:packs` loads each pack through the production store,
-asserts zero violations and zero warnings, and composes the project pack's closure through the offering read.
-Red first: the self-test fails before the packs are complete.
+`PackLocation`s of the three packs, configured with their levels), `pack(String name)`. On first use it copies the
+`example-packs/` resource tree to a per-JVM temp directory (opening the jar's `FileSystem` when the fixtures are a jar,
+as they are for `:deployable`) and returns real paths; a test that mutates files copies again into its `@TempDir`. A self-test in `:packs` loads each pack through the production store,
+asserts zero violations and zero warnings, and composes the project pack's closure through the offering read. A second
+self-test in `:deployable` proves the jar path works. Red first: the self-test fails before the packs are complete.
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- `./gradlew :packs:check` passes with the test-fixtures source set under the same Checkstyle/Error Prone/NullAway rules.
+- Both self-tests (`:packs` and `:deployable`) load the three packs with zero violations and zero warnings; a removed file turns them red.
+- Every bullet of ADR-0070 decision 2 has a file in the packs (checklist in the WP review).
+- The three packs hold at most 150 files (NFR-002).
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 

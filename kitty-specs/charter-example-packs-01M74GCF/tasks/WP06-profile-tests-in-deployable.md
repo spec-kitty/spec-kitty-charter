@@ -3,15 +3,24 @@ work_package_id: WP06
 title: Re-point the profile tests in deployable
 dependencies:
 - WP01
+requirement_refs:
+- FR-004
+- C-001
+- C-003
+planning_base_branch: claude/adr-open-packs-456-458-adf2fo
+merge_target_branch: claude/adr-open-packs-456-458-adf2fo
+branch_strategy: Planning artifacts for this mission were generated on claude/adr-open-packs-456-458-adf2fo. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into claude/adr-open-packs-456-458-adf2fo unless the human explicitly redirects the landing branch.
 subtasks:
 - T021
 - T022
 - T023
-requirement_refs:
-- FR-004
-planning_base_branch: claude/adr-open-packs-456-458-adf2fo
-merge_target_branch: claude/adr-open-packs-456-458-adf2fo
-branch_strategy: single_branch
+history:
+- at: '2026-11-11T05:30:00Z'
+  actor: claude
+  action: created by /spec-kitty.tasks
+agent_profile: java-jenny
+authoritative_surface: service/deployable/src/test/java/ai/speckitty/charter/deployable/
+create_intent: []
 execution_mode: code_change
 owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileCorpusTest.java
@@ -19,15 +28,9 @@ owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/PackGraphEdges.java
 - contracts/charter/examples/Artifact.agent_profile.yaml
 - contracts/charter/examples/EffectiveAgentProfileRead.java-jenny.yaml
-authoritative_surface: service/deployable/src/test/java/ai/speckitty/charter/deployable/
-create_intent: []
-agent_profile: java-jenny
 role: implementer
-agent: claude
-history:
-- at: '2026-11-11T05:30:00Z'
-  actor: claude
-  action: created by /spec-kitty.tasks
+tags: []
+tracker_refs: []
 ---
 
 # WP06 — Re-point the profile tests in deployable
@@ -70,9 +73,9 @@ Update `Artifact.agent_profile.yaml` and `EffectiveAgentProfileRead.java-jenny.y
 
 ## Definition of Done
 
-- Every subtask's validation holds; the touched modules' tests pass (`./gradlew :packs:test :deployable:test` as relevant).
-- `spotlessCheck` and Checkstyle clean on touched sources.
-- No test reads open-packs content (except the WP07 drift job).
+- `ProfileCorpusTest`, `ProfileExamplesEdgeTest` and `PackGraphEdges` read `ExamplePacks` only; per-class old/new assertion table.
+- The two contract profile examples mirror an example profile; the contract example checks pass.
+- The touched modules' tests pass; `spotlessCheck` and Checkstyle clean on touched sources.
 
 ## Risks
 
