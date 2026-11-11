@@ -67,7 +67,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
  * 2026-10-31): the list and the item of every kind refuse it {@link RefusalCode#PACK_UNREADABLE}, never
- * {@code PACK_NOT_FOUND}, since it is configured. The item judges the descriptor before it delegates to the kind's read,
+ * {@code PACK_NOT_FOUND}, since it is configured. Once the descriptor is judged, a pack aggregate or revision the
+ * kind's read cannot read is refused {@link RefusalCode#PACK_NOT_FOUND}, the same for every kind. The item judges the descriptor before it delegates to the kind's read,
  * which reads one file and would otherwise answer the artifact of a pack that cannot be read as a whole. The check and
  * the kind's read run inside one outer verified read, and the answer carries the kind's fingerprint only when it equals
  * the outer digests: all four digests agree, so the 200 or the refusal is the one the fingerprinted inputs give. A
@@ -364,7 +365,8 @@ public final class ArtifactReadService {
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
      * @param steps the port that names the steps a mission type declares, for a step contract's step
-     * @param revisions the pack revision a step contract item reads inside its verified read, for its {@code ETag}
+     * @param revisions the pack revision a step contract item reads inside its verified read, for its {@code ETag}; the
+     *     other kinds take theirs from their own read service
      */
     @Autowired
     public ArtifactReadService(
@@ -448,7 +450,8 @@ public final class ArtifactReadService {
      *     whatever the kind; with {@link RefusalCode#PACK_UNREADABLE} when the configured pack has no readable
      *     {@code pack.yaml}, whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no listed kind, or names
      *     a listed kind outside {@link #ITEM_KINDS} ({@code agent_profile} or {@code mission_type}), which its literal route renders; with the
-     *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_UNREADABLE} or
+     *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_NOT_FOUND}
+     *     when the kind's read cannot read the pack aggregate or its revision; with {@link RefusalCode#PACK_UNREADABLE} or
      *     {@link RefusalCode#STALE_INPUT} as every verified read refuses
      */
     public ConsistentRead.Verified<Item> item(PackIdentifier pack, String kindToken, String id) {
