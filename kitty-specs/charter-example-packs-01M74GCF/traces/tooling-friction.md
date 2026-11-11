@@ -39,3 +39,5 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · WP03: `:packs` test sources compile only under `:packs:test`, so a `:deployable`-only run missed a broken caller of the changed ExamplePacks API.
 
 2026-11-11 · claude · Integration of WP02–WP04: no textual conflicts, but the round trip refused WP03's `impacts` graph edge (RelationshipMerge; filed #477), and Spotless stopped the first run before the tests ran, leaving stale results on disk. Pack-manifest hashes were regenerated through a throwaway test calling PackManifests.recompute: there is no task for it. Suggested fix: a Gradle task that recomputes example-pack manifests.
+
+2026-11-11 · claude · `move-task --to for_review` refuses a WP implemented in a side worktree and cherry-picked: no claim base is recorded when the claim is a plain `move-task --to in_progress`, so the for_review gate sees "no implementation commit since claim". Forced with a note. Suggested fix: let move-task record the claim base, or accept a commit range.
