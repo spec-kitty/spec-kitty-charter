@@ -20,6 +20,12 @@ import org.jspecify.annotations.Nullable;
  */
 final class RelationshipWire {
 
+    /**
+     * The longest {@code from} or {@code to} a request may write, as written, the qualifier included (#443). It is a
+     * request cap only: the kernel URN types also parse pack content, whose schemas do not cap a URN.
+     */
+    static final int MAX_ENDPOINT_LENGTH = 255;
+
     private RelationshipWire() {}
 
     /**
@@ -27,8 +33,8 @@ final class RelationshipWire {
      *
      * @param wire the request body
      * @return the kernel relationship
-     * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is not a URN of a known kind
-     *     or the type is unknown
+     * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is longer than
+     *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, or the type is unknown
      */
     static Relationship fromWire(RelationshipRegistration wire) {
         try {
@@ -56,6 +62,8 @@ final class RelationshipWire {
 
     private static Relationship relationship(
             String from, String to, String type, @Nullable String when, @Nullable String rationale) {
+        capped("from", from);
+        capped("to", to);
         if (parsed(from).qualified()) {
             throw new IllegalArgumentException(
                     "a registered relationship is authored from an artifact of the pack, so its source is not"
@@ -85,6 +93,13 @@ final class RelationshipWire {
                 relationType,
                 Optional.ofNullable(when),
                 Optional.ofNullable(rationale));
+    }
+
+    /** An endpoint longer than the request cap is refused before it is parsed. */
+    private static void capped(String member, String endpoint) {
+        if (endpoint.length() > MAX_ENDPOINT_LENGTH) {
+            throw new IllegalArgumentException(member + " is longer than " + MAX_ENDPOINT_LENGTH + " characters.");
+        }
     }
 
     /** The target as written, bare or pack-qualified; a malformed qualifier is a refused registration. */

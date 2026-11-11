@@ -251,6 +251,10 @@ that calls it. A run that selects only some scenarios reports the others' operat
   is read, and one of 65 refuses the pack as `500 pack_unreadable`; an executable entry of 255 characters is read
   and one of 256 refuses it; an expected artifact key of 256 refuses it; and a directive `PUT` whose id is 65
   characters is refused as `422 validation_failed` and leaves the pack readable.
+- `request-id-length.feature`: the id length caps of the request schemas (#443): a pack id of 65 characters on a
+  path is a `400` without a code and one of 64 is judged as any other (`404 pack_not_found`); an artifact id of 129
+  is a `400` and one of 128 is its kind's not-found; a relationship whose `to` is longer than 255 characters is
+  a `400` and nothing is written, and so is a relationship `DELETE` naming one.
 - `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
   register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
   `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`
