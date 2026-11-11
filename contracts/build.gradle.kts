@@ -420,8 +420,12 @@ abstract class LintContract : ContractToolTask() {
         // 20 seconds skipped a different rule on each main run. 60 seconds gives about three times the failing point;
         // if the contract keeps growing, run the lint without competing tasks rather than raising this again.
         // A rule that times out is skipped, which the ERR check below refuses, so a longer timeout never lets one pass.
+        // The JSONPath lookup timeout (vacuum's default 500 ms) is worse: a lookup that times out is silently treated
+        // as "not found", so under load resource-property-cited reported every resource schema as uncited (and a rule
+        // that flags what it finds would pass). 10 seconds per lookup keeps a loaded runner from changing the verdict.
         val (code, output) = run(vacuum.get().asFile.path, "lint", "--no-style", "--no-banner", "--no-update-check",
-            "--details", "--all-results", "--no-clip", "--timeout", "60", "--ruleset", ruleset.get().asFile.path,
+            "--details", "--all-results", "--no-clip", "--timeout", "60", "--lookup-timeout", "10000",
+            "--ruleset", ruleset.get().asFile.path,
             bundle.get().asFile.path)
         report.get().asFile.writeText(output)
         // A ruleset vacuum could not read would lint against no rules and pass; the rule count rules that out.
@@ -466,9 +470,11 @@ abstract class LintFixtures : BundlingTask() {
         for ((name, file) in byName.toSortedMap()) {
             val bundled = File(temporaryDir, "$name.yaml")
             bundle(vacuum.get().asFile, file, bundled)?.let { problems += "$name: bundling failed: $it"; continue }
-            // The same rule timeout as LintContract: a rule that timed out on the clean fixture would otherwise pass.
+            // The same rule and lookup timeouts as LintContract: a rule that timed out, or a lookup that timed out, on the
+            // clean fixture would otherwise pass, and on a planted one would misreport.
             val (code, output) = run(vacuum.get().asFile.path, "report", "--stdout", "--no-style",
-                "--no-update-check", "--timeout", "60", "--ruleset", ruleset.get().asFile.path, bundled.path)
+                "--no-update-check", "--timeout", "60", "--lookup-timeout", "10000", "--ruleset", ruleset.get().asFile.path,
+                bundled.path)
             if (code != 0) { problems += "$name: vacuum report failed:\n$output"; continue }
             if (output.contains("timed out")) { problems += "$name: a rule timed out and was skipped:\n$output"; continue }
             @Suppress("UNCHECKED_CAST")
