@@ -6,6 +6,7 @@ files:
   - Artifact.styleguide.yaml
   - Artifact.tactic.yaml
   - Artifact.toolguide.yaml
+  - Artifact.procedure.yaml
   - ArtifactPage.first-page.yaml
   - ArtifactReferenceList.cross-pack.yaml
   - CharterRefusal.action-not-found.yaml

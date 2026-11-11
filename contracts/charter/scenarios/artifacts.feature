@@ -639,7 +639,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
 
     Examples:
       | kind      |
-      | procedure |
+      | template  |
       | bogus     |
 
   Scenario Outline: A path kind that is not a slug is a 400 Problem without a code, before the pack is judged (<path>)

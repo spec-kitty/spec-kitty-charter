@@ -10,8 +10,9 @@ get:
     pack_id, is a 404 pack_not_found, whatever the kind. Then a slug that names no kind the service
     serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind
     (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
-    toolguide_not_found or mission_step_contract_not_found). The kinds this read serves are tactic, directive,
-    styleguide, paradigm, toolguide and mission_step_contract. An agent_profile is a kind of the pack that the
+    toolguide_not_found or mission_step_contract_not_found; a procedure the pack does not hold is artifact_not_found).
+    The kinds this read serves are tactic, directive, styleguide, paradigm, toolguide, procedure and
+    mission_step_contract. An agent_profile is a kind of the pack that the
     literal operation getPackAgentProfile answers, with the profile and its governance, and its not-found code is
     artifact_not_found; this templated read never carries a profile body. The item of a mission_type is answered
     by getPackMissionType, GET /packs/{packId}/artifacts/mission_type/{missionTypeId}, a literal path the service
@@ -24,7 +25,7 @@ get:
     pack_unreadable. The answer is verified against
     the source fingerprint and carries it; inputs that change while it is read are stale_input. A
     directive, a styleguide, a paradigm or a toolguide also carries the pack revision as its ETag, for
-    a later write; a tactic or a mission_step_contract, which has no write, carries none, and neither does a
+    a later write; a procedure carries it too, as a validator of the read, although it has no write yet; a tactic or a mission_step_contract, which has no write, carries none, and neither does a
     mission_type. There is no write on this templated
     path: a writable kind is replaced on its own path, PUT /packs/{packId}/artifacts/<kind>/{artifactId},
     and a PUT to the item of a kind that has no write (a tactic) is a 405 Problem without a code, not
@@ -48,7 +49,7 @@ get:
         ETag:
           description: >-
             The pack revision, for optimistic concurrency on a later write. Sent for the writable kinds
-            only (directive, styleguide, paradigm and toolguide); a tactic or a mission_step_contract carries none.
+            (directive, styleguide, paradigm and toolguide) and for a procedure, whose ETag validates the read; a tactic or a mission_step_contract carries none.
             The agent_profile read, getPackAgentProfile, carries it too.
           required: false
           schema:
@@ -62,6 +63,8 @@ get:
               $ref: ../examples/Artifact.tactic.yaml
             mission-step-contract:
               $ref: ../examples/Artifact.mission-step-contract.yaml
+            procedure:
+              $ref: ../examples/Artifact.procedure.yaml
     '400':
       $ref: ../../_shared/responses/Problem.yaml
     '401':

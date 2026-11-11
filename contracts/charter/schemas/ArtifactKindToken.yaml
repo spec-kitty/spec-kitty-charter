@@ -1,12 +1,12 @@
 title: ArtifactKindToken
 description: >-
   An artifact kind this service lists, as its lower-case token: tactic, directive, styleguide,
-  paradigm, toolguide, agent_profile, mission_type or mission_step_contract, the served-kind order of a
+  paradigm, toolguide, procedure, agent_profile, mission_type or mission_step_contract, the served-kind order of a
   list. An agent_profile is read whole by getPackAgentProfile, not by the templated item read. A
   mission_step_contract is read through the generic item read; a mission_type is listed and filtered
   here, and its item is answered by getPackMissionType. Under an activation getEffectiveMissionType and
   getEffectiveMissionStepContract answer them. Neither mission_type nor mission_step_contract answers an
-  ETag, in a pack or under an activation. Other kernel kinds (procedure, template and the rest) are not served yet. It types
+  ETag, in a pack or under an activation. A procedure is read through the generic item read, by pack and under an activation. Other kernel kinds (template and the rest) are not served yet. It types
   only the request's ?kind= filter; a response's kind is an open slug, so a kind served later is
   additive for a client.
 type: string
@@ -16,6 +16,7 @@ enum:
   - styleguide
   - paradigm
   - toolguide
+  - procedure
   - agent_profile
   - mission_type
   - mission_step_contract

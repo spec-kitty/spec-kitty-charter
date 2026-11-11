@@ -1,0 +1,35 @@
+summary: A procedure in the envelope, its steps naming the role that acts; the other kind members are absent.
+value:
+  kind: procedure
+  id: test-first-bug-fixing
+  packId: qa
+  procedure:
+    id: test-first-bug-fixing
+    schemaVersion: '1.0'
+    title: Test-first bug fixing
+    description: Fix a defect by first writing a test that fails on it.
+    entryCondition: A defect is reported.
+    exitCondition: The failing test passes and the defect is fixed.
+    steps:
+      - title: Write a test that fails on the defect
+        description: Reproduce the defect in a test before touching the code.
+        role: implementer
+        onSuccess: Fix the code.
+        onFailure: Ask the reporter for a reproduction.
+      - title: Fix the code until the test passes
+        description: null
+        role: implementer
+        onSuccess: null
+        onFailure: null
+    antiPatterns:
+      - title: Fixing before reproducing
+        content: A fix without a failing test proves nothing.
+        badExample: null
+        goodExample: null
+    notes: null
+    appliesToLanguages: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/procedure/test-first-bug-fixing
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=procedure

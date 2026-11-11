@@ -1,0 +1,33 @@
+title: ProcedureAntiPattern
+description: Something to avoid when following a procedure; a value of its procedure, with no identity.
+type: object
+additionalProperties: false
+required: [title, content, badExample, goodExample]
+properties:
+  title:
+    type: string
+    description: The anti-pattern's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
+      symbol: AntiPatternEntry.title
+  content:
+    type: ['string', 'null']
+    description: Why it is to be avoided; null when the file declares nothing.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
+      symbol: AntiPatternEntry.content
+  badExample:
+    type: ['string', 'null']
+    description: An example of the anti-pattern; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
+      symbol: AntiPatternEntry.badExample
+  goodExample:
+    type: ['string', 'null']
+    description: An example of what to do instead; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
+      symbol: AntiPatternEntry.goodExample
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java
+  symbol: AntiPatternEntry

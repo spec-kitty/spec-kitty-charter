@@ -4,7 +4,7 @@ parameters:
   in: path
   required: true
   description: >-
-    The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide or agent_profile, the
+    The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide, procedure or agent_profile, the
     kinds the pack-scoped artifact routes serve. A mission_type and a mission_step_contract are answered at this path by
     the literal getEffectiveMissionType and getEffectiveMissionStepContract. The parameter is a slug, not an enum: a value that is not a slug
     (Tactic, -tactic) is a 400 Problem without a code, before the activation is judged, and a slug that names no served

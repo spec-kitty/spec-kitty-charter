@@ -181,12 +181,12 @@ Feature: The winner of one artifact is read under an activation, with its state 
     And the problem code is "activation_not_found"
 
   Scenario: A kind the service does not serve is kind_not_found, and a kind that is no slug is a 400
-    "procedure" is a kernel kind the artifact routes do not serve; "Directive" is no slug, so it breaks the parameter.
+    "template" is a kernel kind the artifact routes do not serve; "Directive" is no slug, so it breaks the parameter.
     D is the control: the same activation answers it 200.
-    When I GET "/activations/a-1/artifacts/procedure/X"
+    When I GET "/activations/a-1/artifacts/template/X"
     Then the response status is 404
     And the problem code is "kind_not_found"
-    And the field at "/detail" is "The service serves no artifact kind procedure."
+    And the field at "/detail" is "The service serves no artifact kind template."
     When I GET "/activations/a-1/artifacts/Directive/X"
     Then the response status is 400
     When I GET "/activations/a-1/artifacts/directive/D"
