@@ -16,13 +16,13 @@
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "Whole-pack round trip runs over example packs with empty expected-red lists inside required verifyAll",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": ":packs:wholePackRoundTrip -PopenPacksDir=/nonexistent passed; verifyAll in service.yml @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:15:57.261438+00:00",
+      "notes": "Passing with a nonexistent open-packs dir proves no open-packs input."
     },
     {
       "criterion_id": "FR-003",
