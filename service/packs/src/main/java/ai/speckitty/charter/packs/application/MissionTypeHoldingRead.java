@@ -134,7 +134,7 @@ public final class MissionTypeHoldingRead {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(missionTypeId, "missionTypeId");
         ConsistentRead.Verified<Revised<Held>> verified =
-                read.read(STALE, () -> new Revised<>(load(pack, missionTypeId), revisionOf(pack)));
+                read.read(STALE, () -> new Revised<>(load(pack, missionTypeId), revisions.currentRevision(pack)));
         Revised<Held> held = verified.value();
         return new Revised<>(holdingOf(held.value(), verified.fingerprint()), held.revision());
     }
@@ -164,21 +164,6 @@ public final class MissionTypeHoldingRead {
 
     private static Holding holdingOf(Held held, String fingerprint) {
         return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), fingerprint);
-    }
-
-    /**
-     * The pack's revision. A pack the storage cannot read is, to the caller, a pack that is not there, as
-     * {@code DirectiveReadService} maps it; an identifier no configured pack answers to passes through.
-     */
-    private PackRevision revisionOf(PackIdentifier pack) {
-        try {
-            return revisions.currentRevision(pack);
-        } catch (CharterRefusal refused) {
-            if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refused;
-            }
-            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
-        }
     }
 
     /** What the verified read loaded, before it carries its fingerprint. */
