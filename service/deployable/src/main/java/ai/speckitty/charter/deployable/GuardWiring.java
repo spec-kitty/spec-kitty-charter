@@ -171,20 +171,19 @@ public class GuardWiring {
     }
 
     /**
-     * Judges the raw value of the source that supplies the token, in Boot's own precedence and under its relaxed names
-     * ({@code CHARTER_WORKTREETOKEN} binds the property too), before any placeholder in it is resolved.
+     * Judges the raw value of every source that supplies the token, under Boot's relaxed names
+     * ({@code CHARTER_WORKTREETOKEN} binds the property too), before any placeholder in it is resolved. Every source,
+     * not only the first: which one wins depends on whether Boot's relaxed-name source is attached, and a shadowed
+     * placeholder has no reason to be there either.
      */
     private static void refusePlaceholder(ConfigurableEnvironment environment) {
         ConfigurationPropertyName name = ConfigurationPropertyName.of(TOKEN_PROPERTY);
         for (ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
             ConfigurationProperty supplied = source.getConfigurationProperty(name);
-            if (supplied != null) {
-                if (String.valueOf(supplied.getValue()).contains("${")) {
-                    throw new IllegalStateException(TOKEN_PROPERTY + " must be the token itself, not a placeholder: a"
-                            + " placeholder resolves it from another source, such as the command line or a system"
-                            + " property, where other processes can read it");
-                }
-                return;
+            if (supplied != null && String.valueOf(supplied.getValue()).contains("${")) {
+                throw new IllegalStateException(TOKEN_PROPERTY + " must be the token itself, not a placeholder: a"
+                        + " placeholder resolves it from another source, the command line or a system property among"
+                        + " them, where other processes can read it");
             }
         }
     }

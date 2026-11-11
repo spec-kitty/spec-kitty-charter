@@ -407,6 +407,22 @@ class GuardWiringTest {
     }
 
     @Test
+    void aPlaceholderShadowedByALiteralTokenInAHigherSourceStillRefusesTheStart(CapturedOutput output) {
+        // Which source wins depends on whether Boot's relaxed-name source is attached; a placeholder anywhere is
+        // refused.
+        runner.withInitializer(context -> {
+                    context.getEnvironment()
+                            .getPropertySources()
+                            .addFirst(new MapPropertySource("a-config-file", Map.of("charter.worktree-token", TOKEN)));
+                    context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}"));
+                })
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
     void aTokenFromAMountedTokenFileIsAccepted(@TempDir Path secrets) throws Exception {
         Files.writeString(secrets.resolve("charter.worktree-token"), TOKEN);
         runner.withInitializer(context -> context.getEnvironment()
