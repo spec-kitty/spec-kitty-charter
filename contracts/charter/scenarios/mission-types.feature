@@ -738,6 +738,12 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/specify"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
     When I GET "/packs/main/artifacts/mission_step_contract/specify"
     Then the response status is 200
     And the response header "ETag" appears once

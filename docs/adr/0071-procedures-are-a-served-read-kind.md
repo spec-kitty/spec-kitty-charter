@@ -47,7 +47,7 @@ read the procedure it named.
    `/references` (ADR-0064). The schema has no reference member.
 4. **Absence is `artifact_not_found`.** The per-kind not-found codes are kept for the five kinds that have them; a kind
    served after them uses the generic code, as `agent_profile` does. No refusal code is added.
-5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no `PUT` yet. A tactic has none.
+5. **The pack item carries the pack revision as its `ETag`**, although a procedure has no `PUT` yet. A tactic has none *(superseded by the Amendment 2026-11-11 below, #487)*.
    The revision is a correct validator of the read, it is the `If-Match` of a removal, and a later procedure write will
    need it as well.
 

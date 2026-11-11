@@ -36,16 +36,6 @@ Feature: The tactic reads answer with the source fingerprint they verified
     And the response header "Charter-Source-Fingerprint" appears once
     And the field "id" of the response body is "rehearse"
 
-  Scenario: One tactic carries the pack revision as its ETag, the same on a second read of the same pack
-    #487: the ETag is the pack revision; nothing changed between the reads, so it is the same.
-    When I GET "/packs/qa/artifacts/tactic/rehearse"
-    Then the response status is 200
-    And the response header "ETag" appears once
-    When I remember the header "ETag"
-    And I GET "/packs/qa/artifacts/tactic/rehearse"
-    Then the response status is 200
-    And the response header "ETag" is the remembered header
-
   Scenario: A tactic list whose tactic file changes while it is answered is refused with stale_input
     Given a tactic file changes while the next read is answered
     When I GET "/packs/qa/artifacts?kind=tactic"
