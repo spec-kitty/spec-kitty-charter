@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -490,9 +489,7 @@ class ArtifactControllerTest {
 
         @Override
         public Optional<Procedure> load(PackIdentifier asked, ProcedureIdentifier procedure) {
-            return load(asked).artifacts(ArtifactKind.PROCEDURE, Procedure.class).stream()
-                    .filter(p -> p.id().equals(procedure))
-                    .findFirst();
+            throw new UnsupportedOperationException("the controller tests read no procedure");
         }
 
         @Override

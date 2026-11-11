@@ -38,6 +38,7 @@ import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
+import ai.speckitty.charter.packs.domain.ProcedureStep;
 import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
@@ -94,6 +95,7 @@ class ArtifactReadServiceTest {
                     .id(PACK)
                     .descriptor(descriptor(PACK))
                     .toolguide(toolguide("git"))
+                    .artifact(procedure("refactoring"))
                     .artifact(profile("jenny"))
                     .paradigm(paradigm("layered"))
                     .tactic(tactic("alpha", "Alpha"))
@@ -170,6 +172,7 @@ class ArtifactReadServiceTest {
                         position(ArtifactKind.STYLEGUIDE, "java-style"),
                         position(ArtifactKind.PARADIGM, "layered"),
                         position(ArtifactKind.TOOLGUIDE, "git"),
+                        position(ArtifactKind.PROCEDURE, "refactoring"),
                         position(ArtifactKind.AGENT_PROFILE, "jenny"));
         assertThat(page.hasMore()).isFalse();
     }
@@ -187,6 +190,7 @@ class ArtifactReadServiceTest {
                         "Title of java-style",
                         "Name of layered",
                         "How to use git",
+                        "Title of refactoring",
                         "Name of jenny");
     }
 
@@ -243,18 +247,18 @@ class ArtifactReadServiceTest {
 
     @Test
     void aPageOfExactlyTheRemainingItemsHasNoMore() {
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 7)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 8)
                         .value()
                         .hasMore())
                 .isFalse();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 7)
                         .value()
                         .hasMore())
                 .isTrue();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 7)
                         .value()
                         .items())
-                .hasSize(6);
+                .hasSize(7);
         assertThat(service.list(PACK, Optional.empty(), Optional.of(position(ArtifactKind.AGENT_PROFILE, "jenny")), 5)
                         .value())
                 .as("after the last item")
@@ -406,8 +410,16 @@ class ArtifactReadServiceTest {
                 .isInstanceOf(ArtifactReadService.Item.OfParadigm.class);
         assertThat(service.item(PACK, "toolguide", "git").value())
                 .isInstanceOf(ArtifactReadService.Item.OfToolguide.class);
+        assertThat(service.item(PACK, "procedure", "refactoring").value())
+                .isInstanceOfSatisfying(
+                        ArtifactReadService.Item.OfProcedure.class,
+                        item -> assertThat(item.artifact().id()).isEqualTo(new ProcedureIdentifier("refactoring")));
         for (String[] item : new String[][] {
-            {"directive", "GUARD"}, {"styleguide", "java-style"}, {"paradigm", "layered"}, {"toolguide", "git"}
+            {"directive", "GUARD"},
+            {"styleguide", "java-style"},
+            {"paradigm", "layered"},
+            {"toolguide", "git"},
+            {"procedure", "refactoring"}
         }) {
             assertThat(service.item(PACK, item[0], item[1]).value().revision())
                     .as(item[0])
@@ -524,15 +536,12 @@ class ArtifactReadServiceTest {
                 .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
         assertThat(ArtifactReadService.absentCode(ArtifactKind.MISSION_STEP_CONTRACT))
                 .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
-        // An agent profile answers artifact_not_found (the profiles mission's contract), pinned by its own test.
+        // An agent profile and a procedure answer artifact_not_found (procedures.feature pins it end to end).
         for (ArtifactKind kind : ArtifactReadService.LISTED) {
             if (kind != ArtifactKind.AGENT_PROFILE && kind != ArtifactKind.PROCEDURE) {
                 assertThat(ArtifactReadService.absentCode(kind).token()).isEqualTo(kind.token() + "_not_found");
             }
         }
-        assertThat(ArtifactReadService.absentCode(ArtifactKind.PROCEDURE))
-                .as("a kind served after the per-kind codes answers the generic one (#484)")
-                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
         assertThatThrownBy(() -> ArtifactReadService.absentCode(ArtifactKind.TEMPLATE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -1033,6 +1042,20 @@ class ArtifactReadServiceTest {
                 .schemaVersion("1.0")
                 .name("Name of " + id)
                 .summary("Summary of " + id)
+                .build();
+    }
+
+    private static Procedure procedure(String id) {
+        return Procedure.builder()
+                .id(new ProcedureIdentifier(id))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .title("Title of " + id)
+                .description("What " + id + " is.")
+                .entryCondition("ready")
+                .exitCondition("done")
+                .step(new ProcedureStep(
+                        "Do it", Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
                 .build();
     }
 

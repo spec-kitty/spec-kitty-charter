@@ -281,15 +281,6 @@ public final class Pack {
     }
 
     /**
-     * The readable procedures, in a stable order.
-     *
-     * @return an immutable list; empty when the pack holds none
-     */
-    public List<Procedure> procedures() {
-        return artifacts(ArtifactKind.PROCEDURE, Procedure.class);
-    }
-
-    /**
      * The readable paradigms, in a stable order.
      *
      * @return an immutable list; empty when the pack holds none
