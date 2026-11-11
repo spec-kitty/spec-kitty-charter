@@ -1,0 +1,8 @@
+# The built-in example's mutability policy (ADR-0063): every level once, and the fallback profile locked (ADR-0068).
+schema_version: 1
+kind_defaults:
+  template: extendable
+artifacts:
+  agent_profile:generic-agent: locked
+  directive:DIRECTIVE_001: locked
+  styleguide:boring-code-review: extendable

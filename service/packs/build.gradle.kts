@@ -6,9 +6,13 @@ plugins {
     // The nightly mutation floor (#239). Packs cannot use charter.domain-conventions, which refuses external
     // dependencies, so it applies the mutation conventions itself; the PIT scope and its floors are below.
     id("charter.mutation-conventions")
+    // The example packs every pack-reading test reads (ADR-0070): a test-fixtures source set :deployable consumes.
+    `java-test-fixtures`
 }
 
 dependencies {
+    // The test fixtures (ADR-0070) resolve versions through the same BOM as main and test.
+    testFixturesImplementation(platform(catalog.lib("spring-boot-bom")))
     api(project(":kernel"))
     // The profiles slice's domain: the pack store binds the agent-profile kind (ADR-0037, amendment of 2026-10-27).
     api(project(":profiles"))

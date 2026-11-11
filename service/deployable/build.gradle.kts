@@ -20,6 +20,8 @@ dependencies {
     // Health only, over HTTP; everything else stays unexposed (ADR-0041 decision 7).
     implementation(catalog.lib("spring-boot-starter-actuator"))
 
+    // The charter-owned example packs (ADR-0070).
+    testImplementation(testFixtures(project(":packs")))
     testImplementation(catalog.lib("spring-boot-starter-test"))
     testImplementation(catalog.lib("spring-boot-webmvc-test"))
     testImplementation(catalog.lib("archunit"))

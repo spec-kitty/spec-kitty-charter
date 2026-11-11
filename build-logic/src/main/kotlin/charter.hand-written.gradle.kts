@@ -35,7 +35,7 @@ tasks.withType<JavaCompile>().configureEach {
 // part of `check`.
 spotless {
     java {
-        target("src/main/java/**/*.java", "src/test/java/**/*.java")
+        target("src/main/java/**/*.java", "src/test/java/**/*.java", "src/testFixtures/java/**/*.java")
         palantirJavaFormat(catalog.version("palantir-java-format"))
         formatAnnotations()
     }
@@ -93,6 +93,16 @@ tasks.named<JavaCompile>("compileTestJava") {
     options.errorprone {
         disable("NullAway")
     }
+}
+
+// Test fixtures (java-test-fixtures, ADR-0070) are test code: the same rules as compileTestJava.
+tasks.withType<JavaCompile>().matching { it.name == "compileTestFixturesJava" }.configureEach {
+    options.errorprone {
+        disable("NullAway")
+    }
+}
+plugins.withId("java-test-fixtures") {
+    dependencies { "testFixturesCompileOnly"(catalog.lib("jspecify")) }
 }
 
 // Javadoc of main with every doclint group on and warnings as errors: every public type and member is
