@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -64,8 +63,10 @@ class MissionTypeHoldingCorpusTest {
         MissionType type = (MissionType) holding.missionType();
         List<MissionStep> all = new ArrayList<>(type.steps());
         all.addAll(type.onDemandSteps());
-        List<String> sequence = declaredStepIds(mission, "steps:");
-        List<String> onDemand = declaredStepIds(mission, "on_demand_steps:");
+        OpenPacksCorpus.DeclaredSteps declaredSteps =
+                OpenPacksCorpus.declaredSteps(mission.resolve(TYPE + ".mission-type.yaml"));
+        List<String> sequence = declaredSteps.sequence();
+        List<String> onDemand = declaredSteps.onDemand();
         List<String> declared = new ArrayList<>(sequence);
         declared.addAll(onDemand);
         assertThat(sequence).as("sequence steps the checkout's type declares").isNotEmpty();
@@ -77,7 +78,7 @@ class MissionTypeHoldingCorpusTest {
         assertThat(holding.stepFiles().keySet())
                 .as("a file set per declared step")
                 .containsExactlyInAnyOrderElementsOf(declared);
-        assertThat(filesOf(steps, ".prompt.md"))
+        assertThat(promptNames(steps))
                 .as("every prompt the checkout holds belongs to a declared step")
                 .isSubsetOf(declared);
         for (MissionStep step : all) {
@@ -86,7 +87,9 @@ class MissionTypeHoldingCorpusTest {
             assertStored(files.prompt(), steps.resolve(step.id() + ".prompt.md"));
             assertStored(files.guidelines(), steps.resolve(step.id() + ".guidelines.md"));
         }
-        List<String> templates = filesOf(mission.resolve("templates"), "-template.md");
+        List<String> templates = OpenPacksCorpus.filesEndingWith(mission.resolve("templates"), "-template.md").stream()
+                .map(name -> name.substring(0, name.length() - "-template.md".length()))
+                .toList();
         assertThat(templates)
                 .as("skeletons the checkout's templates/ directory holds")
                 .isNotEmpty();
@@ -103,45 +106,24 @@ class MissionTypeHoldingCorpusTest {
         assertThat(holding.fingerprint()).startsWith("sha256:");
     }
 
-    /** The ids of the top-level {@code - id:} entries under one top-level key ({@code steps:} or {@code on_demand_steps:}), in file order. */
-    private static List<String> declaredStepIds(Path mission, String key) throws IOException {
-        List<String> ids = new ArrayList<>();
-        boolean inSteps = false;
-        for (String line : Files.readAllLines(mission.resolve(TYPE + ".mission-type.yaml"))) {
-            if (!line.isEmpty() && !line.startsWith(" ") && !line.startsWith("-")) {
-                inSteps = line.equals(key);
-            } else if (inSteps && line.startsWith("- id: ")) {
-                ids.add(line.substring("- id: ".length()).strip());
-            }
-        }
-        return ids;
-    }
-
-    /** The names, without {@code suffix}, of the files of {@code directory} that end in it, sorted. */
-    private static List<String> filesOf(Path directory, String suffix) throws IOException {
-        try (Stream<Path> files = Files.list(directory)) {
-            return files.map(file -> file.getFileName().toString())
-                    .filter(name -> name.endsWith(suffix))
-                    .map(name -> name.substring(0, name.length() - suffix.length()))
-                    .sorted()
-                    .toList();
-        }
+    /** The step ids of the prompt files of {@code steps}, sorted. */
+    private static List<String> promptNames(Path steps) throws IOException {
+        return OpenPacksCorpus.filesEndingWith(steps, ".prompt.md").stream()
+                .map(name -> name.substring(0, name.length() - ".prompt.md".length()))
+                .toList();
     }
 
     /** The {@code action} of every step contract file of {@code directory} whose {@code mission} is the type. */
     private static List<String> boundContractActions(Path directory) throws IOException {
         List<String> actions = new ArrayList<>();
-        try (Stream<Path> files = Files.list(directory)) {
-            for (Path file : files.filter(f -> f.toString().endsWith(".step-contract.yaml"))
-                    .toList()) {
-                List<String> lines = Files.readAllLines(file);
-                if (lines.contains("mission: " + TYPE)) {
-                    lines.stream()
-                            .filter(line -> line.startsWith("action: "))
-                            .findFirst()
-                            .ifPresent(line -> actions.add(
-                                    line.substring("action: ".length()).strip()));
-                }
+        for (String name : OpenPacksCorpus.filesEndingWith(directory, ".step-contract.yaml")) {
+            List<String> lines = Files.readAllLines(directory.resolve(name));
+            if (lines.contains("mission: " + TYPE)) {
+                lines.stream()
+                        .filter(line -> line.startsWith("action: "))
+                        .findFirst()
+                        .ifPresent(line ->
+                                actions.add(line.substring("action: ".length()).strip()));
             }
         }
         return actions;
