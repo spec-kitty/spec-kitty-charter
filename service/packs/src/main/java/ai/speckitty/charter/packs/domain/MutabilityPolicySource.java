@@ -29,6 +29,15 @@ public final class MutabilityPolicySource {
     }
 
     /**
+     * The default level of each kind the file sets one for; a kind it leaves out is open.
+     *
+     * @return an unmodifiable map
+     */
+    public Map<NodeKind, MutabilityLevel> kindDefaults() {
+        return kindDefaults;
+    }
+
+    /**
      * The targets the file names one by one, with their levels; a kind default names no target.
      *
      * @return an unmodifiable map

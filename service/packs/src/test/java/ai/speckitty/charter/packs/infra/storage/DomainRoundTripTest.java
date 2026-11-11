@@ -407,6 +407,61 @@ class DomainRoundTripTest {
         assertThat(tactic).doesNotContain("purpose:").contains("id: refactoring-inline-temp");
     }
 
+    // ---- #476: the mutability policy file -----------------------------------------------------------------------
+
+    private static final String POLICY = """
+            # Comments and key order are formatting (ADR-0036); the levels are the meaning.
+            schema_version: 1
+            artifacts:
+              directive:DIRECTIVE_018: locked
+              agent_profile:generic-agent: locked
+            kind_defaults:
+              tactic: extendable
+            """;
+
+    @Test
+    void aPolicyTheDescriptorNamesIsWrittenInPlaceWithItsMeaning() throws IOException {
+        put("pack.yaml", "pack-descriptor", PACK_YAML + "mutability_policy: policy.yaml\n");
+        put("policy.yaml", "policy", POLICY);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("policy.yaml")).isEqualTo(new Written("policy.yaml"));
+        assertThat(PolicyYaml.read(written(outcomes.get("policy.yaml")))).isEqualTo(PolicyYaml.read(POLICY));
+        assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+    }
+
+    @Test
+    void aSourcePolicyThatCannotBeReadRefusesThePolicyFileAlone() throws IOException {
+        put("pack.yaml", "pack-descriptor", PACK_YAML + "mutability_policy: policy.yaml\n");
+        put("policy.yaml", "policy", "schema_version: 1\nroles: {implementer: locked}\n");
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("policy.yaml"))
+                .isInstanceOfSatisfying(
+                        Refused.class,
+                        refused -> assertThat(refused.reason())
+                                .contains("names mutability_policy policy.yaml")
+                                .contains("roles"));
+        Map<String, Outcome> others = new TreeMap<>(outcomes);
+        others.remove("policy.yaml");
+        others.remove("pack.yaml");
+        assertThat(others.values())
+                .as("every artifact is still written")
+                .allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+    }
+
+    @Test
+    void aPolicyFileTheDescriptorDoesNotNameIsRefusedAsNotWritten() throws IOException {
+        put("policy.yaml", "policy", POLICY);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("policy.yaml"))
+                .isEqualTo(new Refused("not written: the descriptor names no mutability_policy policy.yaml"));
+    }
+
     @Test
     void theSourcePackIsLeftUnchanged() throws IOException {
         Map<String, String> before = digests(source);
@@ -425,7 +480,8 @@ class DomainRoundTripTest {
                 "template",
                 "preset",
                 "pack-manifest",
-                "pack-document"));
+                "pack-document",
+                "policy"));
         KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
                 .isEqualTo(expected);
