@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: self-tests green in packs and deployable; 98 files",
-        "Review claimed"
+        "Review claimed",
+        "Release the review claim recorded as 'user' by mistake"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": null,
