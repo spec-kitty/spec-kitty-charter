@@ -34,6 +34,8 @@ Future work for this repository. The target design lives in
   given a milestone after the pack-ecosystem rulings, with the decisions left to the operator.
 - [Re-scope proposals, triage 2026-11-02](/plans/triage-2026-11-02-rescopes/) — the proposed new scope of each
   issue the triage marked for re-scoping, for the operator to approve before any issue body changes.
+- [Next slices after the 2026-11-11 triage](/plans/next-slices-2026-11-11/) — slice B next, with its two
+  rulings first, slice C in parallel, and six quick-win slices, each with its tracking issue.
 - [Charter example packs](/plans/charter-example-packs/) — the plan for ADR-0070: charter-owned example
   packs replace the open-packs corpus in charter's tests.
 - [Engineering notes](/plans/engineering-notes/) — dated, point-in-time assessments that feed decisions and
