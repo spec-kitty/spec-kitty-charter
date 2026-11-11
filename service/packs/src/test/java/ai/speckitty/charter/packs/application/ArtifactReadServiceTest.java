@@ -35,6 +35,9 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
+import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
@@ -134,6 +137,7 @@ class ArtifactReadServiceTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
+                new ProcedureReadService(store, store, read, revisions),
                 new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(
                         new DirectiveReadService(store, store, read, revisions),
@@ -470,10 +474,12 @@ class ArtifactReadServiceTest {
                         ArtifactKind.STYLEGUIDE,
                         ArtifactKind.PARADIGM,
                         ArtifactKind.TOOLGUIDE,
+                        ArtifactKind.PROCEDURE,
                         ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
         assertThat(ArtifactReadService.listedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
-        assertThat(ArtifactReadService.listedKind("procedure")).isEmpty();
+        assertThat(ArtifactReadService.listedKind("procedure")).contains(ArtifactKind.PROCEDURE);
+        assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("TACTIC")).isEmpty();
     }
 
@@ -491,7 +497,7 @@ class ArtifactReadServiceTest {
         assertThat(ArtifactReadService.listedKind("mission_step_contract"))
                 .contains(ArtifactKind.MISSION_STEP_CONTRACT);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
-        assertThat(ArtifactReadService.listedKind("procedure")).isEmpty();
+        assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("mission-type")).isEmpty();
     }
 
@@ -592,7 +598,7 @@ class ArtifactReadServiceTest {
                     assertThat(item.missionTypeHeld()).isTrue();
                     assertThat(item.stepHeld()).isTrue();
                     assertThat(item.heldCandidates())
-                            .as("GUARD is held; NOPE is not; a procedure is not a listed kind")
+                            .as("GUARD is held; NOPE is not; the procedure is listed but the pack does not hold it")
                             .containsExactly(position(ArtifactKind.DIRECTIVE, "GUARD"));
                 });
     }
@@ -1046,6 +1052,7 @@ class ArtifactReadServiceTest {
                     StyleguideRepository,
                     ParadigmRepository,
                     ToolguideRepository,
+                    ProcedureRepository,
                     PackCatalogRepository,
                     PackDescriptorRepository,
                     PackArtifactRepository {
@@ -1140,6 +1147,13 @@ class ArtifactReadServiceTest {
         public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
             return contents(pack).toolguides().stream()
                     .filter(t -> t.id().equals(toolguide))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Procedure> load(PackIdentifier pack, ProcedureIdentifier procedure) {
+            return contents(pack).artifacts(ArtifactKind.PROCEDURE, Procedure.class).stream()
+                    .filter(p -> p.id().equals(procedure))
                     .findFirst();
         }
 

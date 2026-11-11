@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -20,6 +21,7 @@ import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackRevisions;
 import ai.speckitty.charter.packs.application.ParadigmReadService;
+import ai.speckitty.charter.packs.application.ProcedureReadService;
 import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.TacticReadService;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
@@ -39,6 +41,9 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
+import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -157,6 +162,7 @@ class ArtifactControllerTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
+                new ProcedureReadService(store, store, read, revisions),
                 new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(
                         new DirectiveReadService(store, store, read, revisions),
@@ -408,6 +414,7 @@ class ArtifactControllerTest {
                     StyleguideRepository,
                     ParadigmRepository,
                     ToolguideRepository,
+                    ProcedureRepository,
                     PackCatalogRepository,
                     PackDescriptorRepository,
                     PackArtifactRepository {
@@ -478,6 +485,13 @@ class ArtifactControllerTest {
         public Optional<Toolguide> load(PackIdentifier asked, ToolguideIdentifier toolguide) {
             return load(asked).toolguides().stream()
                     .filter(t -> t.id().equals(toolguide))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Procedure> load(PackIdentifier asked, ProcedureIdentifier procedure) {
+            return load(asked).artifacts(ArtifactKind.PROCEDURE, Procedure.class).stream()
+                    .filter(p -> p.id().equals(procedure))
                     .findFirst();
         }
 

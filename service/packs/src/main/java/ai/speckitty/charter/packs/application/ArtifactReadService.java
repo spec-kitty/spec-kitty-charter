@@ -24,6 +24,8 @@ import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
@@ -86,6 +88,7 @@ public final class ArtifactReadService {
             ArtifactKind.STYLEGUIDE,
             ArtifactKind.PARADIGM,
             ArtifactKind.TOOLGUIDE,
+            ArtifactKind.PROCEDURE,
             ArtifactKind.AGENT_PROFILE);
 
     /**
@@ -126,6 +129,8 @@ public final class ArtifactReadService {
             ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
             ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
+            // a procedure, served after the per-kind codes, uses artifact_not_found as the agent profile does (#484)
+            ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND,
             // agent_profile uses artifact_not_found; the five above keep their own codes (contract rule), and the
             // mission kinds have their own codes (#99).
             ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
@@ -159,6 +164,7 @@ public final class ArtifactReadService {
     private final StyleguideReadService styleguides;
     private final ParadigmReadService paradigms;
     private final ToolguideReadService toolguides;
+    private final ProcedureReadService procedures;
     private final OfferingReadService offerings;
     private final CompositeComponentResolver components;
     private final PackEdgeRepository graphs;
@@ -286,6 +292,19 @@ public final class ArtifactReadService {
         }
 
         /**
+         * A procedure and its revision. A procedure has no write; the revision validates the read (#484).
+         *
+         * @param artifact the procedure
+         * @param at the revision it was read at
+         */
+        record OfProcedure(Procedure artifact, PackRevision at) implements Item {
+            @Override
+            public Optional<PackRevision> revision() {
+                return Optional.of(at);
+            }
+        }
+
+        /**
          * A mission step contract and what its pack holds of what it names, read in the same verified read: its links
          * point only at what the pack holds. It has no write, so no revision.
          *
@@ -332,6 +351,7 @@ public final class ArtifactReadService {
      * @param styleguides the styleguide reads an item of that kind delegates to
      * @param paradigms the paradigm reads an item of that kind delegates to
      * @param toolguides the toolguide reads an item of that kind delegates to
+     * @param procedures the procedure reads an item of that kind delegates to
      * @param offerings the offering read whose compose a reference is resolved against, resolved once per read
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
@@ -347,6 +367,7 @@ public final class ArtifactReadService {
             StyleguideReadService styleguides,
             ParadigmReadService paradigms,
             ToolguideReadService toolguides,
+            ProcedureReadService procedures,
             OfferingReadService offerings,
             CompositeComponentResolver components,
             PackEdgeRepository graphs,
@@ -359,6 +380,7 @@ public final class ArtifactReadService {
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
+        this.procedures = Objects.requireNonNull(procedures, "procedures");
         this.offerings = Objects.requireNonNull(offerings, "offerings");
         this.components = Objects.requireNonNull(components, "components");
         this.graphs = Objects.requireNonNull(graphs, "graphs");
@@ -637,6 +659,15 @@ public final class ArtifactReadService {
                         toolguide -> as(
                                 toolguides.toolguideWithRevision(pack, toolguide),
                                 revised -> new Item.OfToolguide(revised.value(), revised.revision())));
+            case PROCEDURE ->
+                readAs(
+                        pack,
+                        ArtifactKind.PROCEDURE,
+                        id,
+                        ProcedureIdentifier::new,
+                        procedure -> as(
+                                procedures.procedureWithRevision(pack, procedure),
+                                revised -> new Item.OfProcedure(revised.value(), revised.revision())));
             case MISSION_STEP_CONTRACT -> stepContract(pack, id);
             default -> throw new IllegalStateException("an item kind without a read: " + kind);
         };

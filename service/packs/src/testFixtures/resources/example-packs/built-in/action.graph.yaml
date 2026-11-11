@@ -25,6 +25,9 @@ edges:
   target: directive:DIRECTIVE_010
   relation: scope
 - source: action:software-dev/implement
+  target: procedure:adversarial-squad-deployment
+  relation: scope
+- source: action:software-dev/implement
   target: styleguide:boring-code-review
   relation: scope
 - source: action:software-dev/implement
