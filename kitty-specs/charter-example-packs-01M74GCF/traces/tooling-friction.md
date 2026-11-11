@@ -56,3 +56,5 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · WP07: NullAway crashes on a new source set (driftTest) unless disabled there, as for testFixtures; actionlint is not installed in the session, so the new workflow was only parsed as YAML; stale test-results XML must be deleted before counting. WholePackExamplesRoundTripTest carried stale counts after WP05/WP06 grew the fixtures, visible only once its tag was dropped and it joined :packs:test.
 
 2026-11-11 · claude · WP07: the drift test fails today against the local open-packs checkout on a real `principles` shape drift (open-packs#66 not migrated yet), which shows the nightly watch works.
+
+2026-11-11 · claude · Accept on a single_branch mission refuses WP09 and WP10 with SINGLE_BRANCH_IMPLEMENTATION_MISSING: a reviewed "no code change owed" verdict has no path but an operator attestation (`--attest-no-implementation`). The acceptance matrix is generated with TODO placeholders per requirement and stays `pending` until someone fills it; nothing in the workflow prompts for it before accept.
