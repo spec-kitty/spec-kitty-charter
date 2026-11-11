@@ -52,6 +52,7 @@ read the procedure it named.
 ## Consequences
 
 - A client can read every procedure an activation selects, and the action context links each one.
-- #350 (an `action:` URN in a procedure reference id) no longer applies to the reader. The procedure schema has no
-  `Reference` member since ADR-0064, so there is no reference id to constrain. It is left open for the operator to close.
+- #350 (an `action:` URN in a procedure reference id) no longer applies to the reader: the procedure schema has no
+  `Reference` member since ADR-0064. Operator ruling, 2026-11-11: #350 is retargeted to the graph-document edges of a
+  procedure, and stays open.
 - Other kernel kinds (`template`, `asset` and the rest) stay unserved and keep `kind_not_found`.
