@@ -82,7 +82,7 @@ plan page.
 ## Rule 7: one place for each fact
 
 - **Kind:** the native issue type (`Bug`, `Feature` or `Task`) is the only kind carrier. The
-  `type:task`, `type:epic`, `enhancement` and `bug` labels are retired.
+  `type:task`, `type:epic`, `enhancement` and `bug` labels are not used; they are being deleted.
 - **Priority:** `priority:P0` to `priority:P3`, one per issue.
 - **Parent:** a native sub-issue link to an open epic, never to a closed one.
 - **Milestone:** every open issue has one; see [Milestones](/plans/milestones/).
