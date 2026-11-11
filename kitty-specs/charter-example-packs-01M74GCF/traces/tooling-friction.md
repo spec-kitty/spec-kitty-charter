@@ -34,6 +34,6 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 
 2026-11-11 · claude · WP04: the `open-packs` tag also hid the moved tests from `:packs:test`, so the tag had to go with the move; Error Prone fails on an unused helper; targeted Gradle runs take ~2 min, and counts were read from test-results XML.
 
-2026-11-11 · claude · The session clone was shallow: the contract rehearsal's compatibility check refuses a shallow clone, so reproducing CI's release-rehearsal red needed `git fetch --unshallow --tags`. The release-rehearsal red on PR #474 (lintContract, ApiRoot `_links` without x-source, only in the synthetic release) passes on main; diagnosis in progress.
+2026-11-11 · claude · The session clone was shallow: the contract rehearsal's compatibility check refuses a shallow clone, so reproducing CI's release-rehearsal red needed `git fetch --unshallow --tags`. The release-rehearsal red on PR #474 (lintContract, ApiRoot `_links` without x-source, only in the synthetic release) passes on main. Root cause: vacuum's 500 ms JSONPath lookup timeout silently reads a timed-out lookup as not found on a loaded runner; main already raised it to 10 s (174353610). Fixed by the planned rebase on main.
 
-2026-11-11 · claude · WP03:  test sources compile only under , so a -only run missed a broken caller of the changed ExamplePacks API.
+2026-11-11 · claude · WP03: `:packs` test sources compile only under `:packs:test`, so a `:deployable`-only run missed a broken caller of the changed ExamplePacks API.
