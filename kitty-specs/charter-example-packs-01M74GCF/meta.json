@@ -1,0 +1,37 @@
+{
+  "accept_commit": "0a848caabc18e4a4c45b4cc5b6b4ac51e61ba376",
+  "acceptance_history": [
+    {
+      "accept_commit": "0a848caabc18e4a4c45b4cc5b6b4ac51e61ba376",
+      "acceptance_mode": "local",
+      "accepted_at": "2026-11-11T08:16:41.710758+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "0957dd3b81f344208769dcd95dd76351302c6908"
+    }
+  ],
+  "acceptance_mode": "local",
+  "accepted_at": "2026-11-11T08:16:41.710758+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "0957dd3b81f344208769dcd95dd76351302c6908",
+  "baseline_merge_commit": "68ec129e12d9d7ef3268e19fce51262f9ce52712",
+  "contracts": "none",
+  "contracts_rationale": "Test, fixture, build, CI and governance change only; no API surface is added or changed.",
+  "created_at": "2026-11-11T05:13:12.473315+00:00",
+  "flattened": false,
+  "friendly_name": "Charter example packs replace the open-packs corpus",
+  "merged_at": "2026-11-11T08:16:59.730222+00:00",
+  "merged_commit": "68ec129e12d9d7ef3268e19fce51262f9ce52712",
+  "mid8": "01M74GCF",
+  "mission_id": "01M74GCF2XKPXAB2FFC2DEJJM6",
+  "mission_number": 21,
+  "mission_slug": "charter-example-packs-01M74GCF",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Charter tests read pinned open-packs content while open-packs authors against charter's schemas; every breaking contract change leaves one side red. ADR-0070 (accepted) moves the proof onto example packs charter owns and lets open-packs validate against a pinned charter release. Done on the PR #474 branch so that PR merges green.",
+  "purpose_tldr": "Charter's tests prove the contract on charter-owned example packs, so a contract change can reach green without waiting for open-packs.",
+  "slug": "charter-example-packs-01M74GCF",
+  "status_phase": "1",
+  "target_branch": "claude/adr-open-packs-456-458-adf2fo",
+  "topology": "single_branch",
+  "topology_source": "explicit"
+}
