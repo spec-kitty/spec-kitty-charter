@@ -26,3 +26,5 @@ Decisions recorded in decisions/ (DM records) and ADR-0070; this file logs the r
 2026-11-11 · claude · WP06's replacement project edge `skill:project-triage overrides org-base::skill:issue-triage` was refused at integration ("org-base is outside its depends_on closure"), so project.graph.yaml keeps WP05's version with no overrides edge; cross-level overrides edges stay covered by ClosureViewMergedTest's synthetic fixtures. Reviewers to confirm the project pack's depends_on.
 
 2026-11-11 · claude · WP10 closes with no code change; evidence in the tracer.
+
+2026-11-11 · reviewer-renata · WP06, WP09, WP10 approved. The project pack does depend on org-base, so the refusal of WP06's cross-level skill `overrides` edge points at a service defect, not the example; filed as #479 (the edge stays out until it is resolved).
