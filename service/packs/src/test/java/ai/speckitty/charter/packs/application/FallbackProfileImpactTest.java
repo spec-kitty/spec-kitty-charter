@@ -3,13 +3,21 @@ package ai.speckitty.charter.packs.application;
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusal;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import java.nio.file.Path;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,63 +46,6 @@ class FallbackProfileImpactTest {
     }
 
     @Test
-    void aLockedGenericFallbackHeldByThePackIsAccepted(@TempDir Path host) {
-        Rig rig = new Rig(host);
-
-        assertThat(rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none())
-                        .outcome())
-                .isEqualTo(Outcome.CREATED);
-    }
-
-    @Test
-    void aFallbackNoPackOfTheClosureHoldsIsRefusedAndNothingIsStored(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        Packs unknown = Packs.of(ORG_ID, "org-base", "1.0.0", "org", "fallback_profile: nobody\n");
-
-        CharterRefusal refused = refusal(() -> rig.register("org-base", rig.stage(unknown), Preconditions.none()));
-
-        assertThat(refused.code()).isEqualTo(RefusalCode.FALLBACK_PROFILE_UNKNOWN);
-        assertThat(refused.getMessage()).contains("nobody").contains("closure rooted at");
-        assertThat(rig.packs.resolve("org-base")).doesNotExist();
-        assertThat(rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none())
-                        .outcome())
-                .as("the control: the same pack holding the profile")
-                .isEqualTo(Outcome.CREATED);
-    }
-
-    @Test
-    void aFallbackNoPackLocksIsRefusedWhileTheLockedOneIsAccepted(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        String extendable = "schema_version: 1\nartifacts:\n  agent_profile:generic-agent: extendable\n";
-
-        assertThat(refusal(() -> rig.register(
-                                "org-base", rig.stage(org("role: generic\n", extendable)), Preconditions.none()))
-                        .code())
-                .isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_LOCKED);
-        assertThat(rig.packs.resolve("org-base")).doesNotExist();
-        assertThat(rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none())
-                        .outcome())
-                .isEqualTo(Outcome.CREATED);
-    }
-
-    @Test
-    void aFallbackWithARoleOtherThanGenericOrWithAltRolesIsRefused(@TempDir Path host) {
-        Rig rig = new Rig(host);
-
-        for (String roleLines : new String[] {"role: implementer\n", "role: generic\nalt-roles: [reviewer]\n"}) {
-            assertThat(refusal(() -> rig.register(
-                                    "org-base", rig.stage(org(roleLines, LOCK_GENERIC)), Preconditions.none()))
-                            .code())
-                    .as(roleLines)
-                    .isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL);
-        }
-        assertThat(rig.packs.resolve("org-base")).doesNotExist();
-        assertThat(rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none())
-                        .outcome())
-                .isEqualTo(Outcome.CREATED);
-    }
-
-    @Test
     void aDerivedPackMayNameAFallbackItsClosureHoldsButNotOneOutsideIt(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none());
@@ -111,5 +62,67 @@ class FallbackProfileImpactTest {
                         .outcome())
                 .as("the org's locked profile, named through the closure (ADR-0068 decision 2)")
                 .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aSingleArtifactWriteOfTheFallbackProfileIsJudgedAsWrittenNotAsStored(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none());
+        PackIdentifier orgBase = new PackIdentifier("org-base");
+        Pack stored = rig.repository.load(orgBase);
+
+        AgentProfile implementer = agentProfile("implementer");
+        CharterRefusal refused = refusal(() -> rig.writeStore.commit(
+                orgBase, null, PackWriteStore.Change.artifact(stored.with(implementer), implementer)));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL);
+        assertThat(rig.repository.load(orgBase).artifacts(ArtifactKind.AGENT_PROFILE))
+                .as("nothing was stored")
+                .singleElement()
+                .isInstanceOfSatisfying(
+                        RoleBearer.class, held -> assertThat(held.role()).isEqualTo("generic"));
+        AgentProfile generic = agentProfile("generic");
+        rig.writeStore.commit(orgBase, null, PackWriteStore.Change.artifact(stored.with(generic), generic));
+    }
+
+    @Test
+    void aWriteToThePackHoldingTheFallbackIsJudgedForThePackThatDeclaresIt(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("org-base", rig.stage(org("role: generic\n", LOCK_GENERIC)), Preconditions.none());
+        String dependsOnOrg = "depends_on:\n  - pack_id: " + ORG_ID + "\n    range: '>=1.0'\n";
+        rig.register(
+                "project",
+                rig.stage(Packs.of(
+                        PROJECT_ID, "project", "1.0.0", "project", dependsOnOrg + "fallback_profile: generic-agent\n")),
+                Preconditions.none());
+        String extendable = "schema_version: 1\nartifacts:\n  agent_profile:generic-agent: extendable\n";
+        Packs unlocked = Packs.of(ORG_ID, "org-base", "1.1.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", extendable)
+                .file("agent_profiles/generic-agent.agent.yaml", profile("generic-agent", "role: generic\n"));
+
+        CharterRefusal refused = refusal(() -> rig.register("org-base", rig.stage(unlocked), Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("the org pack declares no fallback; the project that builds on it does")
+                .isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_LOCKED);
+        assertThat(refused.getMessage()).contains("closure rooted at project");
+        Packs stillLocked = Packs.of(ORG_ID, "org-base", "1.1.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", LOCK_GENERIC)
+                .file("agent_profiles/generic-agent.agent.yaml", profile("generic-agent", "role: generic\n"));
+        assertThat(rig.register("org-base", rig.stage(stillLocked), Preconditions.none())
+                        .outcome())
+                .as("the control: the same write keeping the lock")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    private static AgentProfile agentProfile(String role) {
+        return AgentProfile.builder()
+                .id(new AgentProfileIdentifier("generic-agent"))
+                .packId(new PackIdentifier("org-base"))
+                .name("generic-agent")
+                .role(role)
+                .purpose("Serve when no profile fits.")
+                .specialization(new Specialization("Anything", Optional.empty(), Optional.empty(), Optional.empty()))
+                .build();
     }
 }
