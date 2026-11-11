@@ -1,13 +1,19 @@
 package ai.speckitty.charter.packs.infra.fetch.git;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 
@@ -29,6 +35,9 @@ public final class GitVersionCheck {
     private static final long ASK_SECONDS = 10;
     private static final int MAX_ANSWER_BYTES = 4096;
     private static final String PROPERTY = "charter.pack-sources.git.executable";
+    private static final String HOME_PREFIX = "charter-git-version-";
+    private static final FileAttribute<Set<PosixFilePermission>> OWNER_ONLY =
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
 
     /** What the check found. */
     public enum Status {
@@ -114,7 +123,7 @@ public final class GitVersionCheck {
     private static Optional<GitVersion> ask(Path binary) {
         Path home = null;
         try {
-            home = Files.createTempDirectory("charter-git-version-");
+            home = privateHome();
             ProcessBuilder builder = new ProcessBuilder(List.of(binary.toString(), "--version"));
             builder.environment().clear();
             builder.environment().putAll(GitEnvironment.from(binary, home));
@@ -135,6 +144,29 @@ public final class GitVersionCheck {
         } finally {
             remove(home);
         }
+    }
+
+    /**
+     * The directory git runs in and takes as its {@code HOME}, made the owner's alone: in the shared temporary
+     * directory, another user could otherwise plant a config or a hook for git to read, or read what git writes.
+     * Where the file system has no POSIX modes, the owner-only bits are set right after it is made.
+     */
+    private static Path privateHome() throws IOException {
+        if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+            return Files.createTempDirectory(HOME_PREFIX, OWNER_ONLY);
+        }
+        File home = Files.createTempDirectory(HOME_PREFIX).toFile();
+        boolean ownerOnly = home.setReadable(false, false)
+                && home.setWritable(false, false)
+                && home.setExecutable(false, false)
+                && home.setReadable(true, true)
+                && home.setWritable(true, true)
+                && home.setExecutable(true, true);
+        if (!ownerOnly) {
+            remove(home.toPath());
+            throw new IOException("cannot make the git home the owner's alone: " + home);
+        }
+        return home.toPath();
     }
 
     private static Optional<GitVersion> answer(Process process) throws IOException, InterruptedException {

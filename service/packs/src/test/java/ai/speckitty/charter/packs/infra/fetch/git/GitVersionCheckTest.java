@@ -175,7 +175,7 @@ class GitVersionCheckTest {
     }
 
     @Test
-    void theVersionIsAskedOnceWithAnEnvironmentBuiltFromEmpty() {
+    void theVersionIsAskedOnceInAnOwnerOnlyHomeWithAnEnvironmentBuiltFromEmpty() {
         GitShim shim = GitShim.in(temp).version("git version 2.51.0\n");
 
         GitVersionCheck.resolve(shim.executable(), null);
@@ -197,7 +197,11 @@ class GitVersionCheckTest {
                             "GIT_ALLOW_PROTOCOL",
                             "GIT_LFS_SKIP_SMUDGE");
             assertThat(call.environment())
-                    .containsEntry("PATH", shim.directory().toString());
+                    .containsEntry("PATH", shim.directory().toString())
+                    .containsEntry("HOME", call.cwd());
+            assertThat(call.cwdMode())
+                    .as("git runs in, and reads its config from, a home no other user can open or plant a file in")
+                    .isEqualTo("drwx------");
         });
     }
 
