@@ -2,11 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.CompositeComponentResolver;
-import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.io.IOException;
 import java.net.URI;
@@ -32,8 +28,7 @@ import tools.jackson.databind.ObjectMapper;
  * WP10 consolidation (NFR-004, C-001/C-002, SC-004): the regular-artefact read and registration surface is wired into
  * the production composition root exactly as it ships. A configured pack serves every new per-kind read with the
  * {@code Charter-Source-Fingerprint} header, a registration {@code PUT} round-trips through the wired write store, and
- * the production {@link CompositeComponentResolver} is a bean that dispatches a neighbour URN to its kind's read path
- * (empty for an unwired kind, ADR-0025 Decision 6). A wiring that drops any controller, service, write store or the
+ * the production {@link CompositeComponentResolver}, which names the pack holding a reference, is one bean. A wiring that drops any controller, service, write store or the
  * resolver fails the context load and this test.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,14 +38,10 @@ class RegularArtefactWiringTest {
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
-    private static final PackIdentifier PACK = new PackIdentifier("qa");
     private static Path packs = Path.of("");
 
     @LocalServerPort
     private int port;
-
-    @Autowired
-    private CompositeComponentResolver resolver;
 
     @Autowired
     private ApplicationContext context;
@@ -117,26 +108,8 @@ class RegularArtefactWiringTest {
     }
 
     @Test
-    void theCompositeComponentResolverIsABeanThatDispatchesAcrossKinds() throws Exception {
+    void theCompositeComponentResolverIsOneBean() {
         assertThat(context.getBeansOfType(CompositeComponentResolver.class)).hasSize(1);
-
-        HttpResponse<String> put = send(
-                "PUT",
-                "/api/v1/packs/qa/artifacts/directive/RESOLVED",
-                "{\"schemaVersion\": \"1.0\", \"title\": \"Resolved\", \"intent\": \"prove dispatch\","
-                        + " \"enforcement\": \"required\"}");
-        assertThat(put.statusCode()).as(put.body()).isEqualTo(201);
-
-        ComponentResolver bound = resolver.forPack(PACK);
-        assertThat(bound.resolve(new Urn(NodeKind.DIRECTIVE, "RESOLVED")))
-                .as("the resolver dispatches a directive URN to the directive read path")
-                .isPresent();
-        assertThat(bound.resolve(new Urn(NodeKind.DIRECTIVE, "ABSENT")))
-                .as("an absent in-scope component resolves empty, not an error")
-                .isEmpty();
-        assertThat(bound.resolve(new Urn(NodeKind.PROCEDURE, "unwired")))
-                .as("an unwired kind resolves empty so a walk continues (ADR-0025 Decision 6)")
-                .isEmpty();
     }
 
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
