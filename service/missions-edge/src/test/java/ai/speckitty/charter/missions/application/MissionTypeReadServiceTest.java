@@ -50,13 +50,13 @@ class MissionTypeReadServiceTest {
         }
 
         @Override
-        public PackHolding revised(PackIdentifier pack, String type) {
+        public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String type) {
             asked.add(pack.value() + " " + type);
             if (!type.equals("software-dev")) {
                 throw new CharterRefusal(
                         RefusalCode.MISSION_TYPE_NOT_FOUND, "Pack main has no mission type " + type + ".");
             }
-            return new PackHolding(holding, REVISION);
+            return new PackRead<>(holding, holding.fingerprint(), REVISION);
         }
     });
 

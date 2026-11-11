@@ -3,7 +3,7 @@ package ai.speckitty.charter.missions.application;
 import java.util.Objects;
 
 /**
- * A pack-scoped read's answer, the source fingerprint of the inputs it was read from and the pack revision it was read
+ * A pack-scoped read's answer (also what the {@link PackMissionTypes} port answers), the source fingerprint of the inputs it was read from and the pack revision it was read
  * at, all from one verified read, so a caller never reports a fingerprint or a tag it took separately.
  *
  * @param value what the read answered

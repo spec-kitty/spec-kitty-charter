@@ -51,8 +51,8 @@ public final class MissionTypeReadService {
      * @throws CharterRefusal as {@link PackMissionTypes#revised} refuses
      */
     public PackRead<MissionTypeView> missionType(PackIdentifier pack, String missionTypeId) {
-        PackHolding held = packs.revised(pack, missionTypeId);
-        return PackRead.of(missionTypeOf(held.holding()), held.revision());
+        PackRead<MissionTypeHolding> held = packs.revised(pack, missionTypeId);
+        return PackRead.of(missionTypeOf(held.value()), held.revision());
     }
 
     /**
@@ -89,8 +89,8 @@ public final class MissionTypeReadService {
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the type holds no such step
      */
     public PackRead<StepView> step(PackIdentifier pack, String missionTypeId, String stepId) {
-        PackHolding held = packs.revised(pack, missionTypeId);
-        return PackRead.of(stepOf(held.holding(), scopeOf(pack), missionTypeId, stepId), held.revision());
+        PackRead<MissionTypeHolding> held = packs.revised(pack, missionTypeId);
+        return PackRead.of(stepOf(held.value(), scopeOf(pack), missionTypeId, stepId), held.revision());
     }
 
     /**
@@ -145,8 +145,8 @@ public final class MissionTypeReadService {
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the type
      */
     public PackRead<SkeletonView> skeleton(PackIdentifier pack, String missionTypeId, String name) {
-        PackHolding held = packs.revised(pack, missionTypeId);
-        return PackRead.of(skeletonOf(held.holding(), scopeOf(pack), missionTypeId, name), held.revision());
+        PackRead<MissionTypeHolding> held = packs.revised(pack, missionTypeId);
+        return PackRead.of(skeletonOf(held.value(), scopeOf(pack), missionTypeId, name), held.revision());
     }
 
     /**

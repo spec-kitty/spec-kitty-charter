@@ -9,7 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
-import ai.speckitty.charter.missions.application.PackHolding;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
@@ -94,9 +94,9 @@ class PacksMissionTypesTest {
 
         PacksMissionTypes adapter = new PacksMissionTypes(read(pack, files));
         MissionTypeHolding holding = adapter.holding(PACK, "software-dev");
-        PackHolding revised = adapter.revised(PACK, "software-dev");
+        PackRead<MissionTypeHolding> revised = adapter.revised(PACK, "software-dev");
 
-        assertThat(revised.holding())
+        assertThat(revised.value())
                 .as("the revised read holds the same holding")
                 .isEqualTo(holding);
         assertThat(revised.revision()).as("and the pack revision's token").isEqualTo(REVISION.token());

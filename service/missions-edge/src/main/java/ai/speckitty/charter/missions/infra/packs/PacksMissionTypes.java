@@ -3,8 +3,8 @@ package ai.speckitty.charter.missions.infra.packs;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
-import ai.speckitty.charter.missions.application.PackHolding;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
@@ -42,10 +42,10 @@ public final class PacksMissionTypes implements PackMissionTypes {
     }
 
     @Override
-    public PackHolding revised(PackIdentifier pack, String missionTypeId) {
+    public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String missionTypeId) {
         Revised<MissionTypeHoldingRead.Holding> held = reads.revised(pack, missionTypeId);
-        return new PackHolding(
-                holdingOf(held.value(), pack, missionTypeId), held.revision().token());
+        MissionTypeHolding holding = holdingOf(held.value(), pack, missionTypeId);
+        return new PackRead<>(holding, holding.fingerprint(), held.revision().token());
     }
 
     private static MissionTypeHolding holdingOf(

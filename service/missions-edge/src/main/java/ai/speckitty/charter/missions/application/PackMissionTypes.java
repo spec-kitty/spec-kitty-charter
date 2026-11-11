@@ -27,8 +27,8 @@ public interface PackMissionTypes {
      *
      * @param pack the pack's identity, as the request names it
      * @param missionTypeId the mission type's id
-     * @return the holding and the pack revision
+     * @return the holding, the verified fingerprint it carries and the pack revision
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #holding} refuses
      */
-    PackHolding revised(PackIdentifier pack, String missionTypeId);
+    PackRead<MissionTypeHolding> revised(PackIdentifier pack, String missionTypeId);
 }

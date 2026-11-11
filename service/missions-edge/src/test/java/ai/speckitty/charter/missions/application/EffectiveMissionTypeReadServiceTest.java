@@ -68,10 +68,10 @@ class EffectiveMissionTypeReadServiceTest {
 
         // An activation read never computes a pack revision (C-002): the call is recorded so a test can see it.
         @Override
-        public PackHolding revised(PackIdentifier pack, String type) {
+        public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String type) {
             asked.add("revised " + pack.value() + ":" + type);
-            return new PackHolding(
-                    EffectiveMissionTypeReadServiceTest.holding(packFingerprint), "sha256:" + "e".repeat(64));
+            MissionTypeHolding held = EffectiveMissionTypeReadServiceTest.holding(packFingerprint);
+            return new PackRead<>(held, held.fingerprint(), "sha256:" + "e".repeat(64));
         }
     };
     private final StepContracts contracts = (contract, read) -> view(contract.localId(), "specify");

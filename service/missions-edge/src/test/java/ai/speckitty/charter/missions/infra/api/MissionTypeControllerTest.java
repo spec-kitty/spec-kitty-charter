@@ -12,8 +12,8 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeReadService;
-import ai.speckitty.charter.missions.application.PackHolding;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
+import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
@@ -54,13 +54,14 @@ class MissionTypeControllerTest {
                                 }
 
                                 @Override
-                                public PackHolding revised(PackIdentifier pack, String type) {
+                                public PackRead<MissionTypeHolding> revised(PackIdentifier pack, String type) {
                                     if (!type.equals("software-dev")) {
                                         throw new CharterRefusal(
                                                 RefusalCode.MISSION_TYPE_NOT_FOUND,
                                                 "Pack main has no mission type " + type + ".");
                                     }
-                                    return new PackHolding(MissionTypeControllerTest.holding(pack), REVISION);
+                                    MissionTypeHolding held = MissionTypeControllerTest.holding(pack);
+                                    return new PackRead<>(held, held.fingerprint(), REVISION);
                                 }
                             }),
                             new MissionLinks("/api/v1")),
