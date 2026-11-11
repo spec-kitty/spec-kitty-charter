@@ -55,7 +55,7 @@ class GlossaryPackAndSkillCorpusTest {
 
         assertThat(problems).as("glossary packs that do not round-trip").isEmpty();
         assertThat(files).as("glossary packs in the checkout").isNotEmpty();
-        OpenPacksCorpus.assertPacksPresent("built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd");
+        OpenPacksCorpus.assertAllPacksPresent();
         OpenPacksCorpus.assertEachPackHolds("glossary pack", files, "built-in", "event-driven", "internal", "qa");
     }
 

@@ -59,7 +59,7 @@ class MarkdownCorpusTest {
                 .as("pinned Markdown files refused or not byte-canonical")
                 .isEmpty();
         assertThat(files).as("covered Markdown files in the checkout").isNotEmpty();
-        OpenPacksCorpus.assertPacksPresent("built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd");
+        OpenPacksCorpus.assertAllPacksPresent();
         OpenPacksCorpus.assertEachPackHolds("covered Markdown file", files, "built-in", "internal", "qa");
     }
 
