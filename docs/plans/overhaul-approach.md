@@ -2,7 +2,7 @@
 title: High-level approach to the charter overhaul
 description: The behavior-first, strangler-fig approach to splitting out the charter — scenarios and boundary first, then the OpenAPI contract, before any implementation is chosen.
 doc_status: draft
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Plan
 kind: Planning
 related:

@@ -73,7 +73,7 @@ an architecture and planning review of the plan pages against `main`, the tracke
 - **Phase 1 steps 1 to 5, 3a and the activation register are built.** The contract holds the API root, the offering
   reads, the generic artifact reads (`/packs/{packId}/artifacts[/{kind}/{artifactId}]`), pack registration and the
   activation register with its effective reads (`/artifacts`, `/skipped`, `/graph` and the effective action context,
-  R9). The whole-pack round trip is a required check. Contract `0.1.0` is still uncut (#45, #196).
+  R9, the cutover read of the effective activation sets). The whole-pack round trip is a required check. Contract `0.1.0` is still uncut (#45, #196).
 - **What the usability run found (2026-11-10).** The service is not yet usable by core. Artifact bodies were served for
   five kinds only (tactic, directive, styleguide, paradigm, toolguide; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)), so
   agent profiles, mission types, step contracts, procedures and templates could not be read, although their domain and
@@ -82,8 +82,9 @@ an architecture and planning review of the plan pages against `main`, the tracke
   to read (#454).
 - **Landed since.** PR #470 (2026-11-10) made agent profiles readable, pack-scoped and under an activation, and closed issue
   #407. PR #472 (2026-11-11) did the same for mission types, their steps, step contracts and skeletons, and closed
-  issues #99, #100 and #148. Both go through the generic kind route and `_links`
-  ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)), not new per-kind routes. PR #460 landed phase 1 of
+  issues #99, #100 and #148. Their literal paths in the contract (for example `/packs/{packId}/artifacts/agent_profile/{artifactId}`
+  and `/packs/{packId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`) are concrete instances of the generic kind
+  route, sharing its `_links` and refusals ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)). PR #460 landed phase 1 of
   step enhancements and prompt fragments ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)); #428
   and #437 are closed.
 - **Still open from the reads.** Procedure and template bodies have no read yet. #96 (artifact bodies) stays open for
@@ -97,9 +98,9 @@ tracking issue. Re-run the usability run after slices B and C; its checklist is 
 
 | Slice | Scope | Done when | Depends on |
 |---|---|---|---|
-| **A. Every kind is readable** | ~~#407, #99, #100, #148~~ done; #96 open for procedure and template bodies (#469: the activation links its graph and context) | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | Profiles (PR #470) and mission types, steps, step contracts and skeletons (PR #472) are served; procedures and templates are not |
+| **A. Every kind is readable** | ~~#407, #99, #100, #148~~ done; #96 open for procedure and template bodies (tracker milestone: 4.x cutover; #469: the activation links its graph and context) | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | Profiles (PR #470) and mission types, steps, step contracts and skeletons (PR #472) are served; procedures and templates are not |
 | **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
-| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
+| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd (structured-prompt-driven development) pack |
 | **D. A contract release core can vendor** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
 | **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
 
@@ -111,7 +112,7 @@ The action-context walk is decided in
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/). Its operation is
 `GET /offering/mission-types/{missionType}/actions/{action}/context`
 ([ADR-0020](/adr/0020-offering-and-activations/) D1). What applies in one activation is the effective context under
-`/activations/{activationId}` (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built in PR C;
+`/activations/{activationId}` (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built in PR #448;
 its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450).
 
 ## Before step 6
