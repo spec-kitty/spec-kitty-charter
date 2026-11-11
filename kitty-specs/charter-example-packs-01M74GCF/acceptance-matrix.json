@@ -2,7 +2,7 @@
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -76,13 +76,13 @@
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "Charter 'Gates before merge' and PROJECT_002 amended per ADR-0070",
+      "proof_type": "inspection",
+      "evidence": ".kittify/charter/charter.md:93-97; 002-risk-appetite-directive and how-we-apply-project-002 tactic mention example packs @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:19.942613+00:00",
+      "notes": "Matches ADR-0070."
     }
   ],
   "negative_invariants": []
