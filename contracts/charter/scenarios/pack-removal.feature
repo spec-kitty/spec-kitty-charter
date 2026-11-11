@@ -218,6 +218,43 @@ Feature: One artifact or one registered relationship is removed from a pack
     When I GET "/packs/qa/artifacts/agent_profile/jenny"
     Then the response status is 200
 
+  # bound by: #489 (a procedure is refused as a directive is while an edge of the pack still names it)
+  Scenario: A procedure an edge of the pack still names is not deleted until the edge's source is gone
+    Given the org pack "qa" with the file "procedures/refactoring.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: refactoring
+      title: Refactoring
+      description: Change the structure, not the behavior.
+      entry_condition: The tests pass.
+      exit_condition: The tests still pass.
+      steps:
+        - title: Take one small step
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "procedure:refactoring", "type": "requires"}
+      """
+    Then the response status is 201
+    When I remember the ETag
+    And I DELETE "/packs/qa/artifacts/procedure/refactoring" with the remembered ETag
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+    And the field at "/violations/0/detail" contains "directive:D2"
+    When I GET "/packs/qa/artifacts/procedure/refactoring"
+    Then the response status is 200
+    When I DELETE "/packs/qa/artifacts/directive/D2" with the remembered ETag
+    Then the response status is 204
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I DELETE "/packs/qa/artifacts/procedure/refactoring" with the remembered ETag
+    Then the response status is 204
+    When I GET "/packs/qa/artifacts/procedure/refactoring"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+
   # bound by: WP19 (US2 AS4, FR-005: a 404 per code, each with the control of the delete that follows)
   Scenario Outline: A path that names nothing the pack holds is a 404 with its own code
     When I DELETE "<path>" with the header "If-Match": "*"

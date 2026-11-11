@@ -597,16 +597,25 @@ class ArtifactReadServiceTest {
 
     @Test
     void eachListedKindHasItsNotFoundCode() {
-        assertThat(ArtifactReadService.absentCode(ArtifactKind.MISSION_TYPE))
-                .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
-        assertThat(ArtifactReadService.absentCode(ArtifactKind.MISSION_STEP_CONTRACT))
-                .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
-        // An agent profile and a procedure answer artifact_not_found (procedures.feature pins it end to end).
-        for (ArtifactKind kind : ArtifactReadService.LISTED) {
-            if (kind != ArtifactKind.AGENT_PROFILE && kind != ArtifactKind.PROCEDURE) {
-                assertThat(ArtifactReadService.absentCode(kind).token()).isEqualTo(kind.token() + "_not_found");
-            }
-        }
+        // The five older kinds and the two mission kinds keep their own codes; the kinds served after them, the agent
+        // profile and the procedure, answer artifact_not_found (procedures.feature pins it end to end).
+        Map<ArtifactKind, RefusalCode> expected = Map.of(
+                ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND,
+                ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND,
+                ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
+                ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
+                ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
+                ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND,
+                ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
+                ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
+                ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND);
+
+        assertThat(expected.keySet())
+                .as("the map names every listed kind, so a newly listed kind needs its row")
+                .containsExactlyInAnyOrderElementsOf(ArtifactReadService.LISTED);
+        expected.forEach((kind, code) -> assertThat(ArtifactReadService.absentCode(kind))
+                .as(kind.token())
+                .isEqualTo(code));
         assertThatThrownBy(() -> ArtifactReadService.absentCode(ArtifactKind.TEMPLATE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
