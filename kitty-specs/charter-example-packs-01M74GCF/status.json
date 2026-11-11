@@ -252,7 +252,12 @@
         "implementing in worktree"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer"
+      "role": "implementer",
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
+      }
     },
     "WP10": {
       "actor": "finalize-tasks",
