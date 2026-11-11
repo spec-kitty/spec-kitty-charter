@@ -1,0 +1,89 @@
+{
+  "event_count": 42,
+  "last_event_id": "01M760K30X73XWEPXA44D3S0X8",
+  "materialized_at": "2026-11-11T19:15:40.189478+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 4,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude::java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "done",
+      "last_event_id": "01M760JR268P4BJ9XVRSCCX3T3",
+      "last_transition_at": "2026-11-11T19:15:28.966912+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-item-etags-and-resolver-retirement-01M75WRS-coord/kitty-specs/pack-item-etags-and-resolver-retirement-01M75WRS/tasks/WP01-contract-and-scenarios/review-cycle-2.md",
+        "reference": "review-cycle://pack-item-etags-and-resolver-retirement-01M75WRS/WP01-contract-and-scenarios/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 25420,
+      "shell_pid_created_at": "1794422395.55"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude::java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "done",
+      "last_event_id": "01M760JZBE61AW79VAQJ3MV1J9",
+      "last_transition_at": "2026-11-11T19:15:36.430882+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-item-etags-and-resolver-retirement-01M75WRS-coord/kitty-specs/pack-item-etags-and-resolver-retirement-01M75WRS/tasks/WP02-templated-item-revisions/review-cycle-2.md",
+        "reference": "review-cycle://pack-item-etags-and-resolver-retirement-01M75WRS/WP02-templated-item-revisions/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 29169,
+      "shell_pid_created_at": "1794423844.92"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude::java-jenny",
+      "force_count": 0,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "done",
+      "last_event_id": "01M760K30X73XWEPXA44D3S0X8",
+      "last_transition_at": "2026-11-11T19:15:40.189478+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-item-etags-and-resolver-retirement-01M75WRS-coord/kitty-specs/pack-item-etags-and-resolver-retirement-01M75WRS/tasks/WP03-mission-type-revisions/review-cycle-1.md",
+        "reference": "review-cycle://pack-item-etags-and-resolver-retirement-01M75WRS/WP03-mission-type-revisions/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1496,
+      "shell_pid_created_at": "1794422565.16"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude::java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "done",
+      "last_event_id": "01M760JVQJ7MB4X6P7VFA8GN57",
+      "last_transition_at": "2026-11-11T19:15:32.722883+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-item-etags-and-resolver-retirement-01M75WRS-coord/kitty-specs/pack-item-etags-and-resolver-retirement-01M75WRS/tasks/WP04-retire-resolver-walk-path/review-cycle-2.md",
+        "reference": "review-cycle://pack-item-etags-and-resolver-retirement-01M75WRS/WP04-retire-resolver-walk-path/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 6121,
+      "shell_pid_created_at": "1794422658.92"
+    }
+  }
+}
