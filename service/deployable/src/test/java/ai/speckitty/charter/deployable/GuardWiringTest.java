@@ -5,13 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import jakarta.servlet.DispatcherType;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.env.ConfigTreePropertySource;
 import org.springframework.boot.support.SpringApplicationJsonEnvironmentPostProcessor;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -23,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -304,6 +310,127 @@ class GuardWiringTest {
                                 "test-environment", Map.of("CHARTER_WORKTREE_TOKEN", TOKEN))))
                 .run(context -> assertThat(statusOf(registration(context), request(null)))
                         .isEqualTo(401));
+    }
+
+    // #121: the environment holds a placeholder and the real value is given where other processes can read it. The
+    // placeholder resolves from the command line, a system property or JSON unpacked from either, so the token sits in
+    // /proc/<pid>/cmdline although the environment route was used.
+
+    private static SystemEnvironmentPropertySource placeholderInTheEnvironment(String placeholder) {
+        return new SystemEnvironmentPropertySource("test-environment", Map.of("CHARTER_WORKTREE_TOKEN", placeholder));
+    }
+
+    @Test
+    void aPlaceholderInTheEnvironmentResolvedFromTheCommandLineRefusesTheStart(CapturedOutput output) {
+        runner.withInitializer(context -> {
+                    context.getEnvironment()
+                            .getPropertySources()
+                            .addFirst(new SimpleCommandLinePropertySource("--x=" + TOKEN));
+                    context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}"));
+                })
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderInTheEnvironmentResolvedFromASystemPropertyRefusesTheStart(CapturedOutput output) {
+        runner.withSystemProperties("x=" + TOKEN)
+                .withInitializer(context ->
+                        context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}")))
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderInTheEnvironmentResolvedFromJsonOnTheCommandLineRefusesTheStart(CapturedOutput output) {
+        runner.withInitializer(context -> {
+                    context.getEnvironment()
+                            .getPropertySources()
+                            .addFirst(new SimpleCommandLinePropertySource(
+                                    "--spring.application.json={\"x\":\"" + TOKEN + "\"}"));
+                    context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}"));
+                    unpackApplicationJson(context);
+                })
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderWithADefaultInTheEnvironmentRefusesTheStartEvenWhenNothingResolvesIt(CapturedOutput output) {
+        runner.withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addLast(placeholderInTheEnvironment("${x:" + TOKEN + "}")))
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderInTheEnvironmentUnderARelaxedSpellingRefusesTheStart(CapturedOutput output) {
+        // CHARTER_WORKTREETOKEN binds charter.worktree-token too: Boot ignores the dash once it has attached its
+        // relaxed-name source, which a SpringApplication does at every start and the runner does not.
+        runner.withSystemProperties("x=" + TOKEN)
+                .withInitializer(context -> {
+                    context.getEnvironment()
+                            .getPropertySources()
+                            .replace(
+                                    StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                                    new SystemEnvironmentPropertySource(
+                                            StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                                            Map.of("CHARTER_WORKTREETOKEN", "${x}")));
+                    ConfigurationPropertySources.attach(context.getEnvironment());
+                })
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderInAMountedTokenFileRefusesTheStart(@TempDir Path secrets, CapturedOutput output)
+            throws Exception {
+        Files.writeString(secrets.resolve("charter.worktree-token"), "${x}");
+        runner.withSystemProperties("x=" + TOKEN)
+                .withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addLast(new ConfigTreePropertySource("test-secrets", secrets)))
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aPlaceholderShadowedByALiteralTokenInAHigherSourceStillRefusesTheStart(CapturedOutput output) {
+        // Which source wins depends on whether Boot's relaxed-name source is attached; a placeholder anywhere is
+        // refused.
+        runner.withInitializer(context -> {
+                    context.getEnvironment()
+                            .getPropertySources()
+                            .addFirst(new MapPropertySource("a-config-file", Map.of("charter.worktree-token", TOKEN)));
+                    context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}"));
+                })
+                .run(context -> {
+                    assertRefusedWithoutTheToken(context, output);
+                    assertThat(failureText(context)).contains("placeholder");
+                });
+    }
+
+    @Test
+    void aTokenFromAMountedTokenFileIsAccepted(@TempDir Path secrets) throws Exception {
+        Files.writeString(secrets.resolve("charter.worktree-token"), TOKEN);
+        runner.withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addLast(new ConfigTreePropertySource("test-secrets", secrets)))
+                .run(context -> assertThat(statusOf(registration(context), request("Bearer " + TOKEN)))
+                        .isEqualTo(200));
     }
 
     @Test
