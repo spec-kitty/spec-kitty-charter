@@ -1,5 +1,4 @@
 files:
-  - ActionNotFound.yaml
   - ArtifactNotFound.yaml
   - Forbidden.yaml
   - OfferingUnreadable.yaml
@@ -9,7 +8,6 @@ files:
   - ActivationPresetNotFound.yaml
   - ActivationNotFound.yaml
   - ArtifactPolicyRefused.yaml
-  - NotImplemented.yaml
   - NotModified.yaml
   - PackNotFound.yaml
   - PreconditionFailed.yaml
