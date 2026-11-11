@@ -44,3 +44,5 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 
 2026-11-11 · claude · Review of WP02–WP04: `build/test-results` keeps XML from earlier `openPacks*` task runs, some failing, which inflates naive counts; count per task. The `agent action review` output prints the reject command before the approve one, which misleads.
 2026-11-11 · claude · WP05: :deployable:test reported UP-TO-DATE on the second run, so its result came from the first --continue run; a stale-result read is easy to miss. Re-stamping a manifest via PackManifestYaml.write reformats the file (indentation, quotes, comment lost), so the hashes were patched into the original text by hand.
+
+2026-11-11 · claude · Integrating side-worktree commits conflicts on the append-only tracer files every time (each WP appends); resolved by keeping both sides. Suggested fix: per-WP tracer fragments, or a union merge driver for traces/*.md (.gitattributes `merge=union`).
