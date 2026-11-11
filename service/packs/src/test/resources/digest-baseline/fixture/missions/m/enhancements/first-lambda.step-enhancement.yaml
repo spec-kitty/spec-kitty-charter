@@ -1,0 +1,5 @@
+schema_version: "1.0"
+id: first-lambda
+prompt_fragments:
+  - slot: fixture:slot
+    path: first-lambda.prompt-fragment.md

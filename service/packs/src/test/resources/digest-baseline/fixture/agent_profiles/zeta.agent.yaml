@@ -1,0 +1,34 @@
+profile-id: "zeta"
+name: "Zeta"
+description: "The fixture's agent profile."
+schema-version: "1.0"
+roles:
+- implementer
+capabilities:
+- "Hold the fixture"
+routing-priority: 50
+max-concurrent-tasks: 1
+
+purpose: |
+  Hold the place of an agent profile in the fixture.
+
+specialization:
+  primary-focus: "The fixture"
+  avoidance-boundary: "Everything else"
+
+collaboration:
+  handoff-to:
+  - reviewer
+  output-artifacts:
+  - "Nothing"
+  canonical-verbs:
+  - hold
+
+mode-defaults:
+- mode: "direct"
+  description: "Direct execution"
+  use-case: "The fixture"
+
+directive-references: []
+
+initialization-declaration: ""

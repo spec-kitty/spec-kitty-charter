@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: theta
+title: Theta
+description: The fixture's skill.
+triggers: ["theta"]
+form: prompt
+body_path: theta.skill.md
+version: 1.0.0

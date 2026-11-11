@@ -1,0 +1,16 @@
+schema_version: '1.0'
+id: kappa
+title: Kappa
+initial: open
+states:
+- id: open
+  title: Open
+- id: done
+  title: Done
+  terminal: true
+transitions:
+- from: open
+  to: done
+  event: finish
+  guard:
+  - ref: subtasks-ready

@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: delta
+title: Delta
+scope: docs
+principles:
+  - Keep the fixture small.

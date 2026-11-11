@@ -2,3 +2,4 @@ pack_id: 01M7DIGESTBASEL1NE0000000F
 pack_version: 1.0.0
 name: digest-fixture
 pack_level: org
+mutability_policy: policy.yaml
