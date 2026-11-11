@@ -131,7 +131,7 @@ public final class ArtifactReadService {
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
             // a procedure, served after the per-kind codes, uses artifact_not_found as the agent profile does (#484)
             ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND,
-            // agent_profile uses artifact_not_found; the five above keep their own codes (contract rule), and the
+            // agent_profile uses artifact_not_found; tactic to toolguide keep their own codes (contract rule), and the
             // mission kinds have their own codes (#99).
             ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
             ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND,
