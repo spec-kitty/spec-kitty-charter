@@ -106,7 +106,7 @@
     },
     "WP08": {
       "actor": "reviewer-renata",
-      "agent": "reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -119,6 +119,7 @@
         "Governance amended; open-packs#188 filed"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/charter-example-packs-01M74GCF/tasks/WP08-governance-amendments/review-cycle-1.md",
         "reference": "review-cycle://charter-example-packs-01M74GCF/WP08-governance-amendments/review-cycle-1.md",
@@ -126,13 +127,13 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 24242,
-      "shell_pid_created_at": "1794376577.24",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T028": "done",
-        "T029": "done",
-        "T030": "done",
-        "T031": "done"
+        "T028": "planned",
+        "T029": "planned",
+        "T030": "planned",
+        "T031": "planned"
       }
     },
     "WP09": {
