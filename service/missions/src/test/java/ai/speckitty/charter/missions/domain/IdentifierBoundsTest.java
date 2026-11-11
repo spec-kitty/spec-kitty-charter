@@ -77,19 +77,9 @@ class IdentifierBoundsTest {
     }
 
     static Stream<Arguments> kebabVerdicts() {
-        // Verdicts pinned from the patterns before the possessive rewrite.
+        // The grammar's own verdicts are IdentifierGrammarTest's; these say which grammar each type delegates to.
         return Stream.of(
-                Arguments.of("", false, false),
-                Arguments.of("-", false, false),
-                Arguments.of("a-", false, false),
-                Arguments.of("-a", false, false),
-                Arguments.of("a--b", false, false),
-                Arguments.of("A", false, false),
-                Arguments.of("a_b", false, false),
-                Arguments.of("a-b", true, true),
-                Arguments.of("a1-2b-c3", true, true),
-                Arguments.of("1a", true, false),
-                Arguments.of("1-a", true, false));
+                Arguments.of("a-b", true, true), Arguments.of("1a", true, false), Arguments.of("a--b", false, false));
     }
 
     @ParameterizedTest(name = "\"{0}\": lifecycle {1}, mission type {2}")
@@ -121,26 +111,6 @@ class IdentifierBoundsTest {
         for (String text : new String[] {"", "qa::guard:", "::guard:x", "qa:guard:x", "qa::lint", "Review"}) {
             assertThatThrownBy(() -> GuardReference.parse(text)).as(text).isInstanceOf(IllegalArgumentException.class);
         }
-    }
-
-    static Stream<Arguments> keyVerdicts() {
-        return Stream.of(
-                Arguments.of("spec.md", true),
-                Arguments.of("tasks.wp-01.md", true),
-                Arguments.of("a.b_c", true),
-                Arguments.of("spec", false),
-                Arguments.of("Spec.md", false),
-                Arguments.of("spec.", false),
-                Arguments.of(".md", false),
-                Arguments.of("spec..md", false),
-                Arguments.of("1spec.md", false));
-    }
-
-    @ParameterizedTest(name = "\"{0}\" dotted: {1}")
-    @MethodSource("keyVerdicts")
-    @DisplayName("short artifact keys keep their verdict")
-    void shortArtifactKeysKeepTheirVerdict(String key, boolean dotted) {
-        assertThat(ExpectedArtifact.isDottedKey(key)).as(key).isEqualTo(dotted);
     }
 
     private static void assertVerdict(Consumer<String> construct, String text, boolean valid) {

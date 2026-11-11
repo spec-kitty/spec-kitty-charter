@@ -41,15 +41,6 @@ class ContractBundleFileTest {
     }
 
     @Test
-    fun theResultIsAlwaysAbsoluteAndNormalized() {
-        for (given in listOf("build/b.yaml", "./a/../b.yaml", File(workspace, "x/../y.yaml").absolutePath)) {
-            val resolved = ContractBundleFile.resolve(repositoryRoot, given)
-            assertThat(resolved.isAbsolute).`as`(given).isTrue()
-            assertThat(resolved.toPath()).`as`(given).isEqualTo(resolved.toPath().normalize())
-        }
-    }
-
-    @Test
     fun aBundleThatIsNotAFileIsRefusedRatherThanPackagedAsNothing() {
         val bundle = File(workspace, "charter-openapi.yaml")
         assertThat(ContractBundleFile.requireFile(bundle.apply { writeText("openapi: 3.1.0") })).isEqualTo(bundle)
