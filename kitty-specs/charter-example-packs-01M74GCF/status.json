@@ -79,6 +79,9 @@
       "last_event_id": "01M74JW2PYTB1Q3PQF6M97VKK5",
       "last_transition_at": "2026-11-11T05:56:40.286581+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "implementing in worktree ../charter-WP03"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer"
     },
