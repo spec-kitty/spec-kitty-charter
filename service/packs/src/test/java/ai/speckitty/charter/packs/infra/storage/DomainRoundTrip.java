@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -55,6 +56,9 @@ import org.jspecify.annotations.Nullable;
  * joined by {@code "; "}: no kind prefix and no unknown-field suffix, so the known-failure list and the seam test pin
  * one text (research R5).
  *
+ * <p>#476: the mutability policy file the descriptor names (ADR-0063) is written in place at {@code policy.yaml}, from
+ * the policy the source pack's read declares, and paired by path. The gate compares the two files by meaning.
+ *
  * <p>#260: the pack document is written in place at {@code pack.md}, paired by path like a preset, and refused with
  * the store's exact reasons (a Markdown refusal names its line). The gate compares the two files by the Markdown model.
  *
@@ -90,6 +94,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** #260: the pack document, {@code pack.md}, a pack-level file: written in place, paired by path. */
     static final String PACK_DOCUMENT = PackDocumentMarkdown.KIND;
 
+    /** #476: the mutability policy file the descriptor names (ADR-0063), a pack-level file: written in place. */
+    static final String POLICY = PolicyYaml.SCHEMA;
+
     /**
      * The kinds whose files are not placed by id alone, so a write cannot derive the place from the id: the step
      * enhancement's type directory is the target step's (A12). They are written at the place their file was read from
@@ -104,11 +111,13 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(),
-                    Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST, PACK_DOCUMENT))
+                    Stream.of(
+                            DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST, PACK_DOCUMENT, POLICY))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
     private final UnaryOperator<Pack> beforeSave;
+    private final UnaryOperator<MutabilityPolicySource> beforePolicySave;
 
     /**
      * An adapter over a format.
@@ -127,8 +136,24 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * @param beforeSave maps the loaded pack to the pack that is saved; outcomes still answer for the loaded pack
      */
     DomainRoundTrip(SerializationStrategy strategy, UnaryOperator<Pack> beforeSave) {
+        this(strategy, beforeSave, UnaryOperator.identity());
+    }
+
+    /**
+     * An adapter that also changes the source's policy before writing it: the policy is no part of the {@link Pack},
+     * so the policy control (#476) changes it here, and the loss travels the production write path.
+     *
+     * @param strategy the format to read and write with
+     * @param beforeSave maps the loaded pack to the pack that is saved
+     * @param beforePolicySave maps the source's policy to the policy that is written
+     */
+    DomainRoundTrip(
+            SerializationStrategy strategy,
+            UnaryOperator<Pack> beforeSave,
+            UnaryOperator<MutabilityPolicySource> beforePolicySave) {
         this.strategy = strategy;
         this.beforeSave = beforeSave;
+        this.beforePolicySave = beforePolicySave;
     }
 
     @Override
@@ -151,6 +176,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         @Nullable Pack pack = loaded.pack();
         @Nullable String descriptorFailure =
                 writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack), sourcePlaces(sourceIds, kindOf));
+        // #476: the policy on its own, so a source policy that cannot be read refuses only the policy file.
+        @Nullable String policyFailure = descriptorFailure == null ? writePolicy(from, to, id) : null;
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
         // The shards are written before the read-back: the step enhancement rules read the pack's graph documents.
@@ -191,6 +218,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             } else if (PRESET.equals(kind)) {
                 outcomes.put(
                         path, inPlace(path, "preset", DomainRoundTrip::holdsPreset, pack, assemblyFailure, reloaded));
+            } else if (POLICY.equals(kind)) {
+                outcomes.put(path, policy(target, path, descriptorFailure, policyFailure, readBack));
             } else if (PACK_DOCUMENT.equals(kind)) {
                 outcomes.put(
                         path,
@@ -436,6 +465,51 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             throw new UncheckedIOException(e);
         }
         return written;
+    }
+
+    /**
+     * #476: writes the policy the source's descriptor names, in place, from the policy the source read declares; it
+     * does not depend on the pack assembling.
+     *
+     * @return why the source policy could not be read or the policy written, or null when it was written or not named
+     */
+    private @Nullable String writePolicy(DomainRepositoryService from, DomainRepositoryService to, PackIdentifier id) {
+        try {
+            if (from.get(id).paths().mutabilityPolicy().isPresent()) {
+                to.writePolicy(id, beforePolicySave.apply(from.policyOf(id)));
+            }
+            return null;
+        } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
+            return String.valueOf(refused.getMessage());
+        }
+    }
+
+    /**
+     * #476: the policy file's outcome: refused with the descriptor or with the policy's own write, or when the written
+     * pack holds no policy file at its path (the descriptor names none); refused when the written file does not read
+     * through the {@code policy} schema, as the compose reads it; else what the read-back of the written pack says.
+     */
+    private static Outcome policy(
+            Path target,
+            String path,
+            @Nullable String descriptorFailure,
+            @Nullable String policyFailure,
+            Map<String, List<String>> readBack) {
+        if (descriptorFailure != null) {
+            return new Refused(descriptorFailure);
+        }
+        if (policyFailure != null) {
+            return new Refused(policyFailure);
+        }
+        if (!Files.isRegularFile(target.resolve(path))) {
+            return new Refused("not written: the descriptor names no mutability_policy " + path);
+        }
+        try {
+            PolicyYaml.readNamed(target, path);
+        } catch (PolicyYaml.Unreadable unreadable) {
+            return new Refused("read-back: the written file " + unreadable.getMessage());
+        }
+        return readBackOr(path, readBack);
     }
 
     private static Outcome readBackOr(String writtenPath, Map<String, List<String>> readBack) {

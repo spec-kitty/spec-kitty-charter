@@ -848,6 +848,19 @@ final class FilesystemPackStore {
     }
 
     /**
+     * Writes the mutability policy file in place at {@code policy.yaml}, the only path a descriptor may name for it
+     * (ADR-0063), replacing the file when it is there (#476).
+     *
+     * @param id the pack
+     * @param text the policy's text ({@link PolicyYaml#write})
+     * @throws CharterRefusal when the file cannot be written
+     */
+    void writePolicy(PackIdentifier id, String text) {
+        Path directory = existingDirectory(id);
+        writeAtomically(directory, directory.resolve(PolicyYaml.FILE), utf8(text));
+    }
+
+    /**
      * Writes the pack document in place at {@code pack.md}, replacing the file when it is there (#260).
      *
      * @param id the pack

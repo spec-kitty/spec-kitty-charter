@@ -307,6 +307,20 @@ public final class DomainRepositoryService
         resolved.store.writePackDocument(resolved.key, PackDocumentMarkdown.toWritableText(pack, document));
     }
 
+    /**
+     * Writes the mutability policy of a configured pack in place, at {@code policy.yaml} (ADR-0063, #476), as
+     * {@link PolicyYaml#write} words it. Like {@link #writePreset}, it is the whole-pack gate's seam: it bypasses the
+     * commit store's lock and does not restamp a manifest, so no production write path calls it.
+     *
+     * @param pack the pack to write into
+     * @param policy the policy
+     * @throws CharterRefusal when the pack is not configured or is read-only, or the write fails
+     */
+    void writePolicy(PackIdentifier pack, MutabilityPolicySource policy) {
+        Resolved resolved = writable(pack);
+        resolved.store.writePolicy(resolved.key, PolicyYaml.write(policy));
+    }
+
     private <D, E extends CharterArtifact> Optional<E> loadOne(
             PackIdentifier pack, KindBinding<D, E> kind, String elementId) {
         Resolved resolved = resolve(pack);

@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackDocument;
@@ -77,7 +80,8 @@ class WholePackRoundTripTest {
             "preset", // #195
             "pack-manifest", // #195
             "pack-document", // #260
-            "mission-type"); // #194
+            "mission-type", // #194
+            "policy"); // #476
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -108,7 +112,7 @@ class WholePackRoundTripTest {
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
         // The descriptor and the shards, #193's two payload kinds (bytes, no binding), #195's presets and manifest,
-        // #260's pack document and every bound kind.
+        // #260's pack document, #476's mutability policy and every bound kind.
         Set<String> bound = new TreeSet<>(Set.of(
                 DomainRoundTrip.DESCRIPTOR,
                 DomainRoundTrip.GRAPH_SHARD,
@@ -116,7 +120,8 @@ class WholePackRoundTripTest {
                 DomainRoundTrip.TEMPLATE,
                 DomainRoundTrip.PRESET,
                 DomainRoundTrip.MANIFEST,
-                DomainRoundTrip.PACK_DOCUMENT));
+                DomainRoundTrip.PACK_DOCUMENT,
+                DomainRoundTrip.POLICY));
         KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
@@ -254,6 +259,54 @@ class WholePackRoundTripTest {
         assertThat(others).isEqualTo(faithfulOthers);
         assertThat(unpaired(temp.resolve("faithful"), faithfulPaired)).isEmpty();
         assertThat(unpaired(temp.resolve("lossy"), lossyPaired)).isEmpty();
+    }
+
+    /**
+     * Positive control through the production write path (#476): the source's policy loses its lock on the fallback
+     * profile before the write, and {@code policy.yaml}, green in the faithful run, is red naming that entry; every other
+     * outcome is the faithful run's.
+     */
+    @Test
+    void aLossyPolicyTurnsPolicyYamlRedBesideAGreenFaithfulRun(@TempDir Path temp) throws IOException {
+        Path pack = ExamplePacks.pack(BUILT_IN);
+        SortedMap<String, String> census = WholePackCensus.of(pack);
+        SerializationStrategy yaml = new YamlSerializationStrategy();
+        Urn locked = new Urn(NodeKind.AGENT_PROFILE, "generic-agent");
+
+        Map<String, Optional<String>> faithful = observe(
+                new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>(), new TreeSet<>());
+        Map<String, Optional<String>> lossy = observe(
+                new DomainRoundTrip(yaml, UnaryOperator.identity(), policy -> without(policy, locked)),
+                pack,
+                temp.resolve("lossy"),
+                census,
+                new TreeMap<>(),
+                new TreeSet<>());
+
+        assertThat(census).containsEntry(PolicyYaml.FILE, DomainRoundTrip.POLICY);
+        assertThat(faithful.get(PolicyYaml.FILE)).as("faithful policy.yaml").isEmpty();
+        assertThat(lossy.get(PolicyYaml.FILE))
+                .as("lossy policy.yaml")
+                .hasValueSatisfying(red -> assertThat(red).contains(locked.toString()));
+        Map<String, Optional<String>> others = new TreeMap<>(lossy);
+        others.remove(PolicyYaml.FILE);
+        Map<String, Optional<String>> faithfulOthers = new TreeMap<>(faithful);
+        faithfulOthers.remove(PolicyYaml.FILE);
+        assertThat(others).isEqualTo(faithfulOthers);
+    }
+
+    /** The policy without its entry for {@code target}. */
+    private static MutabilityPolicySource without(MutabilityPolicySource policy, Urn target) {
+        MutabilityPolicySource.Builder builder = MutabilityPolicySource.builder();
+        policy.kindDefaults().forEach(builder::kindDefault);
+        policy.urnEntries().forEach((urn, level) -> {
+            if (!urn.equals(target)) {
+                builder.entry(urn, level);
+            }
+        });
+        MutabilityPolicySource changed = builder.build();
+        assertThat(changed).as("the control changes the policy").isNotEqualTo(policy);
+        return changed;
     }
 
     /** The preamble with its first {@code built-in} changed to {@code built-iN}: one character, rendered. */
