@@ -270,6 +270,9 @@
       "last_event_id": "01M74R5ARBB75267W5M959RW0K",
       "last_transition_at": "2026-11-11T07:29:06.315781+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "implementing in worktree"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer"
     }
