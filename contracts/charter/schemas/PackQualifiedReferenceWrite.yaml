@@ -1,0 +1,11 @@
+title: PackQualifiedReferenceWrite
+description: >-
+  A PackQualifiedReference as a request writes it: the same grammar, at most 255 characters as written, the qualifier
+  included (#443). Only requests carry this cap; a reference a pack writes and a response answers is a
+  PackQualifiedReference, which the pack schemas do not cap.
+type: string
+maxLength: 255
+pattern: '^([a-z0-9][a-z0-9_-]*::)?[a-z_]+:.+$'
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
+  symbol: RelationshipWire.MAX_ENDPOINT_LENGTH

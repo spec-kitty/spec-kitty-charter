@@ -17,6 +17,7 @@ files:
   - OfferingPack.yaml
   - PackLevel.yaml
   - PackQualifiedReference.yaml
+  - PackQualifiedReferenceWrite.yaml
   - ReferencedArtifact.yaml
   - Relation.yaml
   - ResolvedDependency.yaml

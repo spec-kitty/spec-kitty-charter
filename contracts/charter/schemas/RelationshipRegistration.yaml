@@ -12,13 +12,14 @@ required: [from, to, type]
 properties:
   from:
     type: string
+    maxLength: 255
     description: The URN <kind>:<id> the relationship is authored from; must resolve within the pack.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
       symbol: Relationship.from
   to:
     allOf:
-    - $ref: PackQualifiedReference.yaml
+    - $ref: PackQualifiedReferenceWrite.yaml
     description: >-
       The reference the relationship is authored to: the URN <kind>:<id>, which may be external to the pack, or the
       pack-qualified <pack-name>::<kind>:<id> of an artifact of another pack the writer relies on. The pack is

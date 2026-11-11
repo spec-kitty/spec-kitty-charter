@@ -164,13 +164,13 @@ delete:
       and A to other::X a DELETE naming base::X removes one edge; a reference that names no pack matches by its URN,
       whatever pack the edge end names.
     schema:
-      $ref: ../schemas/PackQualifiedReference.yaml
+      $ref: ../schemas/PackQualifiedReferenceWrite.yaml
   - name: to
     in: query
     required: true
     description: The other end of the pair, spelled as from.
     schema:
-      $ref: ../schemas/PackQualifiedReference.yaml
+      $ref: ../schemas/PackQualifiedReferenceWrite.yaml
   - $ref: ../parameters/IfMatch.yaml
   responses:
     '204':

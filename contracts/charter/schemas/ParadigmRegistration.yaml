@@ -20,6 +20,7 @@ required:
 properties:
   id:
     type: string
+    maxLength: 128
     description: The paradigm's identity; optional on POST (server-assigned via Location), path-supplied on PUT.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmIdentifier.java
