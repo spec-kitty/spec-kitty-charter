@@ -3,7 +3,7 @@ in: path
 required: true
 description: >-
   The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide,
-  agent_profile, mission_type or mission_step_contract. For agent_profile the templated item read is
+  procedure, agent_profile, mission_type or mission_step_contract. For agent_profile the templated item read is
   not the one that answers: the literal operation getPackAgentProfile does. A mission_step_contract is
   served by the generic item read; the item of a mission_type is answered by getPackMissionType, whose
   literal path the service prefers, and its references read and its removal (deletePackArtifact, which

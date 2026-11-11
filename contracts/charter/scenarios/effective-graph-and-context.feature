@@ -553,6 +553,250 @@ Feature: The effective graph and the effective action context answer what the ac
       directive:D2 active/selected
       """
 
+  Scenario: The context holds every kind the action scopes and the activation selects, and nothing else (#484)
+    #484: an action scopes a directive, a tactic, a procedure, a styleguide and a toolguide, each selected, so each is an
+    entry, active and selected. Beside each sits a control the context must not list: the directive DX and the procedure
+    px are selected but no step scopes them; the tactic t2 is scoped but not selected; the styleguide and the toolguide
+    each have both controls, s2 and g2 scoped but not selected, s3 and g3 selected but not scoped. The answer lists the
+    five in URN order and none of the seven.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: software-dev
+      title: software-dev
+      description: software-dev
+      steps:
+        - id: implement
+          title: implement
+          role: implementer
+      """
+    And the org pack "main" with the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: D
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/DX.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: DX
+      title: DX
+      intent: DX
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: t
+      name: t
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/t2.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: t2
+      name: t2
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "procedures/p.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: p
+      title: p
+      description: p
+      entry_condition: A defect is reported.
+      exit_condition: The defect is fixed.
+      steps:
+        - title: Write the failing test
+          role: implementer
+      """
+    And the org pack "main" with the file "procedures/px.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: px
+      title: px
+      description: px
+      entry_condition: A defect is reported.
+      exit_condition: The defect is fixed.
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "styleguides/s.styleguide.yaml":
+      """
+      schema_version: '1.0'
+      id: s
+      title: s
+      scope: code
+      principles:
+        - name: Keep it small
+          description: Keep it small, in one sentence.
+      """
+    And the org pack "main" with the file "styleguides/s2.styleguide.yaml":
+      """
+      schema_version: '1.0'
+      id: s2
+      title: s2
+      scope: code
+      principles:
+        - name: Keep it small
+          description: Keep it small, in one sentence.
+      """
+    And the org pack "main" with the file "styleguides/s3.styleguide.yaml":
+      """
+      schema_version: '1.0'
+      id: s3
+      title: s3
+      scope: code
+      principles:
+        - name: Keep it small
+          description: Keep it small, in one sentence.
+      """
+    And the org pack "main" with the file "toolguides/g.toolguide.yaml":
+      """
+      schema_version: '1.0'
+      id: g
+      tool: git
+      title: g
+      guide_path: g.guide.md
+      summary: g
+      """
+    And the org pack "main" with the file "toolguides/g.guide.md":
+      """
+      # g
+
+      ## Overview
+
+      Use git.
+      """
+    And the org pack "main" with the file "toolguides/g2.toolguide.yaml":
+      """
+      schema_version: '1.0'
+      id: g2
+      tool: git
+      title: g2
+      guide_path: g2.guide.md
+      summary: g2
+      """
+    And the org pack "main" with the file "toolguides/g2.guide.md":
+      """
+      # g2
+
+      ## Overview
+
+      Use git.
+      """
+    And the org pack "main" with the file "toolguides/g3.toolguide.yaml":
+      """
+      schema_version: '1.0'
+      id: g3
+      tool: git
+      title: g3
+      guide_path: g3.guide.md
+      summary: g3
+      """
+    And the org pack "main" with the file "toolguides/g3.guide.md":
+      """
+      # g3
+
+      ## Overview
+
+      Use git.
+      """
+    And the org pack "main" with the file "edges.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges:
+      - source: action:software-dev/implement
+        target: directive:D
+        relation: scope
+      - source: action:software-dev/implement
+        target: tactic:t
+        relation: scope
+      - source: action:software-dev/implement
+        target: tactic:t2
+        relation: scope
+      - source: action:software-dev/implement
+        target: procedure:p
+        relation: scope
+      - source: action:software-dev/implement
+        target: styleguide:s
+        relation: scope
+      - source: action:software-dev/implement
+        target: styleguide:s2
+        relation: scope
+      - source: action:software-dev/implement
+        target: toolguide:g
+        relation: scope
+      - source: action:software-dev/implement
+        target: toolguide:g2
+        relation: scope
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "DX"], "tactic": ["t"], "procedure": ["p", "px"], "styleguide": ["s", "s3"], "toolguide": ["g", "g3"]}}
+      """
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the context holds exactly the artifacts:
+      """
+      directive:D active/selected
+      procedure:p active/selected
+      styleguide:s active/selected
+      tactic:t active/selected
+      toolguide:g active/selected
+      """
+    And the field at "/enhancements" holds exactly 0 items
+    And the field at "/artifacts/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/procedure/p"
+    And the field at "/artifacts/1/_links/artifact/href" is "/api/v1/packs/main/artifacts/procedure/p"
+    And the field at "/artifacts/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/styleguide/s"
+    And the field at "/artifacts/4/_links/artifact/href" is "/api/v1/packs/main/artifacts/toolguide/g"
+    When I GET "/activations/a-1/artifacts/styleguide/s"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/state" is "active"
+    When I GET "/activations/a-1/artifacts/toolguide/g2"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/state" is "inactive"
+    And the field at "/reason" is "not_selected"
+    When I GET "/activations/a-1/artifacts?kind=styleguide&state=active"
+    Then the response status is 200
+    And the response header "ETag" appears once
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/items" holds exactly the ids:
+      """
+      styleguide:s
+      styleguide:s3
+      """
+    When I GET "/activations/a-1/artifacts?kind=toolguide&state=active"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      toolguide:g
+      toolguide:g3
+      """
+
   Scenario: US5 AS5 - the context of a mission type not in force is empty and the skipped report says why
     US5 AS5, FR-019: research is not selected, so its step gather is not in force and the context of research/gather has no
     artifacts and no enhancements, although the step scopes D, which is selected. The skipped report lists the mission type

@@ -27,6 +27,8 @@ oneOf:
   - required:
       - toolguide
   - required:
+      - procedure
+  - required:
       - agentProfile
   - required:
       - missionType
@@ -39,7 +41,7 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide,
-      agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know (skips the
+      procedure, agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know (skips the
       item). It names the one member that holds the artifact: agent_profile names agentProfile, the member of
       mission_type is missionType and the member of mission_step_contract is missionStepContract.
     x-source:
@@ -69,6 +71,8 @@ properties:
     $ref: Paradigm.yaml
   toolguide:
     $ref: Toolguide.yaml
+  procedure:
+    $ref: Procedure.yaml
   agentProfile:
     $ref: AgentProfile.yaml
   missionType:

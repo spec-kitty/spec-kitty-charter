@@ -1,0 +1,40 @@
+title: ProcedureStep
+description: One step of a procedure. A step names the role that acts (ADR-0032), never an agent profile.
+type: object
+additionalProperties: false
+required: [title, description, role, onSuccess, onFailure]
+properties:
+  title:
+    type: string
+    description: The step's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+      symbol: ProcedureStep.title
+  description:
+    type: ['string', 'null']
+    description: What the step does; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+      symbol: ProcedureStep.description
+  role:
+    type: ['string', 'null']
+    pattern: '^[a-z][a-z0-9-]*$'
+    description: The open role token of the role that acts, for example implementer; null when any role may act.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+      symbol: ProcedureStep.role
+  onSuccess:
+    type: ['string', 'null']
+    description: What follows when the step succeeds; null when the file declares nothing.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+      symbol: ProcedureStep.onSuccess
+  onFailure:
+    type: ['string', 'null']
+    description: What follows when the step fails; null when the file declares nothing.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+      symbol: ProcedureStep.onFailure
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java
+  symbol: ProcedureStep

@@ -1,0 +1,79 @@
+title: Procedure
+description: >-
+  One procedure of a Charter Pack, as the pack declares it: a reusable orchestrated workflow with entry and exit
+  conditions and ordered steps, each naming the role that acts. A procedure carries no relationship: what it references
+  is authored in the pack's graph documents and read through the references read (ADR-0064).
+type: object
+additionalProperties: false
+required: [id, schemaVersion, title, description, entryCondition, exitCondition, steps, antiPatterns, notes, appliesToLanguages]
+properties:
+  id:
+    type: string
+    description: The procedure's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.id
+  schemaVersion:
+    type: string
+    description: The schema version the procedure file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.schemaVersion
+  title:
+    type: string
+    description: The procedure's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.title
+  description:
+    type: string
+    description: What the procedure is for.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.description
+  entryCondition:
+    type: string
+    description: The condition under which the procedure starts.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.entryCondition
+  exitCondition:
+    type: string
+    description: The condition under which the procedure is done.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.exitCondition
+  steps:
+    type: array
+    minItems: 1
+    description: The procedure's steps, in the order the file declares them.
+    items:
+      $ref: ProcedureStep.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.steps
+  antiPatterns:
+    type: array
+    description: What to avoid when following the procedure; empty when none are declared.
+    items:
+      $ref: ProcedureAntiPattern.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.antiPatterns
+  notes:
+    type: ['string', 'null']
+    description: Free-form notes of the procedure; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.notes
+  appliesToLanguages:
+    type: array
+    description: The languages the procedure applies to; empty when it is language-neutral.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+      symbol: Procedure.appliesToLanguages
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
+  symbol: Procedure
