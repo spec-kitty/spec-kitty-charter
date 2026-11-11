@@ -3,7 +3,6 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.examples.ExamplePacks;
-import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -14,11 +13,9 @@ class ExamplePacksOnTheClasspathTest {
 
     @Test
     void theThreePacksAreRealDirectoriesOutsideTheJar() {
-        assertThat(ExamplePacks.packs())
-                .extracting(PackLocation::name)
-                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
-        assertThat(ExamplePacks.packs())
-                .allSatisfy(location ->
-                        assertThat(location.root().resolve("pack.yaml")).isRegularFile());
+        assertThat(ExamplePacks.names()).containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+        assertThat(ExamplePacks.names())
+                .allSatisfy(name ->
+                        assertThat(ExamplePacks.pack(name).resolve("pack.yaml")).isRegularFile());
     }
 }

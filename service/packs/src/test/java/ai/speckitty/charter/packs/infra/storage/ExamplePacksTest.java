@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,11 +28,7 @@ class ExamplePacksTest {
     private static final FileSystemPackInspector INSPECTOR = new FileSystemPackInspector();
 
     private static PackVerdict judge(String name, Path dir) {
-        PackLevel level = ExamplePacks.packs().stream()
-                .filter(location -> location.name().equals(name))
-                .findFirst()
-                .orElseThrow()
-                .level();
+        PackLevel level = ExamplePacks.level(name);
         return PackPolicy.judge(INSPECTOR.inspect(new PackRoot(name, Optional.of(level), dir.toString()), Scope.FULL));
     }
 
@@ -52,11 +49,18 @@ class ExamplePacksTest {
                 .isNotEmpty();
     }
 
+    /** The three example packs as the store configures them, built-in first. */
+    static List<PackLocation> locations() {
+        return ExamplePacks.names().stream()
+                .map(name -> new PackLocation(name, ExamplePacks.level(name), ExamplePacks.pack(name)))
+                .toList();
+    }
+
     /** The three packs compose through the production store and the offering read: org-base on built-in, project on both. */
     @Test
     void theThreePacksComposeThroughTheOfferingRead() {
         DomainRepositoryService store =
-                new DomainRepositoryService(ExamplePacks::packs, new YamlSerializationStrategy());
+                new DomainRepositoryService(ExamplePacksTest::locations, new YamlSerializationStrategy());
         OfferingReadService read =
                 new OfferingReadService(store, store, store, new ConsistentRead(() -> "sha256:" + "a".repeat(64)));
 

@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.examples;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -77,14 +76,26 @@ public final class ExamplePacks {
     }
 
     /**
-     * The three packs as the store configures them, built-in first.
+     * The three pack names, built-in first, as the store configures them.
      *
-     * @return their locations, with their levels
+     * @return {@link #BUILT_IN}, {@link #ORG}, {@link #PROJECT}
      */
-    public static List<PackLocation> packs() {
-        return Stream.of(BUILT_IN, ORG, PROJECT)
-                .map(name -> new PackLocation(name, LEVELS.get(name), pack(name)))
-                .toList();
+    public static List<String> names() {
+        return List.of(BUILT_IN, ORG, PROJECT);
+    }
+
+    /**
+     * The level one example pack is configured at.
+     *
+     * @param name {@link #BUILT_IN}, {@link #ORG} or {@link #PROJECT}
+     * @return its level
+     */
+    public static PackLevel level(String name) {
+        PackLevel level = LEVELS.get(name);
+        if (level == null) {
+            throw new IllegalArgumentException("no example pack named " + name);
+        }
+        return level;
     }
 
     /**
