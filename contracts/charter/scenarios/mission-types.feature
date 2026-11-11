@@ -413,7 +413,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
   Scenario: A step contract is read through the generic item read, linked to its mission type, its step and its delegates
     FR-001, FR-004, US2 AS1. A delegation candidate of a served kind that the pack holds links to its pack-scoped read;
-    one the pack does not hold (NOPE), or one of a kind the service does not serve (a procedure), has no link. A step
+    one the pack does not hold (NOPE), including a procedure the pack does not hold, has no link. A step
     without inputs answers an empty list. No ETag: the kind has no write. A step contract whose mission names a mission
     type the pack does not hold still reads, without mission-type and step links.
     When I GET "/packs/main/artifacts/mission_step_contract/specify"

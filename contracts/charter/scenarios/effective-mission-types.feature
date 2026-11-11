@@ -301,7 +301,7 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     main's, while the winning software-dev is proj's: its mission-type and step links stay under the activation and
     answer proj's type and step, never the copy that lost. A delegation candidate of a listed kind the closure holds links
     effective-artifact, its read under the activation: GUARD is proj's, so main's own pack read links nothing for it; NOPE
-    is held nowhere and a procedure is not listed. artifact is the pack read of the winner.
+    is held nowhere, and neither is the procedure. artifact is the pack read of the winner.
     Given the project pack "proj" with the file "directives/guard.directive.yaml":
       """
       schema_version: '1.0'

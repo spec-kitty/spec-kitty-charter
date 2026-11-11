@@ -568,7 +568,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       | case                               | query                                        |
       | a cursor for another kind          | kind=tactic&pageCursor=ZGlyZWN0aXZlL0dVQVJE  |
       | a cursor that is not base64url     | pageCursor=***                               |
-      | a cursor of a kind not served      | pageCursor=cHJvY2VkdXJlL3g                   |
+      | a cursor of a kind not served      | pageCursor=dGVtcGxhdGUveA                    |
       | a cursor without a slash           | pageCursor=dGFjdGlj                          |
 
   Scenario Outline: A page size out of range or not a number is a 400 Problem without a code (<pageSize>)
