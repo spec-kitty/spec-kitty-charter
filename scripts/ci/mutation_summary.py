@@ -164,6 +164,8 @@ def render(root: Path, listed: list[str] | None, unmutated: list[str] | None = N
     rows: list[str] = []
     failing: list[str] = []
     for directory in find_modules(root, listed or []):
+        # The label is the Gradle project name (``:kernel``), which is the directory's name for every module under
+        # service/; the report is read from the full relative directory.
         module = Path(directory).name
         path = root / directory / SUMMARY_PATH
         if not path.is_file():
