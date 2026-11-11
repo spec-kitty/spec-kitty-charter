@@ -11,4 +11,7 @@ nodes:
 - urn: directive:DIRECTIVE_010
   kind: directive
   label: Specification Fidelity Requirement
-edges: []
+edges:
+- source: directive:DIRECTIVE_010
+  target: directive:DIRECTIVE_001
+  relation: requires

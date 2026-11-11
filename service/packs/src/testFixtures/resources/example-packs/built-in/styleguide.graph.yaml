@@ -5,6 +5,9 @@ nodes:
 - urn: styleguide:aggregate-design-rules
   kind: styleguide
   label: Aggregate Design Rules
+- urn: styleguide:java-conventions
+  kind: styleguide
+  label: Java Conventions
 - urn: styleguide:boring-code-review
   kind: styleguide
   label: Boring Code Review

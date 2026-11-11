@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,15 +14,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 
 /**
  * The {@code edge} of every governance entry in the two agent profile examples of the contract,
- * {@code Artifact.agent_profile.yaml} and {@code EffectiveAgentProfileRead.java-jenny.yaml}, is the one the pinned
- * {@code built-in} pack's graph files write for the edge the entry was reached through: the same {@code when} and
+ * {@code Artifact.agent_profile.yaml} and {@code EffectiveAgentProfileRead.java-jenny.yaml}, is the one the
+ * {@code built-in} example pack's graph files (ADR-0070) write for the edge the entry was reached through: the same {@code when} and
  * {@code reason}, and {@code {}} where the edge states neither. The examples were wrong twice (a reason cut short, a
  * reason-only edge shown as {@code {}}); this keeps them equal to the pack.
  *
@@ -29,10 +29,9 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * illustrative: <urn>[, <urn>]." Such an urn must not be a target of any edge of the pack, or the declaration would hide
  * a real entry.
  *
- * <p>Runs under {@code :deployable:openPacksProfiles} (tag {@code open-packs}), which supplies the checkout and the
- * contract directory. Nothing here skips.
+ * <p>The contract directory is {@code charter.contractsDir} when set, else {@code contracts/charter} of the nearest
+ * enclosing directory that holds one. Nothing here skips.
  */
-@Tag("open-packs")
 class ProfileExamplesEdgeTest {
 
     private static final List<String> EXAMPLES =
@@ -42,9 +41,9 @@ class ProfileExamplesEdgeTest {
 
     @Test
     void everyEdgeOfTheProfileExamplesIsTheOneThePackGraphWrites() throws IOException {
-        Path checkout = Path.of(System.getProperty("charter.openPacksDir"));
-        Path examples = Path.of(System.getProperty("charter.contractsDir"), "examples");
-        Map<String, Set<Map<String, String>>> written = PackGraphEdges.words(checkout, List.of("built-in"));
+        Path examples = contracts().resolve("examples");
+        Map<String, Set<Map<String, String>>> written =
+                PackGraphEdges.words(ExamplePacks.packsDirectory(), List.of(ExamplePacks.BUILT_IN));
         Set<String> targets = new HashSet<>();
         written.keySet().forEach(key -> targets.add(key.substring(key.lastIndexOf(' ') + 1)));
         List<String> problems = new ArrayList<>();
@@ -91,6 +90,20 @@ class ProfileExamplesEdgeTest {
         assertThat(problems).isEmpty();
         assertThat(checked).as("edges checked").isPositive();
         assertThat(worded).as("edges that state a word").isPositive();
+    }
+
+    private static Path contracts() {
+        String set = System.getProperty("charter.contractsDir");
+        if (set != null) {
+            return Path.of(set);
+        }
+        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
+            if (Files.isDirectory(dir.resolve("contracts/charter/examples"))) {
+                return dir.resolve("contracts/charter");
+            }
+        }
+        throw new IllegalStateException(
+                "no contracts/charter/examples above " + Path.of("").toAbsolutePath());
     }
 
     private static Set<String> inventedUrns(String summary) {

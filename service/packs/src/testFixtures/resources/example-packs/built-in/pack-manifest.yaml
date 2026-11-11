@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 0895539cf35c53d0be8d0cde8be49de7a6cd869236918e85158482222ba30da7
+manifest_hash: a9e1cdbdaba3bdf52680405dedfdd2a13d83cf68317485c7831e89e6c73086d8
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -69,6 +69,10 @@ constituents:
   id: boring-code-review
   path: styleguides/boring-code-review.styleguide.yaml
   content_hash: 089da98c8c4ff6db74fac3d352d7f255e5424904c982b4e9d9b2b5e32c44724b
+- kind: styleguide
+  id: java-conventions
+  path: styleguides/java-conventions.styleguide.yaml
+  content_hash: 322066c38b930bf1b098008bf924c211f5c2d6417ee5826f652721f4da3805c4
 - kind: tactic
   id: adversarial-qa-handoff
   path: tactics/adversarial-qa-handoff.tactic.yaml

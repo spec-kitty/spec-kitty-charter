@@ -5,12 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.application.ProfileSource;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,13 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
@@ -42,18 +37,14 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * NFR-001, SC-003 and SC-004 over the real corpus: every agent profile of the pinned spec-kitty-open-packs checkout, the
- * 26 of {@code built-in} and the 5 of {@code qa}, is read through the service's {@link ProfileSource} and through its
- * REST edge, and the body means what the pack YAML means. The expected wire is built here from the YAML alone, by the
- * rules the contract states (camel case, a list that is not declared is {@code []}, a field the pack schema defaults is
- * left out, a field it allows to be null is {@code null}, an empty specialization context or protocol is {@code null}),
- * never from the code under test. The governance of {@code java-jenny} lists {@code styleguide:java-conventions} as a
- * {@code requires} entry (SC-003), which is what made the pin move to {@code a2a9379}.
- *
- * <p>Runs under {@code :deployable:openPacksProfiles} (tag {@code open-packs}), which supplies the checkout. Nothing
- * here skips: a missing, moved or dirty checkout fails.
+ * NFR-001, SC-003 and SC-004 over the example packs (ADR-0070): every agent profile of the three example packs,
+ * {@code built-in}, {@code org-base} and {@code project}, is read through the service's {@link ProfileSource} and
+ * through its REST edge, and the body means what the pack YAML means. The expected wire is built here from the YAML
+ * alone, by the rules the contract states (camel case, a list that is not declared is {@code []}, a field the pack
+ * schema defaults is left out, a field it allows to be null is {@code null}, an empty specialization context or protocol
+ * is {@code null}), never from the code under test. The governance of the example implementer {@code java-jenny} lists
+ * {@code styleguide:java-conventions} as a {@code requires} entry (SC-003).
  */
-@Tag("open-packs")
 @SpringBootTest(
         classes = CharterServiceApplication.class,
         properties = "charter.worktree-token=" + ProfileCorpusTest.TOKEN)
@@ -61,13 +52,12 @@ import tools.jackson.databind.ObjectMapper;
 class ProfileCorpusTest {
 
     static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-    private static final Pattern SHA = Pattern.compile("[0-9a-f]{40}");
-    private static final int BUILT_IN_PROFILES = 26;
-    private static final int QA_PROFILES = 5;
-    private static final List<String> PACKS = List.of("built-in", "qa");
+    private static final Map<String, Integer> PROFILES =
+            Map.of(ExamplePacks.BUILT_IN, 5, ExamplePacks.ORG, 1, ExamplePacks.PROJECT, 1);
+    private static final List<String> PACKS = ExamplePacks.names();
 
     private static @Nullable Path configRoot;
-    private static Path corpus = Path.of("");
+    private static final Path CORPUS = ExamplePacks.packsDirectory();
 
     @Autowired
     private ProfileSource source;
@@ -78,26 +68,12 @@ class ProfileCorpusTest {
     @Autowired
     private ObjectMapper json;
 
-    @BeforeAll
-    static void theCheckoutIsAtThePinAndClean() {
-        corpus = checkout();
-        String pin = System.getProperty("charter.openPacksRef");
-        assertThat(pin).as("charter.openPacksRef").isNotNull().matches(SHA);
-        assertThat(git("rev-parse", "HEAD").strip())
-                .as("the open-packs checkout is at the pin %s (git -C %s checkout %s)", pin, corpus, pin)
-                .isEqualTo(pin);
-        assertThat(git("status", "--porcelain", "--untracked-files=all"))
-                .as("the open-packs checkout has uncommitted changes")
-                .isBlank();
-    }
-
     @DynamicPropertySource
-    static void configRootHoldingTheCorpusPacks(DynamicPropertyRegistry registry) throws IOException {
-        Path source = checkout();
+    static void configRootHoldingTheExamplePacks(DynamicPropertyRegistry registry) throws IOException {
         Path created = Files.createTempDirectory("charter-profile-corpus");
         configRoot = created;
         for (String pack : PACKS) {
-            copy(source.resolve("packs").resolve(pack), created.resolve("packs").resolve(pack));
+            ExamplePacks.copyOf(pack, created.resolve("packs"));
         }
         registry.add("charter.config-root", created::toString);
     }
@@ -115,53 +91,10 @@ class ProfileCorpusTest {
         }
     }
 
-    private static Path checkout() {
-        String dir = System.getProperty("charter.openPacksDir");
-        if (dir == null || !Files.isDirectory(Path.of(dir, "packs", "built-in"))) {
-            throw new IllegalStateException(
-                    "No spec-kitty-open-packs checkout at '" + dir
-                            + "' (expected <checkout>/packs/built-in). Pass -PopenPacksDir=<checkout>. The corpus test never skips.");
-        }
-        return Path.of(dir);
-    }
-
-    private static String git(String... args) {
-        List<String> command = new ArrayList<>(List.of("git", "-C", corpus.toString()));
-        command.addAll(List.of(args));
-        try {
-            Process process =
-                    new ProcessBuilder(command).redirectErrorStream(true).start();
-            byte[] out = process.getInputStream().readAllBytes();
-            if (!process.waitFor(30, TimeUnit.SECONDS) || process.exitValue() != 0) {
-                throw new IllegalStateException("Failed: " + command + "\n" + new String(out, StandardCharsets.UTF_8));
-            }
-            return new String(out, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static void copy(Path from, Path to) throws IOException {
-        try (Stream<Path> walk = Files.walk(from)) {
-            for (Path file : walk.toList()) {
-                Path target = to.resolve(from.relativize(file).toString());
-                if (Files.isDirectory(file)) {
-                    Files.createDirectories(target);
-                } else {
-                    Files.copy(file, target);
-                }
-            }
-        }
-    }
-
     /** The profile files of a pack of the corpus, by profile id, in file-name order. */
     private static Map<String, Map<String, Object>> profilesOf(String pack) throws IOException {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
-        try (Stream<Path> files =
-                Files.list(corpus.resolve("packs").resolve(pack).resolve("agent_profiles"))) {
+        try (Stream<Path> files = Files.list(CORPUS.resolve(pack).resolve("agent_profiles"))) {
             for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".agent.yaml"))
                     .sorted()
                     .toList()) {
@@ -177,7 +110,7 @@ class ProfileCorpusTest {
     // ---- the expected wire, from the YAML alone --------------------------------------------------------------------
 
     private static Map<String, Set<Map<String, String>>> graphEdgeWords() throws IOException {
-        return PackGraphEdges.words(corpus, PACKS);
+        return PackGraphEdges.words(CORPUS, PACKS);
     }
 
     /**
@@ -385,13 +318,14 @@ class ProfileCorpusTest {
     // ---- the tests --------------------------------------------------------------------------------------------------
 
     @Test
-    void theCorpusHoldsTheThirtyOneProfilesOfTheTwoPacks() throws IOException {
-        assertThat(profilesOf("built-in")).as("built-in profiles").hasSize(BUILT_IN_PROFILES);
-        assertThat(profilesOf("qa")).as("qa profiles").hasSize(QA_PROFILES);
+    void theExamplePacksHoldSevenProfilesInTheThreePacks() throws IOException {
+        for (String pack : PACKS) {
+            assertThat(profilesOf(pack)).as("%s profiles", pack).hasSize(PROFILES.get(pack));
+        }
     }
 
     @Test
-    void everyProfileOfTheCorpusIsReadThroughTheProfileSourceAndItsBodyMeansWhatItsYamlMeans() throws Exception {
+    void everyExampleProfileIsReadThroughTheProfileSourceAndItsBodyMeansWhatItsYamlMeans() throws Exception {
         List<String> problems = new ArrayList<>();
         Map<String, Set<Map<String, String>>> written = graphEdgeWords();
         int[] worded = {0};
@@ -429,7 +363,10 @@ class ProfileCorpusTest {
         }
         assertThat(problems).isEmpty();
         assertThat(worded[0]).as("entries whose edge states a word").isPositive();
-        assertThat(read).as("profiles read").isEqualTo(BUILT_IN_PROFILES + QA_PROFILES);
+        assertThat(read)
+                .as("profiles read")
+                .isEqualTo(
+                        PROFILES.values().stream().mapToInt(Integer::intValue).sum());
     }
 
     /** The invariants of a governance answer, whatever the profile. */
@@ -492,23 +429,18 @@ class ProfileCorpusTest {
     }
 
     /**
-     * The governance of {@code EffectiveAgentProfileRead.java-jenny.yaml}, the contract's example, over the real corpus: the
-     * profile under an activation that selects what this repository's {@code charter.yaml} selects (the two toolguides the
-     * pin does not hold are left out). Every listed entry, its relation, its state and the words of its edge are the
-     * pack's; DIRECTIVE_024 is a {@code requires} target the charter does not select, so it is not listed.
+     * The governance of {@code EffectiveAgentProfileRead.java-jenny.yaml}, the contract's example, over the built-in
+     * example pack: the profile under an activation that selects it, three directives and two style guides. Every listed
+     * entry, its relation, its state and the words of its edge are the pack's; DIRECTIVE_001 is reached through
+     * DIRECTIVE_010 (hops 2) and is locked by the pack policy; the tactic java-jenny suggests is out of force; the procedure it requires is not selected, so
+     * it is not listed (a requires target is not a suggestion, and no preset of the pack requires it).
      */
     @Test
-    void javaJennyUnderTheCharterSelectionListsWhatTheContractExampleShows() throws Exception {
+    void javaJennyUnderASelectionListsWhatTheContractExampleShows() throws Exception {
         String selected = "{\"schemaVersion\":2,\"packs\":[{\"packId\":\"built-in\"}],\"selected\":{"
                 + "\"agent_profile\":[\"java-jenny\"],"
-                + "\"paradigm\":[\"behaviour-driven-development\",\"specification-by-example\","
-                + "\"domain-driven-design\",\"c4-incremental-detail-modeling\"],"
-                + "\"directive\":[\"DIRECTIVE_001\",\"DIRECTIVE_003\",\"DIRECTIVE_010\",\"DIRECTIVE_025\","
-                + "\"DIRECTIVE_030\",\"DIRECTIVE_032\",\"DIRECTIVE_034\",\"DIRECTIVE_037\",\"DIRECTIVE_041\","
-                + "\"DIRECTIVE_051\",\"RECONCILE_CHANGE_SCOPE_TENSIONS\",\"USE_C4_MODEL_TECHNIQUES\"],"
-                + "\"styleguide\":[\"java-conventions\",\"given-when-then-authoring\",\"testing-principles\","
-                + "\"test-desiderata-and-boundaries\"],"
-                + "\"toolguide\":[\"gherkin\",\"java-supply-chain\"]}}";
+                + "\"directive\":[\"DIRECTIVE_001\",\"DIRECTIVE_003\",\"DIRECTIVE_010\"],"
+                + "\"styleguide\":[\"java-conventions\",\"boring-code-review\"]}}";
         assertThat(mvc.perform(put("/api/v1/activations/project")
                                 .header("Authorization", "Bearer " + TOKEN)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -518,18 +450,17 @@ class ProfileCorpusTest {
                         .getStatus())
                 .isEqualTo(201);
 
-        JsonNode body =
-                json.readTree(mvc.perform(get("/api/v1/activations/project/artifacts/agent_profile/java-jenny?depth=1")
-                                .header("Authorization", "Bearer " + TOKEN)
-                                .accept(MediaType.APPLICATION_JSON))
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString());
+        String answer = mvc.perform(get("/api/v1/activations/project/artifacts/agent_profile/java-jenny?depth=1")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        JsonNode body = json.readTree(answer);
 
         List<String> problems = new ArrayList<>();
         int[] worded = {0};
-        edgeProblems(
-                "java-jenny under the charter selection", body.get("governance"), graphEdgeWords(), problems, worded);
+        edgeProblems("java-jenny under the selection", body.get("governance"), graphEdgeWords(), problems, worded);
         assertThat(problems).isEmpty();
         assertThat(worded[0]).as("entries whose edge states a word").isPositive();
         List<String> entries = new ArrayList<>();
@@ -550,37 +481,24 @@ class ProfileCorpusTest {
                     + entry.get("hops").asInt() + " " + entry.get("state").asString() + "/"
                     + entry.get("reason").asString() + " edge {" + String.join(" ", stated) + "}");
         }
-        String d030 = " edge {when \"when assessing whether tests meet the quality gate they must pass\" because"
-                + " \"An implementer-role profile should reach the test-quality-gate hub when assessing test quality."
-                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
-        String d034 = " edge {when \"when writing or reviewing the tests that accompany an implementation\" because"
-                + " \"An implementer-role profile should reach the test-first hub when writing tests."
-                + " Composition-only in the profile channel, authored per the #3063 family-D operator attestation.\"}";
         assertThat(entries)
                 .containsExactly(
-                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_051 hops 2 active/selected edge {}",
+                        "directive:DIRECTIVE_001 requires via directive:DIRECTIVE_010 hops 2 active/locked edge {}",
+                        "directive:DIRECTIVE_003 requires via agent_profile:java-jenny hops 1 active/selected"
+                                + " edge {when \"when an implementation choice departs from the plan\" because"
+                                + " \"An implementer records the decision it takes, so the reviewer reads why the code"
+                                + " differs from the plan.\"}",
                         "directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DIRECTIVE_025 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DIRECTIVE_030 requires via agent_profile:java-jenny hops 1 active/selected" + d030,
-                        "directive:DIRECTIVE_034 requires via agent_profile:java-jenny hops 1 active/selected" + d034,
-                        "directive:DIRECTIVE_041 suggests via agent_profile:java-jenny hops 1 active/selected"
-                                + " edge {when \"when keeping the tests they write a clear scaffold rather than friction\""
-                                + " because \"An implementer-role profile should reach the tests-as-scaffold hub when"
-                                + " writing tests. Composition-only in the profile channel, authored per the #3063"
-                                + " family-D operator attestation.\"}",
-                        "directive:DIRECTIVE_051 requires via agent_profile:java-jenny hops 1 active/selected edge {}",
-                        "directive:DISCIPLINED_REFACTORING suggests via agent_profile:java-jenny hops 1"
-                                + " inactive/not_selected edge {when \"when tidying code, encountering long classes/methods,"
-                                + " or discovering convoluted logic\" because \"An implementer-role profile should reach"
-                                + " the disciplined-refactoring directive when restructuring code. Composition-only under"
-                                + " today's traversal, authored per the #3063 family-B operator attestation.\"}",
-                        "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY suggests via agent_profile:java-jenny"
-                                + " hops 1 inactive/not_selected edge {when \"when assessing whether the tests around a"
-                                + " change actually constrain its behaviour\" because \"An implementer-role profile should"
-                                + " reach the mutation hub when assessing test quality. Composition-only in the profile"
-                                + " channel, authored per the #3063 family-D operator attestation.\"}",
+                        "styleguide:boring-code-review suggests via agent_profile:java-jenny hops 1 active/required"
+                                + " edge {when \"when answering review comments on the code it wrote\" because"
+                                + " \"An implementer-role profile reaches the review styleguide when it answers a"
+                                + " review.\"}",
                         "styleguide:java-conventions requires via agent_profile:java-jenny hops 1 active/selected"
                                 + " edge {because \"A language-specialist profile requires the conventions styleguide of"
-                                + " each of its applies_to_languages (java); operator ruling on spec-kitty-charter#405.\"}");
+                                + " each of its applies_to_languages (java).\"}",
+                        "tactic:autonomous-operation-protocol suggests via agent_profile:java-jenny hops 1"
+                                + " inactive/not_selected edge {when \"when it works through a task without an operator at"
+                                + " hand\" because \"An implementer-role profile reaches the autonomous-operation tactic"
+                                + " for unattended work.\"}");
     }
 }
