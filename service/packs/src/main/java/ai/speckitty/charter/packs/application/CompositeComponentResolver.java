@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import java.util.List;
 import java.util.Objects;
@@ -44,20 +43,6 @@ public final class CompositeComponentResolver {
 
         private Composed(List<PackCompositionResolver.PackUnderResolution> closure) {
             this.closure = closure;
-        }
-
-        /**
-         * The identifier of the pack that holds what a reference names, as {@link #holder} judges it.
-         *
-         * @param reference the reference as the artifact writes it
-         * @param referringPack the pack whose artifact writes it
-         * @return the holding pack's identifier; empty when no pack of the compose holds it
-         * @throws CharterRefusal as {@link #holder} does
-         */
-        public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referringPack) {
-            return holder(reference, referringPack)
-                    .map(PackCompositionResolver.PackUnderResolution::configured)
-                    .map(ConfiguredPack::id);
         }
 
         /**
