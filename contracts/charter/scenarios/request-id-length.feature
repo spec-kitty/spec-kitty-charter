@@ -24,28 +24,41 @@ Feature: An id a request carries is capped in length
       enforcement: required
       """
 
-  Scenario: A pack id of 65 characters is a 400 without a code, and one of 64 is judged as any other
-    When I GET "/packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts"
+  Scenario Outline: A path id one over its cap is a 400 without a code, and one at the cap is judged as any other
+    When I GET "<over>"
     Then the response status is 400
     And the problem has no code
-    When I GET "/packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts"
+    When I GET "<at>"
     Then the response status is 404
-    And the problem code is "pack_not_found"
+    And the problem code is "<code>"
 
-  Scenario: An artifact id of 129 characters is a 400 without a code, and one of 128 is the kind's not-found
-    When I GET "/packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+    Examples: a pack id at 64, an artifact id at 128, an activation id at 64, a step contract id at 128
+      | over                                                                                                                                                                               | at                                                                                                                                                                                | code                 |
+      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | pack_not_found       |
+      | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | directive_not_found  |
+      | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | activation_not_found |
+      | /activations/a-1/artifacts/mission_step_contract/ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | /activations/a-1/artifacts/mission_step_contract/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | activation_not_found |
+
+  Scenario: A registration body id of 129 characters is a 400 without a code, and one of 128 is judged by the domain
+    When I POST "/packs/alpha/artifacts/directive" as JSON with the body:
+      """
+      {"id": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD", "schemaVersion": "1.0", "title": "An id over the cap", "intent": "Be refused", "enforcement": "required"}
+      """
     Then the response status is 400
     And the problem has no code
-    When I GET "/packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-    Then the response status is 404
-    And the problem code is "directive_not_found"
+    When I POST "/packs/alpha/artifacts/directive" as JSON with the body:
+      """
+      {"id": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD", "schemaVersion": "1.0", "title": "An id at the request cap", "intent": "Be refused by the domain", "enforcement": "required"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
 
-  Scenario: A relationship whose reference is longer than 255 characters is refused, and nothing is written
+  Scenario Outline: A relationship whose reference is longer than 255 characters is refused, and nothing is written
     When I GET "/packs/alpha"
     And I remember the ETag
     And I PUT "/packs/alpha/relationships" with the remembered ETag and the body:
       """
-      {"from": "directive:D1", "to": "directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD", "type": "requires"}
+      {"from": "<from>", "to": "<to>", "type": "requires"}
       """
     Then the response status is 400
     And the problem has no code
@@ -53,7 +66,19 @@ Feature: An id a request carries is capped in length
     Then the response status is 200
     And the field at "/items" holds exactly 0 items
 
-  Scenario: A relationship DELETE whose reference is longer than 255 characters is a 400 without a code
-    When I DELETE "/packs/alpha/relationships?from=directive:D1&to=directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" with the header "If-Match": "*"
+    Examples: an over-long from, an over-long to
+      | from                                                                                                                                                                                                                                                             | to                                                                                                                                                                                                                                                               |
+      | directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD | directive:D1                                                                                                                                                                                                                                                     |
+      | directive:D1                                                                                                                                                                                                                                                     | directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD |
+
+  Scenario Outline: A relationship DELETE whose reference is longer than 255 characters is a 400 without a code, and one of 255 is judged as any other
+    When I DELETE "/packs/alpha/relationships?<over>" with the header "If-Match": "*"
     Then the response status is 400
     And the problem has no code
+    When I DELETE "/packs/alpha/relationships?<at>" with the header "If-Match": "*"
+    Then the response status is 404
+
+    Examples: an over-long from, an over-long to
+      | over                                                                                                                                                                                                                                                                                  | at                                                                                                                                                                                                                                                                                   |
+      | from=directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD&to=directive:D1 | from=directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD&to=directive:D1 |
+      | from=directive:D1&to=directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD | from=directive:D1&to=directive:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD |
