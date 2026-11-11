@@ -165,7 +165,7 @@ class PackManifestRoundTripTest {
     void aRegistrationLeavesTheManifestAsItWas(@TempDir Path host) throws IOException, URISyntaxException {
         Path pack = fixture(host);
         byte[] before = Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST));
-        DomainRepositoryService.Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
+        Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations, strategy);
         CommitStorePackWriteStore writeStore =

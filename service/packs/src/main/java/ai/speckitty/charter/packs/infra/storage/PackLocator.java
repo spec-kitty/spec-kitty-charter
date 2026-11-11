@@ -34,8 +34,7 @@ final class PackLocator {
      * @throws CharterRefusal {@code PACK_NOT_FOUND} when no location names or declares the identifier;
      *     {@code PACK_UNREADABLE} when a location holds a {@code pack.yaml} that cannot be read
      */
-    static PackLocation locate(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackIdentifier pack) {
+    static PackLocation locate(Locations locations, SerializationStrategy strategy, PackIdentifier pack) {
         List<PackLocation> configured = locations.all();
         for (PackLocation location : configured) {
             if (location.name().equals(pack.value())) {

@@ -35,7 +35,7 @@ class PerPackGenerationKeyTest {
     /** The {@code pack_id} the fixture's {@code pack.yaml} declares: not the configured name. */
     private static final String DECLARED = "01M5DEH8R0VNDTR1PF1XTVRE0A";
 
-    private static DomainRepositoryService.Locations locations(Path packs) {
+    private static Locations locations(Path packs) {
         return new StorageRootLocations(packs);
     }
 

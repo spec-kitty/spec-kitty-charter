@@ -46,7 +46,7 @@ public final class StagedPackViewFactory implements StagedPackViews {
      * @param strategy the serialization format
      */
     @Autowired
-    public StagedPackViewFactory(DomainRepositoryService.Locations locations, SerializationStrategy strategy) {
+    public StagedPackViewFactory(Locations locations, SerializationStrategy strategy) {
         Objects.requireNonNull(locations, "locations");
         Objects.requireNonNull(strategy, "strategy");
         this.store = () -> Optional.of(new DomainRepositoryService(locations, strategy));

@@ -12,8 +12,8 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.config.StorageConfiguration;
 import java.net.URISyntaxException;
@@ -40,7 +40,7 @@ class TacticReadWiredTest {
     @TestConfiguration(proxyBeanMethods = false)
     static class Root {
         @Bean
-        DomainRepositoryService.Locations locations() throws URISyntaxException {
+        Locations locations() throws URISyntaxException {
             Path pack = Path.of(TacticReadWiredTest.class
                     .getResource("/roundtrip-fixtures/pack-a")
                     .toURI());
@@ -49,7 +49,7 @@ class TacticReadWiredTest {
 
         /** The verifier is wired by a deployment's configuration, never scanned: this is that wiring in miniature. */
         @Bean
-        ConsistentRead consistentRead(DomainRepositoryService.Locations locations) {
+        ConsistentRead consistentRead(Locations locations) {
             return new ConsistentRead(sources(locations));
         }
 
@@ -69,7 +69,7 @@ class TacticReadWiredTest {
         return List.of(new PackLocation("pack-a", PackLevel.ORG, pack));
     }
 
-    private static FileSystemPackSources sources(DomainRepositoryService.Locations locations) {
+    private static FileSystemPackSources sources(Locations locations) {
         return new FileSystemPackSources(locations::all);
     }
 
@@ -77,7 +77,7 @@ class TacticReadWiredTest {
     private TacticReadService service;
 
     @Autowired
-    private DomainRepositoryService.Locations locations;
+    private Locations locations;
 
     @Autowired
     private ApplicationContext context;

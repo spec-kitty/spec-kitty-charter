@@ -6,7 +6,7 @@ import ai.speckitty.charter.deployable.CharterWiring;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.infra.fetch.git.GitVersion;
 import ai.speckitty.charter.packs.infra.fetch.git.GitVersionCheck;
-import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
@@ -160,7 +160,7 @@ public final class CucumberSpringConfiguration {
         /** The packs the steps wrote and the pack domain a whole-pack registration writes to (ScenarioLocations). */
         @Bean
         @Primary
-        DomainRepositoryService.Locations scenarioPackLocations(ScenarioPacks packs) {
+        Locations scenarioPackLocations(ScenarioPacks packs) {
             return new ScenarioLocations(packs);
         }
 

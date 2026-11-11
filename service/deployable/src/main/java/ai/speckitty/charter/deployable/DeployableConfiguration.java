@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
  * nothing; each layer's configuration lands in its own package. The activations slice has no storage {@code config}
  * package: the composition root picks its repository from the {@link ActivationStorageRoot}.
  *
- * <p>This aggregates only the layers' own beans, including the storage layer's {@code DomainRepositoryService.Locations}
+ * <p>This aggregates only the layers' own beans, including the storage layer's {@code Locations}
  * bound from {@code charter.config-root}. The remaining property-bound composition-root beans (for example
  * {@code PackLocations}, the guard, {@code FileSystemPackSources}, the {@code ContractDocument}) are supplied by the
  * {@code deployable} wiring classes ({@code CharterWiring}, {@code GuardWiring}, {@code ContractDocumentWiring})

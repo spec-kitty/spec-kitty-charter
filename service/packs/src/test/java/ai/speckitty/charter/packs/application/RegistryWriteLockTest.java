@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -173,7 +174,7 @@ class RegistryWriteLockTest {
             StorageRootLocations locations = new StorageRootLocations(host);
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
             this.registry = registry;
-            DomainRepositoryService.Locations asLocations = locations;
+            Locations asLocations = locations;
             this.writeStore = new CommitStorePackWriteStore(
                     asLocations, strategy, new PackCommitStore(locations, strategy), registry, generation);
             this.directives = new DirectiveRegistrationService(
