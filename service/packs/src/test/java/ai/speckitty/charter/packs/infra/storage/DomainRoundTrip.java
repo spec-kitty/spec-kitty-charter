@@ -141,7 +141,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     /**
      * An adapter that also changes the source's policy before writing it: the policy is no part of the {@link Pack},
-     * so the policy control (#476) changes it here, and the loss travels the production write path.
+     * so the policy control (#476) changes it here. The loss travels {@code DomainRepositoryService.writePolicy} and
+     * {@code PolicyYaml.write}, the gate's seam: the gate attests that model writer, not {@code WholePackStore}, which
+     * still copies {@code policy.yaml} as it was read.
      *
      * @param strategy the format to read and write with
      * @param beforeSave maps the loaded pack to the pack that is saved

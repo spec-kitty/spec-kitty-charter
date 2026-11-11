@@ -343,7 +343,9 @@ public final class DomainRepositoryService
     /**
      * Writes the mutability policy of a configured pack in place, at {@code policy.yaml} (ADR-0063, #476), as
      * {@link PolicyYaml#write} words it. Like {@link #writePreset}, it is the whole-pack gate's seam: it bypasses the
-     * commit store's lock and does not restamp a manifest, so no production write path calls it.
+     * commit store's lock and does not restamp a manifest, so no production write path calls it. The gate therefore
+     * attests {@link PolicyYaml#write}, the model writer; the store's own copy of {@code policy.yaml}
+     * ({@code WholePackStore}) copies the file as it was read, and {@code PolicyRoundTripTest} pins that copy.
      *
      * @param pack the pack to write into
      * @param policy the policy
