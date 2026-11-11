@@ -128,7 +128,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
-        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green."
+        "Forced: implemented in a side worktree and cherry-picked, so no claim base was recorded. Work is on the mission branch at 4c67432dc; packs:test 4618, wholePackRoundTrip 8, deployable:test 1400 green.",
+        "Approved. Corpus tests moved onto ExamplePacks; full suites green. Minor: lowered thresholds (guidance>=5, command>=10, delegation>=1) are thin; delegation>=1 is a near-presence check and was never measured red here. The integration loosened the skill rule (body only when bodyPath, wrappers need expands_to, at least one side effect). It matches the examples' real mix and still has any-satisfy guards against vacuity."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
