@@ -279,7 +279,12 @@
         "implementing in worktree"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer"
+      "role": "implementer",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done",
+        "T037": "done"
+      }
     }
   }
 }
