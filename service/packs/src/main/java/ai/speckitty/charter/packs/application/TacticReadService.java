@@ -71,32 +71,18 @@ public final class TacticReadService {
     }
 
     /**
-     * One tactic of a pack, with the digest of the inputs it was read from.
-     *
-     * @param pack the pack's identity
-     * @param tactic the tactic's identity
-     * @return the tactic and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file
-     *     cannot be read (refused by the first digest, which covers every configured pack),
-     *     with {@link RefusalCode#PACK_NOT_FOUND} when no configured
-     *     pack has this identifier, with {@link RefusalCode#TACTIC_NOT_FOUND} when the pack has no such tactic, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactic was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Tactic> tactic(PackIdentifier pack, TacticIdentifier tactic) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(tactic, "tactic");
-        return read.read(STALE_ONE, () -> loadOne(pack, tactic));
-    }
-
-    /**
      * One tactic of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
      * read inside the one verified read, so the revision is the one the body was read at.
      *
      * @param pack the pack's identity
      * @param tactic the tactic's identity
      * @return the tactic with its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #tactic(PackIdentifier, TacticIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file
+     *     cannot be read (refused by the first digest, which covers every configured pack),
+     *     with {@link RefusalCode#PACK_NOT_FOUND} when no configured
+     *     pack has this identifier, with {@link RefusalCode#TACTIC_NOT_FOUND} when the pack has no such tactic, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactic was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Tactic>> tacticWithRevision(PackIdentifier pack, TacticIdentifier tactic) {
         Objects.requireNonNull(pack, "pack");

@@ -70,7 +70,8 @@ class StyleguideReadServiceTest {
 
     @Test
     void readsOneStyleguideOfTheAskedPackValueEqual() {
-        Styleguide read = service.styleguide(PACK_A, JAVA_STYLE).value();
+        Styleguide read =
+                service.styleguideWithRevision(PACK_A, JAVA_STYLE).value().value();
         assertThat(read).isEqualTo(javaStyle);
         // Beyond identity equality, the projected fields round-trip value-equal (SC-001).
         assertThat(read.title()).isEqualTo(javaStyle.title());
@@ -87,7 +88,10 @@ class StyleguideReadServiceTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(listed.derivedRelationships()).isEmpty();
-        assertThat(service.styleguide(PACK_A, JAVA_STYLE).value().derivedRelationships())
+        assertThat(service.styleguideWithRevision(PACK_A, JAVA_STYLE)
+                        .value()
+                        .value()
+                        .derivedRelationships())
                 .isEmpty();
     }
 
@@ -101,7 +105,7 @@ class StyleguideReadServiceTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause()).isNull();
         });
-        assertThatThrownBy(() -> service.styleguide(ABSENT, JAVA_STYLE))
+        assertThatThrownBy(() -> service.styleguideWithRevision(ABSENT, JAVA_STYLE))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
         // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
@@ -111,7 +115,7 @@ class StyleguideReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.styleguide(UNREADABLE, JAVA_STYLE))
+        assertThatThrownBy(() -> service.styleguideWithRevision(UNREADABLE, JAVA_STYLE))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(r.getCause())
@@ -123,7 +127,7 @@ class StyleguideReadServiceTest {
 
     @Test
     void anAbsentStyleguideIsNotFoundAndDoesNotFallBackToAnotherPack() {
-        assertThatThrownBy(() -> service.styleguide(PACK_A, new StyleguideIdentifier("other-style")))
+        assertThatThrownBy(() -> service.styleguideWithRevision(PACK_A, new StyleguideIdentifier("other-style")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STYLEGUIDE_NOT_FOUND));
     }
@@ -132,7 +136,8 @@ class StyleguideReadServiceTest {
     void everyReadDigestsTwiceAndAnswersTheDigestItVerified() {
         assertThat(service.styleguidesOf(PACK_A).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(2);
-        assertThat(service.styleguide(PACK_A, JAVA_STYLE).fingerprint()).isEqualTo(D1);
+        assertThat(service.styleguideWithRevision(PACK_A, JAVA_STYLE).fingerprint())
+                .isEqualTo(D1);
         assertThat(digests).hasValue(4);
     }
 
@@ -142,7 +147,8 @@ class StyleguideReadServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the styleguides were read; read them again.");
-        assertThatThrownBy(() -> serviceWhoseInputsChange().styleguide(PACK_A, new StyleguideIdentifier("missing")))
+        assertThatThrownBy(() ->
+                        serviceWhoseInputsChange().styleguideWithRevision(PACK_A, new StyleguideIdentifier("missing")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }

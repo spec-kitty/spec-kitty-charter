@@ -86,7 +86,8 @@ class TacticReadWiredTest {
     void readsTheFixturePacksTacticsThroughTheRealBeans() {
         // Beta is readable and alpha is too; the fixture's broken tactic is left out, not an error.
         assertThat(service.tacticsOf(PACK).value()).extracting(Tactic::name).contains("Alpha tactic", "Beta tactic");
-        assertThat(service.tactic(PACK, new TacticIdentifier("alpha-tactic"))
+        assertThat(service.tacticWithRevision(PACK, new TacticIdentifier("alpha-tactic"))
+                        .value()
                         .value()
                         .packId())
                 .isEqualTo(PACK);
@@ -97,7 +98,8 @@ class TacticReadWiredTest {
         String expected = sources(locations).fingerprint();
 
         assertThat(service.tacticsOf(PACK).fingerprint()).isEqualTo(expected);
-        assertThat(service.tactic(PACK, new TacticIdentifier("alpha-tactic")).fingerprint())
+        assertThat(service.tacticWithRevision(PACK, new TacticIdentifier("alpha-tactic"))
+                        .fingerprint())
                 .isEqualTo(expected);
     }
 

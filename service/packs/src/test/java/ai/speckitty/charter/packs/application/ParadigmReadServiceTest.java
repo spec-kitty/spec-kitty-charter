@@ -68,7 +68,7 @@ class ParadigmReadServiceTest {
 
     @Test
     void readsOneParadigmOfTheAskedPack() {
-        assertThat(service.paradigm(PACK_A, CLEAN).value()).isEqualTo(clean);
+        assertThat(service.paradigmWithRevision(PACK_A, CLEAN).value().value()).isEqualTo(clean);
     }
 
     @Test
@@ -79,7 +79,7 @@ class ParadigmReadServiceTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(read.derivedRelationships()).isEmpty();
-        assertThat(service.paradigm(PACK_A, CLEAN).value().derivedRelationships())
+        assertThat(service.paradigmWithRevision(PACK_A, CLEAN).value().value().derivedRelationships())
                 .isEmpty();
     }
 
@@ -93,7 +93,7 @@ class ParadigmReadServiceTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause()).isNull();
         });
-        assertThatThrownBy(() -> service.paradigm(ABSENT, CLEAN))
+        assertThatThrownBy(() -> service.paradigmWithRevision(ABSENT, CLEAN))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
         // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
@@ -103,7 +103,7 @@ class ParadigmReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.paradigm(UNREADABLE, CLEAN))
+        assertThatThrownBy(() -> service.paradigmWithRevision(UNREADABLE, CLEAN))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(r.getCause())
@@ -115,7 +115,7 @@ class ParadigmReadServiceTest {
 
     @Test
     void anAbsentParadigmIsNotFoundAndDoesNotFallBackToAnotherPack() {
-        assertThatThrownBy(() -> service.paradigm(PACK_A, new ParadigmIdentifier("other")))
+        assertThatThrownBy(() -> service.paradigmWithRevision(PACK_A, new ParadigmIdentifier("other")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PARADIGM_NOT_FOUND));
     }
@@ -124,7 +124,7 @@ class ParadigmReadServiceTest {
     void everyReadDigestsTwiceAndAnswersTheDigestItVerified() {
         assertThat(service.paradigmsOf(PACK_A).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(2);
-        assertThat(service.paradigm(PACK_A, CLEAN).fingerprint()).isEqualTo(D1);
+        assertThat(service.paradigmWithRevision(PACK_A, CLEAN).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(4);
     }
 
@@ -134,7 +134,8 @@ class ParadigmReadServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the paradigms were read; read them again.");
-        assertThatThrownBy(() -> serviceWhoseInputsChange().paradigm(PACK_A, new ParadigmIdentifier("missing")))
+        assertThatThrownBy(() ->
+                        serviceWhoseInputsChange().paradigmWithRevision(PACK_A, new ParadigmIdentifier("missing")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }

@@ -65,7 +65,7 @@ class TacticReadServiceTest {
 
     @Test
     void readsOneTacticOfTheAskedPack() {
-        assertThat(service.tactic(PACK_A, ALPHA).value()).isEqualTo(alpha);
+        assertThat(service.tacticWithRevision(PACK_A, ALPHA).value().value()).isEqualTo(alpha);
     }
 
     @Test
@@ -78,7 +78,7 @@ class TacticReadServiceTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause()).isNull();
         });
-        assertThatThrownBy(() -> service.tactic(ABSENT, ALPHA))
+        assertThatThrownBy(() -> service.tacticWithRevision(ABSENT, ALPHA))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
         // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
@@ -88,18 +88,20 @@ class TacticReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.tactic(UNREADABLE, ALPHA)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
-            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-            assertThat(r.getCause())
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-        });
+        assertThatThrownBy(() -> service.tacticWithRevision(UNREADABLE, ALPHA))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getCause())
+                            .isInstanceOfSatisfying(
+                                    CharterRefusal.class,
+                                    c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                });
     }
 
     @Test
     void anAbsentTacticIsNotFoundAndDoesNotFallBackToAnotherPack() {
         // "other" exists, but in pack-b: asking pack-a for it must refuse, not cross packs.
-        assertThatThrownBy(() -> service.tactic(PACK_A, new TacticIdentifier("other")))
+        assertThatThrownBy(() -> service.tacticWithRevision(PACK_A, new TacticIdentifier("other")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND));
     }
@@ -109,10 +111,10 @@ class TacticReadServiceTest {
         assertThat(service.tacticsOf(PACK_A).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(2);
 
-        assertThat(service.tactic(PACK_A, ALPHA).fingerprint()).isEqualTo(D1);
+        assertThat(service.tacticWithRevision(PACK_A, ALPHA).fingerprint()).isEqualTo(D1);
         assertThat(digests).hasValue(4);
 
-        assertThatThrownBy(() -> service.tactic(PACK_A, new TacticIdentifier("missing")))
+        assertThatThrownBy(() -> service.tacticWithRevision(PACK_A, new TacticIdentifier("missing")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND));
         assertThat(digests).hasValue(6);
@@ -128,11 +130,11 @@ class TacticReadServiceTest {
 
     @Test
     void changedInputsBeatAnAbsentPackAndAnAbsentTactic() {
-        assertThatThrownBy(() -> serviceWhoseInputsChange().tactic(ABSENT, ALPHA))
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tacticWithRevision(ABSENT, ALPHA))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the tactic was read; read it again.");
-        assertThatThrownBy(() -> serviceWhoseInputsChange().tactic(PACK_A, new TacticIdentifier("missing")))
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tacticWithRevision(PACK_A, new TacticIdentifier("missing")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }

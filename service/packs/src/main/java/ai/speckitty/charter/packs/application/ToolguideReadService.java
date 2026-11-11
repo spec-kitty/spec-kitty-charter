@@ -77,30 +77,16 @@ public final class ToolguideReadService {
     }
 
     /**
-     * One toolguide of a pack, with the digest of the inputs it was read from. Its relationships are empty (FR-015).
-     *
-     * @param pack the pack's identity
-     * @param toolguide the toolguide's identity
-     * @return the toolguide and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
-     *     with {@link RefusalCode#TOOLGUIDE_NOT_FOUND} when the pack has no such toolguide, with
-     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Toolguide> toolguide(PackIdentifier pack, ToolguideIdentifier toolguide) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(toolguide, "toolguide");
-        return read.read(STALE_ONE, () -> loadOne(pack, toolguide));
-    }
-
-    /**
      * One toolguide of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
      * taken inside the one verified read, so they name the same state.
      *
      * @param pack the pack's identity
      * @param toolguide the toolguide's identity
      * @return the toolguide and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #toolguide(PackIdentifier, ToolguideIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
+     *     with {@link RefusalCode#TOOLGUIDE_NOT_FOUND} when the pack has no such toolguide, with
+     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
+     *     not-found)
      */
     public ConsistentRead.Verified<Revised<Toolguide>> toolguideWithRevision(
             PackIdentifier pack, ToolguideIdentifier toolguide) {
