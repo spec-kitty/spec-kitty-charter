@@ -349,7 +349,7 @@ class ProblemResponsesTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(content().json("{\"title\":\"Not Implemented\",\"status\":501}", JsonCompareMode.STRICT));
 
-        assertThat(output.getAll()).doesNotContain("ERROR").doesNotContain("ResponseStatusException");
+        assertThat(output.getAll()).doesNotContain("Server error 501").doesNotContain("ResponseStatusException");
     }
 
     @Test

@@ -72,7 +72,8 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
      * {@code internal_error} detail says the failure is logged, and the base class logs only when the response
      * is already committed. The exceptions of {@link #unexpected} are logged there, so none is logged twice.
      *
-     * <p>A {@code 501} is no failure: only a reserved operation answers it, by design (ADR-0020 D8), so it is logged
+     * <p>A {@code 501} is no failure: today only a reserved operation answers it, by design (ADR-0020 D8). A handler that
+     * ever answers {@code 501} for a real gap must not rely on this exclusion. The 501 is logged
      * at {@code DEBUG} with the request, without a stack trace, and raises no operator alert (#406).
      */
     @Override
@@ -80,7 +81,7 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (statusCode.value() == HttpStatus.NOT_IMPLEMENTED.value()) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Reserved operation answered 501: " + request.getDescription(false));
+                logger.debug("501 Not Implemented: " + request.getDescription(false));
             }
         } else if (statusCode.is5xxServerError()) {
             logger.error("Server error " + statusCode.value(), ex);
