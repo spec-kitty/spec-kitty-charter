@@ -79,16 +79,20 @@ class GlossaryPackAndSkillCorpusTest {
             if (!reread.equals(Optional.of(source))) {
                 problems.add(file + ": the written pair reads back differently");
             }
-            if (!bodyWrittenByteForByte(file, source, pack)) {
+            if (source.bodyPath().isPresent() && !bodyWrittenByteForByte(file, source, pack)) {
                 problems.add(file + ": the body is not written byte for byte");
             }
         }
 
         assertThat(problems).as("skills that do not round-trip").isEmpty();
         assertThat(files)
-                .as("example skills: the org pack's one")
+                .as("example skills: two prompt skills (built-in, org) and two wrappers (org, project)")
                 .extracting(path -> path.getFileName().toString())
-                .containsExactlyInAnyOrder("issue-triage.skill.yaml");
+                .containsExactlyInAnyOrder(
+                        "review-checklist.skill.yaml",
+                        "issue-triage.skill.yaml",
+                        "triage-status.skill.yaml",
+                        "project-triage.skill.yaml");
     }
 
     @Test
@@ -119,9 +123,22 @@ class GlossaryPackAndSkillCorpusTest {
         assertThat(aliases).as("terms with aliases").isPositive();
         assertThat(multiLine).as("multi-line definitions").isPositive();
         assertThat(skills).allSatisfy(skill -> {
-            assertThat(skill.body()).as("%s has its body", skill.id()).isPresent();
-            assertThat(skill.invocation().orElseThrow().sideEffects()).isNotEmpty();
+            if (skill.bodyPath().isPresent()) {
+                assertThat(skill.body()).as("%s has its body", skill.id()).isPresent();
+            } else {
+                assertThat(skill.expandsTo())
+                        .as("%s, a wrapper, expands", skill.id())
+                        .isPresent();
+            }
         });
+        assertThat(skills)
+                .as("skills with a body and wrapper skills")
+                .anySatisfy(skill -> assertThat(skill.body()).isPresent())
+                .anySatisfy(skill -> assertThat(skill.expandsTo()).isPresent());
+        assertThat(skills)
+                .as("skills declaring a side effect")
+                .anySatisfy(skill -> assertThat(skill.invocation().orElseThrow().sideEffects())
+                        .isNotEmpty());
     }
 
     /**
@@ -151,7 +168,10 @@ class GlossaryPackAndSkillCorpusTest {
                 .as("one difference per term that carries see_also")
                 .hasSize(seeAlso);
 
-        Path file = files(".skill.yaml").getFirst();
+        Path file = files(".skill.yaml").stream()
+                .filter(path -> skill(path).bodyPath().isPresent())
+                .findFirst()
+                .orElseThrow();
         SkillDso skill = skill(file);
         String body = skill.body().orElseThrow();
         Path shortened = writeSkill(skill.withBody(Optional.of(body.substring(0, body.length() - 1))));

@@ -141,8 +141,8 @@ class WholePackRoundTripTest {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
         assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.GREEN, 3));
         assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 4));
-        // Two top-level templates and four mission-type templates (#194).
-        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 6));
+        // Two top-level templates and five mission-type templates (#194).
+        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 7));
         assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
         assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
@@ -168,8 +168,8 @@ class WholePackRoundTripTest {
                 .filter(path -> path.matches("missions/[^/]+/templates/.+"))
                 .toList();
         assertThat(missionTemplates)
-                .as("the four software-dev mission templates")
-                .hasSize(4)
+                .as("the five software-dev mission templates")
+                .hasSize(5)
                 .allSatisfy(path -> assertThat(census.get(path)).as(path).isEqualTo("template"));
         assertThat(census.entrySet().stream()
                         .filter(entry -> entry.getKey().startsWith("templates/"))
@@ -284,8 +284,8 @@ class WholePackRoundTripTest {
                 .as("bytes-kind outcomes: the loaded pack's asset files plus templates")
                 .hasSize(loaded.get().assetFiles().size()
                         + loaded.get().templates().size())
-                .as("4 asset files, 2 top-level templates and 4 mission-type templates (#194)")
-                .hasSize(4 + 2 + 4);
+                .as("4 asset files, 2 top-level templates and 5 mission-type templates (#194)")
+                .hasSize(4 + 2 + 5);
         assertThat(bytesKind)
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
         // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.

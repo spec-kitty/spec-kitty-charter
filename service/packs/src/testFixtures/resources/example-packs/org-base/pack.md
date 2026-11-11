@@ -1,6 +1,7 @@
 ---
 audience: org
-maintainers: ["@spec-kitty/core"]
+maintainers:
+- '@spec-kitty/core'
 ---
 # SPDD / REASONS Charter Pack
 

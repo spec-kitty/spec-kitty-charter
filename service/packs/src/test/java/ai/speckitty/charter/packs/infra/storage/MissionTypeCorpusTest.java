@@ -59,7 +59,7 @@ class MissionTypeCorpusTest {
     }
 
     @Test
-    @DisplayName("the example holds 1 mission type, 8 steps and 5 on demand, 13 prompts and 5 guidelines")
+    @DisplayName("the example holds 1 mission type, 8 steps and 5 on demand, 13 prompts and 6 guidelines")
     void theCorpusCountsArePinned() throws IOException {
         List<MissionStep> steps = new ArrayList<>();
         for (String pack : List.of(ExamplePacks.BUILT_IN)) {
@@ -85,10 +85,10 @@ class MissionTypeCorpusTest {
         }
         assertThat(templates)
                 .as("output templates the mission types name")
-                .hasSize(2)
+                .hasSize(4)
                 .allSatisfy(template -> assertThat(template).isRegularFile());
         assertThat(steps.stream().filter(step -> step.prompt().isPresent())).hasSize(13);
-        assertThat(steps.stream().filter(step -> step.guidelines().isPresent())).hasSize(5);
+        assertThat(steps.stream().filter(step -> step.guidelines().isPresent())).hasSize(6);
         assertThat(steps.stream()
                         .filter(step -> step.prompt()
                                 .flatMap(prompt -> prompt.description())
@@ -98,7 +98,7 @@ class MissionTypeCorpusTest {
     }
 
     @ParameterizedTest(name = "{0}: {1} files")
-    @CsvSource({"built-in, 19"})
+    @CsvSource({"built-in, 20"})
     @DisplayName("each mission-type file and step companion writes back through the production writer byte for byte")
     void everyMissionFileWritesBackByteForByte(String pack, int files) throws IOException {
         Path source = ExamplePacks.packsDirectory().resolve(pack);

@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 0389b05bec426d8e4d0456196f82b36b78e72d2cb65ac759e81bb43770c3c9b1
+manifest_hash: 0895539cf35c53d0be8d0cde8be49de7a6cd869236918e85158482222ba30da7
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -12,7 +12,7 @@ constituents:
 - kind: agent_profile
   id: java-jenny
   path: agent_profiles/java-jenny.agent.yaml
-  content_hash: 96b043dc30dc09559fc2cdcbbfbcba7dd1513590f5a53640eded5270f9846e6b
+  content_hash: e7a2df4e9d0fb981227b140e84cfef2ff5a947f160faf02af527919eb29242a2
 - kind: agent_profile
   id: python-pedro
   path: agent_profiles/python-pedro.agent.yaml
@@ -48,7 +48,7 @@ constituents:
 - kind: glossary_pack
   id: spec-kitty-core
   path: glossary_packs/spec-kitty-core.glossary-pack.yaml
-  content_hash: da78fe1ea20545747e8cc5ac8ed6423b40c81a6c431008556fea29314a4a33e7
+  content_hash: a93df44f65badaaaf74a702d950447237da43112cce144d34c73bcf676724320
 - kind: paradigm
   id: atomic-design
   path: paradigms/atomic-design.paradigm.yaml
@@ -56,11 +56,11 @@ constituents:
 - kind: procedure
   id: action-item-attribution-gate
   path: procedures/action-item-attribution-gate.procedure.yaml
-  content_hash: be2efe278db6ec7cddd2d0059be589259d9caa3ec572699469259b84dca4230e
+  content_hash: 1fe8e55f3d18c4f7acac7be50005d2cbf6690b94062c79786a415823f168015e
 - kind: procedure
   id: adversarial-squad-deployment
   path: procedures/adversarial-squad-deployment.procedure.yaml
-  content_hash: d5ff1098a721cc8cca89a886912b600091ff5a1008b1f73d55023069628775da
+  content_hash: 9cf80cc6660d8c7c498699564f34f22604550b254ad7993b40a8e0c13f38133b
 - kind: styleguide
   id: aggregate-design-rules
   path: styleguides/aggregate-design-rules.styleguide.yaml
@@ -68,11 +68,11 @@ constituents:
 - kind: styleguide
   id: boring-code-review
   path: styleguides/boring-code-review.styleguide.yaml
-  content_hash: be7c28fe41246faed0c22354ff5501268b461f48de87211548de3f631c5fc51b
+  content_hash: 089da98c8c4ff6db74fac3d352d7f255e5424904c982b4e9d9b2b5e32c44724b
 - kind: tactic
   id: adversarial-qa-handoff
   path: tactics/adversarial-qa-handoff.tactic.yaml
-  content_hash: a442f443934704faf2cfe124ffea4a9c6e2e2af5a6673fa313ff7048c4a4bfbd
+  content_hash: 7b5e5c1873dadcac01104186f416b4a6f35a70ad57e86391c5f06e45a5f7f559
 - kind: tactic
   id: architectural-gate-non-vacuity
   path: tactics/architectural-gate-non-vacuity.tactic.yaml
@@ -84,11 +84,11 @@ constituents:
 - kind: toolguide
   id: efficient-local-tooling
   path: toolguides/efficient-local-tooling.toolguide.yaml
-  content_hash: 5b28a3a724020c7899f8f1a36c7c240347a1f693b3afcfdcd2313133793a7157
+  content_hash: d579be38e070b07bca1c4b2f4ffb864bcb42e2e58ee7f78c5acc22afe78cd5af
 presets:
 - id: default
   path: presets/default.yaml
-  content_hash: 91e7ba1f358205f5c852a964924b6fc936f9b0d2ae7f47ac9801f27fd31525e3
+  content_hash: 075e14a6b65d75255e79e3d43cfc27723a76ccc6c4bc09123c28870593dfff76
 - id: minimal
   path: presets/minimal.yaml
   content_hash: a954e556493d039775a923fd81e7026340fe26287d97a90012f397830540b444

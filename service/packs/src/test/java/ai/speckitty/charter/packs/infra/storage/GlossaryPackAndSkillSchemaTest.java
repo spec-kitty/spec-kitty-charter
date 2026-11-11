@@ -102,7 +102,7 @@ class GlossaryPackAndSkillSchemaTest {
         List<Path> files = filesOfBothKinds(ExamplePacks.packsDirectory());
 
         assertThat(problems(files)).as("files that do not validate").isEmpty();
-        assertThat(files).as("1 glossary pack and 1 skill").hasSize(2);
+        assertThat(files).as("1 glossary pack and 4 skills").hasSize(5);
     }
 
     private static List<String> problems(List<Path> files) throws IOException {

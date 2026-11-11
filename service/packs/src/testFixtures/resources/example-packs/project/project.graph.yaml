@@ -1,4 +1,5 @@
-# The project pack's own edges: an overrides onto org-base's open styleguide, and its directive's requirement.
+# The project pack's own edges: an overrides onto org-base's open styleguide, its directive's requirement,
+# and a signed impacts edge (the built-in shard's edges stay unsigned: the gate cannot register a strength yet).
 schema_version: '1.0'
 generated_at: STATIC
 nodes: []
@@ -9,3 +10,7 @@ edges:
 - source: directive:PROJECT_001
   target: styleguide:reasons-canvas-writing
   relation: requires
+- source: directive:PROJECT_001
+  target: org-base::directive:DIRECTIVE_038
+  relation: impacts
+  impacts: 0.5

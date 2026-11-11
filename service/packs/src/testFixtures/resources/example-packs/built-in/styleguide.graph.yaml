@@ -16,7 +16,6 @@ nodes:
 edges:
 - source: styleguide:boring-code-review
   target: anti_pattern:indirection-for-repetition
-  relation: impacts
+  relation: suggests
   when: reviewing a new helper or wrapper
   reason: the styleguide names this anti-pattern
-  impacts: 0.5

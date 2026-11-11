@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Every example Markdown file reads and writes back byte for byte (SC-006)")
 class MarkdownCorpusTest {
 
-    /** The covered Markdown files in the examples: 25 guides, pack.md and 64 mission step prompts and guidelines (#194). */
-    private static final int PINNED_COUNT = 21;
+    /** The covered Markdown files: 3 guides and pack documents, 19 mission step prompts and guidelines (#194). */
+    private static final int PINNED_COUNT = 22;
 
     private static final List<PathMatcher> COVERED = Stream.of(
                     "glob:*/toolguides/**.md", "glob:*/pack.md", "glob:*/missions/*/steps/*.md")
@@ -41,7 +41,7 @@ class MarkdownCorpusTest {
             .toList();
 
     @Test
-    @DisplayName("the 90 covered Markdown files parse, and write(parse(bytes)) equals the bytes")
+    @DisplayName("the 22 covered Markdown files parse, and write(parse(bytes)) equals the bytes")
     void everyCoveredFileIsCanonical() throws IOException {
         List<Path> files = coveredFiles();
         List<String> problems = new ArrayList<>();
