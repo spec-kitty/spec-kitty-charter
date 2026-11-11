@@ -204,7 +204,31 @@ public enum RefusalCode {
      * The skeleton name does not decode to a skeleton of the asked mission type (RFC 6901 escaping, D9). Answered as
      * 404. Raised by {@code getPackMissionSkeleton} and {@code getEffectiveMissionSkeleton} (#99).
      */
-    SKELETON_NOT_FOUND("skeleton_not_found");
+    SKELETON_NOT_FOUND("skeleton_not_found"),
+    /**
+     * A pack's {@code fallback_profile} names no agent profile its closure holds (ADR-0068 decision 2). Answered as 422,
+     * naming the packs.
+     */
+    FALLBACK_PROFILE_UNKNOWN("fallback_profile_unknown"),
+    /**
+     * A pack's fallback profile is not {@code locked} along the pack's closure (ADR-0068 decision 3). Answered as 422,
+     * naming the packs.
+     */
+    FALLBACK_PROFILE_NOT_LOCKED("fallback_profile_not_locked"),
+    /**
+     * A pack's fallback profile does not declare the reserved role {@code generic}, or declares alt-roles (ADR-0068
+     * decision 4). Answered as 422, naming the packs.
+     */
+    FALLBACK_PROFILE_NOT_ROLE_NEUTRAL("fallback_profile_not_role_neutral"),
+    /** The built-in pack declares no fallback profile (ADR-0068; reserved until open-packs ships the declaration). */
+    FALLBACK_PROFILE_MISSING("fallback_profile_missing"),
+    /**
+     * Two packs of one closure, neither derived from the other, declare different fallbacks (ADR-0068; reserved for the
+     * selection read).
+     */
+    FALLBACK_PROFILE_CONFLICT("fallback_profile_conflict"),
+    /** No profile fits the asked role and no fallback is in force (ADR-0068, ADR-0069; reserved for the selection read). */
+    NO_PROFILE_MATCHED("no_profile_matched");
 
     private final String token;
 

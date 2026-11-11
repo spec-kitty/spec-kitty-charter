@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -27,13 +28,16 @@ public final class Paradigm implements CharterArtifact {
                     paradigm -> SCHEMA_VERSION.matcher(paradigm.schemaVersion).matches()))
             .must(Constraints.of("A paradigm needs a name that is not blank.", paradigm -> !paradigm.name.isBlank()))
             .must(Constraints.of(
-                    "A paradigm needs a summary that is not blank.", paradigm -> !paradigm.summary.isBlank()));
+                    "A paradigm needs a summary that is not blank.", paradigm -> !paradigm.summary.isBlank()))
+            .must(Constraints.of(Principles.SHAPE, paradigm -> Principles.wellFormed(paradigm.principles)))
+            .must(Constraints.of(Principles.UNIQUE, paradigm -> Principles.uniqueNames(paradigm.principles)));
 
     private final ParadigmIdentifier id;
     private final PackIdentifier packId;
     private final String schemaVersion;
     private final String name;
     private final String summary;
+    private final List<Principle> principles;
 
     /**
      * Reconstructs a paradigm from its parts; reachable only inside the domain package.
@@ -43,14 +47,22 @@ public final class Paradigm implements CharterArtifact {
      * @param schemaVersion the schema version text
      * @param name the paradigm's name
      * @param summary the paradigm's summary
+     * @param principles the paradigm's principles, in authored order; empty when it states none
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
-    Paradigm(ParadigmIdentifier id, PackIdentifier packId, String schemaVersion, String name, String summary) {
+    Paradigm(
+            ParadigmIdentifier id,
+            PackIdentifier packId,
+            String schemaVersion,
+            String name,
+            String summary,
+            List<Principle> principles) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
         this.name = Objects.requireNonNull(name, "name");
         this.summary = Objects.requireNonNull(summary, "summary");
+        this.principles = List.copyOf(principles);
         RULES.guard(this);
     }
 
@@ -130,6 +142,16 @@ public final class Paradigm implements CharterArtifact {
         return Optional.of(summary);
     }
 
+    /**
+     * The paradigm's {@code principles}, in the order the author ranks them (ADR-0067); empty when it states none. The
+     * schema admits no empty list, so empty and absent are one state.
+     *
+     * @return the principles
+     */
+    public List<Principle> principles() {
+        return principles;
+    }
+
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -153,6 +175,7 @@ public final class Paradigm implements CharterArtifact {
         private @Nullable String schemaVersion;
         private @Nullable String name;
         private @Nullable String summary;
+        private List<Principle> principles = List.of();
 
         private Builder() {}
 
@@ -212,6 +235,17 @@ public final class Paradigm implements CharterArtifact {
         }
 
         /**
+         * Sets the principles, in authored order.
+         *
+         * @param value the principles; empty for none
+         * @return this builder
+         */
+        public Builder principles(List<Principle> value) {
+            this.principles = List.copyOf(value);
+            return this;
+        }
+
+        /**
          * Builds the paradigm.
          *
          * @return the validated paradigm
@@ -224,7 +258,8 @@ public final class Paradigm implements CharterArtifact {
                     Objects.requireNonNull(packId, "packId"),
                     Objects.requireNonNull(schemaVersion, "schemaVersion"),
                     Objects.requireNonNull(name, "name"),
-                    Objects.requireNonNull(summary, "summary"));
+                    Objects.requireNonNull(summary, "summary"),
+                    principles);
         }
     }
 }

@@ -71,7 +71,7 @@ class ProfileJsonTest {
 
     @Test
     void anExcludingWritesTheFormItDoesNotUseAsNull() {
-        JsonNode written = JSON.valueToTree(new AgentProfileExcluding(List.of("roles"), null));
+        JsonNode written = JSON.valueToTree(new AgentProfileExcluding(List.of("alt-roles"), null));
 
         assertThat(written.get("wholeFields")).hasSize(1);
         assertThat(written.get("fieldValues").isNull()).isTrue();

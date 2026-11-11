@@ -104,6 +104,56 @@ final class RegistrationLists {
     }
 
     /**
+     * The first member of an item of a top-level list that the item's closed schema does not declare (ADR-0067: a
+     * principle is {@code {name, description}}), named {@code <list>[<n>].<member>}. The body is read as
+     * {@link #firstUnknown} reads it.
+     *
+     * @param body the request body
+     * @param contentType the request's content type; {@code null} when it has none
+     * @param list the top-level list whose items are checked
+     * @param declared the members the item's schema declares
+     * @return the first undeclared member, by its place; empty when there is none, or the body is not readable
+     */
+    static Optional<String> firstUnknownInItems(
+            byte[] body, @Nullable MediaType contentType, String list, Set<String> declared) {
+        try (JsonParser parser = parser(body, contentType)) {
+            if (parser.nextToken() != JsonToken.START_OBJECT) {
+                return Optional.empty();
+            }
+            for (JsonToken token = parser.nextToken(); token == JsonToken.PROPERTY_NAME; token = parser.nextToken()) {
+                boolean wanted = list.equals(parser.currentName());
+                JsonToken value = parser.nextToken();
+                if (!wanted || value != JsonToken.START_ARRAY) {
+                    parser.skipChildren();
+                    continue;
+                }
+                int index = 0;
+                for (JsonToken item = parser.nextToken(); item != JsonToken.END_ARRAY; item = parser.nextToken()) {
+                    if (item == JsonToken.START_OBJECT) {
+                        for (JsonToken key = parser.nextToken();
+                                key == JsonToken.PROPERTY_NAME;
+                                key = parser.nextToken()) {
+                            String member = parser.currentName();
+                            if (!declared.contains(member)) {
+                                return Optional.of(list + "[" + index + "]." + member);
+                            }
+                            parser.nextToken();
+                            parser.skipChildren();
+                        }
+                    } else {
+                        parser.skipChildren();
+                    }
+                    index++;
+                }
+            }
+        } catch (JacksonException unreadable) {
+            // Not ours to answer: the converter refuses the body as unreadable.
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
+
+    /**
      * The refusal detail for a member the registration's schema does not declare. A member that once carried
      * relationships (ADR-0064) is told where a relationship is written now; any other member, a typo say, is named
      * only.

@@ -144,8 +144,7 @@ Feature: One artifact or one registered relationship is removed from a pack
       """
       profile-id: jenny
       name: Java Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Java
@@ -171,8 +170,7 @@ Feature: One artifact or one registered relationship is removed from a pack
       """
       profile-id: jenny
       name: Java Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Java

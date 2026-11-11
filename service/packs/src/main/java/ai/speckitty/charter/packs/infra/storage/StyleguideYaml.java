@@ -7,6 +7,7 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.ConfigValue;
+import ai.speckitty.charter.packs.domain.PackContents;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,13 +65,18 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                 required(root, "schema_version"),
                 required(root, "title"),
                 required(root, "scope"),
-                strings(root, "principles"),
+                PrincipleYaml.read(root),
                 patterns,
                 antiPatterns,
                 tooling,
                 optional(root, "quality_test"),
                 lint,
                 strings(root, "applies_to_languages"));
+    }
+
+    @Override
+    public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
+        return PrincipleYaml.rules(root, file);
     }
 
     @Override
@@ -98,7 +104,7 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                 .scalar("schema_version", styleguide.schemaVersion())
                 .scalar("title", styleguide.title())
                 .scalar("scope", styleguide.scope())
-                .strings("principles", styleguide.principles())
+                .mappings(PrincipleYaml.KEY, PrincipleYaml.write(styleguide.principles()))
                 .mappings("patterns", patterns)
                 .mappings("anti_patterns", antiPatterns);
         styleguide.tooling().ifPresent(tooling -> emitter.present("tooling", new LinkedHashMap<>(tooling)));

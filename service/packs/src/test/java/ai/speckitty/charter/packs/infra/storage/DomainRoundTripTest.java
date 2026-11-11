@@ -72,7 +72,8 @@ class DomainRoundTripTest {
             title: REASONS Canvas Writing Styleguide
             scope: docs
             principles:
-              - Lead each section with a one-sentence summary, then bullet specifics.
+              - name: Lead with a summary
+                description: Lead each section with a one-sentence summary, then bullet specifics.
             """;
     private static final String TOOLGUIDE = """
             schema_version: "1.0"
@@ -122,7 +123,7 @@ class DomainRoundTripTest {
     private static final String PROFILE = """
             profile-id: java-jenny
             name: Java Jenny
-            roles: [implementer]
+            role: implementer
             purpose: Writes Java.
             specialization:
               primary-focus: Java.

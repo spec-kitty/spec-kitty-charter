@@ -150,7 +150,7 @@ class StyleguideRegistrationServiceTest {
                 .schemaVersion("1.0")
                 .title(title)
                 .scope(StyleguideScope.CODE)
-                .principle("Prefer clarity")
+                .principle("Prefer clarity", "Prefer clarity, in one sentence.")
                 .build();
     }
 

@@ -918,6 +918,79 @@ Feature: Registering a whole pack replaces the pack the service holds
       | validation_failed     | {source: 'directive:A', target: 'directive:A', relation: enhances}                                                                          |
       | override_cycle        | {source: 'directive:A', target: 'directive:B', relation: overrides}, {source: 'directive:B', target: 'directive:A', relation: overrides}   |
 
+  # bound by: ADR-0068 (#457): the fallback profile a pack declares is held in its closure, locked and role-neutral
+  Scenario Outline: A fallback profile that breaks ADR-0068 is refused with its code, and a locked generic one is accepted
+    Given the archive "fallback" is a copy of the archive "v1"
+    And the archive "fallback" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      fallback_profile: <named>
+      """
+    And the archive "fallback" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        agent_profile:generic-agent: <level>
+      """
+    And the archive "fallback" holds the file "agent_profiles/generic-agent.agent.yaml":
+      """
+      profile-id: generic-agent
+      name: Generic agent
+      <roles>
+      <extra>
+      purpose: Serve when no profile fits the asked role.
+      specialization:
+        primary-focus: Any work
+      """
+    And the archive "sound" is a copy of the archive "fallback"
+    And the archive "sound" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      fallback_profile: generic-agent
+      """
+    And the archive "sound" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        agent_profile:generic-agent: locked
+      """
+    And the archive "sound" holds the file "agent_profiles/generic-agent.agent.yaml":
+      """
+      profile-id: generic-agent
+      name: Generic agent
+      role: generic
+      purpose: Serve when no profile fits the asked role.
+      specialization:
+        primary-focus: Any work
+      """
+    When I PUT "/packs/acme" with the archive "fallback"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "<code>"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples:
+      | code                              | named         | level      | roles             | extra                   |
+      | fallback_profile_unknown          | nobody        | locked     | role: generic     | description: Any work.  |
+      | fallback_profile_not_locked       | generic-agent | extendable | role: generic     | description: Any work.  |
+      | fallback_profile_not_role_neutral | generic-agent | locked     | role: implementer | description: Any work.  |
+      | fallback_profile_not_role_neutral | generic-agent | locked     | role: generic     | alt-roles: [reviewer]   |
+
   # bound by: WP16 (IC-15, A8, A12 and the WP15 hand-off: an edge whose two ends name one artifact of another pack)
   # A self-loop the load can see in one pack is refused first as invalid (the outline above); an edge whose ends are qualified
   # to one artifact of a pack the writer builds on is the shadow the impact check refuses, as the rule of its relation.

@@ -41,8 +41,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: lone
       name: Lone
-      roles:
-        - implementer
+      role: implementer
       purpose: Work alone.
       specialization:
         primary-focus: Nothing else.
@@ -53,8 +52,7 @@ Feature: A pack's agent profile is read with its governance
       name: Java Jenny
       description: Java-specialist implementer
       schema-version: "1.0"
-      roles:
-        - implementer
+      role: implementer
       applies_to_languages:
         - java
       capabilities:
@@ -106,8 +104,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: implementer-ivan
       name: Implementer Ivan
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Implementation
@@ -151,7 +148,8 @@ Feature: A pack's agent profile is read with its governance
       title: Java conventions
       scope: code
       principles:
-        - Name things plainly.
+        - name: Name things plainly
+          description: Name things plainly, in one sentence.
       """
     And the built-in pack "built-in" with the file "agent_profile.graph.yaml":
       """
@@ -197,7 +195,8 @@ Feature: A pack's agent profile is read with its governance
         "agentProfile": {
           "profileId": "lone",
           "name": "Lone",
-          "roles": ["implementer"],
+          "role": "implementer",
+          "altRoles": [],
           "avatarImage": null,
           "capabilities": [],
           "model": null,
@@ -305,8 +304,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: orphan
       name: Orphan
-      roles:
-        - implementer
+      role: implementer
       purpose: Lost its parent.
       specialization:
         primary-focus: Waiting
@@ -353,8 +351,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: house-jenny
       name: House Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Java, the house way.
       specialization:
         primary-focus: Java
@@ -400,8 +397,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: proj-jenny
       name: Project Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Java, the project way.
       specialization:
         primary-focus: Java
@@ -467,8 +463,7 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: drops-fields
       name: Drops fields
-      roles:
-        - implementer
+      role: implementer
       purpose: Drop whole fields.
       specialization:
         primary-focus: Dropping
@@ -480,13 +475,12 @@ Feature: A pack's agent profile is read with its governance
       """
       profile-id: drops-values
       name: Drops values
-      roles:
-        - implementer
+      role: implementer
       purpose: Drop values.
       specialization:
         primary-focus: Dropping
       excluding:
-        roles:
+        alt-roles:
           - reviewer
         capabilities: []
       """
@@ -497,7 +491,7 @@ Feature: A pack's agent profile is read with its governance
     When I GET "/packs/built-in/artifacts/agent_profile/drops-values"
     Then the response status is 200
     And the field at "/agentProfile/excluding/wholeFields" is null
-    And the field at "/agentProfile/excluding/fieldValues/0/field" is "roles"
+    And the field at "/agentProfile/excluding/fieldValues/0/field" is "alt-roles"
     And the field at "/agentProfile/excluding/fieldValues/0/values/0" is "reviewer"
     And the field at "/agentProfile/excluding/fieldValues/1/field" is "capabilities"
     And the field at "/agentProfile/excluding/fieldValues/1/values/0" is absent

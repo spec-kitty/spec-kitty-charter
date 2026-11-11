@@ -36,7 +36,7 @@ class CharterArtifactFamilyTest {
             .schemaVersion("1.0")
             .title("Styleguide title")
             .scope(StyleguideScope.CODE)
-            .principle("be small")
+            .principle("be small", "be small, in one sentence.")
             .build();
 
     private static final Paradigm PARADIGM = Paradigm.builder()

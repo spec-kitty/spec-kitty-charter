@@ -38,7 +38,7 @@ class AggregateRetrofitTest {
                 .schemaVersion("1.0")
                 .title("t")
                 .scope(StyleguideScope.CODE)
-                .principle("p")
+                .principle("p", "p, in one sentence.")
                 .build();
     }
 

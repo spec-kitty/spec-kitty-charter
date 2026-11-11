@@ -88,7 +88,7 @@ class ReadOnlyPackSaveTest {
                                 .schemaVersion("1.0")
                                 .title("House style")
                                 .scope(StyleguideScope.CODE)
-                                .principle("Prefer clarity")
+                                .principle("Prefer clarity", "Prefer clarity, in one sentence.")
                                 .build())),
                 write(
                         "save(Toolguide)",

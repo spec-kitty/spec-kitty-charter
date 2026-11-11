@@ -84,8 +84,7 @@ Feature: The A0 rulings on activation writes and on the packs
       """
       profile-id: p
       name: p
-      roles:
-        - implementer
+      role: implementer
       purpose: Implements.
       specialization:
         primary-focus: Implementation.
@@ -94,8 +93,7 @@ Feature: The A0 rulings on activation writes and on the packs
       """
       profile-id: q
       name: q
-      roles:
-        - implementer
+      role: implementer
       purpose: Implements in general.
       specialization:
         primary-focus: Implementation in general.

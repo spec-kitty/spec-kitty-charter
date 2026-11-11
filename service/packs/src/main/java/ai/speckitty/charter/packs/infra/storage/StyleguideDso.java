@@ -17,7 +17,7 @@ import java.util.Optional;
  * @param schemaVersion the {@code schema_version}
  * @param title the {@code title}
  * @param scope the {@code scope} token, as plain text
- * @param principles the {@code principles}, in authored order
+ * @param principles the {@code principles}, named (ADR-0067), in authored order
  * @param patterns the {@code patterns}, in authored order
  * @param antiPatterns the {@code anti_patterns}, in authored order
  * @param tooling the {@code tooling} map, when stated
@@ -30,7 +30,7 @@ record StyleguideDso(
         String schemaVersion,
         String title,
         String scope,
-        List<String> principles,
+        List<PrincipleDso> principles,
         List<Pattern> patterns,
         List<AntiPattern> antiPatterns,
         Optional<Map<String, String>> tooling,

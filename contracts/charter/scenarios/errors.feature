@@ -176,7 +176,8 @@ Feature: Failures outside the charter's refusals
     toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
     registration_conflict and governance_policy_violation, and the whole-pack registration service adds
     pack_version_conflict and artifact_referenced, and its impact check adds override_not_permitted, enhances_cycle,
-    conflicting_relations, self_override and override_cycle (ReservedRefusalCodesTest holds the flag to the main code that
+    conflicting_relations, self_override, override_cycle and, for a pack's fallback_profile (ADR-0068),
+    fallback_profile_unknown, fallback_profile_not_locked and fallback_profile_not_role_neutral (ReservedRefusalCodesTest holds the flag to the main code that
     names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
     registration_timed_out and pack_storage_full, the https_archive, filesystem and git source fetchers add
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
@@ -245,3 +246,6 @@ Feature: Failures outside the charter's refusals
       | prompt_slot_not_empty       |
       | mission_step_contract_not_found |
       | skeleton_not_found |
+      | fallback_profile_unknown    |
+      | fallback_profile_not_locked |
+      | fallback_profile_not_role_neutral |

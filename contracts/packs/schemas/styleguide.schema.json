@@ -88,6 +88,34 @@
       ],
       "title": "StyleguideScope",
       "type": "string"
+    },
+    "Principle": {
+      "additionalProperties": false,
+      "description": "One core idea of a paradigm (ADR-0067): a short name and one or two sentences.",
+      "properties": {
+        "name": {
+          "description": "The principle's short name; unique within the paradigm, ignoring case and surrounding whitespace.",
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "description": "One or two sentences stating the principle.",
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "title": "Principle",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -113,11 +141,12 @@
     },
     "principles": {
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/Principle"
       },
       "minItems": 1,
       "title": "Principles",
-      "type": "array"
+      "type": "array",
+      "description": "The styleguide's principles, named (ADR-0067), in authored order; at least one. Names are unique within the list, ignoring case and surrounding whitespace (checked by the reader, reported as uniqueItems at the repeated name)."
     },
     "patterns": {
       "items": {

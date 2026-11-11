@@ -9,8 +9,7 @@
       "severity": "blocking",
       "file": "agent_profiles/p.agent.yaml",
       "place": [
-        "roles",
-        "0"
+        "role"
       ]
     }
   ]

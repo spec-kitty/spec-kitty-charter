@@ -3,6 +3,7 @@ package ai.speckitty.charter.profiles.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -23,10 +24,20 @@ import org.jspecify.annotations.Nullable;
  * {@code specializes_from} edge of the pack's graph, and resolving {@code enhances}, {@code overrides} or
  * {@link #excluding()} is not done here (ADR-0032). Build one with {@link #builder()}.
  */
-public final class AgentProfile implements CharterArtifact {
+public final class AgentProfile implements CharterArtifact, RoleBearer {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^(1\\.0|2)$");
-    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9_-]*$");
+    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9-]*+$");
+
+    /** The rule text of an alt-role that repeats the role or an earlier alt-role (ADR-0069 decision 1). */
+    public static final String ALT_ROLES_DISTINCT =
+            "An agent profile's alt-roles must be distinct and must not repeat its role.";
+
+    /** The reserved role of a fallback profile (ADR-0068 decision 4); it never earns a role fit. */
+    public static final String GENERIC_ROLE = RoleBearer.GENERIC;
+
+    /** The longest role token; the cap of an identifier (#446). */
+    public static final int ROLE_MAX = 64;
 
     private static final ModularRuleset<AgentProfile> RULES = ModularRuleset.<AgentProfile>emptyRules()
             .must(Constraints.of(
@@ -34,12 +45,16 @@ public final class AgentProfile implements CharterArtifact {
                     profile -> profile.schemaVersion
                             .map(version -> SCHEMA_VERSION.matcher(version).matches())
                             .orElse(true)))
-            .must(Constraints.of("An agent profile needs at least one role.", profile -> !profile.roles.isEmpty()))
             .must(Constraints.of(
-                    "An agent profile's roles must be lowercase letters, digits, hyphens and underscores, starting"
-                            + " with a letter.",
-                    profile -> profile.roles.stream()
-                            .allMatch(role -> ROLE.matcher(role).matches())))
+                    "An agent profile's role and alt-roles must be lowercase letters, digits and hyphens, starting"
+                            + " with a letter, at most " + AgentProfile.ROLE_MAX + " characters.",
+                    profile -> java.util.stream.Stream.concat(
+                                    java.util.stream.Stream.of(profile.role), profile.altRoles.stream())
+                            .allMatch(AgentProfile::wellFormedRole)))
+            .must(Constraints.of(
+                    ALT_ROLES_DISTINCT,
+                    profile ->
+                            firstRepeatedAltRole(profile.role, profile.altRoles).isEmpty()))
             .must(Constraints.of(
                     "An agent profile's routing priority must be between 0 and 100.",
                     profile -> profile.routingPriority
@@ -54,7 +69,8 @@ public final class AgentProfile implements CharterArtifact {
     private final Optional<String> schemaVersion;
     private final String name;
     private final Optional<String> description;
-    private final List<String> roles;
+    private final String role;
+    private final List<String> altRoles;
     private final Optional<String> avatarImage;
     private final List<String> capabilities;
     private final Optional<Integer> routingPriority;
@@ -82,7 +98,8 @@ public final class AgentProfile implements CharterArtifact {
         this.schemaVersion = builder.schemaVersion;
         this.name = Objects.requireNonNull(builder.name, "name");
         this.description = builder.description;
-        this.roles = List.copyOf(builder.roles);
+        this.role = Objects.requireNonNull(builder.role, "role");
+        this.altRoles = List.copyOf(builder.altRoles);
         this.avatarImage = builder.avatarImage;
         this.capabilities = List.copyOf(builder.capabilities);
         this.routingPriority = builder.routingPriority;
@@ -174,12 +191,65 @@ public final class AgentProfile implements CharterArtifact {
     }
 
     /**
-     * The roles the profile can take, in authored order; never empty.
+     * The profile's primary role, its {@code role} (ADR-0069).
      *
-     * @return an immutable list
+     * @return the primary role
      */
-    public List<String> roles() {
-        return roles;
+    @Override
+    public String role() {
+        return role;
+    }
+
+    /**
+     * The profile's {@code alt-roles}, in authored order (ADR-0069).
+     *
+     * @return an immutable list, empty when it has none
+     */
+    @Override
+    public List<String> altRoles() {
+        return altRoles;
+    }
+
+    /**
+     * How the profile fits a role a step asks for (ADR-0069 decision 4): {@link RoleFit#PRIMARY} for its role,
+     * {@link RoleFit#ALT} for one of its alt-roles, otherwise {@link RoleFit#NONE}. A profile whose role is the reserved
+     * {@value #GENERIC_ROLE} fits no role: it is served only as a fallback (ADR-0068 decision 4).
+     *
+     * @param asked the role asked for
+     * @return the fit
+     */
+    public RoleFit roleFit(String asked) {
+        Objects.requireNonNull(asked, "asked");
+        if (GENERIC_ROLE.equals(role)) {
+            return RoleFit.NONE;
+        }
+        if (role.equals(asked)) {
+            return RoleFit.PRIMARY;
+        }
+        return altRoles.contains(asked) ? RoleFit.ALT : RoleFit.NONE;
+    }
+
+    /**
+     * The index of the first alt-role that repeats the role or an earlier alt-role (ADR-0069 decision 3): the one rule
+     * of the role fields a schema cannot state, shared by the entity and the pack reader.
+     *
+     * @param role the role
+     * @param altRoles the alt-roles, in order
+     * @return the index of the first repeat, or empty
+     */
+    public static java.util.OptionalInt firstRepeatedAltRole(String role, List<String> altRoles) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        seen.add(role);
+        for (int i = 0; i < altRoles.size(); i++) {
+            if (!seen.add(altRoles.get(i))) {
+                return java.util.OptionalInt.of(i);
+            }
+        }
+        return java.util.OptionalInt.empty();
+    }
+
+    private static boolean wellFormedRole(String role) {
+        return role.length() <= ROLE_MAX && ROLE.matcher(role).matches();
     }
 
     /**
@@ -385,7 +455,8 @@ public final class AgentProfile implements CharterArtifact {
         private Optional<String> schemaVersion = Optional.empty();
         private @Nullable String name;
         private Optional<String> description = Optional.empty();
-        private final List<String> roles = new ArrayList<>();
+        private @Nullable String role;
+        private final List<String> altRoles = new ArrayList<>();
         private Optional<String> avatarImage = Optional.empty();
         private final List<String> capabilities = new ArrayList<>();
         private Optional<Integer> routingPriority = Optional.empty();
@@ -465,13 +536,24 @@ public final class AgentProfile implements CharterArtifact {
         }
 
         /**
-         * Appends a role.
+         * Sets the primary {@code role} (ADR-0069).
          *
          * @param value the role
          * @return this builder
          */
         public Builder role(String value) {
-            this.roles.add(Objects.requireNonNull(value, "role"));
+            this.role = Objects.requireNonNull(value, "role");
+            return this;
+        }
+
+        /**
+         * Appends one {@code alt-roles} entry (ADR-0069).
+         *
+         * @param value the alt-role
+         * @return this builder
+         */
+        public Builder altRole(String value) {
+            this.altRoles.add(Objects.requireNonNull(value, "altRole"));
             return this;
         }
 

@@ -37,13 +37,18 @@ enum ParadigmBinding implements KindBinding<ParadigmDso, Paradigm> {
                 .packId(pack)
                 .schemaVersion(dso.schemaVersion())
                 .name(dso.name())
-                .summary(dso.summary());
+                .summary(dso.summary())
+                .principles(PrincipleYaml.toDomain(dso.principles()));
         return builder.build();
     }
 
     @Override
     public ParadigmDso toDso(Paradigm paradigm) {
         return new ParadigmDso(
-                paradigm.id().value(), paradigm.schemaVersion().orElseThrow(), paradigm.name(), paradigm.summary());
+                paradigm.id().value(),
+                paradigm.schemaVersion().orElseThrow(),
+                paradigm.name(),
+                paradigm.summary(),
+                PrincipleYaml.toDso(paradigm.principles()));
     }
 }

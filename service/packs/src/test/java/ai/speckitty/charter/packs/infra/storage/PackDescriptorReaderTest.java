@@ -259,7 +259,8 @@ class PackDescriptorReaderTest {
                         "requires_core",
                         "active_charter",
                         "pack_drg",
-                        "mutability_policy");
+                        "mutability_policy",
+                        "fallback_profile");
     }
 
     // ---- a descriptor that is not YAML or breaks its schema ------------------------------------------

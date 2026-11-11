@@ -14,8 +14,9 @@ value:
   agentProfile:
     profileId: java-jenny
     name: Java Jenny
-    roles:
-    - implementer
+    role: implementer
+    altRoles:
+    - reviewer
     avatarImage: null
     capabilities:
     - java-implementation

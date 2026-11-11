@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
+import ai.speckitty.charter.api.model.Principle;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -50,28 +51,33 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
      * A guarded registration: its kind, as a refusal names it, and its list members, read off the generated DTO; none
      * for a registration without a list.
      */
-    private record Guarded(String kind, List<String> lists, Set<String> members) {
+    private record Guarded(String kind, List<String> lists, Set<String> members, Map<String, Set<String>> items) {
         Guarded(String kind, Class<?> dto) {
-            this(kind, RegistrationLists.of(dto), RegistrationLists.members(dto));
+            this(kind, RegistrationLists.of(dto), RegistrationLists.members(dto), Map.of());
+        }
+
+        /** A guarded registration whose principles items are closed too (ADR-0067). */
+        Guarded withPrinciples() {
+            return new Guarded(kind, lists, members, Map.of("principles", RegistrationLists.members(Principle.class)));
         }
 
         static Guarded withoutLists(String kind, Class<?> dto) {
-            return new Guarded(kind, List.of(), RegistrationLists.members(dto));
+            return new Guarded(kind, List.of(), RegistrationLists.members(dto), Map.of());
         }
     }
 
     /**
-     * The registrations this advice guards. The paradigm and relationship registrations have no list
-     * ({@code RegistrationBodyAdviceTest} pins that), so they name none rather than read them off their DTO, which
-     * would refuse to start; their members are still checked.
+     * The registrations this advice guards. A paradigm's only list is {@code principles} (ADR-0067). The relationship
+     * registration has no list ({@code RegistrationBodyAdviceTest} pins that), so it names none rather than read them off their DTO, which
+     * would refuse to start; its members are still checked.
      */
     private static final Map<Type, Guarded> GUARDED = Map.of(
             DirectiveRegistration.class,
             new Guarded("directive", DirectiveRegistration.class),
             ParadigmRegistration.class,
-            Guarded.withoutLists("paradigm", ParadigmRegistration.class),
+            new Guarded("paradigm", ParadigmRegistration.class).withPrinciples(),
             StyleguideRegistration.class,
-            new Guarded("styleguide", StyleguideRegistration.class),
+            new Guarded("styleguide", StyleguideRegistration.class).withPrinciples(),
             RelationshipRegistration.class,
             Guarded.withoutLists("relationship", RelationshipRegistration.class));
 
@@ -108,6 +114,14 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
                             RefusalCode.VALIDATION_FAILED,
                             RegistrationLists.unknownMemberDetail(guarded.kind(), member));
                 });
+        guarded.items()
+                .forEach((list, declared) -> RegistrationLists.firstUnknownInItems(
+                                body, headers.getContentType(), list, declared)
+                        .ifPresent(member -> {
+                            throw new CharterRefusal(
+                                    RefusalCode.VALIDATION_FAILED,
+                                    "A " + guarded.kind() + " registration has no member " + member + ".");
+                        }));
         if (guarded.lists().isEmpty()) {
             return JsonBodyGuard.replay(headers, body);
         }

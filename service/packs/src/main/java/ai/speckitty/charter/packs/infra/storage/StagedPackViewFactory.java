@@ -5,8 +5,10 @@ import ai.speckitty.charter.packs.application.StagedPackViews;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 public final class StagedPackViewFactory implements StagedPackViews {
 
     private final Supplier<StagedPacks> sessions;
+    private final Supplier<Optional<PackRepository>> store;
 
     /**
      * A factory over the repository ports, which a session reads through as they are.
@@ -33,6 +36,7 @@ public final class StagedPackViewFactory implements StagedPackViews {
         Objects.requireNonNull(descriptors, "descriptors");
         Objects.requireNonNull(artifacts, "artifacts");
         this.sessions = () -> StagedPacks.stored(catalog, descriptors, artifacts);
+        this.store = () -> artifacts instanceof PackRepository repository ? Optional.of(repository) : Optional.empty();
     }
 
     /**
@@ -45,6 +49,7 @@ public final class StagedPackViewFactory implements StagedPackViews {
     public StagedPackViewFactory(DomainRepositoryService.Locations locations, SerializationStrategy strategy) {
         Objects.requireNonNull(locations, "locations");
         Objects.requireNonNull(strategy, "strategy");
+        this.store = () -> Optional.of(new DomainRepositoryService(locations, strategy));
         this.sessions = () -> {
             // The session runs under the registry lock, which every pack write takes, so the listing is taken once:
             // each
@@ -58,6 +63,7 @@ public final class StagedPackViewFactory implements StagedPackViews {
     @Override
     public Session session() {
         StagedPacks stored = sessions.get();
+        Optional<PackRepository> repository = store.get();
         return new Session() {
             @Override
             public View stored() {
@@ -67,6 +73,11 @@ public final class StagedPackViewFactory implements StagedPackViews {
             @Override
             public View with(RegistrationImpact.Replacement written) {
                 return stored.with(written).view();
+            }
+
+            @Override
+            public Optional<PackRepository> packs() {
+                return repository;
             }
         };
     }

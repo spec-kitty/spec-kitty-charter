@@ -1,6 +1,6 @@
 profile-id: p
 name: P
-roles: [implementer]
+role: implementer
 purpose: x
 specialization:
   primary-focus: f

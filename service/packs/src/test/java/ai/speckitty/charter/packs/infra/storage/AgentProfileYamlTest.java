@@ -21,7 +21,7 @@ class AgentProfileYamlTest {
     private static final String MINIMAL = """
             profile-id: p
             name: P
-            roles: [implementer]
+            role: implementer
             purpose: Builds things.
             specialization:
               primary-focus: Building.
@@ -85,7 +85,7 @@ class AgentProfileYamlTest {
         String source = """
                 profile-id: p
                 name: P
-                roles: [implementer]
+                role: implementer
                 purpose: >
                   Builds
                   things.
@@ -104,7 +104,8 @@ class AgentProfileYamlTest {
             name: P
             description: D
             schema-version: "2"
-            roles: [implementer, reviewer]
+            role: implementer
+            alt-roles: [reviewer]
             avatar-image: a.png
             capabilities: [c1, c2, c1]
             routing-priority: 100
@@ -209,18 +210,18 @@ class AgentProfileYamlTest {
     @Test
     @DisplayName("excluding is written as authored in both forms, an empty value list included")
     void excludingKeepsItsForm() {
-        roundTrip(MINIMAL + "excluding: [capabilities, roles]\n");
+        roundTrip(MINIMAL + "excluding: [capabilities, alt-roles]\n");
         String map = MINIMAL + """
                 excluding:
                   capabilities: [deploy]
-                  roles: []
+                  alt-roles: []
                 """;
 
         roundTrip(map);
 
         AgentProfile entity = AgentProfileBinding.INSTANCE.toEntity(new PackIdentifier("p"), read(map));
         assertThat(entity.excluding())
-                .contains(new Exclusion.FieldValues(Map.of("capabilities", List.of("deploy"), "roles", List.of())));
+                .contains(new Exclusion.FieldValues(Map.of("capabilities", List.of("deploy"), "alt-roles", List.of())));
         assertThat(MEANING.compareTexts("agent-profile", map, MINIMAL + "excluding: {capabilities: [deploy]}\n"))
                 .as("inside the open map an empty list is data")
                 .isPresent();

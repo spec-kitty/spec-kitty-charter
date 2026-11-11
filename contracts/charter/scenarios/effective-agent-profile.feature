@@ -47,8 +47,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       name: Java Jenny
       description: Java-specialist implementer
       schema-version: "1.0"
-      roles:
-        - implementer
+      role: implementer
       applies_to_languages:
         - java
       capabilities:
@@ -67,8 +66,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       """
       profile-id: implementer-ivan
       name: Implementer Ivan
-      roles:
-        - implementer
+      role: implementer
       purpose: Implement.
       specialization:
         primary-focus: Implementation
@@ -128,7 +126,8 @@ Feature: An agent profile is read under an activation, with its governance and t
       title: Java conventions
       scope: code
       principles:
-        - Name things plainly.
+        - name: Name things plainly
+          description: Name things plainly, in one sentence.
       """
     And the built-in pack "built-in" with the file "agent_profile.graph.yaml":
       """
@@ -336,8 +335,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       """
       profile-id: java-jenny
       name: House Jenny
-      roles:
-        - implementer
+      role: implementer
       purpose: Java, the house way.
       specialization:
         primary-focus: Java
