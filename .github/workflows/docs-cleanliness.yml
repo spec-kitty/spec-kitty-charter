@@ -147,8 +147,10 @@ jobs:
     # (GitHub drops a cache entry after 7 days without access), so pull requests restore it without the network.
     # On a pull request the render runs only when a diagram input changed. A pull request that touches no
     # diagram cannot change the outcome, and an Ubuntu mirror outage (2026-11-11, #481) must not turn it red.
-    # On main, on the schedule and on dispatch it always runs.
+    # The merge queue judges its own range the same way. On main, on the schedule and on dispatch it always runs.
     runs-on: ubuntu-24.04
+    # Bounds an outage: a run that cannot reach any mirror fails in half an hour, not in hours.
+    timeout-minutes: 30
     env:
       GRAPHVIZ_DEBS: ${{ github.workspace }}/../graphviz-debs
     steps:
@@ -159,15 +161,15 @@ jobs:
       - name: Decide whether a diagram input changed
         id: scope
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
         run: |
           set -euo pipefail
           # The runner image names its own version; a new image gets a fresh package cache.
           echo "graphviz-key=graphviz-debs-${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
-          if [ "${{ github.event_name }}" != pull_request ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" != pull_request ] && [ "${{ github.event_name }}" != merge_group ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           changed=$(git diff --name-only "$BASE...$HEAD")
-          if printf '%s\n' "$changed" | grep -Eq '(\.puml$|\.svg$|^scripts/docs/|^\.github/workflows/docs-cleanliness\.yml$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^docs/architecture/diagrams/|\.puml$|\.iuml$|\.svg$|^scripts/docs/|^\.github/workflows/docs-cleanliness\.yml$)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "No diagram input changed; the render is skipped."
@@ -198,31 +200,36 @@ jobs:
           path: ${{ env.GRAPHVIZ_DEBS }}
           key: ${{ steps.scope.outputs.graphviz-key }}
       - name: Install Graphviz
+        id: graphviz
         if: steps.scope.outputs.run == 'true'
         env:
           HIT: ${{ steps.graphviz-cache.outputs.cache-hit }}
         run: |
           set -euo pipefail
-          if [ "$HIT" = true ] && sudo dpkg -i "$GRAPHVIZ_DEBS"/*.deb; then
+          # Short timeouts: a mirror that does not answer fails an attempt in seconds, not in twenty minutes.
+          echo 'Acquire::Retries "1"; Acquire::http::Timeout "20"; Acquire::https::Timeout "20";' \
+            | sudo tee /etc/apt/apt.conf.d/99ci-timeouts >/dev/null
+          if [ "$HIT" = true ] && compgen -G "$GRAPHVIZ_DEBS/*.deb" >/dev/null && sudo dpkg -i "$GRAPHVIZ_DEBS"/*.deb; then
             dot -V
             exit 0
           fi
           for attempt in 1 2 3 4 5; do
             # A failed dpkg run on a stale or damaged cache leaves graphviz unpacked with unmet dependencies, and
             # then `install graphviz` refuses on every attempt; `install -f` with no package repairs that first.
-            if sudo apt-get -o Acquire::Retries=3 update -q \
-              && sudo apt-get -o Acquire::Retries=3 install -y -q -f \
-              && sudo apt-get -o Acquire::Retries=3 install -y -q graphviz; then
+            if timeout 300 sudo apt-get update -q \
+              && timeout 300 sudo apt-get install -y -q -f \
+              && timeout 300 sudo apt-get install -y -q graphviz; then
               mkdir -p "$GRAPHVIZ_DEBS"
               # Nothing to copy when the image already ships Graphviz; a bare glob would then fail the step.
               find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp -t "$GRAPHVIZ_DEBS" {} +
+              if compgen -G "$GRAPHVIZ_DEBS/*.deb" >/dev/null; then echo "debs=true" >> "$GITHUB_OUTPUT"; fi
               dot -V
               exit 0
             fi
             echo "apt failed (attempt $attempt/5); retrying in $((attempt * 30))s"
-            if [ "$attempt" = 2 ]; then
+            if [ "$attempt" = 1 ]; then
               # The runner's own mirrors resolve through the same DNS (2026-11-11: azure.archive.ubuntu.com and
-              # security.ubuntu.com both unresolvable), so from the third attempt on, apt asks kernel.org's mirror.
+              # security.ubuntu.com both unresolvable), so from the second attempt on, apt asks kernel.org's mirror.
               echo "Switching apt to mirrors.edge.kernel.org"
               echo "http://mirrors.edge.kernel.org/ubuntu" | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
               sudo sed -i -E 's#https?://[a-z.]*(archive|security)\.ubuntu\.com/ubuntu/?#http://mirrors.edge.kernel.org/ubuntu/#g; s#mirror\+file:/etc/apt/apt-mirrors\.txt#http://mirrors.edge.kernel.org/ubuntu/#g' \
@@ -233,7 +240,7 @@ jobs:
           exit 1
       - name: Save the Graphviz packages
         # Saved from main only, so pull requests restore what main saved (a pull request's cache is its own).
-        if: steps.scope.outputs.run == 'true' && steps.graphviz-cache.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
+        if: steps.scope.outputs.run == 'true' && steps.graphviz-cache.outputs.cache-hit != 'true' && steps.graphviz.outputs.debs == 'true' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ${{ env.GRAPHVIZ_DEBS }}

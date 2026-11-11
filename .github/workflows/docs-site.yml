@@ -185,8 +185,8 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          apt-get -o Acquire::Retries=5 update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y -qq --no-install-recommends python3-venv
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y -qq --no-install-recommends python3-venv
           python3 -m venv "$RUNNER_TEMP/docs-venv"
       - name: Wait for the PlantUML server
         # A hard dependency even though no doc page renders PlantUML today: the 23 schema pages each carry a
