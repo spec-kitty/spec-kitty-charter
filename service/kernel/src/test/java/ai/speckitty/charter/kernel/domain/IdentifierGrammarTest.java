@@ -87,18 +87,24 @@ class IdentifierGrammarTest {
 
     static Stream<Arguments> capped() {
         return Stream.of(
-                Arguments.of("slug", (Predicate<String>) IdentifierGrammar::isSlug, "a", 64),
-                Arguments.of("letter-first slug", (Predicate<String>) IdentifierGrammar::isLetterFirstSlug, "a", 64),
-                Arguments.of("dotted key", (Predicate<String>) IdentifierGrammar::isDottedKey, "a.", 255),
-                Arguments.of("relative path", (Predicate<String>) IdentifierGrammar::isRelativePath, "a", 255));
+                Arguments.of("slug", (Predicate<String>) IdentifierGrammar::isSlug, "a", 64, "-a"),
+                Arguments.of(
+                        "letter-first slug", (Predicate<String>) IdentifierGrammar::isLetterFirstSlug, "a", 64, "-a"),
+                Arguments.of("dotted key", (Predicate<String>) IdentifierGrammar::isDottedKey, "a.", 255, ".a"),
+                Arguments.of("relative path", (Predicate<String>) IdentifierGrammar::isRelativePath, "a", 255, "/a"));
     }
 
     @ParameterizedTest(name = "a {0} is capped at {3}")
     @MethodSource("capped")
-    void eachGrammarIsCappedBeforeItMatches(String name, Predicate<String> grammar, String head, int cap) {
+    void eachGrammarIsCappedBeforeItMatches(
+            String name, Predicate<String> grammar, String head, int cap, String repeat) {
         String atCap = head + "a".repeat(cap - head.length());
         assertThat(grammar.test(atCap)).as("%d characters", cap).isTrue();
         assertThat(grammar.test(atCap + "a")).as("%d characters", cap + 1).isFalse();
+        // Refused on length alone: a text of 20 000 characters that is otherwise well formed never reaches the regex.
+        assertThat(grammar.test("a" + repeat.repeat(10_000)))
+                .as("20 000 characters")
+                .isFalse();
     }
 
     static Stream<Arguments> grammars() {
@@ -119,12 +125,6 @@ class IdentifierGrammarTest {
     void eachGrammarMatchesAVeryLongTextWithoutOverflowingTheStack(String name, String grammar, String repeat) {
         String text = "a" + repeat.repeat(10_000);
         assertThat(Pattern.compile(grammar).matcher(text).matches()).isTrue();
-    }
-
-    @Test
-    void theCapsAreThoseThePackSchemasDeclare() {
-        assertThat(IdentifierGrammar.MAX_SLUG_LENGTH).isEqualTo(64);
-        assertThat(IdentifierGrammar.MAX_PATH_LENGTH).isEqualTo(255);
     }
 
     @Test
