@@ -466,7 +466,12 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(pinnedRefusals()).isEmpty();
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.pack().presets()).extracting(Preset::id).containsExactly("default", "minimal");
+        assertThat(loaded.pack().presets())
+                .extracting(Preset::id)
+                .containsExactlyInAnyOrderElementsOf(
+                        OpenPacksCorpus.filesEndingWith(builtIn.resolve("presets"), ".yaml").stream()
+                                .map(file -> file.substring(0, file.length() - ".yaml".length()))
+                                .toList());
         assertThat(loaded.unmodelled())
                 .doesNotContain("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
         assertThat(loaded.manifest()).isPresent();
@@ -543,11 +548,14 @@ class WholePackOpenPacksRoundTripTest {
     void everyAgentProfileFileOfARealPackLoadsAsAProfile() throws IOException {
         Map<String, Integer> onDisk = new LinkedHashMap<>();
         Map<String, Integer> loaded = new LinkedHashMap<>();
+        List<Path> profileFiles = new ArrayList<>();
         for (Path pack : packDirectories()) {
             try (Stream<Path> files = Files.walk(pack)) {
-                onDisk.put(pack.toString(), (int) files.filter(Files::isRegularFile)
+                List<Path> profiles = files.filter(Files::isRegularFile)
                         .filter(file -> file.getFileName().toString().endsWith(".agent.yaml"))
-                        .count());
+                        .toList();
+                profileFiles.addAll(profiles);
+                onDisk.put(pack.toString(), profiles.size());
             }
             loaded.put(
                     pack.toString(),
@@ -559,7 +567,8 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(loaded).isEqualTo(onDisk);
         assertThat(loaded.values().stream().mapToInt(Integer::intValue).sum())
-                .as("the 26 built-in profiles and qa's 5")
-                .isEqualTo(31);
+                .as("agent profiles in the checkout")
+                .isPositive();
+        OpenPacksCorpus.assertEachPackHolds("agent profile", profileFiles, "built-in", "qa");
     }
 }

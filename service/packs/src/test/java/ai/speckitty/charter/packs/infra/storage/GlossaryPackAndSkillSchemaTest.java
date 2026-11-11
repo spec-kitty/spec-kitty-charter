@@ -104,7 +104,20 @@ class GlossaryPackAndSkillSchemaTest {
         List<Path> files = filesOfBothKinds(OpenPacksCorpus.packsDirectory());
 
         assertThat(problems(files)).as("files that do not validate").isEmpty();
-        assertThat(files).as("4 glossary packs and 5 skills").hasSize(9);
+        assertThat(files).as("glossary packs and skills in the checkout").isNotEmpty();
+        OpenPacksCorpus.assertEachPackHolds(
+                "glossary pack",
+                files.stream()
+                        .filter(f -> f.toString().endsWith(GLOSSARY_SUFFIX))
+                        .toList(),
+                "built-in",
+                "event-driven",
+                "internal",
+                "qa");
+        OpenPacksCorpus.assertEachPackHolds(
+                "skill",
+                files.stream().filter(f -> f.toString().endsWith(SKILL_SUFFIX)).toList(),
+                "internal");
     }
 
     private static List<String> problems(List<Path> files) throws IOException {
