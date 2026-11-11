@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -14,17 +15,16 @@ import java.util.regex.Pattern;
  */
 public record GuardReference(Optional<String> pack, String id) {
 
-    private static final String KEBAB = "[a-z0-9]++(?:-[a-z0-9]++)*+";
-
     /** The longest pack name or guard id a reference accepts (#440). */
-    private static final int MAX_PART_LENGTH = 64;
+    private static final int MAX_PART_LENGTH = IdentifierGrammar.MAX_SLUG_LENGTH;
 
     private static final String SEPARATOR = "::guard:";
 
     /** The longest spelling {@link #parse(String)} matches: two capped parts and the separator. */
     private static final int MAX_SPELLING_LENGTH = 2 * MAX_PART_LENGTH + SEPARATOR.length();
 
-    private static final Pattern SPELLING = Pattern.compile("(?:(" + KEBAB + ")" + SEPARATOR + ")?(" + KEBAB + ")");
+    private static final Pattern SPELLING =
+            Pattern.compile("(?:(" + IdentifierGrammar.SLUG + ")" + SEPARATOR + ")?(" + IdentifierGrammar.SLUG + ")");
 
     /**
      * Checks the parts.
