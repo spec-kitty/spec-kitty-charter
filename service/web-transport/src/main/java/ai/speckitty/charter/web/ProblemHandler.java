@@ -71,11 +71,18 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
      * Logs every server error this handler resolves, with its exception, before the response is built: the
      * {@code internal_error} detail says the failure is logged, and the base class logs only when the response
      * is already committed. The exceptions of {@link #unexpected} are logged there, so none is logged twice.
+     *
+     * <p>A {@code 501} is no failure: only a reserved operation answers it, by design (ADR-0020 D8), so it is logged
+     * at {@code DEBUG} with the request, without a stack trace, and raises no operator alert (#406).
      */
     @Override
     protected @Nullable ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-        if (statusCode.is5xxServerError()) {
+        if (statusCode.value() == HttpStatus.NOT_IMPLEMENTED.value()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Reserved operation answered 501: " + request.getDescription(false));
+            }
+        } else if (statusCode.is5xxServerError()) {
             logger.error("Server error " + statusCode.value(), ex);
         }
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
