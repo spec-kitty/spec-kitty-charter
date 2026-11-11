@@ -69,7 +69,7 @@ class PackDigestBaselineTest {
             }
         }
 
-        OpenPacksCorpus.assertPacksPresent("built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd");
+        OpenPacksCorpus.assertAllPacksPresent();
         assertThat(covered)
                 .as("every pack but the one that holds step enhancements is covered")
                 .contains("built-in", "cave-kitty", "event-driven", "internal", "qa");

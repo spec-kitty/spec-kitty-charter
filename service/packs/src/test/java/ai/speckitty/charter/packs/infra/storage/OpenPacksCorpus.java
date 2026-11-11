@@ -21,6 +21,9 @@ public final class OpenPacksCorpus {
     private static final Pattern SHA = Pattern.compile("[0-9a-f]{40}");
     private static final long GIT_TIMEOUT_SECONDS = 30;
 
+    /** The packs the checkout holds: the one list every corpus test names. */
+    private static final String[] PACKS = {"built-in", "cave-kitty", "event-driven", "internal", "qa", "spdd"};
+
     private OpenPacksCorpus() {}
 
     /**
@@ -72,6 +75,11 @@ public final class OpenPacksCorpus {
                     .sorted()
                     .toList();
         }
+    }
+
+    /** Fails unless every pack of {@link #PACKS} is present; see {@link #assertPacksPresent(String...)}. */
+    public static void assertAllPacksPresent() throws IOException {
+        assertPacksPresent(PACKS);
     }
 
     /**
