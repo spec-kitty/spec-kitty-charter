@@ -6,3 +6,9 @@
   is a concurrency token naming the pack, not a cache validator: the answer can carry content from dependency packs
   that the revision does not cover. No pack read takes `If-None-Match` or answers 304; activation reads are unchanged.
   Core's seam: nothing to change. Additive. Closes the contract half of #487.
+
+### Changed
+
+- The templated item read answers a `mission_step_contract` as it answers every other kind: a pack whose aggregate or
+  revision cannot be read after its `pack.yaml` was read is `404 pack_not_found`, where a step contract answered
+  `500 pack_unreadable`. A pack with no readable `pack.yaml` is still `500 pack_unreadable` for every kind.

@@ -23,6 +23,7 @@ clean-up of the graph-walk code ([#488](https://github.com/spec-kitty/spec-kitty
   one thing answers the pack revision, read in the same verified read as the body. For the mission type, its steps and
   its skeletons the tag is a concurrency token naming the pack, not a cache validator, because the answer can carry
   content from dependency packs. No pack read takes `If-None-Match`; activation reads are unchanged.
-- **Refusals agree across kinds.** A pack whose aggregate or revision cannot be read is `pack_not_found` for every kind
-  of the templated item read; a step contract used to answer `pack_unreadable`.
+- **Refusals agree across kinds.** A pack whose aggregate or revision cannot be read, after its `pack.yaml` was read,
+  is `pack_not_found` for every kind of the templated item read; a step contract used to answer `pack_unreadable`. A
+  pack with no readable `pack.yaml` is still `pack_unreadable` for every kind.
 - **One walk path.** `CompositeComponentResolver` keeps only its closure holder check; graph walks use the edge index.

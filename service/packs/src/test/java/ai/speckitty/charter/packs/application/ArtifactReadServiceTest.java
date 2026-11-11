@@ -113,6 +113,9 @@ class ArtifactReadServiceTest {
     /** What a descriptor lookup does to the inputs as it answers; nothing, unless a test plants a change. */
     private Runnable onFind = () -> {};
 
+    /** Whether the aggregate load fails for every pack although its pack.yaml reads. */
+    private boolean aggregateUnreadable;
+
     /** How many times the compose asked the catalog for the configured packs: once per resolution of it. */
     private final AtomicInteger composeResolutions = new AtomicInteger();
 
@@ -443,6 +446,16 @@ class ArtifactReadServiceTest {
         });
 
         assertThat(codeOf(() -> unreadable.item(packOf(kind), kind, id))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    }
+
+    /** The aggregate the step contract read loads can fail after pack.yaml was read; that too is a pack not found. */
+    @Test
+    void anUnreadableAggregateIsThePackNotFoundForAStepContract() {
+        ArtifactReadService missions = missionFixture();
+        aggregateUnreadable = true;
+
+        assertThat(codeOf(() -> missions.item(MISSIONS, "mission_step_contract", "specify")))
+                .isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     private static PackIdentifier packOf(String kind) {
@@ -1139,8 +1152,8 @@ class ArtifactReadServiceTest {
         /** The aggregate needs pack.yaml: {@link #BARE} has none, so it cannot be assembled. */
         @Override
         public Pack load(PackIdentifier pack) {
-            if (pack.equals(BARE)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack bare has no pack.yaml");
+            if (pack.equals(BARE) || aggregateUnreadable) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be assembled");
             }
             return contents(pack);
         }
