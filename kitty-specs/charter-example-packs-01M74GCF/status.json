@@ -225,7 +225,13 @@
         "Forced: WP06, WP09 and WP10 are in review; WP07 is implemented in a side worktree in parallel and integrates only after their approval."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer"
+      "role": "implementer",
+      "subtasks": {
+        "T024": "done",
+        "T025": "done",
+        "T026": "done",
+        "T027": "done"
+      }
     },
     "WP08": {
       "actor": "reviewer-renata",
