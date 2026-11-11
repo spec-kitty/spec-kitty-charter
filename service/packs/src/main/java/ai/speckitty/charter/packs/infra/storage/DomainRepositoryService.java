@@ -1125,6 +1125,10 @@ public final class DomainRepositoryService
             }
         }
         for (PackLocation location : configured) {
+            // A location with no parent directory holds no store to read pack.yaml from, so it cannot declare the id.
+            if (!hasParent(location)) {
+                continue;
+            }
             Resolved candidate = over(location);
             if (declaresId(candidate, pack)) {
                 return candidate;
@@ -1145,6 +1149,11 @@ public final class DomainRepositoryService
                 new FilesystemPackStore(parent, strategy),
                 new PackIdentifier(directory.getFileName().toString()),
                 directory);
+    }
+
+    private static boolean hasParent(PackLocation location) {
+        Path directory = location.root().toAbsolutePath().normalize();
+        return directory.getParent() != null && directory.getFileName() != null;
     }
 
     private static boolean declaresId(Resolved candidate, PackIdentifier pack) {
