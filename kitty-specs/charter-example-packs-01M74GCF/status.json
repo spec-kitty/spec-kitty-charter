@@ -222,7 +222,8 @@
       "last_transition_at": "2026-11-11T08:07:51.372287+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Forced: WP06, WP09 and WP10 are in review; WP07 is implemented in a side worktree in parallel and integrates only after their approval."
+        "Forced: WP06, WP09 and WP10 are in review; WP07 is implemented in a side worktree in parallel and integrates only after their approval.",
+        "Forced: side-worktree implementation, cherry-picked (f5c885e24, d0adc6ece). verifyAll green; wholePackRoundTrip ignores -PopenPacksDir; driftTest catches real drift."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
