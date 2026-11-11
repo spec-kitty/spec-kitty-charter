@@ -156,33 +156,29 @@ class ArtifactControllerTest {
                 store,
                 store,
                 read,
-                new TacticReadService(store, store, read),
+                new TacticReadService(store, store, read, revisions),
                 new DirectiveReadService(store, store, read, revisions),
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
                 new ProcedureReadService(store, read, revisions),
                 new OfferingReadService(store, store, store, read),
-                new CompositeComponentResolver(
-                        new DirectiveReadService(store, store, read, revisions),
-                        new StyleguideReadService(store, store, read, revisions),
-                        new ParadigmReadService(store, store, read, revisions),
-                        new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read)),
+                new CompositeComponentResolver(),
                 pack -> List.of(),
-                type -> Set.of());
+                type -> Set.of(),
+                revisions);
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
     // ---- the item ---------------------------------------------------------------------------------------------
 
     @Test
-    void aTacticIsAnsweredInTheEnvelopeWithoutAnETag() throws Exception {
+    void aTacticIsAnsweredInTheEnvelopeWithItsETag() throws Exception {
         mvc.perform(get(BASE + "/tactic/rehearse"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(header().doesNotExist("ETag"))
+                .andExpect(header().string("ETag", "\"" + REVISION.token() + "\""))
                 .andExpect(jsonPath("$.kind").value("tactic"))
                 .andExpect(jsonPath("$.id").value("rehearse"))
                 .andExpect(jsonPath("$.packId").value("qa"))
@@ -219,6 +215,21 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.tactic").doesNotExist())
                 .andExpect(jsonPath("$._links.self.href").value(BASE + "/" + kind + "/" + id))
                 .andExpect(jsonPath("$._links.collection.href").value(BASE + "?kind=" + kind));
+    }
+
+    /** FR-004: a tactic item whose inputs change during the read is refused {@code stale_input} with no ETag. */
+    @Test
+    void aTacticWhoseInputsChangeDuringTheReadIsStaleWithoutAnETag() throws Exception {
+        AtomicInteger digests = new AtomicInteger();
+        ConsistentRead racing =
+                new ConsistentRead(() -> digests.incrementAndGet() == 1 ? DIGEST : "sha256:" + "1".repeat(64));
+        MockMvcBuilders.standaloneSetup(controller(racing, ignored -> REVISION))
+                .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
+                .build()
+                .perform(get(BASE + "/tactic/rehearse"))
+                .andExpect(status().is5xxServerError())
+                .andExpect(header().doesNotExist("ETag"))
+                .andExpect(jsonPath("$.code").value("stale_input"));
     }
 
     @Test

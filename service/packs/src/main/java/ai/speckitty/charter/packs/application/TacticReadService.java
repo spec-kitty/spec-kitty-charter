@@ -24,9 +24,12 @@ import org.springframework.stereotype.Service;
 @Service
 public final class TacticReadService {
 
+    private static final String STALE_ONE = "The inputs changed while the tactic was read; read it again.";
+
     private final PackRepository packs;
     private final TacticRepository tactics;
     private final ConsistentRead read;
+    private final PackRevisions revisions;
 
     /**
      * A service over the injected ports.
@@ -34,12 +37,15 @@ public final class TacticReadService {
      * @param packs the port that lists a pack's tactics
      * @param tactics the port that fetches one tactic
      * @param read the verifier that digests the inputs before and after each read
+     * @param revisions the pack revision, read inside the verified read for an item's {@code ETag}
      */
     @Autowired
-    public TacticReadService(PackRepository packs, TacticRepository tactics, ConsistentRead read) {
+    public TacticReadService(
+            PackRepository packs, TacticRepository tactics, ConsistentRead read, PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.tactics = Objects.requireNonNull(tactics, "tactics");
         this.read = Objects.requireNonNull(read, "read");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -80,19 +86,44 @@ public final class TacticReadService {
     public ConsistentRead.Verified<Tactic> tactic(PackIdentifier pack, TacticIdentifier tactic) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(tactic, "tactic");
-        return read.read("The inputs changed while the tactic was read; read it again.", () -> {
-            try {
-                return tactics.load(pack, tactic)
-                        .orElseThrow(() -> new CharterRefusal(
-                                RefusalCode.TACTIC_NOT_FOUND,
-                                "Pack " + pack.value() + " has no tactic " + tactic.value() + "."));
-            } catch (CharterRefusal refused) {
-                if (refused.code() == RefusalCode.TACTIC_NOT_FOUND) {
-                    throw refused;
-                }
-                throw packRefusal(pack, refused);
+        return read.read(STALE_ONE, () -> loadOne(pack, tactic));
+    }
+
+    /**
+     * One tactic of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
+     * read inside the one verified read, so the revision is the one the body was read at.
+     *
+     * @param pack the pack's identity
+     * @param tactic the tactic's identity
+     * @return the tactic with its revision, and the verified fingerprint
+     * @throws CharterRefusal as {@link #tactic(PackIdentifier, TacticIdentifier)} does
+     */
+    public ConsistentRead.Verified<Revised<Tactic>> tacticWithRevision(PackIdentifier pack, TacticIdentifier tactic) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(tactic, "tactic");
+        return read.read(STALE_ONE, () -> new Revised<>(loadOne(pack, tactic), revisionOf(pack)));
+    }
+
+    private Tactic loadOne(PackIdentifier pack, TacticIdentifier tactic) {
+        try {
+            return tactics.load(pack, tactic)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.TACTIC_NOT_FOUND,
+                            "Pack " + pack.value() + " has no tactic " + tactic.value() + "."));
+        } catch (CharterRefusal refused) {
+            if (refused.code() == RefusalCode.TACTIC_NOT_FOUND) {
+                throw refused;
             }
-        });
+            throw packRefusal(pack, refused);
+        }
+    }
+
+    private PackRevision revisionOf(PackIdentifier pack) {
+        try {
+            return revisions.currentRevision(pack);
+        } catch (CharterRefusal refused) {
+            throw packRefusal(pack, refused);
+        }
     }
 
     /**

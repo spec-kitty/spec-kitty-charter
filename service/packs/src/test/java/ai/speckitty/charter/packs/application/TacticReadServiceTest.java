@@ -38,6 +38,8 @@ class TacticReadServiceTest {
     private static final String D1 = "sha256:" + "1".repeat(64);
     private static final String D2 = "sha256:" + "2".repeat(64);
 
+    private static final PackRevision REVISION = PackRevision.compute(List.of("committed"));
+
     private final AtomicInteger digests = new AtomicInteger();
     private final TacticReadService service = serviceDigesting(() -> {
         digests.incrementAndGet();
@@ -45,7 +47,8 @@ class TacticReadServiceTest {
     });
 
     private TacticReadService serviceDigesting(PackSources sources) {
-        return new TacticReadService(new InMemoryPacks(), new InMemoryTactics(), new ConsistentRead(sources));
+        return new TacticReadService(
+                new InMemoryPacks(), new InMemoryTactics(), new ConsistentRead(sources), pack -> REVISION);
     }
 
     /** Answers D1, then D2 for every later digest: the inputs changed while the read was answered. */

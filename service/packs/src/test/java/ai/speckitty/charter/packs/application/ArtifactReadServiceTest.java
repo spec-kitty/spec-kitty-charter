@@ -65,6 +65,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -127,28 +128,27 @@ class ArtifactReadServiceTest {
     private final Map<PackIdentifier, List<PackEdge>> edges = new HashMap<>();
 
     private ArtifactReadService serviceDigesting(PackSources sources) {
+        return serviceDigesting(sources, pack -> REVISION);
+    }
+
+    private ArtifactReadService serviceDigesting(PackSources sources, PackRevisions revisions) {
         InMemoryStore store = new InMemoryStore();
         ConsistentRead read = new ConsistentRead(sources);
-        PackRevisions revisions = pack -> REVISION;
         return new ArtifactReadService(
                 store,
                 store,
                 read,
-                new TacticReadService(store, store, read),
+                new TacticReadService(store, store, read, revisions),
                 new DirectiveReadService(store, store, read, revisions),
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
                 new ProcedureReadService(store, read, revisions),
                 new OfferingReadService(store, store, store, read),
-                new CompositeComponentResolver(
-                        new DirectiveReadService(store, store, read, revisions),
-                        new StyleguideReadService(store, store, read, revisions),
-                        new ParadigmReadService(store, store, read, revisions),
-                        new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read)),
+                new CompositeComponentResolver(),
                 pack -> edges.getOrDefault(pack, List.of()),
-                type -> stepIds.getOrDefault(type.localId(), Set.of()));
+                type -> stepIds.getOrDefault(type.localId(), Set.of()),
+                revisions);
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -388,18 +388,69 @@ class ArtifactReadServiceTest {
     // ---- the item ---------------------------------------------------------------------------------------------
 
     @Test
-    void aTacticItemHasNoRevision() {
+    void aTacticItemCarriesItsRevision() {
         var verified = service.item(PACK, "tactic", "alpha");
 
         assertThat(verified.value()).isInstanceOfSatisfying(ArtifactReadService.Item.OfTactic.class, item -> {
             assertThat(item.artifact().id()).isEqualTo(new TacticIdentifier("alpha"));
-            assertThat(item.revision()).isEmpty();
+            assertThat(item.revision()).isEqualTo(REVISION);
         });
         assertThat(verified.fingerprint()).isEqualTo(D1);
     }
 
+    /** NFR-002: one item read of a tactic or a step contract asks for the pack revision exactly once. */
+    @ParameterizedTest
+    @CsvSource({"tactic, alpha", "mission_step_contract, specify"})
+    void anItemReadsTheRevisionOnce(String kind, String id) {
+        missionFixture();
+        AtomicInteger asked = new AtomicInteger();
+        ArtifactReadService counting = serviceDigesting(() -> D1, pack -> {
+            asked.incrementAndGet();
+            return REVISION;
+        });
+
+        counting.item(packOf(kind), kind, id);
+
+        assertThat(asked).hasValue(1);
+    }
+
+    /** FR-004: an item whose inputs change during the read is refused stale, so it answers no revision. */
+    @ParameterizedTest
+    @CsvSource({"tactic, alpha", "mission_step_contract, specify"})
+    void anItemWhoseInputsChangeIsStaleAndAnswersNoRevision(String kind, String id) {
+        missionFixture();
+        AtomicInteger asked = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger();
+        ArtifactReadService racing = serviceDigesting(() -> count.incrementAndGet() == 1 ? D1 : D2, pack -> {
+            asked.incrementAndGet();
+            return REVISION;
+        });
+
+        assertThatThrownBy(() -> racing.item(packOf(kind), kind, id))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        assertThat(asked).as("the revision is read inside the refused read").hasValue(1);
+    }
+
+    /** One mapping for every kind on the item route: a revision the storage cannot read is a pack not found. */
+    @ParameterizedTest
+    @CsvSource({"tactic, alpha", "directive, GUARD", "mission_step_contract, specify"})
+    void anUnreadableRevisionIsThePackNotFoundForEveryItemKind(String kind, String id) {
+        missionFixture();
+        ArtifactReadService unreadable = serviceDigesting(() -> D1, pack -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the revision cannot be read");
+        });
+
+        assertThat(codeOf(() -> unreadable.item(packOf(kind), kind, id))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    }
+
+    private static PackIdentifier packOf(String kind) {
+        return kind.equals("mission_step_contract") ? MISSIONS : PACK;
+    }
+
     @Test
-    void eachWritableKindItemCarriesItsRevision() {
+    void eachItemKindCarriesItsRevision() {
         assertThat(service.item(PACK, "directive", "GUARD").value())
                 .isInstanceOfSatisfying(
                         ArtifactReadService.Item.OfDirective.class,
@@ -415,6 +466,7 @@ class ArtifactReadServiceTest {
                         ArtifactReadService.Item.OfProcedure.class,
                         item -> assertThat(item.artifact().id()).isEqualTo(new ProcedureIdentifier("refactoring")));
         for (String[] item : new String[][] {
+            {"tactic", "alpha"},
             {"directive", "GUARD"},
             {"styleguide", "java-style"},
             {"paradigm", "layered"},
@@ -423,7 +475,7 @@ class ArtifactReadServiceTest {
         }) {
             assertThat(service.item(PACK, item[0], item[1]).value().revision())
                     .as(item[0])
-                    .contains(REVISION);
+                    .isEqualTo(REVISION);
         }
     }
 
@@ -596,7 +648,7 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void aStepContractItemHasNoRevisionAndNamesWhatThePackHoldsOfItsMissionTypeStepAndDelegates() {
+    void aStepContractItemCarriesItsRevisionAndNamesWhatThePackHoldsOfItsMissionTypeStepAndDelegates() {
         ArtifactReadService missions = missionFixture();
 
         var verified = missions.item(MISSIONS, "mission_step_contract", "specify");
@@ -606,8 +658,8 @@ class ArtifactReadServiceTest {
                 .isInstanceOfSatisfying(ArtifactReadService.Item.OfMissionStepContract.class, item -> {
                     assertThat(item.artifact().id()).isEqualTo(new MissionStepContractIdentifier("specify"));
                     assertThat(item.revision())
-                            .as("the kind has no write, so no ETag")
-                            .isEmpty();
+                            .as("every item carries its revision")
+                            .isEqualTo(REVISION);
                     assertThat(item.missionTypeHeld()).isTrue();
                     assertThat(item.stepHeld()).isTrue();
                     assertThat(item.heldCandidates())
