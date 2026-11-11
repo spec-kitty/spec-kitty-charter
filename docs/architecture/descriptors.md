@@ -86,6 +86,7 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 | `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `pack_id` is a ULID and `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4). A pack that declares one must also declare `pack_level`. A pack may depend only on packs at its own level or one nearer built-in. The offering read resolves the compose and refuses a broken one; each refusal is in the table of [Compose packs](/guides/compose-packs/#read-a-refusal) |
 | `overrides` | optional; the sibling conflicts this pack settles, each a closed item `{artifact, member}` where `member` is the contesting member's `pack_id`, a ULID; until #358 any pack of the compose may declare it, and until #357 it only clears the refusal, the member's version is not yet put in force ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5); a second edge on one artifact refuses the descriptor |
+| `fallback_profile` | optional; the profile-id (`^[a-z0-9][a-z0-9_-]*$`, 1 to 64 characters) of the agent profile the pack declares as its fallback, never `null` ([ADR-0068](/adr/0068-a-pack-declares-its-fallback-profile/)). A pack of the declaring pack's closure holds it, locked along the closure, with `role: generic` and no alt-roles; a breach refuses with `fallback_profile_unknown`, `fallback_profile_not_locked` or `fallback_profile_not_role_neutral` |
 
 > **Accepted, partly built:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
 > [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
@@ -246,6 +247,10 @@ A reusable technique as ordered steps. Schema: `tactic.schema.yaml`.
 Conventions for a kind of work. Schema: `styleguide.schema.yaml`.
 
 - **Required:** `id`, `schema_version`, `title`, `scope`, `principles`.
+- **Principles:** at least one `{name, description}` item, in authored order
+  ([ADR-0067](/adr/0067-paradigms-and-styleguides-state-named-principles/)); a name is 1 to 64
+  characters, a description 1 to 255, neither blank, and a name is unique within the list,
+  ignoring case and surrounding white space.
 - **Key fields:** `patterns`, `anti_patterns`, `tooling`, `quality_test`,
   `applies_to_languages`, `structural_lint_config`. A citation that names no pack artifact lives
   in the text, as "(source: …)" or a closing "Sources: …" in the last principle.
@@ -274,7 +279,10 @@ How to use one tool. Schema: `toolguide.schema.json`; the guide's shape is
 A way of thinking about the work. Schema: `paradigm.schema.yaml`.
 
 - **Required:** `schema_version`, `id`, `name`, `summary`.
-- **Key fields:** none beyond the required ones; the directives it `requires` are graph edges.
+- **Key fields:** `principles`, optional: when present, at least one `{name, description}` item,
+  in authored order, under the same rules as a styleguide's
+  ([ADR-0067](/adr/0067-paradigms-and-styleguides-state-named-principles/)). The directives it
+  `requires` are graph edges.
 - **CRG:** `paradigm:<id>`; some built-in paradigm nodes are re-kinded as `anti_pattern`.
 
 ### Procedure — `*.procedure.yaml`
@@ -300,18 +308,25 @@ A multi-step operating procedure with entry and exit conditions. Schema:
 An agent's identity and specialization. Schema: `agent-profile.schema.yaml`. Field names are
 kebab-case.
 
-- **Required:** `profile-id`, `name`, `purpose`, `specialization`.
-- **Key fields:** `description`, `schema-version`, `roles`, `capabilities`,
+- **Required:** `profile-id`, `name`, `role`, `purpose`, `specialization`.
+- **Key fields:** `description`, `schema-version`, `alt-roles`, `capabilities`,
   `routing-priority`, `max-concurrent-tasks`, `collaboration`, `mode-defaults`,
   `initialization-declaration`, `specialization-context`, `directive-references`,
   `tactic-references`, `toolguide-references`, `styleguide-references`,
   `self-review-protocol`, `model`, `effort`.
 - **CRG:** `agent_profile:<id>`. Lineage is a `specializes_from` edge in the graph, never a
   profile field; `delegates_to` edges declare runtime handoff.
-- **Selection:** the first entry of `roles` is the primary role, the rest alt-roles, and
-  `routing-priority` is the specificity level
-  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)). How a primary role and a
-  fallback profile are marked in this file is not yet decided.
+- **Roles:** `role` is the primary role and `alt-roles` an optional list of further roles, each
+  a lowercase token of letters, digits and hyphens, starting with a letter, at most 64
+  characters; alt-roles are distinct, never repeat `role` and are never `generic`. A step that
+  asks for a role finds a primary fit, which outranks any alt-role fit
+  ([ADR-0069](/adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles/)). The retired
+  `roles` list is no key of the schema.
+- **Fallback:** `generic` is reserved for the fallback profile a pack names in `fallback_profile`
+  in `pack.yaml`; it fits no role and is served only when no profile fits
+  ([ADR-0068](/adr/0068-a-pack-declares-its-fallback-profile/)).
+- **Selection:** `routing-priority` is the specificity level
+  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
 
 ### Mission step contract — `*.step-contract.yaml`
 
