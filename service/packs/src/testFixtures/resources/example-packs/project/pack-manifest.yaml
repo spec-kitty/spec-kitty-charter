@@ -1,6 +1,6 @@
 # The project pack's generated manifest (ADR-0042): its constituents and preset, each with its content hash.
 schema_version: "1.0"
-manifest_hash: 4ff847d215f9e35da6c89b4bba1f857f7ad41d508bb147380f2d73f8826c7e46
+manifest_hash: d84e7dcd2f369e89b4d92c8b68b50befb606651415af4f2114b1c6eccd079701
 constituents:
   - kind: directive
     id: PROJECT_001
@@ -9,7 +9,7 @@ constituents:
   - kind: styleguide
     id: reasons-canvas-writing
     path: styleguides/reasons-canvas-writing.styleguide.yaml
-    content_hash: 0781bd98ae7b70412fe8ae1c973571beedb8181a52aee5bbd8d657869cb8e4bc
+    content_hash: 06cd7b59d8d3c6c9409a35ec6449934d7144f1399db7ded579e83c509ec64a89
   - kind: agent_profile
     id: project-reviewer
     path: agent_profiles/project-reviewer.agent.yaml

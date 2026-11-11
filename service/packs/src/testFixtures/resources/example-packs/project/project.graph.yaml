@@ -1,12 +1,10 @@
-# The project pack's own edges: an overrides onto org-base's open styleguide, its directive's requirement,
-# and a signed impacts edge (the built-in shard's edges stay unsigned: the gate cannot register a strength yet).
+# The project pack's own edges: its directive's requirement and a signed impacts edge (the built-in shard's edges stay
+# unsigned: the gate cannot register a strength yet). Its styleguide overrides org-base's by sharing its id across
+# levels (a layer override, ADR-0053); an overrides edge onto it would resolve to its own source (self_override).
 schema_version: '1.0'
 generated_at: STATIC
 nodes: []
 edges:
-- source: styleguide:reasons-canvas-writing
-  target: org-base::styleguide:reasons-canvas-writing
-  relation: overrides
 - source: directive:PROJECT_001
   target: styleguide:reasons-canvas-writing
   relation: requires

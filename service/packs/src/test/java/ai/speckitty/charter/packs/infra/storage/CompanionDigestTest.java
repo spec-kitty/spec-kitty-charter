@@ -4,16 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -23,6 +26,10 @@ import org.junit.jupiter.api.io.TempDir;
  */
 @DisplayName("The source fingerprint digests companion files with their artifact (#192)")
 class CompanionDigestTest {
+
+    /** The built-in example's pack-level tail, digested last (ADR-0042 decision 9). */
+    private static final List<String> TAIL =
+            List.of("presets/default.yaml", "presets/minimal.yaml", "pack.md", "pack-manifest.yaml", "policy.yaml");
 
     private static final String PACK_YAML = """
             pack_id: 01M5YVECC0MPAN10ND1GEST00A
@@ -121,53 +128,51 @@ class CompanionDigestTest {
     }
 
     @Test
-    @Tag("open-packs")
     @DisplayName("binding skills adds nothing to the digest of a pack with no skill; only companions are Markdown")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
-        // The pinned qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
-        // styleguides, ...) and Markdown beside them, and no skill.
-        OpenPacksCorpus.assertPinned();
-        Path qa = OpenPacksCorpus.packsDirectory().resolve("qa");
-        Set<ArtifactKind> withoutSkills = EnumSet.copyOf(KindBindings.kinds());
-        withoutSkills.remove(ArtifactKind.SKILL);
+        // The built-in example (ADR-0070) holds every kind and Markdown beside them; a copy without its one skill is a
+        // pack with many kinds and no skill.
+        Path builtIn = builtInWithoutSkills();
+        Set<ArtifactKind> withoutSkills = withoutSkills();
 
-        List<String> digested = PackFileSet.digested(qa);
-        // #193 digests the pack's asset files (three .py payloads) and then its templates, last; #194 makes the mission
-        // type's templates templates. The preset the pin added (open-packs 7963b62, vendored by the re-vendor) is
-        // digested after them, as the pack-level tail (ADR-0042 decision 9): the digest ends with the payloads and it.
-        List<String> assetFiles = PackFileSet.assetFiles(qa);
-        List<String> payloads = new java.util.ArrayList<>(assetFiles);
-        payloads.addAll(PackFileSet.templates(qa));
-        payloads.add("presets/qa.yaml");
-        // #194: every file before them is YAML, except the companions: the three toolguide guides, each right after its
-        // toolguide, and the qa mission type's seven step prompts, right after the mission-type file in step order.
+        List<String> digested = PackFileSet.digested(builtIn);
+        // #193 digests the pack's asset files and then its templates; #194 makes the mission type's templates
+        // templates. The pack-level tail follows them (ADR-0042 decision 9): the presets, pack.md, the manifest and the
+        // policy.
+        List<String> assetFiles = PackFileSet.assetFiles(builtIn);
+        List<String> payloads = new ArrayList<>(assetFiles);
+        payloads.addAll(PackFileSet.templates(builtIn));
+        payloads.addAll(TAIL);
+        // #194: every file before them is YAML, except the companions: the toolguide's guide, right after its
+        // toolguide, the software-dev mission type's step prompts and guidelines, right after the mission-type file in
+        // step order, and the step enhancement's prompt fragment, right after the enhancement.
         List<String> beforeAssets = digested.subList(0, digested.size() - payloads.size());
         List<String> guides =
                 beforeAssets.stream().filter(file -> file.endsWith(".guide.md")).toList();
-        int type = beforeAssets.indexOf("missions/qa/qa.mission-type.yaml");
+        int type = beforeAssets.indexOf("missions/software-dev/software-dev.mission-type.yaml");
+        int fragment = beforeAssets.indexOf("missions/software-dev/enhancements/plan-risk-notes.prompt-fragment.md");
 
         assertThat(beforeAssets.stream().filter(file -> !file.endsWith(".yaml")))
-                .hasSize(10)
-                .allSatisfy(file ->
-                        assertThat(file).matches("toolguides/.*\\.guide\\.md|missions/qa/steps/.*\\.prompt\\.md"));
-        assertThat(beforeAssets.subList(type + 1, type + 8))
-                .containsExactly(
-                        "missions/qa/steps/discovery.prompt.md",
-                        "missions/qa/steps/specify.prompt.md",
-                        "missions/qa/steps/plan.prompt.md",
-                        "missions/qa/steps/tasks.prompt.md",
-                        "missions/qa/steps/implement.prompt.md",
-                        "missions/qa/steps/review.prompt.md",
-                        "missions/qa/steps/accept.prompt.md");
+                .hasSize(21)
+                .allSatisfy(file -> assertThat(file)
+                        .matches("toolguides/.*\\.guide\\.md|missions/software-dev/steps/.*\\.md"
+                                + "|missions/software-dev/enhancements/.*\\.prompt-fragment\\.md"));
+        assertThat(beforeAssets.subList(type + 1, type + 20))
+                .allSatisfy(file -> assertThat(file).startsWith("missions/software-dev/steps/"))
+                .startsWith(
+                        "missions/software-dev/steps/discovery.prompt.md",
+                        "missions/software-dev/steps/specify.prompt.md",
+                        "missions/software-dev/steps/specify.guidelines.md");
+        assertThat(beforeAssets.get(fragment - 1))
+                .isEqualTo("missions/software-dev/enhancements/plan-risk-notes.step-enhancement.yaml");
 
-        assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
-        assertThat(digested).hasSizeGreaterThan(10).endsWith(payloads.toArray(String[]::new));
-        assertThat(guides).hasSize(3).allSatisfy(guide -> {
+        assertThat(assetFiles).hasSize(4).noneSatisfy(file -> assertThat(file).endsWith(".md"));
+        assertThat(digested).hasSizeGreaterThan(21).endsWith(payloads.toArray(String[]::new));
+        assertThat(guides).hasSize(1).allSatisfy(guide -> {
             String toolguide = beforeAssets.get(beforeAssets.indexOf(guide) - 1);
             assertThat(toolguide).endsWith(".toolguide.yaml");
-            // The guide is the one the toolguide before it names, not merely some guide: read its id and guide_path
-            // (the file stem is no proxy, two qa toolguides' ids differ from their stems).
-            Map<?, ?> declared = yaml(qa, toolguide);
+            // The guide is the one the toolguide before it names, not merely some guide: read its id and guide_path.
+            Map<?, ?> declared = yaml(builtIn, toolguide);
             assertThat(guide)
                     .as("the guide after %s", toolguide)
                     .isEqualTo("toolguides/" + declared.get("id") + ".guide.md")
@@ -176,7 +181,35 @@ class CompanionDigestTest {
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
-                .containsExactlyElementsOf(PackFileSet.digested(qa, withoutSkills));
+                .containsExactlyElementsOf(PackFileSet.digested(builtIn, withoutSkills));
+    }
+
+    @Test
+    @DisplayName("failing control: with its skill, the built-in example digests more than without the skill kind")
+    void aPackWithASkillDigestsItsSkillAndBody() {
+        Path builtIn = ExamplePacks.pack(ExamplePacks.BUILT_IN);
+
+        List<String> digested = PackFileSet.digested(builtIn);
+
+        assertThat(digested).isNotEqualTo(PackFileSet.digested(builtIn, withoutSkills()));
+        assertThat(digested)
+                .containsSubsequence("skills/review-checklist.skill.yaml", "skills/review-checklist.skill.md");
+    }
+
+    private static Set<ArtifactKind> withoutSkills() {
+        Set<ArtifactKind> kinds = EnumSet.copyOf(KindBindings.kinds());
+        kinds.remove(ArtifactKind.SKILL);
+        return kinds;
+    }
+
+    private Path builtInWithoutSkills() throws IOException {
+        Path copy = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host.resolve("copy"));
+        try (Stream<Path> walk = Files.walk(copy.resolve("skills"))) {
+            for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        }
+        return copy;
     }
 
     private static Map<?, ?> yaml(Path pack, String relative) throws IOException {

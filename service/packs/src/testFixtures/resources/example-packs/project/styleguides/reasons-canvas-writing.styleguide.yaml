@@ -1,4 +1,4 @@
-# A project override of org-base's open styleguide (an overrides edge, project.graph.yaml).
+# A project override of org-base's open styleguide: the same id one level up (a layer override, ADR-0053).
 schema_version: '1.0'
 id: reasons-canvas-writing
 title: REASONS Canvas Writing (project override)

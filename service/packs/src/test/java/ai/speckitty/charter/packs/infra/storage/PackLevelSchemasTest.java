@@ -3,13 +3,12 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -254,31 +253,48 @@ class PackLevelSchemasTest {
                 .containsExactly("const at /schema_version");
     }
 
-    // ---- the pinned content -----------------------------------------------------------------------------------
+    // ---- the example content ------------------------------------------------------------------------------------
 
     /**
-     * The pinned built-in presets and manifest are in the sanitized shape: OP-1 and OP-2 landed upstream before the
-     * pin (open-packs commits 213a059 and cfc9971 moved the presets and the manifest to the shapes of ADR-0042), so
-     * the closed schemas accept each. A pinned file that is refused again, for any keyword, fails here.
+     * The example packs' presets (one per level, ADR-0070 decision 2) and manifests are in the sanitized shape
+     * (ADR-0042), so the closed schemas accept each. An example file that is refused, for any keyword, fails here; the
+     * control after them shows the same read refuses an example with one required field removed.
      */
     @Nested
-    @Tag("open-packs")
-    class PinnedContent {
+    class ExampleContent {
 
-        private String pinned(String file) throws IOException {
-            Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
-            return Files.readString(builtIn.resolve(file), StandardCharsets.UTF_8);
+        private String example(String file) throws IOException {
+            return Files.readString(ExamplePacks.packsDirectory().resolve(file), StandardCharsets.UTF_8);
         }
 
         @ParameterizedTest(name = "{0} is accepted")
-        @CsvSource({"presets/default.yaml", "presets/minimal.yaml"})
-        void aPinnedPresetIsAccepted(String file) throws IOException {
-            assertThat(preset(pinned(file))).as(file).isEmpty();
+        @CsvSource({
+            "built-in/presets/default.yaml",
+            "built-in/presets/minimal.yaml",
+            "org-base/presets/spdd.yaml",
+            "project/presets/project.yaml"
+        })
+        void anExamplePresetIsAccepted(String file) throws IOException {
+            assertThat(preset(example(file))).as(file).isEmpty();
+        }
+
+        @ParameterizedTest(name = "{0} is accepted")
+        @CsvSource({"built-in/pack-manifest.yaml", "project/pack-manifest.yaml"})
+        void anExampleManifestIsAccepted(String file) throws IOException {
+            assertThat(manifest(example(file))).as(file).isEmpty();
         }
 
         @Test
-        void thePinnedManifestIsAccepted() throws IOException {
-            assertThat(manifest(pinned("pack-manifest.yaml"))).isEmpty();
+        void failingControlAnExampleWithARequiredFieldRemovedIsRefused() throws IOException {
+            String manifest = example("built-in/pack-manifest.yaml");
+            String hashLine = manifest.lines()
+                    .filter(line -> line.startsWith("manifest_hash:"))
+                    .findFirst()
+                    .orElseThrow();
+            String preset = example("org-base/presets/spdd.yaml");
+
+            assertThat(manifest(manifest.replace(hashLine + "\n", ""))).isNotEmpty();
+            assertThat(preset(preset.replace("id: spdd\n", ""))).isNotEmpty();
         }
     }
 }
