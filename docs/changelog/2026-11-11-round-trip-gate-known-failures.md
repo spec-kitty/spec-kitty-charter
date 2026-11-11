@@ -15,7 +15,7 @@ audience:
     guidance_text: Read this before you add an entry to the whole-pack gate's expected-red.yaml, or when a qualified edge is refused as outside a depends_on closure.
 ---
 
-# 2026-11-11 — The round-trip gate has no known failures left
+# 2026-11-11 — The round-trip gate has no known failures left, for what it covers
 
 **The whole-pack round trip now writes `policy.yaml`**
 ([#476](https://github.com/spec-kitty/spec-kitty-charter/issues/476)). The gate writes a pack back through
@@ -27,13 +27,15 @@ example pack holds a policy that locks its fallback profile, so the gate listed 
   source pack declares, reads the written file back through the `policy` schema, and compares the two files by meaning
   (ADR-0036). A control test drops one locked entry before the write and turns the file red. The `policy`
   entry is gone from `whole-pack/expected-red.yaml`, and the list is empty.
-- **What did not change.** The production write path still copies the policy file as it was read
-  (`WholePackStore`). The new write is the gate's seam, like the preset and pack-document writes.
+- **What the empty list covers.** The gate attests the model writer: `PolicyYaml.write`, reached only through the test
+  seam `DomainRepositoryService.writePolicy`, like the preset and pack-document writes. The production write path
+  (`WholePackStore`) still copies the policy file as it was read, so the gate does not attest that copy; a store test
+  pins that the bytes equal the source. Writing the model there would reformat policy files and drop comments.
 
 **A qualified `overrides` edge onto a dependency's skill composes**
 ([#479](https://github.com/spec-kitty/spec-kitty-charter/issues/479)). The project example pack's edge from
 `skill:project-triage` onto `org-base::skill:issue-triage` was taken out after a refusal: "org-base is outside its
 depends_on closure". The refusal does not reproduce: with the edge in place, all three example packs compose. The
 refusal came from a compose test that removes the project pack's `depends_on` on purpose, and with it removed, the
-refusal is right. The edge is back in `project/project.graph.yaml`. That test now removes the edge too, and a new
+refusal (reason code `PACK_REFERENCE_PACK_MISSING`) is right. The edge is back in `project/project.graph.yaml`. That test now removes the edge too, and a new
 test pins the refusal when the dependency is gone.

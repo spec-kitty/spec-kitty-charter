@@ -21,7 +21,8 @@ import org.jspecify.annotations.Nullable;
  * The YAML form of a pack's mutability policy file, {@code policy.yaml} (ADR-0063): read through the bundled
  * {@code policy} schema into the domain's {@link MutabilityPolicySource}. The schema is closed, so every key the file
  * holds is one this reader maps: {@code kind_defaults} by artifact kind token, {@code artifacts} by bare URN, each to a
- * level, and written back from it ({@link #write}). Not a {@link YamlFormat}: the policy is a pack-level file, not a
+ * level, and written back from it ({@link #write}), which only the whole-pack gate's test seam calls: the production
+ * store copies the file as it was read. Not a {@link YamlFormat}: the policy is a pack-level file, not a
  * kind.
  */
 final class PolicyYaml {
