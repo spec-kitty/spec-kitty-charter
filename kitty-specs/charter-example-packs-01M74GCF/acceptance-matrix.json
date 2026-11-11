@@ -6,13 +6,13 @@
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "Verify FR-001 is satisfied",
+      "description": "Three charter-owned example packs (built-in, org-base, project) in canonical shape cover every artifact kind and level closure",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "service/packs/src/testFixtures/resources/example-packs (115 files); ExamplePackCoverageTest; ./gradlew --offline verifyAll -PrequireSymlinks=true (10,246 tests, 0 failures) @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:15:53.369420+00:00",
+      "notes": "115 files <= 150 (NFR-002). Verified by reviewer."
     },
     {
       "criterion_id": "FR-002",
