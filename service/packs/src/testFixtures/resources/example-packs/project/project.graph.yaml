@@ -1,6 +1,8 @@
-# The project pack's own edges: its directive's requirement and a signed impacts edge (the built-in shard's edges stay
-# unsigned: the gate cannot register a strength yet). Its styleguide overrides org-base's by sharing its id across
-# levels (a layer override, ADR-0053); an overrides edge onto it would resolve to its own source (self_override).
+# The project pack's own edges: its directive's requirement, a signed impacts edge (the built-in shard's edges stay
+# unsigned: the gate cannot register a strength yet) and a cross-level overrides edge from its triage skill onto
+# org-base's, which org-base's place in its depends_on closure allows (#479). Its styleguide overrides org-base's by
+# sharing its id across levels (a layer override, ADR-0053); an overrides edge onto it would resolve to its own source
+# (self_override).
 schema_version: '1.0'
 generated_at: STATIC
 nodes: []
@@ -12,3 +14,6 @@ edges:
   target: org-base::directive:DIRECTIVE_038
   relation: impacts
   impacts: 0.5
+- source: skill:project-triage
+  target: org-base::skill:issue-triage
+  relation: overrides
