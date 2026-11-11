@@ -85,8 +85,11 @@ public final class Relationship {
         return pack;
     }
 
+    // The package is @NullMarked, but the check stays: a relationship is built from parsed YAML and request bodies by
+    // callers NullAway does not see, and the constructor's contract is an IllegalArgumentException naming the field,
+    // not a NullPointerException later (RelationshipTest pins it).
     private static <T> T requireArg(T value, String name) {
-        if (value == null) {
+        if (value == null) { // NOSONAR java:S2583: unannotated callers can pass null; see above
             throw new IllegalArgumentException(name + " must not be null");
         }
         return value;
