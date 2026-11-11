@@ -35,7 +35,12 @@ tasks.withType<JavaCompile>().configureEach {
 // part of `check`.
 spotless {
     java {
-        target("src/main/java/**/*.java", "src/test/java/**/*.java", "src/testFixtures/java/**/*.java")
+        target(
+            "src/main/java/**/*.java",
+            "src/test/java/**/*.java",
+            "src/testFixtures/java/**/*.java",
+            "src/driftTest/java/**/*.java",
+        )
         palantirJavaFormat(catalog.version("palantir-java-format"))
         formatAnnotations()
     }
