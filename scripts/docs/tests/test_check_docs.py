@@ -320,3 +320,63 @@ def test_links_accept_generated_route_prefix_from_doc_rules_only(root: Path) -> 
     assert any("`/javadoc/../nope/` does not resolve" in m for m in messages)
     assert any("`/javadoc/%2e%2e/nope.html` does not resolve" in m for m in messages)
     assert any("`/javadoc%2Fx.html` does not resolve" in m for m in messages)
+
+
+# Heading ids as the site builds them (#134): github-slugger 2.0.0 over the heading's rendered text, which is what
+# Astro's heading-id step does. Each expected slug was produced that way (mdast-util-from-markdown 2.1.0 and
+# mdast-util-to-string 4.0.0 without raw HTML, the versions site/package-lock.json pins), not written by hand.
+SLUGGER_CASES = [
+    ("`requires_core` stays in `pack.yaml`", "requires_core-stays-in-packyaml"),
+    ("DIV-003: pack_level_missing, the diagnostic for a missing pack level",
+     "div-003-pack_level_missing-the-diagnostic-for-a-missing-pack-level"),
+    ("2026-11-01 — governance_policy_violation is marked raised, and the reserved-code test reads the contract",
+     "2026-11-01--governance_policy_violation-is-marked-raised-and-the-reserved-code-test-reads-the-contract"),
+    ("Option B: Open the DTOs (drop `additionalProperties: false`) to carry `_links`",
+     "option-b-open-the-dtos-drop-additionalproperties-false-to-carry-_links"),
+    ("`__all__` Declaration Convention", "__all__-declaration-convention"),
+    ("Keep `required_*` as the authoring form", "keep-required_-as-the-authoring-form"),
+    ("`activated_<kind>`", "activated_kind"),
+    ("`presets/<name>.yaml` — activation preset", "presetsnameyaml--activation-preset"),
+    ("Inter-step `depends_on` (a DAG, as core's runtime `PromptStep` had)",
+     "inter-step-depends_on-a-dag-as-cores-runtime-promptstep-had"),
+    ("DIV-014: Nested tactics under built-in/tactics/<sub>/", "div-014-nested-tactics-under-built-intactics"),
+    ("3.1 Pack registration & validation (`registration.domain`) — the heart of this design",
+     "31-pack-registration--validation-registrationdomain--the-heart-of-this-design"),
+    ("Mission step contract — `*.step-contract.yaml`", "mission-step-contract--step-contractyaml"),
+    ("A _quiet_ word", "a-quiet-word"),
+    ("__Strong__ text", "strong-text"),
+    ("See [the `pack_id` guide](/guides/x/) now", "see-the-pack_id-guide-now"),
+    ("snake_case and _leading", "snake_case-and-_leading"),
+    ("*star* and **bold** and a * alone", "star-and-bold-and-a--alone"),
+    ("Code `` a`b `` span", "code-ab-span"),
+    ("a \\_b\\_ c", "a-_b_-c"),
+    ("___both___ x", "both-x"),
+    ("Use \\<kind\\> here", "use-kind-here"),
+    ("snake\\_case", "snake_case"),
+    ("a \\*not\\* em", "a-not-em"),
+]
+
+
+@pytest.mark.parametrize(("heading", "slug"), SLUGGER_CASES)
+def test_slugify_matches_the_site_heading_id(heading: str, slug: str) -> None:
+    assert cd.slugify(heading) == slug
+
+
+def test_links_accept_an_anchor_that_keeps_underscores(root: Path) -> None:
+    rewrite(
+        root,
+        "docs/guides/one.md",
+        "## Setup\n\nSee [home](/) and [setup](#setup).",
+        "## `requires_core` stays in `pack.yaml`\n\nSee [home](/) and [it](#requires_core-stays-in-packyaml).",
+    )
+    assert run("links", root) == []
+
+
+def test_links_reject_the_anchor_that_drops_underscores(root: Path) -> None:
+    rewrite(
+        root,
+        "docs/guides/one.md",
+        "## Setup\n\nSee [home](/) and [setup](#setup).",
+        "## `requires_core` stays in `pack.yaml`\n\nSee [home](/) and [it](#requirescore-stays-in-packyaml).",
+    )
+    assert any("requirescore-stays-in-packyaml" in m.message for m in run("links", root))
