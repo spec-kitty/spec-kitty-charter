@@ -274,7 +274,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
-        "Forced: nothing to commit. None of the 11 :packs classes reads packs/qa or packs/internal; they pass in a worktree without the synced trees (180 tests, 0 failed). See traces."
+        "Forced: nothing to commit. None of the 11 :packs classes reads packs/qa or packs/internal; they pass in a worktree without the synced trees (180 tests, 0 failed). See traces.",
+        "Verified: no :packs/:deployable test reads packs/qa or packs/internal (repositoryRoot readers read src/main, schemas, docs). OpenPacksCorpus has no callers; charter.openPacksDir is wired by openPacksRoundTrip, wholePackRoundTrip and deployable openPacksProfiles, all removed by WP07."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
