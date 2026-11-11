@@ -106,6 +106,9 @@
       "last_event_id": "01M74JRW11W1RC0E8SS3X9ARVM",
       "last_transition_at": "2026-11-11T05:54:55.137458+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Governance amended; open-packs#188 filed"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 21632,
