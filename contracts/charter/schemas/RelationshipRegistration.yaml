@@ -15,8 +15,8 @@ properties:
     maxLength: 255
     description: The URN <kind>:<id> the relationship is authored from; must resolve within the pack.
     x-source:
-      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
-      symbol: Relationship.from
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
+      symbol: RelationshipWire.MAX_ENDPOINT_LENGTH
   to:
     allOf:
     - $ref: PackQualifiedReferenceWrite.yaml
