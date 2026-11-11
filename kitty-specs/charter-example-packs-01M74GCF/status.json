@@ -32,7 +32,8 @@
       "notes": [
         "Ready for review: self-tests green in packs and deployable; 98 files",
         "Review claimed",
-        "Release the review claim recorded as 'user' by mistake"
+        "Release the review claim recorded as 'user' by mistake",
+        "Approved by reviewer-renata: tests green, canonical shapes only, 102 files, jar-safe locator, non-vacuous checks. Minor: built-in pack-manifest.yaml missing (WP05 adds it); no root() accessor (packsDirectory() covers it); control deletes only pack.yaml (strengthen with an artifact-file deletion)."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
