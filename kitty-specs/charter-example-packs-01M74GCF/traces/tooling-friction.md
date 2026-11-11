@@ -41,3 +41,5 @@ Tooling this mission touches: Gradle (java-test-fixtures, Spotless, Checkstyle, 
 2026-11-11 · claude · Integration of WP02–WP04: no textual conflicts, but the round trip refused WP03's `impacts` graph edge (RelationshipMerge; filed #477), and Spotless stopped the first run before the tests ran, leaving stale results on disk. Pack-manifest hashes were regenerated through a throwaway test calling PackManifests.recompute: there is no task for it. Suggested fix: a Gradle task that recomputes example-pack manifests.
 
 2026-11-11 · claude · `move-task --to for_review` refuses a WP implemented in a side worktree and cherry-picked: no claim base is recorded when the claim is a plain `move-task --to in_progress`, so the for_review gate sees "no implementation commit since claim". Forced with a note. Suggested fix: let move-task record the claim base, or accept a commit range.
+
+2026-11-11 · claude · Review of WP02–WP04: `build/test-results` keeps XML from earlier `openPacks*` task runs, some failing, which inflates naive counts; count per task. The `agent action review` output prints the reject command before the approve one, which misleads.

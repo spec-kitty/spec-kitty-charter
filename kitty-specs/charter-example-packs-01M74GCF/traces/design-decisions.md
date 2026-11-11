@@ -17,3 +17,5 @@ Decisions recorded in decisions/ (DM records) and ADR-0070; this file logs the r
 2026-11-11 · claude · Integration: the `impacts` edge example moved from built-in to project/project.graph.yaml, which the round trip does not cover, and the built-in edge became `suggests` (gap filed as #477). This is a scope dodge to flag in review and to the operator, like `policy` (#476).
 
 2026-11-11 · claude · Integration loosened one WP04 skill rule to the examples' real mix: prompt skills have a body, wrapper skills have `expands_to`, at least one skill declares a side effect. For review to judge.
+
+2026-11-11 · reviewer-renata · WP02–WP04 approved. Restoring the built-in `impacts` edge turns wholePackRoundTrip red (2 of 8), so #477 is real and the move to project/ hides it; accepted as minor while #477 stays open. `delegation ≥1` is close to a presence check.
