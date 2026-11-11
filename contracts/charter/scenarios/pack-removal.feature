@@ -203,7 +203,7 @@ Feature: One artifact or one registered relationship is removed from a pack
     Examples: the pack, the kind, the artifact
       | path                                   | code                |
       | /packs/nope/artifacts/directive/D3     | pack_not_found      |
-      | /packs/qa/artifacts/procedure/D3       | kind_not_found      |
+      | /packs/qa/artifacts/template/D3        | kind_not_found      |
       | /packs/qa/artifacts/directive/NOPE     | directive_not_found |
       | /packs/qa/artifacts/agent_profile/NOPE | artifact_not_found  |
 

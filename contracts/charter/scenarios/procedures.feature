@@ -20,7 +20,7 @@ Feature: Procedures are read by pack and under an activation (#484)
       schema_version: '1.0'
       id: refactoring
       title: Refactoring
-      description: Change the structure, not the behaviour.
+      description: Change the structure, not the behavior.
       entry_condition: The tests pass.
       exit_condition: The tests still pass and the structure is simpler.
       steps:
