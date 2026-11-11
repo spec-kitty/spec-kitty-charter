@@ -414,10 +414,12 @@ abstract class LintContract : ContractToolTask() {
     fun lint() {
         // vacuum lints the bundle resolved, so keeping components (#294) roughly halves the lint, not more: on four
         // busy cores (the build's parallel tasks) the whole run took 6 to 7 seconds, and vacuum's default 5-second
-        // rule timeout skipped rules. 20 seconds keeps about three times that; the inlined bundle needed 60.
-        // A rule that times out is skipped, which the ERR check below refuses.
+        // rule timeout skipped rules. After the mission-type reads (#472) grew the contract, 20 seconds was no longer
+        // enough on busy CI runners: on main, a different rule timed out on each run, while the whole lint takes about
+        // 3.5 seconds on an idle machine. 60 seconds is the headroom the inlined bundle once needed.
+        // A rule that times out is skipped, which the ERR check below refuses, so a longer timeout never lets one pass.
         val (code, output) = run(vacuum.get().asFile.path, "lint", "--no-style", "--no-banner", "--no-update-check",
-            "--details", "--all-results", "--no-clip", "--timeout", "20", "--ruleset", ruleset.get().asFile.path,
+            "--details", "--all-results", "--no-clip", "--timeout", "60", "--ruleset", ruleset.get().asFile.path,
             bundle.get().asFile.path)
         report.get().asFile.writeText(output)
         // A ruleset vacuum could not read would lint against no rules and pass; the rule count rules that out.
