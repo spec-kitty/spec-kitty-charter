@@ -191,7 +191,8 @@
       "last_transition_at": "2026-11-11T07:43:57.726560+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "implementing in worktree"
+        "implementing in worktree",
+        "Forced: side-worktree implementation, cherry-picked (69e99f2cc + fix-up 31d9d451b). packs:test 4647, wholePackRoundTrip 8, deployable:test 1405 green."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
