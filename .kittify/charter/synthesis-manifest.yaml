@@ -8,7 +8,7 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/directive-project-intent-directive.yaml
   slug: project-intent-directive
-- content_hash: b678f83e5db7b76670f443323f9ca39562ff40ebe5c7e21e03b15e7d0ec46bf7
+- content_hash: 10d6285ae7038b525730a7041bc69073566cc4daa6a8dedc580e4f69c899405f
   kind: directive
   path: 
     .kittify/charter-packs/directive/002-risk-appetite-directive.directive.yaml
@@ -33,14 +33,14 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/styleguide-python-style-guide.yaml
   slug: python-style-guide
-- content_hash: 687a9849cbd372601dbd07998e9c80216eb3f66563d0bf874651002ccebffcf7
+- content_hash: 56320c6e942327c36448ddaecef578795e16608e0a8bed06975dac5950f99402
   kind: styleguide
   path: 
     .kittify/charter-packs/styleguide/quality-gates-style-guide.styleguide.yaml
   provenance_path: 
     .kittify/charter/provenance/styleguide-quality-gates-style-guide.yaml
   slug: quality-gates-style-guide
-- content_hash: 97d6878ac9b02ec70a199fb29692dfae5b28edb1bcddb7e3f70405225303a989
+- content_hash: 7c0799ec02497d62a609942ad1b06eba622a7b5a45ace1247aa2b3fe4773ce31
   kind: styleguide
   path: .kittify/charter-packs/styleguide/testing-style-guide.styleguide.yaml
   provenance_path: 
@@ -70,7 +70,7 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-directive-025.yaml
   slug: how-we-apply-directive-025
-- content_hash: d7526285c9573284b1c0c64046ef10125321af59b5837e00656127be8f6649ab
+- content_hash: 36d2e73ddff7f94a16a86fd20987e52de2673145bd6c151edcd35d004c805cc1
   kind: tactic
   path: .kittify/charter-packs/tactic/how-we-apply-directive-030.tactic.yaml
   provenance_path: 
@@ -119,13 +119,13 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-project-001.yaml
   slug: how-we-apply-project-001
-- content_hash: f7e3986cf2bef615399767eb7e74314c8b8ac858e3b23d734f12614e7afd7b48
+- content_hash: 678a5a033d79b024ec9e1a22625783f9249d1e847d959c8b417ad5858db283fb
   kind: tactic
   path: .kittify/charter-packs/tactic/how-we-apply-project-002.tactic.yaml
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-project-002.yaml
   slug: how-we-apply-project-002
-- content_hash: cdf939488d6cb4a2160c153ec4dbe1fa36b9f3721063a285fc1b3896f8b76044
+- content_hash: 5466175563a51099d6a2ef3c30de60c3ffd3555bc40417df9bb2346c40c3bdee
   kind: tactic
   path: .kittify/charter-packs/tactic/how-we-apply-qa-003.tactic.yaml
   provenance_path: .kittify/charter/provenance/tactic-how-we-apply-qa-003.yaml
@@ -149,7 +149,7 @@ artifacts:
   path: .kittify/charter-packs/tactic/review-policy-tactic.tactic.yaml
   provenance_path: .kittify/charter/provenance/tactic-review-policy-tactic.yaml
   slug: review-policy-tactic
-- content_hash: c69cb0213494b11c5a7cdc211394e0d6b742b13f7033e67963811774b416131f
+- content_hash: 45788fba24a1d614bdc9d1e907ccbffd1a903b89003f71292075ec71bf284aa3
   kind: tactic
   path: .kittify/charter-packs/tactic/testing-philosophy-tactic.tactic.yaml
   provenance_path: 
@@ -157,9 +157,9 @@ artifacts:
   slug: testing-philosophy-tactic
 built_in_only: false
 bundle_content_hash: 
-  sha256:0f867d212ad01d12167e868a8083f9c580f9a7ac009d5340d87117d111f55916
+  sha256:d3a6eec9e9ee89ae3834e60c90c8decaa7013cbd7942c9d0e1ef23d8a7b05cf1
 created_at: '2026-10-29T05:38:46.605828+00:00'
-manifest_hash: 40bb45108e556a86000271638206fb43628834b60ec95de000170e4805265a33
+manifest_hash: 9717a40e14891f53c6b636256746181b3b182ef8776749f28db7a58180e5bdfe
 mission_id:
 run_id: 01M632NYF4MPBMM1R3M9M8V69Q
 schema_version: '3'
