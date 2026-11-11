@@ -139,8 +139,11 @@ class ExampleCoverageTest {
     @Test
     void everyRaisedRefusalCodeIsProducedByAScenarioOrAnExamplePack(@TempDir Path scratch) throws Exception {
         Set<String> produced = producedCodes(scenarioTexts());
-        produced.add(storageFullCode(scratch));
-        produced.add(timedOutCode(scratch));
+        String storageFull = storageFullCode(scratch);
+        String timedOut = timedOutCode(scratch);
+        assertThat(List.of(storageFull, timedOut)).containsExactly("pack_storage_full", "registration_timed_out");
+        produced.add(storageFull);
+        produced.add(timedOut);
 
         assertThat(raisedCodes()).as("raised codes").isNotEmpty();
         assertThat(raisedCodes().stream()
