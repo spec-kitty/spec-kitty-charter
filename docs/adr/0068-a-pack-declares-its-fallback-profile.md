@@ -50,7 +50,7 @@ the pack's closure and is judged locked along it, and the fallback declares the 
 ## Decision
 
 1. **Declared in `pack.yaml`, not on the profile.** The descriptor gains an optional `fallback_profile: <profile-id>`
-   (a string, 1 to 64 characters, kebab-case). It is a fact about the pack, checked in one file, and a whole-pack
+   (a string, 1 to 64 characters, in the identifier grammar `^[a-z0-9][a-z0-9_-]*$`). It is a fact about the pack, checked in one file, and a whole-pack
    replace (ADR-0065) carries it with the rest of the pack. A flag on the profile would let several profiles of one
    closure claim the role and would need a rule to pick one. `null` is not a value: a pack that declares no fallback
    leaves the key out.
@@ -83,7 +83,7 @@ the pack's closure and is judged locked along it, and the fallback declares the 
    | `fallback_profile_not_locked` | the profile is not `locked` along the closure (decision 3) | `422` |
    | `fallback_profile_not_role_neutral` | the profile's role is not `generic`, or it declares alt-roles (decision 4) | `422` |
    | `fallback_profile_missing` | the built-in pack declares no fallback | `422`, reserved (`raised: false`) until open-packs ships the declaration |
-   | `fallback_profile_conflict` | two packs of one closure, neither derived from the other, declare different fallbacks | reserved for the selection read |
+   | `fallback_profile_conflict` | two packs of one closure, neither derived from the other, declare different fallbacks | `422`, reserved for the selection read |
    | `no_profile_matched` | no profile fits and no fallback is in force for the context (ADR-0032 decision 3.4) | reserved for the selection read, `404` |
 
    The three raised codes are judged over the declaring pack's own closure, with the write in place, by the

@@ -110,9 +110,15 @@ class ParadigmEntityTest {
                         .principles(List.of(new Principle(name64, desc255)))
                         .build())
                 .isNotNull();
+        assertThat(valid("ddd")
+                        .principles(List.of(new Principle("\uD83D\uDE00".repeat(40), "d")))
+                        .build())
+                .as("the caps count code points, as the schema's maxLength does: 40 emoji are 80 chars")
+                .isNotNull();
 
         for (Principle bad : List.of(
                 new Principle(" ", "d"),
+                new Principle("\u00A0", "d"),
                 new Principle("n", " "),
                 new Principle(name64 + "n", "d"),
                 new Principle("n", desc255 + "d"))) {

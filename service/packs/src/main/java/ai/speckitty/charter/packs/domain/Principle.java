@@ -31,12 +31,40 @@ public record Principle(String name, String description) {
     }
 
     /**
-     * The key two principles of one list must not share: the name, trimmed and lower-cased.
+     * The key two principles of one list must not share: the name, trimmed of white space as the schema's {@code \s}
+     * reads it, and lower-cased.
      *
      * @param name a principle name
      * @return its uniqueness key
      */
     public static String key(String name) {
-        return name.strip().toLowerCase(Locale.ROOT);
+        int start = 0;
+        int end = name.length();
+        while (start < end && isSpace(name.codePointAt(start))) {
+            start += Character.charCount(name.codePointAt(start));
+        }
+        while (end > start && isSpace(name.codePointBefore(end))) {
+            end -= Character.charCount(name.codePointBefore(end));
+        }
+        return name.substring(start, end).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Whether a text holds nothing but white space, as the schema's {@code pattern: \S} reads it.
+     *
+     * @param text the text
+     * @return {@code true} when every code point is white space (an empty text included)
+     */
+    public static boolean isBlank(String text) {
+        return text.codePoints().allMatch(Principle::isSpace);
+    }
+
+    /** The characters of ECMA-262 {@code \s}, which is what a JSON Schema {@code pattern} of {@code \S} tests. */
+    private static boolean isSpace(int codePoint) {
+        return switch (codePoint) {
+            case '\t', '\n', 0x0B, '\f', '\r', ' ', 0xA0, 0x1680, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF ->
+                true;
+            default -> codePoint >= 0x2000 && codePoint <= 0x200A;
+        };
     }
 }
