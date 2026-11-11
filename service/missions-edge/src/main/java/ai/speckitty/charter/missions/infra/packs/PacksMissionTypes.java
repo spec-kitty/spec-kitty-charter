@@ -3,10 +3,12 @@ package ai.speckitty.charter.missions.infra.packs;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
+import ai.speckitty.charter.missions.application.PackHolding;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
+import ai.speckitty.charter.packs.application.Revised;
 import ai.speckitty.charter.packs.domain.Payload;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,7 +38,18 @@ public final class PacksMissionTypes implements PackMissionTypes {
 
     @Override
     public MissionTypeHolding holding(PackIdentifier pack, String missionTypeId) {
-        MissionTypeHoldingRead.Holding held = reads.holding(pack, missionTypeId);
+        return holdingOf(reads.holding(pack, missionTypeId), pack, missionTypeId);
+    }
+
+    @Override
+    public PackHolding revised(PackIdentifier pack, String missionTypeId) {
+        Revised<MissionTypeHoldingRead.Holding> held = reads.revised(pack, missionTypeId);
+        return new PackHolding(
+                holdingOf(held.value(), pack, missionTypeId), held.revision().token());
+    }
+
+    private static MissionTypeHolding holdingOf(
+            MissionTypeHoldingRead.Holding held, PackIdentifier pack, String missionTypeId) {
         String read = "The read of the mission type " + missionTypeId + " in pack " + pack.value();
         MissionType type = MissionTypeNarrowing.narrowed(held.missionType(), read);
         Map<String, MissionTypeHolding.StepFiles> files = new LinkedHashMap<>();

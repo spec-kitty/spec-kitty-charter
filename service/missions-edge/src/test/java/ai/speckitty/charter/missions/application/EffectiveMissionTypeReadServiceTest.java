@@ -56,12 +56,23 @@ class EffectiveMissionTypeReadServiceTest {
             return stepContract;
         }
     };
-    private final PackMissionTypes packs = (pack, type) -> {
-        asked.add(pack.value() + ":" + type);
-        packRefusal.ifPresent(code -> {
-            throw new CharterRefusal(code, "pack " + pack.value() + ": " + code.token());
-        });
-        return holding(packFingerprint);
+    private final PackMissionTypes packs = new PackMissionTypes() {
+        @Override
+        public MissionTypeHolding holding(PackIdentifier pack, String type) {
+            asked.add(pack.value() + ":" + type);
+            packRefusal.ifPresent(code -> {
+                throw new CharterRefusal(code, "pack " + pack.value() + ": " + code.token());
+            });
+            return EffectiveMissionTypeReadServiceTest.holding(packFingerprint);
+        }
+
+        // An activation read never computes a pack revision (C-002): the call is recorded so a test can see it.
+        @Override
+        public PackHolding revised(PackIdentifier pack, String type) {
+            asked.add("revised " + pack.value() + ":" + type);
+            return new PackHolding(
+                    EffectiveMissionTypeReadServiceTest.holding(packFingerprint), "sha256:" + "e".repeat(64));
+        }
     };
     private final StepContracts contracts = (contract, read) -> view(contract.localId(), "specify");
     private final EffectiveMissionTypeReadService reads =
@@ -92,6 +103,15 @@ class EffectiveMissionTypeReadServiceTest {
                 .as("the merged closure's contract, not the holding pack's own")
                 .contains("specify-contract");
         assertThat(asked).containsExactly("a-1 software-dev", "proj:software-dev");
+    }
+
+    @Test
+    void noActivationReadAsksForThePackRevision() {
+        reads.missionType("a-1", "software-dev");
+        reads.step("a-1", "software-dev", "specify");
+        reads.skeleton("a-1", "software-dev", "spec.md");
+
+        assertThat(asked).noneMatch(call -> call.startsWith("revised "));
     }
 
     @Test

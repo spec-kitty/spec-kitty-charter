@@ -47,11 +47,12 @@ public final class MissionTypeReadService {
      *
      * @param pack the pack's identity
      * @param missionTypeId the mission type's id
-     * @return the mission type's view and the verified fingerprint
-     * @throws CharterRefusal as {@link PackMissionTypes#holding} refuses
+     * @return the mission type's view, the verified fingerprint and the pack revision
+     * @throws CharterRefusal as {@link PackMissionTypes#revised} refuses
      */
-    public Fingerprinted<MissionTypeView> missionType(PackIdentifier pack, String missionTypeId) {
-        return missionTypeOf(packs.holding(pack, missionTypeId));
+    public PackRead<MissionTypeView> missionType(PackIdentifier pack, String missionTypeId) {
+        PackHolding held = packs.revised(pack, missionTypeId);
+        return PackRead.of(missionTypeOf(held.holding()), held.revision());
     }
 
     /**
@@ -83,12 +84,13 @@ public final class MissionTypeReadService {
      * @param pack the pack's identity
      * @param missionTypeId the mission type's id
      * @param stepId the step's id
-     * @return the step's view and the verified fingerprint
-     * @throws CharterRefusal as {@link PackMissionTypes#holding} refuses, then with
+     * @return the step's view, the verified fingerprint and the pack revision
+     * @throws CharterRefusal as {@link PackMissionTypes#revised} refuses, then with
      *     {@link RefusalCode#ACTION_NOT_FOUND} when the type holds no such step
      */
-    public Fingerprinted<StepView> step(PackIdentifier pack, String missionTypeId, String stepId) {
-        return stepOf(packs.holding(pack, missionTypeId), scopeOf(pack), missionTypeId, stepId);
+    public PackRead<StepView> step(PackIdentifier pack, String missionTypeId, String stepId) {
+        PackHolding held = packs.revised(pack, missionTypeId);
+        return PackRead.of(stepOf(held.holding(), scopeOf(pack), missionTypeId, stepId), held.revision());
     }
 
     /**
@@ -138,12 +140,13 @@ public final class MissionTypeReadService {
      * @param pack the pack's identity
      * @param missionTypeId the mission type's id
      * @param name the skeleton's name
-     * @return the skeleton's view and the verified fingerprint
-     * @throws CharterRefusal as {@link PackMissionTypes#holding} refuses, then with
+     * @return the skeleton's view, the verified fingerprint and the pack revision
+     * @throws CharterRefusal as {@link PackMissionTypes#revised} refuses, then with
      *     {@link RefusalCode#SKELETON_NOT_FOUND} when the name does not decode to a skeleton of the type
      */
-    public Fingerprinted<SkeletonView> skeleton(PackIdentifier pack, String missionTypeId, String name) {
-        return skeletonOf(packs.holding(pack, missionTypeId), scopeOf(pack), missionTypeId, name);
+    public PackRead<SkeletonView> skeleton(PackIdentifier pack, String missionTypeId, String name) {
+        PackHolding held = packs.revised(pack, missionTypeId);
+        return PackRead.of(skeletonOf(held.holding(), scopeOf(pack), missionTypeId, name), held.revision());
     }
 
     /**

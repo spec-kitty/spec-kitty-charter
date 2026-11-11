@@ -19,6 +19,8 @@ import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService
 import ai.speckitty.charter.missions.application.EffectiveStepContract;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
+import ai.speckitty.charter.missions.application.PackHolding;
+import ai.speckitty.charter.missions.application.PackMissionTypes;
 import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
@@ -50,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 class EffectiveMissionTypesControllerTest {
 
     private static final String FINGERPRINT = "sha256:" + "c".repeat(64);
+    private static final String PACK_REVISION = "sha256:" + "e".repeat(64);
 
     /** specify, bound to software-dev's specify; its first step delegates to GUARD, which the closure holds, and NOPE. */
     private static final StepContractView STEP_CONTRACT = new StepContractView(
@@ -90,7 +93,18 @@ class EffectiveMissionTypesControllerTest {
                                                     FINGERPRINT);
                                         }
                                     },
-                                    (pack, type) -> holding(),
+                                    new PackMissionTypes() {
+                                        @Override
+                                        public MissionTypeHolding holding(PackIdentifier pack, String type) {
+                                            return EffectiveMissionTypesControllerTest.holding();
+                                        }
+
+                                        @Override
+                                        public PackHolding revised(PackIdentifier pack, String type) {
+                                            return new PackHolding(
+                                                    EffectiveMissionTypesControllerTest.holding(), PACK_REVISION);
+                                        }
+                                    },
                                     (contract, read) -> STEP_CONTRACT),
                             new MissionLinks("/api/v1")),
                     new GenericEffectiveRead())
@@ -118,6 +132,7 @@ class EffectiveMissionTypesControllerTest {
                 "/api/v1/activations/a-1/artifacts/mission_step_contract/specify")) {
             mvc.perform(get(path).header("If-None-Match", "*"))
                     .andExpect(status().isOk())
+                    // the holding pack's revision is at hand, yet an activation read never answers it (C-002)
                     .andExpect(header().doesNotExist("ETag"))
                     .andExpect(jsonPath("$.generic").doesNotExist());
             mvc.perform(head(path)).andExpect(status().isOk()).andExpect(header().doesNotExist("ETag"));
