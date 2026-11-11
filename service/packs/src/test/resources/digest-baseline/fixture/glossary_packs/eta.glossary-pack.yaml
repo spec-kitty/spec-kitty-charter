@@ -1,0 +1,8 @@
+description: The fixture's glossary pack.
+id: eta
+provenance: org
+terms:
+- confidence: 0.9
+  definition: A small pack that pins a digest.
+  status: active
+  surface: fixture

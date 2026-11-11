@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: m-first
+action: first
+mission: m
+steps:
+  - id: bootstrap
+    description: Load context for this action
+    command: "spec-kitty charter context --action first --mission-type m --json"

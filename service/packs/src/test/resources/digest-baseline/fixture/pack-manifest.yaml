@@ -1,0 +1,15 @@
+schema_version: '1.0'
+manifest_hash: f6c97528aec8cc397aa2ddd3a5b98378a000f6d238e861dd97ef1d4b2e615717
+constituents:
+  - kind: directive
+    id: GAMMA
+    path: directives/gamma.directive.yaml
+    content_hash: a2914445c6b81e150634d257ad045910bd6a826e224de59a6e15d305e4d8a6f5
+  - kind: tactic
+    id: alpha
+    path: tactics/alpha.tactic.yaml
+    content_hash: 35990eba441d65e2509e7a88739891f1b5ab44432a25f352327fd17b325c1dfb
+presets:
+  - id: default
+    path: presets/default.yaml
+    content_hash: 13981239e6987aff27cbb4ed10c8feac8b5ce878ef2bbd61e7dcb84dd925489d
