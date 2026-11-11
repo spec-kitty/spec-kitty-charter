@@ -31,7 +31,8 @@ class OpenPacksDriftTest {
 
     @Test
     void everyOpenPacksPackRoundTripsByMeaning(@TempDir Path host) throws IOException {
-        Path packs = Path.of(System.getProperty("charter.openPacksDir", "../spec-kitty-open-packs")).resolve("packs");
+        Path packs = Path.of(System.getProperty("charter.openPacksDir", "../spec-kitty-open-packs"))
+                .resolve("packs");
         assertThat(packs).as("the open-packs checkout's packs directory").isDirectory();
         List<Path> dirs;
         try (Stream<Path> list = Files.list(packs)) {
@@ -65,13 +66,7 @@ class OpenPacksDriftTest {
         Map<String, List<String>> information = new TreeMap<>();
         TreeSet<String> paired = new TreeSet<>();
         Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
-                new DomainRoundTrip(yaml),
-                pack,
-                written,
-                census,
-                information,
-                paired,
-                WholePackCensus.formsOf(pack));
+                new DomainRoundTrip(yaml), pack, written, census, information, paired, WholePackCensus.formsOf(pack));
         observed.forEach((path, red) -> red.ifPresent(r -> problems.add(name + ": " + path + ": " + r)));
         WholePackRoundTripTest.unpaired(written, paired)
                 .forEach(file -> problems.add(name + ": written but unpaired " + file));

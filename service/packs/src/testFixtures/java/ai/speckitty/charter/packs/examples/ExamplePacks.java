@@ -7,10 +7,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -21,7 +23,7 @@ import java.util.stream.Stream;
  * only canonical shapes; an invalid shape belongs to an error-handling fixture, never here.
  *
  * <p>The packs ship as classpath resources, inside a jar when another module reads them. On first use the tree is
- * copied once per JVM to a temporary directory, so every caller gets real paths it can walk; a test that changes a
+ * copied once per JVM to a temporary directory, deleted when the JVM exits, so every caller gets real paths it can walk; a test that changes a
  * file copies the pack again into its own temporary directory.
  */
 public final class ExamplePacks {
@@ -118,11 +120,10 @@ public final class ExamplePacks {
         }
         try {
             Path target = Files.createTempDirectory("example-packs");
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteTree(target)));
             URI uri = url.toURI();
             if ("jar".equals(uri.getScheme())) {
-                try (FileSystem jar = FileSystems.newFileSystem(uri, Map.of())) {
-                    copyTree(jar.getPath(RESOURCE), target);
-                }
+                copyOutOfJar(uri, target);
             } else {
                 copyTree(Path.of(uri), target);
             }
@@ -131,6 +132,36 @@ public final class ExamplePacks {
             throw new UncheckedIOException(e);
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    /** Copies out of the jar, whether this call mounts it or something else in the JVM has mounted it already. */
+    private static void copyOutOfJar(URI uri, Path target) throws IOException {
+        FileSystem jar;
+        boolean mounted;
+        try {
+            jar = FileSystems.newFileSystem(uri, Map.of());
+            mounted = true;
+        } catch (FileSystemAlreadyExistsException alreadyMounted) {
+            jar = FileSystems.getFileSystem(uri);
+            mounted = false;
+        }
+        try {
+            copyTree(jar.getPath(RESOURCE), target);
+        } finally {
+            if (mounted) {
+                jar.close();
+            }
+        }
+    }
+
+    private static void deleteTree(Path root) {
+        try (Stream<Path> walk = Files.walk(root)) {
+            for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException | UncheckedIOException e) {
+            // best effort on exit: the temporary directory is the operating system's to clean in the end
         }
     }
 

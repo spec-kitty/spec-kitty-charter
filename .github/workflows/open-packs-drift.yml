@@ -7,6 +7,7 @@ name: Open-packs drift (nightly)
 # expected-red baseline, so it can be red against today's open-packs.
 # - Schedule and workflow_dispatch only: no pull_request or push trigger, not a required check, and not in ci.yml's
 #   path routers. `driftTest` is its own source set: `check` and `verifyAll` compile and lint it but never run it.
+# - A green night closes the open issue with a comment, so the issue's state is the watch's state.
 # - A drift (the test failed) or a build failure (the drift test did not compile or Gradle failed before it ran) opens
 #   one issue labelled `open-packs-drift`, or comments on the open one, and says which of the two it was.
 
@@ -107,4 +108,29 @@ jobs:
           else
             gh issue create --repo "$REPO" --label "$label" \
               --title "Open-packs drift: charter's loader rejects spec-kitty-open-packs main" --body-file "$body"
+          fi
+
+  # A green night means the loader accepts open-packs main again: close the open issue and say which run did.
+  recover:
+    needs: drift
+    if: needs.drift.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Close the open-packs-drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          label=open-packs-drift
+          issue="$(gh issue list --repo "$REPO" --label "$label" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --repo "$REPO" --reason completed \
+              --comment "Resolved: spec-kitty-open-packs main loads through charter's loader again. Run: $RUN_URL"
           fi
