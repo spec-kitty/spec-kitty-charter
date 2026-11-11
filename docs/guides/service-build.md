@@ -181,12 +181,19 @@ not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` l
 
 **The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
 90-minute timeout, 80 of them for the mutation step. It syncs the packs at the pin, then runs
-`./gradlew pitest --continue`. Whatever the result, it runs the summary script's unit tests,
-`scripts/ci/mutation_summary.py` turns every `floors.json` into a job-summary table (score, strength, uncovered
-mutants, floor, verdict and the classes with the most surviving or uncovered mutants), and every module's report goes
+`./gradlew mutationModules pitest --continue`. `mutationModules` writes the list of modules that apply
+`charter.mutation-conventions` (#388). Whatever the result, it runs the summary script's unit tests,
+`scripts/ci/mutation_summary.py --modules` turns every listed module's `floors.json` into a job-summary table (score,
+strength, uncovered and timed-out mutants, floor, margin to the floor, verdict and the classes with the most surviving
+or uncovered mutants), shows "no report" for a listed module that wrote none, and quotes PIT's lines about any test
+that fails with no mutation applied (#461). The module list, the step's output (`pitest.log`) and every module's report go
 up as the `mutation-report` artifact, kept for 14 days. When a scheduled run does not
 succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
 `workflow_dispatch` with `force_issue` tests that path.
+
+**Never in the required check.** PIT runs only in the nightly (ADR-0060). The root build fails any invocation in which
+`verifyAll` or a `check` depends on `pitest` or `checkMutationFloors`, and build-logic's `MutationWorkflowGuardTest`
+pins the nightly's triggers and that no other workflow runs PIT (#387).
 
 **A surviving mutant** is triaged in this order: kill it by strengthening an existing test's assertion; mark it
 equivalent, with a one-line reason; or accept it, naming an owner. Never add a test whose only purpose is killing a

@@ -2,7 +2,7 @@
 title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -277,3 +277,28 @@ measured for this module yet, so the table states no margin. The group mutates
 packages (`application.config`, `infra.api.config`, `infra.packs.config`, `infra.activations.config`). These packages
 live in a different module from the `missions` group's `ai.speckitty.charter.missions`, so the two scopes do not
 overlap. The nightly's `./gradlew pitest` already reaches the module. The other floors are unchanged.
+
+## Amendment, 2026-11-11 (#387, #388, #389): the nightly guards its own scope and shows its margins
+
+No floor and no decision changes. The three follow-ups the operator ruled from the first squad are delivered as one
+change:
+
+- **Mutation testing stays out of the required check (#387).** The root build checks the task graph of every invocation:
+  when `verifyAll` or any `check` depends on `pitest` or `checkMutationFloors`, however indirectly, the invocation fails
+  before it runs (`MutationIsolation` in build-logic). Build-logic's `MutationWorkflowGuardTest` pins that
+  `mutation-nightly.yml` has only the schedule and `workflow_dispatch` triggers, that no other workflow calls it or
+  waits for it, and that no other workflow runs PIT or the floor check.
+- **The module list comes from the build (#388).** `./gradlew mutationModules` writes
+  `build/reports/mutation-floors/modules.txt`, one directory per module that applies `charter.mutation-conventions`.
+  The nightly runs it beside `pitest`, and `scripts/ci/mutation_summary.py --modules` reads it, so a module whose PIT
+  run writes no `floors.json` still gets its "no report" row. The hand-kept list is gone. It had already missed
+  `:missions-edge`: the 2026-11-11 nightly showed no row for it. Without the list, the summary says so and is never
+  green.
+- **Margins and timed-out mutants are shown (#389).** `floors.json` gains `timedOut`, `marginMutants` (the detected
+  mutants a group can lose and still pass, negative when below its floor) and `marginPoints` (the printed score minus
+  the floor). The summary table shows them as the "Timed out" and "Margin" columns, so a slide shows before a floor
+  trips.
+- **A red night names its failing test (#461).** The mutation step's output is kept as
+  `build/reports/mutation-floors/pitest.log` in the `mutation-report` artifact (14 days), and the summary, which the
+  alert issue quotes, lists PIT's lines about tests that fail with no mutation applied. Such a test leaves its module
+  without a report. On 2026-11-11 the job log that named one returned errors and then expired before anyone read it.

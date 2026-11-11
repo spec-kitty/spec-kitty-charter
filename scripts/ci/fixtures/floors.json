@@ -10,9 +10,12 @@
       "detected": 9,
       "survived": 1,
       "noCoverage": 0,
+      "timedOut": 0,
       "score": 90.0,
       "strength": 90.0,
       "floor": 85,
+      "marginMutants": 0,
+      "marginPoints": 5.0,
       "passed": true,
       "topClasses": [
         {"class": "ai.speckitty.charter.packs.domain.Pack", "survived": 1, "noCoverage": 0}
@@ -26,9 +29,12 @@
       "detected": 3,
       "survived": 0,
       "noCoverage": 1,
+      "timedOut": 0,
       "score": 75.0,
       "strength": 100.0,
       "floor": 85,
+      "marginMutants": -1,
+      "marginPoints": -10.0,
       "passed": false,
       "topClasses": [
         {"class": "ai.speckitty.charter.packs.infra.storage.FileStore", "survived": 0, "noCoverage": 1}

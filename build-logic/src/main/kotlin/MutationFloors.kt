@@ -38,10 +38,14 @@ import org.gradle.work.DisableCachingByDefault
  * either cannot be found is counted as unreadable, and a report with any unreadable element is refused rather than
  * scored on fewer mutants.
  *
+ * **Margin.** How close a group is to its floor (#389): `marginMutants` is how many detected mutants it can lose and
+ * still pass (negative: how many it must gain), and `marginPoints` is its printed score minus its floor, in points.
+ * `timedOut` counts the TIMED_OUT mutants, which count as detected but are often noise from a loaded runner.
+ *
  * **Summary.** [evaluate] gives the summary, `build/reports/mutation-floors/floors.json` in a module (its own output
  * directory, outside PIT's report directory): one entry per group with `mutants`, `detected`, `survived`,
- * `noCoverage`, `score`, `strength`, `floor`, `passed` and the [TOP_CLASSES] classes with the most surviving and
- * uncovered mutants.
+ * `noCoverage`, `timedOut`, `score`, `strength`, `floor`, `marginMutants`, `marginPoints`, `passed` and the
+ * [TOP_CLASSES] classes with the most surviving and uncovered mutants.
  */
 object MutationFloors {
 
@@ -50,6 +54,7 @@ object MutationFloors {
 
     private const val SURVIVED = "SURVIVED"
     private const val NO_COVERAGE = "NO_COVERAGE"
+    private const val TIMED_OUT = "TIMED_OUT"
 
     /** Where the floor and its raise rule are recorded, quoted in every failure. */
     private const val REFERENCE = "(#239, ADR-0062)"
@@ -115,6 +120,7 @@ object MutationFloors {
         val detected: Int,
         val survived: Int,
         val noCoverage: Int,
+        val timedOut: Int,
         val topClasses: List<ClassGaps>,
     ) {
         /** Detected over all mutants, in percent; 0 for a group without mutants. */
@@ -123,6 +129,20 @@ object MutationFloors {
         /** Detected over covered mutants (all minus NO_COVERAGE), in percent; 0 when nothing is covered. */
         val strength: Double
             get() = (mutants - noCoverage).let { covered -> if (covered == 0) 0.0 else detected * 100.0 / covered }
+
+        /**
+         * The detected mutants the group can lose and still pass: [detected] minus the fewest that pass, which is
+         * `ceil(floor * mutants / 100)`. Negative when it fails: the mutants it must gain.
+         */
+        val marginMutants: Int
+            get() = (detected - (group.floor.toLong() * mutants + 99) / 100).toInt()
+
+        /**
+         * The printed score minus the floor, in points to one decimal: the score is truncated as [percent] prints it,
+         * so a group below its floor never reads as 0.0.
+         */
+        val marginPoints: String
+            get() = points(tenths(detected, mutants) - group.floor * 10L)
 
         /** Whether the group has mutants and its exact score is at or above its floor. */
         val passes: Boolean get() = mutants > 0 && detected.toLong() * 100 >= group.floor.toLong() * mutants
@@ -211,6 +231,7 @@ object MutationFloors {
             detected = mine.count { it.status in DETECTED },
             survived = mine.count { it.status == SURVIVED },
             noCoverage = mine.count { it.status == NO_COVERAGE },
+            timedOut = mine.count { it.status == TIMED_OUT },
             topClasses = topClasses,
         )
     }
@@ -237,10 +258,13 @@ object MutationFloors {
             append("      \"detected\": ").append(result.detected).append(",\n")
             append("      \"survived\": ").append(result.survived).append(",\n")
             append("      \"noCoverage\": ").append(result.noCoverage).append(",\n")
+            append("      \"timedOut\": ").append(result.timedOut).append(",\n")
             append("      \"score\": ").append(percent(result.detected, result.mutants)).append(",\n")
             append("      \"strength\": ")
                 .append(percent(result.detected, result.mutants - result.noCoverage)).append(",\n")
             append("      \"floor\": ").append(result.group.floor).append(",\n")
+            append("      \"marginMutants\": ").append(result.marginMutants).append(",\n")
+            append("      \"marginPoints\": ").append(result.marginPoints).append(",\n")
             append("      \"passed\": ").append(result.passes).append(",\n")
             append("      \"topClasses\": [")
             result.topClasses.forEachIndexed { classIndex, gaps ->
@@ -260,10 +284,16 @@ object MutationFloors {
      * [numerator] over [denominator] in percent, truncated (never rounded) to one decimal, as the failure line, the
      * log and the summary print it; 0.0 when [denominator] is 0. Integer arithmetic, so 65 % is never 64.9 %.
      */
-    fun percent(numerator: Int, denominator: Int): String {
-        if (denominator <= 0) return "0.0"
-        val tenths = numerator.toLong() * 1000 / denominator
-        return "${tenths / 10}.${tenths % 10}"
+    fun percent(numerator: Int, denominator: Int): String = points(tenths(numerator, denominator))
+
+    /** [numerator] over [denominator] in tenths of a percent, truncated; 0 when [denominator] is 0. */
+    private fun tenths(numerator: Int, denominator: Int): Long =
+        if (denominator <= 0) 0 else numerator.toLong() * 1000 / denominator
+
+    /** Tenths written as a decimal with one digit after the point, a minus sign when negative. */
+    private fun points(tenths: Long): String {
+        val magnitude = kotlin.math.abs(tenths)
+        return "${if (tenths < 0) "-" else ""}${magnitude / 10}.${magnitude % 10}"
     }
 
     private fun quote(text: String): String = buildString {

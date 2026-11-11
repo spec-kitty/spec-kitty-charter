@@ -12,6 +12,34 @@ tasks.register("verifyAll") {
     dependsOn(gradle.includedBuild("build-logic").task(":check"))
 }
 
+// The modules under the nightly mutation floor, as the build sees them (#388): every project that applies
+// charter.mutation-conventions. mutation-nightly.yml runs this beside pitest and gives the file to the summary script.
+val mutationModuleDirs = objects.listProperty<String>()
+subprojects {
+    pluginManager.withPlugin("charter.mutation-conventions") {
+        mutationModuleDirs.add(projectDir.relativeTo(rootDir).invariantSeparatorsPath)
+    }
+}
+tasks.register<WriteMutationModules>("mutationModules") {
+    group = "verification"
+    description = "Lists the modules under the nightly mutation floor, for mutation-nightly.yml's summary (#388)."
+    modules = mutationModuleDirs
+    output = layout.buildDirectory.file("reports/mutation-floors/modules.txt")
+}
+
+// Mutation testing runs only in the nightly, never in verifyAll or a module's check (ADR-0060, #387): any invocation
+// whose graph has a gate reaching pitest or checkMutationFloors, through dependencies or finalizers however indirectly,
+// fails before it runs.
+gradle.taskGraph.whenReady {
+    val graph = this
+    val byPath = allTasks.associateBy { it.path }
+    MutationIsolation.violation(byPath.keys) { path ->
+        byPath[path]?.let { task ->
+            (graph.getDependencies(task) + task.finalizedBy.getDependencies(task)).map { it.path }
+        }.orEmpty()
+    }?.let { throw GradleException(it) }
+}
+
 // Syncs packs/internal and packs/qa from the spec-kitty-open-packs commit pinned by openPacksRef (gradle.properties) and
 // verifies them against packs/open-packs.lock.yaml. They are not committed: run it once per worktree. The work is
 // scripts/packs/sync_packs.py, which CI runs through this task as well. Source: -PopenPacksDir (absolute, or relative to

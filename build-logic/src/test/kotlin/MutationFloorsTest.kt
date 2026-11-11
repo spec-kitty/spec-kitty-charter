@@ -188,6 +188,51 @@ class MutationFloorsTest {
     }
 
     @Test
+    fun theMarginIsTheDetectedMutantsAGroupCanLoseAndStillPassAndItsPointsOverTheFloor() {
+        // 70 of 100 against 65 %: 65 must be detected, so 5 can be lost; 70.0 - 65 = +5.0 points.
+        val over = scoreKernel(killed = 70, survived = 30, noCoverage = 0)
+        assertThat(over.marginMutants).isEqualTo(5)
+        assertThat(over.marginPoints).isEqualTo("5.0")
+
+        // 13 of 20 is exactly 65 %: one lost mutant fails it.
+        val at = scoreKernel(killed = 13, survived = 5, noCoverage = 2)
+        assertThat(at.marginMutants).isZero()
+        assertThat(at.marginPoints).isEqualTo("0.0")
+
+        // 5 of 7 against 65 %: 4.55 must be detected, so 5 must, and none can be lost; 71.4 - 65 = 6.4 points.
+        val rounded = scoreKernel(killed = 5, survived = 2, noCoverage = 0)
+        assertThat(rounded.marginMutants).isZero()
+        assertThat(rounded.marginPoints).isEqualTo("6.4")
+
+        // Below the floor the margin is negative: the mutants it must gain, and the points it lacks, truncated as the
+        // score is (64.95 % reads 64.9 %, so -0.1 points, never -0.0).
+        val under = scoreKernel(killed = 1299, survived = 701, noCoverage = 0)
+        assertThat(under.marginMutants).isEqualTo(-1)
+        assertThat(under.marginPoints).isEqualTo("-0.1")
+        assertThat(scoreKernel(killed = 64, survived = 36, noCoverage = 0).marginPoints).isEqualTo("-1.0")
+    }
+
+    @Test
+    fun timedOutMutantsAreCountedApartThoughTheyCountAsDetected() {
+        val xml = mutations(
+            mutation("ai.speckitty.charter.kernel.domain.A", "KILLED"),
+            mutation("ai.speckitty.charter.kernel.domain.A", "TIMED_OUT"),
+            mutation("ai.speckitty.charter.kernel.domain.A", "TIMED_OUT"),
+            mutation("ai.speckitty.charter.kernel.domain.A", "SURVIVED"),
+        )
+
+        val result = MutationFloors.score(MutationFloors.parse(xml).mutants, listOf(kernel)).single()
+
+        assertThat(result.timedOut).isEqualTo(2)
+        assertThat(result.detected).isEqualTo(3)
+        assertThat(MutationFloors.toJson(":kernel", 4, listOf(result))).contains(
+            "\"timedOut\": 2,\n",
+            "\"marginMutants\": 0,\n",
+            "\"marginPoints\": 10.0,\n",
+        )
+    }
+
+    @Test
     fun aFailingScoreIsTruncatedNeverRoundedUpToItsFloor() {
         // 1299 of 2000 is 64.95 %: rounded to one decimal it would read 65.0 %, its floor.
         val result = scoreKernel(killed = 1299, survived = 701, noCoverage = 0)
