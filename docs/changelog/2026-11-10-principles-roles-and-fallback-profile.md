@@ -25,9 +25,12 @@ are retired with no window, and open-packs follows before its pin moves.
 
 - **Named principles** ([ADR-0067](/adr/0067-paradigms-and-styleguides-state-named-principles/)). Before: a paradigm
   had no principles, and a styleguide's were plain strings. After: both use one element, `{name, description}`; a
-  paradigm's list is optional, a styleguide's required; names are unique within a list; there is no count cap.
+  paradigm's list is optional, a styleguide's required; names are unique within a list, ignoring case and surrounding white space (no-break spaces included);
+  lengths count characters, not UTF-16 units; there is no count cap.
 - **One primary role** ([ADR-0069](/adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles/)). Before: a
   positional `roles` list. After: `role` and optional `alt-roles`; a primary-role fit outranks every alt-role fit.
+  The reserved role `generic` cannot be an alt-role.
 - **A declared fallback profile** ([ADR-0068](/adr/0068-a-pack-declares-its-fallback-profile/)). Before: no way to
   declare one. After: `fallback_profile` in `pack.yaml`, held in the pack's closure, locked along it, with
-  `role: generic`; a registration that breaks it is refused with its own code.
+  `role: generic`; a registration that breaks it is refused with its own code. That includes a write to
+  a pack the fallback depends on: unlocking or removing the profile, or changing its role, is refused for every pack that names it.
