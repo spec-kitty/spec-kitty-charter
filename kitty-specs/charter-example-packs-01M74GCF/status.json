@@ -1,7 +1,7 @@
 {
-  "event_count": 10,
-  "last_event_id": "01M74H5GA4SBQYHP2DAN3M5QJ5",
-  "materialized_at": "2026-11-11T05:26:51.972417+00:00",
+  "event_count": 12,
+  "last_event_id": "01M74H6WMGB2JDQEY9ZR7JZG9N",
+  "materialized_at": "2026-11-11T05:27:37.358256+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -13,17 +13,26 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 10
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M74H55K802SWR4T4T5QH5CHZ",
-      "last_transition_at": "2026-11-11T05:26:41.000386+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M74H6WMGB2JDQEY9ZR7JZG9N",
+      "last_transition_at": "2026-11-11T05:27:37.358256+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 15441,
+      "shell_pid_created_at": "1794374853.24"
     },
     "WP02": {
       "actor": "finalize-tasks",
