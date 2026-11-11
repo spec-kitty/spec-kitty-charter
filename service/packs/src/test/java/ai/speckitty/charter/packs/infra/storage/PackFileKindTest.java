@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -433,17 +433,15 @@ class PackFileKindTest {
     /**
      * A {@code markdown} rule is a {@code files} rule, so it outranks every exclusion and payload rule: a rule such as
      * {@code **}{@code /*.md} would turn an excluded assets README and every Markdown template or asset into a
-     * schema'd Markdown file. The table load checks no overlap, so this does: no bundled {@code markdown} rule (none at
-     * the pin) may match a path an exclusion or a payload rule matches, over the sample paths here and every file of
-     * the pinned open-packs packs. It fails as soon as an overlapping {@code markdown} rule is added (ADR-0040,
-     * 2026-10-29). Runs under {@code :packs:openPacksRoundTrip}, which supplies the checkout.
+     * schema'd Markdown file. The table load checks no overlap, so this does: no bundled {@code markdown} rule (none
+     * today) may match a path an exclusion or a payload rule matches, over the sample paths here and every file of the
+     * example packs (ADR-0070). It fails as soon as an overlapping {@code markdown} rule is added (ADR-0040,
+     * 2026-10-29); the test after it is its failing control, over the example packs' files too.
      */
     @Test
-    @Tag("open-packs")
     void noBundledMarkdownRuleMatchesAPathAnExclusionOrAPayloadRuleMatches() throws IOException {
-        OpenPacksCorpus.assertPinned();
         List<String> paths = samplePaths();
-        paths.addAll(pinnedPackPaths());
+        paths.addAll(examplePackPaths());
         assertThat(markdownOverlaps(KINDS, paths)).isEmpty();
     }
 
@@ -458,6 +456,10 @@ class PackFileKindTest {
                         "**/*.md matches built-in/assets/audiences/line_manager.md, a payload of */assets/**/*",
                         "**/*.md matches built-in/templates/writing/meeting-minutes.md, a payload of */templates/**/*");
         assertThat(markdownOverlaps(withMarkdownRule("*/notes/*.md"), samples)).isEmpty();
+        assertThat(markdownOverlaps(withMarkdownRule("**/*.md"), examplePackPaths()))
+                .as("the example packs alone hold a Markdown payload an overlapping rule would claim")
+                .contains(
+                        "**/*.md matches built-in/templates/writing/meeting-minutes.md, a payload of */templates/**/*");
     }
 
     /** Every sample exclusion and payload path. */
@@ -467,9 +469,9 @@ class PackFileKindTest {
         return paths;
     }
 
-    /** Every file of the pinned open-packs packs, relative to {@code packs/}. */
-    private static List<String> pinnedPackPaths() throws IOException {
-        Path packs = OpenPacksCorpus.packsDirectory();
+    /** Every file of the example packs, relative to the directory that holds them. */
+    private static List<String> examplePackPaths() throws IOException {
+        Path packs = ExamplePacks.packsDirectory();
         try (Stream<Path> walk = Files.walk(packs)) {
             return walk.filter(Files::isRegularFile)
                     .map(p -> packs.relativize(p).toString().replace('\\', '/'))

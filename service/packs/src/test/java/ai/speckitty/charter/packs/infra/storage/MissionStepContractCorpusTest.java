@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.MeaningComparator.Difference;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -11,23 +12,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Every mission step contract of the pinned open-packs checkout round-trips by meaning (ADR-0036): read, mapped to the
- * domain and back, written, and compared with its source text. It covers the {@code qa} pack too, which no pack-level
- * gate loads because it has no {@code pack.yaml}.
+ * Every mission step contract of the example packs round-trips by meaning (ADR-0036): read, mapped to the
+ * domain and back, written, and compared with its source text.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
- * skips.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-@DisplayName("Every pinned mission step contract round-trips by meaning (#191)")
+@DisplayName("Every example mission step contract round-trips by meaning (#191)")
 class MissionStepContractCorpusTest {
 
     private static final String KIND = "mission-step-contract";
@@ -36,7 +34,7 @@ class MissionStepContractCorpusTest {
     private final SerializationStrategy yaml = new YamlSerializationStrategy();
 
     @Test
-    @DisplayName("every step contract in the checkout reads, writes and read back with their meaning unchanged")
+    @DisplayName("every example step contract reads, writes and reads back with its meaning unchanged")
     void everyPinnedContractRoundTrips() throws IOException {
         List<Path> files = contracts();
         List<String> problems = new ArrayList<>();
@@ -53,9 +51,8 @@ class MissionStepContractCorpusTest {
         }
 
         assertThat(problems).as("step contracts that do not round-trip").isEmpty();
-        assertThat(files).as("step contract files in the checkout").isNotEmpty();
-        OpenPacksCorpus.assertAllPacksPresent();
-        OpenPacksCorpus.assertEachPackHolds("step contract", files, "built-in", "qa");
+        assertThat(files).as("step contract files in the example packs").isNotEmpty();
+        PackFiles.assertEachPackHolds("step contract", files, ExamplePacks.BUILT_IN);
     }
 
     @Test
@@ -65,20 +62,44 @@ class MissionStepContractCorpusTest {
         int guidance = 0;
         int commands = 0;
         int delegations = 0;
+        int[] declared = new int[4];
         for (Path file : contracts()) {
-            MissionStepContractDso dso = read(file, Files.readString(file, StandardCharsets.UTF_8));
+            String text = Files.readString(file, StandardCharsets.UTF_8);
+            MissionStepContractDso dso = read(file, text);
             gates += dso.gates().size();
             for (MissionStepContractDso.Step step : dso.steps()) {
                 guidance += step.guidance().isPresent() ? 1 : 0;
                 commands += step.command().isPresent() ? 1 : 0;
                 delegations += step.delegatesTo().isPresent() ? 1 : 0;
             }
+            declare(text, declared);
         }
 
-        assertThat(gates).as("gate bindings").isPositive();
-        assertThat(guidance).as("steps with guidance").isGreaterThanOrEqualTo(10);
-        assertThat(commands).as("steps with a command").isGreaterThanOrEqualTo(46);
-        assertThat(delegations).as("steps with a delegation").isGreaterThanOrEqualTo(101);
+        // What the files on disk declare, read as raw YAML without the binding: the reader drops nothing.
+        assertThat(new int[] {gates, guidance, commands, delegations})
+                .as("gates, guidance, commands, delegations read against those the files declare")
+                .containsExactly(declared);
+        // The true counts of the example packs: a change that drops items from them goes red here.
+        assertThat(gates).as("gate bindings").isEqualTo(1);
+        assertThat(guidance).as("steps with guidance").isEqualTo(5);
+        assertThat(commands).as("steps with a command").isEqualTo(10);
+        assertThat(delegations).as("steps with a delegation").isEqualTo(26);
+    }
+
+    /** Adds the gates and the steps' guidance, command and delegates_to keys one file declares, read as raw YAML. */
+    private static void declare(String text, int[] declared) {
+        Map<?, ?> contract = (Map<?, ?>) Yaml.load(text);
+        if (contract.get("gates") instanceof List<?> gates) {
+            declared[0] += gates.size();
+        }
+        if (contract.get("steps") instanceof List<?> steps) {
+            for (Object step : steps) {
+                Map<?, ?> map = (Map<?, ?>) step;
+                declared[1] += map.get("guidance") != null ? 1 : 0;
+                declared[2] += map.get("command") != null ? 1 : 0;
+                declared[3] += map.get("delegates_to") != null ? 1 : 0;
+            }
+        }
     }
 
     /**
@@ -161,7 +182,7 @@ class MissionStepContractCorpusTest {
     }
 
     private static List<Path> contracts() throws IOException {
-        try (Stream<Path> walk = Files.walk(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> walk = Files.walk(ExamplePacks.packsDirectory())) {
             return walk.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".step-contract.yaml"))
                     .sorted()

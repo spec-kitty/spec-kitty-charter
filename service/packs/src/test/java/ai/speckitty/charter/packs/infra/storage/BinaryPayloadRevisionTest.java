@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -20,29 +21,24 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Acceptance check 11 (post-plan P4): the revision and {@code If-Match} work over a pack whose asset files are binary.
- * A copy of the pinned open-packs {@code packs/internal} (OTF fonts and a PNG under {@code assets/debrief/}) sits in a temp
- * storage root behind the production locations, revision store and registration service. Runs under
- * {@code :packs:openPacksRoundTrip}, which supplies the checkout.
+ * A copy of the built-in example pack (ADR-0070; a PNG at {@code assets/logo.png}) sits in a temp storage root behind
+ * the production locations, revision store and registration service.
  */
-@Tag("open-packs")
 class BinaryPayloadRevisionTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("internal");
-    private static final String LOGO = "debrief/logo.png";
+    private static final PackIdentifier PACK = new PackIdentifier(ExamplePacks.BUILT_IN);
+    private static final String LOGO = "logo.png";
 
     @Test
     void theRevisionOfAPackWithBinaryPayloadsComputesAndIfMatchFollowsAPayloadByte(@TempDir Path host)
             throws IOException {
-        Path packDir = copyOfPinnedInternalPack(host);
+        Path packDir = copyOfBuiltInExample(host);
         StorageRootLocations locations = new StorageRootLocations(host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
@@ -56,7 +52,7 @@ class BinaryPayloadRevisionTest {
                 .toList();
         assertThat(binaries)
                 .as("the copy holds binary payloads, so the revision is read over non-UTF-8 bytes")
-                .contains(LOGO, "debrief/fonts/FallingSky-Bold.otf");
+                .containsExactly(LOGO);
         assertThat(PackFileSet.digested(packDir)).contains("assets/" + LOGO);
 
         PackRevision current = writeStore.currentRevision(PACK); // no PACK_UNREADABLE
@@ -99,30 +95,9 @@ class BinaryPayloadRevisionTest {
                 .isEqualTo(edited);
     }
 
-    /**
-     * Copies the pinned {@code internal} pack, and the {@code built-in} pack it builds on: a write is judged over every
-     * closure the pack joins (IC-15), which cannot compose with the pack's dependency missing.
-     */
-    private static Path copyOfPinnedInternalPack(Path host) throws IOException {
-        OpenPacksCorpus.assertPinned();
-        copyOfPinnedPack("built-in", host);
-        return copyOfPinnedPack(PACK.value(), host);
-    }
-
-    private static Path copyOfPinnedPack(String name, Path host) throws IOException {
-        Path source = OpenPacksCorpus.packsDirectory().resolve(name);
-        Path target = host.resolve(name);
-        try (Stream<Path> walk = Files.walk(source)) {
-            for (Path path : walk.sorted(Comparator.naturalOrder()).toList()) {
-                Path to = target.resolve(source.relativize(path).toString());
-                if (Files.isDirectory(path)) {
-                    Files.createDirectories(to);
-                } else {
-                    Files.copy(path, to);
-                }
-            }
-        }
-        return target;
+    /** Copies the built-in example pack, the pack with a binary payload; it depends on no other pack. */
+    private static Path copyOfBuiltInExample(Path host) {
+        return ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
     }
 
     private static boolean isUtf8(byte[] bytes) {

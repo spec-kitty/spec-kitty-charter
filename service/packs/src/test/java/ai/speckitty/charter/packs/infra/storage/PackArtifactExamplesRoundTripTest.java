@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,28 +13,24 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * SC-001 / NFR-001 over the real corpus: every directive, styleguide and paradigm file of the open-packs checkout is
+ * SC-001 / NFR-001 over the real corpus: every directive, styleguide and paradigm file of the example packs is
  * read into its DSO, written back and read again, and the two DSOs must be equal. DSO equality is field equality (the
  * DSOs are records), so a field the reader or the writer drops, coerces or reorders fails the run; "no exception" is
  * not the bar. The corpus does contain all three kinds (no fallback fixtures are needed), and each kind's file count
  * must be positive, so an empty or moved corpus cannot pass vacuously. A file the reader refuses is collected and
  * fails the run rather than being skipped.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout. Other corpus
- * tests in that task call {@code assertPinned()}, so the checkout is pinned; this class's fidelity does not depend on
- * the exact commit.
+ * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@Tag("open-packs")
-class PackDoctrineCorpusRoundTripTest {
+class PackArtifactExamplesRoundTripTest {
 
     private final SerializationStrategy yaml = new YamlSerializationStrategy();
 
     private static List<Path> filesOfKind(String suffix) throws IOException {
-        try (Stream<Path> walk = Files.walk(OpenPacksCorpus.packsDirectory())) {
+        try (Stream<Path> walk = Files.walk(ExamplePacks.packsDirectory())) {
             return walk.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(suffix))
                     .sorted()
@@ -127,6 +124,6 @@ class PackDoctrineCorpusRoundTripTest {
         assertThat(problems)
                 .as("agent profiles whose written form differs from the source")
                 .isEmpty();
-        assertThat(files).as("agent profiles in the corpus").hasSizeGreaterThan(30);
+        assertThat(files).as("agent profiles in the corpus").hasSize(7);
     }
 }
