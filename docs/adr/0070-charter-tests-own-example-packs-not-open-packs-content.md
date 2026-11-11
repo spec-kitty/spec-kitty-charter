@@ -27,7 +27,7 @@ audience:
 
 **Accepted**, 2026-11-11 (operator, on PR #474). Raised by Stijn Dejongh (operator) on
 [PR #474](https://github.com/spec-kitty/spec-kitty-charter/pull/474), whose three breaking contract changes
-(ADR-0067 to ADR-0069) could not reach green in either repository. If accepted, it amends the charter's "Gates before
+(ADR-0067 to ADR-0069) could not reach green in either repository. It amends the charter's "Gates before
 merge" (the whole-pack round trip, operator ruling of 2026-11-05, epic #186) and the open-packs clause of PROJECT_002,
 as [Consequences](#consequences) sets out. The work is planned in
 [the example-packs plan](/plans/charter-example-packs/).

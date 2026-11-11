@@ -10,7 +10,8 @@ class AgentProfile <<agent-profile.schema.yaml>> {
   + name : string
   + purpose : string
   + specialization : Specialization
-  + role : string and/or roles : string[1..] [anyOf: at least one]
+  + role : string ~ ^[a-z][a-z0-9-]*$, <= 64
+  - alt-roles : string[1..] distinct, not role, not generic
   - description : string
   - schema-version : "1.0" | "2"
   - avatar-image : string
