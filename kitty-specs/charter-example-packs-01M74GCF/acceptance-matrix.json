@@ -66,13 +66,13 @@
     },
     {
       "criterion_id": "FR-007",
-      "description": "Verify FR-007 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "syncPacks and openPacksRef kept for governance only, never test input",
+      "proof_type": "inspection",
+      "evidence": "build.gradle.kts syncPacks; service.yml comment + step; tests read example packs @ 6d372e86f",
+      "pass_fail": "pass",
+      "verified_by": "reviewer-renata",
+      "verified_at": "2026-11-11T08:16:15.970294+00:00",
+      "notes": "Sync still runs in CI for digest verification only."
     },
     {
       "criterion_id": "FR-008",
