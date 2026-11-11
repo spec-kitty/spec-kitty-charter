@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "mission_slug": "pack-item-etags-and-resolver-retirement-01M75WRS",
+  "mission_id": "01M75WRS0Y5BQV0ATEYNA0QJZX",
+  "mission_branch": "kitty/mission-pack-item-etags-and-resolver-retirement-01M75WRS",
+  "target_branch": "claude/feat-487-488-pack-item-etags",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-11-pack-item-etags.md",
+        "contracts/charter/paths/packs_packId_artifacts_kind_artifactId.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_mission_type_*.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/mission-types.feature",
+        "contracts/charter/scenarios/tactics.feature",
+        "contracts/charter/schemas/Artifact.yaml",
+        "contracts/charter/schemas/ArtifactKindToken.yaml",
+        "docs/adr/0071-procedures-are-a-served-read-kind.md",
+        "docs/api/service-contract.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/RegularArtefactWiringTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositeComponentResolver.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositeComponentResolverTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphWalkTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/TacticReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactDtos.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/TacticReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArtifactControllerTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-d"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/**",
+        "service/missions-edge/src/test/java/ai/speckitty/charter/missions/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/MissionTypeHoldingRead.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/MissionTypeHoldingReadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeHoldingCorpusTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-11-11T18:24:39.525477+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "7c09f4fe4e83fb6092e85b714bbc826e47b1c11a"
+}
