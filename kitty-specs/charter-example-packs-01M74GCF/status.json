@@ -1,7 +1,7 @@
 {
-  "event_count": 67,
-  "last_event_id": "01M74TWCK36XP2BQNV5W953PN0",
-  "materialized_at": "2026-11-11T08:16:39.011059+00:00",
+  "event_count": 68,
+  "last_event_id": "01M74TWDQTDMYBYARFCWMQJJYB",
+  "materialized_at": "2026-11-11T08:16:40.186615+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
@@ -310,14 +310,14 @@
       }
     },
     "WP10": {
-      "actor": "reviewer-renata",
+      "actor": "Claude",
       "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 1,
+      "force_count": 2,
       "lane": "approved",
-      "last_event_id": "01M74S5RC3A4M5WXQRS05QAWNR",
-      "last_transition_at": "2026-11-11T07:46:48.835126+00:00",
+      "last_event_id": "01M74TWDQTDMYBYARFCWMQJJYB",
+      "last_transition_at": "2026-11-11T08:16:40.186615+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
