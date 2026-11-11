@@ -27,5 +27,7 @@ week. The new page [Keep the issue tracker small](/development/issue-tracker/) s
   milestone or assignee.
 - Pack content is filed in `spec-kitty-open-packs`; core work is not filed here until
   incorporation.
-- The native issue type is the only kind carrier; the `type:*`, `enhancement` and `bug` labels are
-  retired.
+- An epic is broken into child issues when it is scheduled, not before.
+- Each fact has one place: the native issue type carries the kind, one `priority:*` label the
+  priority, a sub-issue link the parent and the milestone the schedule. The `type:*`,
+  `enhancement` and `bug` labels are no longer used.
