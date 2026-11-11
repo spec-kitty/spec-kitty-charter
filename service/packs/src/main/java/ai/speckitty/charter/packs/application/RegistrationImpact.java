@@ -227,15 +227,31 @@ public final class RegistrationImpact {
      *     {@link #check(Replacement)} refuses
      */
     public Notices check(PackIdentifier pack, UnaryOperator<PackCompositionFacts> write) {
+        return check(pack, write, Optional.empty());
+    }
+
+    /**
+     * As {@link #check(PackIdentifier, UnaryOperator)}, with the pack as it will be stored, so a rule that reads an
+     * entity of the written pack (ADR-0068) reads the written version and not the stored one.
+     *
+     * @param pack the pack written to
+     * @param write what the pack's facts become once the write is stored
+     * @param staged the pack aggregate once the write is stored, when the write has one
+     * @return the floor and lock changes over those closures
+     * @throws CharterRefusal as {@link #check(PackIdentifier, UnaryOperator)}
+     */
+    public Notices check(PackIdentifier pack, UnaryOperator<PackCompositionFacts> write, Optional<Pack> staged) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(write, "write");
+        Objects.requireNonNull(staged, "staged");
         StagedPackViews.Session session = views.session();
         StagedPackViews.View stored = session.stored();
         ConfiguredPack configured = configuredAs(stored, pack);
         Replacement written = new Replacement(
                 configured,
                 stored.descriptors().get(configured.id()),
-                write.apply(stored.artifacts().compositionFacts(configured.id())));
+                write.apply(stored.artifacts().compositionFacts(configured.id())),
+                staged);
         return check(session, written, false);
     }
 
@@ -284,7 +300,7 @@ public final class RegistrationImpact {
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now));
         }
-        judgeFallback(replacement, after, staged, session);
+        judgeFallbacks(found, replacement, after, staged, session);
         List<String> affected = namingActivations
                 ? activations.activationsAffected(
                         roots -> found.holding().apply(roots).map(changes::get))
@@ -349,7 +365,7 @@ public final class RegistrationImpact {
                 return relations;
             }
             FallbackProfileRule.Profiles profiles =
-                    (holder, id) -> packsOfCensus.flatMap(store -> profileIn(store.load(holder), id));
+                    (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
             return fallbackBreach(pack.id(), stored.descriptors().get(pack.id()), composing, profiles)
                     .map(breach -> new Finding(name, breach.code(), breach.detail()));
         } catch (CharterRefusal refused) {
@@ -394,25 +410,50 @@ public final class RegistrationImpact {
     // ---- the fallback profile (ADR-0068) --------------------------------------------------------------------------
 
     /**
-     * Judges a pack's {@code fallback_profile} over the pack's own closure, the write in place (ADR-0068 decisions 2 to
-     * 4); a pack that declares none is not judged.
+     * Judges the {@code fallback_profile} of every staged pack whose closure holds the written pack, the write in place
+     * (ADR-0068 decisions 2 to 4): the written pack itself, and each pack that builds on it, whose declared fallback may
+     * be held in the written pack and so be removed, unlocked or given a role by this write. A pack that declares none is
+     * not judged.
      */
-    private static void judgeFallback(
-            Replacement replacement, Views views, StagedPackViews.View staged, StagedPackViews.Session session) {
-        PackIdentifier pack = replacement.configured().id();
+    private static void judgeFallbacks(
+            ClosureRoots.Found found,
+            Replacement replacement,
+            Views views,
+            StagedPackViews.View staged,
+            StagedPackViews.Session session) {
+        PackIdentifier written = replacement.configured().id();
         FallbackProfileRule.Profiles profiles =
-                (holder, id) -> holder.equals(pack) && replacement.pack().isPresent()
+                (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
                         ? profileIn(replacement.pack().get(), id)
-                        : session.packs().flatMap(store -> profileIn(store.load(holder), id));
-        Optional<FallbackProfileRule.Breach> breach = fallbackBreach(pack, replacement.descriptor(), views, profiles);
-        if (breach.isPresent()) {
-            ClosureRoots.Roots roots = new ClosureRoots.Roots(List.of(pack));
-            throw new CharterRefusal(
-                    breach.get().code(),
-                    "In the closure rooted at " + roots.label() + ": "
-                            + breach.get().detail(),
-                    withRoots(List.of(), roots, staged));
+                        : profileIn(storeOf(session).load(holder), id);
+        for (ClosureRoots.Roots roots : found.closures()) {
+            if (roots.ids().size() != 1) {
+                continue;
+            }
+            PackIdentifier declaring = roots.ids().getFirst();
+            PackDescriptor descriptor = declaring.equals(written)
+                    ? replacement.descriptor()
+                    : staged.descriptors().get(declaring);
+            Optional<FallbackProfileRule.Breach> breach = fallbackBreach(declaring, descriptor, views, profiles);
+            if (breach.isPresent()) {
+                throw new CharterRefusal(
+                        breach.get().code(),
+                        "In the closure rooted at " + roots.label() + ": "
+                                + breach.get().detail(),
+                        withRoots(List.of(), roots, staged));
+            }
         }
+    }
+
+    /** The store that loads the aggregates; a session that has none cannot judge a fallback, which is a defect, not a refusal. */
+    private static ai.speckitty.charter.packs.domain.PackRepository storeOf(StagedPackViews.Session session) {
+        return requireStore(session.packs());
+    }
+
+    private static ai.speckitty.charter.packs.domain.PackRepository requireStore(
+            Optional<ai.speckitty.charter.packs.domain.PackRepository> store) {
+        return store.orElseThrow(() -> new IllegalStateException(
+                "The staged packs cannot load agent profiles, so a fallback_profile cannot be judged"));
     }
 
     private static Optional<FallbackProfileRule.Breach> fallbackBreach(

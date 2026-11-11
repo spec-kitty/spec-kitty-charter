@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -262,14 +263,17 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     private void requireClosuresCompose(PackIdentifier pack, Change change) {
         List<Relationship> registeredBefore =
                 change.relationships().isPresent() ? registeredRelationships(pack) : List.of();
-        impact.check(pack, facts -> {
-            PackCompositionFacts written = change.artifact()
-                    .map(artifact -> WriteFacts.withArtifact(facts, artifact.urn()))
-                    .orElse(facts);
-            return change.relationships()
-                    .map(after -> WriteFacts.withRegisteredEdges(written, registeredBefore, after))
-                    .orElse(written);
-        });
+        impact.check(
+                pack,
+                facts -> {
+                    PackCompositionFacts written = change.artifact()
+                            .map(artifact -> WriteFacts.withArtifact(facts, artifact.urn()))
+                            .orElse(facts);
+                    return change.relationships()
+                            .map(after -> WriteFacts.withRegisteredEdges(written, registeredBefore, after))
+                            .orElse(written);
+                },
+                Optional.of(change.revalidated()));
     }
 
     @Override

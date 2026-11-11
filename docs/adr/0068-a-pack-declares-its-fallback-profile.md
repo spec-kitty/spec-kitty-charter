@@ -88,7 +88,9 @@ the pack's closure and is judged locked along it, and the fallback declares the 
 
    The three raised codes are judged over the declaring pack's own closure, with the write in place, by the
    registration impact check (ADR-0065 D6): a whole-pack registration ends `refused` with the code, naming the closure,
-   and nothing is stored. Like the other impact rules, a pack stored before the rule is not re-judged on a read; the
+   and nothing is stored. The profile is read as the write leaves it, and a write to a pack is judged for every pack
+   whose closure holds it: a write to a dependency that removes, unlocks or re-roles the profile a derived pack names is
+   refused with the derived pack's closure named. Like the other impact rules, a pack stored before the rule is not re-judged on a read; the
    startup census logs it.
 
 ## Consequences
