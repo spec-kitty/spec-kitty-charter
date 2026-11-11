@@ -39,7 +39,10 @@ public class ProblemErrorController implements ErrorController {
      * @param response the response, whose {@code Allow} header a container-level 405 gets corrected
      * @return the {@code application/problem+json} response
      */
-    @RequestMapping("${server.error.path:${error.path:/error}}")
+    // Every method on purpose (java:S3752): the container forwards the error of any request, a TRACE it refuses 405
+    // among them, and a mapping narrowed to some methods would lose the problem of the others. The braces are
+    // Spring Boot's property placeholder for the error path, not a URI template variable (java:S6856).
+    @RequestMapping("${server.error.path:${error.path:/error}}") // NOSONAR: every method on purpose; a placeholder
     public ResponseEntity<Object> error(HttpServletRequest request, HttpServletResponse response) {
         Object code = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         int status = code == null ? 404 : code instanceof Integer value && value >= 400 && value <= 599 ? value : 500;
