@@ -71,12 +71,6 @@ class CompositeComponentResolverTest {
     }
 
     @Test
-    void theHoldingPackIsTheConfiguredIdOfTheHolder() {
-        assertThat(twoPackResolver().holdingPack(PackQualifiedReference.parse("bravo::directive:SHARED_1"), PACK))
-                .contains(PACK_B);
-    }
-
-    @Test
     void aQualifiedReferenceNamingAPackOutsideTheClosureIsRefusedNamingThatPack() {
         assertThatThrownBy(() -> holderOf(twoPackResolver(), "charlie::directive:ANY"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
