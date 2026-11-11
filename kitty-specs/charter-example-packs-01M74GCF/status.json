@@ -1,20 +1,20 @@
 {
-  "event_count": 61,
-  "last_event_id": "01M74S5A9WRBCNXZ116M2596XT",
-  "materialized_at": "2026-11-11T07:46:34.428441+00:00",
+  "event_count": 62,
+  "last_event_id": "01M74S5H9BM99T93VYFH668R9B",
+  "materialized_at": "2026-11-11T07:46:41.579761+00:00",
   "mission_number": "",
   "mission_slug": "charter-example-packs-01M74GCF",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 7,
+    "approved": 8,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 1,
-    "in_review": 2,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -268,15 +268,21 @@
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01M74S4SQD63NMCT40JR9BCQNV",
-      "last_transition_at": "2026-11-11T07:46:17.453138+00:00",
+      "lane": "approved",
+      "last_event_id": "01M74S5H9BM99T93VYFH668R9B",
+      "last_transition_at": "2026-11-11T07:46:41.579761+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "implementing in worktree",
         "Forced: nothing to commit. None of the 11 :packs classes reads packs/qa or packs/internal; they pass in a worktree without the synced trees (180 tests, 0 failed). See traces."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/charter-example-packs-01M74GCF/tasks/WP09-synced-tree-tests-in-packs/review-cycle-1.md",
+        "reference": "review-cycle://charter-example-packs-01M74GCF/WP09-synced-tree-tests-in-packs/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 10281,
       "shell_pid_created_at": "1794383168.74",
