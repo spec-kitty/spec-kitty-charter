@@ -16,7 +16,8 @@ orchestrating cloud sessions, and the rewrite is designed without regard to core
 failures are judged against the charter's own model, contract and packs (epic #186). Amended
 2026-11-05 (operator): the whole-pack round trip is a gate before merge (epic #186). Amended
 2026-11-10 (operator, charter #456 to #458): the charter's model is the canonical data model, and
-legacy shapes get no compatibility.
+legacy shapes get no compatibility. Amended 2026-11-11 (operator, ADR-0070): the round-trip gate
+runs over charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release.
 
 ## What this repository is for
 
@@ -38,7 +39,8 @@ contract, so both are judged against the charter's own model, contract and packs
 current behavior (operator ruling, epic #186, 2026-10-28). When the service is incorporated
 into core, the oracle and core-compatibility clauses return; that work is planned then.
 
-Also: open-packs YAML always round-trips without loss of meaning (ADR-0036: the same
+Also: pack YAML always round-trips without loss of meaning, proven on charter's own example packs
+(ADR-0070; ADR-0036: the same
 meaning, not the same bytes, so formatting and comments may change), and no unverified
 dependency enters the build. None of these is traded for speed, and no exception is granted for the first
 two.
@@ -92,7 +94,7 @@ When a session hands Missions to child cloud sessions, it follows these rules. T
 
 - `./gradlew verifyAll` on **Java 25**, with strict SHA-256 dependency verification: the
   charter's own contract checks, contract validation and generation, unit tests, the
-  ArchUnit gate, the contract scenarios and the open-packs round-trip. CI never builds with
+  ArchUnit gate, the contract scenarios and the whole-pack round trip over charter's example packs (ADR-0070). CI never builds with
   `-Pcharter.javaVersion=21`.
 - The **Java style check** on hand-written sources, wired into `verifyAll`: palantir-java-format
   (Spotless) and Checkstyle, with Error Prone, NullAway and doclint beside them. What each

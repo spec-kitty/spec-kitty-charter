@@ -1,5 +1,5 @@
 anti_patterns:
-- bad_example: ./gradlew verifyAll -x openPacksRoundTrip
+- bad_example: ./gradlew verifyAll -x wholePackRoundTrip
   description: Excluding a module, skipping the round trip or disabling 
     verification to pass the gate.
   good_example: ./gradlew verifyAll
@@ -11,8 +11,8 @@ patterns:
   name: Gate proof
 principles:
 - ./gradlew verifyAll on Java 25 passes before merge - contract validation and 
-  generation, unit tests, the ArchUnit gate, the BDD scenarios and the 
-  open-packs round trip - with strict SHA-256 dependency verification.
+  generation, unit tests, the ArchUnit gate, the BDD scenarios and the
+  whole-pack round trip over the example packs - with strict SHA-256 dependency verification.
 - CI never builds with -Pcharter.javaVersion=21.
 - A Java style check (Checkstyle plus the palantir-java-format check) runs on 
   hand-written sources. Until it is wired into verifyAll, reviewers apply the 

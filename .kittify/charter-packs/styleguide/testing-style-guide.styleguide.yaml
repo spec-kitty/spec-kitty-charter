@@ -25,8 +25,9 @@ principles:
   is tagged @provisional.
 - Only scenarios/** is on the test classpath; fixtures stay inline in the 
   scenario, never as YAML files under the contract tree.
-- Every spec-kitty-open-packs YAML file round-trips through the file-based layer
-  (openPacksRoundTrip) with per-pack diagnostics asserted; never skipped.
+- Every file of charter's example packs round-trips through the file-based layer
+  (wholePackRoundTrip); never skipped. No test reads spec-kitty-open-packs content
+  (ADR-0070).
 - Unit tests use JUnit 6 and AssertJ; Mockito only at port boundaries.
 - Assert outcomes, not implementation details; no fake green, no skipped or 
   quarantined tests to reach green; test code is reviewed like production code.

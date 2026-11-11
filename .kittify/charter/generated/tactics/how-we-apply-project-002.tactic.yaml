@@ -2,7 +2,7 @@ id: how-we-apply-project-002
 schema_version: '1.0'
 name: How We Apply PROJECT_002 (Risk Appetite and Non-Negotiable Failures)
 purpose: Never trade fidelity to the charter's own model, contract and packs, the
-  contract's versioning rules, the open-packs round trip or dependency verification
+  contract's versioning rules, the whole-pack round trip over charter's example packs or dependency verification
   for speed, and give every other risk exception an owner and an end date.
 steps:
 - title: Pin governance content to the charter's own model
@@ -20,8 +20,7 @@ steps:
     minor with a `### Breaking` CHANGELOG entry, and no released contract is broken
     incompatibly.
 - title: Keep the round trip green
-  description: openPacksRoundTrip runs on every build and is never skipped; every
-    open-packs YAML file round-trips by meaning (ADR-0036). A file waiting on an
+  description: wholePackRoundTrip runs on every build and is never skipped; every example-pack file round-trips by meaning (ADR-0036). A file waiting on an
     upstream pack fix sits on the gate's self-expiring known-failure list, keyed
     to its spec-kitty-open-packs issue, and the gate fails once it passes.
 - title: Verify every dependency
