@@ -76,9 +76,9 @@ class MissionStepContractCorpusTest {
         }
 
         assertThat(gates).as("gate bindings").isPositive();
-        assertThat(guidance).as("steps with guidance").isPositive();
-        assertThat(commands).as("steps with a command").isPositive();
-        assertThat(delegations).as("steps with a delegation").isPositive();
+        assertThat(guidance).as("steps with guidance").isGreaterThanOrEqualTo(10);
+        assertThat(commands).as("steps with a command").isGreaterThanOrEqualTo(46);
+        assertThat(delegations).as("steps with a delegation").isGreaterThanOrEqualTo(101);
     }
 
     /**
