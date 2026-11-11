@@ -97,7 +97,7 @@ Far: stages 3 and 4 have not started, and the read inventory is mostly undecided
 | #127, #128 | Hosted-first reshape; mint contract 1.0.0 | Before the first switched route (ADR-0022 D6) |
 | #130, #133 | Refusal-code enums; `x-extensible-enum` | Contract shape; decide before 1.0.0 |
 | #94, #96, #98, #100 to #102, #104 to #110, #112 | Epic and steps: the cutover read inventory | #96 and #100 are in slice A |
-| #29, #30, #31, #33, #15, #38, #68 | Behaviour-first overhaul and the scenario net | The scenarios now gate each switch, so this net is on the critical path |
+| #29, #30, #31, #33, #15, #38, #68 | Behavior-first overhaul and the scenario net | The scenarios now gate each switch, so this net is on the critical path |
 | #69, #70 to #74, #76, #332, #343 | Stages 3 and 4 | #70 and #71 are in slice E. #76 still cites the closed #75 |
 | #357 to #360, #67, #185, #306 | Resolver deferrals and follow-ups | #67: the 2026-11-02 triage proposed Post-cutover. #185: re-check against [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) |
 
