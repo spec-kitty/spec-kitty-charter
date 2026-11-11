@@ -4,9 +4,8 @@ schema_version: "1.0"
 pack_id: 01M6Y9ACNAAD96XPNQS0XWP2FF
 pack_version: 1.0.0
 parent_pack: null
-name: spdd
+name: org-base
 pack_level: org
-active_charter: org-charter.yaml
 pack_drg: drg/fragment.yaml
 depends_on:
   - pack_id: 01ARWG13C000000000000000FG

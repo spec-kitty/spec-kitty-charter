@@ -1,4 +1,0 @@
-# Deliberately activates nothing on its own. A consumer opts in per project
-# with the `spdd` preset or explicit artifact activation.
-schema_version: 2
-org_name: spec-kitty-spdd

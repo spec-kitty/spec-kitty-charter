@@ -5,11 +5,11 @@ scope: docs
 principles:
   - name: Lead each section with a one-sentence
     description: "Lead each section with a one-sentence summary, then bullet specifics."
-  - name: Use the canvas to capture intent,
+  - name: Use the canvas to capture intent
     description: "Use the canvas to capture intent, not to mirror code."
-  - name: Link to source artifacts (spec, plan,
+  - name: Link to source artifacts
     description: "Link to source artifacts (spec, plan, tasks, contracts) instead of duplicating them."
-  - name: Distinguish "must" (Safeguard), "should" (Norm), and
+  - name: Distinguish must, should and may
     description: "Distinguish \"must\" (Safeguard), \"should\" (Norm), and \"may\" (Approach option)."
   - name: Keep WP summaries to 200 words
     description: "Keep WP summaries to 200 words or fewer."

@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -11,6 +13,7 @@ import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -44,6 +47,33 @@ class ExamplePacksTest {
         Path copy = ExamplePacks.copyOf(name, dir);
         Files.delete(copy.resolve("pack.yaml"));
 
-        assertThat(judge(name, copy).findings()).as("the control: the check reads the example").isNotEmpty();
+        assertThat(judge(name, copy).findings())
+                .as("the control: the check reads the example")
+                .isNotEmpty();
+    }
+
+    /** The three packs compose through the production store and the offering read: org-base on built-in, project on both. */
+    @Test
+    void theThreePacksComposeThroughTheOfferingRead() {
+        DomainRepositoryService store =
+                new DomainRepositoryService(ExamplePacks::packs, new YamlSerializationStrategy());
+        OfferingReadService read =
+                new OfferingReadService(store, store, store, new ConsistentRead(() -> "sha256:" + "a".repeat(64)));
+
+        assertThat(read.offering().value())
+                .extracting(entry -> entry.name())
+                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+    }
+
+    /** Every artifact file of every pack loads into the domain through the whole-pack load, with no violation. */
+    @ParameterizedTest
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    void everyPackLoadsWholeWithNoViolation(String name) {
+        WholePackStore.LoadedPack loaded =
+                new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));
+
+        assertThat(loaded.pack().violations()).as(name).isEmpty();
+        assertThat(loaded.unmodelled()).as(name).isEmpty();
+        assertThat(loaded.warnings()).as(name).isEmpty();
     }
 }

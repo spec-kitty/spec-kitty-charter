@@ -1,0 +1,11 @@
+# The project pack's own edges: an overrides onto org-base's open styleguide, and its directive's requirement.
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- source: styleguide:reasons-canvas-writing
+  target: org-base::styleguide:reasons-canvas-writing
+  relation: overrides
+- source: directive:PROJECT_001
+  target: styleguide:reasons-canvas-writing
+  relation: requires
