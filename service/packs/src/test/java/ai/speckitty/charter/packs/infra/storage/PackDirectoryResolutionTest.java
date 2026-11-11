@@ -121,6 +121,17 @@ class PackDirectoryResolutionTest {
     }
 
     @Test
+    void aLocationWhosePackYamlCannotBeReadIsRefusedNotPassedOver() throws IOException {
+        // A pack.yaml that is there but cannot be read (here a directory) must not hide itself: the duplicate
+        // declaration after it would silently win.
+        Path unreadable = Files.createDirectories(host.resolve("unreadable").resolve(PackFileSet.PACK_YAML))
+                .getParent();
+        Path declares = pack("declares", ID_A);
+
+        assertAllRefuse(List.of(at("x", unreadable), at("y", declares)), ID_A, RefusalCode.PACK_UNREADABLE);
+    }
+
+    @Test
     void aLocationWithNoParentDirectoryIsPassedOverAsOneThatCannotDeclareTheId() throws IOException {
         Path root = host.getRoot();
         Path declares = pack("declares", ID_A);

@@ -29,7 +29,10 @@ except in the one case named below.
 - **One pack locator.** Reads, commits and writes resolve a pack id to its directory through `PackLocator`
   ([#184](https://github.com/spec-kitty/spec-kitty-charter/issues/184)). One fix came with it: a pack location
   at the filesystem root no longer makes an id lookup on the read side refuse `500 pack_unreadable`. Like any
-  location that cannot declare the id, it is passed over, as the write side already did.
+  location that cannot declare the id, it is passed over, as the write side already did. The other way round, a
+  location whose `pack.yaml` is there but cannot be read (a directory, no read permission) is refused
+  `500 pack_unreadable` on all three sides, so it cannot hide behind a later location that declares the same id.
+  A missing `pack.yaml` or one that is no descriptor is still passed over.
 - **A relative `-PcontractBundle` is relative to the repository root**, as `-PopenPacksDir` is. Before, it
   resolved against `service/deployable`, so the build packaged no bundle and still passed. A path that names no
   file, or a directory, now fails the build with `-PcontractBundle names no file: <path>`
