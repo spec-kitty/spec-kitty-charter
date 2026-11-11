@@ -277,7 +277,8 @@
       "last_transition_at": "2026-11-11T07:44:03.361174+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "implementing in worktree"
+        "implementing in worktree",
+        "Forced: nothing to commit. No :deployable test reads packs/qa or packs/internal; deployable:test 1400/0 without the synced trees. See traces."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
