@@ -254,7 +254,7 @@ class ArtifactControllerTest {
 
     @Test
     void anUnservedKindIsKindNotFound() throws Exception {
-        mvc.perform(get(BASE + "/procedure/x"))
+        mvc.perform(get(BASE + "/template/x"))
                 .andExpect(status().isNotFound())
                 .andExpect(header().doesNotExist(FINGERPRINT))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -379,7 +379,7 @@ class ArtifactControllerTest {
     @ValueSource(
             strings = {
                 "kind=bogus",
-                "kind=procedure",
+                "kind=template",
                 "kind=Tactic",
                 "pageCursor=***",
                 "pageCursor=dGFjdGlj",
