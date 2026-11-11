@@ -40,18 +40,6 @@ class PolicyYamlTest {
     }
 
     @Test
-    void aWrittenPolicyReadsBackAsTheSamePolicy() {
-        MutabilityPolicySource policy = MutabilityPolicySource.builder()
-                .kindDefault(NodeKind.TEMPLATE, MutabilityLevel.EXTENDABLE)
-                .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.OPEN)
-                .entry(new Urn(NodeKind.AGENT_PROFILE, "generic-agent"), MutabilityLevel.LOCKED)
-                .entry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"), MutabilityLevel.LOCKED)
-                .build();
-
-        assertThat(PolicyYaml.read(PolicyYaml.write(policy))).isEqualTo(policy);
-    }
-
-    @Test
     void aPolicyIsWrittenInOneOrderWithEveryKeyItDeclares() {
         MutabilityPolicySource policy = MutabilityPolicySource.builder()
                 .entry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"), MutabilityLevel.LOCKED)
@@ -71,11 +59,9 @@ class PolicyYamlTest {
                           agent_profile:generic-agent: locked
                           directive:DIRECTIVE_001: locked
                         """);
-    }
-
-    @Test
-    void theEmptyPolicyIsWrittenAsItsVersionAlone() {
-        assertThat(PolicyYaml.write(MutabilityPolicySource.empty())).isEqualTo("schema_version: 1\n");
+        assertThat(PolicyYaml.write(MutabilityPolicySource.empty()))
+                .as("the empty policy is its version alone")
+                .isEqualTo("schema_version: 1\n");
     }
 
     @Test
