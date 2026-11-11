@@ -351,6 +351,8 @@ SLUGGER_CASES = [
     ("Code `` a`b `` span", "code-ab-span"),
     ("a \\_b\\_ c", "a-_b_-c"),
     ("___both___ x", "both-x"),
+    ("a\tb c", "ab-c"),
+    ("a\u00a0b c", "ab-c"),
     ("Use \\<kind\\> here", "use-kind-here"),
     ("snake\\_case", "snake_case"),
     ("a \\*not\\* em", "a-not-em"),

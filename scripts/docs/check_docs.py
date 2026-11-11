@@ -279,7 +279,7 @@ def slugify(heading: str) -> str:
     The slugger lower-cases, drops punctuation but keeps `_` and `-`, and turns each space (not other whitespace)
     into `-`. Underscores stay unless they mark emphasis, and a code span keeps what it shows, `<kind>` included.
     """
-    text = re.sub(r"[^\w\s-]", "", heading_text(heading).strip().lower())
+    text = re.sub(r"[^\w -]", "", heading_text(heading).strip().lower())
     return text.replace(" ", "-")
 
 
