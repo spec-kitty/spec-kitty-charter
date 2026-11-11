@@ -126,14 +126,10 @@ class MissionTypeHoldingReadTest {
     }
 
     @Test
-    void aRevisionTheStorageCannotReadIsAPackThatIsNotThere() {
+    void aRevisionTheStorageCannotReadIsAnUnreadablePack() {
         revisionUnreadable = true;
 
-        CharterRefusal refusal =
-                catchThrowableOfType(CharterRefusal.class, () -> read(() -> D1).revised(PACK, "software-dev"));
-
-        assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-        assertThat(refusal.getCause()).isInstanceOf(CharterRefusal.class);
+        assertThat(codeOf(() -> read(() -> D1).revised(PACK, "software-dev"))).isEqualTo(RefusalCode.PACK_UNREADABLE);
     }
 
     @Test
