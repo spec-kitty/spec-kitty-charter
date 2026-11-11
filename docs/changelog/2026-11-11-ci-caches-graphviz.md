@@ -16,19 +16,20 @@ audience:
 # 2026-11-11 — An Ubuntu mirror outage no longer turns the docs gate red
 
 **An outage of the runners' Ubuntu mirror no longer turns a pull request red.** On 2026-11-11,
-`azure.archive.ubuntu.com` did not resolve on the GitHub runners for over two hours. The PlantUML check
+`azure.archive.ubuntu.com` stopped resolving on the GitHub runners. The PlantUML check
 failed on every attempt while it installed Graphviz, before it compared a diagram, and the CI gate held
 [PR #481](https://github.com/spec-kitty/spec-kitty-charter/pull/481), which changes no diagram.
 
 - **Render only when it can matter.** On a pull request the check renders only if a diagram input
-  changed: a `.puml` or `.svg` file, `scripts/docs/`, or its workflow. Otherwise it passes with a note.
-  Pushes to `main`, the weekly schedule and a manual dispatch always render.
+  changed: a file under `docs/architecture/diagrams/` (an include such as `_style.iuml` among them), any `.puml`
+  or `.svg`, `scripts/docs/`, or its workflow. Otherwise it passes with a note. The merge queue judges its
+  own range the same way. Pushes to `main`, the weekly schedule and a manual dispatch always render.
 - **Graphviz from a cache.** The Graphviz packages are cached per runner image, saved by runs on `main`
   and restored by pull requests, as for the PlantUML jar
   ([#420](https://github.com/spec-kitty/spec-kitty-charter/issues/420)). A hit installs them with `dpkg`
   and needs no mirror.
-- **Retries and a fallback mirror on a miss.** apt retries, and from the third attempt it uses
-  `mirrors.edge.kernel.org`. A cached set that does not install is repaired first, so it cannot make
+- **Retries and a fallback mirror on a miss.** apt retries with short timeouts, and from the second attempt it uses
+  `mirrors.edge.kernel.org`. The job gives up after 30 minutes. A cached set that does not install is repaired first, so it cannot make
   every retry fail.
 - **Unlike the jar,** the cached packages carry no pin in the repository: Ubuntu ships security fixes to
   Graphviz under the same package names. They are trusted as apt verified them when `main` saved them.
