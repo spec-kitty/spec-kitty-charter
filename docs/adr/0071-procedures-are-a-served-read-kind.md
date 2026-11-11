@@ -58,7 +58,7 @@ read the procedure it named.
 
 - A client can read every procedure an activation selects, and the action context links each one.
 - #350 (an `action:` URN in a procedure reference id) no longer applies to the reader: the procedure schema has no
-  `Reference` member since ADR-0064. Operator ruling, 2026-11-11: #350 is retargeted to the graph-document edges of a
+  `Reference` member since ADR-0064. Operator ruling, 2026-11-11: #350 is redirected to the graph-document edges of a
   procedure, and stays open.
 - Operator ruling, 2026-11-11: a procedure can be removed. Listing it among the served kinds enables the generic
   removal (ADR-0030), with the usual referrer, closure and `If-Match` checks; the ruling accepts that.
