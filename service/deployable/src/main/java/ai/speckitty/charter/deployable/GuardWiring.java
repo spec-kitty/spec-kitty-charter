@@ -14,6 +14,10 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.source.ConfigurationProperty;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +41,9 @@ import tools.jackson.databind.ObjectMapper;
  *       {@code spring.application.json} given on the command line or as a system property, judged on the keys Boot
  *       unpacks from it, not on its text; the same JSON in the
  *       {@code SPRING_APPLICATION_JSON} environment variable is accepted;
+ *   <li>the start is refused when the value that supplies the token is a placeholder ({@code ${...}}) rather than the
+ *       token itself, wherever it is written: a placeholder resolves the token from another source, the command line
+ *       or a system property among them, which puts it back where other processes can read it (#121);
  *   <li>the start is refused when there is no token, unless {@code charter.insecure-no-token} is exactly
  *       {@code true}, a development flag that logs a warning at every start. The guard's browser checks are on
  *       either way;
@@ -119,6 +126,7 @@ public class GuardWiring {
     /** The token the guard enforces, or {@code null} for the development flag; fails the start otherwise. */
     private static @Nullable WorktreeToken configuredToken(ConfigurableEnvironment environment) {
         refuseReadableSources(environment);
+        refusePlaceholder(environment);
         boolean insecure =
                 "true".equals(environment.getProperty(INSECURE_PROPERTY, "").strip());
         String token = environment.getProperty(TOKEN_PROPERTY);
@@ -159,6 +167,25 @@ public class GuardWiring {
                 && unpacked instanceof EnumerablePropertySource<?> json
                 && namesToken(json.getPropertyNames())) {
             throw unreadableSourceRefusal(environment);
+        }
+    }
+
+    /**
+     * Judges the raw value of the source that supplies the token, in Boot's own precedence and under its relaxed names
+     * ({@code CHARTER_WORKTREETOKEN} binds the property too), before any placeholder in it is resolved.
+     */
+    private static void refusePlaceholder(ConfigurableEnvironment environment) {
+        ConfigurationPropertyName name = ConfigurationPropertyName.of(TOKEN_PROPERTY);
+        for (ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+            ConfigurationProperty supplied = source.getConfigurationProperty(name);
+            if (supplied != null) {
+                if (String.valueOf(supplied.getValue()).contains("${")) {
+                    throw new IllegalStateException(TOKEN_PROPERTY + " must be the token itself, not a placeholder: a"
+                            + " placeholder resolves it from another source, such as the command line or a system"
+                            + " property, where other processes can read it");
+                }
+                return;
+            }
         }
     }
 

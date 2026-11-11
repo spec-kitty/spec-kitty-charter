@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 decision_status: 'Accepted, with Amendments through 2026-10-28 (D10 reconciled with ADR-0026 write surface; 304-no-body carve-out #208); superseded in part by ADR-0038 (2026-10-27) and ADR-0041 (2026-10-28)'
 decision_date: '2026-10-25'
 type: ADR
@@ -378,9 +378,9 @@ depths 0, 1 and 2".
 - **A port squatter** receives the seam's token (#70, launcher review).
 - **A derived worktree id is guessable.** The launcher must always set an opaque
   `charter.worktree-id` (#70).
-- **A placeholder split.** `CHARTER_WORKTREE_TOKEN='${x}'` with the value on argv starts the
-  service. It needs a deliberate launcher misconfiguration (launcher review #70; the hardening
-  that refuses it is issue #121).
+- **A placeholder split.** *(Closed 2026-11-11, issue #121.)* `CHARTER_WORKTREE_TOKEN='${x}'` with
+  the value on argv used to start the service. The start is now refused when the value that supplies
+  the token holds a placeholder, whatever would resolve it.
 - **A storage read outside the declared kinds.** *(Replaces, 2026-10-24, the bullet that said
   nothing pinned the digest to the files the load reads, issue #120.)* A generated-tree exactness
   test with a planted omission pins that the fingerprint digests exactly the declared files the
