@@ -31,7 +31,8 @@ except in the one case named below.
   at the filesystem root no longer makes an id lookup on the read side refuse `500 pack_unreadable`. Like any
   location that cannot declare the id, it is passed over, as the write side already did.
 - **A relative `-PcontractBundle` is relative to the repository root**, as `-PopenPacksDir` is. Before, it
-  resolved against `service/deployable`, so the build packaged no bundle and still passed
+  resolved against `service/deployable`, so the build packaged no bundle and still passed. A path that names no
+  file, or a directory, now fails the build with `-PcontractBundle names no file: <path>`
   ([#324](https://github.com/spec-kitty/spec-kitty-charter/issues/324)).
 - **The links check slugs a heading as the site does**
   ([#134](https://github.com/spec-kitty/spec-kitty-charter/issues/134)). It keeps underscores and what a code

@@ -595,7 +595,8 @@ risks the native build (a new reflective path, a dependency bump, a change to `s
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
 needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one. On Windows, where the contract
 tools have no pinned binary, pass a bundle built elsewhere with `-PcontractBundle=<file>`, absolute or relative to the
-repository root, as the Windows job does.
+repository root, as the Windows job does. A path that names no file fails `processResources` with
+`-PcontractBundle names no file: <path>`.
 
 ## The Java client
 

@@ -4,7 +4,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-/** Where `-PcontractBundle` points: a relative path resolves against the repository root (#324). */
+/** Where `-PcontractBundle` points: a relative path resolves against the repository root, and it must name a file (#324). */
 class ContractBundleFileTest {
 
     @TempDir
@@ -46,6 +46,18 @@ class ContractBundleFileTest {
             val resolved = ContractBundleFile.resolve(repositoryRoot, given)
             assertThat(resolved.isAbsolute).`as`(given).isTrue()
             assertThat(resolved.toPath()).`as`(given).isEqualTo(resolved.toPath().normalize())
+        }
+    }
+
+    @Test
+    fun aBundleThatIsNotAFileIsRefusedRatherThanPackagedAsNothing() {
+        val bundle = File(workspace, "charter-openapi.yaml")
+        assertThat(ContractBundleFile.requireFile(bundle.apply { writeText("openapi: 3.1.0") })).isEqualTo(bundle)
+        for (notAFile in listOf(File(workspace, "missing.yaml"), workspace)) {
+            assertThatThrownBy { ContractBundleFile.requireFile(notAFile) }
+                .`as`(notAFile.name)
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("-PcontractBundle names no file: ${notAFile.path}")
         }
     }
 }
