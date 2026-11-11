@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import ai.speckitty.charter.packs.domain.PackInspector;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
@@ -167,11 +168,7 @@ public final class FileSystemPackInspector implements PackInspector {
         FileRead<RawGraph> fragment = new FileRead.Absent<>(PackFileSet.FRAGMENT);
         Path fragmentYaml = directory.resolve("drg").resolve("fragment.yaml");
         if (Files.isRegularFile(fragmentYaml)) {
-            fragment = read(
-                    fragmentYaml,
-                    PackFileSet.FRAGMENT,
-                    name,
-                    text -> GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, PackFileSet.FRAGMENT));
+            fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         if (scope == Scope.LOAD_PATH) {
             return new PackContents(
@@ -828,6 +825,26 @@ public final class FileSystemPackInspector implements PackInspector {
             return new FileRead.Unreadable<>(file, new ParseFailure(file, RESERVED_SHARD), List.of());
         }
         return GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file);
+    }
+
+    /**
+     * The fragment, refused whole when a node's {@code body_path} leaves the pack root (#254), as the load refuses it
+     * ({@link FilesystemPackStore#readGraphs}): its finding is the fragment's {@code drg_schema_error}, naming the first
+     * such node, and its edges are not judged, as for any graph document that cannot be read.
+     */
+    private static FileRead<RawGraph> fragment(String text) {
+        FileRead<RawGraph> read =
+                GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, PackFileSet.FRAGMENT);
+        if (read instanceof FileRead.Read<RawGraph> good) {
+            for (PackContents.RawNode node : good.value().nodes()) {
+                Optional<String> escape = PackPolicy.bodyPathEscape(node.ref(), node.bodyPath());
+                if (escape.isPresent()) {
+                    return new FileRead.Unreadable<>(
+                            PackFileSet.FRAGMENT, ParseFailure.refused(PackFileSet.FRAGMENT, escape.get()), List.of());
+                }
+            }
+        }
+        return read;
     }
 
     private static List<Path> shards(Path directory, String name) {

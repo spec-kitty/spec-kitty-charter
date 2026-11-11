@@ -386,6 +386,86 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
+  # #382 (ADR-0040 decision 6, amended 2026-11-11): a sidecar whose path leaves assets/ is refused as an escape, even
+  # though a file is at the target (the pack's own pack.yaml), and the pack is not stored.
+  Scenario: An archive with an asset sidecar whose path leaves assets/ is refused naming the escape
+    Given the archive "escaping" is a copy of the archive "v1"
+    And the archive "escaping" holds the file "assets/notes.md.asset.yaml":
+      """
+      id: notes
+      mime: text/markdown
+      path: ../pack.yaml
+      """
+    When I PUT "/packs/acme" with the archive "escaping"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/detail" is "The pack cannot be registered: 1 fault(s), the first at assets/notes.md.asset.yaml."
+    And the field at "/problem/violations/0/code" is "asset"
+    And the field at "/problem/violations/0/pointer" is "assets/notes.md.asset.yaml"
+    And the field at "/problem/violations/0/detail" is "assets/notes.md.asset.yaml: asset path '../pack.yaml' escapes the pack's assets/ root"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    And the problem code is "pack_not_found"
+
+  # #382: a sidecar path inside assets/ that names no file still reads "does not exist", once.
+  Scenario: An archive with an asset sidecar whose payload is missing is refused naming the payload
+    Given the archive "missing" is a copy of the archive "v1"
+    And the archive "missing" holds the file "assets/notes.md.asset.yaml":
+      """
+      id: notes
+      mime: text/markdown
+      path: notes.md
+      """
+    When I PUT "/packs/acme" with the archive "missing"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/pointer" is "assets/notes.md.asset.yaml"
+    And the field at "/problem/violations/0/detail" is "assets/notes.md.asset.yaml: payload assets/notes.md does not exist"
+
+  # #254: a fragment node's body_path is relative to the pack root; one that leaves it is a graph fault of the fragment,
+  # listed as drg_schema_error at drg/fragment.yaml, and the pack is not stored.
+  Scenario: An archive whose fragment names a body_path outside the pack is refused at the fragment
+    Given the archive "escaping" is a copy of the archive "v1"
+    And the archive "escaping" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      pack_drg: drg/fragment.yaml
+      """
+    And the archive "escaping" holds the file "drg/fragment.yaml":
+      """
+      nodes:
+      - id: A
+        kind: directives
+        title: A at version 1
+        body_path: ../outside.directive.yaml
+      edges: []
+      """
+    When I PUT "/packs/acme" with the archive "escaping"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "drg_schema_error"
+    And the field at "/problem/violations/0/pointer" is "drg/fragment.yaml"
+    And the field at "/problem/violations/0/detail" is "drg/fragment.yaml: node A body_path '../outside.directive.yaml' escapes the pack root"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    And the problem code is "pack_not_found"
+
   # bound by: WP16 (US1 AS7: a changed level or pack_id is refused, then the same identity is accepted)
   Scenario Outline: A replace may not change the level or the pack_id of the stored pack
     Given the archive "changed" is a copy of the archive "v1"

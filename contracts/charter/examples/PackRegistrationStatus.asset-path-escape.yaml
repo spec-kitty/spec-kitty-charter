@@ -1,0 +1,19 @@
+summary: A registration refused because an asset sidecar's path leaves assets/, although a file is at the target (#382).
+value:
+  registrationId: 01M7650000000000000000ESC1
+  state: refused
+  packId: acme
+  acceptedAt: '2026-11-11T10:00:00Z'
+  finishedAt: '2026-11-11T10:00:01Z'
+  problem:
+    title: Validation failed
+    status: 422
+    code: validation_failed
+    detail: 'The pack cannot be registered: 1 fault(s), the first at assets/notes.md.asset.yaml.'
+    violations:
+    - pointer: assets/notes.md.asset.yaml
+      code: asset
+      detail: "assets/notes.md.asset.yaml: asset path '../pack.yaml' escapes the pack's assets/ root"
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M7650000000000000000ESC1

@@ -2,8 +2,8 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
-decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+updated: 2026-11-11T00:00:00Z
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -209,6 +209,25 @@ request for #193 asks for.
   Case folds as a claim folds it: `Locale.ROOT` lower case. Names that this fold leaves apart, such
   as two Unicode normalizations of one name, are different names, on every file system.
 
+### Amendment 2026-11-11 (#382): a sidecar path that leaves `assets/` is refused as an escape
+
+Made by [#382](https://github.com/spec-kitty/spec-kitty-charter/issues/382), the follow-up the operator asked
+for when the SHARING-004 scenario (#374) pinned the old wording on 2026-11-05. The decision text below is
+unchanged, and decision 6 is annotated where it stands.
+
+**Accepted** — 2026-11-11, by the operator, with the pull request for #496. Only this amendment is accepted; the record
+stays Proposed, pending the acceptance that the pull request for #193 asks for.
+
+- **Decision 6: an escape has a refusal of its own.** A sidecar `path` that leaves `assets/` as written
+  (absolute in POSIX or Windows form, or with a `..` part: the lexical rule of validate mode's `ASSET_PATH_ESCAPE`)
+  is refused `asset path '<path>' escapes the pack's assets/ root`, whether or not a file is at the target. The
+  load and validate mode keep one rule and one wording (`SidecarPayloads`). A path inside `assets/` that names no
+  asset file, a file another rule classifies, or a link the store's read does not hold, is still
+  `payload assets/<path> does not exist`.
+- **On the wire,** the code is unchanged: the composing read answers `500 pack_unreadable` and a registration lists
+  the sidecar's violation; the detail names the escape. A registration lists every sidecar the store refuses once, at
+  its file, no longer a second time as `unmodelled`.
+
 ## Context
 
 Issue #193 asks for the two payload-bearing kinds: an **asset** (a `*.asset.yaml` sidecar and the
@@ -349,7 +368,8 @@ Four facts force a decision:
    sidecar only when `assets/<path>` is an asset file it read; otherwise the sidecar's file is a
    violation of kind `asset`, `payload assets/<path> does not exist`, and the sidecar does not join
    the pack. A path that leaves `assets/` or names a file another rule classifies is the same
-   refusal. A second sidecar naming a file an earlier one named is refused,
+   refusal. *(Amended 2026-11-11, #382: a path that leaves `assets/` is refused as an escape,
+   `asset path '<path>' escapes the pack's assets/ root`.)* A second sidecar naming a file an earlier one named is refused,
    `payload assets/<path> is already named by asset <id>`. The `Pack` guards the link: every asset
    names a held asset file, and no two assets name the same one. The whole-pack write refuses a pack
    with any violation (ADR-0037 decision 5).

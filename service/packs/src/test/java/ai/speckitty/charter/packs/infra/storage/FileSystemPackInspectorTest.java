@@ -622,8 +622,9 @@ class FileSystemPackInspectorTest {
 
     /**
      * #251: validate mode refuses the sidecars the store's load refuses, with the load's words: a payload the pack does
-     * not hold (missing, spelled in another case, or outside {@code assets/}), and a payload an earlier sidecar named.
-     * The sidecar's facts stand, so the asset rules still judge it.
+     * not hold (missing, or spelled in another case), a path that leaves {@code assets/} (#382: an escape of its own,
+     * whether or not a file is at the target), and a payload an earlier sidecar named. The sidecar's facts stand, so the
+     * asset rules still judge it.
      */
     @Test
     void aSidecarWhosePayloadThePackDoesNotHoldIsRefusedAsTheLoadRefusesIt(@TempDir Path host) throws IOException {
@@ -639,11 +640,16 @@ class FileSystemPackInspectorTest {
         write(dir, "assets/logo.png", "png");
         write(dir, "assets/d.asset.yaml", ASSET.formatted("d", "text/markdown", "a.md"));
         write(dir, "assets/e.asset.yaml", ASSET.formatted("e", "image/png", "../../escape.png"));
+        write(host, "escape.png", "png");
+        write(dir, "assets/f.asset.yaml", ASSET.formatted("f", "text/markdown", "sub/../a.md"));
+        write(dir, "assets/g.asset.yaml", ASSET.formatted("g", "text/markdown", "/etc/hosts"));
         List<Tuple> refused = List.of(
                 tuple("assets/b.asset.yaml", "payload assets/b.md does not exist"),
                 tuple("assets/c.asset.yaml", "payload assets/Logo.png does not exist"),
                 tuple("assets/d.asset.yaml", "payload assets/a.md is already named by asset a"),
-                tuple("assets/e.asset.yaml", "payload assets/../../escape.png does not exist"));
+                tuple("assets/e.asset.yaml", "asset path '../../escape.png' escapes the pack's assets/ root"),
+                tuple("assets/f.asset.yaml", "asset path 'sub/../a.md' escapes the pack's assets/ root"),
+                tuple("assets/g.asset.yaml", "asset path '/etc/hosts' escapes the pack's assets/ root"));
 
         PackContents contents = full(dir);
         FilesystemPackStore.PackRead load =
@@ -667,12 +673,58 @@ class FileSystemPackInspectorTest {
                         "assets/b.asset.yaml",
                         "assets/c.asset.yaml",
                         "assets/d.asset.yaml",
-                        "assets/e.asset.yaml");
+                        "assets/e.asset.yaml",
+                        "assets/f.asset.yaml",
+                        "assets/g.asset.yaml");
+    }
+
+    /**
+     * #254: a fragment node whose body_path leaves the pack root refuses the whole fragment, in validate mode as on the
+     * load and in the same words, so neither judges its edges (here one to a node the fragment declares).
+     */
+    @Test
+    void aFragmentWithABodyPathOutsideThePackIsRefusedWholeInValidateModeAsOnTheLoad(@TempDir Path host)
+            throws IOException {
+        Path dir = host.resolve("qa");
+        write(dir, "pack.yaml", """
+                pack_id: 01ARWG13C00000000000001ABC
+                pack_version: 1.0.0
+                name: qa
+                pack_level: org
+                pack_drg: drg/fragment.yaml
+                """);
+        write(dir, "drg/fragment.yaml", """
+                nodes:
+                - id: D1
+                  kind: directives
+                  body_path: ../outside.directive.yaml
+                - id: D2
+                  kind: directives
+                edges:
+                - {source: 'directive:D1', target: 'directive:D2', relation: suggests}
+                """);
+        String reason = "node D1 body_path '../outside.directive.yaml' escapes the pack root";
+
+        PackVerdict verdict = PackPolicy.judge(full(dir));
+        FilesystemPackStore.GraphRead load =
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackIdentifier("qa"));
+
+        assertThat(verdict.findings())
+                .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
+                .containsExactly(
+                        tuple(PackFindingCode.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "qa/drg/fragment.yaml " + reason));
+        assertThat(load.documents())
+                .as("the load reads no part of the fragment")
+                .isEmpty();
+        assertThat(load.violations())
+                .extracting(PackElementViolation::file, PackElementViolation::reason)
+                .containsExactly(tuple("drg/fragment.yaml", reason));
     }
 
     /**
      * #251: an asset file the store's read does not hold (here, a link that leaves the pack) is refused with the load's
-     * reason, and a sidecar naming it names no payload, in validate mode as in the load.
+     * reason, and a sidecar naming it names no payload, in validate mode as in the load. Its path stays inside
+     * {@code assets/} as written, so it is a missing payload, not an escape (#382 judges the path as written).
      */
     @Test
     void anAssetFileTheLoadDoesNotHoldIsRefusedAndNamesNoPayload(@TempDir Path host) throws IOException {

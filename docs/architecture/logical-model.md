@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -675,7 +675,7 @@ these are resources, used rather than followed.
   that directory. The payload (script, document, font, image) is held as its exact bytes. A
   payload may have no sidecar (`built-in/assets/docs_structural_lint.config.yaml`): the pack holds
   every file under `assets/` as an asset file, named by an asset or not. A sidecar whose payload
-  does not exist is refused. `mime` is metadata; it does not decide how the payload is read.
+  does not exist is refused, and so is one whose `path` leaves `assets/`, as an escape (#382). `mime` is metadata; it does not decide how the payload is read.
   An asset that runs declares an **executable** block (`runtime`, `min_version?`, `entry`, `args?`;
   [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 5): `runtime` is a
   token from a closed allowlist (`python`), never a shell or an executable path; `entry` is a payload file of the same pack

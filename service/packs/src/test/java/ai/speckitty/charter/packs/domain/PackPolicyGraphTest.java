@@ -14,6 +14,8 @@ import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PackPolicyGraphTest {
 
@@ -82,6 +84,22 @@ class PackPolicyGraphTest {
 
         assertThat(build.graph().nodes())
                 .containsExactly(new DrgNode(B, Optional.of("B"), Optional.empty(), List.of(), Optional.of("b.md")));
+    }
+
+    /** #254: a fragment node's body_path is relative to the pack root, and one that leaves it is a graph fault. */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {"/etc/passwd", "../outside.md", "directives/../../outside.md", "C:\\x.md", "\\\\host\\x.md"})
+    void aBodyPathThatLeavesThePackRootIsAnEscapeNamingTheNodeAndThePath(String bodyPath) {
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath)))
+                .contains("node b body_path '" + bodyPath + "' escapes the pack root");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"directives/b.directive.yaml", "directives/b..md", "./b.md"})
+    void aBodyPathThatStaysInsideThePackRootOrNoneIsNoEscape(String bodyPath) {
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath))).isEmpty();
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.empty())).isEmpty();
     }
 
     @Test
