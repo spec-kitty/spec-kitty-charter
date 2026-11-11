@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -262,9 +263,10 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * Positive control through the production write path (#476): the source's policy loses its lock on the fallback
-     * profile before the write, and {@code policy.yaml}, green in the faithful run, is red naming that entry; every other
-     * outcome is the faithful run's.
+     * Positive control through the gate's policy seam (#476): the source's policy loses its lock on the fallback
+     * profile, and, in a second run, its {@code template} kind default drops from {@code extendable} to {@code open};
+     * {@code policy.yaml}, green in the faithful run, is red naming the lost entry each time; every other outcome is the
+     * faithful run's.
      */
     @Test
     void aLossyPolicyTurnsPolicyYamlRedBesideAGreenFaithfulRun(@TempDir Path temp) throws IOException {
@@ -275,24 +277,30 @@ class WholePackRoundTripTest {
 
         Map<String, Optional<String>> faithful = observe(
                 new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>(), new TreeSet<>());
-        Map<String, Optional<String>> lossy = observe(
-                new DomainRoundTrip(yaml, UnaryOperator.identity(), policy -> without(policy, locked)),
-                pack,
-                temp.resolve("lossy"),
-                census,
-                new TreeMap<>(),
-                new TreeSet<>());
-
         assertThat(census).containsEntry(PolicyYaml.FILE, DomainRoundTrip.POLICY);
         assertThat(faithful.get(PolicyYaml.FILE)).as("faithful policy.yaml").isEmpty();
-        assertThat(lossy.get(PolicyYaml.FILE))
-                .as("lossy policy.yaml")
-                .hasValueSatisfying(red -> assertThat(red).contains(locked.toString()));
-        Map<String, Optional<String>> others = new TreeMap<>(lossy);
-        others.remove(PolicyYaml.FILE);
         Map<String, Optional<String>> faithfulOthers = new TreeMap<>(faithful);
         faithfulOthers.remove(PolicyYaml.FILE);
-        assertThat(others).isEqualTo(faithfulOthers);
+
+        Map<String, UnaryOperator<MutabilityPolicySource>> losses = new TreeMap<>();
+        losses.put(locked.toString(), policy -> without(policy, locked));
+        losses.put("template", policy -> withKindDefault(policy, NodeKind.TEMPLATE, MutabilityLevel.OPEN));
+        losses.forEach((lost, loss) -> {
+            Map<String, Optional<String>> lossy = observe(
+                    new DomainRoundTrip(yaml, UnaryOperator.identity(), loss),
+                    pack,
+                    temp.resolve("lossy-" + lost.replace(':', '-')),
+                    census,
+                    new TreeMap<>(),
+                    new TreeSet<>());
+
+            assertThat(lossy.get(PolicyYaml.FILE))
+                    .as("lossy policy.yaml, losing " + lost)
+                    .hasValueSatisfying(red -> assertThat(red).contains(lost));
+            Map<String, Optional<String>> others = new TreeMap<>(lossy);
+            others.remove(PolicyYaml.FILE);
+            assertThat(others).isEqualTo(faithfulOthers);
+        });
     }
 
     /** The policy without its entry for {@code target}. */
@@ -304,6 +312,18 @@ class WholePackRoundTripTest {
                 builder.entry(urn, level);
             }
         });
+        MutabilityPolicySource changed = builder.build();
+        assertThat(changed).as("the control changes the policy").isNotEqualTo(policy);
+        return changed;
+    }
+
+    /** The policy with the default of {@code kind} set to {@code level}. */
+    private static MutabilityPolicySource withKindDefault(
+            MutabilityPolicySource policy, NodeKind kind, MutabilityLevel level) {
+        MutabilityPolicySource.Builder builder = MutabilityPolicySource.builder();
+        policy.kindDefaults().forEach(builder::kindDefault);
+        builder.kindDefault(kind, level);
+        policy.urnEntries().forEach(builder::entry);
         MutabilityPolicySource changed = builder.build();
         assertThat(changed).as("the control changes the policy").isNotEqualTo(policy);
         return changed;
