@@ -159,6 +159,8 @@ Feature: Procedures are read by pack and under an activation (#484)
     And the response header "ETag" appears once
     And the response header "Charter-Source-Fingerprint" appears once
     And the field at "/packId" is "qa"
+    And the field at "/state" is "active"
+    And the field at "/_links/artifact/href" is "/api/v1/packs/qa/artifacts/procedure/test-first-bug-fixing"
     When I follow the link "artifact"
     Then the response status is 200
     And the field at "/procedure/steps/0/role" is "implementer"

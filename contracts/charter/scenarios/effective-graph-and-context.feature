@@ -774,6 +774,10 @@ Feature: The effective graph and the effective action context answer what the ac
     And the response header "ETag" appears once
     And the response header "Charter-Source-Fingerprint" appears once
     And the field at "/state" is "active"
+    When I GET "/activations/a-1/artifacts/styleguide/s2"
+    Then the response status is 200
+    And the field at "/state" is "inactive"
+    And the field at "/reason" is "not_selected"
     When I GET "/activations/a-1/artifacts/toolguide/g2"
     Then the response status is 200
     And the response header "ETag" appears once

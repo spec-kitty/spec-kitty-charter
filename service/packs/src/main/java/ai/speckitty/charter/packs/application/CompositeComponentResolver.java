@@ -28,8 +28,8 @@ import org.springframework.stereotype.Service;
  * bounded by the walk rather than by pack size (NFR-001). It composes the per-kind read services only and never reaches
  * into storage; the dispatch is a plain {@code switch} on the node kind, not a shared registry (research Decision 5).
  *
- * <p>For a target whose kind is out of scope, unwired or external — a procedure, an asset, an agent profile, and the
- * like — it returns {@link Optional#empty()} (research Decision 6), so a walk simply continues past it; the same empty
+ * <p>For a target whose kind is out of scope, unwired or external — an asset, an agent profile, and the like, and a
+ * procedure, which the artifact reads serve (#484) but no walk resolves yet (#488) — it returns {@link Optional#empty()} (research Decision 6), so a walk simply continues past it; the same empty
  * answers an in-scope kind whose component is absent (the read service refuses {@code *_NOT_FOUND}). It
  * <strong>never</strong> throws for an unresolvable kind: emptiness is the normal answer for the 44% of real edges that
  * target currently-unwired kinds.
@@ -210,7 +210,8 @@ public final class CompositeComponentResolver {
                         .value());
             case TACTIC ->
                 read(() -> tactics.tactic(pack, new TacticIdentifier(urn.id())).value());
-            // D6: a procedure, asset, agent_profile, action, mission_type and every other unwired/out-of-scope kind
+            // D6: a procedure (served, not walked yet: #488), asset, agent_profile, action, mission_type and every
+            // other unwired/out-of-scope kind
             // resolves empty, and the walk continues past it.
             default -> Optional.empty();
         };

@@ -137,7 +137,7 @@ class ArtifactReadServiceTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
-                new ProcedureReadService(store, store, read, revisions),
+                new ProcedureReadService(store, read, revisions),
                 new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(
                         new DirectiveReadService(store, store, read, revisions),

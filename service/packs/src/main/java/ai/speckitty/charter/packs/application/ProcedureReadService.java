@@ -3,11 +3,9 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
-import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,7 +27,6 @@ public final class ProcedureReadService {
 
     private static final String STALE_ONE = "The inputs changed while the procedure was read; read it again.";
 
-    private final PackRepository packs;
     private final ProcedureRepository procedures;
     private final ConsistentRead read;
     private final PackRevisions revisions;
@@ -37,56 +34,15 @@ public final class ProcedureReadService {
     /**
      * A service over the injected ports.
      *
-     * @param packs the port that loads a pack aggregate (its procedures are projected for the list)
      * @param procedures the port that fetches one procedure
      * @param read the verifier that digests the inputs before and after each read
      * @param revisions the pack revision, read inside the verified read for an item's {@code ETag}
      */
     @Autowired
-    public ProcedureReadService(
-            PackRepository packs, ProcedureRepository procedures, ConsistentRead read, PackRevisions revisions) {
-        this.packs = Objects.requireNonNull(packs, "packs");
+    public ProcedureReadService(ProcedureRepository procedures, ConsistentRead read, PackRevisions revisions) {
         this.procedures = Objects.requireNonNull(procedures, "procedures");
         this.read = Objects.requireNonNull(read, "read");
         this.revisions = Objects.requireNonNull(revisions, "revisions");
-    }
-
-    /**
-     * The readable procedures of a pack, with the digest of the inputs they were read from. Each carries an empty
-     * relationship list (FR-015; a procedure mints none).
-     *
-     * @param pack the pack's identity
-     * @return the pack's procedures, in the aggregate's stable order, and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
-     *     {@link RefusalCode#PACK_UNREADABLE} when a configured pack or pack file cannot be read, or with
-     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the procedures were read
-     */
-    public ConsistentRead.Verified<List<Procedure>> proceduresOf(PackIdentifier pack) {
-        Objects.requireNonNull(pack, "pack");
-        return read.read("The inputs changed while the procedures were read; read them again.", () -> {
-            try {
-                return packs.load(pack).procedures();
-            } catch (CharterRefusal refused) {
-                throw packRefusal(pack, refused);
-            }
-        });
-    }
-
-    /**
-     * One procedure of a pack, with the digest of the inputs it was read from. Its relationships are empty (FR-015).
-     *
-     * @param pack the pack's identity
-     * @param procedure the procedure's identity
-     * @return the procedure and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
-     *     with {@link RefusalCode#ARTIFACT_NOT_FOUND} when the pack has no such procedure, with
-     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the procedure was read (a change beats a
-     *     not-found)
-     */
-    public ConsistentRead.Verified<Procedure> procedure(PackIdentifier pack, ProcedureIdentifier procedure) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(procedure, "procedure");
-        return read.read(STALE_ONE, () -> loadOne(pack, procedure));
     }
 
     /**
@@ -96,7 +52,8 @@ public final class ProcedureReadService {
      * @param pack the pack's identity
      * @param procedure the procedure's identity
      * @return the procedure and its revision, and the verified fingerprint
-     * @throws CharterRefusal as {@link #procedure(PackIdentifier, ProcedureIdentifier)} does
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND}, {@link RefusalCode#ARTIFACT_NOT_FOUND},
+     *     {@link RefusalCode#PACK_UNREADABLE} or {@link RefusalCode#STALE_INPUT}
      */
     public ConsistentRead.Verified<Revised<Procedure>> procedureWithRevision(
             PackIdentifier pack, ProcedureIdentifier procedure) {
