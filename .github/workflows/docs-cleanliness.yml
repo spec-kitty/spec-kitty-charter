@@ -216,6 +216,14 @@ jobs:
               exit 0
             fi
             echo "apt failed (attempt $attempt/5); retrying in $((attempt * 30))s"
+            if [ "$attempt" = 2 ]; then
+              # The runner's own mirrors resolve through the same DNS (2026-11-11: azure.archive.ubuntu.com and
+              # security.ubuntu.com both unresolvable), so from the third attempt on, apt asks kernel.org's mirror.
+              echo "Switching apt to mirrors.edge.kernel.org"
+              echo "http://mirrors.edge.kernel.org/ubuntu" | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+              sudo sed -i -E 's#https?://[a-z.]*(archive|security)\.ubuntu\.com/ubuntu/?#http://mirrors.edge.kernel.org/ubuntu/#g; s#mirror\+file:/etc/apt/apt-mirrors\.txt#http://mirrors.edge.kernel.org/ubuntu/#g' \
+                /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true
+            fi
             sleep $((attempt * 30))
           done
           exit 1
