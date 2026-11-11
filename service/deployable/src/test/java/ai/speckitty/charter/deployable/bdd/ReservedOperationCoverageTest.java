@@ -44,8 +44,8 @@ class ReservedOperationCoverageTest {
     /** The pin file of each contract set; no set reserves an operation now, so none has one. */
     private static final Map<String, String> FEATURES = Map.of();
 
-    private static final Pattern REQUEST =
-            Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
+    private static final Pattern REQUEST = Pattern.compile(
+            "^\\s*+(?:When|And) I (?:send )?+(GET|PUT|POST|DELETE|PATCH) \"([^\"?]++)(?:\\?[^\"]*+)?+\"");
     private static final Pattern RESERVED_TAG = Pattern.compile("\n\\s*@reserved\\s*\n");
     private static final Pattern NEXT_SCENARIO =
             Pattern.compile("^\\s*(?:@|Scenario|Rule:|Example:|Background:)", Pattern.MULTILINE);

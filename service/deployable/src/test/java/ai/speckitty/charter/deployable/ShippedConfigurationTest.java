@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -32,11 +33,10 @@ class ShippedConfigurationTest {
     private static final Path ENV_TEMPLATE = ROOT.resolve("deploy/compose/.env.example");
 
     /**
-     * A value that looks like a credential: a run of 32 or more token characters with both letters and digits. A path
-     * ({@code /} is not a token character) and a pinned image digest ({@code sha256:<hex>}) are not.
+     * A run of 32 or more token characters, matched whole; {@link #secretShaped} asks for both letters and digits in it.
+     * A path ({@code /} is not a token character) and a pinned image digest ({@code sha256:<hex>}) are no such run.
      */
-    private static final Pattern SECRET_SHAPED = Pattern.compile(
-            "(?<![A-Za-z0-9+=_-])(?=[A-Za-z0-9+=_-]*[A-Za-z])(?=[A-Za-z0-9+=_-]*[0-9])[A-Za-z0-9+=_-]{32,}");
+    private static final Pattern TOKEN_RUN = Pattern.compile("[A-Za-z0-9+=_-]{32,}+");
 
     private static final Pattern IMAGE_DIGEST = Pattern.compile("sha256:[0-9a-f]{64}");
 
@@ -195,11 +195,23 @@ class ShippedConfigurationTest {
                     .replaceAll("")
                     .strip();
             boolean token = normalized(key).endsWith("charterworktreetoken");
-            if (!own.isEmpty() && (token || SECRET_SHAPED.matcher(own).find())) {
+            if (!own.isEmpty() && (token || secretShaped(own))) {
                 findings.add(key);
             }
         });
         return findings;
+    }
+
+    /** A value that looks like a credential: it holds a {@link #TOKEN_RUN} with both letters and digits. */
+    private static boolean secretShaped(String value) {
+        Matcher run = TOKEN_RUN.matcher(value);
+        while (run.find()) {
+            String token = run.group();
+            if (token.chars().anyMatch(Character::isLetter) && token.chars().anyMatch(Character::isDigit)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -334,7 +346,11 @@ class ShippedConfigurationTest {
                 .containsExactly("CHARTER_WORKTREE_TOKEN");
         assertThat(secretFindings(envEntries("CHARTER_WORKTREE_TOKEN=\"\"\n", true)))
                 .isEmpty();
-        // A long path or a pinned image digest is not a credential.
+        // A long run of letters alone, or of digits alone, is not a credential; nor is a long path or an image digest.
+        assertThat(secretFindings(flattenedYaml("name: " + "spec-kitty_charter-".repeat(3) + "\n")))
+                .isEmpty();
+        assertThat(secretFindings(flattenedYaml("serial: " + "0123456789".repeat(4) + "\n")))
+                .isEmpty();
         assertThat(secretFindings(flattenedYaml("root: /var/lib/spec-kitty/charter-config/and/more/levels\n")))
                 .isEmpty();
         assertThat(secretFindings(flattenedYaml("image: example.org/charter@sha256:" + "ab12".repeat(16) + "\n")))
