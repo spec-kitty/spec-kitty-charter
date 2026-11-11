@@ -99,6 +99,11 @@ class ParadigmEntityTest {
                         .build())
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("unique");
+        assertThatThrownBy(() -> valid("ddd")
+                        .principles(List.of(principle("Fast"), principle("fast\u00A0")))
+                        .build())
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("unique");
     }
 
     @Test
