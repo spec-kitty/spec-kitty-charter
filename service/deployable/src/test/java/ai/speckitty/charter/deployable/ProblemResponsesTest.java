@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,11 @@ class ProblemResponsesTest {
         UnwritableController unwritableController() {
             return new UnwritableController();
         }
+
+        @Bean
+        ReservedController reservedController() {
+            return new ReservedController();
+        }
     }
 
     /** A handler whose response Spring cannot write: a failure {@code ResponseEntityExceptionHandler} resolves. */
@@ -57,6 +63,16 @@ class ProblemResponsesTest {
         @GetMapping("/test/unwritable")
         String unwritable() {
             throw new HttpMessageNotWritableException("a secret the body must not show");
+        }
+    }
+
+    /** A handler reserved as the contract reserves an operation: the interceptor answers it {@code 501}. */
+    @RestController
+    @ReservedOperation
+    static class ReservedController {
+        @GetMapping("/test/reserved")
+        String reserved() {
+            return "never served";
         }
     }
 
@@ -320,6 +336,20 @@ class ProblemResponsesTest {
         assertThat(output.getAll())
                 .containsOnlyOnce("ERROR")
                 .containsOnlyOnce("HttpMessageNotWritableException: a secret the body must not show");
+    }
+
+    /**
+     * A reserved operation answers {@code 501} by design (ADR-0020 D8): the client gets the problem, and the log gets
+     * no {@code ERROR} and no stack trace, so an operator is not alerted for a call the contract reserves (#406).
+     */
+    @Test
+    void aReservedOperationIsANotImplementedProblemThatIsNotLoggedAsAnError(CapturedOutput output) throws Exception {
+        mvc.perform(get("/test/reserved").header("Authorization", BEARER))
+                .andExpect(status().isNotImplemented())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content().json("{\"title\":\"Not Implemented\",\"status\":501}", JsonCompareMode.STRICT));
+
+        assertThat(output.getAll()).doesNotContain("ERROR").doesNotContain("ResponseStatusException");
     }
 
     @Test
