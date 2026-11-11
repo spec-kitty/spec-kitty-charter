@@ -18,8 +18,8 @@ import java.util.Set;
 /**
  * The lazy, repository-backed DRG walk driver (ADR-0025 Decision 4). It visits a component's effective-origin
  * {@link CharterArtifact#derivedRelationships() derived relationships}, resolving each neighbour on demand through the
- * {@link ComponentResolver} port, with a visited-URN cycle guard. It never materialises the whole graph: it issues at
- * most one resolver call per distinct reachable component (NFR-001).
+ * {@link ComposeResolver}'s {@link ComponentResolver} of its pack, with a visited-URN cycle guard. It never
+ * materialises the whole graph: it issues at most one resolver call per distinct reachable component (NFR-001).
  *
  * <p>It lives in the application ring, where the ports exist (ADR-0006). It is plain orchestration over the resolver
  * and a {@link GraphWalker} visitor — no IO, no framework; the composition root constructs it.
@@ -36,28 +36,6 @@ public final class GraphWalk {
     private record Held(PackIdentifier pack, Urn urn) {}
 
     private final ComposeResolver resolvers;
-
-    /**
-     * Creates a walk driver over one pack's resolver. A pack-qualified neighbour names a pack this resolver cannot
-     * reach, so the walk passes over it, as it does an unwired kind.
-     *
-     * @param resolver the port that resolves a neighbour URN to its component on demand
-     */
-    public GraphWalk(ComponentResolver resolver) {
-        Objects.requireNonNull(resolver, "resolver");
-        this.resolvers = new ComposeResolver() {
-            @Override
-            public Optional<PackIdentifier> holdingPack(
-                    PackQualifiedReference reference, PackIdentifier referringPack) {
-                return Optional.empty();
-            }
-
-            @Override
-            public ComponentResolver inPack(PackIdentifier pack) {
-                return resolver;
-            }
-        };
-    }
 
     /**
      * Creates a walk driver across the packs of one compose. A bare reference resolves in the pack that holds the
