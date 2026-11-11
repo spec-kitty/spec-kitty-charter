@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -26,7 +26,7 @@ each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** in effect (updated 2026-11-10). The assignment is provisional and changes as the plan
+> **Status:** in effect (updated 2026-11-11). The assignment is provisional and changes as the plan
 > does. The operator approved the proposed homes on 2026-11-10, and the tracker matches this page.
 
 ## The milestones
@@ -62,26 +62,26 @@ Core makes adopting the charter activation contract a 4.0 GA deliverable (spec-k
 
 ## Distribution
 
-Refreshed 2026-11-10 against the tracker (142 open issues). Closed issues have left the tables. The order of work
+Refreshed 2026-11-11 against the tracker (184 open issues). Closed issues have left the tables. The order of work
 inside and across milestones is the slice order in the [Roadmap](/plans/roadmap/#toward-a-service-core-can-use).
 
 ### 4.0 GA (contract adopted)
 
-Not close: four P0s are open, two of them in flight.
+Not close: two P0s are open (#405 and #406), and the profile and mission-type reads have landed.
 
 | Issue | Title | Slice | Note |
 |---|---|---|---|
-| #407, #99 | Agent-profile reads; mission-type reads (with #96, #148) | A | In flight |
+| #96 | R2: artifact bodies, decide and shape | A | Profiles (PR #470) and mission-type kinds (PR #472) are served; procedure and template bodies are not |
 | #405 | Language profiles cannot reach their conventions styleguide | B | Fixed upstream in open-packs; the pin bump remains |
 | #406 | Reserved operations' `501` is logged as an error with a stack trace | D | With #454 |
 | #97 | R3: merged CRG and graph queries, decide and shape | C | The effective graph read exists (PR #448) |
 | #45, #196 | Contract release publishing; tag ruleset | D | Built; open until a release is cut, which the operator holds |
 | #312, #367 | Orphaned `ActionNotFound` response; refactor the over-limit methods | D | #367 before the complexity gate #371 |
-| #206, #397, #408, #409, #411 | `required_<plural>` to presets; retire the CRG walk; cascade controls; and follow-ups | B to D | #397: check whether #448 made it moot. #411 (unserved kind gives a bare 400) shrinks with slice A |
+| #206, #397, #408, #409, #411 | `required_<plural>` to presets; retire the CRG walk; cascade controls; and follow-ups | B to D | #397: check whether #448 made it moot. #411 (unserved kind gives a bare 400) shrinks as the last kinds become readable |
 
 Also in 4.0 GA since 2026-11-10: the usability-run issues #450 to #454, the ADR-0066 track #424, #434, #435 and #438
-(#428 and #437 close with PR #460), the ADR requests #456 to #458, #431, #432, and #148, moved forward from
-Post-cutover. #103 closed as shaped into #450.
+(#428 and #437 closed with PR #460), the ADR requests #456 to #458, #431 and #432. Issue #407 (PR #470) and issues #99, #100
+and #148 (PR #472) have closed. #103 closed as shaped into #450.
 
 ### 4.x cutover
 
@@ -96,7 +96,7 @@ Far: stages 3 and 4 have not started, and the read inventory is mostly undecided
 | #47 | `x-source` citation checker | PR #436 checks the paths; narrow to the symbol check or close |
 | #127, #128 | Hosted-first reshape; mint contract 1.0.0 | Before the first switched route (ADR-0022 D6) |
 | #130, #133 | Refusal-code enums; `x-extensible-enum` | Contract shape; decide before 1.0.0 |
-| #94, #96, #98, #100 to #102, #104 to #110, #112 | Epic and steps: the cutover read inventory | #96 and #100 are in slice A |
+| #94, #96, #98, #101, #102, #104 to #110, #112 | Epic and steps: the cutover read inventory | #96 is in slice A; #99 and #100 closed with PR #472 |
 | #29, #30, #31, #33, #15, #38, #68 | Behavior-first overhaul and the scenario net | The scenarios now gate each switch, so this net is on the critical path |
 | #69, #70 to #74, #76, #332, #343 | Stages 3 and 4 | #70 and #71 are in slice E. #76 still cites the closed #75 |
 | #357 to #360, #67, #185, #306 | Resolver deferrals and follow-ups | #67: the 2026-11-02 triage proposed Post-cutover. #185: re-check against [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) |
@@ -107,8 +107,8 @@ Open-ended by definition: Creeds and Values (#16 to #23), pack governance (#55, 
 the `impacts` vocabulary (#77, #79, #80, #82), offering extensions (#40, #42), quality follow-ups (#49, #52, #36), the
 core follow-ups epic #361 (#333 to #342), and #142, #149, #154, #160, #163, #164, #178, #181, #184, #349, #350, #355.
 
-- **#148** (mission types and step contracts as full kinds) moved forward to 4.0 GA on 2026-11-10: the usability run
-  makes it a core-readiness blocker, and slice A delivers it.
+- **#148** (mission types and step contracts as full kinds) moved forward to 4.0 GA on 2026-11-10 and closed with PR #472
+  on 2026-11-11.
 - **The id spelling at the seam** (slug versus `PROJECT_001`), under #361, blocks the first core integration: pull it
   into slice E.
 - **#181** is overtaken by [ADR-0063](/adr/0063-pack-mutability-policy-file/) (the mutability policy file).

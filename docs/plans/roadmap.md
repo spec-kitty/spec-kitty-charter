@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -67,23 +67,28 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-11-10. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
+As of 2026-11-11. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
 an architecture and planning review of the plan pages against `main`, the tracker, and the nightly SonarCloud scan.
 
 - **Phase 1 steps 1 to 5, 3a and the activation register are built.** The contract holds the API root, the offering
   reads, the generic artifact reads (`/packs/{packId}/artifacts[/{kind}/{artifactId}]`), pack registration and the
   activation register with its effective reads (`/artifacts`, `/skipped`, `/graph` and the effective action context,
   R9). The whole-pack round trip is a required check. Contract `0.1.0` is still uncut (#45, #196).
-- **What the usability run found.** The service is not yet usable by core. Artifact bodies are served for five kinds
-  only (tactic, directive, styleguide, paradigm, toolguide; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)), so
-  agent profiles, mission types, step contracts, procedures and templates cannot be read, although their domain and
-  storage bindings exist. No real pack registers unedited (#451, #431, #452), language tags do not alias (#453), the
+- **What the usability run found (2026-11-10).** The service is not yet usable by core. Artifact bodies were served for
+  five kinds only (tactic, directive, styleguide, paradigm, toolguide; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)), so
+  agent profiles, mission types, step contracts, procedures and templates could not be read, although their domain and
+  storage bindings exist. Two of those gaps are closed since (see **Landed since** below). No real pack registers unedited (#451, #431, #452), language tags do not alias (#453), the
   effective action context lists fewer directives than core and links no bodies (#450), and startup refusals are hard
   to read (#454).
-- **In flight.** Two missions wire agent profiles and mission types to reads (#407, #96, #99, #148), through the
-  generic kind route and `_links` ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)), not new
-  per-kind routes. PR #460 lands phase 1 of step enhancements and prompt fragments
-  ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/), #437).
+- **Landed since.** PR #470 (2026-11-10) made agent profiles readable, pack-scoped and under an activation, and closed issue
+  #407. PR #472 (2026-11-11) did the same for mission types, their steps, step contracts and skeletons, and closed
+  issues #99, #100 and #148. Both go through the generic kind route and `_links`
+  ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)), not new per-kind routes. PR #460 landed phase 1 of
+  step enhancements and prompt fragments ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)); #428
+  and #437 are closed.
+- **Still open from the reads.** Procedure and template bodies have no read yet. #96 (artifact bodies) stays open for
+  them, and #104 covers the template catalog. PR #472 took only the item-link half of #450, so its action-context
+  scoping half is still open. #469 asks the activation to link its graph and an action-context template.
 
 ## Toward a service core can use
 
@@ -92,7 +97,7 @@ tracking issue. Re-run the usability run after slices B and C; its checklist is 
 
 | Slice | Scope | Done when | Depends on |
 |---|---|---|---|
-| **A. Every kind is readable** | #407, #96, #99, #148 (moved forward from Post-cutover), #100; #437 via PR #460 | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | in flight |
+| **A. Every kind is readable** | ~~#407, #99, #100, #148~~ done; #96 open for procedure and template bodies (#469: the activation links its graph and context) | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | Profiles (PR #470) and mission types, steps, step contracts and skeletons (PR #472) are served; procedures and templates are not |
 | **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
 | **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd pack |
 | **D. A contract release core can vendor** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
