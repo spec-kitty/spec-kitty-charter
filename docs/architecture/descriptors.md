@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -145,7 +145,7 @@ The single graph file of an org pack.
 
 | Field | Meaning |
 |---|---|
-| `nodes[]` | `id`, `kind` (the plural form, for example `directives`), `title`, `body_path` to the descriptor file |
+| `nodes[]` | `id`, `kind` (the plural form, for example `directives`), `title`, `body_path` to the descriptor file, relative to the pack root and never leaving it (#254) |
 | `edges[]` | `source` and `target` (URNs), `relation`, optional `when` and `reason`; `impacts` on an `impacts` edge |
 
 A fragment has no header fields: core overwrites `pack_name`, `source_kind`, `source_ref`,

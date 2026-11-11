@@ -90,43 +90,16 @@ class PackPolicyGraphTest {
     @ParameterizedTest
     @ValueSource(
             strings = {"/etc/passwd", "../outside.md", "directives/../../outside.md", "C:\\x.md", "\\\\host\\x.md"})
-    void aFragmentNodeWhoseBodyPathLeavesThePackIsAFindingAndTheNodeIsDropped(String bodyPath) {
-        GraphBuild build = PackPolicy.graph(
-                "qa",
-                fragment(
-                        List.of(new RawNode(
-                                "b",
-                                "directives",
-                                Optional.of("B"),
-                                Optional.empty(),
-                                List.of(),
-                                Optional.of(bodyPath))),
-                        List.of()));
-
-        assertThat(build.graph().nodes()).isEmpty();
-        assertThat(build.findings())
-                .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
-                        FRAGMENT,
-                        List.of("nodes", "0"),
-                        "qa/drg/fragment.yaml: node b body_path '" + bodyPath + "' escapes the pack root"));
+    void aBodyPathThatLeavesThePackRootIsAnEscapeNamingTheNodeAndThePath(String bodyPath) {
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath)))
+                .contains("node b body_path '" + bodyPath + "' escapes the pack root");
     }
 
-    @Test
-    void aFragmentNodeWhoseBodyPathStaysInsideThePackBinds() {
-        GraphBuild build = PackPolicy.graph(
-                "qa",
-                fragment(
-                        List.of(new RawNode(
-                                "b",
-                                "directives",
-                                Optional.empty(),
-                                Optional.empty(),
-                                List.of(),
-                                Optional.of("directives/b..md"))),
-                        List.of()));
-
-        assertThat(build.findings()).isEmpty();
+    @ParameterizedTest
+    @ValueSource(strings = {"directives/b.directive.yaml", "directives/b..md", "./b.md"})
+    void aBodyPathThatStaysInsideThePackRootOrNoneIsNoEscape(String bodyPath) {
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath))).isEmpty();
+        assertThat(PackPolicy.bodyPathEscape("b", Optional.empty())).isEmpty();
     }
 
     @Test

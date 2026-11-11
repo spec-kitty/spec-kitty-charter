@@ -213,8 +213,8 @@ request for #193 asks for.
 
 Made by [#382](https://github.com/spec-kitty/spec-kitty-charter/issues/382), the follow-up the operator asked
 for when the SHARING-004 scenario (#374) pinned the old wording on 2026-11-05. The decision text below is
-unchanged, and decision 6 is annotated where it stands. Proposed with the pull request for #496; it is in force
-for that code once the operator approves it.
+unchanged, and decision 6 is annotated where it stands. It is in force for the code #496 ships, and stays Proposed
+pending the operator's acceptance.
 
 - **Decision 6: an escape has a refusal of its own.** A sidecar `path` that leaves `assets/` as written
   (absolute in POSIX or Windows form, or with a `..` part: the lexical rule of validate mode's `ASSET_PATH_ESCAPE`)
@@ -223,7 +223,8 @@ for that code once the operator approves it.
   asset file, a file another rule classifies, or a link the store's read does not hold, is still
   `payload assets/<path> does not exist`.
 - **On the wire,** the code is unchanged: the composing read answers `500 pack_unreadable` and a registration lists
-  the sidecar's violation; only the detail names the escape.
+  the sidecar's violation; the detail names the escape. A registration lists every sidecar the store refuses once, at
+  its file, no longer a second time as `unmodelled`.
 
 ## Context
 

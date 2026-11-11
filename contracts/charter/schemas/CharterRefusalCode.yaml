@@ -42,8 +42,8 @@ description: >-
   skeleton reads for a name that does not decode to a skeleton of the type. pack_level_mismatch is no longer raised: no operation
   loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
   registration (validation_failed), as the definition of raised below counts it: a graph document (a root
-  *.graph.yaml shard or drg/fragment.yaml) that cannot be read, breaks its schema or breaks a graph rule (a fragment
-  node whose body_path leaves the pack root, #254) is a violation per fault at its pack-relative file, and a registration lists every such fault beside the pack's other faults, not the first
+  *.graph.yaml shard or drg/fragment.yaml) that cannot be read, breaks its schema or breaks a graph rule (a
+  fragment node whose body_path leaves the pack root, #254) is a violation per fault at its pack-relative file, and a registration lists every such fault beside the pack's other faults, not the first
   only. pack_level_mismatch stays in the enum so that the contract keeps accepting it.
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of

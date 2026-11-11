@@ -1,4 +1,4 @@
-### Changed
+### Breaking
 
 - A `drg/fragment.yaml` node whose `body_path` leaves the pack root is refused (#254). The path is judged as written:
   absolute in POSIX or Windows form (a drive or UNC root), or with a `..` part. It is a graph fault of the fragment: a

@@ -679,6 +679,49 @@ class FileSystemPackInspectorTest {
     }
 
     /**
+     * #254: a fragment node whose body_path leaves the pack root refuses the whole fragment, in validate mode as on the
+     * load and in the same words, so neither judges its edges (here one to a node the fragment declares).
+     */
+    @Test
+    void aFragmentWithABodyPathOutsideThePackIsRefusedWholeInValidateModeAsOnTheLoad(@TempDir Path host)
+            throws IOException {
+        Path dir = host.resolve("qa");
+        write(dir, "pack.yaml", """
+                pack_id: 01ARWG13C00000000000001ABC
+                pack_version: 1.0.0
+                name: qa
+                pack_level: org
+                pack_drg: drg/fragment.yaml
+                """);
+        write(dir, "drg/fragment.yaml", """
+                nodes:
+                - id: D1
+                  kind: directives
+                  body_path: ../outside.directive.yaml
+                - id: D2
+                  kind: directives
+                edges:
+                - {source: 'directive:D1', target: 'directive:D2', relation: suggests}
+                """);
+        String reason = "node D1 body_path '../outside.directive.yaml' escapes the pack root";
+
+        PackVerdict verdict = PackPolicy.judge(full(dir));
+        FilesystemPackStore.GraphRead load =
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackIdentifier("qa"));
+
+        assertThat(verdict.findings())
+                .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
+                .containsExactly(
+                        tuple(PackFindingCode.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "qa/drg/fragment.yaml " + reason));
+        assertThat(load.documents())
+                .as("the load reads no part of the fragment")
+                .isEmpty();
+        assertThat(load.violations())
+                .extracting(PackElementViolation::file, PackElementViolation::reason)
+                .containsExactly(tuple("drg/fragment.yaml", reason));
+    }
+
+    /**
      * #251: an asset file the store's read does not hold (here, a link that leaves the pack) is refused with the load's
      * reason, and a sidecar naming it names no payload, in validate mode as in the load. Its path stays inside
      * {@code assets/} as written, so it is a missing payload, not an escape (#382 judges the path as written).

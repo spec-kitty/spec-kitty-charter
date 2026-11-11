@@ -634,10 +634,12 @@ final class FilesystemPackStore {
 
     /**
      * Reads a pack's DRG documents with every field: the root {@code *.graph.yaml} shards by name, then
-     * {@code drg/fragment.yaml} when the pack has one. A document that cannot be read is a violation, not a refusal.
+     * {@code drg/fragment.yaml} when the pack has one. A document that cannot be read is a violation, not a refusal, and
+     * so is a fragment with a node whose {@code body_path} leaves the pack root (#254): one violation per such node, and
+     * the fragment is not read.
      *
      * @param id the pack
-     * @return the readable documents and a violation per unreadable one
+     * @return the readable documents and the violations of the others
      */
     GraphRead readGraphs(PackIdentifier id) {
         Path directory = existingDirectory(id);

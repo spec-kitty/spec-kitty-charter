@@ -665,13 +665,6 @@ public final class PackPolicy {
         List<PackFinding> findings = new ArrayList<>();
         for (int i = 0; i < raw.nodes().size(); i++) {
             RawNode node = raw.nodes().get(i);
-            Optional<String> escape = raw.shape() == RawGraph.Shape.FRAGMENT
-                    ? bodyPathEscape(node.ref(), node.bodyPath())
-                    : Optional.empty();
-            if (escape.isPresent()) {
-                findings.add(graphFinding(raw, NODES, i, origin + ": " + escape.get()));
-                continue;
-            }
             Optional<DrgNode> bound = switch (raw.shape()) {
                 case SHARD -> shardNode(node);
                 case FRAGMENT -> fragmentNode(node);
@@ -699,8 +692,8 @@ public final class PackPolicy {
 
     /**
      * The fault of a fragment node whose {@code body_path} leaves the pack root as written ({@link PackRelativePaths#leavesRoot},
-     * #254): a graph fault of the fragment, which validate mode reports at the node and the load refuses the fragment
-     * with, in the same words.
+     * #254): a graph fault of the fragment. Validate mode and the load both refuse the whole fragment with it, in the
+     * same words, as a graph document that cannot be read.
      *
      * @param id the node's id
      * @param bodyPath its {@code body_path}, when written
