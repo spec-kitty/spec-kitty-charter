@@ -249,7 +249,8 @@
       "last_transition_at": "2026-11-11T07:28:58.554563+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "implementing in worktree"
+        "implementing in worktree",
+        "Forced: nothing to commit. None of the 11 :packs classes reads packs/qa or packs/internal; they pass in a worktree without the synced trees (180 tests, 0 failed). See traces."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
