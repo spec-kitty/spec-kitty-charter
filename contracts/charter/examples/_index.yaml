@@ -36,6 +36,8 @@ files:
   - PackRegistrationStatus.version-conflict.yaml
   - PackRegistrationStatus.asset-path-escape.yaml
   - PackRegistrationStatus.fragment-body-path-escape.yaml
+  - PackRegistrationStatus.overrides-source-not-activatable.yaml
+  - CharterRefusal.overrides-source-not-activatable.yaml
   - Artifact.mission-type.yaml
   - Artifact.mission-step-contract.yaml
   - MissionStep.specify.yaml

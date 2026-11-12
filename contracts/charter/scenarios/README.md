@@ -316,6 +316,10 @@ that calls it. A run that selects only some scenarios reports the others' operat
 - `prompt-fragment-refusals.feature`: a malformed step enhancement or prompt fragment, refused `prompt_fragment_invalid`
   at its file (a violation of a `422 validation_failed` registration, `500 pack_unreadable` on a read, and the top-level
   code of `putPackRelationship`'s `422`), each refusal beside its passing twin.
+- `override-source-kind.feature`: an `overrides` edge whose source is not of an activatable kind (FR-014, #447),
+  refused `overrides_source_not_activatable` (a violation of a `422 validation_failed` registration at the graph
+  document and of `putPackRelationship`'s `422 validation_failed` at `/from`, `500 pack_unreadable` on a read), each
+  refusal beside its passing twin.
 - `prompt-slots.feature`: the slots a step prompt declares (ADR-0066, #424): `prompt_slot_malformed` whatever the
   descriptor declares, `prompt_slot_not_empty` only behind the descriptor's `schema_version: "1.0"` gate, each at the
   prompt file and beside its passing twin.
