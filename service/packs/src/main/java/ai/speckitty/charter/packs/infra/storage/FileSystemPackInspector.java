@@ -363,7 +363,7 @@ public final class FileSystemPackInspector implements PackInspector {
                             readMapped(path, file, mapped.kind());
                         }
                     }
-                    // Reported below from the store's listing, with the retired Markdown files.
+                    // Reported by readAll from the store's listing, with the retired Markdown files.
                     case PackFileKind.Retired retired -> {}
                     case PackFileKind.Unclassified unclassified -> {}
                 }
