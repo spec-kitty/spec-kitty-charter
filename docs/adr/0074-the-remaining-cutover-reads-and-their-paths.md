@@ -155,12 +155,14 @@ both to the operator, who ruled on each (decisions 9 to 14).
 
    The kinds served before this record keep `?kind=` only; their collection paths stay write targets.
 10. **Items.** `asset`, `skill` and `glossary` each get a literal item path and an operation of their own, in both
-    trees, as `agent_profile` and `mission_type` have: `…/artifacts/asset/{assetId}`, `…/artifacts/skill/{skillId}`
+    trees, as `agent_profile` and `mission_type` have: `…/artifacts/asset/{artifactId}`, `…/artifacts/skill/{artifactId}`
     and `…/artifacts/glossary/{contextId}`. Each answers its kind's own schema. As for an agent profile, the templated
     item read `…/artifacts/{kind}/{artifactId}` does not render them.
+    The asset and skill item paths name their parameter `{artifactId}`, as `agent_profile`'s does (operator,
+    2026-11-12); the glossary keeps `{contextId}` from ADR-0049.
 11. **Parts are sub-resources under the item.** This follows `steps/{stepId}`, `skeletons/{skeletonName}` and
     `references`. A part that is a collection takes a plural noun, and a single part takes a singular one:
-    - `GET …/artifacts/asset/{assetId}/payload`: the asset's bytes. The `Content-Type` is the asset's `mime` when it is
+    - `GET …/artifacts/asset/{artifactId}/payload`: the asset's bytes. The `Content-Type` is the asset's `mime` when it is
       a well-formed `type/subtype`, and `application/octet-stream` when it is not; the item keeps `mime` as written,
       and validate mode still reports a malformed or mismatched one as a policy finding. This amends ADR-0040 decision
       1 for the payload read only: the store still never chooses a content form by `mime`.
