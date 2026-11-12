@@ -664,15 +664,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!misplaced.isEmpty()) {
             return new Refused(String.join("; ", misplaced));
         }
-        // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses.
-        List<String> membership =
-                ManifestMembership.mismatch(good.value(), ManifestMembership.derivedAt(source, strategy));
+        // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses, and
+        // the gate writes the derived lists, in path order, as the store's write does.
+        PackManifestDso derived = ManifestMembership.derivedAt(source, new WholePackStore(strategy));
+        List<String> membership = ManifestMembership.mismatch(good.value(), derived);
         if (!membership.isEmpty()) {
             return new Refused(String.join("; ", membership));
         }
-        Map<String, String> pairing = pairing(good.value(), target, written);
+        Map<String, String> pairing = pairing(derived, target, written);
         PackManifests.Recomputed recomputed = PackManifests.recompute(
-                good.value(),
+                derived,
                 listed -> pairing.containsKey(listed)
                         ? FilesystemPackStore.readBytes(target.resolve(pairing.get(listed)))
                         : Optional.empty());

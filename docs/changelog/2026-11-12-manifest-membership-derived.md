@@ -33,4 +33,7 @@ audience:
   uploaded manifest that lists an entry the pack does not hold, or leaves out one it holds, is refused
   `422 validation_failed`, code `manifest_membership`, at `pack-manifest.yaml`. Order and hashes are not judged. A pack
   author can leave the manifest out and let the service write it.
+- **A pack stored before this change is re-registered at a new version.** Its next write adds the stamped manifest,
+  so its revision changes. Re-registering it unchanged at the same `pack_version`, which answered `unchanged`, now
+  answers `409`; send a new `pack_version`.
 - **The example packs.** `built-in`'s manifest lists all 40 of its artifacts (it listed 22), and `org-base` holds one.

@@ -205,6 +205,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     private final DirectoryRename rename;
     private final RegistryWriteLock registryLock;
     private final PackWriteGeneration generation;
+    private final WholePackStore wholePack;
 
     /**
      * A commit store that swaps directories atomically.
@@ -263,6 +264,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.rename = Objects.requireNonNull(rename, "rename");
+        this.wholePack = new WholePackStore(strategy);
         this.registryLock = Objects.requireNonNull(registryLock, "registryLock");
         this.generation = Objects.requireNonNull(generation, "generation");
     }
@@ -390,7 +392,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             copyTree(liveDir, staging);
             edit.apply(staging, parent);
             // #110: every commit restamps the manifest over the edited copy, and generates it when the pack held none.
-            ManifestMembership.stamp(staging, strategy);
+            ManifestMembership.stamp(staging, wholePack, strategy);
             PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up

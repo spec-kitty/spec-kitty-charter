@@ -78,6 +78,37 @@ class ManifestMembershipTest {
     }
 
     @Test
+    @DisplayName("the project pack's derived lists are its four artifact files and its preset, each a file on disk")
+    void theProjectPacksDerivedListsAreItsFiles() {
+        Path pack = ExamplePacks.pack(PROJECT);
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        PackManifestDso derived = ManifestMembership.derived(loaded.pack(), loaded.layout());
+
+        assertThat(derived.constituents())
+                .extracting(c -> c.kind() + ":" + c.id() + "@" + c.path())
+                .containsExactly(
+                        "agent_profile:project-reviewer@agent_profiles/project-reviewer.agent.yaml",
+                        "directive:PROJECT_001@directives/PROJECT_001.directive.yaml",
+                        "skill:project-triage@skills/project-triage.skill.yaml",
+                        "styleguide:reasons-canvas-writing@" + STYLEGUIDE);
+        assertThat(derived.presets())
+                .extracting(p -> p.id() + "@" + p.path())
+                .containsExactly("project@presets/project.yaml");
+        for (String name : ExamplePacks.names()) {
+            WholePackStore.LoadedPack each = store.load(ExamplePacks.pack(name));
+            PackManifestDso lists = ManifestMembership.derived(each.pack(), each.layout());
+            lists.constituents()
+                    .forEach(c -> assertThat(ExamplePacks.pack(name).resolve(c.path()))
+                            .as(name)
+                            .isRegularFile());
+            lists.presets()
+                    .forEach(p -> assertThat(ExamplePacks.pack(name).resolve(p.path()))
+                            .as(name)
+                            .isRegularFile());
+        }
+    }
+
+    @Test
     @DisplayName("every example pack holds a manifest whose lists are the derived ones and whose hashes verify")
     void everyExamplePackHoldsAFreshDerivedManifest() {
         for (String name : ExamplePacks.names()) {
@@ -204,6 +235,23 @@ class ManifestMembershipTest {
     }
 
     @Test
+    @DisplayName(
+            "a registration refuses a pack-manifest.yaml that is a directory, before the stamp could write over it")
+    void aRegistrationRefusesAManifestThatIsNotAFile(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(PROJECT, host);
+        deleteManifest(pack);
+        Files.createDirectory(pack.resolve(PackFileSet.MANIFEST));
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                            .containsExactly(org.assertj.core.groups.Tuple.tuple(PackFileSet.MANIFEST, "unreadable"));
+                });
+    }
+
+    @Test
     @DisplayName("the staged tree is restamped before its revision: generated when absent, derived and fresh")
     void theStagedTreeIsRestamped(@TempDir Path host) throws IOException {
         Path generated = ExamplePacks.copyOf(PROJECT, host.resolve("generated"));
@@ -238,6 +286,22 @@ class ManifestMembershipTest {
                     .extracting(c -> c.kind() + ":" + c.id())
                     .contains("toolguide:ripgrep");
         }
+    }
+
+    @Test
+    @DisplayName("a PUT to a stored pack with an unreadable artifact file goes ahead, and the manifest lists what the"
+            + " pack reads")
+    void aPutToAPackWithAnUnreadableArtifactGoesAhead(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(PROJECT, host);
+        Files.writeString(pack.resolve("directives/BROKEN.directive.yaml"), "id: BROKEN\nnot: [a directive\n");
+
+        commitStore(pack).commit(new PackIdentifier(PROJECT), null, toolguide(), null);
+
+        assertFreshAndDerived(pack);
+        assertThat(manifestOf(pack).constituents())
+                .extracting(PackManifestDso.Constituent::path)
+                .contains("ripgrep.toolguide.yaml")
+                .doesNotContain("directives/BROKEN.directive.yaml");
     }
 
     @Test
