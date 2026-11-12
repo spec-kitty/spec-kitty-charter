@@ -22,7 +22,7 @@ audience:
 
 On 2026-11-12 a planning Op (planner profile, `01M78GFNS4DY0J1E5XMPAVJNQC`) reviewed the slices of the
 [roadmap](/plans/roadmap/) against `main` at `1d244f3` and the tracker. Since the
-[2026-11-11 plan](/plans/next-slices-2026-11-11/), slice B landed (PR #501), the six quick wins closed, and
+[2026-11-11 plan](/plans/next-slices-2026-11-11/), slice B landed (PR #501), five of the six quick wins closed (#494, green nightly runs, is open), and
 [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) (PR #529) decided the remaining cutover
 reads. The operator approved the slices below and their order on 2026-11-12.
 
@@ -34,7 +34,7 @@ reads. The operator approved the slices below and their order on 2026-11-12.
 | **B. Real packs register as they are** (#466) | Built (PR #501, ADR-0073) | #110, and the proof once open-packs #241 and #242 land; see B close-out |
 | **C. The effective step and action context** (#467) | In flight, as its own Mission | #438, #450, #97, #439, #447 |
 | **D. Release machinery and clean-up** (#468) | Mostly done: #454, #312 (PR #507), #406 (PR #481), #9 and #72 (PR #527), #47 | #196, #45, #367 (21 methods left after PR #525), #371 |
-| **E. Core ingests** (#13) | Not started; core's work | #13, #70, #452 |
+| **E. Core ingests** (#13) | Not started; core's work, after a released contract | #13, #70, #452 |
 
 Three items the 2026-11-11 plan still listed under slice B were already closed, and need no slice:
 
@@ -131,7 +131,7 @@ Slice C and slice D run first. After them, in this order:
 
 ## Where the issues moved from core belong
 
-The scope migration moved #512 to #520, #528 and #535 here. Each now has a slice or an epic:
+The scope migration moved #512 through #520, #528 and #535 here. Each now has a slice or an epic:
 
 | Issue | Home |
 | --- | --- |
@@ -152,5 +152,5 @@ No open issue was found delivered or duplicated beyond those already closed on 2
   and #245.
 - The core work parked under #361, and slice E.
 - Contract 1.0.0 (#128) and hosting (#127, #396), which follow slice E.
-- The stale issues the 2026-11-11 plan named: Creeds and Values (#16), the verifiability epic (#143) and
+- The stale issues the 2026-11-11 plan named: Creeds and Values (#16) and
   #477.

@@ -68,7 +68,7 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-11-12: slice B is built (PR #501), slice A closed (#492), the quick wins of 2026-11-11 closed, the switch
+As of 2026-11-12: slice B is built (PR #501), slice A closed (#492), the quick wins of 2026-11-11 closed except #494 (green nightly runs), the switch
 gate is checked per operation (PR #527, #9 and #72), and ADR-0074 decided the remaining cutover reads (PR #529). The
 next slices are in [Next slices after the 2026-11-12 slice review](/plans/next-slices-2026-11-12/). The notes below
 are as of 2026-11-11. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
@@ -107,7 +107,7 @@ each slice and the reasons for the order are in [Next slices after the 2026-11-1
 | **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | Built in PR #501 (#451, #431, #432, #490; ADR-0073). Left: #110 (manifest restamping), and the proof: the drift watch (#509) green, then `openPacksRef` raised | The drift watch registers open-packs `main` unedited, and the usability run's registration checks pass | open-packs #241 and #242 for the proof |
 | **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438, #450, #97, #439, #447. In flight | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | — |
 | **D. Release machinery and clean-up** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #367, #371 left; #454, #406, #312, #47, #9 and #72 done | Its tickets close. A release is not tied to any slice: the operator cuts a 0.x release when what the contract offers suits them (ruling, 2026-11-12) | — |
-| **A2. The reads ADR-0074 added** ([#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)) | #98 presets, #105 assets, #107 skills, #532, #409; #106 glossary last | Presets, assets, skills and glossary contexts are served in both trees by ADR-0074's paths, each through the ADR-0059 D1 gate | C and D first; open-packs follows #106 |
+| **A2. The reads ADR-0074 added** ([#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)) | #98 presets, #105 assets, #107 skills, #532, #409; #106 glossary last | Presets, assets, skills and glossary contexts are served in both trees by ADR-0074's paths, each through the ADR-0059 D1 gate | — (runs after C and D); open-packs follows #106 |
 | **F. The kind taxonomy and the mission-type schema** ([#537](https://github.com/spec-kitty/spec-kitty-charter/issues/537)) | #112 (R18), #514, #520, #515 (needs a ruling), #533 | The kind table is served as data; `mission_step_contract` is retired; steps are the single authoring surface | A2 |
 | **G. Agent profile resolution** ([#538](https://github.com/spec-kitty/spec-kitty-charter/issues/538)) | #102 (R8), #42, #512, #380 | Profile resolution is a contract operation; a human can serve an `operator` step | F |
 | **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70 | Core's seam tests pass through the generated client | A released contract |
