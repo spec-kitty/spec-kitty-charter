@@ -54,7 +54,6 @@ class PackPolicyVocabularyTest {
         assertThat(code(PACK_YAML)).isEqualTo(PackFindingCode.PACK_UNREADABLE);
         assertThat(code(SHARD)).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
         assertThat(code(FRAGMENT)).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
-        assertThat(code("org-charter.yaml")).isEqualTo(PackFindingCode.ORG_CHARTER_SCHEMA_ERROR);
         assertThat(code("tactics/x.tactic.yaml")).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
     }
 
@@ -94,16 +93,18 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
-    void anOrgCharterParseFailureIsAnOrgCharterSchemaError() {
+    void aRetiredOrgCharterIsAnArtifactSchemaErrorLikeEveryRetiredFile() {
         assertThat(PackPolicy.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(
-                                "org-charter.yaml", new ParseFailure("org-charter.yaml", "bad indent"), List.of())))
+                                "org-charter.yaml",
+                                ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)"),
+                                List.of())))
                 .containsExactly(new PackFinding(
-                        PackFindingCode.ORG_CHARTER_SCHEMA_ERROR,
+                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
                         "org-charter.yaml",
                         List.of(),
-                        "qa/org-charter.yaml is not valid YAML: bad indent"));
+                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)"));
     }
 
     @Test

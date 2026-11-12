@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -19,7 +18,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -58,11 +56,12 @@ import org.slf4j.LoggerFactory;
  * <p>Before it lists, it repairs a commit a crash interrupted between its swap's two renames (#281), under the pack's
  * write lock ({@link PackWriteLocks}): a {@code <name>.pack-old-*} aside copy with no {@code <name>} entry, or a pack
  * link that no longer resolves because its target was moved aside, is restored from a sole aside copy, in the pack
- * domain's real directory, for a pack writable through the service, never into or around another pack. A listing that
- * reads the domain while a commit in this JVM is between its renames waits for it (at most ten seconds) and is served
- * its result; one that read it just before the first rename can still miss the pack once, as before. An aside copy
- * beside a live pack, residue of a finished swap, is hidden so it is never restored later. So a read can rename
- * directories in the pack domain.
+ * domain's real directory, for a pack writable through the service, never into or around another pack. The listing
+ * never waits for that lock (#490, NFR-001): when a commit in this JVM holds it, the pack is between its renames, and
+ * is listed through its aside copy, the last committed state ({@link PackDirectories}); so is a pack whose live
+ * directory went missing after the domain was read. An aside copy beside a live pack, residue of a finished swap, is
+ * hidden so it is never restored later, when the lock is free. So a read can rename directories in the pack domain.
+ * An entry that is itself an empty directory (not a link), a create's reservation, is not listed.
  *
  * <p>A refused entry is logged as a warning once for each reason, naming the entry and why, not on every listing; an
  * entry that is served again is warned again if it is refused later.
@@ -70,9 +69,6 @@ import org.slf4j.LoggerFactory;
 public final class StorageRootLocations implements Locations {
 
     private static final String ASIDE_MARKER = ".pack-old-";
-
-    /** How long a listing waits for a pack's write lock before it skips that pack for this listing. */
-    private static final Duration READ_WAIT = Duration.ofSeconds(10);
 
     private static final Logger LOG = LoggerFactory.getLogger(StorageRootLocations.class);
 
@@ -117,14 +113,16 @@ public final class StorageRootLocations implements Locations {
         try {
             Path configRoot = realConfigRoot();
             List<Path> entries = entries();
-            if (repairInterrupted(entries, domain.get())) {
+            Repair repair = repairInterrupted(entries, domain.get());
+            if (repair.relist()) {
                 entries = entries(); // list again, so the restored packs face every rule below
             }
-            for (Path entry : entries.stream()
-                    .filter(StorageRootLocations::isPack)
-                    .sorted()
-                    .toList()) {
-                directoryOf(entry, domain.get(), configRoot)
+            Set<Path> listed = new TreeSet<>();
+            entries.stream().filter(StorageRootLocations::isPack).forEach(listed::add);
+            // A pack a commit is swapping has no entry of its own between the renames; it is listed all the same.
+            listed.addAll(repair.inFlight());
+            for (Path entry : listed) {
+                directoryOf(entry, domain.get(), configRoot, repair.unrepaired())
                         .ifPresent(real -> candidates.add(new Candidate(entry, real)));
             }
         } catch (IOException e) {
@@ -155,12 +153,19 @@ public final class StorageRootLocations implements Locations {
     }
 
     /**
+     * What the repair did: whether the domain must be listed again, the half-swapped entries a commit in this JVM is
+     * swapping now (their lock was held), and the half-swapped entries the repair could take the lock of and still not
+     * restore, which are not served through an aside copy either.
+     */
+    private record Repair(boolean relist, Set<Path> inFlight, Set<Path> unrepaired) {}
+
+    /**
      * Repairs every commit a crash interrupted between its swap's two renames (#281), so the pack is listed again with
      * its last committed state, and hides the aside copies a finished swap left beside a live pack, so they are never
-     * restored later. Each runs under the pack's write lock, the one a registration holds, so a commit in flight in
-     * this JVM is waited for rather than mistaken for a crash. True when the domain must be listed again.
+     * restored later. Each runs under the pack's write lock, the one a registration holds, and only when that lock is
+     * free: a held lock is a commit in flight in this JVM, never a crash, and the listing does not wait for it (#490).
      */
-    private boolean repairInterrupted(List<Path> entries, Path domain) {
+    private Repair repairInterrupted(List<Path> entries, Path domain) {
         Set<String> names = new HashSet<>();
         entries.forEach(entry -> names.add(nameOf(entry)));
         Set<Path> halfSwapped = new TreeSet<>();
@@ -176,17 +181,26 @@ public final class StorageRootLocations implements Locations {
             }
         }
         if (halfSwapped.isEmpty() && stale.isEmpty()) {
-            return false;
+            return new Repair(false, Set.of(), Set.of());
         }
         List<Path> served = servedDirectories(entries);
         boolean changed = false;
+        Set<Path> inFlight = new TreeSet<>();
+        Set<Path> unrepaired = new TreeSet<>();
         for (Path entry : halfSwapped) {
-            changed |= underLock(entry, () -> restore(entry, domain, served));
+            Optional<Boolean> restored = ifUnlocked(entry, () -> restore(entry, domain, served));
+            if (restored.isEmpty()) {
+                inFlight.add(entry);
+            } else if (restored.get()) {
+                changed = true;
+            } else {
+                unrepaired.add(entry);
+            }
         }
         for (Path entry : stale) {
-            underLock(entry, () -> hideStale(entry, domain));
+            ifUnlocked(entry, () -> hideStale(entry, domain)); // a held lock is a swap that hides its own aside copy
         }
-        return changed;
+        return new Repair(changed, inFlight, unrepaired);
     }
 
     /** The real directories of the entries that resolve now, which a restore must not overlap. */
@@ -209,29 +223,21 @@ public final class StorageRootLocations implements Locations {
     }
 
     /**
-     * Runs {@code work} under the pack's write lock and answers its result, or false when the lock was not taken. A
-     * thread that already holds a pack's lock only tries it, so two packs never wait on each other; any other waits at
-     * most {@link #READ_WAIT}, so a read is never held up by a registration for long. A failure is warned, never thrown:
-     * a read does not fail because a repair did.
+     * Runs {@code work} under the pack's write lock when the lock is free, and answers its result; empty when another
+     * thread holds it, a commit in flight. The lock is only tried, never waited for, so a read takes no lock wait
+     * (#490, NFR-001) and two packs never wait on each other. A failure is warned, never thrown: a read does not fail
+     * because a repair did.
      */
-    private boolean underLock(Path entry, Supplier<Boolean> work) {
+    private Optional<Boolean> ifUnlocked(Path entry, Supplier<Boolean> work) {
         ReentrantLock lock = PackWriteLocks.of(entry);
-        try {
-            boolean locked = PackWriteLocks.heldByCurrentThread()
-                    ? lock.tryLock()
-                    : lock.tryLock(READ_WAIT.toMillis(), TimeUnit.MILLISECONDS);
-            if (!locked) {
-                return false;
-            }
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            return false;
+        if (!lock.tryLock()) {
+            return Optional.empty();
         }
         try {
-            return work.get();
+            return Optional.of(work.get());
         } catch (CharterRefusal failed) {
             warnUnrepaired(entry, "cannot be repaired after an interrupted commit: " + failed.getMessage());
-            return false;
+            return Optional.of(false);
         } finally {
             lock.unlock();
         }
@@ -240,7 +246,7 @@ public final class StorageRootLocations implements Locations {
     /**
      * Restores one half-swapped pack, after checking again: only into the pack domain's real directory, only for a
      * pack writable through the service, never into or around another pack, and only from a sole aside copy. True
-     * when the pack now resolves: restored, or swapped into place by the commit this listing waited for.
+     * when the pack now resolves: restored, or swapped into place by a commit that finished since the domain was read.
      */
     private boolean restore(Path entry, Path domain, List<Path> served) {
         Optional<Path> missing = PackCommitStore.missingLiveDirectory(entry);
@@ -367,11 +373,21 @@ public final class StorageRootLocations implements Locations {
     }
 
     /**
-     * The real directory an entry is a pack of: a directory's own, a link's target's. Empty for a file, an entry that
+     * The real directory an entry is a pack of: a directory's own, a link's target's, or while a commit is between its
+     * renames the aside copy that holds its last committed state ({@link PackDirectories#resolve}), unless the repair
+     * took the entry's lock and could not restore it. Empty for a file, a create's empty reservation, an entry that
      * vanished, and a link that resolves to no directory, to one that holds the pack domain, or to one in the
      * configuration root outside the pack domain; such a link is refused.
      */
-    private Optional<Path> directoryOf(Path entry, Path domain, Path configRoot) {
+    private Optional<Path> directoryOf(Path entry, Path domain, Path configRoot, Set<Path> unrepaired) {
+        PackDirectories.Resolution resolution = PackDirectories.resolve(entry, this);
+        if (resolution.state() == PackDirectories.State.RESERVED) {
+            return Optional.empty(); // a create in flight, or one a crash interrupted: no pack yet (squad D7)
+        }
+        if (resolution.state() == PackDirectories.State.ASIDE && !unrepaired.contains(entry)) {
+            return realPath(resolution.directory())
+                    .filter(real -> whyNotAPack(real, domain, configRoot).isEmpty());
+        }
         boolean link = Files.isSymbolicLink(entry);
         if (!link && !Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
             return Optional.empty();
@@ -430,12 +446,24 @@ public final class StorageRootLocations implements Locations {
         return !name.startsWith(".") && !name.contains(ASIDE_MARKER);
     }
 
-    private static PackLocation location(Path directory) {
-        return new PackLocation(String.valueOf(directory.getFileName()), declaredLevel(directory), directory);
+    private PackLocation location(Path entry) {
+        String name = String.valueOf(entry.getFileName());
+        return new PackLocation(name, declaredLevel(entry, name), entry);
     }
 
-    /** The {@code pack_level} the pack's {@code pack.yaml} declares; org when there is no readable declaration. */
-    private static PackLevel declaredLevel(Path directory) {
+    /**
+     * The {@code pack_level} the pack's {@code pack.yaml} declares, read from the directory a reader reads (the aside
+     * copy while a commit is between its renames); org when there is no readable declaration.
+     */
+    private PackLevel declaredLevel(Path entry, String name) {
+        try {
+            return PackDirectories.read(entry, name, this, StorageRootLocations::levelIn);
+        } catch (CharterRefusal unreadable) {
+            return PackLevel.ORG;
+        }
+    }
+
+    private static PackLevel levelIn(Path directory) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (!Files.isRegularFile(packYaml, LinkOption.NOFOLLOW_LINKS)) {
             return PackLevel.ORG;

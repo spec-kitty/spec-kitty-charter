@@ -22,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
  * FR-005 (#194): a {@code files} rule may declare {@code content_form: markdown}. With a copy of the bundled table plus
  * one test rule, a fixture file is classified as {@code markdown} with its structure schema, and the path a Markdown
  * kind takes holds end to end: parse, validate against the structure schema, write canonically, compare by model. The
- * store reads only the pack document ({@code pack.md}, #260) and the companions, so this proves the classification,
+ * store reads only the pack document ({@code README.md}, #260) and the companions, so this proves the classification,
  * schema and comparison path, and that every production path that dispatches on a rule's content form refuses any
  * other {@code markdown} file loudly instead of reading it as YAML or skipping it.
  */
@@ -48,8 +48,10 @@ class MarkdownFilesRuleTest {
                 .as("the copy keeps every bundled rule and adds one")
                 .hasSize(PackFileKind.bundled().fileRules().size() + 1);
         assertThat(PackFileKind.bundled().classify("built-in/notes/valid.md"))
-                .as("the bundled table has no markdown rule at the pin")
-                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
+                .as("the bundled table has no markdown rule for it, so only the ignored fallback takes it (#451)")
+                .isInstanceOfSatisfying(
+                        PackFileKind.Excluded.class,
+                        excluded -> assertThat(excluded.exclusionClass()).isEqualTo("**/*.md"));
     }
 
     @Test

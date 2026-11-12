@@ -185,7 +185,7 @@ class MixedReadConcurrencyTest {
             this.writeStore = new CommitStorePackWriteStore(
                     locations, strategy, commits, new RegistryWriteLock(Duration.ofSeconds(5)), generation);
             this.directives = new DirectiveRegistrationService(repository, writeStore, new PackMutabilityPolicy());
-            this.sources = new FileSystemPackSources(locations::all);
+            this.sources = new FileSystemPackSources(locations);
             this.read = new ConsistentRead(sources, generation);
         }
 

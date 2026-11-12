@@ -17,6 +17,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -192,6 +193,20 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
             logger.error("Server error " + statusCode.value(), ex);
         }
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
+    /**
+     * A representation the request does not accept is the code-less {@code 406} problem, and it varies with the
+     * request's {@code Accept} as the answers it stands in for do ({@code Vary: Accept}, RFC 9110 section 12.5.5), so a
+     * cache never serves it to a client that accepts what the resource can produce (#451).
+     */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleHttpMediaTypeNotAcceptable(
+            HttpMediaTypeNotAcceptableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        HttpHeaders varying = new HttpHeaders();
+        varying.putAll(headers);
+        varying.add(HttpHeaders.VARY, HttpHeaders.ACCEPT);
+        return super.handleHttpMediaTypeNotAcceptable(ex, varying, status, request);
     }
 
     /** Every response of {@link ResponseEntityExceptionHandler} becomes the closed problem of its status. */

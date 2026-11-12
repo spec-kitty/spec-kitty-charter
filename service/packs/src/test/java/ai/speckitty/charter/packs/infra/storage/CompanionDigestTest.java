@@ -130,7 +130,7 @@ class CompanionDigestTest {
         // The built-in example (ADR-0070) holds every kind and Markdown beside them; a copy without its one skill is a
         // pack with many kinds and no skill. The assertions are about roles, not counts or positions: PackFileSet
         // digests the YAML inputs (each bound file followed by its companions), then the asset files, then the
-        // templates, then the pack-level tail (presets, pack.md, manifest, policy).
+        // templates, then the pack-level tail (presets, README.md, manifest, policy).
         Path builtIn = builtInWithoutSkills();
         Set<ArtifactKind> withoutSkills = withoutSkills();
 
@@ -150,8 +150,8 @@ class CompanionDigestTest {
         List<String> tail = digested.subList(payloadStart + payloads.size(), digested.size());
         assertThat(tail)
                 .as("after the payloads only the pack-level tail: presets, the pack document, the manifest, the policy")
-                .allSatisfy(file ->
-                        assertThat(file).matches("presets/[^/]+\\.yaml|pack\\.md|pack-manifest\\.yaml|policy\\.yaml"));
+                .allSatisfy(file -> assertThat(file)
+                        .matches("presets/[^/]+\\.yaml|README\\.md|pack-manifest\\.yaml|policy\\.yaml"));
         List<String> presetsOnDisk = PackFiles.filesEndingWith(builtIn.resolve("presets"), ".yaml").stream()
                 .map(file -> "presets/" + file)
                 .toList();
@@ -238,7 +238,17 @@ class CompanionDigestTest {
                 .isNotEmpty()
                 .containsExactlyInAnyOrderElementsOf(declaredStepFiles);
 
-        assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
+        // The pack document is README.md (#451) and is digested in the tail, once, between the presets and the
+        // manifest;
+        // the retired pack.md and PROVENANCE.md are not part of a canonical pack.
+        assertThat(digested).containsOnlyOnce("README.md").doesNotContain("pack.md", "PROVENANCE.md");
+        assertThat(digested.indexOf("README.md"))
+                .as("the pack document follows the presets and precedes the manifest")
+                .isGreaterThan(digested.lastIndexOf(digested.stream()
+                        .filter(f -> f.startsWith("presets/"))
+                        .reduce((a, b) -> b)
+                        .orElseThrow()))
+                .isLessThan(digested.indexOf(PackFileSet.MANIFEST));
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
                 .containsExactlyElementsOf(PackFileSet.digested(builtIn, withoutSkills));

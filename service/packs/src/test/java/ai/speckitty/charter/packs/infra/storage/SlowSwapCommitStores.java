@@ -2,13 +2,14 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
 /**
  * Test support: a {@link PackCommitStore} whose directory swap pauses between its two renames, so a reader can run in
- * the window where the live directory is missing. It lives here because the commit store's swap seam is package-private.
+ * the window where the live directory is missing. It is the real swap ({@link PackCommitStore#moveAside}) with its
+ * {@link PackCommitStore.SwapPhases#afterAside} pause, so the aside copy is named, hidden and deleted as in production
+ * (#490). It lives here because the commit store's swap seam is package-private.
  */
 public final class SlowSwapCommitStores {
 
@@ -48,18 +49,12 @@ public final class SlowSwapCommitStores {
         return new PackCommitStore(
                 locations,
                 strategy,
-                (staging, live) -> {
-                    Path aside = live.resolveSibling(live.getFileName() + ".pack-old-slow");
-                    PackCommitStore.moveDirectory(live, aside);
-                    try {
+                PackCommitStore.moveAside(new PackCommitStore.SwapPhases() {
+                    @Override
+                    public void afterAside(Path live, Path aside) {
                         midSwap.accept(live);
-                        PackCommitStore.moveDirectory(staging, live);
-                    } catch (IOException | RuntimeException failed) {
-                        PackCommitStore.moveDirectory(aside, live);
-                        throw failed;
                     }
-                    PackCommitStore.deleteTree(aside);
-                },
+                }),
                 lock,
                 generation);
     }

@@ -59,7 +59,7 @@ import org.jspecify.annotations.Nullable;
  * <p>#476: the mutability policy file the descriptor names (ADR-0063) is written in place at {@code policy.yaml}, from
  * the policy the source pack's read declares, and paired by path. The gate compares the two files by meaning.
  *
- * <p>#260: the pack document is written in place at {@code pack.md}, paired by path like a preset, and refused with
+ * <p>#260: the pack document is written in place at {@code README.md}, paired by path like a preset, and refused with
  * the store's exact reasons (a Markdown refusal names its line). The gate compares the two files by the Markdown model.
  *
  * <p>#195: the source {@code pack-manifest.yaml} is read through the format; an unreadable one is refused with the
@@ -91,7 +91,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** #195: the pack manifest, owned by the whole-pack seam: restamped over the written files, paired by path. */
     static final String MANIFEST = PackManifestYaml.SCHEMA;
 
-    /** #260: the pack document, {@code pack.md}, a pack-level file: written in place, paired by path. */
+    /** #260: the pack document, {@code README.md}, a pack-level file: written in place, paired by path. */
     static final String PACK_DOCUMENT = PackDocumentMarkdown.KIND;
 
     /** #476: the mutability policy file the descriptor names (ADR-0063), a pack-level file: written in place. */
@@ -303,7 +303,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             }
             // #195: presets in place, at presets/<id>.yaml.
             pack.presets().forEach(preset -> to.writePreset(id, preset));
-            // #260: the pack document in place, at pack.md.
+            // #260: the pack document in place, at README.md.
             pack.document().ifPresent(document -> to.writePackDocument(id, document));
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {

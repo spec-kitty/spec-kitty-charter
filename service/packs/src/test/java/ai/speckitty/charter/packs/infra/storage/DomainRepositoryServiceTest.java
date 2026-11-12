@@ -144,7 +144,7 @@ class DomainRepositoryServiceTest {
     void aDescriptorMutationWrittenThroughThePortIsVisibleOnReload() {
         PackDescriptor before = service.get(BY_ID);
         assertThat(before.declaredLevel()).contains(PackLevel.ORG);
-        assertThat(before.paths().activeCharter()).contains("org-charter.yaml");
+        assertThat(before.paths().packDrg()).contains("drg/fragment.yaml");
 
         PackDescriptor changed = new PackDescriptor(
                 before.packId(),

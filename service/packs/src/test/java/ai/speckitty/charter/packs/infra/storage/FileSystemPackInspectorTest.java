@@ -274,14 +274,51 @@ class FileSystemPackInspectorTest {
                 .containsExactly(
                         classified("a.graph.yaml", "graph-shard"),
                         classified("drg/fragment.yaml", "org-fragment"),
-                        // A retired file (#194) is refused by name, never listed; an excluded one is listed.
+                        // A retired file (#194; the org-charter.yaml of #431) is refused by name, never listed; an
+                        // excluded one is listed.
                         excluded(
                                 "missions/m/templates/plan-field-declaration.yaml",
                                 "**/templates/plan-field-declaration.yaml"),
-                        classified("org-charter.yaml", "org-charter"),
                         classified("pack.yaml", "pack-descriptor"),
                         classified("tactics/x.tactic.yaml", "tactic"),
                         classified("tactics-b/y.tactic.yaml", "tactic"));
+    }
+
+    @Test
+    void excludedMarkdownIsListedWithItsRuleButNeverReadAndNeverAFinding(@TempDir Path dir) throws IOException {
+        write(dir, "pack.yaml", "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\n");
+        // Text no Markdown reader would accept in a pack file: it must never be parsed (#451).
+        write(dir, "docs/notes.md", "---\nunclosed: [\n");
+        write(dir, "NOTES.MD", "---\nunclosed: [\n");
+        write(dir, "missions/m/README.md", "---\nunclosed: [\n");
+        // A skill body is claimed by its skill: held with its owner, so not excluded.
+        write(dir, "skills/foo.skill.yaml", """
+                schema_version: '1.0'
+                id: foo
+                title: Foo
+                description: Use when foo.
+                form: prompt
+                body_path: foo.skill.md
+                invocation:
+                  user_invocable: true
+                  side_effects: []
+                """);
+        write(dir, "skills/foo.skill.md", "Do foo.");
+
+        PackContents contents = full(dir);
+
+        assertThat(contents.files())
+                .filteredOn(file -> file.exclusionClass().isPresent())
+                .containsExactlyInAnyOrder(
+                        excluded("NOTES.MD", "**/*.md"),
+                        excluded("docs/notes.md", "**/*.md"),
+                        excluded("missions/m/README.md", "*/missions/*/README.md"));
+        assertThat(contents.files())
+                .extracting(PackContents.ClassifiedFile::file)
+                .doesNotContain("skills/foo.skill.md");
+        assertThat(contents.unreadableFiles())
+                .as("an excluded file is not read, so it is never unreadable")
+                .isEmpty();
     }
 
     private static PackContents.ClassifiedFile classified(String file, String kind) {
@@ -296,7 +333,6 @@ class FileSystemPackInspectorTest {
     void aMappedFileThatIsNotYamlOrBreaksItsSchemaIsUnreadableNotAnException(@TempDir Path dir) throws IOException {
         write(dir, "tactics/bad.tactic.yaml", "id: [\n");
         write(dir, "tactics/short.tactic.yaml", "id: only\n");
-        write(dir, "org-charter.yaml", "schema_version: two\n");
         write(dir, "project/charter.yaml", "governance: 3\n");
         write(dir, "directives/bytes.directive.yaml", "id: !!binary AAAA\n");
         write(dir, "paradigms/utf.paradigm.yaml", "a: b\n");
@@ -308,19 +344,35 @@ class FileSystemPackInspectorTest {
                 .extracting(FileRead::file)
                 .containsExactly(
                         "directives/bytes.directive.yaml",
-                        "org-charter.yaml",
                         "paradigms/utf.paradigm.yaml",
                         "project/charter.yaml",
                         "tactics/bad.tactic.yaml",
                         "tactics/short.tactic.yaml");
         assertThat(unreadable.get(0).parse()).isNotNull();
-        assertThat(unreadable.get(1).violations())
-                .extracting(PackContents.SchemaViolation::keyword)
-                .containsExactly("type");
-        assertThat(unreadable.get(2).parse())
+        assertThat(unreadable.get(1).parse())
                 .isEqualTo(new PackContents.ParseFailure("paradigms/utf.paradigm.yaml", "the file is not valid UTF-8"));
-        assertThat(unreadable.get(4).parse()).isNotNull();
-        assertThat(unreadable.get(5).violations()).isNotEmpty();
+        assertThat(unreadable.get(2).violations()).isNotEmpty();
+        assertThat(unreadable.get(3).parse()).isNotNull();
+        assertThat(unreadable.get(4).violations()).isNotEmpty();
+    }
+
+    @Test
+    void aRetiredOrgCharterIsRefusedByNameNotListedAndNotReadAsASchema(@TempDir Path dir) throws IOException {
+        write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
+        write(dir, "org-charter.yaml", "schema_version: 2\norg_name: acme\n");
+
+        PackContents contents = full(dir);
+
+        assertThat(contents.files())
+                .extracting(PackContents.ClassifiedFile::file)
+                .doesNotContain("org-charter.yaml");
+        assertThat(contents.unreadableFiles()).singleElement().satisfies(file -> {
+            assertThat(file.file()).isEqualTo("org-charter.yaml");
+            assertThat(file.parse().refusal())
+                    .hasValueSatisfying(refusal -> assertThat(refusal)
+                            .isEqualTo("is retired: org enforcement is an activation preset with must-have items"
+                                    + " plus policy.yaml levels (#431)"));
+        });
     }
 
     private static final String GUIDE = "# Use make\n\n## Overview\n\nHow to use make.\n";
@@ -366,8 +418,10 @@ class FileSystemPackInspectorTest {
                         .isEqualTo("qa/toolguides/no-overview.guide.md is not valid Markdown: the guide has no ##"
                                 + " Overview"));
         assertThat(full(dir).files())
-                .as("a Markdown file is read, not listed in the YAML classification")
-                .isEmpty();
+                .as("a Markdown file a rule models is read, not listed; Markdown nothing models is listed as excluded"
+                        + " (#451)")
+                .containsExactlyInAnyOrder(
+                        excluded("notes/loose.md", "**/*.md"), excluded("toolguides/README.md", "**/*.md"));
     }
 
     private static final String ENHANCEMENT_DIR = "missions/software-dev/enhancements/";
@@ -500,7 +554,6 @@ class FileSystemPackInspectorTest {
     @Test
     void aFileThatIsReadCleanlyIsNotListedAsUnreadable(@TempDir Path dir) throws IOException {
         write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
-        write(dir, "org-charter.yaml", "schema_version: 2\norg_name: acme\n");
 
         assertThat(full(dir).unreadableFiles()).isEmpty();
     }
@@ -784,14 +837,17 @@ class FileSystemPackInspectorTest {
         // The listing rule (FileSystemPackInspector, FULL scope), restated here from the file layout alone, without
         // PackFileKind: every *.yaml file the pack holds (a file the table excludes for a reviewed reason is listed
         // with its exclusion class), and every payload or template file whatever its extension (#251): anything under
-        // assets/, templates/ or missions/<type>/templates/. Orientation READMEs and hidden files are excluded there
-        // (the table's exclusions for README.md and dot-files). The classifier is used below only to check each
+        // assets/, templates/ or missions/<type>/templates/. Hidden files are excluded there (the table's exclusion for
+        // dot-files). An orientation README below the pack root is Markdown the table excludes (#451): it is listed
+        // with its exclusion class, never read. The rule is stated narrowly on purpose: the built-in pack holds no
+        // excluded Markdown but READMEs (any other unmodelled .md is the fallback's, pinned by the dedicated tests
+        // above and in ExcludedFilesAgreementTest). The classifier is used below only to check each
         // listed file's kind, so a pattern regression cannot drop a file from both sides.
         List<String> listedByTheRule;
         try (Stream<Path> walk = Files.walk(builtIn)) {
             listedByTheRule = walk.filter(Files::isRegularFile)
                     .map(file -> builtIn.relativize(file).toString().replace('\\', '/'))
-                    .filter(file -> file.endsWith(".yaml") || isPayloadOrTemplate(file))
+                    .filter(file -> file.endsWith(".yaml") || isPayloadOrTemplate(file) || file.endsWith("/README.md"))
                     .toList();
         }
         assertThat(listedByTheRule)

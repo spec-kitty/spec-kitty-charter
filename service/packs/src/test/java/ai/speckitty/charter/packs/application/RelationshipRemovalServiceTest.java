@@ -54,7 +54,7 @@ class RelationshipRemovalServiceTest {
 
     /** The real mutability gate, over the rig's packs. */
     private static WritePolicyGate gateOf(Rig rig) {
-        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
         return new PackMutabilityPolicy(
                 new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
                 rig.repository,

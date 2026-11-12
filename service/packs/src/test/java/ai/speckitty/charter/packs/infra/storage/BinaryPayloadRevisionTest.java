@@ -57,8 +57,7 @@ class BinaryPayloadRevisionTest {
 
         PackRevision current = writeStore.currentRevision(PACK); // no PACK_UNREADABLE
         assertThat(current.token()).matches("sha256:[0-9a-f]{64}");
-        assertThatCode(() -> new FileSystemPackSources(locations::all).fingerprint())
-                .doesNotThrowAnyException();
+        assertThatCode(() -> new FileSystemPackSources(locations).fingerprint()).doesNotThrowAnyException();
 
         PackRevision registered = directives
                 .registerDirective(PACK, directive("BINARY_PROBE_ONE"), false, current.token())

@@ -46,7 +46,8 @@ class PackRegistrationMapperSourceTest {
                 PackLevel.ORG,
                 PackRevision.compute(List.of("x")),
                 RegistrationImpact.Notices.NONE,
-                List.of());
+                List.of(),
+                false);
     }
 
     private PackRegistrationStatus statusOf(RegistrationJobs.Ending ending, State state) {
