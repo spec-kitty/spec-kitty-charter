@@ -96,7 +96,8 @@
       "last_transition_at": "2026-11-12T23:21:52.234926+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Reviewed: mirrors missions-edge; every new rule has a biting fixture; registered in settings, deployable, reports, sonar, docs; deployable 1711/0"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
