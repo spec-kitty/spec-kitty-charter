@@ -70,12 +70,14 @@ contracts/charter/
 │   read-refusals.feature, switch-gate.yaml
 └── changes/2026-11-12-slice-a2-reads.md (+ -changes.md)
 contracts/packs/schemas/asset.schema.json   # id pattern pinned
-service/packs/…/application/ArtifactReadService.java, PresetReadService.java (new), AssetReadService.java (new),
-    SkillReadService.java (new), ClosureView.java (held winner + references over the merged index)
-service/packs/…/infra/api/PresetsController.java, AssetsController.java, SkillsController.java (new), mappers
-service/activations/…/application/EffectiveReadService.java, PacksSession.java;
-    infra/packs/ClosureViewSession.java, PacksAvailability.java;
-    infra/api/EffectiveAssetsController, EffectiveSkillsController, ActivationMapper (links), references twin
+service/packs/…/application/ArtifactReadService.java (kind sets), ArtifactRemovalService.java (REMOVABLE),
+    ForeignArtifactRead.java (held, payload), PresetReadService.java (new), ClosureView.java (held winners);
+    domain/PackPolicy.java (one media-type rule), AssetIdentifier.java; infra/api/PresetsController.java (new)
+service/activations/…/application/EffectiveReadService.java (templated gate, asset winner, EffectiveTag values)
+service/artifacts-edge/ (new): application, infra.api (Assets, Skills, EffectiveAssets, EffectiveSkills,
+    EffectiveReferences controllers + one body mapper), infra.packs, infra.activations
+service/activations/…/infra/api/ActivationMapper.java (links)
+service/deployable/src/test/…/HexagonalArchitectureTest.java, ActivationRoutingTest.java
 docs/api/service-contract.md, docs/development/hypermedia-hateoas.md, docs/adr/0074-… (status note)
 ```
 
