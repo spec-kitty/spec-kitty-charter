@@ -2,7 +2,7 @@
 title: "Journey 05: Remove the Python artifacts from our org pack"
 description: How a governance lead at an org with no Python removes each Python artifact from built-in through a derived pack, and why removing a locked one is refused.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -86,7 +86,7 @@ sequenceDiagram
 
 - Core has no removal. An org pack can add artifacts, override or enhance built-in ones
   (`enhances` / `overrides` relations in `src/charter/offering/drg/models.py`) and declare
-  `required_<plural>` lists (`src/charter/activation/org_charter.py`), but it cannot take a
+  `required_<plural>` lists (`src/charter/activation/org_charter.py`; the service retired that file, #431), but it cannot take a
   built-in artifact out of the offering.
 - The nearest thing is per-project deactivation: `spec-kitty charter deactivate` writes a
   `deactivated_<plural>` exclusion into `.kittify/charter/activation.yaml`

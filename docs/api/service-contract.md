@@ -282,6 +282,7 @@ the conventions in [Development conventions](/development/).
 | Method | Path | Proposed operationId | Purpose | Inventory issue |
 |---|---|---|---|---|
 | `GET` | `/packs/{packId}` | `getPack` | One pack: its identity, version, level and revision, with the revision as the `ETag`. **Built** | — |
+| `GET` | `/packs/{packId}/doc` | `getPackDocument` | The pack's document, its `README.md`: `Accept: text/markdown` answers the held file, `application/json` a `PackDocumentRead` (title, body, links); one `ETag`, the pack revision, and `Vary: Accept`; `304` on `If-None-Match`; `406` for an `Accept` that names neither; `404 pack_document_not_found` when the pack holds none. **Built** | [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
 | `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
 | `GET` | `/packs/{packId}/assets` | `listPackAssets` | The pack's asset paths | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |

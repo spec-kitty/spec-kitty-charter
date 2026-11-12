@@ -1,7 +1,6 @@
 @startuml descriptor-governance
 ' Sources:
 '   src/charter/offering/drg/models.py        (DRGGraph, DRGNode, DRGEdge, NodeKind, Relation)
-'   src/charter/activation/org_charter.py     (OrgCharterPolicy -> org-charter.yaml)
 '   src/charter/activation/schemas.py         (GovernanceCharterConfig)
 '   src/charter/offering/packs/pack_descriptor.py (PackDescriptor -> pack.yaml)
 '   see also core src/charter/diagrams/pack-descriptor-model.puml
@@ -19,7 +18,6 @@ class PackDescriptor <<pack.yaml>> {
   + name : string
   - pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string
-  - active_charter : path
   - pack_drg : path
 }
 class DependsOn <<item of depends_on>> {
@@ -65,28 +63,6 @@ enum Relation {
   overrides, refines, in_tension_with,
   reconciles_tension, rejects
 }
-class OrgCharterPolicy <<org-charter.yaml>> {
-  - schema_version : int
-  - extends : string
-  - org_name : string
-  - interview_defaults : map<string, string|bool>
-  - required_directives, required_tactics,
-    required_paradigms, required_styleguides,
-    required_toolguides, required_procedures,
-    required_agent_profiles,
-    required_mission_step_contracts,
-    required_<glossary plural>,
-    required_assets,
-    required_skills : string[] = []
-  - skill_namespace : string
-  - governance_policies : GovernancePolicy[] = []
-  - activations : ActivationEntry[] = []
-}
-class GovernancePolicy {
-  + field : string
-  + value : string|bool
-  - enforcement : string = "advisory"
-}
 class GovernanceCharterConfig <<project charter>> {
   - selected_paradigms, selected_directives,
     selected_tactics, selected_styleguides,
@@ -103,18 +79,19 @@ class GovernanceCharterConfig <<project charter>> {
 }
 PackDescriptor "1" *-- "0..*" DependsOn
 PackDescriptor --> "0..1" DRGGraph : pack_drg
-PackDescriptor --> "0..1" OrgCharterPolicy : active_charter
-OrgCharterPolicy *-- "*" GovernancePolicy
 DRGGraph *-- "*" DRGNode
 DRGGraph *-- "*" DRGEdge
 DRGNode --> NodeKind
 DRGEdge --> Relation
 DRGEdge ..> DRGNode : source / target
-OrgCharterPolicy ..> GovernanceCharterConfig : required_* union into selected_*\n(selection_overlayable kinds)
 note bottom of NodeKind
   glossary_scope is retired (ADR-0049 d11): scope comes from the pack level.
   Token spelling is snake_case (mission_type, anti_pattern, event_registry) <color:#8A6D00>[pending ADR-0050 OQ9]</color>
   vocabulary targets glossary and term (ADR-0049 d4).
+end note
+note bottom of PackDescriptor
+  org-charter.yaml and active_charter are retired (#431): org enforcement is a governing
+  preset (presets/<id>.yaml, must_have items) plus policy.yaml levels (ADR-0063).
 end note
 note bottom of GovernanceCharterConfig
   <glossary plural> is not spelled by ADR-0049 (follow-up #114).

@@ -6,7 +6,6 @@
 '   src/charter/offering/artifact_kinds.py         (ArtifactKind)
 '   src/charter/offering/drg/models.py             (NodeKind, Relation, DRGNode, DRGEdge)
 '   src/charter/offering/packs/pack_descriptor.py  (PackDescriptor, pack.yaml)
-'   src/charter/activation/org_charter.py          (OrgCharterPolicy, org-charter.yaml)
 '   src/charter/activation/schemas.py              (GovernanceCharterConfig selected_*)
 ' Built-in edge counts are not drawn: they are today's data, not the design.
 ' Pending: a yellow <<pending>> entity or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
@@ -20,7 +19,6 @@ package "Charter Pack (pack.yaml)" as pack {
     pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
     parent_pack : ref? [lineage only]
     depends_on : {pack_id, range}[] <color:#8A6D00>[pending ADR-0048 OQ4]</color>
-    active_charter : path?
     pack_drg : path?
   }
   entity "PackDescriptor\n(the parent pack)" as PDP <<authored>>
@@ -30,9 +28,8 @@ package "Charter Pack (pack.yaml)" as pack {
     nodes : DRGNode[]
     edges : DRGEdge[]
   }
-  entity "OrgCharterPolicy\n(org-charter.yaml)" as OC {
-    required_<plural> : id[]
-    skill_namespace
+  entity "Preset\n(presets/<id>.yaml)" as PS {
+    activated_<plural> : {id, must_have?}[]
   }
 }
 
@@ -80,14 +77,13 @@ entity "GovernanceCharterConfig\n(project charter)" as GC {
 
 PD "1" *-- "1" PM : sibling
 PD "1" *-- "0..1" FRAG : pack_drg
-PD "1" *-- "0..1" OC : active_charter
+PD "1" *-- "0..*" PS : presets/
 PD "1" o-- "*" kinds : ships
 PD "*" --> "*" PD : depends_on\n(versioned range)\n<color:#8A6D00>[pending ADR-0048 OQ4, OQ6]</color>
 PD ..> PDP : parent_pack\n(lineage only)
 FRAG ..> kinds : DRGNode.urn = kind:id
-OC ..> kinds : requires (org_requirable kinds)
+PS ..> kinds : activates; must_have items\nare the required floor (ADR-0031)
 GC ..> kinds : selects (selected_* per activatable kind)
-OC ..> GC : required ids union into selected_*
 
 ' Containment inside a mission type's bundle, and links between kinds
 MissionType "1" o-- "*" MissionStepContract : bundle (step_contracts/)

@@ -2,8 +2,8 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-11-07T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed)'
+updated: 2026-11-12T00:00:00Z
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431)'
 decision_date: '2026-10-28'
 type: ADR
 kind: ADR
@@ -12,6 +12,7 @@ related:
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
   - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
   - adr/0040-content-form-and-payload-kinds
+  - adr/0073-real-packs-register-as-they-are
   - architecture/logical-model
   - architecture/descriptor-schemas
   - conformance/divergence-register
@@ -104,12 +105,38 @@ switch a kind off.
 - **Divergence.** DIV-211 of the [divergence register](/conformance/divergence-register/): core's preset may carry
   `activated_kinds` and excludes skills and glossary packs.
 
+### Amendment 2026-11-11 (#451, #431): `README.md` is the pack document, and three files are retired
+
+Made by slice B (mission `slice-b-real-packs-register-01M7649C`,
+[#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of 2026-11-11 on
+[#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
+[#431](https://github.com/spec-kitty/spec-kitty-charter/issues/431). The calls the mission made beyond the rulings are
+in [ADR-0073](/adr/0073-real-packs-register-as-they-are/) (Proposed). The decision text below is unchanged, and each
+point this note changes is annotated where it stands.
+
+- **Decision 8: the pack document is `README.md`.** `*/README.md` is the `files` rule of `content_form: markdown` with
+  the structure schema `pack-document`, held as the pack's `PackDocument` exactly as `pack.md` was (the codec, the
+  canonical write, validate mode's read, the gate's `pack-document` model). Only the root file is the document; a
+  `README.md` deeper in the pack keeps the exclusions and payload rules that already cover it. The document is served
+  at `GET /packs/{packId}/doc` (ADR-0073 decisions 6 to 9).
+- **`pack.md` and `PROVENANCE.md` are retired.** Each is a root-anchored `retired` rule of `file-kinds.yaml`, refused
+  by name, with a reason, in classification, the load, validate mode and registration (`422`, violation code
+  `retired`). `PROVENANCE.md`'s content moves into a `## Provenance` section of the README. A root file that differs
+  from a rule's file only in letter case is refused under that rule (ADR-0073 decision 3).
+- **Decision 9: the tail.** The tail is the presets in path order, then `README.md`, then `pack-manifest.yaml`, then
+  `policy.yaml` (ADR-0063), then the retired files. A `README.md` is digested as text, whatever the load makes of it.
+- **The per-kind table.** The `*/pack.md` row reads `*/README.md`.
+- **#206 is superseded.** `org-charter.yaml` is retired with its schema (#431): a root-anchored `retired` rule refuses
+  it by name, and `pack.yaml` loses `active_charter`, which the closed descriptor now refuses as an unknown key. Its
+  `required_<plural>` lists map to the must-have items of a governing preset (decision 6); nothing migrates or reads
+  them. The conversion is in [Enforce presets on an organization's projects](/guides/enforce-org-presets/).
+
 ## Context
 
 Issue #195 asks the whole-pack round trip to cover the four files that describe a pack as a whole:
 
 - **activation presets**, `presets/<name>.yaml`;
-- **the pack document**, `pack.md`;
+- **the pack document**, `pack.md` *(`README.md` since the amendment of 2026-11-11, #451)*;
 - **the pack descriptor**, `pack.yaml`, written back without loss;
 - **the pack manifest**, `pack-manifest.yaml`, read and regenerated on write.
 
@@ -204,6 +231,8 @@ This answers ADR-0031:
   `required_<plural>` lists, and the closed schema refuses any such key. Migrating
   `org-charter.yaml`'s lists into presets, and then refusing them there, is
   [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206).
+  *(Superseded 2026-11-11, #431: `org-charter.yaml` is retired and refused by name, so its lists are neither migrated
+  nor read; an org writes must-have items of a governing preset instead. See the amendment under Status.)*
 
 In the domain a preset is a value, not an artifact. Core gives a preset no URN and no kind.
 `Preset(id, description, activatedKinds, artifacts, missionTypes)` holds `PresetItem(id, mustHave)`
@@ -357,6 +386,8 @@ had not opened, so the operator split it off to
 [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) on 2026-10-28, and #195 closes
 on the scope it delivered. Until #260 lands, `other:pack.md` stays on the gate's expected-red list.
 *(Done by #260 on 2026-10-30; see the amendment under Status. `other:pack.md` is off the list.)*
+*(Amended 2026-11-11, #451: the pack document is `README.md` at the pack root, held through the same form and model;
+`pack.md` and `PROVENANCE.md` are retired and refused by name. See the amendment under Status.)*
 
 ### 9. The fingerprint order
 
@@ -369,7 +400,8 @@ on the scope it delivered. Until #260 lands, `other:pack.md` stays on the gate's
 5. the pack-level tail, in one ordered step: the presets in path order, then `pack-manifest.yaml`.
 
 When `pack.md` lands (decision 8), it joins the tail between the presets and the manifest *(it
-did, in #260, 2026-10-30)*. A pack
+did, in #260, 2026-10-30; since 2026-11-11, #451, the document in that place is `README.md`, the tail ends with
+`policy.yaml` (ADR-0063) and the retired files follow it)*. A pack
 with no presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them
 gets a new `Charter-Source-Fingerprint` and ETag once, as binding any kind does (ADR-0037).
 
@@ -399,7 +431,7 @@ The rows this record adds to ADR-0036's per-kind table:
 | `*/presets/*.yaml` | preset | YAML | none: every list is a sequence | none | yes |
 | `*/pack-manifest.yaml` | pack-manifest | YAML, less its derived fields | none: `constituents` and `presets` are sequences | `manifest_hash`; each entry's `content_hash`. Recomputed on write and verified by the gate on each side, never compared | yes |
 | `*/pack.yaml` | pack-descriptor | YAML | none | none | yes: the schema is closed (decision 4) |
-| `*/pack.md` (#260) | pack-document | the Markdown model (ADR-0040 as amended): frontmatter as loaded YAML values, every string exactly | none: the sections are a sequence | none | not applicable: the structure schema is closed over the model |
+| `*/pack.md` (#260) *(`*/README.md` since 2026-11-11, #451; `pack.md` is retired)* | pack-document | the Markdown model (ADR-0040 as amended): frontmatter as loaded YAML values, every string exactly | none: the sections are a sequence | none | not applicable: the structure schema is closed over the model |
 
 ### The gate and the pinned files
 
@@ -505,6 +537,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 - [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260): `pack.md` through #194's
   `markdown` form, once #194's first pull request merges. *(Done 2026-10-30.)*
 - #206: migrate `org-charter.yaml`'s `required_<plural>` lists into presets, then refuse them.
+  *(Superseded 2026-11-11 by retiring `org-charter.yaml`, #431: the file is refused by name, and its lists map to a
+  governing preset's must-have items.)*
 - #110: manifest membership and restamping after a registration.
 - Epic #186: extract `PackLevelContent` (decision 10).
 - Epic #186: merged storage objects that break the sanitized-shape rules. They are listed in the
@@ -517,7 +551,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
   - `path` is anchored at `assets/` for an asset and at the pack root elsewhere
     (open-packs#75);
   - optional lists default to `null` in the glossary pack and to `[]` elsewhere;
-  - `org-charter.schema.json` keeps the legacy `required_<plural>` lists (#206);
+  - `org-charter.schema.json` keeps the legacy `required_<plural>` lists (#206) *(the schema is deleted with the
+    retired file, 2026-11-11, #431)*;
   - `charter.schema.json` has `mission_type_activations`, and its `activated_*` set leaves out
     `anti_patterns`;
   - the agent profile's `excluding` is an ad hoc union of an array, an object and `null`;
