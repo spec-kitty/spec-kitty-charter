@@ -65,8 +65,10 @@ and org-base's `spdd-plan`, read the prompt of `software-dev/plan`, and check th
    contract's not-found refusal (`activation_not_found`, `mission_type_not_found`, `action_not_found`), judged before a
    `304`, never an empty prompt.
 5. **Given** a mission type the closure holds but the activation does not put in force, **When** the prompt is read,
-   **Then** the answer follows the ruling of Decision Moment `01M774HSKK0SSA4147QEG9ZCKR` (OD-5 reconciled with PR C's
-   200-empty).
+   **Then** the answer is `409 mission_type_not_in_force`, judged after the not-found checks and before a `304`
+   (OD-5, which stands: operator ruling of 2026-11-12, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`). The action
+   context keeps its `200` with an empty context for the same case; the reason the two reads differ is recorded on
+   ADR-0066.
 6. **Given** a slot that still holds legacy base text and an active fragment for it, **When** the prompt is read,
    **Then** the slot is listed with its fragment and no flag, and the read's `diagnostics` carry
    `prompt_slot_not_empty` for that slot (OD-7, OD-8).
@@ -110,10 +112,10 @@ action" apart from "dropped by mistake".
 
 **Independent Test**: A fixture shaped like the evidence below. It has directives scoped to the action, scoped to
 another action, scoped to the mission type, scoped to another mission type, and unscoped; some are selected and one is
-org-required. Read the context, and compare it with the rule the operator rules on Decision Moment
-`01M774HQ8N5EVYDRTP16MBJCN3`.
+org-required. Read the context, and compare it with the ownership rule (Decision Moment
+`01M774HQ8N5EVYDRTP16MBJCN3`, option B).
 
-**Acceptance Scenarios** (written for the recommended option B, and rewritten to the ruling if it differs):
+**Acceptance Scenarios** (option B, the ownership rule, ruled by the operator on 2026-11-12):
 
 1. **Given** an in-force directive with a `scope` edge from the action, **When** the context is read, **Then** it is
    listed, brought in through the action.
@@ -164,13 +166,13 @@ org-required. Read the context, and compare it with the rule the operator rules 
 | FR-001 | Compose refuses a missing slot | As a renderer, I want any compose in which an **active** enhancement names a slot that the prompt in force does not declare, including after an override drops it, refused with `prompt_slot_missing`: `500` on composing reads, and `422` at registration and on writes that rebuild the merge (OD-1 (B), OD-4 (i)). An inactive enhancement does not refuse. So no fragment is silently lost. | High | Open | [build] | no |
 | FR-002 | Compose resolves the target and its integrity | As an activation owner, I want a compose refused when an enhancement's target step is held by no pack of its `depends_on` closure (judged by `StepHolding`, OD-9), or when the target step's mission type is locked. A step inherits its mission type's mutability level (OD-2 (A)): `422 override_not_permitted` at registration, `500 pack_unreadable` on reads, the `override_not_permitted` description broadened, no new enum value. So fragments land only on steps that accept them. | High | Open | [build] | no |
 | FR-003 | Effective-prompt read | As a renderer, I want `GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt` to return the prompt in force, unchanged in meaning (its canonical render), and, for every slot it declares, the fragments of the enhancements that are themselves in force (ADR-0066 decision 4: no pull either way), ordered by pack level, then pack name, then enhancement id (decision 5), each with its pack and enhancement. It is a new built operation (`### Added`), so core's renderers place the same text on every path (decision 9). | High | Open | [build] | no |
-| FR-004 | A mission type that is not in force | As a renderer, I want the prompt read of a mission type the closure holds but the activation does not put in force to answer as the operator rules on Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`, consistently with the action context's answer for the same case, so that I can tell it apart from a mission type that does not exist. The ruling is recorded on ADR-0066. | Medium | Open | [build] | no |
+| FR-004 | A mission type that is not in force | As a renderer, I want the prompt read of a mission type the closure holds but the activation does not put in force to answer `409 mission_type_not_in_force`, a new refusal code (OD-5, which stands: operator ruling of 2026-11-12, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`; `### Breaking`, an enum value added), with the reason it differs from the action context's `200`-empty answer recorded on ADR-0066 decision 9, so that I can tell it apart from a mission type that does not exist and never render a prompt for a mission that cannot run. | Medium | Open | [build] | no |
 | FR-005 | Legacy slot text kept, with diagnostics | As a renderer, I want a slot that still holds legacy text listed with its fragments and no flag (OD-8: the renderer keeps anything between the markers and adds the fragments after it), and the prompt read to carry a `diagnostics` member, reusing `Diagnostic.yaml`, that lists `prompt_slot_not_empty` for such a slot (OD-7). So no base text is lost and the legacy state is visible. | Medium | Open | [build] | no |
 | FR-006 | `prompt_slot_missing` raised | As a client, I want `prompt_slot_missing` raised, with an `operations` entry `getPackRegistration: 422` (OD-4), and its contract clause narrowed from "an active or inactive enhancement" to an active one (OD-1, `### Changed`), so that none of ADR-0066's four codes is still reserved. | High | Open | [build] | no |
 | FR-007 | The context links the prompt | As a harness, I want the effective action context's `_links` to carry `prompt`, the effective-prompt read of the same action, with the relation listed in the hypermedia relation table, so a client goes from the context to the prompt without building a path. | Medium | Open | [build] | no |
-| FR-008 | Scoping rule for in-force artifacts the action's walk does not reach | As a harness, I want the effective action context to apply the rule the operator rules on Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`. The recommended option B: an in-force directive, tactic or paradigm is listed when the action's walk reaches it, when no action and no mission type scopes it, or when the action's own mission type scopes it, together with what ADR-0018's steps 2 to 5 reach from it; one scoped only by other actions or other mission types is not listed. So every directive in force is listed or left out by a stated rule. | High | Open | [build] | no |
-| FR-009 | Each listed item says why it is listed | As a harness, I want each context item to carry the rule that brought it in (under option B, `appliesThrough`: `action`, `mission_type` or `project`), as an additive member, so a client can tell action-scoped governance from type-wide and project-wide governance. | Medium | Open | [build] | no |
-| FR-010 | The ruling is recorded | As a maintainer, I want the scoping ruling recorded as a dated amendment to ADR-0018 (D5) and rule E16, or, if the ruling keeps the drop, as a divergence-register entry; and the 16 directives of the 2026-11-12 evidence explained in a recorded table. So the next usability run can check them. | High | Open | [build] | yes: positive control is FR-008's fixture test, which fails without the rule |
+| FR-008 | Scoping rule for in-force artifacts the action's walk does not reach | As a harness, I want the effective action context to apply the ownership rule (option B, operator ruling of 2026-11-12, Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`): an in-force directive, tactic or paradigm is listed when the action's walk reaches it, when no action and no mission type scopes it, or when the action's own mission type scopes it, together with what ADR-0018's steps 2 to 5 reach from it; one scoped only by other actions or other mission types is not listed. So every directive in force is listed or left out by a stated rule. | High | Open | [build] | no |
+| FR-009 | Each listed item says why it is listed | As a harness, I want each context item to carry the rule that brought it in, `appliesThrough`: `action`, `mission_type` or `project`, as an additive member (operator ruling of 2026-11-12), so a client can tell action-scoped governance from type-wide and project-wide governance. | Medium | Open | [build] | no |
+| FR-010 | The ruling is recorded | As a maintainer, I want the scoping ruling recorded as a dated amendment to ADR-0018 (D5) and rule E16, a divergence-register entry for honouring mission-type scope (core ignores it), and the 16 directives of the 2026-11-12 evidence explained in a recorded table. So the next usability run can check them. | High | Open | [build] | yes: positive control is FR-008's fixture test, which fails without the rule |
 | FR-011 | R3 decided | As a maintainer, I want R3's decision recorded in `docs/api/service-contract.md`: the merged graph under an activation (`getEffectiveGraph`), the per-artifact graph queries (`listArtifactReferences`) and the reference checks at registration answer core's graph reads; the unfiltered `/offering/graph` waits for the minor that brings the offering merge, as R5's `/offering/mission-types` does. #97 is then closed with that evidence. | Medium | Open | [build] | yes: positive control is the docs checks and the issue state |
 | FR-012 | Phase-2 rulings recorded | As a maintainer, I want these recorded: dated annotations on ADR-0066 decision 8 (OD-1), decision 7's integrity bullet (OD-2) and decision 9 (the OD-5 reconciliation); the conceptual-model integrity note; the rules page's compose rules, the effective step prompt and the amended E16; the operation and status lists; the `prompt` relation; the glossary terms "effective step prompt" and "project-wide artifact"; and a dated changelog page. So docs and contract say what the service does. | Medium | Open | [build] | yes: positive control is the docs checks, `RelationTableParityTest` and the contract tests that pin the text |
 
@@ -192,10 +194,10 @@ org-required. Read the context, and compare it with the rule the operator rules 
 | C-003 | Graph-only relationships | An enhancement's target and an artifact's scope owners are read only from graph-document edges, never from the directory or a field (ADR-0064). | Architecture | High | Open |
 | C-004 | Test first | BDD scenarios under `contracts/charter/scenarios/` come before the code for every behaviour the contract changes. Every refusal has a test that fails without its check, and a passing twin. | Process | High | Open |
 | C-005 | Canonical shape only | Tests, fixtures and examples carry only the canonical shape, except tests of error handling. No field is excluded from a parity or round-trip check (charter companion, 2026-11-10). The proof runs on charter's example packs (ADR-0070), not open-packs content. | Process | High | Open |
-| C-006 | Stay out of slice B | Pack registration internals, `file-kinds.yaml`, `PackCommitStore`, `PackLocator`, the Loader, `CharterRefusalCode` additions and the pack document belong to slice B (PR #501). This mission adds no refusal code unless the OD-5 ruling needs one. It touches the registration path only to raise the 422 compose checks, and routes any overlap through the orchestrator. It rebases onto `main` once #501 merges, before the pre-merge squad. | Coordination | High | Open |
+| C-006 | Stay out of slice B | Pack registration internals, `file-kinds.yaml`, `PackCommitStore`, `PackLocator`, the Loader, `CharterRefusalCode` additions and the pack document belong to slice B (PR #501). This mission adds one refusal code, `mission_type_not_in_force` (OD-5), in the shared `CharterRefusalCode.yaml`, routed through the orchestrator. It touches the registration path only to raise the 422 compose checks, and routes any overlap through the orchestrator. It rebases onto `main` once #501 merges, before the pre-merge squad. | Coordination | High | Open |
 | C-007 | Core is evidence | Core's current output is evidence of intent, never the oracle (charter companion, epic #186). A difference from core is recorded in the divergence register, not copied. | Governance | High | Open |
 | C-008 | Out of scope | Core's renderers; guards and emits on enhancements (#434); the open-packs pin bump (#435); the real `spdd` pack (open-packs #205, #206); the offering-wide merged reads; and the tension annotation (#16). | Scope | High | Open |
-| C-009 | New ADR number | A new ADR, if one is written, takes its number when it is written, checked against `main` and the open PRs. 0072 is taken on `main`. | Governance | Medium | Open |
+| C-009 | New ADR number | A new ADR, if one is written, takes 0074 or the next free number after it, checked against `main` and the open PRs when it is written (0072 is on `main`, 0073 is reserved for slice B; orchestrator, 2026-11-12). | Governance | Medium | Open |
 
 ## Success Criteria *(mandatory)*
 
@@ -227,7 +229,7 @@ whole project directive set, rendered as "Directive IDs" on every action. It is 
 array. Core's own action rule (`delivery_table.py`, `_classify_artifact_urns`) adds selected and required
 directive/tactic/paradigm roots to an action, unless another action scopes them, and ignores mission-type scope.
 
-| Directive | Scope owners in open-packs | Service today | Under option B |
+| Directive | Scope owners in open-packs | Service today | Under the ownership rule (ruled) |
 |---|---|---|---|
 | DIRECTIVE_001, 010, 025, 030, 034, 037, 051 | include `action:software-dev/implement` | listed | listed, through the action |
 | DIRECTIVE_003 | 14 other actions, not implement | absent | absent: scoped only by other actions |
@@ -251,8 +253,8 @@ directive/tactic/paradigm roots to an action, unless another action scopes them,
 
 ## Dependencies
 
-- The operator's rulings on Decision Moments `01M774HQ8N5EVYDRTP16MBJCN3` (#450 scoping) and
-  `01M774HSKK0SSA4147QEG9ZCKR` (OD-5). Both are put to the operator through the orchestrator before plan.
+- The operator's rulings of 2026-11-12, relayed by the orchestrator: Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`
+  (#450 scoping: option B, the ownership rule) and `01M774HSKK0SSA4147QEG9ZCKR` (OD-5 stands: `409`).
 - Slice B (PR #501): this mission rebases onto it once it merges, before the pre-merge squad.
 - Parked plan input: the former phase-2 mission's spec, its WP07–WP11 and its contract draft (branch
   `issue-424-adr-0066-phase-2-effective-prompt`), and PR C's symbol list (comment on #438).

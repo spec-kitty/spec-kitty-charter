@@ -38,6 +38,5 @@
 
 - This is a contract mission: the operations, paths and refusal codes it names are the contract's vocabulary (the
   subject of the work), not an implementation choice. Java, framework and module names are kept out.
-- Two operator rulings are open as Decision Moments (`01M774HQ8N5EVYDRTP16MBJCN3`, `01M774HSKK0SSA4147QEG9ZCKR`), put
-  to the operator through the orchestrator. FR-004, FR-008, FR-009 and FR-010 are written against the recommended
-  options and are rewritten to the rulings before `/spec-kitty.plan`.
+- Both operator rulings are resolved (2026-11-12): `01M774HQ8N5EVYDRTP16MBJCN3` option B, `01M774HSKK0SSA4147QEG9ZCKR`
+  OD-5 stands (`409`). FR-004, FR-008, FR-009 and FR-010 are written to them.

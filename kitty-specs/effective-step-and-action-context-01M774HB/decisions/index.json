@@ -3,7 +3,7 @@
     {
       "created_at": "2026-11-12T05:44:04.117294Z",
       "decision_id": "01M774HQ8N5EVYDRTP16MBJCN3",
-      "final_answer": null,
+      "final_answer": "B: ownership rule (operator, 2026-11-12, relayed by the orchestrator). An in-force directive, tactic or paradigm applies to mt/a when the walk reaches it, when no action or mission-type node scopes it, or when mission_type:mt scopes it; it brings its closure under ADR-0018 steps 2-5; each entry gets an additive appliesThrough member. Record as an amendment to ADR-0018 D5 and rule E16, plus a divergence entry for honouring mission-type scope. Expected 15 of 16; DIRECTIVE_003 is left out as claimed by other actions.",
       "input_key": "context_scoping_rule",
       "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
       "mission_slug": "effective-step-and-action-context-01M774HB",
@@ -18,17 +18,17 @@
       "other_answer": false,
       "question": "#450: is ADR-0018's action scoping meant to drop in-force artifacts no walk from the action reaches (required or project-selected but unscoped)?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-12T05:47:57.239284Z",
       "resolved_by": null,
       "slot_key": "specify.scoping.unscoped-in-force",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     },
     {
       "created_at": "2026-11-12T05:44:06.515272Z",
       "decision_id": "01M774HSKK0SSA4147QEG9ZCKR",
-      "final_answer": null,
+      "final_answer": "409 mission_type_not_in_force: OD-5 stands (operator, 2026-11-12, relayed by the orchestrator). Record why the prompt read differs from the context read's 200-empty answer; add the refusal code and its change fragment.",
       "input_key": "prompt_read_mission_type_not_in_force",
       "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
       "mission_slug": "effective-step-and-action-context-01M774HB",
@@ -39,13 +39,13 @@
         "Other"
       ],
       "origin_flow": "specify",
-      "other_answer": false,
+      "other_answer": true,
       "question": "OD-5 vs PR C: does the effective-prompt read answer 409 mission_type_not_in_force, or 200 with no fragments like the context read?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-12T05:48:00.083765Z",
       "resolved_by": null,
       "slot_key": "specify.prompt-read.mission-type-not-in-force",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }

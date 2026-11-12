@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scoping.unscoped-in-force`
 - **Input key:** `context_scoping_rule`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-12T05:44:04.117294+00:00`
+- **Resolved:** `2026-11-12T05:47:57.239284+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,7 +23,7 @@
 
 ## Final answer
 
-_(none)_
+B: ownership rule (operator, 2026-11-12, relayed by the orchestrator). An in-force directive, tactic or paradigm applies to mt/a when the walk reaches it, when no action or mission-type node scopes it, or when mission_type:mt scopes it; it brings its closure under ADR-0018 steps 2-5; each entry gets an additive appliesThrough member. Record as an amendment to ADR-0018 D5 and rule E16, plus a divergence entry for honouring mission-type scope. Expected 15 of 16; DIRECTIVE_003 is left out as claimed by other actions.
 
 ## Rationale
 
@@ -31,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-12T05:44:04.117294+00:00` - opened
+- `2026-11-12T05:47:57.239284+00:00` - resolved (final_answer="B: ownership rule (operator, 2026-11-12, relayed by the orchestrator). An in-force directive, tactic or paradigm applies to mt/a when the walk reaches it, when no action or mission-type node scopes it, or when mission_type:mt scopes it; it brings its closure under ADR-0018 steps 2-5; each entry gets an additive appliesThrough member. Record as an amendment to ADR-0018 D5 and rule E16, plus a divergence entry for honouring mission-type scope. Expected 15 of 16; DIRECTIVE_003 is left out as claimed by other actions.")
