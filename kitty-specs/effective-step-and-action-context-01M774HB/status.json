@@ -163,6 +163,9 @@
       "last_event_id": "01M78FEGA5RRJEPVMAGHDYJRWB",
       "last_transition_at": "2026-11-12T18:13:47.461067+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "C38 slots-declared check: SlotCompose pure rule; ClosureView.requireSlots (inForce pure); reads 500 via ClosureViewSession.statesOf after merge codes (F6); ActivationImpact.requireComposable gate on every RegistrationImpact path, adapter per stored activation, never swallowed, skips activations with no before view (G21); activation writes check before storing (422). prompt_slot_missing raised with a 19-operation 422 map; RefusalHandler per-operation 422; Breaking + Changed fragments. packs/activations/web-transport/deployable tests, wholePackRoundTrip, contracts:check, spotless, checkstyle green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 21909,
