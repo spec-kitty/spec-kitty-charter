@@ -329,18 +329,20 @@ class ClosureViewSessionStepRefsTest {
 
     @Test
     void aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution() {
-        // A step enhancer selected next to its mission type, whose two target steps no pack holds, is not in force, and
-        // the report names each step as a node of kind action. Two targets, because a step enhancement with one
-        // unheld action target is refused at compose by C37 (WP04, ADR-0066 decision 8); a two-target enhancer keeps
-        // rule E6 as built (OD-6), so the unheld-target branch stays reachable on the real resolution.
+        // The resolution's own branch for an unheld step (rule E6 as amended by OD-6), below the compose: a step
+        // enhancer
+        // selected next to its mission type, whose one target step no pack holds, is not in force, and the report names
+        // the step as a node of kind action. The shape is not production-shaped any more: C37 (ADR-0066 decision 8,
+        // WP04) refuses it at compose, so no composed closure reaches this branch. The closure here is built directly,
+        // without the compose, to pin what the resolution answers if it ever meets one. A two-target enhancer is no
+        // stand-in: rule E6 as built drops its unheld action targets and it never reaches this branch.
         Closure closure = new Closure()
                 .pack(
                         "alpha",
                         PackLevel.ORG,
                         List.of(),
                         List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
-                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"),
-                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/gone"));
+                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"));
         PacksSession session = closure.session();
 
         InForceAnswer answer = session.inForce(new InForceQuery(
@@ -351,8 +353,8 @@ class ClosureViewSessionStepRefsTest {
         assertThat(answer.states().get(ref("mission_type:M")).state())
                 .as("the control: the mission type selected beside it is in force")
                 .isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.ACTIVE);
-        assertThat(answer.enhancedTargets().get(ref("step_enhancement:x")))
-                .containsExactlyInAnyOrder(new NodeRef(NodeKind.ACTION, "M/gone"), new NodeRef(NodeKind.ACTION, "M/missing"));
+        assertThat(answer.enhancedTargets())
+                .containsEntry(ref("step_enhancement:x"), List.of(new NodeRef(NodeKind.ACTION, "M/missing")));
     }
 
     // ---- the action context: each pass of the walk is the appliesThrough of its entry (FR-009) ----
@@ -369,7 +371,12 @@ class ClosureViewSessionStepRefsTest {
                         entry("directive:P", Pass.PROJECT, Optional.of(urn("directive:P")))),
                 List.of(
                         new ActionContextWalk.SuggestionCandidate(
-                                urn("tactic:s1"), urn("directive:A"), 2, Optional.empty(), Optional.empty(), Pass.ACTION),
+                                urn("tactic:s1"),
+                                urn("directive:A"),
+                                2,
+                                Optional.empty(),
+                                Optional.empty(),
+                                Pass.ACTION),
                         new ActionContextWalk.SuggestionCandidate(
                                 urn("tactic:s3"),
                                 urn("directive:P"),

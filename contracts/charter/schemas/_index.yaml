@@ -49,6 +49,7 @@ files:
   - EffectiveArtifactList.yaml
   - EffectiveArtifactReason.yaml
   - EffectiveArtifactState.yaml
+  - EffectiveContextArtifact.yaml
   - EffectiveGraph.yaml
   - EffectiveGraphEdge.yaml
   - EffectiveGraphNode.yaml

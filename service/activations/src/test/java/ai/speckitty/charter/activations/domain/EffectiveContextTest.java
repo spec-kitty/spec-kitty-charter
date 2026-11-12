@@ -96,8 +96,8 @@ class EffectiveContextTest {
                 artifact("directive:D2", State.ACTIVE, Reason.SELECTED),
                 artifact("directive:D", State.ACTIVE, Reason.SELECTED),
                 artifact("tactic:S", State.INACTIVE, Reason.NOT_SELECTED));
-        SuggestionCandidate candidate =
-                new SuggestionCandidate(ref("tactic:S"), Optional.of("when"), Optional.of("why"), AppliesThrough.ACTION);
+        SuggestionCandidate candidate = new SuggestionCandidate(
+                ref("tactic:S"), Optional.of("when"), Optional.of("why"), AppliesThrough.ACTION);
 
         EffectiveContext forward = EffectiveContext.of(
                 set,
@@ -135,7 +135,9 @@ class EffectiveContextTest {
         EffectiveContext context = EffectiveContext.of(
                 set, walked(List.of(reached("directive:D")), candidates, List.of()), MISSION_TYPE, STEP);
 
-        assertThat(context.artifacts()).extracting(EffectiveContextTest::urnOf).containsExactly("directive:D", "tactic:S");
+        assertThat(context.artifacts())
+                .extracting(EffectiveContextTest::urnOf)
+                .containsExactly("directive:D", "tactic:S");
     }
 
     @Test
@@ -178,7 +180,9 @@ class EffectiveContextTest {
                 set,
                 walked(
                         List.of(reached("directive:A"), reached("directive:P", AppliesThrough.PROJECT)),
-                        List.of(candidate("tactic:S2", AppliesThrough.PROJECT), candidate("tactic:S1", AppliesThrough.ACTION)),
+                        List.of(
+                                candidate("tactic:S2", AppliesThrough.PROJECT),
+                                candidate("tactic:S1", AppliesThrough.ACTION)),
                         List.of()),
                 MISSION_TYPE,
                 STEP);

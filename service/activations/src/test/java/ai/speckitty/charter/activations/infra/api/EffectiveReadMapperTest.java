@@ -648,7 +648,9 @@ class EffectiveReadMapperTest {
         assertThat(wire.getAction()).isEqualTo("implement");
         assertThat(wire.getGovernanceFingerprint()).isEqualTo("sha256:closure");
         assertThat(wire.getArtifacts())
-                .extracting(EffectiveContextArtifact::getArtifactId, item -> item.getAppliesThrough().getValue())
+                .extracting(
+                        EffectiveContextArtifact::getArtifactId,
+                        item -> item.getAppliesThrough().getValue())
                 .as("each item carries its own appliesThrough")
                 .containsExactly(tuple("A", "mission_type"), tuple("t", "project"));
         assertThat(wire.getArtifacts().get(0).getKind().getValue()).isEqualTo("directive");
@@ -678,8 +680,8 @@ class EffectiveReadMapperTest {
                 .map(through -> new EffectiveContext.Item(item(A, Optional.empty(), Optional.empty()), through))
                 .toList();
 
-        EffectiveActionContext wire =
-                mapper.toContext(contextRead(new EffectiveContext(items, List.of(), EffectiveSkippedReport.empty())), true);
+        EffectiveActionContext wire = mapper.toContext(
+                contextRead(new EffectiveContext(items, List.of(), EffectiveSkippedReport.empty())), true);
 
         assertThat(wire.getArtifacts())
                 .extracting(item -> item.getAppliesThrough().getValue())

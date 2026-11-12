@@ -166,8 +166,9 @@ final class ClosureViewSession implements PacksSession {
 
     /**
      * The activation domain's context for the packs slice's walk: the artifacts in force the walk lists with their
-     * enhancers, the candidates for a suggestion, and the enhancers in force of the step. The walk's step, via and hops are
-     * its own: the context names artifacts, and the effective set decides their states.
+     * enhancers, the candidates for a suggestion, and the enhancers in force of the step. Each entry and each candidate
+     * keeps the pass that listed it, as its {@link ActionContext.AppliesThrough} (FR-009). The walk's step, via, hops and
+     * pass root are its own: the context names artifacts, and the effective set decides their states.
      *
      * @param walked what the walk reached
      * @return the context, as values
@@ -179,15 +180,31 @@ final class ClosureViewSession implements PacksSession {
         List<ActionContext.Reached> entries = new ArrayList<>();
         for (ActionContextWalk.Entry entry : walked.entries()) {
             activatable(entry.urn())
-                    .ifPresent(ref -> entries.add(new ActionContext.Reached(ref, listOf(entry.enhancedBy()))));
+                    .ifPresent(ref -> entries.add(new ActionContext.Reached(
+                            ref, listOf(entry.enhancedBy()), appliesThroughOf(entry.pass()))));
         }
         List<ActionContext.SuggestionCandidate> candidates = new ArrayList<>();
         for (ActionContextWalk.SuggestionCandidate candidate : walked.suggestionCandidates()) {
             activatable(candidate.urn())
-                    .ifPresent(ref -> candidates.add(
-                            new ActionContext.SuggestionCandidate(ref, candidate.when(), candidate.reason())));
+                    .ifPresent(ref -> candidates.add(new ActionContext.SuggestionCandidate(
+                            ref, candidate.when(), candidate.reason(), appliesThroughOf(candidate.pass()))));
         }
         return new ActionContext(true, entries, candidates, listOf(walked.actionEnhancedBy()));
+    }
+
+    /**
+     * The activation domain's name for a pass of the effective walk: the same three parts of the ownership rule, in the
+     * same order (research R3).
+     *
+     * @param pass the pass that listed an entry or reached a candidate
+     * @return its appliesThrough
+     */
+    static ActionContext.AppliesThrough appliesThroughOf(ActionContextWalk.Pass pass) {
+        return switch (pass) {
+            case ACTION -> ActionContext.AppliesThrough.ACTION;
+            case MISSION_TYPE -> ActionContext.AppliesThrough.MISSION_TYPE;
+            case PROJECT -> ActionContext.AppliesThrough.PROJECT;
+        };
     }
 
     /**

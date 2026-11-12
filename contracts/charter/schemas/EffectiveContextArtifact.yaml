@@ -1,0 +1,118 @@
+title: EffectiveContextArtifact
+description: >-
+  One artifact of an effective action context (getEffectiveActionContext): the members of EffectiveArtifact, copied, the
+  same facts as the artifact's item in the effective list under the same activation, and appliesThrough, the part of the
+  ownership rule that lists it for this action (operator ruling of 2026-11-12, Decision Moment
+  01M774HQ8N5EVYDRTP16MBJCN3). appliesThrough is about one action, so the activation-wide listing does not carry it. The
+  schema is closed and carries no allOf of EffectiveArtifact; the two are kept equal by a parity test. _links is the
+  item's: effective-artifact and artifact, only for a kind the pack-scoped artifact routes serve.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- packId
+- level
+- state
+- required
+- policy
+- reason
+- appliesThrough
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind, from the one kind enum, mission types included.
+    x-derived:
+      rule: The kind of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The declared id of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version in force: the winner of the layer merge, the
+      provenance of its content (FR-013).
+    x-derived:
+      rule: The pack of the winning version of the artifact after the layer merge (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of the pack that holds the version in force (built-in, org or project).
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  state:
+    allOf:
+    - $ref: EffectiveArtifactState.yaml
+    description: Whether it is in force; in force is active.
+    x-derived:
+      rule: The effective-set algebra over config and the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  required:
+    type: boolean
+    description: >-
+      True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
+      none of whose targets is in force or is bound to a mission type not in force (E9). A required one
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
+      mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
+    x-derived:
+      rule: Derived from the must-have items of the governing presets of the closure (ADR-0031) and the pack locks.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  satisfiedBy:
+    $ref: ArtifactReference.yaml
+  suggestion:
+    $ref: EffectiveArtifactSuggestion.yaml
+  policy:
+    allOf:
+    - $ref: ArtifactPolicy.yaml
+    description: The mutability level its pack declares.
+    x-derived:
+      rule: The level the owning pack declares (ADR-0012).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: EffectiveArtifactReason.yaml
+    description: Why it has its state.
+    x-derived:
+      rule: The rule of the effective-set algebra that decided the state.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml
+  appliesThrough:
+    type: string
+    enum:
+    - action
+    - mission_type
+    - project
+    description: >-
+      The part of the ownership rule that lists the artifact for this action, the first that reaches it, in this order:
+      action, the action's own walk (ADR-0018's five steps from the action's step); mission_type, the walk from the
+      directives, tactics and paradigms in force that the action's mission type scopes; project, the walk from the
+      directives, tactics and paradigms in force that no action and no mission type scopes. What one of those reaches by
+      ADR-0018's steps 2 to 5 is listed with the same value, and a suggestion carries the value of the entry whose
+      suggests edge reached it.
+    x-derived:
+      rule: >-
+        The first pass of the effective action-context walk that lists the artifact: the action's walk, then the mission
+        type's scoped roots, then the project-wide roots (ADR-0018 D5 as amended 2026-11-12, rule E16).
+      inputs:
+      - schemas/ActivationConfig.yaml
+      - parameters/MissionTypePath.yaml
+      - parameters/ActionPath.yaml

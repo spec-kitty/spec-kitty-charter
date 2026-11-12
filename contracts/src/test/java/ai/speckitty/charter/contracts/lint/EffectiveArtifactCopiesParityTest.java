@@ -60,8 +60,12 @@ class EffectiveArtifactCopiesParityTest {
     void theAppliesThroughOfTheContextItemIsOneOfTheThreeRulesOfTheOwnershipRule() {
         Map<?, ?> appliesThrough = (Map<?, ?>) properties(CONTEXT_ITEM).get("appliesThrough");
 
-        assertThat((List<?>) appliesThrough.get("enum")).containsExactly("action", "mission_type", "project");
-        assertThat(appliesThrough.containsKey("x-derived")).as("appliesThrough cites its rule").isTrue();
+        assertThat(((List<?>) appliesThrough.get("enum"))
+                        .stream().map(String::valueOf).toList())
+                .containsExactly("action", "mission_type", "project");
+        assertThat(appliesThrough.containsKey("x-derived"))
+                .as("appliesThrough cites its rule")
+                .isTrue();
     }
 
     private static List<String> concat(java.util.Collection<String> first, List<String> second) {
