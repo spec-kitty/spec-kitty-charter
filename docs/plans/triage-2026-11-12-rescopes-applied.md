@@ -25,7 +25,8 @@ against `main` at `fd20faa`. Where `main` had moved on since 2026-11-02, the iss
 below says.
 
 The rule applied throughout is the charter's: the charter's model is canonical, and core aligns at incorporation
-(`charter.md`, "Designing during the rewrite"). So no issue keeps a core dependency or a core acceptance criterion.
+(`charter.md`, "Designing during the rewrite"). So no charter-side issue keeps a core dependency or a core acceptance criterion; #14's work is core's,
+planned at incorporation.
 
 ## Applied
 
@@ -43,7 +44,7 @@ The rule applied throughout is the charter's: the charter's model is canonical, 
 | #61 | Pack-author how-to: open, extendable and locked in policy.yaml | Core doc edits and glossary terms dropped. |
 | #69 | Epic: the 4.x cutover, a per-operation switch to the service | Gate text is ADR-0059 D1; charter-side steps only. |
 | #154 | The anti_pattern kind: its schema and refusals (ADR-0052) | Charter half only; curation moves to open-packs (draft below). |
-| #157 | Trust policy for executable pack assets, and SBOMs | Core trust baseline (spec-kitty#2540) dropped; the #143 order recorded. |
+| #157 | Trust policy for executable pack assets, and SBOMs | Core trust baseline (spec-kitty#2540) dropped; orders after #158, designed with #40. |
 | #158, #159 | unchanged | Core trust baseline dropped; order #158, then #157 with #40, then #159. |
 | #163 | unchanged | Core acceptance criterion dropped. |
 | #164 | Mission-type requirement kinds: the declaration in the mission-type schema | Narrowed to requirement kinds. |
@@ -51,7 +52,7 @@ The rule applied throughout is the charter's: the charter's model is canonical, 
 
 No other priority or milestone changed.
 
-## Where main had moved on since the draft
+## Where `main` had moved on since the draft
 
 - **#154:** the draft asked for a `rejects` list on every guidance kind. [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)
   decision 12 retired that list before it was built, so the issue asks for `rejects` edges in the pack's graph
@@ -69,8 +70,8 @@ No other priority or milestone changed.
 
 ## Decided during the Op
 
-- **#82, the anti-pattern vector** (operator, 2026-11-12): an anti-pattern authors its own `impacts` list. Nothing
-  is derived from the guidance that rejects it, so the sign-flip rule is gone.
+- **#82, the anti-pattern vector** (operator, 2026-11-12): an anti-pattern authors its own `impacts` list, and
+  `anti_pattern` joins the kinds that may carry one. Nothing is derived from the guidance that rejects it, so the sign-flip rule is gone.
 
 ## Left to file: open-packs anti-pattern curation
 
