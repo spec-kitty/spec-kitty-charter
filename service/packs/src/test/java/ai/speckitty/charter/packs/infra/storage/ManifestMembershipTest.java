@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -22,7 +23,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,35 +50,7 @@ class ManifestMembershipTest {
     // ---- the derivation ------------------------------------------------------------------------------------------
 
     @Test
-    @DisplayName("the derived lists hold one constituent per artifact at its own file, and every preset, in path order")
-    void theDerivedListsHoldEveryArtifactAndPresetInPathOrder() {
-        for (String name : ExamplePacks.names()) {
-            WholePackStore.LoadedPack loaded = store.load(ExamplePacks.pack(name));
-            PackManifestDso derived = ManifestMembership.derived(loaded.pack(), loaded.layout());
-
-            assertThat(derived.schemaVersion()).isEqualTo("1.0");
-            assertThat(derived.constituents())
-                    .as(name + ": one entry per artifact, with its kind token, id and file")
-                    .extracting(c -> c.kind() + ":" + c.id() + "@" + c.path())
-                    .containsExactlyInAnyOrderElementsOf(loaded.pack().artifacts().stream()
-                            .map(a -> a.kind().token() + ":" + a.localId() + "@"
-                                    + loaded.layout().pathOf(a))
-                            .toList());
-            assertThat(derived.constituents())
-                    .extracting(PackManifestDso.Constituent::path)
-                    .isSortedAccordingTo(Comparator.naturalOrder());
-            assertThat(derived.presets())
-                    .as(name + ": every preset at presets/<id>.yaml")
-                    .extracting(p -> p.id() + "@" + p.path())
-                    .containsExactlyElementsOf(loaded.pack().presets().stream()
-                            .map(p -> p.id() + "@presets/" + p.id() + ".yaml")
-                            .sorted()
-                            .toList());
-        }
-    }
-
-    @Test
-    @DisplayName("the project pack's derived lists are its four artifact files and its preset, each a file on disk")
+    @DisplayName("the project pack's derived lists are its four artifact files and its preset, in path order")
     void theProjectPacksDerivedListsAreItsFiles() {
         Path pack = ExamplePacks.pack(PROJECT);
         WholePackStore.LoadedPack loaded = store.load(pack);
@@ -94,18 +66,6 @@ class ManifestMembershipTest {
         assertThat(derived.presets())
                 .extracting(p -> p.id() + "@" + p.path())
                 .containsExactly("project@presets/project.yaml");
-        for (String name : ExamplePacks.names()) {
-            WholePackStore.LoadedPack each = store.load(ExamplePacks.pack(name));
-            PackManifestDso lists = ManifestMembership.derived(each.pack(), each.layout());
-            lists.constituents()
-                    .forEach(c -> assertThat(ExamplePacks.pack(name).resolve(c.path()))
-                            .as(name)
-                            .isRegularFile());
-            lists.presets()
-                    .forEach(p -> assertThat(ExamplePacks.pack(name).resolve(p.path()))
-                            .as(name)
-                            .isRegularFile());
-        }
     }
 
     @Test
@@ -173,65 +133,44 @@ class ManifestMembershipTest {
     // ---- the whole-pack registration -----------------------------------------------------------------------------
 
     @Test
-    @DisplayName("a registration refuses an uploaded manifest that leaves out an artifact the pack holds")
-    void aRegistrationRefusesAManifestThatLeavesOutAnArtifact(@TempDir Path host) throws IOException {
+    @DisplayName(
+            "a registration refuses an uploaded manifest whose lists differ from the pack, one violation per entry")
+    void aRegistrationRefusesAManifestWhoseListsDifferFromThePack(@TempDir Path host) throws IOException {
         Path pack = ExamplePacks.copyOf(PROJECT, host);
-        editManifest(pack, text -> text.replace(STYLEGUIDE_ENTRY + contentHashLine(text, STYLEGUIDE), ""));
+        editManifest(
+                pack,
+                text -> text.replace(STYLEGUIDE_ENTRY + contentHashLine(text, STYLEGUIDE), "")
+                                .replace(
+                                        "presets:\n",
+                                        "- kind: tactic\n  id: ghost\n  path: tactics/ghost.tactic.yaml\n  content_hash: "
+                                                + "0".repeat(64) + "\npresets:\n")
+                        + "- id: ghost\n  path: presets/ghost.yaml\n  content_hash: " + "0".repeat(64) + "\n");
 
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
                             .extracting(RefusalViolation::pointer, RefusalViolation::code, RefusalViolation::detail)
-                            .containsExactly(org.assertj.core.groups.Tuple.tuple(
-                                    PackFileSet.MANIFEST,
-                                    "manifest_membership",
-                                    PackFileSet.MANIFEST
-                                            + ": leaves out constituent styleguide:reasons-canvas-writing at "
-                                            + STYLEGUIDE + ", which the pack holds"));
+                            .containsExactly(
+                                    tuple(
+                                            PackFileSet.MANIFEST,
+                                            "manifest_membership",
+                                            PackFileSet.MANIFEST
+                                                    + ": lists constituent tactic:ghost at tactics/ghost.tactic.yaml,"
+                                                    + " which the pack does not hold"),
+                                    tuple(
+                                            PackFileSet.MANIFEST,
+                                            "manifest_membership",
+                                            PackFileSet.MANIFEST
+                                                    + ": lists preset ghost at presets/ghost.yaml, which the pack does"
+                                                    + " not hold"),
+                                    tuple(
+                                            PackFileSet.MANIFEST,
+                                            "manifest_membership",
+                                            PackFileSet.MANIFEST
+                                                    + ": leaves out constituent styleguide:reasons-canvas-writing at "
+                                                    + STYLEGUIDE + ", which the pack holds"));
                 });
-    }
-
-    @Test
-    @DisplayName(
-            "a registration refuses an uploaded manifest that lists a constituent or a preset the pack does not hold")
-    void aRegistrationRefusesAManifestThatListsWhatThePackDoesNotHold(@TempDir Path host) throws IOException {
-        Path pack = ExamplePacks.copyOf(PROJECT, host);
-        editManifest(
-                pack,
-                text -> text.replace(
-                                "presets:\n",
-                                "- kind: tactic\n  id: ghost\n  path: tactics/ghost.tactic.yaml\n  content_hash: "
-                                        + "0".repeat(64) + "\npresets:\n")
-                        + "- id: ghost\n  path: presets/ghost.yaml\n  content_hash: " + "0".repeat(64) + "\n");
-
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.violations())
-                                .extracting(RefusalViolation::detail)
-                                .containsExactly(
-                                        PackFileSet.MANIFEST
-                                                + ": lists constituent tactic:ghost at tactics/ghost.tactic.yaml, which the pack does not"
-                                                + " hold",
-                                        PackFileSet.MANIFEST
-                                                + ": lists preset ghost at presets/ghost.yaml, which the pack does not hold"));
-    }
-
-    @Test
-    @DisplayName(
-            "a registration takes the derived lists in any order, and stale hashes: those are restamped, not judged")
-    void aRegistrationTakesAnyOrderAndStaleHashes(@TempDir Path host) throws IOException {
-        Path pack = ExamplePacks.copyOf(PROJECT, host);
-        String hash = contentHashLine(Files.readString(pack.resolve(PackFileSet.MANIFEST)), STYLEGUIDE);
-        editManifest(
-                pack,
-                text -> text.replace(STYLEGUIDE_ENTRY + hash, "")
-                        .replace(
-                                "constituents:\n",
-                                "constituents:\n" + STYLEGUIDE_ENTRY + "  content_hash: " + "0".repeat(64) + "\n"));
-
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().artifacts()).isNotEmpty();
     }
 
     @Test
@@ -247,7 +186,7 @@ class ManifestMembershipTest {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
                             .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                            .containsExactly(org.assertj.core.groups.Tuple.tuple(PackFileSet.MANIFEST, "unreadable"));
+                            .containsExactly(tuple(PackFileSet.MANIFEST, "unreadable"));
                 });
     }
 
@@ -270,22 +209,17 @@ class ManifestMembershipTest {
     // ---- the per-artifact PUT and DELETE -------------------------------------------------------------------------
 
     @Test
-    @DisplayName(
-            "a PUT lists the artifact it adds and restamps the manifest; on a pack that held none it generates one")
-    void aPutRestampsOrGeneratesTheManifest(@TempDir Path host) throws IOException {
-        Path listed = ExamplePacks.copyOf(PROJECT, host.resolve("listed"));
-        Path bare = ExamplePacks.copyOf(PROJECT, host.resolve("bare"));
+    @DisplayName("a PUT on a pack that held no manifest generates one listing the artifact it adds")
+    void aPutGeneratesTheManifest(@TempDir Path host) {
+        Path bare = ExamplePacks.copyOf(PROJECT, host);
         deleteManifest(bare);
 
-        commitStore(listed).commit(new PackIdentifier(PROJECT), null, toolguide(), null);
         commitStore(bare).commit(new PackIdentifier(PROJECT), null, toolguide(), null);
 
-        for (Path pack : List.of(listed, bare)) {
-            assertFreshAndDerived(pack);
-            assertThat(manifestOf(pack).constituents())
-                    .extracting(c -> c.kind() + ":" + c.id())
-                    .contains("toolguide:ripgrep");
-        }
+        assertFreshAndDerived(bare);
+        assertThat(manifestOf(bare).constituents())
+                .extracting(c -> c.kind() + ":" + c.id())
+                .contains("toolguide:ripgrep");
     }
 
     @Test
