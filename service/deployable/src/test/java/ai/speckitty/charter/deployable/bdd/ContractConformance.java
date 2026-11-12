@@ -72,21 +72,6 @@ final class ContractConformance {
     private static final Set<String> METHODS =
             Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
 
-    /**
-     * One success answer the contract declares: an operation, by its method and path template, and a 2xx status.
-     *
-     * @param method the lower-case method, as the contract names it
-     * @param template the path template, for example {@code /packs/{packId}/artifacts}
-     * @param status the 2xx status
-     */
-    record Success(String method, String template, int status) {
-
-        @Override
-        public String toString() {
-            return method.toUpperCase(Locale.ROOT) + " " + template + " " + status;
-        }
-    }
-
     private final Path root;
     private final Map<String, Map<String, Object>> documents = new HashMap<>();
 
@@ -375,31 +360,54 @@ final class ContractConformance {
     }
 
     /**
-     * Every success answer the contract declares of a built operation: each 2xx status of each operation that carries
-     * no {@code x-reserved}. A reserved operation (ADR-0020 D8) answers 501 whatever the request holds, so its declared
-     * successes cannot be exercised until it is built; it is pinned by its 501 scenario instead.
+     * One operation of the contract with the statuses it declares, for the switch gate (ADR-0059 D1).
      *
-     * @return the successes, by method, path template and status
+     * @param operationId the operation's {@code operationId}
+     * @param method the lower-case method
+     * @param template the path template
+     * @param reserved whether it carries {@code x-reserved}
+     * @param statuses the statuses its {@code responses} list by number; {@code default} is not a status
      */
-    Set<Success> successResponses() {
-        Set<Success> successes = new HashSet<>();
+    record Operation(String operationId, String method, String template, boolean reserved, Set<Integer> statuses) {}
+
+    /**
+     * Every operation the contract declares, reserved or built, with the statuses it lists.
+     *
+     * @return the operations, by {@code operationId}
+     */
+    Map<String, Operation> operations() {
+        Map<String, Operation> operations = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : paths().entrySet()) {
-            Located item = pathItem(entry);
-            for (Map.Entry<String, Object> operation : item.node().entrySet()) {
-                if (!METHODS.contains(operation.getKey())
-                        || new DeclaredOperation(entry.getKey(), mapping(operation.getValue(), entry.getKey()))
-                                .reserved()) {
-                    continue;
+            for (Map.Entry<String, Object> method : pathItem(entry).node().entrySet()) {
+                if (METHODS.contains(method.getKey())) {
+                    Operation operation = operation(entry.getKey(), method.getKey(), method.getValue());
+                    if (operations.put(operation.operationId(), operation) != null) {
+                        throw new IllegalStateException(
+                                "operationId " + operation.operationId() + " is declared twice");
+                    }
                 }
-                mapping(mapping(operation.getValue(), entry.getKey()).get("responses"), entry.getKey() + " responses")
-                        .keySet()
-                        .stream()
-                        .filter(status -> status.matches("2\\d\\d"))
-                        .forEach(status -> successes.add(
-                                new Success(operation.getKey(), entry.getKey(), Integer.parseInt(status))));
             }
         }
-        return successes;
+        return operations;
+    }
+
+    private Operation operation(String template, String method, Object value) {
+        Map<String, Object> node = mapping(value, template);
+        if (!(node.get("operationId") instanceof String operationId) || operationId.isBlank()) {
+            throw new IllegalStateException(method + " " + template + " declares no operationId");
+        }
+        Set<Integer> statuses = new HashSet<>();
+        for (String status :
+                mapping(node.get("responses"), template + " responses").keySet()) {
+            if (status.matches("\\d{3}")) {
+                statuses.add(Integer.parseInt(status));
+            } else if (!status.equals("default")) {
+                throw new IllegalStateException(method + " " + template + " declares the response key " + status
+                        + ", which is neither a status nor default");
+            }
+        }
+        return new Operation(
+                operationId, method, template, new DeclaredOperation(template, node).reserved(), Set.copyOf(statuses));
     }
 
     private Map<String, Object> paths() {

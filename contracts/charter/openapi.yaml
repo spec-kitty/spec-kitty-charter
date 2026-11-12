@@ -84,6 +84,8 @@ paths:
     $ref: paths/packs.yaml
   /packs/{packId}:
     $ref: paths/packs_packId.yaml
+  /packs/{packId}/doc:
+    $ref: paths/packs_packId_doc.yaml
   /pack-registrations/{registrationId}:
     $ref: paths/pack-registrations_registrationId.yaml
   /packs/{packId}/relationships:

@@ -153,7 +153,7 @@ class WholePackRoundTripTest {
             assertThat(byKind.get(kind)).as(kind).isEqualTo(Map.of(Status.GREEN, (int) classed));
         }
         assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
-        assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
+        assertThat(observed.get(PackDocumentMarkdown.FILE)).as("README.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("asset"))
                 .map(Map.Entry::getKey)
@@ -170,12 +170,17 @@ class WholePackRoundTripTest {
      * ADR-0040 deferred them to), beside the pack's top-level {@code templates/}: every file there is one.
      */
     @Test
-    void missionTemplatesAreTemplates(@TempDir Path readmeHost) {
+    void missionTemplatesAreTemplates() {
         SortedMap<String, String> census = WholePackCensus.of(ExamplePacks.pack(BUILT_IN));
 
         List<String> missionTemplates = census.keySet().stream()
                 .filter(path -> path.matches("missions/[^/]+/templates/.+"))
                 .toList();
+        assertThat(census)
+                .as("the example pack holds an orientation README beside its templates, which is excluded (#451)")
+                .containsEntry(
+                        "missions/software-dev/templates/README.md",
+                        WholePackCensus.EXCLUDED + "*/missions/*/templates/**/README.md");
         assertThat(missionTemplates)
                 .filteredOn(path -> census.get(path).equals("template"))
                 .as("every mission template but the orientation READMEs, which are excluded")
@@ -189,19 +194,7 @@ class WholePackRoundTripTest {
                         .filter(path -> !Path.of(path).getFileName().toString().startsWith("."))
                         .count())
                 .noneSatisfy(path -> assertThat(path).endsWith("README.md"));
-        // The example pack holds no orientation README, so a copy gains one to prove the exclusion.
-        Path copy = ExamplePacks.copyOf(BUILT_IN, readmeHost);
-        Path templates = copy.resolve("missions/software-dev/templates");
-        try {
-            Files.writeString(templates.resolve("README.md"), "# Templates\n", StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        SortedMap<String, String> withReadme = WholePackCensus.of(copy);
-        assertThat(withReadme)
-                .as("the planted README is in the census, so the next line is not a vacuous null check")
-                .containsKey("missions/software-dev/templates/README.md");
-        assertThat(withReadme.get("missions/software-dev/templates/README.md"))
+        assertThat(census.get("missions/software-dev/templates/README.md"))
                 .as("an orientation README is not a template")
                 .isNotEqualTo("template");
         assertThat(census.entrySet().stream()
@@ -215,7 +208,7 @@ class WholePackRoundTripTest {
 
     /**
      * Positive control through the production write path (#260): the loaded pack's document has one character of its
-     * preamble changed before the save, within the rendered prefix of a difference, and {@code pack.md}, green in the
+     * preamble changed before the save, within the rendered prefix of a difference, and {@code README.md}, green in the
      * faithful run, is red at {@code preamble} alone with both renderings; every other outcome is the faithful run's,
      * and neither run writes a file no source file pairs with.
      */
@@ -246,11 +239,11 @@ class WholePackRoundTripTest {
 
         assertThat(census).containsEntry(PackDocumentMarkdown.FILE, DomainRoundTrip.PACK_DOCUMENT);
         assertThat(faithful.get(PackDocumentMarkdown.FILE))
-                .as("faithful pack.md")
+                .as("faithful README.md")
                 .isEmpty();
         String source = loaded.get().preamble();
         assertThat(lossy.get(PackDocumentMarkdown.FILE))
-                .as("lossy pack.md")
+                .as("lossy README.md")
                 .hasValue(
                         "preamble: source " + rendered(source) + ", written " + rendered(lossyPreamble(loaded.get())));
         Map<String, Optional<String>> others = new TreeMap<>(lossy);
@@ -392,7 +385,7 @@ class WholePackRoundTripTest {
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
         // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.
         assertThat(flipped.get(PackDocumentMarkdown.FILE))
-                .as("pack.md in the flipped run")
+                .as("README.md in the flipped run")
                 .isEmpty();
         faithful.keySet().stream()
                 .filter(path -> !bytesKind.contains(path))
@@ -758,6 +751,16 @@ class WholePackRoundTripTest {
             };
             observed.put(path, red);
         }
+        // An excluded file is not compared, it is checked: the store must not have written it (#451).
+        census.forEach((path, kind) -> {
+            if (kind.startsWith(WholePackCensus.EXCLUDED)) {
+                observed.put(
+                        path,
+                        Files.exists(written.resolve(path))
+                                ? Optional.of("the store wrote the excluded file " + path)
+                                : Optional.empty());
+            }
+        });
         return observed;
     }
 

@@ -12,3 +12,5 @@ value:
     artifacts:
       href: /api/v1/packs/acme-review-pack/artifacts{?kind}
       templated: true
+    doc:
+      href: /api/v1/packs/acme-review-pack/doc

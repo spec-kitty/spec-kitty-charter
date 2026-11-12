@@ -13,7 +13,7 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.util.List;
 
 /**
- * The storage rules of a pack's {@code pack.md} (#260, ADR-0042 decision 8): where it is, its file kind, and the
+ * The storage rules of a pack's {@code README.md} (#260, ADR-0042 decision 8): where it is, its file kind, and the
  * mapping between the domain {@link PackDocument} and #194's {@link MarkdownDocument}, part for part, and the one read
  * the store and validate mode share, so the two refuse the same files. Markdown is parsed and written by #194's codec
  * only.
@@ -21,7 +21,7 @@ import java.util.List;
 final class PackDocumentMarkdown {
 
     /** The pack document's pack-relative path. */
-    static final String FILE = "pack.md";
+    static final String FILE = "README.md";
 
     /** Its file kind and structure schema, as {@code contracts/packs/file-kinds.yaml} names them. */
     static final String KIND = "pack-document";
@@ -29,7 +29,7 @@ final class PackDocumentMarkdown {
     private PackDocumentMarkdown() {}
 
     /**
-     * Reads a {@code pack.md} text as the {@code markdown} content form does: parsed by the codec (a refusal names its
+     * Reads a {@code README.md} text as the {@code markdown} content form does: parsed by the codec (a refusal names its
      * line: a carriage return, a byte order mark or an ambiguous heading is never normalized), then validated against
      * the {@code pack-document} structure schema.
      *
@@ -83,7 +83,7 @@ final class PackDocumentMarkdown {
     }
 
     /**
-     * The canonical text of a document about to be written, or a refusal naming {@code pack.md}, before any byte is
+     * The canonical text of a document about to be written, or a refusal naming {@code README.md}, before any byte is
      * written. A domain document keeps the Markdown model's rules when it is built (#271); what is left to refuse here
      * is a document the codec cannot read back as itself: a frontmatter value that reads back as another value (a
      * {@code long} reads back as an {@code int}).

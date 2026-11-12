@@ -212,14 +212,9 @@ public final class ReleaseGate {
                 .flatMap(s -> s.version().stream())
                 .filter(Version::released)
                 .toList();
-        Set<String> recorded = new TreeSet<>();
-        released.forEach(v -> recorded.add(v.tag()));
-        Set<String> unrecorded = new TreeSet<>(mergedTags);
-        unrecorded.removeAll(recorded);
-        if (!unrecorded.isEmpty()) {
-            return new Decision.Refused("Tags " + unrecorded + " are merged into HEAD, but"
-                    + " contracts/charter/CHANGELOG.md does not record them as released versions (recorded: "
-                    + (recorded.isEmpty() ? "none" : recorded) + ").");
+        Optional<Decision.Refused> unrecorded = unrecordedRefusal(released, mergedTags);
+        if (unrecorded.isPresent()) {
+            return unrecorded.get();
         }
         Version top = sections.getFirst().version().orElseThrow();
         if (top.released() && mergedTags.contains(top.tag()) && !tagsAtHead.contains(top.tag())) {
@@ -233,15 +228,7 @@ public final class ReleaseGate {
         Optional<Version> baseline =
                 candidates.stream().filter(v -> v.sameLine(top)).findFirst();
         if (baseline.isEmpty()) {
-            return new Decision.NoBaseline("No released baseline: "
-                    + (pending ? "pending release " + top.text() + "; " : "")
-                    + (candidates.isEmpty()
-                            ? "contracts/charter/CHANGELOG.md records no released version before this one."
-                            : "contracts/charter/CHANGELOG.md records no released " + top.line() + " version,"
-                                    + (top.major() > 0
-                                            ? " and a new major version is not compared with an older one."
-                                            : " and a new minor version of 0.x is not compared with an older"
-                                                    + " one.")));
+            return noBaseline(top, pending, candidates.isEmpty());
         }
         String tag = baseline.get().tag();
         if (!mergedTags.contains(tag)) {
@@ -254,6 +241,32 @@ public final class ReleaseGate {
                 tag,
                 (pending ? "pending release " + top.text() + ": " : "") + "compared against "
                         + baseline.get().text());
+    }
+
+    /** Refuses tags merged into HEAD that the CHANGELOG does not record as released versions. */
+    private static Optional<Decision.Refused> unrecordedRefusal(List<Version> released, Set<String> mergedTags) {
+        Set<String> recorded = new TreeSet<>();
+        released.forEach(v -> recorded.add(v.tag()));
+        Set<String> unrecorded = new TreeSet<>(mergedTags);
+        unrecorded.removeAll(recorded);
+        if (unrecorded.isEmpty()) {
+            return Optional.empty();
+        }
+        return refuse("Tags " + unrecorded + " are merged into HEAD, but"
+                + " contracts/charter/CHANGELOG.md does not record them as released versions (recorded: "
+                + (recorded.isEmpty() ? "none" : recorded) + ").");
+    }
+
+    /** Why the top version has no released baseline on its line. */
+    private static Decision.NoBaseline noBaseline(Version top, boolean pending, boolean noCandidates) {
+        return new Decision.NoBaseline("No released baseline: "
+                + (pending ? "pending release " + top.text() + "; " : "")
+                + (noCandidates
+                        ? "contracts/charter/CHANGELOG.md records no released version before this one."
+                        : "contracts/charter/CHANGELOG.md records no released " + top.line() + " version,"
+                                + (top.major() > 0
+                                        ? " and a new major version is not compared with an older one."
+                                        : " and a new minor version of 0.x is not compared with an older one.")));
     }
 
     /**

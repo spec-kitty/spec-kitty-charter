@@ -27,6 +27,10 @@ import org.jspecify.annotations.Nullable;
  * because the pack's own data is inconsistent, each pinned to where it differs and to the spec-kitty-open-packs issue
  * that owns the fix (ADR-0036 decision 5).
  *
+ * <p>A file the table excludes (census kind {@code excluded:<glob>}) is judged apart, and is never red for being
+ * unmodelled: the run checks that the store did not write it ({@link Status#EXCLUDED}), and the file needs no entry in
+ * any of the lists above (#451).
+ *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
  * listed item that now round-trips, so a fix is recorded the moment it lands. Stale entries, an exclusion over a
  * modelled file and a modelled kind with no files fail too, so the gate cannot pass vacuously.
@@ -285,6 +289,23 @@ final class WholePackExpectation {
         Set<String> excludedPaths = new HashSet<>();
         census.forEach((path, kind) -> {
             boolean modelled = modelledKinds.contains(kind);
+            if (kind.startsWith(WholePackCensus.EXCLUDED)) {
+                // An excluded file is not pack content: checked, not compared. The store must not have written it.
+                excludedPaths.add(path);
+                Optional<String> written = observed.getOrDefault(
+                        path, Optional.of("the gate did not check whether the store wrote this excluded file"));
+                if (written.isEmpty()) {
+                    results.add(new FileResult(
+                            path,
+                            kind,
+                            Status.EXCLUDED,
+                            "excluded by " + kind.substring(WholePackCensus.EXCLUDED.length()) + ": not written"));
+                } else {
+                    results.add(new FileResult(path, kind, Status.RED, written.get()));
+                    problems.add("EXCLUDED_WRITTEN " + path + " (" + kind + "): " + written.get());
+                }
+                return;
+            }
             Optional<String> red = modelled
                     ? observed.getOrDefault(path, Optional.of("the round trip gave no outcome for this file"))
                     : Optional.of("no adapter models kind " + kind);

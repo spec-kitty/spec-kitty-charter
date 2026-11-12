@@ -64,8 +64,8 @@ class PackSchemasTest {
     // ---- the bundle -------------------------------------------------------------------------
 
     @Test
-    void thereAreTwentyEightBundledSchemas() {
-        assertThat(bundledKinds()).hasSize(28);
+    void thereAreTwentySevenBundledSchemas() {
+        assertThat(bundledKinds()).hasSize(27);
     }
 
     @ParameterizedTest
@@ -441,14 +441,6 @@ class PackSchemasTest {
                 .allSatisfy(v -> assertThat(v.value()).contains(reported))
                 .extracting(SchemaViolation::keyword)
                 .contains("type");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {".nan", ".inf", "-.inf", "1e400"})
-    void aNonFiniteSchemaVersionOfTheOrgCharterIsRefused(String written) {
-        assertThat(violationsAt("org-charter", "schema_version: " + written + "\n", "schema_version"))
-                .singleElement()
-                .satisfies(v -> assertThat(v.keyword()).isEqualTo("type"));
     }
 
     @Test

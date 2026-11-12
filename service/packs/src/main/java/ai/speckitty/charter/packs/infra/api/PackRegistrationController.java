@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.RegistrationApi;
+import ai.speckitty.charter.api.model.PackDocumentRead;
 import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationStatus;
 import ai.speckitty.charter.api.model.PackSource;
@@ -25,8 +26,13 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -58,6 +64,7 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackRegistrationMapper mapper;
     private final PackSourceIntake intake;
     private final PackRemovalController removals;
+    private final PackDocumentController documents;
 
     /**
      * A controller over the registration jobs, the stored packs, the sources a registration may name and the removals.
@@ -68,6 +75,7 @@ public class PackRegistrationController implements RegistrationApi {
      * @param mapper the contract shapes
      * @param intake what takes a registration from a source
      * @param removals the adapter of the two {@code DELETE}s
+     * @param documents the adapter of the document read, in both its forms
      */
     @Autowired
     PackRegistrationController(
@@ -76,13 +84,15 @@ public class PackRegistrationController implements RegistrationApi {
             PackArchiveReader archives,
             PackRegistrationMapper mapper,
             PackSourceIntake intake,
-            PackRemovalController removals) {
+            PackRemovalController removals,
+            PackDocumentController documents) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
         this.archives = Objects.requireNonNull(archives, "archives");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.intake = Objects.requireNonNull(intake, "intake");
         this.removals = Objects.requireNonNull(removals, "removals");
+        this.documents = Objects.requireNonNull(documents, "documents");
     }
 
     @Override
@@ -104,6 +114,47 @@ public class PackRegistrationController implements RegistrationApi {
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
                 .body(mapper.summary(verified.value()));
+    }
+
+    /**
+     * The {@code application/json} form of the document read, and the one operation of the contract: the generated
+     * interface lists {@code application/json} first, so it types this method, and {@code text/markdown} and the
+     * problem type after it. Its mapping is narrowed to JSON here, so that it and {@link #getPackDocumentMarkdown} are
+     * disjoint and Spring picks between them by the request's {@code Accept}: by quality, then by specificity (RFC 9110,
+     * section 12.5.1), {@code text/*} to Markdown, {@code application/*}, {@code *}{@code /*} and no {@code Accept}
+     * to JSON. An {@code Accept} that names neither is no match, and Spring's {@code 406} is rendered by
+     * {@code ProblemHandler} as the code-less problem. The parameter annotations are the interface's.
+     *
+     * <p>A tie is two named types of equal quality and equal specificity ({@code text/markdown, application/json}).
+     * RFC 9110 leaves it to the server, and the two mappings settle it by the order the client wrote the types in; a
+     * range that covers both ({@code *}{@code /*}) is not such a tie, and the JSON form, the form the contract lists
+     * first, answers it. The negotiation is Spring's mapping, not ours: none of it is written here (#451, the
+     * decision of the document read's spike). {@code PackDocumentControllerTest} has each case.
+     *
+     * @param packId the pack identifier
+     * @param ifNoneMatch the request's {@code If-None-Match}, verbatim, or null
+     * @return {@code 304}, or {@code 200} with the title, the body and the links
+     */
+    @Override
+    @GetMapping(value = RegistrationApi.PATH_GET_PACK_DOCUMENT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PackDocumentRead> getPackDocument(String packId, @Nullable String ifNoneMatch) {
+        return documents.json(packId, ifNoneMatch);
+    }
+
+    /**
+     * The {@code text/markdown} form of the document read: the held {@code README.md}. It is not on the generated
+     * interface, which types the operation by its first media type, JSON; a {@code String} body has no DTO to generate
+     * (ADR-0004 holds for the JSON form).
+     *
+     * @param packId the pack identifier
+     * @param ifNoneMatch the request's {@code If-None-Match}, verbatim, or null
+     * @return {@code 304}, or {@code 200} with the held text
+     */
+    @GetMapping(value = RegistrationApi.PATH_GET_PACK_DOCUMENT, produces = "text/markdown")
+    public ResponseEntity<String> getPackDocumentMarkdown(
+            @PathVariable("packId") String packId,
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) @Nullable String ifNoneMatch) {
+        return documents.markdown(packId, ifNoneMatch);
     }
 
     @Override

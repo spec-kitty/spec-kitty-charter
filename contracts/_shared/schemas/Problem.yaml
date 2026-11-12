@@ -21,7 +21,12 @@ properties:
     description: The HTTP status code of this occurrence.
   detail:
     type: string
-    description: A human-readable explanation specific to this occurrence of the problem.
+    description: >-
+      A human-readable explanation specific to this occurrence of the problem. On a 400 without a code for a
+      malformed request parameter it names where the parameter is (query, path or header), its name, the value it
+      carried (quoted, its quotes, backslashes and control characters escaped, cut after 64 code points) and what it
+      accepts, for example: The query parameter kind is "bogus", which is not one of tactic, directive, ... or
+      mission_step_contract. It is for a person to read; a client branches on the status, never on the detail.
   instance:
     type: string
     description: A URI reference that identifies this occurrence of the problem.

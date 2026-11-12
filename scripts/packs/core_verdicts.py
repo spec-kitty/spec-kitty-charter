@@ -54,7 +54,6 @@ REGISTER_IDS: dict[str, str] = {
     "c10-agent-role-uppercase": "DIV-010",
     "c10-agent-scalar-role": "DIV-010",
     "c10-agent-quoted-integer": "DIV-010",
-    "c10-org-charter-schema-version-quoted": "DIV-010",
     "c12-edge-impacts-valid": "DIV-018",
     "c12-impacts-edge-without-impacts": "DIV-018",
     "c16-shard-edge-provenance": "DIV-019",

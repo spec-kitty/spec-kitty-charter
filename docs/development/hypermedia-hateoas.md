@@ -130,7 +130,8 @@ used.
 | `service-desc` | The contract document, `/api/v1/openapi.yaml` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) | `GET` | Root; the service info | In the contract |
 | `packs` | `/api/v1/packs` | `GET` | Root | Proposed |
 | `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root; proposed elsewhere ([ADR-0020](/adr/0020-offering-and-activations/)) |
-| `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored | In the contract |
+| `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored; a pack document read: the pack it belongs to | In the contract |
+| `doc` | `/api/v1/packs/{packId}/doc` | `GET` | A pack that holds a document (`README.md`), and a registration's stored answer for such a pack; absent otherwise | In the contract |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
 | `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`/api/v1/activations/{activationId}/artifacts{?kind,state}`, templated) | In the contract on the root, an offering pack, a registered relationship and an activation; proposed elsewhere |
@@ -157,6 +158,11 @@ used.
 | `step` | `…/artifacts/mission_type/{missionTypeId}/steps/{stepId}` | `GET` | A step contract: the step its `mission` and `action` name, when its scope holds it | In the contract |
 | `step-contract` | `…/artifacts/mission_step_contract/{artifactId}` | `GET` | A step: the step contract bound to it (its `mission` and `action`; the lowest id when several are); absent when none is | In the contract |
 | `skeleton` | `…/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}` | `GET` | An expected output artifact of a step whose `templatePath` names a stored skeleton of the type | In the contract |
+
+The pack document is linked as `doc`, not as the IANA `describedby`: the operator's ruling on the document read
+names `doc` (#451), and `describedby` points at a description of a resource's *kind* (a schema), not at a
+document the pack holds. The link is present exactly when the pack holds a `README.md`, so following it does not meet
+`pack_document_not_found`.
 
 ## Anti-patterns
 

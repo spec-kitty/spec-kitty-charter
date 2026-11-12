@@ -1,9 +1,11 @@
 package ai.speckitty.charter.deployable.bdd;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,6 +57,7 @@ public class ScenarioHttp {
     private final MockMvc mvc;
     private final String suiteToken;
     private final List<Exchange> exchanges = new ArrayList<>();
+    private final Set<Integer> asserted = new HashSet<>();
 
     /**
      * The seam of one scenario, which sends {@code token} as its bearer token until a step says otherwise.
@@ -188,6 +191,27 @@ public class ScenarioHttp {
      */
     public List<Exchange> exchanges() {
         return List.copyOf(exchanges);
+    }
+
+    /**
+     * Marks the last exchange as one whose status a step asserted, for the switch gate (ADR-0059 D1): a refusal counts
+     * toward its operation only when a scenario said what it expects.
+     *
+     * @throws IllegalStateException when the scenario has sent no request
+     */
+    public void statusAsserted() {
+        last();
+        asserted.add(exchanges.size() - 1);
+    }
+
+    /**
+     * Whether a step asserted the status of an exchange.
+     *
+     * @param index the exchange's index in {@link #exchanges()}
+     * @return true when a step asserted its status
+     */
+    public boolean statusAsserted(int index) {
+        return asserted.contains(index);
     }
 
     /**

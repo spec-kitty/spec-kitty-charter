@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests {@code
  * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
  * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets, the pack document ({@code pack.md}), the manifest and the mutability policy (the
+ * templates, then the presets, the pack document ({@code README.md}), the manifest and the mutability policy (the
  * pack-level tail, ADR-0042, ADR-0063), then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
  * escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The asset files, templates,
  * presets, pack document and retired files come last, so a pack that
@@ -47,7 +47,7 @@ import org.jspecify.annotations.Nullable;
  * top-level {@code templates/}); the table admits no {@code bytes} rule of another kind ({@link PackFileKind}). A file
  * of the {@code yaml} form, the default of a {@code files} rule, is a file of its schema's bound kind. A file of the
  * {@code markdown} form is a bound kind's companion (a toolguide's guide, #194), which its artifact holds, or the pack
- * document ({@code pack.md}, #260); no store path reads any other. The walk is
+ * document ({@code README.md}, #260); no store path reads any other. The walk is
  * the store's: {@link Files#walkFileTree} from the root's real path (a root configured through a link is entered, #174;
  * hidden directories are entered, a directory link below the root is not followed, an entry that vanishes mid-walk is
  * not listed), every regular file ({@link Files#isRegularFile} follows a file link)
@@ -108,7 +108,7 @@ final class PackFileSet {
      * @param templates the templates, pack-relative (under {@code templates/} or a mission type's
      *     {@code missions/<type>/templates/}, ADR-0044)
      * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
-     * @param document the pack document, {@code pack.md}, when the pack has one
+     * @param document the pack document, {@code README.md}, when the pack has one
      * @param retired the files of a retired family (ADR-0044 decision 6), each with its rule's reason, which the load and
      *     validate mode refuse by name
      */
@@ -215,7 +215,7 @@ final class PackFileSet {
 
     /**
      * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every bound kind, the
-     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets, {@code pack.md}, the
+     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets, {@code README.md}, the
      * manifest and {@code policy.yaml}.
      *
      * @param packDir the pack directory
@@ -232,7 +232,7 @@ final class PackFileSet {
      * @param kinds the loaded kinds to include
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file;
-     *     the asset files; the templates; the presets; {@code pack.md} when a regular file; {@code pack-manifest.yaml}
+     *     the asset files; the templates; the presets; {@code README.md} when a regular file; {@code pack-manifest.yaml}
      *     when a regular file; {@code policy.yaml} when a regular file; the retired files. None of those is a bound kind, and they are always included.
      */
     static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
@@ -306,10 +306,10 @@ final class PackFileSet {
 
     /**
      * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
-     * order, then the pack document ({@code pack.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
+     * order, then the pack document ({@code README.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
      * (ADR-0042 decision 9), then {@code policy.yaml} when it is a regular file (ADR-0063), so a lock edit moves the
      * fingerprint and a read cannot serve a stale level. A pack without them keeps its digest list (NFR-002). The document is digested by its
-     * bytes, whatever the load makes of them, so a change to a {@code pack.md} the load refuses still moves the
+     * bytes, whatever the load makes of them, so a change to a {@code README.md} the load refuses still moves the
      * fingerprint; one that cannot be read refuses the digest, as any digested file does.
      */
     private static List<String> packLevelTail(Path directory, Listing loaded) {
@@ -399,7 +399,7 @@ final class PackFileSet {
             };
             holder.ifPresent(files -> files.add(file));
         }
-        // The rule matches only <pack>/pack.md, so there is at most one.
+        // The rule matches only <pack>/README.md, so there is at most one.
         return new Listing(
                 byKind, assetFiles, templates, presets, documents.stream().findFirst(), retired);
     }
@@ -421,7 +421,7 @@ final class PackFileSet {
     /**
      * The list a {@code markdown} file joins: none when it is a bound kind's companion (a toolguide's guide, #194; a
      * step enhancement's prompt fragment, #428), which its artifact holds and reads; the pack document's when it is
-     * {@code pack.md} (#260); any other {@code markdown} file fails loudly ({@link #notStored}).
+     * {@code README.md} (#260); any other {@code markdown} file fails loudly ({@link #notStored}).
      */
     private static Optional<List<String>> markdownHolder(
             String file, PackFileKind.Mapped mapped, List<String> documents) {

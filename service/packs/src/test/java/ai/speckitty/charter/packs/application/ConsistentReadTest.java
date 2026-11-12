@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
@@ -188,15 +189,125 @@ class ConsistentReadTest {
                 .hasMessage(STALE);
     }
 
-    @Test
-    void aSwapRunningWhenTheReadStartsIsStaleAndNeitherDigestsNorLoads() {
+    // ---- a read inside one swap (FR-023, #490) ----------------------------------------------------------------------
+
+    /** A generation with one swap running, as a pack write holds it between its {@code begin} and {@code end}. */
+    private static PackWriteGeneration oneSwapRunning() {
         PackWriteGeneration generation = new PackWriteGeneration();
         generation.begin("pack-a");
-
-        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> "value")))
-                .satisfies(ConsistentReadTest::assertStale);
-        assertThat(events).as("no digest, no load while the generation is odd").isEmpty();
+        return generation;
     }
+
+    @Test
+    void aReadThatStartsAndEndsInsideOneSwapWithEqualDigestsAnswersTheStateItRead() {
+        PackWriteGeneration generation = oneSwapRunning();
+        long during = generation.registry();
+
+        ConsistentRead.Verified<String> verified =
+                reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> "value"));
+
+        assertThat(verified).isEqualTo(new ConsistentRead.Verified<>("value", D1));
+        assertThat(events).containsExactly("digest", "load", "digest");
+        assertThat(generation.registry())
+                .as("the read ended in the same odd generation")
+                .isEqualTo(during);
+    }
+
+    @Test
+    void aReadInsideOneSwapWhoseDigestsDifferIsStale() {
+        PackWriteGeneration generation = oneSwapRunning();
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D2).read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale);
+        assertThat(events).containsExactly("digest", "load", "digest");
+    }
+
+    @Test
+    void aReadInsideOneSwapWhoseSecondDigestRefusesIsStale() {
+        PackWriteGeneration generation = oneSwapRunning();
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, refusal(RefusalCode.PACK_UNREADABLE))
+                        .read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale);
+    }
+
+    @Test
+    void aReadStartedInsideASwapThatEndsDuringTheLoadIsStaleEvenWhenBothDigestsAgree() {
+        PackWriteGeneration generation = oneSwapRunning();
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> {
+                    generation.end("pack-a");
+                    return "value";
+                })))
+                .satisfies(ConsistentReadTest::assertStale);
+        assertThat(events)
+                .as("the moved generation settles it; no second digest is needed")
+                .containsExactly("digest", "load");
+    }
+
+    @Test
+    void aReadStartedInsideASwapWhoseNextSwapIsRunningAtTheEndIsStale() {
+        PackWriteGeneration generation = oneSwapRunning();
+        long during = generation.registry();
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> {
+                    generation.end("pack-a");
+                    generation.begin("pack-a");
+                    assertThat(PackWriteGeneration.isSwapping(generation.registry()))
+                            .as("odd again, but another swap's generation")
+                            .isTrue();
+                    assertThat(generation.registry()).isNotEqualTo(during);
+                    return "value";
+                })))
+                .satisfies(ConsistentReadTest::assertStale);
+    }
+
+    @Test
+    void aReadInsideASwapThatEndsWhileTheSecondDigestIsTakenIsStale() {
+        PackWriteGeneration generation = oneSwapRunning();
+        AtomicInteger digests = new AtomicInteger();
+
+        assertThatThrownBy(() -> reading(
+                                generation,
+                                () -> {
+                                    if (digests.incrementAndGet() == 2) {
+                                        generation.end("pack-a");
+                                    }
+                                },
+                                D1,
+                                D1)
+                        .read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale);
+        assertThat(events)
+                .as("the generation is checked again after the second digest")
+                .containsExactly("digest", "load", "digest");
+    }
+
+    @Test
+    void aLoadFailureInsideOneSwapIsStaleWithTheFailureAsCauseAndNoSecondDigest() {
+        PackWriteGeneration generation = oneSwapRunning();
+        CharterRefusal notFound = refusal(RefusalCode.PACK_NOT_FOUND);
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> {
+                    throw notFound;
+                })))
+                .satisfies(ConsistentReadTest::assertStale)
+                .hasCause(notFound);
+        assertThat(events).containsExactly("digest", "load");
+    }
+
+    @Test
+    void aFirstDigestThatRefusesInsideOneSwapIsStaleNotUnreadable() {
+        PackWriteGeneration generation = oneSwapRunning();
+        CharterRefusal unreadable = refusal(RefusalCode.PACK_UNREADABLE);
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, unreadable).read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale)
+                .hasCause(unreadable);
+        assertThat(events).containsExactly("digest");
+    }
+
+    // ---- an even generation -------------------------------------------------------------------------------------
 
     @Test
     void aSwapThatRunsAndFinishesDuringTheLoadIsStaleEvenWhenBothDigestsAgree() {

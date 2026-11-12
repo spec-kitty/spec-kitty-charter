@@ -15,7 +15,6 @@ import ai.speckitty.charter.profiles.infra.activations.config.ProfilesActivation
 import ai.speckitty.charter.profiles.infra.api.AgentProfilesController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveProfileDtos;
-import ai.speckitty.charter.profiles.infra.api.EffectiveProfileProblems;
 import ai.speckitty.charter.profiles.infra.api.ProfileDtos;
 import ai.speckitty.charter.profiles.infra.api.config.ProfilesApiConfiguration;
 import ai.speckitty.charter.profiles.infra.packs.PacksProfileSource;
@@ -55,7 +54,6 @@ class ProfilesEdgeConfigurationsTest {
                     assertThat(context).hasSingleBean(AgentProfilesController.class);
                     assertThat(context).hasSingleBean(EffectiveAgentProfilesController.class);
                     assertThat(context).hasSingleBean(EffectiveProfileDtos.class);
-                    assertThat(context).hasSingleBean(EffectiveProfileProblems.class);
                     assertThat(context).hasSingleBean(ProfileDtos.class);
                     assertThat(context).hasSingleBean(JacksonModule.class);
                 });

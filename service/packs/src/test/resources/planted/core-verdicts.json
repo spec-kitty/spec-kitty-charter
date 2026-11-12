@@ -464,28 +464,6 @@
         "--json",
         "<pack>"
       ],
-      "exit_code": 0,
-      "raw": {
-        "advisories": [],
-        "errors": [],
-        "ok": true
-      },
-      "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
-      "version": "4.0.0rc8"
-    },
-    "plant": "c10-org-charter-schema-version-quoted",
-    "register_id": "DIV-010"
-  },
-  {
-    "core": {
-      "command": [
-        "spec-kitty",
-        "charter",
-        "pack",
-        "validate",
-        "--json",
-        "<pack>"
-      ],
       "exit_code": 1,
       "raw": {
         "advisories": [],

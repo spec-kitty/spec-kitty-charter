@@ -282,6 +282,83 @@ class PackRegistrationServiceTest {
         assertThat(again.diagnostics()).hasSize(1);
     }
 
+    // ---- excluded files are not refused, not held and reported (FR-004, FR-005, FR-021, #451) ---------------------
+
+    private static final String AUTHOR_NOTE = "docs/notes.md";
+    private static final String MISSION_NOTE = "missions/x/README.md";
+
+    @Test
+    void excludedFilesAreStrippedFromTheStagedTreeBeforeTheCommitAndEachIsReported(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                .directive("DIRECTIVE_001", "One")
+                .file(AUTHOR_NOTE, "# Notes\n")
+                .file(MISSION_NOTE, "# x\n"));
+
+        RegistrationOutcome outcome = rig.register("pack-x", upload, Preconditions.none());
+
+        assertThat(outcome.outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x")).keySet())
+                .as("the stored pack holds the staged tree less the excluded files")
+                .containsExactlyInAnyOrder("pack.yaml", "directives/DIRECTIVE_001.directive.yaml");
+        assertThat(rig.filesOf(upload.directory()).keySet())
+                .as("the strip happened in the staging area, and its empty directories went with the files")
+                .containsExactlyInAnyOrder("pack.yaml", "directives/DIRECTIVE_001.directive.yaml");
+        assertThat(upload.directory().resolve("docs")).doesNotExist();
+        assertThat(outcome.revision()).isEqualTo(rig.commits.revisionOf(upload));
+        assertThat(outcome.diagnostics()).extracting(Diagnostic::code).containsOnly(Diagnostic.Code.FILE_NOT_HELD);
+        assertThat(outcome.diagnostics())
+                .extracting(Diagnostic::detail)
+                .satisfiesExactly(
+                        first -> assertThat(first)
+                                .startsWith(AUTHOR_NOTE + ": not held (Author aid: Markdown that no files rule models"
+                                        + " (#451)."),
+                        second -> assertThat(second)
+                                .startsWith(MISSION_NOTE + ": not held (Orientation notes beside the mission type"));
+    }
+
+    @Test
+    void aRegistrationThatDiffersOnlyInAnExcludedFileIsUnchangedAndStillReportsIt(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs plain = Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One");
+        RegistrationOutcome first = rig.register("pack-x", rig.stage(plain), Preconditions.none());
+        long generationBefore = rig.generation.ofPack("pack-x");
+
+        RegistrationOutcome again = rig.register(
+                "pack-x",
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                        .directive("DIRECTIVE_001", "One")
+                        .file(AUTHOR_NOTE, "# Notes\n")),
+                Preconditions.none());
+
+        assertThat(again.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(again.revision()).isEqualTo(first.revision());
+        assertThat(again.diagnostics()).singleElement().satisfies(diagnostic -> {
+            assertThat(diagnostic.code()).isEqualTo(Diagnostic.Code.FILE_NOT_HELD);
+            assertThat(diagnostic.detail()).startsWith(AUTHOR_NOTE + ": not held (");
+        });
+        assertThat(rig.generation.ofPack("pack-x")).as("no swap ran").isEqualTo(generationBefore);
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).doesNotContainKey(AUTHOR_NOTE);
+    }
+
+    @Test
+    void aFileNothingModelsThatIsNotMarkdownIsStillRefused(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                .directive("DIRECTIVE_001", "One")
+                .file(AUTHOR_NOTE, "# Notes\n")
+                .file("notes.txt", "stray"));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", upload, Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo("notes.txt");
+            assertThat(violation.code()).isEqualTo("unmodelled");
+        });
+        assertThat(rig.packs.resolve("pack-x")).doesNotExist();
+    }
+
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
 
     @Test
@@ -1015,7 +1092,7 @@ class PackRegistrationServiceTest {
             this.commits =
                     SlowSwapCommitStores.pausingMidSwap(locations, strategy, live -> midSwap.run(), lock, generation);
             this.writeStore = new CommitStorePackWriteStore(locations, strategy, commits, lock, generation);
-            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
+            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
             this.impact =

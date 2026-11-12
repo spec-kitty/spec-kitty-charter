@@ -88,7 +88,8 @@ class StorageRoomAdmissionTest {
                 reader,
                 new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
                 PackSourceIntake.none(),
-                mock(PackRemovalController.class));
+                mock(PackRemovalController.class),
+                mock(PackDocumentController.class));
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .addInterceptors(new RegistrationAdmission(new RegistrationSwitch(true), jobs, info))
                 .setControllerAdvice(new ArchiveBodyAdvice(), new RefusalHandler())

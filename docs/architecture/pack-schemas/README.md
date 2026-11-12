@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Pack schemas
 description: "One page per charter pack JSON Schema, each with a rendered diagram and property list generated from the schema file."
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Hub
 audience:
@@ -31,10 +31,9 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Mission step guidelines](/architecture/pack-schemas/mission-step-guidelines/) — the parsed Markdown structure of a step guidelines file.
 - [Mission step prompt](/architecture/pack-schemas/mission-step-prompt/) — the parsed Markdown structure of a step prompt file.
 - [Mission type](/architecture/pack-schemas/mission-type/) — the ordered steps, expected artifacts and guidance of a mission type.
-- [Organization charter policy](/architecture/pack-schemas/org-charter/) — the organization-level policy file org-charter.yaml.
 - [Organization graph fragment](/architecture/pack-schemas/org-fragment/) — a loaded organization-tier graph fragment with its provenance.
 - [Pack descriptor](/architecture/pack-schemas/pack-descriptor/) — the identity and lineage of a charter pack.
-- [Pack document](/architecture/pack-schemas/pack-document/) — the parsed Markdown structure of a pack description file pack.md.
+- [Pack document](/architecture/pack-schemas/pack-document/) — the parsed Markdown structure of the pack document, the pack's README.md.
 - [Pack manifest](/architecture/pack-schemas/pack-manifest/) — the generated list of a pack's constituent artifacts.
 - [Pack mutability policy](/architecture/pack-schemas/policy/) — the optional policy.yaml that sets a pack's mutability levels.
 - [Paradigm](/architecture/pack-schemas/paradigm/) — a worldview-level framing that guides how the charter is read.

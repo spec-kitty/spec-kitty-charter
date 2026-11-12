@@ -70,7 +70,7 @@ class TacticReadWiredTest {
     }
 
     private static FileSystemPackSources sources(Locations locations) {
-        return new FileSystemPackSources(locations::all);
+        return new FileSystemPackSources(locations);
     }
 
     @Autowired

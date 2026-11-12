@@ -16,7 +16,7 @@ import java.util.Set;
  * @param name the pack's {@code name}
  * @param declaredLevel the pack's {@code pack_level}; empty when the file declares none
  * @param requiresCore the raw {@code requires_core} text; empty when the file has none
- * @param paths the declared {@code active_charter} and {@code pack_drg} paths, grouped
+ * @param paths the declared {@code pack_drg} and {@code mutability_policy} paths, grouped
  * @param dependencies the packs this pack declares it depends on; empty when it declares none
  * @param overrides the sibling conflicts this pack settles (any pack of the compose may declare one until #358), each
  *     by the conflicting artifact and the member meant to win; empty when it settles none
@@ -112,7 +112,7 @@ public record PackDescriptor(
     }
 
     /**
-     * Builds a descriptor that declares neither {@code active_charter} nor {@code pack_drg}.
+     * Builds a descriptor that declares neither {@code pack_drg} nor {@code mutability_policy}.
      *
      * @param packId the pack's {@code pack_id}
      * @param packVersion the pack's {@code pack_version}

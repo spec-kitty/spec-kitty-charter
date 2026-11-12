@@ -93,25 +93,105 @@ public final class PackCommitStore implements WholePackWriteStore {
          * @throws IOException when the swap fails; the live directory must be left intact
          */
         void swap(Path staging, Path live) throws IOException;
+
+        /**
+         * Swaps {@code staging} into the place of {@code live}, running {@code movedAside} once the live directory has
+         * left its place and before anything moves it back. A swap that never moves the live directory aside (a test's
+         * failing step) does not run it.
+         *
+         * @param staging the fully staged directory
+         * @param live the live pack directory to replace
+         * @param movedAside what records the move ({@link PackWriteGeneration#moved})
+         * @throws IOException when the swap fails; the live directory must be left intact
+         */
+        default void swap(Path staging, Path live, Runnable movedAside) throws IOException {
+            swap(staging, live);
+        }
     }
 
-    private static final DirectoryRename MOVE_ASIDE = (staging, live) -> {
-        Path aside = live.resolveSibling(live.getFileName() + ".pack-old-" + unique());
-        moveDirectory(live, aside);
-        try {
-            moveDirectory(staging, live);
-        } catch (IOException swapFailed) {
-            // The staging move failed with the live directory already moved aside: restore it, leave staging to the
-            // caller's cleanup, and rethrow. The live directory is whole again, byte for byte.
-            try {
-                moveDirectory(aside, live);
-            } catch (IOException restoreFailed) {
-                swapFailed.addSuppressed(restoreFailed);
+    /**
+     * The test seam inside the real swap (#490): the points between its steps where a test pauses it, so a reader can be
+     * run in each state of the pack directory. Production uses {@link #NONE}, which does nothing.
+     */
+    interface SwapPhases {
+
+        /** No pause: the production swap. */
+        SwapPhases NONE = new SwapPhases() {};
+
+        /**
+         * After the first rename: the live directory is missing and only its aside copy holds the pack.
+         *
+         * @param live the live directory, missing now
+         * @param aside the aside copy
+         */
+        default void afterAside(Path live, Path aside) {}
+
+        /**
+         * After the second rename, before the aside copy is hidden: the new live directory and the aside copy.
+         *
+         * @param live the new live directory
+         * @param aside the aside copy, still beside it
+         */
+        default void afterLive(Path live, Path aside) {}
+
+        /**
+         * After the aside copy is hidden and deleted: the swap is done.
+         *
+         * @param live the new live directory
+         */
+        default void afterHide(Path live) {}
+    }
+
+    /**
+     * The swap: the live directory moves aside to {@code <name>.pack-old-<unique>}, the staged directory moves into its
+     * place, and the aside copy is hidden ({@code .pack-discard-*}) and deleted. A failure of the second step, or of the
+     * pause before it, moves the aside copy back, so the live directory is whole again, byte for byte, and rethrows.
+     * The move aside is recorded first ({@link DirectoryRename#swap(Path, Path, Runnable)}): the directory moved back
+     * is the same directory, so a reader learns of the rolled-back swap from the record alone.
+     *
+     * @param phases where the swap pauses; {@link SwapPhases#NONE} in production
+     * @return the swap
+     */
+    static DirectoryRename moveAside(SwapPhases phases) {
+        Objects.requireNonNull(phases, "phases");
+        return new DirectoryRename() {
+            @Override
+            public void swap(Path staging, Path live) throws IOException {
+                swap(staging, live, () -> {});
             }
-            throw swapFailed;
-        }
-        deleteTree(hidden(aside));
-    };
+
+            @Override
+            public void swap(Path staging, Path live, Runnable movedAside) throws IOException {
+                Path aside = live.resolveSibling(live.getFileName() + ".pack-old-" + unique());
+                moveDirectory(live, aside);
+                try {
+                    // Recorded before the rollback below can move the same directory back (squad D-1).
+                    movedAside.run();
+                    phases.afterAside(live, aside);
+                    moveDirectory(staging, live);
+                } catch (IOException | RuntimeException swapFailed) {
+                    // The staging move failed with the live directory already moved aside: restore it, leave staging
+                    // to the caller's cleanup, and rethrow. The live directory is whole again, byte for byte.
+                    try {
+                        moveDirectory(aside, live);
+                    } catch (IOException restoreFailed) {
+                        LOG.warn(
+                                "pack {} could not be restored from {} after a failed swap; it stays aside",
+                                live,
+                                aside,
+                                restoreFailed);
+                        swapFailed.addSuppressed(restoreFailed);
+                    }
+                    throw swapFailed;
+                }
+                phases.afterLive(live, aside);
+                deleteTree(hidden(aside));
+                phases.afterHide(live);
+            }
+        };
+    }
+
+    private static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
 
     /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
     private static final int MAX_LINK_HOPS = 40;
@@ -294,7 +374,8 @@ public final class PackCommitStore implements WholePackWriteStore {
         // The commit stages beside the live directory and swaps it, so a configured link keeps the link and its target
         // takes the new content (#174); the real path is captured once and reused below so a retargeted link cannot
         // redirect the swap, and the same gate refuses a pack linked from outside the configuration root (#287).
-        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
+        Resolved resolved = resolve(pack);
+        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolved.directory, pack);
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
@@ -307,7 +388,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             copyTree(liveDir, staging);
             edit.apply(staging, parent);
             PackRevision revision = revisionOf(staging, pack);
-            rename.swap(staging, liveDir);
+            rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up
             return revision;
         } catch (CharterRefusal | PreconditionException refusal) {
@@ -527,7 +608,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     private void swapBracketed(String name, Path staging, Path live) throws IOException {
         generation.begin(name);
         try {
-            rename.swap(staging, live);
+            rename.swap(staging, live, () -> generation.moved(name));
         } finally {
             generation.end(name);
         }

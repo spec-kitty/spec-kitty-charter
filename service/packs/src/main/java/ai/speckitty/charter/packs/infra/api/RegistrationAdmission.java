@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.web.InvalidParameter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -13,10 +14,8 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -206,8 +205,11 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         Object variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         Object value = variables instanceof Map<?, ?> map ? map.get("packId") : null;
         if (!(value instanceof String packId) || !PACK_ID.matcher(packId).matches()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "The pack id must match " + PACK_ID.pattern() + ".");
+            throw new InvalidParameter(
+                    InvalidParameter.In.PATH,
+                    "packId",
+                    String.valueOf(value),
+                    "which is not in the form this parameter accepts");
         }
         return packId;
     }
@@ -216,14 +218,19 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         String ifMatch = request.getHeader(HttpHeaders.IF_MATCH);
         String ifNoneMatch = request.getHeader(HttpHeaders.IF_NONE_MATCH);
         if (ifMatch != null && ifNoneMatch != null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "If-Match and If-None-Match: * exclude each other.");
+            throw InvalidParameter.excluding(
+                    InvalidParameter.In.HEADER, HttpHeaders.IF_MATCH, HttpHeaders.IF_NONE_MATCH);
         }
         if (ifNoneMatch != null && !ifNoneMatch.equals("*")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "If-None-Match takes only *.");
+            throw new InvalidParameter(
+                    InvalidParameter.In.HEADER, HttpHeaders.IF_NONE_MATCH, ifNoneMatch, "which is not *");
         }
         if (ifMatch != null && !IF_MATCH.matcher(ifMatch).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "If-Match is a quoted sha256 revision, or *.");
+            throw new InvalidParameter(
+                    InvalidParameter.In.HEADER,
+                    HttpHeaders.IF_MATCH,
+                    ifMatch,
+                    "which is neither * nor one quoted sha256 revision");
         }
         return ifMatch != null
                 ? Preconditions.ifMatch(ifMatch)

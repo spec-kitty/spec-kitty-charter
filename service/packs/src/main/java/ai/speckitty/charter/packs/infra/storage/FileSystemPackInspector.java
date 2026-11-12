@@ -36,6 +36,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -69,7 +70,7 @@ import org.jspecify.annotations.Nullable;
  * companion structure (a toolguide's guide, #194), as the store's load does: parsed with {@link MarkdownCodec},
  * validated against the structure schema, then held to the rules the schema cannot express
  * ({@link KindBinding#checkCompanion}). A guide that breaks one is {@link PackContents#unreadableFiles()}, so validate
- * mode and the load refuse the same guide. It reads the pack document ({@code pack.md}, #260) the same way, through
+ * mode and the load refuse the same guide. It reads the pack document ({@code README.md}, #260) the same way, through
  * the store's own read ({@link PackDocumentMarkdown#read}). Other Markdown files are not read, nor listed in the
  * classification.
  *
@@ -355,9 +356,23 @@ public final class FileSystemPackInspector implements PackInspector {
                     case PackFileKind.Unclassified unclassified -> {}
                 }
             }
+            @Nullable Set<String> held = null;
             for (Path path : packFiles(directory, name, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
-                if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)
+                PackFileKind.Classification classification = table.classify(prefix + file);
+                if (classification instanceof PackFileKind.Excluded excluded) {
+                    // Excluded Markdown (an exclusions rule, or the ignored fallback, #451) is listed as excluded
+                    // YAML is: never read, never a finding. A file a bound kind claims as its companion (a skill
+                    // body) is held with its owner, so it is not listed; the digest knows which files are held.
+                    if (held == null) {
+                        held = new HashSet<>(PackFileSet.digested(directory, table));
+                    }
+                    if (!held.contains(file)) {
+                        files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
+                    }
+                    continue;
+                }
+                if (!(classification instanceof PackFileKind.Mapped mapped)
                         || mapped.contentForm() != ContentForm.MARKDOWN) {
                     continue;
                 }
@@ -426,7 +441,7 @@ public final class FileSystemPackInspector implements PackInspector {
             return both;
         }
 
-        /** The pack document (#260), read as the store's load reads it, so the two refuse the same {@code pack.md}. */
+        /** The pack document (#260), read as the store's load reads it, so the two refuse the same {@code README.md}. */
         private void readDocument(Path path, String file) {
             if (read(path, file, name, PackDocumentMarkdown::read) instanceof FileRead.Unreadable<?> bad) {
                 unreadable.add(bad);
@@ -708,7 +723,11 @@ public final class FileSystemPackInspector implements PackInspector {
             throw PackFileSet.unlistable(packName, e);
         }
         try (Stream<Path> walk = Files.walk(root)) {
-            return walk.filter(p -> p.getFileName().toString().endsWith(suffix) && Files.isRegularFile(p))
+            // The suffix matches in any letter case: the ignored fallback takes NOTES.MD as it takes notes.md
+            // (#451).
+            return walk.filter(p ->
+                            p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(suffix)
+                                    && Files.isRegularFile(p))
                     .map(p -> directory.resolve(root.relativize(p)))
                     .sorted(Comparator.comparing(
                             (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))

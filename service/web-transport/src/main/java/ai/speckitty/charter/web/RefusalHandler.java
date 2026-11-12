@@ -326,6 +326,7 @@ public class RefusalHandler {
             case MISSION_TYPE_NOT_FOUND,
                     ACTION_NOT_FOUND,
                     PACK_NOT_FOUND,
+                    PACK_DOCUMENT_NOT_FOUND,
                     TACTIC_NOT_FOUND,
                     DIRECTIVE_NOT_FOUND,
                     STYLEGUIDE_NOT_FOUND,

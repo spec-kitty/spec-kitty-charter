@@ -734,3 +734,15 @@ Feature: One artifact or one registered relationship is removed from a pack
       """
     When I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
     Then the response status is 204
+
+  Scenario Outline: A relationship removal whose ends are malformed or missing is a 400 Problem without a code that says why (<query>)
+    #411: the detail names the query parameter, and the value it carried when it carried one.
+    When I DELETE "/packs/qa/relationships?<query>" with the header "If-Match": "*"
+    Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" is "<detail>"
+
+    Examples:
+      | query                         | detail                                                                                                      |
+      | from=D1&to=directive:D2       | The query parameter from is \"D1\", which is not in the form this parameter accepts. |
+      | from=directive:D1             | The query parameter to is missing, and it is required.                                                      |

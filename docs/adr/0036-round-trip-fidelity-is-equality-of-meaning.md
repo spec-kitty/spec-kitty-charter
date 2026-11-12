@@ -2,8 +2,8 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05)
+updated: 2026-11-12T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -15,6 +15,7 @@ related:
   - adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0073-real-packs-register-as-they-are
   - architecture/descriptors
   - architecture/logical-model
   - conformance/divergence-register
@@ -137,6 +138,25 @@ The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/is
 
 The decision text below is unchanged, and decision 4 is annotated where it stands.
 
+### Amendment 2026-11-11 (#451, #431): the pack document is `README.md`, the org charter is retired, Markdown nothing models is excluded
+
+Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of
+2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
+[#431](https://github.com/spec-kitty/spec-kitty-charter/issues/431), recorded in
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (amendment 2026-11-11) and
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/). The decision text below is unchanged; the points
+this note changes are annotated where they stand:
+
+- **Decision 3's table.** The `org-charter.yaml` row is gone: the file is retired, refused by name as `retired`, and
+  its schema and the finding `ORG_CHARTER_SCHEMA_ERROR` are deleted. The last row's reference to it is annotated in place.
+- **Decision 6.** An excluded file is not refused at registration and is not held: the registration reports it as
+  `file_not_held` and removes it before the commit. `file-kinds.yaml` gains a last section, `ignored`, whose rule
+  `**/*.md` excludes Markdown that no other rule and no companion claim takes. An excluded file has no schema and is
+  not compared; the whole-pack gate gives it the status `EXCLUDED`.
+- **The per-kind table.** The `*/org-charter.yaml` row is retired. On the `*.md` row, `*/README.md` takes the place
+  of `*/pack.md` as the pack document (structure schema `pack-document`, compared by the `markdown` model), and
+  `pack.md` and `PROVENANCE.md` at the pack root are retired, refused by name.
+
 ## Context
 
 Epic #186 reads every file of a Charter Pack into the domain and writes it back. A gate (#187)
@@ -240,8 +260,8 @@ Status.)*
   |---|---|---|---|
   | `pack.yaml` | `PACK_UNREADABLE` | The pack is refused: `pack_unreadable` on the wire. | Reported as blocking. |
   | `*.graph.yaml`, `drg/fragment.yaml` | `DRG_SCHEMA_ERROR` | No operation loads a pack's graph today (`drg_schema_error` is `raised: false`). When the whole-pack seam (#189) loads it, the pack is refused as `drg_schema_error`. | Reported as blocking. |
-  | `org-charter.yaml` | `ORG_CHARTER_SCHEMA_ERROR` | The file is skipped. The store returns the rest of the pack and lists the violation (`PackRead.violations()`). No load-path finding reaches the wire today. | Reported as blocking. |
-  | Every other schema-mapped file (the artifact files: directive, tactic, styleguide, toolguide, paradigm, procedure, agent profile, step contract, asset, and a stray `charter.yaml`) | `ARTIFACT_SCHEMA_ERROR` | As for `org-charter.yaml`: skipped and listed by the store, not on the wire. | Reported as blocking. |
+  | `org-charter.yaml` *(retired 2026-11-11, #431: the file is refused by name and the code is deleted)* | `ORG_CHARTER_SCHEMA_ERROR` | The file is skipped. The store returns the rest of the pack and lists the violation (`PackRead.violations()`). No load-path finding reaches the wire today. | Reported as blocking. |
+  | Every other schema-mapped file (the artifact files: directive, tactic, styleguide, toolguide, paradigm, procedure, agent profile, step contract, asset, and a stray `charter.yaml`) | `ARTIFACT_SCHEMA_ERROR` | As for `org-charter.yaml`: skipped and listed by the store, not on the wire. *(Since 2026-11-11, #431, `org-charter.yaml` is retired: read "skipped and listed by the store", with no reference to it.)* | Reported as blocking. |
 
   *Reading:* "fails the load" (ruling 1) means the file fails to load. A file that does not load is
   missing from the written pack, so the round trip fails too. Refusing the whole pack for one bad
@@ -340,6 +360,10 @@ exclusions are retired, for the `files` rules `*/presets/*.yaml` (`preset`) and
 `*/pack-manifest.yaml` (`pack-manifest`). The manifest's hashes are derived fields, recomputed on
 write (open question 3).)*
 
+*(Amended 2026-11-11, #451: an excluded file is not refused at registration and not held; the registration reports
+it as `file_not_held`. The new last section `ignored` excludes Markdown that no rule and no companion claim takes. See
+the amendment under Status.)*
+
 ### 7. The charter's round-trip promise
 
 The charter companion said "open-packs YAML always round-trips exactly", and `charter.yaml`
@@ -367,6 +391,7 @@ below.)*
 | `**/*.graph.yaml` | graph-shard | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`urn`) | yes |
 | `*/drg/fragment.yaml` | org-fragment | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`kind`, `id`) | yes |
 | `*/org-charter.yaml` | org-charter | YAML; open maps such as `interview_defaults`, `activation_context` | none | yes |
+| *(Retired 2026-11-11, #431, on the row above: `*/org-charter.yaml` is a `retired` rule, refused by name; the `org-charter` schema is deleted.)* | | | | |
 | `**/*.directive.yaml` | directive | YAML | none | yes |
 | `**/*.tactic.yaml` | tactic | YAML | none | yes |
 | `**/*.styleguide.yaml` | styleguide | YAML; `tooling`, `structural_lint_config` open | none | yes |
@@ -393,6 +418,7 @@ below.)*
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the extension no longer chooses the form (R8). A Markdown file under `assets/` or a top-level `templates/` compares by bytes, frontmatter included (R9); `assets/**/README.md` stays excluded (R4). A Markdown kind declares `markdown` on its own rule when that form is built.)* | | | | |
 | *(Superseded in part by ADR-0042 and ADR-0040, amendments 2026-10-30 (#260), on the `*.md` row: `*/pack.md` has the structure schema `pack-document` and compares by the `markdown` content form's model (ADR-0040 as amended). A carriage return or a byte order mark is refused at its line, not normalized to LF; blank lines between blocks and the final newline do not count. Its frontmatter compares as loaded YAML values, stricter than this record's numeric and empty-versus-absent equality.)* | | | | |
 | *(Superseded in part by ADR-0044, 2026-10-30, on the `*.md` row: a mission step's `prompt.md` and `guidelines.md` are retired; its prompt and guidelines are `missions/<type>/steps/<step>.prompt.md` and `.guidelines.md`, with the structure schemas `mission-step-prompt` and `mission-step-guidelines`, compared by the `markdown` content form's model. A prompt's frontmatter holds only its detailed description; guidelines hold none.)* | | | | |
+| *(Amended 2026-11-11, #451, on the `*.md` row: the pack document is `*/README.md`, with the structure schema `pack-document`, compared by the `markdown` content form's model as `pack.md` was; `pack.md` and `PROVENANCE.md` at the pack root are retired and refused by name. Markdown that no rule and no companion claim takes is excluded by the `ignored` fallback: not held and not compared.)* | | | | |
 | Any other file (asset payloads, templates, `.csv`, `.feature`, `.py`, images, fonts, `.gitkeep`) | none | bytes | none | not applicable |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: asset payloads (`*/assets/**/*`) and top-level templates (`*/templates/**/*`) are no longer "any other file": each has its own `payloads` rule, of the `bytes` form, and is read, written and fingerprinted as pack content.)* | | | | |
 

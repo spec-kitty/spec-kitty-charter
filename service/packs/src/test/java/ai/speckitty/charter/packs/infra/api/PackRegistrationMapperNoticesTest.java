@@ -32,6 +32,10 @@ class PackRegistrationMapperNoticesTest {
             new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler());
 
     private PackRegistration resultWith(RegistrationImpact.Notices notices) {
+        return resultWith(notices, false);
+    }
+
+    private PackRegistration resultWith(RegistrationImpact.Notices notices, boolean hasDocument) {
         return mapper.result(
                 new RegistrationOutcome(
                         Outcome.CREATED,
@@ -46,7 +50,8 @@ class PackRegistrationMapperNoticesTest {
                         PackLevel.ORG,
                         PackRevision.compute(List.of("x")),
                         notices,
-                        List.of()),
+                        List.of(),
+                        hasDocument),
                 Map.of());
     }
 
@@ -103,5 +108,16 @@ class PackRegistrationMapperNoticesTest {
         } finally {
             logger.detachAppender(events);
         }
+    }
+
+    @Test
+    void aResultLinksTheDocumentExactlyWhenThePackHoldsOne() {
+        assertThat(resultWith(RegistrationImpact.Notices.NONE, true).getLinks())
+                .containsKey("doc")
+                .extractingByKey("doc")
+                .extracting(link -> link.getHref())
+                .isEqualTo("/api/v1/packs/acme/doc");
+        assertThat(resultWith(RegistrationImpact.Notices.NONE, false).getLinks())
+                .doesNotContainKey("doc");
     }
 }

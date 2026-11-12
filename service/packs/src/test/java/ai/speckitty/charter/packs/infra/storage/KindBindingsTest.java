@@ -212,7 +212,7 @@ class KindBindingsTest {
         assertThat(KindBindings.isCompanionStructure("toolguide")).isFalse();
         assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .containsSame(ToolguideBinding.INSTANCE);
-        // #260: pack.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of the
+        // #260: README.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of the
         // bound step-enhancement kind (#428): the enhancement holds it, as a toolguide holds its guide.
         assertThat(KindBindings.isCompanionStructure(PackDocumentMarkdown.KIND)).isFalse();
         assertThat(KindBindings.isCompanionStructure("prompt-fragment")).isTrue();

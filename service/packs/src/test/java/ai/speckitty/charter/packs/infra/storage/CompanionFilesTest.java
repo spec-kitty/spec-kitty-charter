@@ -118,6 +118,28 @@ class CompanionFilesTest {
     }
 
     @Test
+    @DisplayName("a companion that resolves to the root README.md is refused as the pack document; Markdown only the"
+            + " ignored fallback takes is claimable (#451)")
+    void aCompanionMayNotBeThePackDocumentButMayBeFallbackMarkdown() throws IOException {
+        Files.writeString(pack.resolve("pack.yaml"), PACK_YAML);
+        Files.writeString(pack.resolve("README.md"), "# p\n");
+        artifact("doc.tactic.yaml", "doc", "README.md");
+        artifact("note.tactic.yaml", "note", "NOTES.MD");
+        Files.writeString(pack.resolve("NOTES.MD"), "an author-style note, claimed by its artifact");
+
+        FilesystemPackStore.PackRead read = store.read(PACK, List.of(Fixture.INSTANCE));
+
+        assertThat(read.violations())
+                .extracting(violation -> violation.file() + ": " + violation.reason())
+                .containsExactly("doc.tactic.yaml: README.md: is a pack file of kind pack-document"
+                        + " (file-kinds rule '*/README.md'), not a companion");
+        assertThat(read.dsos(Fixture.INSTANCE))
+                .extracting(FixtureDso::id, dso -> dso.note().orElse(""))
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("note", "an author-style note, claimed by its artifact"));
+    }
+
+    @Test
     @DisplayName("two artifacts naming one companion: the second is refused, case ignored")
     void aCompanionHasOneOwner() throws IOException {
         Files.writeString(pack.resolve("pack.yaml"), PACK_YAML);
@@ -167,14 +189,14 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("pack.yaml"), PACK_YAML);
         artifact("a.tactic.yaml", "a", "a.md");
         Files.writeString(pack.resolve("a.md"), "mine");
-        Files.writeString(pack.resolve("README.md"), "the pack's own");
+        Files.writeString(pack.resolve("notes.txt"), "the pack's own");
 
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("README.md"), Optional.of("x"))))
+                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("notes.txt"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
-                .hasMessageContaining("companion README.md is taken");
+                .hasMessageContaining("companion notes.txt is taken");
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("pack.yaml/"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
@@ -182,7 +204,7 @@ class CompanionFilesTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion pack.yaml/ is a YAML file");
 
-        assertThat(Files.readString(pack.resolve("README.md"))).isEqualTo("the pack's own");
+        assertThat(Files.readString(pack.resolve("notes.txt"))).isEqualTo("the pack's own");
         assertThat(Files.readString(pack.resolve("pack.yaml"))).isEqualTo(PACK_YAML);
         assertThat(Files.readString(pack.resolve("a.md"))).isEqualTo("mine");
     }
