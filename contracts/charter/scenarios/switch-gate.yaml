@@ -7,11 +7,12 @@
 #
 # The contract suite checks this file after the last scenario (SwitchGate): it fails when an operation of the
 # contract has no entry or an entry names no operation, when a ready operation has an answer no scenario asserts,
-# when a held operation would pass as ready, and when a reserved one is ready. The per-operation report, the
-# scenarios that cover each answer, is written to service/deployable/build/reports/switch-gate/switch-gate.md.
+# when a held operation would pass as ready or its unasserted answers are not exactly the statuses it names, and when a
+# reserved one is ready. The suite also writes a per-operation report of the scenarios that cover each answer.
 #
-# Each entry is {switch: ready} or {switch: held, reason: <why>}. A new operation gets an entry in the change that
-# adds it: ready with its scenarios, or held with the reason. Ready is necessary for a switch, not sufficient: the
+# Each entry is {switch: ready} or {switch: held, statuses: [<declared statuses>], reason: <why>}: statuses names the
+# answers no scenario asserts, and a gap not named, or a named status asserted now, fails the suite. A new operation
+# gets an entry in the change that adds it: ready with its scenarios, or held with the reason. Ready is necessary for a switch, not sufficient: the
 # first operation core switches needs contract 1.0.0 (ADR-0022 D6). This file ships in charter-scenarios.tar.gz; a
 # change to its keys, or an operation moved from ready to held, is a breaking change of the contract
 # (contracts/charter/CHANGELOG.md, ### Breaking).
@@ -21,6 +22,7 @@ operations:
   deactivateActivationArtifact: {switch: ready}
   deleteActivation:
     switch: held
+    statuses: [500]
     reason: its declared 500 is a failure of the activation storage alone (a quoted revision or * reads no packs), and the scenarios hold activations in memory with no seam to fail it
   deletePackArtifact: {switch: ready}
   deletePackRelationship: {switch: ready}
@@ -45,6 +47,7 @@ operations:
   getPackMissionType: {switch: ready}
   getPackRegistration:
     switch: held
+    statuses: [500]
     reason: its declared 500 is a failure of the registration job table alone (the status reads no pack), and the scenarios have no seam to fail it
   getServiceInfo: {switch: ready}
   listActivationPacks: {switch: ready}

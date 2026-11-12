@@ -470,14 +470,16 @@ provenance cases where the operation has them. The mission makes both one rule t
   which the suite checks on every `GET` (ADR-0018 D11). This is stricter than D1's "at least one behavioral scenario",
   and it includes D1's bar: a ready operation has its success answer exercised.
 - **The register is the published verdict.** `contracts/charter/scenarios/switch-gate.yaml` holds one entry per
-  operation, `ready` or `held` with a reason. The suite fails when an operation has no entry or an entry names none
-  (fail closed), when a ready operation has an answer no scenario asserts, when a held one would pass, and when a
-  reserved operation is ready. The register ships in `charter-scenarios.tar.gz` with the contract release; a change to
+  operation, `ready` or `held` with the declared `statuses` it is held for and a reason. The suite fails when an
+  operation has no entry or an entry names none (fail closed), when a ready operation has an answer no scenario
+  asserts, when a held one would pass or its unasserted answers are not exactly the statuses it names (a new gap
+  cannot hide behind an old entry), and when a reserved operation is ready. The register ships in `charter-scenarios.tar.gz` with the contract release; a change to
   its keys, or an operation moved from ready to held, is a `### Breaking` change (ADR-0022).
 - **Ready is necessary, not sufficient.** The first switch still needs contract 1.0.0 (ADR-0022 D6).
 - **What is held, and why.** `deleteActivation` and `getPackRegistration` declare a `500` that only a failure of the
   activation storage or of the registration job table raises; both are kept in memory and no seam lets a scenario fail them. They
-  stay held until a seam can fail that storage; the other 44 operations are ready.
+  stay held until a seam can fail that storage; the other 44 operations are ready. Each held entry names the
+  `statuses` it is held for (here `[500]`), so a held operation that gains another gap fails the suite.
 - **Core's half.** Refusing a switch the register does not hold ready is core's proxy (ADR-0021 D5), built at
   incorporation; it is recorded in the [work breakdown](/plans/pack-ecosystem-work-breakdown/), not filed here
   (issue-tracker Rule 5).
