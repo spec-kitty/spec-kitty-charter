@@ -56,12 +56,12 @@
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
+      "description": "prompt_slot_missing raised with its operations map and narrowed clause",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "CharterRefusalCode.yaml x-refusal; errors.feature pins; RefusalHandlerTest; ReservedRefusalCodesTest (WP05)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:58.985425+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
