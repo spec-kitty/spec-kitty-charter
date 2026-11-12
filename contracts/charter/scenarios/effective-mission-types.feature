@@ -412,9 +412,10 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     And the field at "/_links/step/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement"
     And the field at "/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_step_contract/implement"
 
-  Scenario: D11 - a step contract links its mission type when the closure holds it, and its step when the winning type declares it
-    review is bound to software-dev, which the closure holds, but neither copy of software-dev declares review: it links
-    mission-type and no step. stray is bound to research, which no pack of the closure holds: it links neither. A step
+  Scenario: D11 - a step contract links its mission type when the closure holds it, and its step when the step read answers it
+    review is bound to software-dev, which the closure holds, but neither copy of software-dev declares review and no
+    version of the closure holds the step, so the step read answers 404 for it: it links mission-type and no step (WP09:
+    the step link is offered whenever the step read answers the step, from the winner or from the step's place). stray is bound to research, which no pack of the closure holds: it links neither. A step
     contract no pack of the closure holds is mission_step_contract_not_found, after an unknown activation, which is
     activation_not_found whatever the rest of the path names.
     Given the org pack "main" with the file "mission_step_contracts/review.step-contract.yaml":
@@ -594,8 +595,9 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     the unique steps of the versions it replaced (A7): the step's place is the merged winner of the action, main. The
     step read answers main's step with main's prompt, as the prompt read does, and its skeleton link names main, whose
     version stores the skeleton (the activation's skeleton read serves proj's and answers skeleton_not_found for it).
-    The context's artifact link is the step's read in main. Every link followed answers 200. The twin, deploy, differs
-    only in the step id: no version declares it, and the three reads answer 404 action_not_found.
+    The context's artifact link is the step's read in main, and main's step contract review links the step, as the step
+    read answers it. Every link followed answers 200. The twin, deploy, differs only in the step id: no version declares
+    it, and the three reads answer 404 action_not_found.
     Given the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
       """
       schema_version: '1.0'
@@ -637,6 +639,16 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
         kind: action
         label: review
       edges: []
+      """
+    And the org pack "main" with the file "mission_step_contracts/review.step-contract.yaml":
+      """
+      schema_version: '1.0'
+      id: review
+      action: review
+      mission: software-dev
+      steps:
+        - id: read
+          description: Read the change
       """
     When I GET "/activations/a-1/artifacts/mission_type/software-dev"
     Then the response status is 200
@@ -690,6 +702,12 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     And I follow the link "artifact"
     Then the response status is 200
     And the field at "/title" is "Review at org"
+    When I GET "/activations/a-1/artifacts/mission_step_contract/review"
+    Then the response status is 200
+    And the field at "/_links/step/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"
+    When I follow the link "step"
+    Then the response status is 200
+    And the field at "/title" is "Review at org"
     When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/deploy"
     Then the response status is 404
     And the problem code is "action_not_found"
@@ -697,5 +715,59 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     Then the response status is 404
     And the problem code is "action_not_found"
     When I GET "/activations/a-1/mission-types/software-dev/actions/deploy/prompt"
+    Then the response status is 404
+    And the problem code is "action_not_found"
+
+  Scenario: WP09 review H1 - a step the winning type declares is placed at the winner, whichever pack's graph declares it
+    The step's place is the winner of the mission type when its version declares the step, else the merged winner of the
+    action (A7). proj's winning software-dev declares specify; only main's graph declares action:software-dev/specify.
+    The context's effective-artifact and artifact links answer the same step, proj's, and the step read answers it.
+    Given the org pack "main" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/specify
+        kind: action
+        label: specify
+      edges: []
+      """
+    When I GET "/activations/a-1/mission-types/software-dev/actions/specify/context"
+    Then the response status is 200
+    And the field at "/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"
+    And the field at "/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/specify"
+    When I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/specify/context"
+    And I follow the link "artifact"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+
+  Scenario: WP09 review H1 - the context's artifact link answers a step only the winning type declares, whose action another pack's graph declares
+    main's graph declares action:software-dev/implement and main's software-dev does not declare implement; proj's
+    winning software-dev does. The step's place is proj, the winner of the mission type, so both context links answer
+    proj's step, never a 404 from main's copy.
+    Given the org pack "main" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges: []
+      """
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
+    Then the response status is 200
+    And the field at "/_links/artifact/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/implement"
+    When I follow the link "artifact"
+    Then the response status is 200
+    And the field at "/title" is "Implementation"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
+    And I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Implementation"
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/implement"
     Then the response status is 404
     And the problem code is "action_not_found"
