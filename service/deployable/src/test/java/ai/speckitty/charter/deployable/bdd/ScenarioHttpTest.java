@@ -33,19 +33,15 @@ class ScenarioHttpTest {
     void anAssertedStatusMarksTheLastExchangeAlone() throws Exception {
         http.get("/setup");
         http.get("/refused");
+        assertThat(http.statusAsserted(1))
+                .as("no exchange is marked before a status is asserted")
+                .isFalse();
 
         http.statusAsserted();
 
         assertThat(http.exchanges()).hasSize(2);
         assertThat(http.statusAsserted(0)).as("the setup request").isFalse();
         assertThat(http.statusAsserted(1)).as("the asserted request").isTrue();
-    }
-
-    @Test
-    void noExchangeIsMarkedUntilAStatusIsAsserted() throws Exception {
-        http.get("/refused");
-
-        assertThat(http.statusAsserted(0)).isFalse();
     }
 
     @Test

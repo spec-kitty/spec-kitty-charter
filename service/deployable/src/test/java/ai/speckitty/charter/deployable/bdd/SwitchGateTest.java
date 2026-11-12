@@ -300,6 +300,12 @@ class SwitchGateTest {
                 .contains("## getLater — held: reserved until built");
     }
 
+    /**
+     * Fast feedback without Cucumber: a typo in the shipped register's keys fails here in milliseconds, not after the
+     * whole contract suite has run.
+     *
+     * @throws IOException when the register cannot be read
+     */
     @Test
     void theShippedRegisterNamesExactlyTheContractsOperations() throws IOException {
         Map<String, Entry> shipped;
