@@ -65,6 +65,9 @@
       "last_event_id": "01M77HJGX41JFMWH87J13X5CXC",
       "last_transition_at": "2026-11-12T09:31:41.860731+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Context served with appliesThrough (EffectiveContextArtifact, ### Breaking fragment), E17 recipe v3; new effective-context-scoping.feature (16-directive table: 15 listed, DIRECTIVE_003 absent; type scope, R2 leak control, required-elsewhere, procedure twin, suggestion pass); US5 AS3/AS4 and #484 rewritten with stated meaning change. Commits f1191c2b1 (red), 8cbbfe76a (feat). Green: activations, packs, deployable (incl. CharterContractSuite, HexagonalArchitectureTest, NullOmissionTest), contract checks, checkstyle/spotless."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3737,
