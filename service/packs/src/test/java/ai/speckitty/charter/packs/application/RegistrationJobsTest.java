@@ -644,8 +644,7 @@ class RegistrationJobsTest {
         }
         // The two workers stay held until close() has refused all four jobs, then wake inside close()'s grace and must
         // neither run a refused job nor write anything. Left held, they would keep close() waiting out its whole 30 s
-        // grace on every run, and under PIT
-        // on every mutant this test covers (#461).
+        // grace on every run, and under PIT on every mutant this test covers (#461).
         Thread releaser = new Thread(() -> {
             h.await(() -> waiting.stream()
                     .allMatch(reservation -> h.jobs.status(reservation.id())

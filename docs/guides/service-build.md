@@ -181,7 +181,7 @@ fail the check too.
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
 **The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only. PIT runs
-in two shards, each on its own runner with a 100-minute timeout, 90 of them for the mutation step: `:packs` alone
+in two shards, each on its own runner with the 90-minute timeout, 80 of them for the mutation step: `:packs` alone
 (1h06m measured alone on a 4-core machine) and every other module (#461). Each shard syncs the packs at the pin, then
 runs `./gradlew mutationModules <its tasks> --continue`. `mutationModules` writes the list of modules that apply
 `charter.mutation-conventions` (#388). A summary job then runs, whatever the shards' results: it runs the summary

@@ -44,13 +44,13 @@ jobs:
   # PIT runs in two shards, each on its own 4-core runner (#461): :packs alone, and every other module. A full
   # :packs:pitest measured 1h06m34s alone on an idle 4-core machine (2026-11-12, 7129 mutants, 79 timed out); the six
   # other modules add ~20 min. Together they no longer fit one runner's budget, and run side by side they starve each
-  # other's minions into timeouts. Each shard's mutation step has 90 minutes, >25 % headroom over :packs as measured
-  # (NFR-002), and the job 100, so the copy and the upload still run when PIT runs out of time. A timeout raises the
-  # mutation-nightly issue. The summary job merges both shards' reports into one table.
+  # other's minions into timeouts. Each shard keeps the ruled 90 minutes (ADR-0062), >25 % headroom over :packs as
+  # measured; the mutation step has 80 of them, so the copy and the upload still run when PIT runs out of time. A
+  # timeout raises the mutation-nightly issue. The summary job merges both shards' reports into one table.
   pitest:
     name: pitest (${{ matrix.shard }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 100
+    timeout-minutes: 90
     strategy:
       # Both shards always report: a red :packs does not cancel the others.
       fail-fast: false
@@ -107,7 +107,7 @@ jobs:
       # applied leaves its module without a report, and the job log that named it can be gone before anyone reads it
       # (#461). The summary quotes PIT's lines about such tests.
       - name: Mutation testing
-        timeout-minutes: 90
+        timeout-minutes: 80
         run: |
           set -o pipefail
           mkdir -p build/reports/mutation-floors
@@ -192,7 +192,7 @@ jobs:
     needs: [pitest, summary]
     if: >-
       always() && (
-        (needs.pitest.result != 'success' && github.event_name == 'schedule')
+        ((needs.pitest.result != 'success' || needs.summary.result != 'success') && github.event_name == 'schedule')
         || (github.event_name == 'workflow_dispatch' && inputs.force_issue)
       )
     runs-on: ubuntu-24.04
@@ -207,6 +207,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT: ${{ github.event_name }}
           RESULT: ${{ needs.pitest.result }}
+          SUMMARY_RESULT: ${{ needs.summary.result }}
           SUMMARY: ${{ needs.summary.outputs.summary }}
         run: |
           set -euo pipefail
@@ -220,9 +221,9 @@ jobs:
             if [ "$EVENT" = workflow_dispatch ]; then
               echo "**Forced test run** (workflow_dispatch with force_issue), not a scheduled alert:"
               echo "it checks that the nightly can open or comment on this issue."
-              echo "The \`pitest\` job result was: **$RESULT**. Run: $RUN_URL"
+              echo "The \`pitest\` job result was: **$RESULT**, the \`summary\` job's **$SUMMARY_RESULT**. Run: $RUN_URL"
             else
-              echo "The nightly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**): $RUN_URL"
+              echo "The nightly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**, \`summary\`: **$SUMMARY_RESULT**): $RUN_URL"
             fi
             echo
             if [ -n "$SUMMARY" ]; then

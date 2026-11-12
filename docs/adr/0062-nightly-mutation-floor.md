@@ -156,6 +156,10 @@ characters in mutator descriptions, so it is not well-formed XML.
      the same path, marked as a forced test run. Proving the alert with `force_issue` costs a full PIT run.
    - `timeout-minutes` is 90 (operator ruling). The mutation step has 80 of them, so the summary and the upload
      still run when PIT runs out of time.
+   - PIT runs in two shards, each on its own runner with that budget: `:packs` alone, and every other module (#461).
+     A full `:packs:pitest` measured 1h06m34s alone on a 4-core machine on 2026-11-12, so the modules no longer fit one
+     runner. A summary job merges the shards' `mutation-report-<shard>` artifacts into the one table; a red summary
+     job raises the alert as a red shard does.
 9. **Never on a pull request.** No pull-request or `merge_group` trigger runs PIT, `verifyAll` contains no `pitest` or
    `checkMutationFloors` task, and the nightly is never part of the required check of
    [ADR-0023](/adr/0023-ci-gate-required-check/).
@@ -299,6 +303,6 @@ change:
   the floor). The summary table shows them as the "Timed out" and "Margin" columns, so a slide shows before a floor
   trips.
 - **A red night names its failing test (#461).** The mutation step's output is kept as
-  `build/reports/mutation-floors/pitest.log` in the `mutation-report` artifact (14 days), and the summary, which the
+  `build/reports/mutation-floors/pitest-<shard>.log` in the `mutation-report-<shard>` artifacts (14 days), and the summary, which the
   alert issue quotes, lists PIT's lines about tests that fail with no mutation applied. Such a test leaves its module
   without a report. On 2026-11-11 the job log that named one returned errors and then expired before anyone read it.
