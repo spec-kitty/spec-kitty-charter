@@ -41,8 +41,9 @@ The weaknesses have moved from what is missing to what is quietly not checked:
   template path inside `templates/`.
 - **The mutation nightly has had no `:packs` report for three nights** (#461). The run now times
   out, and one test that burns a 30-second production timeout on every run is a large part of the cost.
-- **Four places read an older or retired shape or name beside the canonical one.** The charter
-  rules these out since 2026-11-10, but they were sanctioned or written before that ruling.
+- **Four places keep an older or retired shape or name beside the canonical one.** The charter's
+  2026-11-10 ruling rules this out. Two are legacy readers: the activation store's version 1 reader
+  and the unversioned pack-descriptor branch. Each violates the ruling until the operator rules.
 - **Complexity has grown in `packs` while its gate waits.** The Checkstyle limits of ADR-0058 are
   still off (#367, #371).
 
@@ -268,24 +269,24 @@ too small for Sonar to see:
   `RefusalCode.notFound()` (`:258`) has 16 codes and no caller in main code. `RefusalHandler.java:326-343`
   hand-lists 17, adding `NO_PROFILE_MATCHED`.
 
-**The canonical model (DIRECTIVE_032; charter ruling of 2026-11-10).** Two findings were checked against
-their sources:
+**The canonical model (DIRECTIVE_032; charter ruling of 2026-11-10).** The ruling says a change
+replaces the old shape outright, with no deprecation window and no reader for the old shape beside
+the new one. Four findings, each read against its source:
 
 - **The retired "Doctrine" vocabulary names kernel types.** `docs/context/domain.md:159-163` retires
   "Doctrine" as a name for any domain object; the graph is the Charter Reference Graph (CRG). The
   code still has `DoctrineGraph` (23 references in main code), `DrgNode` (32) and the storage DSO
   `DrgEdge` (10). No CRG-named type exists.
-- **An unversioned descriptor is read under a softer rule.** For a descriptor without
-  `schema_version`, which `PackDescriptor.java:23` calls "legacy", `PackPolicy.java:331,347` turns
-  text in a prompt slot into the warning `PROMPT_SLOT_NOT_EMPTY_UNVERSIONED` instead of the blocking
-  `PROMPT_SLOT_NOT_EMPTY`. ADR-0066 sanctioned this on 2026-11-08, two days before the ruling that
-  the old shape is not read beside the new one, and nothing reconciles the two.
-
-Two more were not checked against an ADR line by line, but were read:
-
-- **The activation store reads its version 1 files** (`ActivationFileCodec.java:32-38,102-126`). ADR-0020 decision 6
-  sanctions it. It is the service's own unreleased store, not a pack shape, but the "no deprecation
-  window" wording reads on it.
+- **The unversioned pack-descriptor branch is a legacy reader beside the canonical one.** For a
+  descriptor without `schema_version`, which `PackDescriptor.java:23` calls "legacy",
+  `PackPolicy.java:331,347` turns text in a prompt slot into the warning
+  `PROMPT_SLOT_NOT_EMPTY_UNVERSIONED` instead of the blocking `PROMPT_SLOT_NOT_EMPTY`. The ruling
+  rules this out. ADR-0066 added the branch on 2026-11-08, two days before the ruling, and nothing
+  reconciles the two. It is a violation pending a ruling.
+- **The activation store's version 1 reader is a legacy reader beside the canonical one**
+  (`ActivationFileCodec.java:32-38,102-126`). The ruling rules this out too. The ADR-0020 decision 6
+  amendment of 2026-11-07 added it, and it predates the ruling. The store is unreleased, so no
+  field file needs the reader. It is a violation pending a ruling.
 - **`kernel/domain/Relation`** is superseded by `RelationType` and has no caller in main code; only
   `VocabularyEqualityTest` uses it. It also shares its name with the hypermedia
   `packs/infra/api/Relation`.
@@ -320,8 +321,8 @@ catch. `PackPolicy.handles` (`:428`), `RegistrationJobs.retained` (`:801`) and
        for every appended file.
    - **Status:** the nightly timeout is owned by another session (#461).
 3. **Old shapes and retired names beside the canonical model.** Four places:
-   - the unversioned-descriptor branch;
-   - the activation store's version 1 reader;
+   - the unversioned-descriptor branch (a legacy reader; violation pending a ruling);
+   - the activation store's version 1 reader (a legacy reader; violation pending a ruling);
    - `Relation` beside `RelationType`;
    - the "Doctrine" type names.
 
