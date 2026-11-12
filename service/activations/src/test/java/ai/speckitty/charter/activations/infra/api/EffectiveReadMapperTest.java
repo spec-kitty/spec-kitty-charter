@@ -292,6 +292,16 @@ class EffectiveReadMapperTest {
         ai.speckitty.charter.api.model.SkippedReport report = wire.getReport();
         assertThat(report.getStaleIds())
                 .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"));
+        assertTheDenyEnhancerAndOverrideBuckets(report);
+        assertTheRequiredPinLanguageAndDeactivatedBuckets(report);
+        assertThat(report.getSkippedByScope()).isEmpty();
+        assertThat(report.getUnreachedBehindDeactivated()).isEmpty();
+        assertThat(report.getSkippedShared()).isEmpty();
+        assertThat(wire.getLinks()).containsOnlyKeys("self");
+        assertThat(wire.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/a-1/skipped");
+    }
+
+    private static void assertTheDenyEnhancerAndOverrideBuckets(ai.speckitty.charter.api.model.SkippedReport report) {
         assertThat(report.getDenyNotApplied()).singleElement().satisfies(entry -> {
             assertThat(entry.getKind()).isEqualTo(ai.speckitty.charter.api.model.DenyNotApplied.KindEnum.DIRECTIVE);
             assertThat(entry.getArtifactId()).isEqualTo("B");
@@ -309,6 +319,10 @@ class EffectiveReadMapperTest {
             assertThat(entry.getOverriddenBy())
                     .isEqualTo(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
         });
+    }
+
+    private static void assertTheRequiredPinLanguageAndDeactivatedBuckets(
+            ai.speckitty.charter.api.model.SkippedReport report) {
         assertThat(report.getRequiredNotHeld())
                 .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "GONE"));
         assertThat(report.getRequiredNotInForce()).singleElement().satisfies(entry -> {
@@ -335,11 +349,6 @@ class EffectiveReadMapperTest {
             assertThat(entry.getOverriddenBy())
                     .isEqualTo(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"));
         });
-        assertThat(report.getSkippedByScope()).isEmpty();
-        assertThat(report.getUnreachedBehindDeactivated()).isEmpty();
-        assertThat(report.getSkippedShared()).isEmpty();
-        assertThat(wire.getLinks()).containsOnlyKeys("self");
-        assertThat(wire.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/a-1/skipped");
     }
 
     // ---- getActivation's deny notice
