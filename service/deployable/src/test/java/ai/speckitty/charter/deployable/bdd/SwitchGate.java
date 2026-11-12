@@ -45,14 +45,16 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *
  * <p>The contract tests are the checks every exchange already passes (its schema, links and fingerprint), so an
  * exercised answer is also a checked one. Whatever the outcome, the per-operation report is written to
- * {@code build/reports/switch-gate/switch-gate.md}. A run that selects only some scenarios reports the others'
+ * {@code service/deployable/build/reports/switch-gate/switch-gate.md}, a declared output of the test task. A run that selects only some scenarios reports the others'
  * answers as gaps.
  */
 public final class SwitchGate {
 
     private static final String REGISTER = "scenarios/switch-gate.yaml";
     private static final String SCENARIOS_PREFIX = "classpath:scenarios/";
-    private static final Path REPORT = Path.of("build", "reports", "switch-gate", "switch-gate.md");
+    private static final Path REPORT = Path.of(
+                    System.getProperty("charter.switchGateReport", "build/reports/switch-gate/switch-gate.md"))
+            .toAbsolutePath();
     private static final Set<Exercise> EXERCISED = ConcurrentHashMap.newKeySet();
 
     private SwitchGate() {}
@@ -314,6 +316,7 @@ public final class SwitchGate {
         Map<String, Operation> operations = new ContractConformance().operations();
         Map<String, Entry> register = register(readRegister());
         Set<Exercise> exercised = Set.copyOf(EXERCISED);
+        EXERCISED.clear();
         writeReport(report(operations, exercised, register));
         List<String> violations = violations(operations, exercised, register);
         if (!violations.isEmpty()) {

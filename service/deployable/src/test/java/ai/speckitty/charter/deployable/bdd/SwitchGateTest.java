@@ -87,6 +87,34 @@ class SwitchGateTest {
     }
 
     @Test
+    void anOperationWithoutAnIdOrWithARangeKeyIsRefused(@TempDir Path fixture) throws IOException {
+        Files.createDirectories(fixture.resolve("charter/paths"));
+        Files.writeString(fixture.resolve("charter/openapi.yaml"), """
+                openapi: 3.1.0
+                paths:
+                  /a:
+                    $ref: paths/a.yaml
+                """);
+        Files.writeString(fixture.resolve("charter/paths/a.yaml"), """
+                get:
+                  responses:
+                    '200': {description: d}
+                """);
+        assertThatThrownBy(() -> new ContractConformance(fixture).operations())
+                .hasMessage("get /a declares no operationId");
+
+        Files.writeString(fixture.resolve("charter/paths/a.yaml"), """
+                get:
+                  operationId: getA
+                  responses:
+                    '200': {description: d}
+                    4XX: {description: d}
+                """);
+        assertThatThrownBy(() -> new ContractConformance(fixture).operations())
+                .hasMessage("get /a declares the response key 4XX, which is neither a status nor default");
+    }
+
+    @Test
     void anExchangeCountsForTheOperationThatAnswersItsMethodAndPath() {
         assertThat(SwitchGate.exercised(
                         CONTRACT, new Exchange("put", "/packs/qa/artifacts/directive/GUARD", 412), true, READ))
@@ -188,6 +216,17 @@ class SwitchGateTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("operation getThing: an entry is");
         assertThatThrownBy(() -> register("{switch: maybe}")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> register("{switch: held, reason: '  '}"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() -> register("{switch: held, reason: 7}"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() ->
+                        SwitchGate.register("operations:\n  getThing: {switch: ready}\n  getThing: {switch: ready}\n"))
+                .as("a key stated twice")
+                .isInstanceOf(RuntimeException.class);
+        assertThat(register("{switch: held, reason: why}")).containsEntry("getThing", new Entry(false, "why"));
         assertThatThrownBy(() -> SwitchGate.register("operations: []\n"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("operations must be a mapping");
@@ -197,7 +236,7 @@ class SwitchGateTest {
     }
 
     @Test
-    void theReportNamesTheScenariosOfEachStatusAndTheSharedMechanism() {
+    void theReportNamesTheScenariosOfEachStatus() {
         Set<Exercise> exercised = Set.of(new Exercise("get", "/things/{id}", 200, READ));
 
         String report = SwitchGate.report(operations, exercised, register("{switch: ready}"));

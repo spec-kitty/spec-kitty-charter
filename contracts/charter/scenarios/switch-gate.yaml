@@ -8,7 +8,7 @@
 # The contract suite checks this file after the last scenario (SwitchGate): it fails when an operation of the
 # contract has no entry or an entry names no operation, when a ready operation has an answer no scenario asserts,
 # when a held operation would pass as ready, and when a reserved one is ready. The per-operation report, the
-# scenarios that cover each answer, is written to build/reports/switch-gate/switch-gate.md.
+# scenarios that cover each answer, is written to service/deployable/build/reports/switch-gate/switch-gate.md.
 #
 # Each entry is {switch: ready} or {switch: held, reason: <why>}. A new operation gets an entry in the change that
 # adds it: ready with its scenarios, or held with the reason. Ready is necessary for a switch, not sufficient: the

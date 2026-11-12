@@ -379,26 +379,35 @@ final class ContractConformance {
         Map<String, Operation> operations = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : paths().entrySet()) {
             for (Map.Entry<String, Object> method : pathItem(entry).node().entrySet()) {
-                if (!METHODS.contains(method.getKey())) {
-                    continue;
+                if (METHODS.contains(method.getKey())) {
+                    Operation operation = operation(entry.getKey(), method.getKey(), method.getValue());
+                    if (operations.put(operation.operationId(), operation) != null) {
+                        throw new IllegalStateException(
+                                "operationId " + operation.operationId() + " is declared twice");
+                    }
                 }
-                Map<String, Object> node = mapping(method.getValue(), entry.getKey());
-                Set<Integer> statuses = new HashSet<>();
-                mapping(node.get("responses"), entry.getKey() + " responses").keySet().stream()
-                        .filter(status -> status.matches("\\d{3}"))
-                        .forEach(status -> statuses.add(Integer.parseInt(status)));
-                String operationId = String.valueOf(node.get("operationId"));
-                operations.put(
-                        operationId,
-                        new Operation(
-                                operationId,
-                                method.getKey(),
-                                entry.getKey(),
-                                new DeclaredOperation(entry.getKey(), node).reserved(),
-                                Set.copyOf(statuses)));
             }
         }
         return operations;
+    }
+
+    private Operation operation(String template, String method, Object value) {
+        Map<String, Object> node = mapping(value, template);
+        if (!(node.get("operationId") instanceof String operationId) || operationId.isBlank()) {
+            throw new IllegalStateException(method + " " + template + " declares no operationId");
+        }
+        Set<Integer> statuses = new HashSet<>();
+        for (String status :
+                mapping(node.get("responses"), template + " responses").keySet()) {
+            if (status.matches("\\d{3}")) {
+                statuses.add(Integer.parseInt(status));
+            } else if (!status.equals("default")) {
+                throw new IllegalStateException(method + " " + template + " declares the response key " + status
+                        + ", which is neither a status nor default");
+            }
+        }
+        return new Operation(
+                operationId, method, template, new DeclaredOperation(template, node).reserved(), Set.copyOf(statuses));
     }
 
     private Map<String, Object> paths() {

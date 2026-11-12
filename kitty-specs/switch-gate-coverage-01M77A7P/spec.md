@@ -80,7 +80,7 @@ It is recorded in the pack-ecosystem work breakdown (C13), and #72 closes with e
 - **FR-003** After the last scenario, the suite records every exchange by operation and status and fails when an
   entry is missing or extra, a ready operation has a declared status no scenario asserts, a held operation that is not
   reserved is complete, or a reserved operation is ready.
-- **FR-004** It writes the per-operation report to `build/reports/switch-gate/`.
+- **FR-004** It writes the per-operation report to `service/deployable/build/reports/switch-gate/`, a declared output of the test task.
 - **FR-005** It subsumes `OperationCoverage`'s 2xx check (R-20) with no loss: a missing 2xx answer still fails, with
   the R-20 wording.
 - **FR-006** New scenarios fill the gaps of User Story 2. They go in new feature files, so they do not collide with
