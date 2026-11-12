@@ -61,7 +61,7 @@
       "wp": null
     },
     "#435": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Out of scope (spec C-008): open-packs pin bump",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,7 +69,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#438": {
