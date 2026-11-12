@@ -39,9 +39,13 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *   <li>a success answer of a built operation was exercised by no scenario (R-20), whatever the register says;
  *   <li>the register lacks an operation of the contract, or names one the contract does not declare (fail closed);
  *   <li>a {@code ready} operation has a declared status no scenario exercised on it;
- *   <li>a {@code held} operation that is not reserved would pass as {@code ready}, so the register cannot go stale;
+ *   <li>a {@code held} operation that is not reserved would pass as {@code ready}, or its gaps are not the statuses
+ *       it names, so the register cannot go stale;
  *   <li>a reserved operation ({@code x-reserved}, a 501 pin) is {@code ready}.
  * </ul>
+ *
+ * <p>A held entry names the statuses it is held for, and they must be the operation's gaps exactly: a gap the entry
+ * does not name, or a named status that is asserted now, fails the gate, so a held entry cannot hide a new gap.
  *
  * <p>The contract tests are the checks every exchange already passes (its schema, links and fingerprint), so an
  * exercised answer is also a checked one. Whatever the outcome, the per-operation report is written to
@@ -83,8 +87,9 @@ public final class SwitchGate {
      *
      * @param ready true for {@code switch: ready}, false for {@code switch: held}
      * @param reason why a held operation is held; empty for a ready one
+     * @param statuses the declared statuses a held operation is held for, sorted; empty for a ready one
      */
-    record Entry(boolean ready, String reason) {}
+    record Entry(boolean ready, String reason, List<Integer> statuses) {}
 
     /**
      * Records one exchange of a scenario.
@@ -148,16 +153,23 @@ public final class SwitchGate {
         Object verdict = fields.get("switch");
         Object reason = fields.get("reason");
         if ("ready".equals(verdict) && fields.keySet().equals(Set.of("switch"))) {
-            return new Entry(true, "");
+            return new Entry(true, "", List.of());
         }
         if ("held".equals(verdict)
-                && fields.keySet().equals(Set.of("switch", "reason"))
+                && fields.keySet().equals(Set.of("switch", "reason", "statuses"))
                 && reason instanceof String text
-                && !text.isBlank()) {
-            return new Entry(false, text);
+                && !text.isBlank()
+                && fields.get("statuses") instanceof List<?> held
+                && !held.isEmpty()
+                && held.stream().allMatch(Integer.class::isInstance)) {
+            return new Entry(
+                    false,
+                    text,
+                    held.stream().map(Integer.class::cast).sorted().distinct().toList());
         }
-        throw new IllegalArgumentException(
-                "operation " + id + ": an entry is {switch: ready} or {switch: held, reason: <why>}; found " + fields);
+        throw new IllegalArgumentException("operation " + id
+                + ": an entry is {switch: ready} or {switch: held, statuses: [<declared statuses>], reason: <why>};"
+                + " found " + fields);
     }
 
     private static Map<?, ?> map(@Nullable Object value, String what) {
@@ -245,9 +257,25 @@ public final class SwitchGate {
             return Optional.of(id + ": is ready, but no scenario asserts its declared " + statuses(gaps) + " on "
                     + signature(operation) + "; add a scenario, or hold it with a reason");
         }
-        if (!entry.ready() && !operation.reserved() && gaps.isEmpty()) {
+        if (entry.ready() || operation.reserved()) {
+            return Optional.empty();
+        }
+        if (gaps.isEmpty()) {
             return Optional.of(id + ": is held (" + entry.reason() + "), but every declared answer is exercised;"
                     + " mark it ready");
+        }
+        List<Integer> extra =
+                gaps.stream().filter(gap -> !entry.statuses().contains(gap)).toList();
+        if (!extra.isEmpty()) {
+            return Optional.of(id + ": is held for " + statuses(entry.statuses()) + ", but no scenario asserts "
+                    + statuses(extra) + " either; add it to its statuses, or add a scenario");
+        }
+        List<Integer> stale = entry.statuses().stream()
+                .filter(status -> !gaps.contains(status))
+                .toList();
+        if (!stale.isEmpty()) {
+            return Optional.of(id + ": is held for " + statuses(entry.statuses()) + ", but " + statuses(stale)
+                    + " is asserted now; remove it from its statuses");
         }
         return Optional.empty();
     }

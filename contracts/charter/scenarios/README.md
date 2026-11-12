@@ -230,7 +230,7 @@ Every 2xx answer with a JSON body is also checked for its links (R-20), statical
 ## The switch gate
 
 `switch-gate.yaml` says, per operation of `../openapi.yaml`, whether core may switch to it (ADR-0059 D1, as amended
-on 2026-11-12): `{switch: ready}`, or `{switch: held, reason: <why>}`. The suite records every exchange of every
+on 2026-11-12): `{switch: ready}`, or `{switch: held, statuses: [<declared statuses>], reason: <why>}`. The suite records every exchange of every
 scenario by the operation that answers it, and after the last scenario (`SwitchGate`) it fails:
 
 - when a success answer the contract declares, a 2xx status of a built operation, was exercised by no scenario (R-20),
@@ -240,7 +240,9 @@ scenario by the operation that answers it, and after the last scenario (`SwitchG
 - when a `ready` operation has a status its responses declare by number (not `default`) that no scenario asserts on
   that operation; a success answer counts from any exchange, and any other answer only where `Then the response
   status is <n>` asserts it, so a setup request's incidental refusal covers nothing;
-- when a `held` operation would pass as ready, and when a reserved operation (`x-reserved`, a 501 pin) is ready.
+- when a `held` operation would pass as ready, when the statuses no scenario asserts on it are not exactly the
+  `statuses` its entry names (an unnamed gap fails, and so does a named status that is asserted now), and when a
+  reserved operation (`x-reserved`, a 501 pin) is ready.
 
 Each run writes the scenarios that cover each answer of each operation to
 `service/deployable/build/reports/switch-gate/switch-gate.md`. A run that selects only some scenarios reports the

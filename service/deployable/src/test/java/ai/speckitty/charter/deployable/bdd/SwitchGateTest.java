@@ -13,11 +13,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The switch gate (ADR-0059 D1), judged on a planted contract and register: each failure it names has a control
@@ -66,7 +71,7 @@ class SwitchGateTest {
         return SwitchGate.register("""
                 operations:
                   getThing: %s
-                  getLater: {switch: held, reason: reserved until built}
+                  getLater: {switch: held, statuses: [200, 501], reason: reserved until built}
                 """.formatted(getThing));
     }
 
@@ -144,7 +149,8 @@ class SwitchGateTest {
     void aSuccessNoScenarioExercisedFailsWithTheR20WordingWhateverTheVerdict() {
         Set<Exercise> exercised = Set.of(new Exercise("get", "/things/{id}", 401, GUARD));
 
-        assertThat(SwitchGate.violations(operations, exercised, register("{switch: held, reason: gaps}")))
+        assertThat(SwitchGate.violations(
+                        operations, exercised, register("{switch: held, statuses: [200, 404], reason: gaps}")))
                 .containsExactly(
                         "No scenario exercises this success answer of the contract (R-20): GET /things/{id} 200");
     }
@@ -157,15 +163,43 @@ class SwitchGateTest {
         assertThat(SwitchGate.violations(operations, exercised, register("{switch: ready}")))
                 .containsExactly("getThing: is ready, but no scenario asserts its declared 404 on GET /things/{id};"
                         + " add a scenario, or hold it with a reason");
-        assertThat(SwitchGate.violations(operations, exercised, register("{switch: held, reason: no 404 yet}")))
+        assertThat(SwitchGate.violations(
+                        operations, exercised, register("{switch: held, statuses: [404], reason: no 404 yet}")))
                 .isEmpty();
     }
 
-    @Test
-    void aHeldOperationThatWouldPassMustBeMarkedReady() {
+    @ParameterizedTest(name = "held for {0}: {1}")
+    @MethodSource("heldEntries")
+    void aHeldEntryMustNameExactlyTheStatusesNoScenarioAsserts(
+            String statuses, String outcome, Set<Exercise> exercised, List<String> violations) {
         assertThat(SwitchGate.violations(
-                        operations, everyAnswerOfGetThing(), register("{switch: held, reason: stale}")))
-                .containsExactly("getThing: is held (stale), but every declared answer is exercised; mark it ready");
+                        operations, exercised, register("{switch: held, statuses: " + statuses + ", reason: why}")))
+                .as(outcome)
+                .isEqualTo(violations);
+    }
+
+    private static Stream<Arguments> heldEntries() {
+        Set<Exercise> noRefusal =
+                Set.of(new Exercise("get", "/things/{id}", 200, READ), new Exercise("get", "/things/{id}", 401, GUARD));
+        return Stream.of(
+                Arguments.of("[404]", "equal passes", noRefusal, List.of()),
+                Arguments.of(
+                        "[401]",
+                        "more gaps fail",
+                        noRefusal,
+                        List.of("getThing: is held for 401, but no scenario asserts 404 either;"
+                                + " add it to its statuses, or add a scenario")),
+                Arguments.of(
+                        "[404, 401]",
+                        "fewer gaps are stale",
+                        noRefusal,
+                        List.of("getThing: is held for 401, 404, but 401 is asserted now;"
+                                + " remove it from its statuses")),
+                Arguments.of(
+                        "[404]",
+                        "no gaps means ready",
+                        everyAnswerOfGetThing(),
+                        List.of("getThing: is held (why), but every declared answer is exercised; mark it ready")));
     }
 
     @Test
@@ -195,7 +229,7 @@ class SwitchGateTest {
     void anOperationTheRegisterLacksOrAnEntryForNoOperationFails() {
         Map<String, Entry> register = SwitchGate.register("""
                 operations:
-                  getLater: {switch: held, reason: reserved until built}
+                  getLater: {switch: held, statuses: [200, 501], reason: reserved until built}
                   getGone: {switch: ready}
                 """);
         Set<Exercise> exercised = Set.of(new Exercise("get", "/things/{id}", 200, READ));
@@ -212,21 +246,38 @@ class SwitchGateTest {
         assertThatThrownBy(() -> register("{switch: held}"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() -> register("{switch: held, reason: why}"))
+                .as("a held entry without statuses")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() -> register("{switch: held, statuses: [], reason: why}"))
+                .as("a held entry with no statuses")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() -> register("{switch: held, statuses: ['x'], reason: why}"))
+                .as("a status that is no number")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
+        assertThatThrownBy(() -> register("{switch: ready, statuses: [500]}"))
+                .as("statuses on a ready entry")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("operation getThing: an entry is");
         assertThatThrownBy(() -> register("{switch: ready, reason: why}"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("operation getThing: an entry is");
         assertThatThrownBy(() -> register("{switch: maybe}")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> register("{switch: held, reason: '  '}"))
+        assertThatThrownBy(() -> register("{switch: held, statuses: [500], reason: '  '}"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("operation getThing: an entry is");
-        assertThatThrownBy(() -> register("{switch: held, reason: 7}"))
+        assertThatThrownBy(() -> register("{switch: held, statuses: [500], reason: 7}"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("operation getThing: an entry is");
         assertThatThrownBy(() ->
                         SwitchGate.register("operations:\n  getThing: {switch: ready}\n  getThing: {switch: ready}\n"))
                 .as("a key stated twice")
                 .isInstanceOf(RuntimeException.class);
-        assertThat(register("{switch: held, reason: why}")).containsEntry("getThing", new Entry(false, "why"));
+        assertThat(register("{switch: held, statuses: [500, 404, 500], reason: why}"))
+                .containsEntry("getThing", new Entry(false, "why", List.of(404, 500)));
         assertThatThrownBy(() -> SwitchGate.register("operations: []\n"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("operations must be a mapping");
