@@ -197,7 +197,7 @@ The calls the Op made beyond the rulings, open to review:
   not hold (26 agent profiles and 27 styleguides, refused for their shape) and leaves out 54 it holds (4 mission types,
   21 step contracts, 27 templates, a procedure and a toolguide). open-packs regenerates each `pack-manifest.yaml` from
   the derived lists once its packs load clean, or drops it and lets the service generate it. The other packs hold no
-  manifest, and the service generates one. A pack the service registered before this rule gets a one-time `409` on its
+  manifest, and the service generates one. [open-packs #250](https://github.com/spec-kitty/spec-kitty-open-packs/issues/250) tracks the regeneration. A pack the service registered before this rule gets a one-time `409` on its
   first unchanged re-registration: send a new `pack_version`.
 
 ## Context
