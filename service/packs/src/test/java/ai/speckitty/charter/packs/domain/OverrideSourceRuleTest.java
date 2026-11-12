@@ -4,10 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
+import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -130,5 +137,57 @@ class OverrideSourceRuleTest {
         assertThat(OverrideSourceRule.refusal(
                         Relationship.of(new Urn(NodeKind.TEMPLATE, "t.md"), directive, RelationType.REQUIRES)))
                 .isEmpty();
+    }
+    // ---- validate mode agrees with the load (ADR-0042 decision 7) -------------------------------------------------
+
+    private static PackContents validated(String source) {
+        RawGraph shard = new RawGraph(
+                FILE,
+                RawGraph.Shape.SHARD,
+                List.of(),
+                List.of(new RawEdge(
+                        source, TARGET, "overrides", Optional.empty(), Optional.empty(), Optional.empty())));
+        return new PackContents(
+                new PackRoot("main", Optional.of(PackLevel.ORG), "loc"),
+                new FileRead.Read<>(
+                        "pack.yaml",
+                        new PackDescriptor(
+                                "01ARWG13C00000000000001ABC",
+                                "1.0.0",
+                                Optional.empty(),
+                                "main",
+                                Optional.of(PackLevel.ORG),
+                                Optional.empty())),
+                List.of(new FileRead.Read<>(FILE, shard)),
+                new FileRead.Read<>(
+                        "drg/fragment.yaml",
+                        new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of())),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    @Test
+    void validateModeReportsTheEdgeAsOneBlockingFindingAtItsGraphDocumentAndTheTwinPasses() {
+        List<PackFinding> findings = PackPolicy.judge(validated("template:t.md")).findings();
+
+        assertThat(findings).singleElement().satisfies(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
+            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.file()).isEqualTo(FILE);
+            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.detail()).startsWith("main/" + FILE + ": ").contains("template:t.md");
+        });
+        assertThat(PackPolicy.judge(validated("directive:E")).findings()).isEmpty();
+    }
+
+    @Test
+    void theFindingCodeAndTheViolationCodeAreOneToken() {
+        assertThat(PackPolicy.violationKind(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE))
+                .isEqualTo(OverrideSourceRule.CODE);
+        assertThat(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE.name().toLowerCase(Locale.ROOT))
+                .isEqualTo(OverrideSourceRule.CODE);
     }
 }
