@@ -56,7 +56,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -66,7 +66,8 @@
       "last_transition_at": "2026-11-12T09:45:45.399808+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Context served with appliesThrough (EffectiveContextArtifact, ### Breaking fragment), E17 recipe v3; new effective-context-scoping.feature (16-directive table: 15 listed, DIRECTIVE_003 absent; type scope, R2 leak control, required-elsewhere, procedure twin, suggestion pass); US5 AS3/AS4 and #484 rewritten with stated meaning change. Commits f1191c2b1 (red), 8cbbfe76a (feat). Green: activations, packs, deployable (incl. CharterContractSuite, HexagonalArchitectureTest, NullOmissionTest), contract checks, checkstyle/spotless."
+        "Context served with appliesThrough (EffectiveContextArtifact, ### Breaking fragment), E17 recipe v3; new effective-context-scoping.feature (16-directive table: 15 listed, DIRECTIVE_003 absent; type scope, R2 leak control, required-elsewhere, procedure twin, suggestion pass); US5 AS3/AS4 and #484 rewritten with stated meaning change. Commits f1191c2b1 (red), 8cbbfe76a (feat). Green: activations, packs, deployable (incl. CharterContractSuite, HexagonalArchitectureTest, NullOmissionTest), contract checks, checkstyle/spotless.",
+        "Review passed (reviewer-renata). Anti-pattern checklist: dead code PASS, synthetic fixture PASS, silent empty return PASS (itemLinks empty for unserved kinds, documented), FR coverage PASS (FR-008/009/010 by effective-context-scoping.feature + rewritten US5 AS3/AS4/#484/AS5), frozen surface PASS (no C-006 file), locked decision PASS, shared-file ownership PASS with coordination note: out-of-map edits to EffectiveArtifact.yaml (WP10 owns, one sentence as the prompt asks), _index.yaml and EffectiveReadServiceTest (WP07 owns) - WP07 and WP10 depend on WP02 and rebase onto it; production fragility PASS. Mutation: mapping every Pass to ACTION fails 14 scenarios (every project/mission_type row, AS3, AS4, #484, suggestion); EffectiveTag v3->v2 fails 3 EffectiveTagTest cases; both reverted. Green: :activations:test, CharterContractSuite (744), HexagonalArchitectureTest, packs WireTokenParityTest, contracts checks/lint/test, spotless, checkstyle, javadoc. Fragment is one ### Breaking covering item swap, wider listing, ETag v3. Offering read untouched. LOW findings (non-blocking): fragment does not say a v2 getActivation tag used as If-Match on an activation write now answers 412; research/gather context in the type-scope outline pins only a count and RT; EffectiveTagTest contextV2 literal not derived from the v2 recipe; awkward comment wrap ClosureViewSessionStepRefsTest:332-333. Multi-target step-enhancement gap: confirmed at resolution level (ClosureView.enhancements filters non-winner targets, so >=2 unheld action targets leave enhances empty and E6 never prunes), unreachable through any loaded pack: F4 EDGE_COUNT (StepEnhancementRules) refuses !=1 enhances edges at load/registration and R-REL refuses a second enhances edge on the relationship write. LOW, latent defence-in-depth, not filed."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
