@@ -29,7 +29,8 @@ Per artifact URN, the held steps and mission types with a held `scope` edge to i
 
 ## Prompt facts (part of `PackCompositionFacts`, packs)
 
-Per pack: `declaredSlots: Map<action URN, List<SlotId>>` (from the canonical render of each held step prompt) and, per
+Per pack: `declaredSlots: Map<action URN, List<DeclaredSlot(SlotId id, boolean holdsText)>>` (from the canonical
+render of each held step prompt; `holdsText` marks a legacy slot with text between its markers, OD-7) and, per
 held step enhancement, `fills: List<(SlotId, canonical fragment text)>`; filled where the facts are built (research R9).
 
 ## Refusal codes
