@@ -173,6 +173,9 @@
       "last_event_id": "01M77N69R956ZJWJ8K8ZMB3JJ3",
       "last_transition_at": "2026-11-12T10:34:55.626042+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: #439 option (b). satisfiedBy and overriddenBy list every overrider in force, sorted by winning-pack level then URN by code point (packs InForceResolution/InForceStates; activations and profiles-edge carry lists; contract arrays minItems 1; Breaking fragment 2026-11-12-every-overrider-named.md). Red commit 2a3b40aa, green f5a88cc9. overrideNotApplied is grouped one entry per locked target (OverriddenArtifact is shared). URN-only and UTF-16 mutations fail InForceResolutionOverridersTest. packs, activations, profiles-edge tests, CharterContractSuite, HexagonalArchitectureTest, contract checks, spotless and checkstyle all green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 31137,
