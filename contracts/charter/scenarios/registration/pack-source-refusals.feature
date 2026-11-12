@@ -45,6 +45,8 @@ Feature: A registration from a source answers each refusal it declares before a 
     And the response has no "Location" header
 
   Scenario: A source body over the request body limit is 413 before it is read, and one under it is accepted
+    The control is a small body, not one just under the limit as directives.feature's is: every field of a source
+    is checked against its own grammar, so no field can be padded to the limit and still be accepted.
     When I POST "/packs" as JSON with the body, its "path" padded to 1048576 bytes:
       """
       {"kind": "filesystem", "packId": "acme", "path": "packs/acme"}

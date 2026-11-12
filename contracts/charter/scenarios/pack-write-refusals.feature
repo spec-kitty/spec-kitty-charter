@@ -9,7 +9,8 @@ Feature: The per-artifact pack writes answer each refusal they declare
   - a write the mutability policy of an ancestor pack does not permit: 409 governance_policy_violation (ADR-0012);
   - a list sent as null: 422 validation_failed;
   - a stale If-Match: 412, and an If-Match that breaks its pattern: 400;
-  - a removal that leaves the closure of a stored activation unable to compose: 422 (pack-removal.feature);
+  - a removal from a pack in the broken closure of a stored activation: 422, and nothing is written
+    (pack-removal.feature);
   - a write that meets a busy registry: 503 with Retry-After.
 
   Background:
@@ -105,14 +106,30 @@ Feature: The per-artifact pack writes answer each refusal they declare
 
     Examples:
       | operation              | method | pack    | path                   | body                                                                                                                                  |
-      | registerPackDirective  | POST   | no-such | directive              | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                                       |
       | putPackDirective       | PUT    | no-such | directive/N            | {"schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                                                  |
-      | registerPackParadigm   | POST   | no-such | paradigm               | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                                  |
       | putPackParadigm        | PUT    | no-such | paradigm/n             | {"schemaVersion": "1.0", "name": "N", "summary": "New"}                                                                             |
-      | registerPackStyleguide | POST   | no-such | styleguide             | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]}          |
       | putPackStyleguide      | PUT    | no-such | styleguide/n           | {"schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]}                     |
-      | registerPackToolguide  | POST   | no-such | toolguide              | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}                   |
       | putPackToolguide       | PUT    | no-such | toolguide/n            | {"schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}                              |
+
+  Scenario Outline: <operation>, which takes no If-Match, to a pack no configured pack names is 404 pack_not_found, and to qa it is written
+    When I send <method> "/packs/<pack>/artifacts/<path>" as "application/json" with the body:
+      """
+      <body>
+      """
+    Then the response status is 404
+    And the problem code is "pack_not_found"
+    When I send <method> "/packs/qa/artifacts/<path>" as "application/json" with the body:
+      """
+      <body>
+      """
+    Then the response status is 201
+
+    Examples:
+      | operation              | method | pack    | path                   | body                                                                                                                                  |
+      | registerPackDirective  | POST   | no-such | directive              | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                                       |
+      | registerPackParadigm   | POST   | no-such | paradigm               | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                                  |
+      | registerPackStyleguide | POST   | no-such | styleguide             | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]}          |
+      | registerPackToolguide  | POST   | no-such | toolguide              | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}                   |
 
   Scenario: putPackRelationship to a pack no configured pack names is 404 pack_not_found, and to qa it is written
     When I PUT "/packs/no-such/relationships" with If-Match "*" and the body:
@@ -133,6 +150,7 @@ Feature: The per-artifact pack writes answer each refusal they declare
       {"from": "directive:D", "to": "directive:E", "type": "requires"}
       """
     Then the response status is 412
+    And the problem has no code
     When I GET "/packs/qa"
     And I remember the ETag
     And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
@@ -188,7 +206,7 @@ Feature: The per-artifact pack writes answer each refusal they declare
     When I DELETE "/packs/qa/artifacts/directive/E" with the header "If-Match": "*"
     Then the response status is 204
 
-  Scenario: deletePackArtifact that leaves the closure of a stored activation unable to compose is 422, and is accepted once the closure is whole
+  Scenario: deletePackArtifact from a pack in the broken closure of a stored activation is 422, and is accepted once the closure is whole
     The activation lists no pack, so it roots at every configured pack, and the org pack rival holds D as qa does: the
     closure does not compose (two packs of one level hold one id), and no removal from qa repairs it
     (pack-removal.feature, decision DM-01M6TQ67C9ZTNGZB9CY28JS54F). Once the activation is deleted the removal is
@@ -213,9 +231,15 @@ Feature: The per-artifact pack writes answer each refusal they declare
       intent: A directive of a pack that does not build on qa
       enforcement: required
       """
-    When I DELETE "/packs/qa/artifacts/directive/E" with the header "If-Match": "*"
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/qa/artifacts/directive/E" with the header "If-Match": "*"
     Then the response status is 422
     And the problem code is "pack_sibling_conflict"
+    And the field at "/packs/0/packId" is "rival"
+    And the field at "/packs/1/packId" is "qa"
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
     When I DELETE "/activations/a-1" with the header "If-Match": "*"
     Then the response status is 204
     When I DELETE "/packs/qa/artifacts/directive/E" with the header "If-Match": "*"
@@ -239,11 +263,30 @@ Feature: The per-artifact pack writes answer each refusal they declare
 
     Examples:
       | operation              | method | path                  | body                                                                                                                         |
-      | registerPackDirective  | POST   | artifacts/directive   | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                              |
-      | registerPackParadigm   | POST   | artifacts/paradigm    | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                         |
       | putPackParadigm        | PUT    | artifacts/paradigm/n  | {"schemaVersion": "1.0", "name": "N", "summary": "New"}                                                                    |
-      | registerPackStyleguide | POST   | artifacts/styleguide  | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]} |
       | putPackStyleguide      | PUT    | artifacts/styleguide/n | {"schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]}           |
-      | registerPackToolguide  | POST   | artifacts/toolguide   | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}          |
       | putPackToolguide       | PUT    | artifacts/toolguide/n | {"schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}                     |
       | putPackRelationship    | PUT    | relationships         | {"from": "directive:D", "to": "directive:E", "type": "requires"}                                                           |
+
+  Scenario Outline: <operation>, which takes no If-Match, that meets a busy registry is 503 with Retry-After, and succeeds once it is free
+    Given the pack registry is held by another write
+    When I send <method> "/packs/qa/<path>" as "application/json" with the body:
+      """
+      <body>
+      """
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When the held pack registry is released
+    And I send <method> "/packs/qa/<path>" as "application/json" with the body:
+      """
+      <body>
+      """
+    Then the response status is 201
+
+    Examples:
+      | operation              | method | path                  | body                                                                                                                         |
+      | registerPackDirective  | POST   | artifacts/directive   | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                              |
+      | registerPackParadigm   | POST   | artifacts/paradigm    | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                         |
+      | registerPackStyleguide | POST   | artifacts/styleguide  | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]} |
+      | registerPackToolguide  | POST   | artifacts/toolguide   | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}          |

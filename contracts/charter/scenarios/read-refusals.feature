@@ -38,16 +38,16 @@ Feature: The reads answer each refusal and each conditional answer they declare
     Then the response status is <status>
 
     Examples:
-      | operation                   | refused                                                                                 | judged                                                    | status |
-      | getPack                     | /packs/Main                                                                             | /packs/main                                               | 200    |
-      | listArtifactReferences      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/directive/D/references | /packs/main/artifacts/directive/D/references              | 200    |
-      | getPackMissionStep          | /packs/main/artifacts/mission_type/Main/steps/specify                                   | /packs/main/artifacts/mission_type/main/steps/specify     | 404    |
-      | getPackMissionSkeleton      | /packs/main/artifacts/mission_type/Main/skeletons/spec.md                               | /packs/main/artifacts/mission_type/main/skeletons/spec.md | 404    |
-      | getEffectiveMissionType     | /activations/a-1/artifacts/mission_type/Main                                            | /activations/a-1/artifacts/mission_type/main              | 404    |
-      | getEffectiveMissionStep     | /activations/a-1/artifacts/mission_type/Main/steps/specify                              | /activations/a-1/artifacts/mission_type/main/steps/specify | 404   |
-      | getEffectiveMissionSkeleton | /activations/a-1/artifacts/mission_type/Main/skeletons/spec.md                          | /activations/a-1/artifacts/mission_type/main/skeletons/spec.md | 404 |
-      | getActivationSkippedReport  | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/skipped | /activations/a-1/skipped                                  | 200    |
-      | getEffectiveGraph           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/graph   | /activations/a-1/graph                                    | 200    |
+      | operation                   | refused                                                                                                   | judged                                                         | status |
+      | getPack                     | /packs/Main                                                                                               | /packs/main                                                    | 200    |
+      | listArtifactReferences      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/directive/D/references | /packs/main/artifacts/directive/D/references                   | 200    |
+      | getPackMissionStep          | /packs/main/artifacts/mission_type/Main/steps/specify                                                     | /packs/main/artifacts/mission_type/main/steps/specify          | 404    |
+      | getPackMissionSkeleton      | /packs/main/artifacts/mission_type/Main/skeletons/spec.md                                                 | /packs/main/artifacts/mission_type/main/skeletons/spec.md      | 404    |
+      | getEffectiveMissionType     | /activations/a-1/artifacts/mission_type/Main                                                              | /activations/a-1/artifacts/mission_type/main                   | 404    |
+      | getEffectiveMissionStep     | /activations/a-1/artifacts/mission_type/Main/steps/specify                                                | /activations/a-1/artifacts/mission_type/main/steps/specify     | 404    |
+      | getEffectiveMissionSkeleton | /activations/a-1/artifacts/mission_type/Main/skeletons/spec.md                                            | /activations/a-1/artifacts/mission_type/main/skeletons/spec.md | 404    |
+      | getActivationSkippedReport  | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/skipped                    | /activations/a-1/skipped                                       | 200    |
+      | getEffectiveGraph           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/graph                      | /activations/a-1/graph                                         | 200    |
 
   Scenario Outline: <operation> whose If-None-Match matches its ETag answers 304, and sends the ETag again
     When I GET "<path>"
