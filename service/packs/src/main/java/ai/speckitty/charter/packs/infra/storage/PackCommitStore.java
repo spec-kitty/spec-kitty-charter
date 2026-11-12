@@ -593,7 +593,8 @@ public final class PackCommitStore implements WholePackWriteStore {
     static void moveOver(Path staging, Path reserved) throws IOException {
         try {
             Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException notAtomic) {
+        } catch (AtomicMoveNotSupportedException | java.nio.file.AccessDeniedException notAtomic) {
+            // Windows refuses MOVEFILE_REPLACE_EXISTING onto a directory with ACCESS_DENIED (probe for #510).
             Files.delete(reserved);
             Files.move(staging, reserved);
         }
