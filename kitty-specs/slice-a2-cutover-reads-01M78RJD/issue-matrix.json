@@ -157,7 +157,7 @@
       "wp": null
     },
     "#536": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Parent slice; ticked at closeout",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -165,8 +165,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#94": {
       "evidence_ref": "<auto-classified: no action required>",
