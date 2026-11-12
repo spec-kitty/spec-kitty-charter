@@ -2,7 +2,7 @@
 title: Pack ecosystem work breakdown
 description: "Ordered, sized work for epic #142 after ADR-0048 to ADR-0052: charter schema and service work, the open-packs split and curation, and the core follow-ups."
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -135,6 +135,7 @@ after ADR-0054.
 | C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue | #341 |
 | C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 | #342 |
 | C12 | Render activated anti-patterns in review prompts instead of the hardcoded checklist | 0052 | S | none; may precede the cutover | #343 |
+| C13 | Make the switch gate block core's switch: the routing proxy reads `switch-gate.yaml` from the vendored `charter-scenarios.tar.gz` and refuses to route an operation to the service unless the register holds it `ready`, naming it; an operation with no entry is not switched (fail closed). Recorded 2026-11-12 from #72; not filed (issue-tracker Rule 5) | 0059 D1 (amended 2026-11-12), 0021 D5 | S | the proxy (roadmap step 6), contract 1.0.0 | none |
 
 Two upstream items sit outside both repositories: an issue on spec-kitty-events for generic step events (the notes'
 E4), and agreement there on who owns the lane names (ADR-0050 decision 21).

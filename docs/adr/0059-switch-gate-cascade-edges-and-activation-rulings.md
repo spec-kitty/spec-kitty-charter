@@ -2,7 +2,7 @@
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
 description: "Operator rulings of 2026-11-04 to 2026-11-09: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-04'
 type: ADR
@@ -41,7 +41,9 @@ records them, and D2, D4 and D6 carry a note where it changes them. On 2026-11-0
 merge and two effective reads; the [amendment of 2026-11-08](#amendment-2026-11-08) records the two operator decisions
 that change D5 and ticks the follow-ups PR B closes. On 2026-11-09 its PR C built the effective graph and action context
 and the relaxed write rule; the [amendment R6](#amendment-2026-11-09-r6) records the write rule and the read rules of
-research R11 that amend D2 and D3.
+research R11 that amend D2 and D3. On 2026-11-12 the switch-gate mission (`switch-gate-coverage-01M77A7P`) made D1's
+gate an explicit, checked register; the [amendment of 2026-11-12](#amendment-2026-11-12-the-switch-gate-register)
+records the rule it checks.
 
 This record answers [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) open question 1 and
 [ADR-0020](/adr/0020-offering-and-activations/) open questions 4 to 7. It also settles two points that
@@ -93,6 +95,10 @@ pin the service to that model.
 
 **What follows.** #72 (conformance as a blocking gate) and #9 (the corpus harness) are re-scoped or closed, and #14
 loses its gating role. Those changes are follow-ups, not part of this record.
+
+*Amended 2026-11-12:* what passes is stated per declared answer, and the verdict per operation is the register
+`contracts/charter/scenarios/switch-gate.yaml`, checked by the contract suite; see the
+[amendment](#amendment-2026-11-12-the-switch-gate-register).
 
 ### D2. The cascade follows five relations and `enhances` (ruled)
 
@@ -448,6 +454,33 @@ registration and is not the place.
     (decision `01M7037V93Y077H8M4W9V8Y6B3`), so the cascade of D2.1 follows only held steps.
 - **Floor of activatable kinds** (D16 of the PR C plan): the policy and preset schemas cannot name a step, so the
   required floor holds activatable kinds only and `requiredNotInForce` never names a step.
+
+## Amendment 2026-11-12: the switch-gate register
+
+**D1 made checkable, by the switch-gate mission (`switch-gate-coverage-01M77A7P`; issues #9 and #72).** D1 asks for at
+least one behavioral `@contract` scenario and passing contract tests. Issue #9 asked for positive, refusal and
+provenance cases where the operation has them. The mission makes both one rule the build checks:
+
+- **Ready means every declared answer is asserted on the operation.** An operation is ready when every status its
+  responses declare by number (not `default`) is asserted on that operation by a `@contract` scenario, and every
+  exchange of those scenarios passes the contract checks `./gradlew verifyAll` runs on it: the schema, the links (R-20)
+  and the fingerprint rule. A success answer counts from any exchange; any other answer counts only where a step asserts
+  its status, so a setup request's incidental refusal covers nothing. There are no shared statuses: the worktree
+  guard's 401 and 403 are asserted on every operation (`every-operation.feature`). Provenance is the fingerprint rule,
+  which the suite checks on every `GET` (ADR-0018 D11). This is stricter than D1's "at least one behavioral scenario",
+  and it includes D1's bar: a ready operation has its success answer exercised.
+- **The register is the published verdict.** `contracts/charter/scenarios/switch-gate.yaml` holds one entry per
+  operation, `ready` or `held` with a reason. The suite fails when an operation has no entry or an entry names none
+  (fail closed), when a ready operation has an answer no scenario asserts, when a held one would pass, and when a
+  reserved operation is ready. The register ships in `charter-scenarios.tar.gz` with the contract release; a change to
+  its keys, or an operation moved from ready to held, is a `### Breaking` change (ADR-0022).
+- **Ready is necessary, not sufficient.** The first switch still needs contract 1.0.0 (ADR-0022 D6).
+- **What is held, and why.** `deleteActivation` and `getPackRegistration` declare a `500` that only a failure of the
+  activation storage or of the registration job table raises, which the scenarios hold in memory and cannot fail. They
+  stay held until a seam can fail that storage; the other 44 operations are ready.
+- **Core's half.** Refusing a switch the register does not hold ready is core's proxy (ADR-0021 D5), built at
+  incorporation; it is recorded in the [work breakdown](/plans/pack-ecosystem-work-breakdown/), not filed here
+  (issue-tracker Rule 5).
 
 ## Consequences
 

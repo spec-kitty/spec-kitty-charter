@@ -193,6 +193,12 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Then following "via" from every guidance entry of "<path>" reaches the action in exactly "hops" edges`
   — the last response must be the answer to that path; walks the `via` chain of every entry back to
   the action node, through entries of the answer only, in exactly the entry's `hops` steps.
+- `When I send <method> "<path>" as "<media type>" with the body:` and `When I send <method> "<path>" as "<media type>"
+  with If-Match "<value>" and the body:` — any method, with that `Content-Type` (and that `If-Match`); for the 415 of
+  a body that is not `application/json`, and for a write whose control sends the same body as JSON.
+- `When I POST "<path>" as JSON with the body, its "<field>" padded to <n> bytes:` — the POST twin of the padded PUT:
+  the top-level string field is padded with `a` to exactly `<n>` bytes of UTF-8; for the 413 of a body over the
+  request body limit.
 
 Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends,
 for every request it sent, not only the last: the response's content type must be one the operation declares for the status, or for its
@@ -221,9 +227,26 @@ Every 2xx answer with a JSON body is also checked for its links (R-20), statical
 - **Relations.** Every key of every `_links` is a relation of the table in
   `docs/development/hypermedia-hateoas.md`, which the build copies onto the test classpath.
 
-After the last scenario, the suite fails when a success answer the contract declares, a 2xx status of an
-operation, was exercised by no scenario, and lists the gaps: a new operation or success status needs a scenario
-that calls it. A run that selects only some scenarios reports the others' operations as gaps.
+## The switch gate
+
+`switch-gate.yaml` says, per operation of `../openapi.yaml`, whether core may switch to it (ADR-0059 D1, as amended
+on 2026-11-12): `{switch: ready}`, or `{switch: held, reason: <why>}`. The suite records every exchange of every
+scenario by the operation that answers it, and after the last scenario (`SwitchGate`) it fails:
+
+- when a success answer the contract declares, a 2xx status of a built operation, was exercised by no scenario (R-20),
+  whatever the register says: a new operation or success status needs a scenario that calls it;
+- when an operation of the contract has no entry, or an entry names no operation: a new operation gets an entry in
+  the change that adds it;
+- when a `ready` operation has a status its responses declare by number (not `default`) that no scenario asserts on
+  that operation; a success answer counts from any exchange, and any other answer only where `Then the response
+  status is <n>` asserts it, so a setup request's incidental refusal covers nothing;
+- when a `held` operation would pass as ready, and when a reserved operation (`x-reserved`, a 501 pin) is ready.
+
+Each run writes the scenarios that cover each answer of each operation to
+`service/deployable/build/reports/switch-gate/switch-gate.md`. A run that selects only some scenarios reports the
+others' answers as gaps. Ready is necessary for a switch, not sufficient: the first switched operation needs contract
+1.0.0 (ADR-0022 D6). The register ships in `charter-scenarios.tar.gz`, so a change to its keys, or an operation moved
+from ready to held, is a breaking change of the contract.
 
 ## Features
 
@@ -256,6 +279,12 @@ that calls it. A run that selects only some scenarios reports the others' operat
   path is a `400` without a code and one of 64 is judged as any other (`404 pack_not_found`); an artifact id of 129
   is a `400` and one of 128 is its kind's not-found; a relationship whose `to` is longer than 255 characters is
   a `400` and nothing is written, and so is a relationship `DELETE` naming one.
+- `every-operation.feature`, `unexpected-failure.feature`, `read-refusals.feature`, `activation-write-refusals.feature`,
+  `pack-write-refusals.feature` and `registration/pack-source-refusals.feature`: the answers each operation declares,
+  asserted on that operation for the switch gate, each refusal with its control. The worktree guard's 401 and 403 on
+  every operation; `500 internal_error` on every operation that reads the packs, the failure planted after the state
+  the operation needs; and the 304, 400, 404, 409, 412, 413, 415, 422, 428 and 503 answers the feature files above
+  leave out for one operation or another. A new operation gets a row in `every-operation.feature`.
 - `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
   register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
   `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`
@@ -382,8 +411,8 @@ vocabulary above.
   registration (`registration/whole-pack-registration.feature` and `pack-removal.feature`) are the exception: they carry
   `@contract` on the feature, as `activation-ruling-changes.feature` does, and tag each scenario `@WIP` until the work
   package that serves it binds its steps and removes the tag (`pack-removal.feature` is bound).
-- `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
-  it. It is still asserted exactly, so a change to it is deliberate, and it matches an
+- `@provisional`: the behavior is not settled yet; a ruling on the design decides it (ADR-0055 D3; the
+  conformance corpus over core's CLI is not built, ADR-0059 D1). It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.
 - `@reserved`: the scenario pins something the contract declares before it is built. It must also carry
   `@contract`. It takes one of two forms:

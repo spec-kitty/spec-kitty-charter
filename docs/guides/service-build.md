@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -78,7 +78,8 @@ How to build the charter service and run every check CI runs.
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
-| `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
+| `:deployable:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
+| `:deployable:test` (switch gate) | After the last scenario, the switch gate ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1, amended 2026-11-12) holds `contracts/charter/scenarios/switch-gate.yaml` to the run: it fails when an operation has no entry, when a `ready` operation has a declared status no scenario asserts on it, when a `held` one would pass, or when a success answer is exercised by no scenario (R-20). The scenarios of each answer are written to `service/deployable/build/reports/switch-gate/switch-gate.md` |
 | `:packs:test`, `:deployable:test` (example packs) | The corpus tests over the charter-owned example packs ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)): every artifact file reads back equal after a write, and the coverage tests (`ExamplePackCoverageTest`, `ExampleCoverageTest`) fail when the examples stop exercising a kind, field or edge the model has |
 | `:packs:wholePackRoundTrip` | The whole-pack round-trip gate over the example packs (not part of `check`; CI requires it, see [below](#the-whole-pack-round-trip-gate)) |
 | `:packs:driftTest` | Not required and not run by `check` (which only compiles and lints it): the nightly [open-packs drift watch](#the-open-packs-drift-watch) |
