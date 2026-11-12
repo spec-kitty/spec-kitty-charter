@@ -472,7 +472,7 @@ provenance cases where the operation has them. The mission makes both one rule t
 - **The register is the published verdict.** `contracts/charter/scenarios/switch-gate.yaml` holds one entry per
   operation, `ready` or `held` with the declared `statuses` it is held for and a reason. The suite fails when an
   operation has no entry or an entry names none (fail closed), when a ready operation has an answer no scenario
-  asserts, when a held one would pass or its unasserted answers are not exactly the statuses it names (a new gap
+  asserts, when a held one would pass or the answers no scenario asserts are not exactly the statuses it names (a new gap
   cannot hide behind an old entry), and when a reserved operation is ready. The register ships in `charter-scenarios.tar.gz` with the contract release; a change to
   its keys, or an operation moved from ready to held, is a `### Breaking` change (ADR-0022).
 - **Ready is necessary, not sufficient.** The first switch still needs contract 1.0.0 (ADR-0022 D6).
