@@ -31,9 +31,11 @@ class ArtifactsEdgeDeployableWiringTest {
 
     @Test
     void eachOfTheFourArtifactsEdgeRingsContributesItsConfiguration() {
-        assertThat(context.getBeansOfType(ArtifactsApplicationConfiguration.class)).hasSize(1);
+        assertThat(context.getBeansOfType(ArtifactsApplicationConfiguration.class))
+                .hasSize(1);
         assertThat(context.getBeansOfType(ArtifactsApiConfiguration.class)).hasSize(1);
         assertThat(context.getBeansOfType(ArtifactsPacksConfiguration.class)).hasSize(1);
-        assertThat(context.getBeansOfType(ArtifactsActivationsConfiguration.class)).hasSize(1);
+        assertThat(context.getBeansOfType(ArtifactsActivationsConfiguration.class))
+                .hasSize(1);
     }
 }

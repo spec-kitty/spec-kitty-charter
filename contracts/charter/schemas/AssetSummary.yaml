@@ -1,0 +1,40 @@
+title: AssetSummary
+description: >-
+  One asset of a Charter Pack as listPackAssets lists it: its id, its media type as the sidecar writes it, whether it
+  declares how it runs, and a self link to the asset's own read (getPackAsset), which answers the whole descriptor and
+  links its payload.
+type: object
+additionalProperties: false
+required:
+  - id
+  - mime
+  - executable
+  - _links
+properties:
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The asset's identity within its pack, as Asset.id.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.id
+  mime:
+    type: string
+    minLength: 1
+    description: The media type exactly as the sidecar writes it, as Asset.mime.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.mime
+  executable:
+    type: boolean
+    description: Whether the asset declares how it runs (its executable block); the asset's own read answers the block.
+    x-derived:
+      rule: True exactly when the sidecar declares an executable block.
+      inputs:
+        - the asset's sidecar, assets/<path>.asset.yaml
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+  symbol: Asset

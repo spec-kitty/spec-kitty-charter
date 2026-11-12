@@ -31,6 +31,9 @@ Feature: The worktree guard answers in front of every operation
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -89,6 +92,9 @@ Feature: The worktree guard answers in front of every operation
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
