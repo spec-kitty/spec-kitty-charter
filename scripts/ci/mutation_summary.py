@@ -202,7 +202,7 @@ def render(root: Path, listed: list[str] | None, unmutated: list[str] | None = N
         "Timed out: mutants PIT counts as detected because a test ran past its time, often noise from a loaded runner. "
         "Margin: the score minus the floor in points, and the detected mutants the group can lose and still pass "
         "(negative: how many it must gain; #389). "
-        "Floors and their raise rule: #239 and ADR-0062. The HTML reports are in the `mutation-report` artifact.",
+        "Floors and their raise rule: #239 and ADR-0062. The HTML reports are in the `mutation-report-<shard>` artifacts.",
         "",
         *HEADER,
         *rows,
