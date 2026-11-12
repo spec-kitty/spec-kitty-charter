@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -127,14 +128,23 @@ public class CharterSteps {
     /**
      * Every success answer with a JSON body is linked as {@link LinkChecks} requires: its {@code self}, every link
      * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20). Every success
-     * answer, JSON or not, is recorded for the operation-coverage check that runs after the last scenario
-     * ({@link OperationCoverage}).
+     * answer is linked; every answer, success or not, JSON or not, is recorded with its scenario for the switch gate
+     * that runs after the last scenario ({@link SwitchGate}, ADR-0059 D1).
+     *
+     * @param scenario the scenario that made the exchanges
      */
     @After
-    public void everySuccessAnswerIsLinked() throws Exception {
-        for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+    public void everySuccessAnswerIsLinked(Scenario scenario) throws Exception {
+        List<ScenarioHttp.Exchange> exchanges = http.exchanges();
+        for (int index = 0; index < exchanges.size(); index++) {
+            ScenarioHttp.Exchange exchange = exchanges.get(index);
             MockHttpServletResponse response = exchange.result().getResponse();
-            OperationCoverage.record(CONTRACT, exchange.method(), exchange.path(), response.getStatus());
+            SwitchGate.record(
+                    CONTRACT,
+                    new SwitchGate.Exchange(exchange.method(), exchange.path(), response.getStatus()),
+                    http.statusAsserted(index),
+                    scenario.getUri().toString(),
+                    scenario.getLine());
             JsonNode body = json(response.getContentAsString());
             if (!isSuccess(response) || body == null || !isJson(response.getContentType())) {
                 continue;
@@ -260,6 +270,7 @@ public class CharterSteps {
     @Then("the response status is {int}")
     public void status(int status) throws Exception {
         assertThat(http.response().getStatus()).as(http.body()).isEqualTo(status);
+        http.statusAsserted();
     }
 
     @Then("the response body is:")
