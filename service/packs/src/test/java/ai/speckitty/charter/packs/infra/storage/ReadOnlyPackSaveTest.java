@@ -68,6 +68,10 @@ class ReadOnlyPackSaveTest {
     }
 
     static Stream<Arguments> everyWrite() {
+        return Stream.of(typedSaves(), genericSavesAndFileWrites()).flatMap(writes -> writes);
+    }
+
+    private static Stream<Arguments> typedSaves() {
         return Stream.of(
                 write("save(Tactic)", service -> service.save(tacticOf(service))),
                 write(
@@ -120,7 +124,11 @@ class ReadOnlyPackSaveTest {
                                 .purpose("Implements.")
                                 .specialization(new Specialization(
                                         "Focus", Optional.empty(), Optional.empty(), Optional.empty()))
-                                .build())),
+                                .build())));
+    }
+
+    private static Stream<Arguments> genericSavesAndFileWrites() {
+        return Stream.of(
                 write("saveArtifact", service -> service.saveArtifact(PACK, tacticOf(service))),
                 write(
                         "saveArtifact(Template)",

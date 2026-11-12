@@ -135,6 +135,15 @@ class LayerMergeTest {
 
     static Stream<Row> rows() {
         return Stream.of(
+                        levelAndSiblingRows(),
+                        mutabilityRows(),
+                        stepContestAndLanguageOrderRows(),
+                        presetAndMustHaveRows())
+                .flatMap(rows -> rows);
+    }
+
+    private static Stream<Row> levelAndSiblingRows() {
+        return Stream.of(
                 new Row("C17", "the level that applies wins, built-in then org then project", LayerMergeTest::c17),
                 new Row("C17", "an id held once is its own winner, and replaces nothing", LayerMergeTest::c17Single),
                 new Row("C18", "the winner replaces the others whole, per artifact", LayerMergeTest::c18),
@@ -148,7 +157,11 @@ class LayerMergeTest {
                         "C15",
                         "a settled sibling loser is no layer override, the level winner is",
                         LayerMergeTest::c15BelowALayerWinner),
-                new Row("C15", "an unsettled sibling contest still refuses in the compose", LayerMergeTest::c15Open),
+                new Row("C15", "an unsettled sibling contest still refuses in the compose", LayerMergeTest::c15Open));
+    }
+
+    private static Stream<Row> mutabilityRows() {
+        return Stream.of(
                 new Row(
                         "C21",
                         "a locked artifact refuses its override and names both packs",
@@ -163,7 +176,11 @@ class LayerMergeTest {
                         "C21",
                         "a third pack that raised the level refuses the override",
                         LayerMergeTest::c21RaisedByAnotherPack),
-                new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22),
+                new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22));
+    }
+
+    private static Stream<Row> stepContestAndLanguageOrderRows() {
+        return Stream.of(
                 new Row(
                         "C15",
                         "an unsettled step contest the compose lets through refuses the merge, never last loaded wins",
@@ -184,7 +201,11 @@ class LayerMergeTest {
                         "C15",
                         "an action that names no step (action:M/) shares no contest with its mission type",
                         LayerMergeTest::c15ActionWithoutAStepNameIsNoStep),
-                new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder),
+                new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder));
+    }
+
+    private static Stream<Row> presetAndMustHaveRows() {
+        return Stream.of(
                 new Row(
                         "C29",
                         "the copy of a preset id held last in merge order is the one applied",

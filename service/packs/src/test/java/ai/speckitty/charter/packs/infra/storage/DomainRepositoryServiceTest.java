@@ -201,8 +201,26 @@ class DomainRepositoryServiceTest {
                 target.resolve("only.tactic.yaml"),
                 "id: only-tactic\nschema_version: '1.0'\nname: Only\nsteps:\n  - title: s\n");
         List<String> tacticFilesOpened = new ArrayList<>();
+        SerializationStrategy counting = yamlRecordingTheTacticFilesItReads(tacticFilesOpened);
+        DomainRepositoryService counted = new DomainRepositoryService(
+                () -> List.of(
+                        new PackLocation("pack-a", PackLevel.ORG, decoy),
+                        new PackLocation("pack-descriptor-only", PackLevel.PROJECT, target)),
+                counting);
+        PackIdentifier targetId = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0B");
+
+        assertThat(counted.get(targetId).name()).isEqualTo("roundtrip-descriptor-only");
+        assertThat(tacticFilesOpened)
+                .as("descriptor resolution opens no tactic file")
+                .isEmpty();
+
+        assertThat(counted.load(targetId, new TacticIdentifier("only-tactic"))).isPresent();
+        assertThat(tacticFilesOpened).containsExactly("only.tactic.yaml");
+    }
+
+    private static SerializationStrategy yamlRecordingTheTacticFilesItReads(List<String> tacticFilesOpened) {
         SerializationStrategy yaml = new YamlSerializationStrategy();
-        SerializationStrategy counting = new SerializationStrategy() {
+        return new SerializationStrategy() {
             @Override
             public <D> String write(KindBinding<D, ?> kind, D dso) {
                 return yaml.write(kind, dso);
@@ -256,20 +274,6 @@ class DomainRepositoryServiceTest {
                 return yaml.readManifest(text, file);
             }
         };
-        DomainRepositoryService counted = new DomainRepositoryService(
-                () -> List.of(
-                        new PackLocation("pack-a", PackLevel.ORG, decoy),
-                        new PackLocation("pack-descriptor-only", PackLevel.PROJECT, target)),
-                counting);
-        PackIdentifier targetId = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0B");
-
-        assertThat(counted.get(targetId).name()).isEqualTo("roundtrip-descriptor-only");
-        assertThat(tacticFilesOpened)
-                .as("descriptor resolution opens no tactic file")
-                .isEmpty();
-
-        assertThat(counted.load(targetId, new TacticIdentifier("only-tactic"))).isPresent();
-        assertThat(tacticFilesOpened).containsExactly("only.tactic.yaml");
     }
 
     /** The storage-level {@code tacticsOf} override returns the same readable tactics as the aggregate, no more. */

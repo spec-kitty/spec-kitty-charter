@@ -135,6 +135,41 @@ class CompanionDigestTest {
         Set<ArtifactKind> withoutSkills = withoutSkills();
 
         List<String> digested = PackFileSet.digested(builtIn);
+        int payloadStart = assertThePayloadsRunThenOnlyThePackLevelTail(builtIn, digested);
+
+        List<String> beforePayloads = digested.subList(0, payloadStart);
+        List<String> markdown =
+                beforePayloads.stream().filter(file -> !file.endsWith(".yaml")).toList();
+        assertThat(markdown)
+                .as("every non-YAML file before the payloads is a toolguide guide, a mission step prompt or guidelines,"
+                        + " or a step enhancement's prompt fragment")
+                .isNotEmpty()
+                .allSatisfy(file -> assertThat(file)
+                        .matches("toolguides/.*\\.guide\\.md|missions/[^/]+/steps/[^/]+\\.(prompt|guidelines)\\.md"
+                                + "|missions/[^/]+/enhancements/[^/]+\\.prompt-fragment\\.md"));
+        assertEachFragmentFollowsItsEnhancement(markdown, beforePayloads);
+        assertEachGuideFollowsTheToolguideThatNamesIt(builtIn, markdown, beforePayloads);
+        assertTheStepFilesFollowTheirMissionTypeInDeclaredOrder(builtIn, markdown, beforePayloads);
+
+        // The pack document is README.md (#451) and is digested in the tail, once, between the presets and the
+        // manifest;
+        // the retired pack.md and PROVENANCE.md are not part of a canonical pack.
+        assertThat(digested).containsOnlyOnce("README.md").doesNotContain("pack.md", "PROVENANCE.md");
+        assertThat(digested.indexOf("README.md"))
+                .as("the pack document follows the presets and precedes the manifest")
+                .isGreaterThan(digested.lastIndexOf(digested.stream()
+                        .filter(f -> f.startsWith("presets/"))
+                        .reduce((a, b) -> b)
+                        .orElseThrow()))
+                .isLessThan(digested.indexOf(PackFileSet.MANIFEST));
+        assertThat(digested)
+                .as("binding the skill kind adds nothing to a pack that has no skill")
+                .containsExactlyElementsOf(PackFileSet.digested(builtIn, withoutSkills));
+    }
+
+    /** Asserts the payloads run in one, followed only by the pack-level tail, and answers where the run starts. */
+    private static int assertThePayloadsRunThenOnlyThePackLevelTail(Path builtIn, List<String> digested)
+            throws IOException {
         List<String> assetFiles = PackFileSet.assetFiles(builtIn);
         List<String> payloads = new ArrayList<>(assetFiles);
         payloads.addAll(PackFileSet.templates(builtIn));
@@ -157,17 +192,10 @@ class CompanionDigestTest {
                 .toList();
         assertThat(presetsOnDisk).as("presets in the built-in example").isNotEmpty();
         assertThat(tail).as("every preset on disk is in the tail").containsAll(presetsOnDisk);
+        return payloadStart;
+    }
 
-        List<String> beforePayloads = digested.subList(0, payloadStart);
-        List<String> markdown =
-                beforePayloads.stream().filter(file -> !file.endsWith(".yaml")).toList();
-        assertThat(markdown)
-                .as("every non-YAML file before the payloads is a toolguide guide, a mission step prompt or guidelines,"
-                        + " or a step enhancement's prompt fragment")
-                .isNotEmpty()
-                .allSatisfy(file -> assertThat(file)
-                        .matches("toolguides/.*\\.guide\\.md|missions/[^/]+/steps/[^/]+\\.(prompt|guidelines)\\.md"
-                                + "|missions/[^/]+/enhancements/[^/]+\\.prompt-fragment\\.md"));
+    private static void assertEachFragmentFollowsItsEnhancement(List<String> markdown, List<String> beforePayloads) {
         List<String> fragments = markdown.stream()
                 .filter(file -> file.endsWith(".prompt-fragment.md"))
                 .toList();
@@ -181,7 +209,10 @@ class CompanionDigestTest {
                             .as("the enhancement before %s", fragment)
                             .isEqualTo(enhancement);
                 });
+    }
 
+    private static void assertEachGuideFollowsTheToolguideThatNamesIt(
+            Path builtIn, List<String> markdown, List<String> beforePayloads) {
         List<String> guides =
                 markdown.stream().filter(file -> file.endsWith(".guide.md")).toList();
         assertThat(guides)
@@ -199,7 +230,10 @@ class CompanionDigestTest {
                             .isEqualTo(toolguide.substring(0, toolguide.lastIndexOf('/') + 1)
                                     + declared.get("guide_path"));
                 });
+    }
 
+    private static void assertTheStepFilesFollowTheirMissionTypeInDeclaredOrder(
+            Path builtIn, List<String> markdown, List<String> beforePayloads) throws IOException {
         List<String> stepFiles = markdown.stream()
                 .filter(file -> file.endsWith(".prompt.md") || file.endsWith(".guidelines.md"))
                 .toList();
@@ -212,20 +246,7 @@ class CompanionDigestTest {
             // The step prompts and guidelines follow their mission-type file, in the order the file declares its steps.
             String missionDir = type.substring(0, type.lastIndexOf('/') + 1);
             Map<?, ?> declared = yaml(builtIn, type);
-            List<String> expected = new ArrayList<>();
-            for (String key : List.of("steps", "on_demand_steps")) {
-                if (declared.get(key) instanceof List<?> steps) {
-                    for (Object step : steps) {
-                        if (step instanceof Map<?, ?> fields) {
-                            for (String path : List.of("prompt_path", "guidelines_path")) {
-                                if (fields.get(path) != null) {
-                                    expected.add(missionDir + fields.get(path));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            List<String> expected = declaredStepFilesOf(missionDir, declared);
             int at = beforePayloads.indexOf(type);
             assertThat(beforePayloads.subList(at + 1, at + 1 + expected.size()))
                     .as("the step prompts and guidelines after %s, in its declared step order", type)
@@ -237,21 +258,31 @@ class CompanionDigestTest {
                         "mission step prompts and guidelines in the built-in example: exactly the declared ones, none stray")
                 .isNotEmpty()
                 .containsExactlyInAnyOrderElementsOf(declaredStepFiles);
+    }
 
-        // The pack document is README.md (#451) and is digested in the tail, once, between the presets and the
-        // manifest;
-        // the retired pack.md and PROVENANCE.md are not part of a canonical pack.
-        assertThat(digested).containsOnlyOnce("README.md").doesNotContain("pack.md", "PROVENANCE.md");
-        assertThat(digested.indexOf("README.md"))
-                .as("the pack document follows the presets and precedes the manifest")
-                .isGreaterThan(digested.lastIndexOf(digested.stream()
-                        .filter(f -> f.startsWith("presets/"))
-                        .reduce((a, b) -> b)
-                        .orElseThrow()))
-                .isLessThan(digested.indexOf(PackFileSet.MANIFEST));
-        assertThat(digested)
-                .as("binding the skill kind adds nothing to a pack that has no skill")
-                .containsExactlyElementsOf(PackFileSet.digested(builtIn, withoutSkills));
+    /** The prompt and guidelines files a mission type declares, step by step, steps before on-demand steps. */
+    private static List<String> declaredStepFilesOf(String missionDir, Map<?, ?> declared) {
+        List<String> expected = new ArrayList<>();
+        for (String key : List.of("steps", "on_demand_steps")) {
+            if (declared.get(key) instanceof List<?> steps) {
+                for (Object step : steps) {
+                    expected.addAll(promptAndGuidelinesOf(missionDir, step));
+                }
+            }
+        }
+        return expected;
+    }
+
+    private static List<String> promptAndGuidelinesOf(String missionDir, Object step) {
+        List<String> files = new ArrayList<>();
+        if (step instanceof Map<?, ?> fields) {
+            for (String path : List.of("prompt_path", "guidelines_path")) {
+                if (fields.get(path) != null) {
+                    files.add(missionDir + fields.get(path));
+                }
+            }
+        }
+        return files;
     }
 
     @Test
