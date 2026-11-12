@@ -6,7 +6,7 @@ kind: Glossary
 glossary_context: "Product lines"
 doc_status: active
 generated:
-  by: "doc-kitty-glossary/0.5.0"
+  by: "doc-kitty-glossary/0.7.0"
   at: "2026-10-27T09:25:39Z"
   content_hash: "sha256:3702350c67cc"
 ---

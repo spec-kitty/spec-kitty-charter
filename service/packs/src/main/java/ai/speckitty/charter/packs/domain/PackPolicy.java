@@ -87,15 +87,8 @@ public final class PackPolicy {
      * The key order of each document kind is the order of the bundled schema's `properties`
      * (contracts/packs/schemas/<kind>.schema.json): graph-shard, org-fragment and pack-descriptor.
      */
-    private static final List<String> DESCRIPTOR_KEYS = List.of(
-            "pack_id",
-            "pack_version",
-            "parent_pack",
-            "name",
-            "pack_level",
-            "requires_core",
-            "active_charter",
-            "pack_drg");
+    private static final List<String> DESCRIPTOR_KEYS =
+            List.of("pack_id", "pack_version", "parent_pack", "name", "pack_level", "requires_core", "pack_drg");
     private static final List<String> SHARD_ROOT_KEYS =
             List.of("schema_version", "generated_at", "generated_by", NODES, EDGES);
     private static final List<String> FRAGMENT_ROOT_KEYS = List.of(NODES, EDGES);
@@ -898,9 +891,8 @@ public final class PackPolicy {
      * <p>A file a store rule refuses though it parses reads {@code <origin> <refusal>}, a retired file (#194)
      * {@code <origin> is retired: <reason>}. The code of a parse failure follows the file
      * kind, like every other finding (R17): {@code pack_unreadable} for {@code pack.yaml}, {@code drg_schema_error} for
-     * a shard or the fragment, {@code org_charter_schema_error} for the org charter and {@code artifact_schema_error}
-     * for any other file. An {@link FileRead.Unreadable} holds exactly one of a parse failure and schema violations, so
-     * every unreadable file has a finding.
+     * a shard or the fragment and {@code artifact_schema_error} for any other file. An {@link FileRead.Unreadable} holds
+     * exactly one of a parse failure and schema violations, so every unreadable file has a finding.
      *
      * @param packName the pack's configured name
      * @param unreadable the file that could not be read
@@ -925,8 +917,8 @@ public final class PackPolicy {
      *
      * <p>The text is chosen by the violation's keyword and the class of its place (the root, a node or edge item, a
      * field of one, or elsewhere), never by a validator's message. The code is chosen by the file kind:
-     * {@code pack_unreadable} for {@code pack.yaml}, {@code drg_schema_error} for a shard or the fragment,
-     * {@code org_charter_schema_error} for the org charter and {@code artifact_schema_error} for any other file.
+     * {@code pack_unreadable} for {@code pack.yaml}, {@code drg_schema_error} for a shard or the fragment and
+     * {@code artifact_schema_error} for any other file.
      *
      * <p>Contract of the facts, beside the pointer, {@code property} and {@code value}. Facts networknt produces are
      * read from their positional argument only: {@code "1"} is the expected JSON type of a {@code type} violation
@@ -1011,9 +1003,7 @@ public final class PackPolicy {
         if (file.endsWith(".graph.yaml") || isFragment(file)) {
             return PackFindingCode.DRG_SCHEMA_ERROR;
         }
-        return file.endsWith("org-charter.yaml")
-                ? PackFindingCode.ORG_CHARTER_SCHEMA_ERROR
-                : PackFindingCode.ARTIFACT_SCHEMA_ERROR;
+        return PackFindingCode.ARTIFACT_SCHEMA_ERROR;
     }
 
     /** A step enhancement's companion: a fault of its own read (a codec refusal, a structure breach) is its code. */

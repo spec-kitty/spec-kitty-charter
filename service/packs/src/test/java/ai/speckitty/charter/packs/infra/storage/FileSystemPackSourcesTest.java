@@ -261,7 +261,8 @@ class FileSystemPackSourcesTest {
      * 90de8f9 and on this branch until 2026-11-03, when the {@code pack_id} of pack-a and pack-descriptor-only became
      * valid ULIDs (FR-003); their two fingerprints and the combined one were re-captured from the unchanged digest
      * code, so the pin still guards the digest scheme. pack-a's fingerprint (and so the combined one) was re-captured on
-     * 2026-11-05 from the unchanged digest code after its alpha tactic lost its {@code references} (ADR-0064).
+     * 2026-11-05 from the unchanged digest code after its alpha tactic lost its {@code references} (ADR-0064), and again
+     * on 2026-11-11 after its {@code pack.yaml} lost {@code active_charter} (#431).
      */
     private static final List<PinnedPack> PINNED = List.of(
             new PinnedPack(
@@ -272,7 +273,7 @@ class FileSystemPackSourcesTest {
                             "alpha-tactic.tactic.yaml",
                             "beta-tactic.tactic.yaml",
                             "broken-tactic.tactic.yaml"),
-                    "sha256:843d6e5be4c925704f212a59c1b29ac01d454eb0c985bfb0d627527cd2c8897e"),
+                    "sha256:cc7368d14127760b10e8af87c2a897602a3568f4e285ae52afb80cd070fe4d2d"),
             new PinnedPack(
                     "pack-descriptor-only",
                     "/roundtrip-fixtures/pack-descriptor-only",
@@ -285,7 +286,7 @@ class FileSystemPackSourcesTest {
                     "sha256:731c25459783e328fb650111f46747f0b9bdc84f80f96388a9e6cfff682ffa44"));
 
     /** The fingerprint of the three {@link #PINNED} locations together, in that order (captured as above). */
-    private static final String PINNED_ALL = "sha256:b2500f2a3d6a272d694047ae88ca5c3af5cf1f2a3ee1557ce232a174b9af6129";
+    private static final String PINNED_ALL = "sha256:a8fc6e9a42f24da52cc0bfebbdb0055933e2bde0b2572fdaf7e853246b908640";
 
     private record PinnedPack(String name, String resource, List<String> digested, String fingerprint) {}
 

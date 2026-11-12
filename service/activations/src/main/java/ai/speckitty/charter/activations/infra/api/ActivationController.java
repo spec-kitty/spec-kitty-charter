@@ -28,6 +28,7 @@ import ai.speckitty.charter.api.model.SelectionRequest;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
+import ai.speckitty.charter.web.InvalidParameter;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +40,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -230,7 +230,11 @@ public class ActivationController implements ActivationApi {
                     EffectiveReadService.Page::sourceFingerprint,
                     page -> reads.toList(page, queryParamGiven("pageSize")));
         } catch (EffectiveReadService.StaleCursorException anotherSet) {
-            throw new ErrorResponseException(HttpStatus.BAD_REQUEST, anotherSet);
+            throw new InvalidParameter(
+                    InvalidParameter.In.QUERY,
+                    "pageCursor",
+                    Objects.requireNonNull(pageCursor, "pageCursor"),
+                    "which belongs to another set of effective artifacts; read the first page again");
         }
     }
 
@@ -340,18 +344,31 @@ public class ActivationController implements ActivationApi {
                 .containsKey(name);
     }
 
-    /** The kind filter: an activatable kind, or a {@code 400} problem without a code. */
+    /** The kind filter: an activatable kind, or a {@code 400} problem without a code that lists them (#411). */
     private static ArtifactKind kindFilter(String token) {
         return ArtifactKind.fromToken(token)
                 .filter(ArtifactKind::activatable)
-                .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new InvalidParameter(
+                        InvalidParameter.In.QUERY,
+                        "kind",
+                        token,
+                        InvalidParameter.oneOf(Arrays.stream(ArtifactKind.values())
+                                .filter(ArtifactKind::activatable)
+                                .map(ArtifactKind::token)
+                                .toList())));
     }
 
-    /** The state filter: one of the three states, or a {@code 400} problem without a code. */
+    /** The state filter: one of the three states, or a {@code 400} problem without a code that lists them (#411). */
     private static EffectiveSet.State stateFilter(String token) {
         return Arrays.stream(EffectiveSet.State.values())
                 .filter(state -> state.token().equals(token))
                 .findFirst()
-                .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new InvalidParameter(
+                        InvalidParameter.In.QUERY,
+                        "state",
+                        token,
+                        InvalidParameter.oneOf(Arrays.stream(EffectiveSet.State.values())
+                                .map(EffectiveSet.State::token)
+                                .toList())));
     }
 }

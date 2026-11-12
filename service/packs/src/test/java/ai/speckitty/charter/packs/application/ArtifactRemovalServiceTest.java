@@ -93,7 +93,7 @@ class ArtifactRemovalServiceTest {
 
         Removals(Rig rig, WritePolicyGate gate) {
             this.rig = rig;
-            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
             WritePolicyGate effective = gate != null
                     ? gate
                     : new PackMutabilityPolicy(

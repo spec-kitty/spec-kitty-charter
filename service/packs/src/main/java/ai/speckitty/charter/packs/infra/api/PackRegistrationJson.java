@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.Link;
+import ai.speckitty.charter.api.model.PackDocumentRead;
 import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationNotices;
 import ai.speckitty.charter.api.model.PackRegistrationProblem;
@@ -22,7 +23,7 @@ import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
- * How the whole-pack registration models serialize: a member the schema neither requires nor allows to be {@code null}
+ * How the whole-pack registration models, and the pack document read's, serialize: a member the schema neither requires nor allows to be {@code null}
  * (the outcome of a read of the stored pack, the end time of a running job) is omitted, never written as {@code null},
  * by the contract rule {@code NullOmissionTest} checks against the schemas. The rule reaches the generated DTOs only
  * through the mix-in. The status, the stored pack and the problem of a refused registration are answered by the
@@ -43,6 +44,7 @@ public class PackRegistrationJson {
     @Bean
     public JacksonModule packRegistrationJsonModule() {
         return new SimpleModule("charter-pack-registration-json")
+                .setMixInAnnotation(PackDocumentRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PackRegistration.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PackRegistrationNotices.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PackRegistrationProblem.class, OmitAbsentMembers.class)
@@ -70,6 +72,7 @@ public class PackRegistrationJson {
                             hints.reflection(),
                             PackRegistrationStatus.class,
                             PackRegistration.class,
+                            PackDocumentRead.class,
                             PackRegistrationNotices.class,
                             PackRegistrationProblem.class,
                             ArtifactReference.class,

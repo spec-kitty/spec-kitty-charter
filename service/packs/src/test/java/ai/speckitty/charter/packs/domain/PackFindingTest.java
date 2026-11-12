@@ -31,19 +31,23 @@ class PackFindingTest {
     }
 
     @Test
-    void onlyTheLevelMissingCodeIsAWarning() {
+    void onlyTheThreeWarningCodesAreWarnings() {
         assertThat(EnumSet.allOf(PackFindingCode.class).stream()
                         .filter(c -> c.severity() == PackFindingCode.Severity.WARNING))
-                .containsExactly(PackFindingCode.PACK_LEVEL_MISSING, PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED);
+                .containsExactly(
+                        PackFindingCode.PACK_LEVEL_MISSING,
+                        PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                        PackFindingCode.FILE_NOT_HELD);
     }
 
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aFindingTakesItsSeverityFromItsCode(PackFindingCode code) {
-        PackFindingCode.Severity expected =
-                code == PackFindingCode.PACK_LEVEL_MISSING || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED
-                        ? PackFindingCode.Severity.WARNING
-                        : PackFindingCode.Severity.BLOCKING;
+        PackFindingCode.Severity expected = code == PackFindingCode.PACK_LEVEL_MISSING
+                        || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED
+                        || code == PackFindingCode.FILE_NOT_HELD
+                ? PackFindingCode.Severity.WARNING
+                : PackFindingCode.Severity.BLOCKING;
         assertThat(finding(code).severity()).isEqualTo(expected);
     }
 
@@ -54,6 +58,14 @@ class PackFindingTest {
         CharterRefusal refusal = finding(PackFindingCode.PACK_LEVEL_MISMATCH).toRefusal();
         assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH);
         assertThat(refusal.getMessage()).isEqualTo("the detail");
+    }
+
+    @Test
+    void theFileNotHeldWarningProjectsOntoItsDiagnosticAndNoRefusal() {
+        assertThat(finding(PackFindingCode.FILE_NOT_HELD).toDiagnostic())
+                .isEqualTo(new Diagnostic(Diagnostic.Code.FILE_NOT_HELD, "the detail"));
+        assertThat(Diagnostic.Code.FILE_NOT_HELD.token()).isEqualTo("file_not_held");
+        assertThatThrownBy(PackFindingCode.FILE_NOT_HELD::refusal).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -73,7 +85,8 @@ class PackFindingTest {
     void aValidateOnlyCodeHasNoWireValue(PackFindingCode code) {
         if (LOAD_PATH_BLOCKING.contains(code)
                 || code == PackFindingCode.PACK_LEVEL_MISSING
-                || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED) {
+                || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED
+                || code == PackFindingCode.FILE_NOT_HELD) {
             return;
         }
         assertThatThrownBy(code::refusal).isInstanceOf(IllegalStateException.class);

@@ -42,9 +42,11 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>a preset {@code presets/<stem>.yaml} (#195): refused by the load when malformed or its id is not its
  *     stem</td><td>loaded</td></tr>
  * <tr><td>root {@code pack-manifest.yaml} (#195)</td><td>manifest: digested, not loaded by the store</td></tr>
- * <tr><td>root {@code pack.md} (#260), one in five with a carriage return</td><td>loaded (a refused one is a
+ * <tr><td>root {@code README.md} (#260), one in five with a carriage return</td><td>loaded (a refused one is a
  *     violation); digested</td></tr>
- * <tr><td>nested {@code sub/pack.md} (#260)</td><td>decoy: not the pack document</td></tr>
+ * <tr><td>root {@code pack.md} (#451)</td><td>retired: refused by name by the load; digested</td></tr>
+ * <tr><td>root {@code org-charter.yaml} (#431)</td><td>retired: refused by name by the load; digested</td></tr>
+ * <tr><td>nested {@code sub/pack.md} (#260)</td><td>decoy: not a retired file, not the pack document</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
@@ -58,7 +60,7 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code assets/<dirs>README.md}; a mission template {@code missions/m/templates/<stem>.md}; a
  *     payload-like {@code <dirs><stem>.png} outside {@code assets/}</td><td>decoy</td></tr>
- * <tr><td>root {@code org-charter.yaml}, {@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
+ * <tr><td>{@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
  *     <td>decoy</td></tr>
  * <tr><td>nested {@code sub/y.graph.yaml}, nested {@code sub/drg/fragment.yaml}</td><td>decoy</td></tr>
  * <tr><td>a directory named {@code d.tactic.yaml}</td><td>decoy (not a file)</td></tr>
@@ -87,6 +89,8 @@ final class GeneratedPackTree {
         PAYLOAD,
         /** The pack manifest (#195): digested; the store never loads it, the whole-pack seam reads it. */
         MANIFEST,
+        /** A file of a retired family (#451): refused by name by the load, digested in the tail. */
+        RETIRED,
         /** A file or directory the service neither loads nor digests. */
         DECOY
     }
@@ -151,6 +155,8 @@ final class GeneratedPackTree {
         PRESET(Verdict.LOADED),
         PACK_DOCUMENT(Verdict.LOADED),
         MANIFEST(Verdict.MANIFEST),
+        RETIRED_PACK_DOCUMENT(Verdict.RETIRED),
+        RETIRED_ORG_CHARTER(Verdict.RETIRED),
         DECOY_YML(Verdict.DECOY),
         DECOY_UPPER_EXTENSION(Verdict.DECOY),
         DECOY_UPPER_KIND(Verdict.DECOY),
@@ -163,7 +169,6 @@ final class GeneratedPackTree {
         DECOY_TEMPLATES_HIDDEN(Verdict.DECOY),
         DECOY_MISSION_TEMPLATE(Verdict.DECOY),
         DECOY_PAYLOAD_OUTSIDE_ASSETS(Verdict.DECOY),
-        DECOY_ORG_CHARTER(Verdict.DECOY),
         DECOY_SUB_CHARTER(Verdict.DECOY),
         DECOY_SUB_PACK(Verdict.DECOY),
         DECOY_SUB_PACK_DOCUMENT(Verdict.DECOY),
@@ -589,7 +594,7 @@ final class GeneratedPackTree {
     }
 
     /**
-     * The pack document (#260), {@code pack.md} at the pack root, loaded into its own slot; one in five refused by the
+     * The pack document (#260), {@code README.md} at the pack root, loaded into its own slot; one in five refused by the
      * Markdown codec (a carriage return), which the load reports and the digest still covers. Planted once per pack.
      */
     private void plantPackDocument(Pack pack) throws IOException {
@@ -710,6 +715,8 @@ final class GeneratedPackTree {
             case GRAPH_HIDDEN_ROOT -> ".b.graph.yaml";
             case GRAPH_FRAGMENT -> "drg/fragment.yaml";
             case MANIFEST -> PackFileSet.MANIFEST;
+            case RETIRED_PACK_DOCUMENT -> "pack.md";
+            case RETIRED_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_YML -> directories(2) + stem + ".tactic.yml";
             case DECOY_UPPER_EXTENSION -> directories(2) + stem + ".tactic.YAML";
             case DECOY_UPPER_KIND -> directories(2) + stem + ".TACTIC.yaml";
@@ -728,7 +735,6 @@ final class GeneratedPackTree {
             case TEMPLATE_MISSION -> "missions/m/templates/" + directories(1) + stem + ".md";
             case DECOY_MISSION_TEMPLATE -> "missions/templates/" + stem + ".md";
             case DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + ".png";
-            case DECOY_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_SUB_CHARTER -> "sub/charter.yaml";
             case DECOY_SUB_PACK -> "sub/pack.yaml";
             case DECOY_SUB_PACK_DOCUMENT -> "sub/pack.md";

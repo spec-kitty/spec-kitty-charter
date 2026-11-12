@@ -32,7 +32,6 @@ class PackFileKindTest {
             Map.entry("core/pack.yaml", "pack-descriptor"),
             Map.entry("core/graph/a.graph.yaml", "graph-shard"),
             Map.entry("org/drg/fragment.yaml", "org-fragment"),
-            Map.entry("org/org-charter.yaml", "org-charter"),
             Map.entry("core/directives/a.directive.yaml", "directive"),
             Map.entry("core/tactics/a.tactic.yaml", "tactic"),
             Map.entry("core/styleguides/a.styleguide.yaml", "styleguide"),
@@ -56,7 +55,7 @@ class PackFileKindTest {
             Map.entry("core/presets/minimal.yaml", "preset"),
             Map.entry("core/pack-manifest.yaml", "pack-manifest"),
             Map.entry("core/policy.yaml", "policy"),
-            Map.entry("core/pack.md", "pack-document"));
+            Map.entry("core/README.md", "pack-document"));
 
     /** One sample path for each exclusion rule. */
     private static final List<String> EXCLUDED = List.of(
@@ -202,11 +201,107 @@ class PackFileKindTest {
         "core/a.unknown.yaml",
         "pack.yaml",
         "core/deep/er/pack.yaml",
-        "core/docs/pack.md",
-        "built-in/missions/templates/spec-template.md"
+        "core/docs/pack.txt",
+        "built-in/missions/templates/spec-template.txt"
     })
     void anUnknownFileIsUnclassified(String path) {
         assertThat(KINDS.classify(path)).isEqualTo(PackFileKind.Unclassified.INSTANCE);
+    }
+
+    /** The fallback's reason, as the table words it. */
+    private static final String FALLBACK_REASON = "Author aid: Markdown that no files rule models (#451)."
+            + " Not pack content: not held, not served, not refused.";
+
+    /** Markdown that no rule models is excluded by the {@code ignored} fallback, in any letter case (FR-004). */
+    @ParameterizedTest
+    @CsvSource({
+        "x/docs/notes.md",
+        "x/docs/pack.md",
+        "x/NOTES.MD",
+        "x/.notes.md",
+        "x/docs/README.md",
+        "x/missions/qa/docs/notes.md",
+        "x/skills/foo.skill.md",
+        "x/skills/README.md"
+    })
+    void markdownNoRuleModelsIsExcludedByTheFallbackWithItsReason(String path) {
+        assertThat(KINDS.classify(path)).isEqualTo(new PackFileKind.Excluded("**/*.md", FALLBACK_REASON));
+    }
+
+    /** The fallback takes only what every other section leaves: a Markdown file another rule takes keeps its class. */
+    @Test
+    void theFallbackNeverTakesAFileAnotherRuleTakes() {
+        assertThat(KINDS.classify("x/assets/a/guide.md")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("x/templates/writing/t.md")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("x/missions/m/templates/spec.md")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("x/mission-steps/a/b.md")).isInstanceOf(PackFileKind.Retired.class);
+        assertThat(KINDS.classify("x/pack.md")).isInstanceOf(PackFileKind.Retired.class);
+        assertThat(KINDS.classify("x/PROVENANCE.md")).isInstanceOf(PackFileKind.Retired.class);
+        assertThat(KINDS.classify("x/README.md")).isInstanceOf(PackFileKind.Mapped.class);
+        // A file a rule takes in another letter case is unmodelled, not fallback: it is refused, never stripped.
+        assertThat(KINDS.classify("x/toolguides/x.guide.MD")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        assertThat(KINDS.classify("x/missions/m/enhancements/a.prompt-fragment.MD"))
+                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        // A table exclusion keeps its own reason.
+        assertThat(KINDS.classify("x/missions/m/README.md"))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Excluded.class,
+                        excluded -> assertThat(excluded.exclusionClass()).isEqualTo("*/missions/*/README.md"));
+    }
+
+    /** No Markdown sample of another section is classified by the fallback: the invariant of the data model. */
+    @Test
+    void noMarkdownSampleOfAnotherSectionIsExcludedByTheFallback() {
+        List<String> samples = new ArrayList<>(MAPPED.keySet());
+        samples.addAll(EXCLUDED);
+        samples.addAll(PAYLOADS.keySet());
+        samples.addAll(List.of("x/mission-steps/a/b.md", "x/pack.md", "x/PROVENANCE.md", "x/Readme.md"));
+        List<String> markdown = samples.stream()
+                .filter(path -> path.toLowerCase(java.util.Locale.ROOT).endsWith(".md"))
+                .toList();
+        assertThat(markdown).isNotEmpty();
+        for (String path : markdown) {
+            assertThat(KINDS.classify(path))
+                    .as(path)
+                    .isNotEqualTo(new PackFileKind.Excluded("**/*.md", FALLBACK_REASON));
+        }
+    }
+
+    /** A companion claim is checked case-folded without the fallback, so a skill body stays claimable (D2). */
+    @Test
+    void theCompanionViewOfClassificationLeavesFallbackMarkdownUnclassified() {
+        assertThat(KINDS.classifyFolded("x/skills/foo.skill.md")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        assertThat(KINDS.classifyFolded("x/NOTES.MD")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        assertThat(KINDS.classifyFolded("x/README.md")).isInstanceOf(PackFileKind.Mapped.class);
+    }
+
+    /** An {@code ignored} rule is not among the rules the overlap check compares (squad R8). */
+    @Test
+    void anIgnoredRuleIsNeverAMatchingRule() {
+        assertThat(KINDS.matchingRules("x/docs/notes.md")).isEmpty();
+        assertThat(KINDS.matchingRulesFolded("x/docs/notes.md")).isEmpty();
+        assertThat(KINDS.matchingRules("x/README.md")).containsExactly("*/README.md");
+    }
+
+    /** The section takes {@code match} and {@code reason}, both required, and no other key. */
+    @Test
+    void theIgnoredSectionTakesMatchAndReasonAndNothingElse() {
+        String base = "files: []\nexclusions: []\n";
+        PackFileKind own = new PackFileKind(TABLE.formatted(base + "ignored: [{match: '**/*.txt', reason: r}]"));
+        assertThat(own.classify("x/a/b.TXT")).isEqualTo(new PackFileKind.Excluded("**/*.txt", "r"));
+        assertThat(new PackFileKind(TABLE.formatted(base)).ignoredRules()).isEmpty();
+        Map<String, String> problems = Map.of(
+                "ignored: [{match: '**/*.txt', reason: r, kind: k}]",
+                "a rule in ignored has the unknown key 'kind'",
+                "ignored: [{match: '**/*.txt'}]",
+                "non-blank 'reason'",
+                "ignored: [{reason: r}]",
+                "non-blank 'match'");
+        problems.forEach((rules, problem) -> assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(base + rules)))
+                .as(rules)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("packs/file-kinds.yaml")
+                .hasMessageContaining(problem));
     }
 
     @Test
@@ -240,10 +335,10 @@ class PackFileKindTest {
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(28);
+        assertThat(KINDS.fileRules()).hasSize(27);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
-                        + " pack.md's (#260)")
+                        + " README.md's (#260, #451)")
                 .filteredOn(rule -> !Set.of(
                                 "toolguide-guide",
                                 "pack-document",

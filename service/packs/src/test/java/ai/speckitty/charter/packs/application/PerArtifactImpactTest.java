@@ -41,7 +41,7 @@ class PerArtifactImpactTest {
 
         Writes(Rig rig) {
             this.rig = rig;
-            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
             PackMutabilityPolicy gate = new PackMutabilityPolicy(
                     new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
                     rig.repository,

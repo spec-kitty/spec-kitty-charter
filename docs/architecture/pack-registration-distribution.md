@@ -2,7 +2,7 @@
 title: Pack registration and distribution
 description: "How the charter service registers, stores, verifies and distributes packs of every level: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -192,7 +192,7 @@ Repository ports (domain-owned, impl in storage ring):
 ### 3.4 Other charter artifacts (`artifacts.domain`)
 
 - `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary_pack, skill, anti_pattern, asset, template, mission_step_contract).
-- `ActiveGraph`, `LayerMerge`, `Activation {activated_<kind>, activated_kinds, mission_type_activations}`, `OrgCharterPolicy {required_<kind>}`.
+- `ActiveGraph`, `LayerMerge`, `Activation {activated_<kind>, activated_kinds, mission_type_activations}`; a requirement is the must-have items of a governing preset (`Preset`, `RequiredFloor`), since `org-charter.yaml` is retired (#431).
 - `ArtifactService`, `GraphQueryService`, `ActivationService` (plan → commit).
 - Ports: `ArtifactRepository`, `ActiveGraphRepository`.
 

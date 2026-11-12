@@ -19,7 +19,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -151,38 +150,60 @@ class InterruptedCommitRepairTest {
     }
 
     @Test
-    void aReadThatMeetsASwapInFlightWaitsForItAndServesTheNewState() throws IOException {
+    void aReadThatMeetsASwapInFlightServesTheLastCommittedStateWithoutWaiting() throws Exception {
         Path live = PackFixtures.copyOf("pack-a", packs);
         StorageRootLocations locations = new StorageRootLocations(packs);
         DomainRepositoryService reader = new DomainRepositoryService(locations, strategy);
         CompletableFuture<Pack> read = new CompletableFuture<>();
-        // Between the two renames, a reader in another thread lists the pack domain; the swap finishes only once it is
-        // waiting (or has answered), so it cannot answer the half-swapped state as "no such pack".
-        PackCommitStore.DirectoryRename swapWithAReaderInTheWindow = (staging, liveDir) -> {
-            Path aside = liveDir.resolveSibling(liveDir.getFileName() + ".pack-old-inflight");
-            PackCommitStore.moveDirectory(liveDir, aside);
-            Thread thread = Thread.ofPlatform().start(() -> complete(read, reader));
-            awaitQueuedOnTheLockOf(liveDir, thread);
-            PackCommitStore.moveDirectory(staging, liveDir);
-            PackCommitStore.deleteTree(aside);
+        AtomicBoolean lockHeldWhenRead = new AtomicBoolean();
+        AtomicBoolean queuedOnTheLock = new AtomicBoolean();
+        // Between the two renames, a reader in another thread reads the pack, and is joined before the second rename:
+        // it answers inside the window, with the write lock held, so it cannot have waited for the swap (#490).
+        PackCommitStore.SwapPhases readInTheWindow = new PackCommitStore.SwapPhases() {
+            @Override
+            public void afterAside(Path liveDir, Path aside) {
+                Thread thread = Thread.ofPlatform().start(() -> complete(read, reader));
+                ReentrantLock lock = PackWriteLocks.of(liveDir);
+                try {
+                    while (!thread.join(Duration.ofMillis(1))) {
+                        queuedOnTheLock.compareAndSet(false, lock.hasQueuedThread(thread));
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(e);
+                }
+                lockHeldWhenRead.set(lock.isLocked());
+            }
         };
-        PackCommitStore commits = new PackCommitStore(locations, strategy, swapWithAReaderInTheWindow);
+        PackCommitStore commits = new PackCommitStore(locations, strategy, PackCommitStore.moveAside(readInTheWindow));
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations, strategy, commits);
 
-        writeStore.exclusively(PACK, () -> commits.commit(PACK, null, toolguide("fd"), null));
+        assertTimeoutPreemptively(
+                HANG_CAP, () -> writeStore.exclusively(PACK, () -> commits.commit(PACK, null, toolguide("fd"), null)));
 
+        assertThat(lockHeldWhenRead)
+                .as("the read answered while the swap held the write lock")
+                .isTrue();
+        assertThat(queuedOnTheLock)
+                .as("the read never queued on the write lock")
+                .isFalse();
         assertThat(read)
-                .as("the read waited for the swap and served the committed state")
-                .succeedsWithin(HANG_CAP)
-                .satisfies(pack -> assertThat(pack.toolguides())
+                .as("the read served the last committed state, through the aside copy")
+                .isCompleted()
+                .satisfies(future -> assertThat(future.join().toolguides())
                         .extracting(guide -> guide.id().value())
-                        .contains("fd"));
+                        .doesNotContain("fd"));
+        assertThat(reader.load(PACK).toolguides())
+                .extracting(guide -> guide.id().value())
+                .as("after the commit a read serves the new state")
+                .contains("fd");
         assertThat(live.resolve("fd.toolguide.yaml")).isRegularFile();
         assertThat(residue(packs)).isEmpty();
+        assertThat(hidden(packs)).isEmpty();
     }
 
     @Test
-    void aListingInsideAnotherPacksWriteLockSkipsAPackWhoseLockIsHeldRatherThanWaiting() throws Exception {
+    void aListingInsideAnotherPacksWriteLockListsAHeldPackThroughItsAsideRatherThanWaiting() throws Exception {
         PackFixtures.copyOf("pack-descriptor-only", packs);
         Path live = PackFixtures.copyOf("pack-a", packs);
         StorageRootLocations locations = new StorageRootLocations(packs);
@@ -237,7 +258,9 @@ class InterruptedCommitRepairTest {
         assertThat(waitedOn)
                 .as("the listing only tried the held lock; it never waited on it")
                 .isFalse();
-        assertThat(listed).containsExactly("pack-descriptor-only");
+        assertThat(listed)
+                .as("the held, half-swapped pack is listed through its aside copy (#490)")
+                .containsExactlyInAnyOrder("pack-a", "pack-descriptor-only");
         assertThat(locations.all()).extracting(PackLocation::name).contains("pack-a");
     }
 
@@ -438,20 +461,6 @@ class InterruptedCommitRepairTest {
             read.complete(reader.load(PACK));
         } catch (RuntimeException failure) {
             read.completeExceptionally(failure);
-        }
-    }
-
-    /**
-     * Spins until {@code thread} waits on the write lock of the pack at {@code entry}, or has finished (it answered
-     * without waiting, which the test then reports); fails after the hang cap.
-     */
-    private static void awaitQueuedOnTheLockOf(Path entry, Thread thread) {
-        Instant deadline = Instant.now().plus(HANG_CAP);
-        while (!PackWriteLocks.of(entry).hasQueuedThread(thread) && thread.getState() != Thread.State.TERMINATED) {
-            if (Instant.now().isAfter(deadline)) {
-                throw new AssertionError("the reader neither waited on the pack's lock nor answered");
-            }
-            Thread.onSpinWait();
         }
     }
 

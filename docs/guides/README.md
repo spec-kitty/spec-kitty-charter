@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Guides
 description: Task-oriented how-tos for contributors to the charter service and, later, for its consumers.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Guide
 kind: Hub
 audience:
@@ -28,6 +28,8 @@ audience:
   schema refuses, and the three refusals of ADR-0052 that review applies.
 - [Compose packs](/guides/compose-packs/) — declaring `depends_on`, qualifying references across packs, settling
   a sibling conflict, and the table of the eleven composition refusals.
+- [Enforce presets on an organization's projects](/guides/enforce-org-presets/) — a governing preset with must-have
+  items and `policy.yaml` levels, and how to convert a pack that still ships `org-charter.yaml`.
 
 - [Generate your own client](/guides/generate-a-client/) — fetch and verify the published contract, and generate a Java
   or Python client with the pinned generator and the options that tolerate additive 0.x changes.

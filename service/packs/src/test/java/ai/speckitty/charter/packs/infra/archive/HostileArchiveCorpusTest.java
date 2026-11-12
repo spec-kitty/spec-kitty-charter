@@ -102,6 +102,11 @@ class HostileArchiveCorpusTest {
     }
 
     static Stream<Hostile> hostileTars() {
+        return Stream.of(tarTraversalAndSpecialEntries(), tarMalformedAndCollidingNames(), tarHeaderLimitsAndBombs())
+                .flatMap(rows -> rows);
+    }
+
+    private static Stream<Hostile> tarTraversalAndSpecialEntries() {
         return Stream.of(
                 tar("tar zip-slip", tarOf(t -> t.file("../evil", "x")), v(PATH_TRAVERSAL, "../evil")),
                 tar(
@@ -129,7 +134,11 @@ class HostileArchiveCorpusTest {
                 tar(
                         "tar PAX path override",
                         tarOf(t -> t.paxPath("../../evil").file("ok.txt", "x")),
-                        v(PATH_TRAVERSAL, "../../evil")),
+                        v(PATH_TRAVERSAL, "../../evil")));
+    }
+
+    private static Stream<Hostile> tarMalformedAndCollidingNames() {
+        return Stream.of(
                 tar(
                         "tar GNU long name with ..",
                         tarOf(t -> t.gnuLongName(LONG_DOTDOT).file("short", "x")),
@@ -165,7 +174,11 @@ class HostileArchiveCorpusTest {
                 tar(
                         "tar path over 4096 bytes",
                         tarOf(t -> t.paxPath("a/".repeat(2_100)).file("ok.txt", "x")),
-                        v(PATH_TOO_LONG, "a/".repeat(128))),
+                        v(PATH_TOO_LONG, "a/".repeat(128))));
+    }
+
+    private static Stream<Hostile> tarHeaderLimitsAndBombs() {
+        return Stream.of(
                 tar(
                         "tar PAX x header over 64 KiB",
                         tarOf(t ->
@@ -220,6 +233,15 @@ class HostileArchiveCorpusTest {
 
     static Stream<Hostile> hostileZips() {
         return Stream.of(
+                        zipTraversalAndEntryKinds(),
+                        zipEntryCountsAndNames(),
+                        zipBombsAndStructure(),
+                        zipPathFormsAndLimits())
+                .flatMap(rows -> rows);
+    }
+
+    private static Stream<Hostile> zipTraversalAndEntryKinds() {
+        return Stream.of(
                 zip("zip zip-slip", zipOf(z -> z.file("../evil.txt", "x")), v(PATH_TRAVERSAL, "../evil.txt")),
                 zip("zip absolute path", zipOf(z -> z.file("/etc/passwd", "x")), v(PATH_ABSOLUTE, "/etc/passwd")),
                 zip(
@@ -239,12 +261,23 @@ class HostileArchiveCorpusTest {
                 zip(
                         "zip bzip2 method",
                         zipOf(z -> z.file("pack/a.txt", "x").method(12)),
-                        v(COMPRESSION_METHOD, "pack/a.txt")),
+                        v(COMPRESSION_METHOD, "pack/a.txt")));
+    }
+
+    private static Stream<Hostile> zipEntryCountsAndNames() {
+        return Stream.of(
                 zip(
                         "zip end record claims 10,001 entries",
                         zipOf(z -> {
                             z.file("pack/a.txt", "x");
                             z.declaredCount(10_001);
+                        }),
+                        v(TOO_MANY_ENTRIES, "")),
+                zip(
+                        "zip ZIP64 end record claims 10,001 entries",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "x");
+                            z.zip64Count(10_001);
                         }),
                         v(TOO_MANY_ENTRIES, "")),
                 zip(
@@ -293,7 +326,11 @@ class HostileArchiveCorpusTest {
                 zip(
                         "zip Unicode Path extra field carrying ../ under a benign name",
                         zipOf(z -> z.file("pack/ok.txt", "x").extra(RawZip.unicodePathExtra("pack/ok.txt", "../evil"))),
-                        v(ZIP_EXTRA_FIELD, "pack/ok.txt")),
+                        v(ZIP_EXTRA_FIELD, "pack/ok.txt")));
+    }
+
+    private static Stream<Hostile> zipBombsAndStructure() {
+        return Stream.of(
                 zip(
                         "zip bomb with honest sizes",
                         zipOf(z -> z.add(RawZip.zeros("pack/big.bin", 40 * MIB))),
@@ -341,14 +378,11 @@ class HostileArchiveCorpusTest {
                 zip(
                         "zip central offset not at a local header",
                         zipOf(z -> z.file("pack/a.txt", "x".repeat(100)).centralOffset(40)),
-                        v(ARCHIVE_UNREADABLE, "pack/a.txt")),
-                zip(
-                        "zip ZIP64 end record claims 10,001 entries",
-                        zipOf(z -> {
-                            z.file("pack/a.txt", "x");
-                            z.zip64Count(10_001);
-                        }),
-                        v(TOO_MANY_ENTRIES, "")),
+                        v(ARCHIVE_UNREADABLE, "pack/a.txt")));
+    }
+
+    private static Stream<Hostile> zipPathFormsAndLimits() {
+        return Stream.of(
                 zip("zip backslash", zipOf(z -> z.file("pack\\evil.txt", "x")), v(PATH_BACKSLASH, "pack\\evil.txt")),
                 zip("zip drive letter", zipOf(z -> z.file("C:/evil.txt", "x")), v(PATH_DRIVE_LETTER, "C:/evil.txt")),
                 zip("zip empty segment", zipOf(z -> z.file("pack//a.txt", "x")), v(PATH_EMPTY_SEGMENT, "pack//a.txt")),
@@ -441,6 +475,11 @@ class HostileArchiveCorpusTest {
     static Stream<Benign> benign() {
         Map<String, String> plain = Map.of("pack.yaml", "name: p\n");
         Map<String, String> nested = Map.of("agents/", "", "agents/a.yaml", "a: 1\n", "pack.yaml", "name: p\n");
+        return Stream.of(benignTars(plain, nested), benignBoundaryCases(plain), benignZips(plain, nested))
+                .flatMap(rows -> rows);
+    }
+
+    private static Stream<Benign> benignTars(Map<String, String> plain, Map<String, String> nested) {
         return Stream.of(
                 new Benign(
                         "tar regular file", ArchiveFormat.TAR_GZ, tarOf(t -> t.file("pack.yaml", "name: p\n")), plain),
@@ -480,7 +519,11 @@ class HostileArchiveCorpusTest {
                         "tar PAX header of exactly 64 KiB",
                         ArchiveFormat.TAR_GZ,
                         tarOf(t -> t.pax(Map.of("comment", "a".repeat(65_521))).file("pack.yaml", "name: p\n")),
-                        plain),
+                        plain));
+    }
+
+    private static Stream<Benign> benignBoundaryCases(Map<String, String> plain) {
+        return Stream.of(
                 new Benign(
                         "zip with exactly 1,024 bytes of central extra fields",
                         ArchiveFormat.ZIP,
@@ -518,7 +561,11 @@ class HostileArchiveCorpusTest {
                             z.dir("empty/");
                         }),
                         Map.of("pack.yaml", "name: p\n", "empty/", "")),
-                new Benign("zip regular file", ArchiveFormat.ZIP, zipOf(z -> z.file("pack.yaml", "name: p\n")), plain),
+                new Benign("zip regular file", ArchiveFormat.ZIP, zipOf(z -> z.file("pack.yaml", "name: p\n")), plain));
+    }
+
+    private static Stream<Benign> benignZips(Map<String, String> plain, Map<String, String> nested) {
+        return Stream.of(
                 new Benign(
                         "zip nested directory, deflated",
                         ArchiveFormat.ZIP,

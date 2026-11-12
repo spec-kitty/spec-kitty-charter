@@ -2,8 +2,8 @@
 title: "ADR-0031: Requirement is authored as a preset, and the required set is derived from it"
 description: An org states what must be on the plate through a preset's must-have items; the service derives the required set; ADR-0042 answers its two open questions.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
-decision_status: Accepted, with Amendment 2026-10-28; open questions answered by ADR-0042 (2026-10-28)
+updated: 2026-11-12T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-28; open questions answered by ADR-0042 (2026-10-28); #206 superseded 2026-11-11 (org-charter.yaml retired, #431)
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
@@ -56,11 +56,27 @@ decision 6 and the two open questions. The answers are in force for the code #19
 implements them. ADR-0042 itself is Accepted (2026-10-29), the acceptance the pull request
 for #195 asked for.
 
+### Amendment 2026-11-11 (#431): `org-charter.yaml` is retired, so #206 is superseded
+
+On the operator's ruling of 2026-11-11 on [#431](https://github.com/spec-kitty/spec-kitty-charter/issues/431), slice B
+([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) retires `org-charter.yaml` outright: a pack that
+ships it is refused by name (`retired`), its schema is deleted, and `pack.yaml` loses `active_charter`. So the
+`required_<plural>` lists are neither migrated by the service nor read: an org writes the must-have items of a
+governing preset, as this record decides, and locks what must not change with `policy.yaml` (ADR-0063). The
+migration [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206) asked for is superseded; closing it is
+for the slice B closeout. The conversion is in
+[Enforce presets on an organization's projects](/guides/enforce-org-presets/), and the record of the retirement is
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (amendment 2026-11-11). The decision
+text below is unchanged; the Context and the open question that name `org-charter.yaml` are annotated where they
+stand.
+
 ## Context
 
 Today an org declares requirements as `required_<plural>` lists in `org-charter.yaml`. Presets
 are a separate, pack-shipped convenience: a one-shot selection written into a project's active
 charter. ADR-0012 decision 7 defined required as presence only, and refused its deactivation.
+*(Since 2026-11-11, #431, `org-charter.yaml` is retired and refused by name; the lists exist only in core. See the
+amendment under Status.)*
 
 The concept session settled three independent levers (requirement, integrity, and the project's
 own selection) and two jobs for a preset:
@@ -100,6 +116,8 @@ selections, written one way.
   *(Answered by ADR-0042, 2026-10-28: a preset carries no `required_*` key; its closed schema
   refuses one. Migrating `org-charter.yaml`'s `required_<plural>` lists into presets, and then
   refusing them, is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206).)*
+  *(Superseded 2026-11-11, #431: `org-charter.yaml` is retired, so nothing is migrated or read; see the amendment
+  under Status.)*
 - **Telling a governing preset from a convenience preset.** How the service, a project and a
   reader tell a preset that governs (must-have items) from one that only offers defaults: a
   marker on the preset, on each item, or the presence of any must-have item. Not decided.

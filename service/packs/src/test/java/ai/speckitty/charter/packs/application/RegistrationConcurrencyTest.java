@@ -71,7 +71,7 @@ class RegistrationConcurrencyTest {
         assertThat(rig.register(PACK, rig.stage(version(0, 0, "m-initial")), Preconditions.none())
                         .outcome())
                 .isEqualTo(Outcome.CREATED);
-        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
 
         for (int run = 1; run <= RUNS; run++) {
             replaceEightTimesWithReaders(rig, read, run);

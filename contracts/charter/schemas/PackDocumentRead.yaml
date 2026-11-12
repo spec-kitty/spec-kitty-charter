@@ -1,0 +1,34 @@
+title: PackDocumentRead
+description: >-
+  A Charter Pack's document as getPackDocument answers it for Accept: application/json: the parts of the pack's
+  README.md. The same read answers the whole file, frontmatter included, for Accept: text/markdown. Both forms carry
+  the same ETag, the quoted pack revision.
+type: object
+additionalProperties: false
+required:
+- body
+- _links
+properties:
+  title:
+    type: string
+    minLength: 1
+    description: The document's H1. Left out when the document has none.
+    x-derived:
+      rule: The title of the pack's README.md, as the Markdown codec reads it.
+      inputs:
+      - the README.md of the pack
+  body:
+    type: string
+    description: >-
+      The Markdown below the H1, in canonical form: the preamble and the sections, without the title and without the
+      frontmatter, which is only in the text/markdown form. Empty when the document holds nothing else.
+    x-derived:
+      rule: The preamble and sections of the pack's README.md, written by the Markdown codec.
+      inputs:
+      - the README.md of the pack
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The README.md the service holds for the pack, read inside one verified read.
+  inputs:
+  - the README.md of the pack

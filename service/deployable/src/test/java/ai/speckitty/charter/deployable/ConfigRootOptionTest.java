@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import org.junit.jupiter.api.Test;
 
 /** {@code --configRootLocation <path>} is accepted beside Spring's own {@code --configRootLocation=<path>}. */
@@ -24,7 +25,7 @@ class ConfigRootOptionTest {
     @Test
     void theOptionWithoutAPathIsRefused() {
         assertThatThrownBy(() -> CharterServiceApplication.joinConfigRootOption(new String[] {"--configRootLocation"}))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("needs a path");
+                .isInstanceOf(StartupRefusal.class)
+                .hasMessage("--configRootLocation needs a path: --configRootLocation <path>");
     }
 }

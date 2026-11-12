@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -35,7 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The pack document through the whole-pack store (#260, ADR-0042 decision 8): {@code pack.md} is read into the
+ * The pack document through the whole-pack store (#260, ADR-0042 decision 8): {@code README.md} is read into the
  * {@code Pack} through #194's {@code markdown} content form, written back in its canonical form, and equal in meaning
  * by the Markdown model. Each case is judged by #194's rule: a carriage return or a byte order mark is refused at its
  * line, never normalized; a missing final newline is the same model. Each refusal is paired with a clean control on
@@ -80,7 +81,7 @@ class PackDocumentRoundTripTest {
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
     @Test
-    @DisplayName("a pack.md with frontmatter and sections is read, written as pack.md and equal by its model")
+    @DisplayName("a README.md with frontmatter and sections is read, written as README.md and equal by its model")
     void frontmatterAndSectionsRoundTrip(@TempDir Path host) throws IOException {
         Path pack = documentedPack(host.resolve("source"), WITH_FRONTMATTER);
         WholePackStore.LoadedPack loaded = store.load(pack);
@@ -105,7 +106,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack.md without frontmatter is written without frontmatter, byte for byte when canonical")
+    @DisplayName("a README.md without frontmatter is written without frontmatter, byte for byte when canonical")
     void noFrontmatterStaysAbsent(@TempDir Path host) throws IOException {
         Path pack = documentedPack(host.resolve("source"), WITHOUT_FRONTMATTER);
         WholePackStore.LoadedPack loaded = store.load(pack);
@@ -134,7 +135,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack.md with no final newline loads as the same model and is written with one")
+    @DisplayName("a README.md with no final newline loads as the same model and is written with one")
     void noFinalNewlineIsTheSameModel(@TempDir Path host) throws IOException {
         String unterminated = WITHOUT_FRONTMATTER.stripTrailing();
         Path pack = documentedPack(host.resolve("source"), unterminated);
@@ -152,7 +153,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack.md with CRLF line endings is refused at its first line, never normalized; LF loads")
+    @DisplayName("a README.md with CRLF line endings is refused at its first line, never normalized; LF loads")
     void crlfIsRefusedNotNormalised(@TempDir Path host) throws IOException {
         Path clean = documentedPack(host.resolve("clean"), WITHOUT_FRONTMATTER);
         Path refused = documentedPack(host.resolve("refused"), WITHOUT_FRONTMATTER.replace("\n", "\r\n"));
@@ -172,7 +173,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack.md that opens with a byte order mark is refused; the same text without it loads")
+    @DisplayName("a README.md that opens with a byte order mark is refused; the same text without it loads")
     void aByteOrderMarkIsRefused(@TempDir Path host) throws IOException {
         Path clean = documentedPack(host.resolve("clean"), WITHOUT_FRONTMATTER);
         Path refused = documentedPack(host.resolve("refused"), "﻿" + WITHOUT_FRONTMATTER);
@@ -185,7 +186,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("an empty pack.md is the empty document and is written back")
+    @DisplayName("an empty README.md is the empty document and is written back")
     void anEmptyFileIsTheEmptyDocument(@TempDir Path host) throws IOException {
         Path pack = documentedPack(host.resolve("source"), "");
         WholePackStore.LoadedPack loaded = store.load(pack);
@@ -199,7 +200,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack without pack.md holds no document and is written without one")
+    @DisplayName("a pack without README.md holds no document and is written without one")
     void aPackWithoutPackMdHasNone(@TempDir Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("bare"));
         Files.writeString(pack.resolve(PackFileSet.PACK_YAML), PACK_YAML);
@@ -212,17 +213,20 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack.md below the pack root is not the pack document: it stays unmodelled")
-    void aNestedPackMdIsNotTheDocument(@TempDir Path host) throws IOException {
+    @DisplayName("a README.md below the pack root is not the pack document: it is excluded, not unmodelled (#451)")
+    void aNestedReadmeIsNotTheDocument(@TempDir Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("nested"));
         Files.writeString(pack.resolve(PackFileSet.PACK_YAML), PACK_YAML);
         Files.createDirectories(pack.resolve("docs"));
-        Files.writeString(pack.resolve("docs/pack.md"), WITHOUT_FRONTMATTER);
+        Files.writeString(pack.resolve("docs/README.md"), WITHOUT_FRONTMATTER);
 
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().document()).isEmpty();
-        assertThat(loaded.unmodelled()).contains("docs/pack.md");
+        assertThat(loaded.unmodelled()).isEmpty();
+        assertThat(loaded.excluded())
+                .extracting(WholePackWriteStore.ExcludedFile::file)
+                .containsExactly("docs/README.md");
     }
 
     @Test
@@ -249,7 +253,7 @@ class PackDocumentRoundTripTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("refusedTexts")
     @DisplayName(
-            "validate mode refuses the pack.md the load refuses, with the same reason, and is silent on the clean one")
+            "validate mode refuses the README.md the load refuses, with the same reason, and is silent on the clean one")
     void validateModeAgreesWithTheLoad(String breakage, byte[] bytes, String validateReason, @TempDir Path host)
             throws IOException {
         Path clean = documentedPack(host.resolve("clean"), WITHOUT_FRONTMATTER);
@@ -268,7 +272,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("#273: a pack.md that is not UTF-8 is refused by the load and by validate mode in the one wording")
+    @DisplayName("#273: a README.md that is not UTF-8 is refused by the load and by validate mode in the one wording")
     void notUtf8IsWordedOnce(@TempDir Path host) throws IOException {
         Path refused = documentedPack(host, "");
         Files.write(refused.resolve(PackDocumentMarkdown.FILE), new byte[] {'#', ' ', 'T', '\n', (byte) 0xff, '\n'});
@@ -282,7 +286,7 @@ class PackDocumentRoundTripTest {
     }
 
     /**
-     * Each way a pack.md is refused when read: its name, the file's bytes, and validate mode's reason when it is not the
+     * Each way a README.md is refused when read: its name, the file's bytes, and validate mode's reason when it is not the
      * load's own (an empty one: it is the same). Every refusal is worded the same by both, a file that is not UTF-8
      * included (#273): one wording for every file kind, {@code FilesystemPackStore.NOT_UTF8}.
      */
@@ -303,7 +307,7 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a document whose frontmatter does not read back refuses the write, naming pack.md, and leaves no"
+    @DisplayName("a document whose frontmatter does not read back refuses the write, naming README.md, and leaves no"
             + " target")
     void anUnwritableDocumentRefusesTheWrite(@TempDir Path host) throws IOException {
         // #271: the Markdown rules hold when a document is built (PackDocumentTest); what the codec still refuses at
@@ -324,7 +328,7 @@ class PackDocumentRoundTripTest {
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.getMessage())
-                            .contains("pack.md cannot be written as Markdown")
+                            .contains("README.md cannot be written as Markdown")
                             .contains("[frontmatter]");
                 });
         assertThat(refused).doesNotExist();
@@ -333,7 +337,7 @@ class PackDocumentRoundTripTest {
     // ---- through the gate: DomainRoundTrip, compared by the Markdown model -------------------------------------
 
     @Test
-    @DisplayName("through the gate, a pack.md with frontmatter is green, numbers and lists included")
+    @DisplayName("through the gate, a README.md with frontmatter is green, numbers and lists included")
     void theGateIsGreenOnAFaithfulRun(@TempDir Path host) throws IOException {
         Path pack = documentedPack(host.resolve("documented"), WITH_FRONTMATTER);
 
@@ -376,11 +380,11 @@ class PackDocumentRoundTripTest {
         assertThat(dropped.observed())
                 .containsEntry(
                         PackDocumentMarkdown.FILE,
-                        Optional.of("refused: read-back: the written pack holds no document at pack.md"));
+                        Optional.of("refused: read-back: the written pack holds no document at README.md"));
     }
 
     @Test
-    @DisplayName("through the gate, a CRLF pack.md is refused with the store's reason; the LF one is green")
+    @DisplayName("through the gate, a CRLF README.md is refused with the store's reason; the LF one is green")
     void aCrlfPackMdIsRefusedThroughTheGate(@TempDir Path host) throws IOException {
         Path clean = documentedPack(host.resolve("clean").resolve("documented"), WITHOUT_FRONTMATTER);
         Path crlf =

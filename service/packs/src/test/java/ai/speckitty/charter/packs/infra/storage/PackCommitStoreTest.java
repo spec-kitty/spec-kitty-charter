@@ -355,10 +355,11 @@ class PackCommitStoreTest {
      * throwaway test printing {@code currentRevision} on this lane's base before the change (its revision readers
      * and the fixture were byte-identical to 90de8f9's); re-captured on 2026-11-03 from the unchanged revision code after the
      * fixture's {@code pack_id} became a valid ULID (FR-003), and again on 2026-11-05 after the fixture's tactic lost
-     * its {@code references} (ADR-0064); pinned so reading bytes does not move an existing ETag.
+     * its {@code references} (ADR-0064), and again on 2026-11-11 after its {@code pack.yaml} lost
+     * {@code active_charter} (#431); pinned so reading bytes does not move an existing ETag.
      */
     private static final String PACK_A_REVISION_ON_MAIN =
-            "sha256:f76f94e24cb700573c43190b45432b1374360c4f189ab62405e0f4bde9e83744";
+            "sha256:00fedaf7bceaddfaaffc141640a6c6479be67423d087f34a29ee3392fb7248f6";
 
     /** A root graph shard, which {@link PackFileSet#digested} covers, written with bytes that are not UTF-8. */
     private static final String NON_UTF8_SHARD = "binary.graph.yaml";

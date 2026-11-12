@@ -12,7 +12,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A pack's description, its {@code pack.md} (#260, ADR-0042 decision 8), in the shape of the {@code markdown} content
+ * A pack's description, its {@code README.md} (#260, ADR-0042 decision 8), in the shape of the {@code markdown} content
  * form's model (#194, ADR-0040 as amended): optional frontmatter, an optional title (the H1), a preamble (the text
  * before the first H2) and the H2 sections in order.
  *

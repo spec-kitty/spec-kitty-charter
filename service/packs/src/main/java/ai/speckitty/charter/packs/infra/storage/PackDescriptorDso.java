@@ -11,8 +11,8 @@ import java.util.Optional;
 
 /**
  * The persistence shape of {@code pack.yaml}: a flat mirror of its fields, not the domain descriptor. Its record
- * equality carries the round-trip fidelity assertion, {@code active_charter}, {@code pack_drg} and
- * {@code mutability_policy} included.
+ * equality carries the round-trip fidelity assertion, {@code pack_drg} and {@code mutability_policy}
+ * included.
  *
  * <p>The schema is closed (ADR-0036 decision 3): a {@code pack.yaml} with a key it does not declare is unreadable, so
  * every key the file holds is one of these fields and a write loses nothing.
@@ -23,7 +23,6 @@ import java.util.Optional;
  * @param name the {@code name}
  * @param packLevel the {@code pack_level} token as written, when stated
  * @param requiresCore the {@code requires_core} text as written, when stated
- * @param activeCharter the {@code active_charter} path, when stated
  * @param packDrg the {@code pack_drg} path, when stated
  * @param mutabilityPolicy the {@code mutability_policy} path, when stated (ADR-0063)
  * @param dependencies the {@code depends_on} entries, in file order
@@ -38,7 +37,6 @@ record PackDescriptorDso(
         String name,
         Optional<String> packLevel,
         Optional<String> requiresCore,
-        Optional<String> activeCharter,
         Optional<String> packDrg,
         Optional<String> mutabilityPolicy,
         List<PackDependency> dependencies,
@@ -55,7 +53,6 @@ record PackDescriptorDso(
      * @param name the name
      * @param packLevel the level token
      * @param requiresCore the core requirement
-     * @param activeCharter the active charter path
      * @param packDrg the pack DRG path
      * @param mutabilityPolicy the mutability policy path
      * @param dependencies the declared dependencies
@@ -70,7 +67,6 @@ record PackDescriptorDso(
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(packLevel, "packLevel");
         Objects.requireNonNull(requiresCore, "requiresCore");
-        Objects.requireNonNull(activeCharter, "activeCharter");
         Objects.requireNonNull(packDrg, "packDrg");
         Objects.requireNonNull(mutabilityPolicy, "mutabilityPolicy");
         Objects.requireNonNull(dependencies, "dependencies");
@@ -90,7 +86,6 @@ record PackDescriptorDso(
             String name,
             Optional<String> packLevel,
             Optional<String> requiresCore,
-            Optional<String> activeCharter,
             Optional<String> packDrg,
             Optional<String> mutabilityPolicy,
             List<PackDependency> dependencies,
@@ -103,7 +98,6 @@ record PackDescriptorDso(
                 name,
                 packLevel,
                 requiresCore,
-                activeCharter,
                 packDrg,
                 mutabilityPolicy,
                 dependencies,
@@ -126,7 +120,6 @@ record PackDescriptorDso(
                 descriptor.name(),
                 descriptor.declaredLevel().map(PackLevel::token),
                 descriptor.requiresCore(),
-                descriptor.paths().activeCharter(),
                 descriptor.paths().packDrg(),
                 descriptor.paths().mutabilityPolicy(),
                 descriptor.dependencies(),
@@ -148,7 +141,7 @@ record PackDescriptorDso(
                 name,
                 packLevel.flatMap(PackLevel::fromToken),
                 requiresCore,
-                new PackPaths(activeCharter, packDrg, mutabilityPolicy),
+                new PackPaths(packDrg, mutabilityPolicy),
                 dependencies,
                 overrides,
                 schemaVersion,

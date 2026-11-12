@@ -6,7 +6,7 @@ kind: Glossary
 glossary_context: "Governance"
 doc_status: active
 generated:
-  by: "doc-kitty-glossary/0.6.0"
+  by: "doc-kitty-glossary/0.7.0"
   at: "2026-11-03T20:16:18Z"
   content_hash: "sha256:ecffd3f6d8c2"
 ---

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
@@ -104,21 +105,25 @@ public class PackSourceWiring {
      * @param tree the writer of a walked tree
      * @param configRoot the configuration root the source root must not overlap, when one is set
      * @return the fetcher
-     * @throws IllegalStateException when the source is switched on and no root is configured
-     * @throws IllegalArgumentException when the root is under {@code /proc}, {@code /sys} or {@code /dev}, or overlaps
+     * @throws StartupRefusal when the source is switched on and no root is configured
+     * @throws StartupRefusal when the root is under {@code /proc}, {@code /sys} or {@code /dev}, or overlaps
      *     the configuration root
      */
     @Bean
     PackSourceFetcher filesystemSourceFetcher(
             PackSourceProperties properties, PackTreeReader tree, ObjectProvider<ConfigRoot> configRoot) {
         if (properties.filesystem().enabled() && properties.filesystem().root() == null) {
-            throw new IllegalStateException("charter.pack-sources.filesystem.enabled is true but "
+            throw new StartupRefusal("charter.pack-sources.filesystem.enabled is true but "
                     + "charter.pack-sources.filesystem.root is not set: name the directory a path is read under, "
                     + "or switch the filesystem source off.");
         }
         ConfigRoot configured = configRoot.getIfAvailable();
         Path config = configured == null ? null : configured.root();
-        return new LocalSourceReader(properties.filesystem().root(), config, tree);
+        try {
+            return new LocalSourceReader(properties.filesystem().root(), config, tree);
+        } catch (IllegalArgumentException refused) {
+            throw new StartupRefusal(String.valueOf(refused.getMessage()));
+        }
     }
 
     /**

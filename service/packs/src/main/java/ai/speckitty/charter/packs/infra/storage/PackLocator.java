@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * The one rule that resolves a pack identifier to its configured location (#184), shared by the read side
@@ -19,6 +20,12 @@ import java.util.List;
  * is no descriptor) is passed over. A {@code pack.yaml} that is there but cannot be read is refused
  * {@code PACK_UNREADABLE}, so a location that cannot be read never hides behind another that declares the same id.
  * An identifier no location names or declares is refused {@code PACK_NOT_FOUND}.
+ *
+ * <p>It also resolves a location to its directory, two ways. {@link #directoryOf} is the configured entry, which a
+ * write addresses under the pack's write lock and which keys that lock. {@link #read} is what a reader that takes no
+ * lock reads: the entry, or during a replace's swap window the aside copy that holds the last committed state, inside
+ * an identity-checked re-read ({@link PackDirectories}, #490). Every lock-free read of a pack's files goes through it,
+ * the declaration check of {@link #locate} included, so a pack addressed by its id is found during the window too.
  */
 final class PackLocator {
 
@@ -42,7 +49,7 @@ final class PackLocator {
             }
         }
         for (PackLocation location : configured) {
-            if (declaresId(location, strategy, pack)) {
+            if (declaresId(locations, location, strategy, pack)) {
                 return location;
             }
         }
@@ -60,8 +67,37 @@ final class PackLocator {
         return location.root().toAbsolutePath().normalize();
     }
 
-    private static boolean declaresId(PackLocation location, SerializationStrategy strategy, PackIdentifier pack) {
-        Path directory = directoryOf(location);
+    /**
+     * Reads a location's pack without a lock: {@code body} is given the directory to read, the configured entry or,
+     * while a replace is between its two renames, its aside copy, and its answer is kept only when no swap moved the
+     * directory under it ({@link PackDirectories#read}).
+     *
+     * @param locations the configured pack locations, which say what the service may write
+     * @param location the location
+     * @param body the read, given the directory; it must not write
+     * @param <T> what the read answers
+     * @return what {@code body} answered
+     * @throws CharterRefusal {@code PACK_NOT_FOUND} when the entry is a create's empty reservation; {@code STALE_INPUT}
+     *     when the pack was replaced again and again while it was read; what {@code body} threw otherwise
+     */
+    static <T> T read(Locations locations, PackLocation location, Function<Path, T> body) {
+        return PackDirectories.read(directoryOf(location), location.name(), locations, body);
+    }
+
+    private static boolean declaresId(
+            Locations locations, PackLocation location, SerializationStrategy strategy, PackIdentifier pack) {
+        try {
+            return read(locations, location, directory -> declares(location, directory, strategy, pack));
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() == RefusalCode.PACK_NOT_FOUND) {
+                return false; // a create's reservation declares nothing yet
+            }
+            throw refusal;
+        }
+    }
+
+    private static boolean declares(
+            PackLocation location, Path directory, SerializationStrategy strategy, PackIdentifier pack) {
         Path parent = directory.getParent();
         Path name = directory.getFileName();
         if (parent == null || name == null) {

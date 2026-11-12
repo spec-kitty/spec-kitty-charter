@@ -522,15 +522,16 @@ Feature: A pack's agent profile is read with its governance
     Then the response status is 404
     And the problem code is "pack_not_found"
 
-  Scenario Outline: A depth other than 0 or 1 is a 400 Problem without a code
+  Scenario Outline: A depth other than 0 or 1 is a 400 Problem without a code that names the bound
     When I GET "/packs/built-in/artifacts/agent_profile/java-jenny?depth=<depth>"
     Then the response status is 400
     And the problem has no code
+    And the field at "/detail" is "The query parameter depth is \"<depth>\", which <reason>."
 
     Examples:
-      | depth |
-      | 2     |
-      | -1    |
+      | depth | reason            |
+      | 2     | is greater than 1 |
+      | -1    | is less than 0    |
 
   Scenario: A directive is still read by the generic route, with no profile member and no references link
     When I GET "/packs/built-in/artifacts/directive/DIRECTIVE_010"

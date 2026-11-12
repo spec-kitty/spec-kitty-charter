@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackDocumentRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,8 @@ class PackSummaryQueryTest {
             new ConsistentRead(() -> "sha256:" + "0".repeat(64)),
             () -> List.of(new ConfiguredPack(new PackIdentifier("built-in-pack"), PackLevel.BUILT_IN)),
             descriptors,
-            revisions);
+            revisions,
+            mock(PackDocumentRepository.class));
 
     @Test
     void aBuiltInPackIsNotFoundBecauseItHasNoRegistrationSummary() {

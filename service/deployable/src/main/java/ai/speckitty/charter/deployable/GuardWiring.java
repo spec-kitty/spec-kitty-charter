@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.infra.api.GuardPolicy;
@@ -90,7 +91,7 @@ public class GuardWiring {
      * @param audit the audit log, in which the guard enters the registration and DELETE attempts it refuses
      * @param basePath the API base path, which tells a registration path from any other
      * @return the registration of the guard at the highest precedence, for request dispatches only
-     * @throws IllegalStateException when the token is missing, blank, too short or from the command line or a system
+     * @throws StartupRefusal when the token is missing, blank, too short or from the command line or a system
      *     property; the message names the property and never the token
      */
     @Bean
@@ -132,17 +133,17 @@ public class GuardWiring {
         String token = environment.getProperty(TOKEN_PROPERTY);
         if (token == null) {
             if (!insecure) {
-                throw new IllegalStateException(missingTokenMessage(environment));
+                throw new StartupRefusal(missingTokenMessage(environment));
             }
             LOG.warn("The service starts WITHOUT a worktree token (" + INSECURE_PROPERTY
                     + " is set): any local process can read this worktree's charter. Development only.");
             return null;
         }
         if (token.isBlank()) {
-            throw new IllegalStateException(blankTokenMessage(environment));
+            throw new StartupRefusal(blankTokenMessage(environment));
         }
         if (token.length() < MIN_TOKEN_LENGTH) {
-            throw new IllegalStateException(
+            throw new StartupRefusal(
                     TOKEN_PROPERTY + " is too short; it must be at least " + MIN_TOKEN_LENGTH + " characters");
         }
         if (insecure) {
@@ -181,7 +182,7 @@ public class GuardWiring {
         for (ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
             ConfigurationProperty supplied = source.getConfigurationProperty(name);
             if (supplied != null && String.valueOf(supplied.getValue()).contains("${")) {
-                throw new IllegalStateException(
+                throw new StartupRefusal(
                         TOKEN_PROPERTY + " must be the token itself, not a placeholder: it must not contain ${, since a"
                                 + " placeholder resolves it from another source, the command line or a system property among"
                                 + " them, where other processes can read it");
@@ -189,10 +190,10 @@ public class GuardWiring {
         }
     }
 
-    private static IllegalStateException unreadableSourceRefusal(ConfigurableEnvironment environment) {
+    private static StartupRefusal unreadableSourceRefusal(ConfigurableEnvironment environment) {
         String accepted =
                 inContainer(environment) ? containerSources(environment) : "the environment (CHARTER_WORKTREE_TOKEN)";
-        return new IllegalStateException(TOKEN_PROPERTY + " must come from " + accepted
+        return new StartupRefusal(TOKEN_PROPERTY + " must come from " + accepted
                 + ", not from the command line or a system property, where other processes can read it");
     }
 

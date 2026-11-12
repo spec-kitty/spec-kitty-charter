@@ -32,6 +32,8 @@ import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.PackDocumentRepository;
+import ai.speckitty.charter.packs.domain.PackDocumentText;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -76,13 +78,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
- * {@link MutabilityPolicyRepository}, {@link MissionTypeSteps} and {@link PackCompanionFiles} over the filesystem.
+ * {@link MutabilityPolicyRepository}, {@link MissionTypeSteps}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -113,7 +116,8 @@ public final class DomainRepositoryService
                 PackRepository,
                 MutabilityPolicyRepository,
                 MissionTypeSteps,
-                PackCompanionFiles {
+                PackCompanionFiles,
+                PackDocumentRepository {
 
     private final Locations locations;
     private final SerializationStrategy strategy;
@@ -293,7 +297,7 @@ public final class DomainRepositoryService
     }
 
     /**
-     * Writes the document of a configured pack in place, at {@code pack.md}, in the Markdown form's canonical text
+     * Writes the document of a configured pack in place, at {@code README.md}, in the Markdown form's canonical text
      * (#260, ADR-0042 decision 8). Like {@link #writePreset}, it is the whole-pack gate's seam: it bypasses the commit
      * store's lock and does not restamp a manifest, so no production write path calls it.
      *
@@ -325,22 +329,24 @@ public final class DomainRepositoryService
 
     private <D, E extends CharterArtifact> Optional<E> loadOne(
             PackIdentifier pack, KindBinding<D, E> kind, String elementId) {
-        Resolved resolved = resolve(pack);
-        return resolved.store.readOne(resolved.key, kind, elementId).flatMap(dso -> entity(pack, kind, dso));
+        return reading(
+                pack,
+                resolved ->
+                        resolved.store.readOne(resolved.key, kind, elementId).flatMap(dso -> entity(pack, kind, dso)));
     }
 
     // ---- PackDescriptorRepository --------------------------------------------------------------------------------
 
     @Override
     public PackDescriptor get(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        return resolved.store.readDescriptor(resolved.key).toDescriptor();
+        return reading(
+                pack, resolved -> resolved.store.readDescriptor(resolved.key).toDescriptor());
     }
 
     @Override
     public Optional<PackDescriptor> find(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        return resolved.store.findDescriptor(resolved.key).map(PackDescriptorDso::toDescriptor);
+        return reading(
+                pack, resolved -> resolved.store.findDescriptor(resolved.key).map(PackDescriptorDso::toDescriptor));
     }
 
     @Override
@@ -401,7 +407,11 @@ public final class DomainRepositoryService
         if (!(missionType instanceof MissionType type)) {
             return Map.of();
         }
-        Path directory = resolve(pack).directory;
+        return reading(pack, resolved -> stepFiles(pack, type, resolved.directory));
+    }
+
+    private static Map<String, PackCompanionFiles.StepFiles> stepFiles(
+            PackIdentifier pack, MissionType type, Path directory) {
         String typeDirectory = "missions/" + type.localId() + "/";
         Map<String, PackCompanionFiles.StepFiles> files = new LinkedHashMap<>();
         List<MissionStep> steps = new ArrayList<>(type.steps());
@@ -447,7 +457,10 @@ public final class DomainRepositoryService
      */
     @Override
     public List<PackEdge> edges(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
+        return reading(pack, resolved -> edges(pack, resolved));
+    }
+
+    private static List<PackEdge> edges(PackIdentifier pack, Resolved resolved) {
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         if (!graphs.violations().isEmpty()) {
             throw new CharterRefusal(
@@ -501,13 +514,16 @@ public final class DomainRepositoryService
      */
     @Override
     public PackCompositionFacts compositionFacts(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
+        return reading(pack, resolved -> compositionFacts(pack, resolved));
+    }
+
+    private static PackCompositionFacts compositionFacts(PackIdentifier pack, Resolved resolved) {
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         if (!graphs.violations().isEmpty()) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
-        Pack assembled = readable(pack);
+        Pack assembled = readable(pack, resolved);
         MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
         Set<String> changed = new LinkedHashSet<>();
         Set<String> references = new LinkedHashSet<>();
@@ -635,9 +651,12 @@ public final class DomainRepositoryService
      */
     @Override
     public MutabilityPolicySource policyOf(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        return policyOf(
-                resolved, pack, resolved.store.readDescriptor(resolved.key).toDescriptor());
+        return reading(
+                pack,
+                resolved -> policyOf(
+                        resolved,
+                        pack,
+                        resolved.store.readDescriptor(resolved.key).toDescriptor()));
     }
 
     /**
@@ -721,8 +740,8 @@ public final class DomainRepositoryService
     }
 
     /** The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. */
-    private Pack readable(PackIdentifier pack) {
-        Pack assembled = assemble(pack);
+    private static Pack readable(PackIdentifier pack, Resolved resolved) {
+        Pack assembled = assemble(pack, resolved);
         if (!assembled.violations().isEmpty()) {
             PackElementViolation first = assembled.violations().getFirst();
             throw new CharterRefusal(
@@ -744,15 +763,16 @@ public final class DomainRepositoryService
 
     @Override
     public Pack load(PackIdentifier pack) {
-        return assemble(pack);
+        return reading(pack, resolved -> assemble(pack, resolved));
     }
 
     @Override
     public List<Tactic> tacticsOf(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        return resolved.store.readAll(resolved.key, TacticBinding.INSTANCE).stream()
-                .flatMap(dso -> entity(pack, TacticBinding.INSTANCE, dso).stream())
-                .toList();
+        return reading(
+                pack,
+                resolved -> resolved.store.readAll(resolved.key, TacticBinding.INSTANCE).stream()
+                        .flatMap(dso -> entity(pack, TacticBinding.INSTANCE, dso).stream())
+                        .toList());
     }
 
     /**
@@ -787,8 +807,7 @@ public final class DomainRepositoryService
         store.write(key, kind, kind.dsoOf(artifact));
     }
 
-    private Pack assemble(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
+    private static Pack assemble(PackIdentifier pack, Resolved resolved) {
         // No read serves the warnings in phase 1: the list is filled and dropped.
         return assembly(
                         pack,
@@ -1050,6 +1069,18 @@ public final class DomainRepositoryService
         }
     }
 
+    // ---- the pack document (#451) --------------------------------------------------------------------------------
+
+    @Override
+    public Optional<PackDocumentText> document(PackIdentifier pack) {
+        return reading(pack, resolved -> PackDocumentFiles.read(pack, resolved.directory));
+    }
+
+    @Override
+    public boolean holdsDocument(PackIdentifier pack) {
+        return reading(pack, resolved -> PackDocumentFiles.holds(resolved.directory));
+    }
+
     // ---- identifier to directory ---------------------------------------------------------------------------------
 
     /** A pack's store, the directory-name key the store addresses it by, and the pack's directory. */
@@ -1100,14 +1131,23 @@ public final class DomainRepositoryService
                 real);
     }
 
-    /** The pack's store and directory, at the location {@link PackLocator} resolves. */
+    /** The pack's store and configured directory, at the location {@link PackLocator} resolves: what a write addresses. */
     private Resolved resolve(PackIdentifier pack) {
-        return over(PackLocator.locate(locations, strategy, pack));
+        return over(PackLocator.directoryOf(PackLocator.locate(locations, strategy, pack)));
+    }
+
+    /**
+     * A lock-free read of the pack at the location {@link PackLocator} resolves: {@code body} is given the store over the
+     * directory a reader reads, the aside copy during a replace's swap window too, and its answer is kept only when no
+     * swap moved that directory under it ({@link PackLocator#read}, #490). A whole load runs inside one such read.
+     */
+    private <T> T reading(PackIdentifier pack, Function<Resolved, T> body) {
+        PackLocation location = PackLocator.locate(locations, strategy, pack);
+        return PackLocator.read(locations, location, directory -> body.apply(over(directory)));
     }
 
     /** The store rooted at the pack directory's parent, addressed by the directory's own name. */
-    private Resolved over(PackLocation location) {
-        Path directory = PackLocator.directoryOf(location);
+    private Resolved over(Path directory) {
         Path parent = directory.getParent();
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage.config;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
@@ -57,7 +58,7 @@ public class StorageConfiguration {
      *
      * @param properties the bound configuration
      * @return the configuration root
-     * @throws IllegalStateException when {@code charter.config-root} is empty, or names something that exists and is
+     * @throws StartupRefusal when {@code charter.config-root} is empty, or names something that exists and is
      *     not a directory; the message names the property, not the path
      */
     @Bean
@@ -65,11 +66,10 @@ public class StorageConfiguration {
     ConfigRoot configRoot(StorageProperties properties) {
         Path root = properties.configRoot();
         if (root == null || root.toString().isBlank()) {
-            throw new IllegalStateException("charter.config-root is configured but empty; name a directory");
+            throw new StartupRefusal("charter.config-root is configured but empty; name a directory");
         }
         if (Files.exists(root) && !Files.isDirectory(root)) {
-            throw new IllegalStateException(
-                    "charter.config-root must name a directory; it names something else that exists");
+            throw new StartupRefusal("charter.config-root must name a directory; it names something else that exists");
         }
         return new ConfigRoot(root);
     }
@@ -81,7 +81,7 @@ public class StorageConfiguration {
      * @param root the configuration root, the {@code @Primary} one when a test supplies its own
      * @param environment where a retired property would be found
      * @return the packs of the pack domain
-     * @throws IllegalStateException when a retired property ({@code charter.packs}, {@code charter.storage.*}) is set
+     * @throws StartupRefusal when a retired property ({@code charter.packs}, {@code charter.storage.*}) is set
      */
     @Bean
     Locations storageLocations(ObjectProvider<ConfigRoot> root, Environment environment) {
@@ -98,7 +98,7 @@ public class StorageConfiguration {
                                 .anyMatch(retired -> retired.equals(name) || retired.isAncestorOf(name)))
                         .findFirst()
                         .ifPresent(name -> {
-                            throw new IllegalStateException(Objects.toString(name)
+                            throw new StartupRefusal(Objects.toString(name)
                                     + " is no longer read: packs live under charter.config-root (<root>/packs/<pack>);"
                                     + " pass --configRootLocation <path>");
                         });
