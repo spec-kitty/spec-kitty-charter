@@ -74,7 +74,7 @@ How to build the charter service and run every check CI runs.
 | `:charter-api:generateContract` | Spring interfaces and DTOs are generated; controllers that drift from the contract fail to compile |
 | `:client-java:check` | The Java client is generated from the contract bundle and compiles for Java 21; `ProblemDetails` passes every gate and its tests; two generations are byte-identical ([The Java client](#the-java-client)) |
 | `:<module>:spotlessCheck` | Hand-written main and test sources are formatted by palantir-java-format |
-| `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`; any violation fails |
+| `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`, the complexity limits among them ([below](#exceptions-to-a-gate)); any violation fails |
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
@@ -479,12 +479,20 @@ element or a comment-only entry (a comment with a `rule:` line); all are checked
 not run Checkstyle and does not ask whether an entry is still needed; an empty register passes.
 
 The four complexity limits decided in
-[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet:
-cyclomatic complexity 15, NPath 1000, 60 non-empty lines per method and nested-if depth 1. No build
-fails on them today, so keep new methods within them.
-[#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) first refactors the methods over
-them, with no register entry, and
-[#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) then turns them on.
+[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are Checkstyle rules in
+`config/checkstyle/checkstyle.xml`, on main, test, test-fixture and drift-test sources alike:
+
+| Checkstyle module | Limit |
+| --- | --- |
+| `CyclomaticComplexity` | 15 |
+| `NPathComplexity` | 1000 |
+| `MethodLength` | 60 non-empty lines |
+| `NestedIfDepth` | 1 |
+
+A method over a limit fails the build. Refactor it (an extracted method, a guard clause, a table of
+rows split by family); it never gets a register entry. No method was grandfathered when the limits
+turned on ([#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367),
+[#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371)).
 
 ## The nightly SonarCloud report
 
