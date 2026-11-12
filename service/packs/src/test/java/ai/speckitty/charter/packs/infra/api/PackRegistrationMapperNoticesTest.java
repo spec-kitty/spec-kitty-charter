@@ -120,4 +120,14 @@ class PackRegistrationMapperNoticesTest {
         assertThat(resultWith(RegistrationImpact.Notices.NONE, false).getLinks())
                 .doesNotContainKey("doc");
     }
+
+    @Test
+    void aResultLinksThePresetListWhetherOrNotThePackHoldsADocument() {
+        for (boolean hasDocument : new boolean[] {true, false}) {
+            assertThat(resultWith(RegistrationImpact.Notices.NONE, hasDocument).getLinks())
+                    .extractingByKey("presets")
+                    .extracting(link -> link.getHref())
+                    .isEqualTo("/api/v1/packs/acme/presets");
+        }
+    }
 }
