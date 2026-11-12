@@ -13,7 +13,11 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
@@ -45,6 +49,7 @@ class OfferingReadServiceTest {
     private final Map<String, CharterRefusal> unreadable = new HashMap<>();
     private final Map<String, List<String>> defined = new HashMap<>();
     private final Map<String, List<String>> written = new HashMap<>();
+    private final Map<String, List<Relationship>> edges = new HashMap<>();
     private final Map<String, CharterRefusal> factsUnreadable = new HashMap<>();
     private final List<String> factsRead = new ArrayList<>();
 
@@ -337,6 +342,53 @@ class OfferingReadServiceTest {
     }
 
     /**
+     * C37 (FR-002): the {@code enhances} target {@code action:M/s} of a step enhancement is held by a pack of the
+     * enhancing pack's {@code depends_on} closure. The twin differs only in the step it names.
+     */
+    @Nested
+    class StepEnhancementTarget {
+
+        private List<ConfiguredPack> enhancing(String target) {
+            defined.put("base", List.of("mission_type:software-dev", "action:software-dev/plan"));
+            defined.put("enhancer", List.of("step_enhancement:spdd-plan"));
+            written.put("enhancer", List.of("step_enhancement:spdd-plan", target));
+            edges.put(
+                    "enhancer",
+                    List.of(new Relationship(
+                            Urn.parse("step_enhancement:spdd-plan").orElseThrow(),
+                            Optional.empty(),
+                            PackQualifiedReference.parse(target).asUrn().orElseThrow(),
+                            PackQualifiedReference.parse(target).packName(),
+                            RelationType.ENHANCES,
+                            Optional.empty(),
+                            Optional.empty())));
+            return List.of(
+                    declared("base", PackLevel.ORG, named("base", "base", List.of())),
+                    declared("enhancer", PackLevel.ORG, withDependencies("enhancer", "base")));
+        }
+
+        @Test
+        void aStepEnhancementOfAStepTheNamedPackDoesNotHoldRefusesTheCompose() {
+            List<ConfiguredPack> packs = enhancing("base::action:software-dev/nosuch");
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+            assertThat(refused.getMessage())
+                    .contains("step_enhancement:spdd-plan")
+                    .contains("action:software-dev/nosuch");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+        }
+
+        @Test
+        void theTwinAStepEnhancementOfAHeldStepComposes() {
+            List<ConfiguredPack> packs = enhancing("base::action:software-dev/plan");
+
+            assertThat(service(packs).composed()).hasSize(2);
+        }
+    }
+
+    /**
      * The offering ratchet (FR-020, SC-004): the whole compose is the compose rooted at every configured pack, and each
      * composition refusal reached through the offering is the one the unrooted resolve gives over every pack.
      */
@@ -539,7 +591,7 @@ class OfferingReadServiceTest {
         }
     }
 
-    /** The defined and written artifacts by pack id; no pack refines any. */
+    /** The defined and written artifacts and the typed edges by pack id; no pack refines any. */
     private final class InMemoryRefinements implements PackArtifactRepository {
 
         @Override
@@ -552,7 +604,10 @@ class OfferingReadServiceTest {
             return new PackCompositionFacts(
                     List.of(),
                     defined.getOrDefault(pack.value(), List.of()),
-                    written.getOrDefault(pack.value(), List.of()));
+                    written.getOrDefault(pack.value(), List.of()),
+                    MutabilityPolicySource.empty(),
+                    List.of(),
+                    edges.getOrDefault(pack.value(), List.of()));
         }
     }
 }
