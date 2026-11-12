@@ -242,6 +242,26 @@ public class EffectiveReadService {
         }
     }
 
+    /**
+     * The place of a step under an activation.
+     *
+     * @param packId the configured id of the pack that holds the merged winner of the step's action
+     * @param sourceFingerprint the source fingerprint of the read
+     */
+    public record StepPlace(String packId, String sourceFingerprint) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param packId the place's pack
+         * @param sourceFingerprint the source fingerprint
+         */
+        public StepPlace {
+            Objects.requireNonNull(packId, "packId");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+        }
+    }
+
     /** A page cursor of another set, which a client holds after the document or a pack of the closure changed. */
     public static final class StaleCursorException extends RuntimeException {
 
@@ -541,6 +561,35 @@ public class EffectiveReadService {
                 winner.artifact(),
                 contracts,
                 session.snapshot().fingerprint());
+    }
+
+    /**
+     * The place of one step under an activation (research R8, A7, DIV-243), for the missions slice's read of a step that
+     * the winning mission type does not declare: the pack that holds the merged winner of
+     * {@code action:<missionType>/<stepId>}, which keeps the step when only a version the winner replaced declares it,
+     * and the source fingerprint, from one {@link PacksSession}. The names are judged as the action context judges them
+     * ({@link PacksSession#requireAction}), so the step, the context and the prompt reads refuse one unknown step alike.
+     * What the place's pack stores of the mission type is the packs slice's to read, against the fingerprint.
+     *
+     * @param id the activation's id
+     * @param missionTypeId the mission type's id, exactly as declared
+     * @param stepId the step's id, exactly as declared
+     * @return the place's pack and the source fingerprint of the read
+     * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
+     *     is no longer configured, or as the merge refuses; {@code mission_type_not_found} or {@code action_not_found}
+     *     when the merged closure holds no such mission type or step
+     */
+    public StepPlace stepPlace(ActivationId id, String missionTypeId, String stepId) {
+        Objects.requireNonNull(missionTypeId, "missionTypeId");
+        Objects.requireNonNull(stepId, "stepId");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        session.requireAction(missionTypeId, stepId);
+        String place = session.stepPlace(missionTypeId, stepId)
+                .orElseThrow(() -> new IllegalStateException("The read of the step " + stepId + " of mission type "
+                        + missionTypeId + " under activation " + id.value()
+                        + ": the merged closure holds the step, and the session gave it no place."));
+        return new StepPlace(place, session.snapshot().fingerprint());
     }
 
     /**

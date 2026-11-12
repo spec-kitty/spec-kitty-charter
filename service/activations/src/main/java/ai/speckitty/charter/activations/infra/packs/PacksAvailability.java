@@ -156,6 +156,11 @@ public class PacksAvailability implements AvailablePacks {
         public void requireAction(String missionType, String action) {
             // a session that holds no closure refuses before any name is judged
         }
+
+        @Override
+        public Optional<String> stepPlace(String missionType, String action) {
+            return Optional.empty();
+        }
     }
 
     /**

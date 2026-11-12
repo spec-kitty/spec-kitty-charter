@@ -210,6 +210,15 @@ final class ClosureViewSession implements PacksSession {
         view.requireAction(missionType, action);
     }
 
+    /** The pack of the merged winner of the step's action, the one place {@link StepHolding} gives a step (R8). */
+    @Override
+    public Optional<String> stepPlace(String missionType, String action) {
+        return view.merged()
+                .closure()
+                .winnerOf(Urn.action(missionType, action))
+                .map(winner -> winner.packId().value());
+    }
+
     /**
      * What is in force under the query: resolved on the first ask and kept for a read request that asks again. The cache
      * holds one query: a write that asks for another document (a deactivate judges the early floor, then the committed

@@ -182,6 +182,48 @@ class EffectiveReadServiceMissionWinnerTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
     }
 
+    @Test
+    void aStepsPlaceIsThePackOfTheMergedWinnerOfItsActionWithTheSourceFingerprint() {
+        packs.places(
+                (type, step) -> type.equals("sd") && step.equals("review") ? Optional.of("main") : Optional.empty());
+
+        EffectiveReadService.StepPlace place = service.stepPlace(ID, "sd", "review");
+
+        assertThat(place.packId())
+                .as("main keeps review, which proj's winning sd drops (A7)")
+                .isEqualTo("main");
+        assertThat(place.sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(packs.nameChecks()).as("judged as the context judges it").containsExactly("sd/review");
+        assertThat(packs.calls()).as("one session").isEqualTo(1);
+        assertThat(packs.effectiveAsks()).as("no entity is read").isEmpty();
+    }
+
+    @Test
+    void aStepTheClosureDoesNotHoldIsTheSessionsRefusalBeforeAnyPlaceIsAsked() {
+        packs.places((type, step) -> {
+            throw new AssertionError("no place is asked of a step the names check refused");
+        });
+        packs.contexts(ask -> {
+            if (ask.action().equals("deploy")) {
+                throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no such action");
+            }
+            throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "no such mission type");
+        });
+
+        assertThatThrownBy(() -> service.stepPlace(ID, "sd", "deploy"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+        assertThatThrownBy(() -> service.stepPlace(ID, "research", "gather"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThatThrownBy(() -> service.stepPlace(new ActivationId("nope"), "sd", "review"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+    }
+
     private static MergedSnapshot.Winner winner(String packId, PackLevel level) {
         return new MergedSnapshot.Winner(packId, level, Policy.OPEN);
     }

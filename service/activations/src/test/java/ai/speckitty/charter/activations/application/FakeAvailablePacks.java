@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
@@ -57,6 +58,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<ArtifactRef> activeAsks = new ArrayList<>();
     private Function<PromptAsk, EffectivePrompt> promptAnswer = ask -> EffectivePrompt.NONE;
     private final List<PromptAsk> promptAsks = new ArrayList<>();
+    private BiFunction<String, String, Optional<String>> placeAnswer = (missionType, action) -> Optional.empty();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -231,6 +233,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void prompts(Function<PromptAsk, EffectivePrompt> next) {
         this.promptAnswer = next;
+    }
+
+    /**
+     * Answers every step place of a session with this function from now on, where by default no step has one.
+     *
+     * @param next the answers of {@link PacksSession#stepPlace}, by mission type and step
+     */
+    public void places(BiFunction<String, String, Optional<String>> next) {
+        this.placeAnswer = next;
     }
 
     /**
@@ -409,6 +420,11 @@ public final class FakeAvailablePacks implements AvailablePacks {
             PromptAsk ask = new PromptAsk(missionType, action, query);
             promptAsks.add(ask);
             return promptAnswer.apply(ask);
+        }
+
+        @Override
+        public Optional<String> stepPlace(String missionType, String action) {
+            return placeAnswer.apply(missionType, action);
         }
 
         @Override

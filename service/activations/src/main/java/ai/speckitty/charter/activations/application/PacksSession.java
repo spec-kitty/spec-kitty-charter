@@ -171,4 +171,18 @@ public interface PacksSession {
      *     does
      */
     void requireAction(String missionType, String action);
+
+    /**
+     * The place of one step on the merged closure (research R8, A7, DIV-243): the configured id of the pack that holds the
+     * merged winner of {@code action:<missionType>/<action>}, the version of the step the closure keeps, whether or not
+     * the winning mission type declares it. It judges no name: the caller has run {@link #requireAction}, so a held step
+     * has a place. It answers from this session's read alone, with no in-force resolution.
+     *
+     * @param missionType the mission type of the step
+     * @param action the step
+     * @return the configured id of the place's pack; empty when the merged closure holds no such step, and for a session
+     *     that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does
+     */
+    Optional<String> stepPlace(String missionType, String action);
 }

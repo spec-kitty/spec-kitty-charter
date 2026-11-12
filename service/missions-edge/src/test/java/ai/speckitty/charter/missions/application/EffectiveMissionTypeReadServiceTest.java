@@ -30,10 +30,12 @@ class EffectiveMissionTypeReadServiceTest {
 
     private static final String FINGERPRINT = "sha256:" + "d".repeat(64);
     private static final PackIdentifier PROJ = new PackIdentifier("proj");
+    private static final PackIdentifier MAIN = new PackIdentifier("main");
 
     private final List<String> asked = new ArrayList<>();
     private String packFingerprint = FINGERPRINT;
     private String laterFingerprint = FINGERPRINT;
+    private String placeFingerprint = FINGERPRINT;
     private Optional<RefusalCode> packRefusal = Optional.empty();
 
     private EffectiveStepContract stepContract = new EffectiveStepContract(
@@ -54,6 +56,18 @@ class EffectiveMissionTypeReadServiceTest {
         public EffectiveStepContract stepContract(String activation, String id) {
             asked.add(activation + " contract " + id);
             return stepContract;
+        }
+
+        // main keeps review, which proj's winning type drops (A7); no version declares any other step it lacks.
+        @Override
+        public EffectiveStepPlace stepPlace(String activation, String type, String step) {
+            asked.add(activation + " place " + type + "/" + step);
+            if (!step.equals("review")) {
+                throw new CharterRefusal(
+                        RefusalCode.ACTION_NOT_FOUND,
+                        "The action " + step + " of mission type " + type + " is not held by the closure.");
+            }
+            return new EffectiveStepPlace(MAIN, placeFingerprint);
         }
     };
     private final PackMissionTypes packs = new PackMissionTypes() {

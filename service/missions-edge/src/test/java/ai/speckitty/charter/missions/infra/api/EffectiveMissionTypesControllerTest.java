@@ -11,12 +11,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.missions.application.ActivationMissionTypes;
 import ai.speckitty.charter.missions.application.EffectiveMissionType;
 import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService;
 import ai.speckitty.charter.missions.application.EffectiveStepContract;
+import ai.speckitty.charter.missions.application.EffectiveStepPlace;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
@@ -91,6 +94,12 @@ class EffectiveMissionTypesControllerTest {
                                                     Optional.of(holding().type()),
                                                     Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD")),
                                                     FINGERPRINT);
+                                        }
+
+                                        @Override
+                                        public EffectiveStepPlace stepPlace(
+                                                String activation, String type, String step) {
+                                            throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no step " + step);
                                         }
                                     },
                                     new PackMissionTypes() {
