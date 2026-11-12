@@ -106,12 +106,12 @@
     },
     {
       "criterion_id": "FR-011",
-      "description": "Verify FR-011 is satisfied",
+      "description": "R3 decided and recorded",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "docs/api/service-contract.md R3 row (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:23.548526+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
