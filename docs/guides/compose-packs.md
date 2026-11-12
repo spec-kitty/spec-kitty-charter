@@ -2,7 +2,7 @@
 title: Compose packs
 description: "Declare depends_on, qualify cross-pack references, settle a sibling conflict, register and remove packs, artifacts and edges, and fix each refusal."
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -20,6 +20,7 @@ related:
   - changelog/2026-11-07-a-pack-registration
   - conformance/divergence-register
   - guides/service-build
+  - guides/enforce-org-presets
 audience:
   - profile: pack-author
     guidance_text: Follow this when your pack builds on another pack, references its artifacts, or meets a composition refusal.
@@ -201,8 +202,8 @@ pack-scoped reads still answer.
 
 ## Register a pack
 
-A whole pack is registered in one request, and the service then holds exactly that pack. An artifact, an edge, a preset
-item or a file the upload does not carry is gone. This differs from core, which merges per artifact
+A whole pack is registered in one request, and the service then holds exactly that pack, less the files it reports as
+not held. An artifact, an edge, a preset item or a file the upload does not carry is gone. This differs from core, which merges per artifact
 ([DIV-601](/conformance/divergence-register/#div-601-a-registration-replaces-the-stored-pack)). The per-artifact and
 per-relationship writes stay for a small change.
 
@@ -230,6 +231,16 @@ Rules of the request:
 - For `POST`, the `name` in the pack's `pack.yaml` must equal the target `packId`. For `PUT` it need not.
 - A git ref that is a branch needs a commit, or `If-Match`, or `If-None-Match: *`, else `428`. A tag, a commit id and a
   branch with a commit need none of them.
+- A file that is not pack content is not held and not refused: a file an `exclusions` rule of `file-kinds.yaml` names
+  (a `README.md` beside a mission type, `plan-field-declaration.yaml`, a hidden file under `assets/`), and a Markdown file
+  that no rule models (an author's `docs/notes.md`). The service removes it before it commits, and reports it in the
+  answer's `diagnostics` as a `file_not_held` warning whose `detail` names the file and the reason. Any other file
+  nothing models (`notes.txt`) is refused `unmodelled`.
+- The pack document is `README.md` at the pack root. The retired `pack.md`, `PROVENANCE.md` and `org-charter.yaml`, and a
+  root file that differs from a rule's file only in letter case (`Readme.md`), are refused by name with violation code
+  `retired`. A `pack.yaml` that declares `active_charter` is refused as unreadable: one `pack_unreadable` violation at
+  `pack`, whose detail names the undeclared key; the pack's other faults show only once the key is removed. To require artifacts of an
+  organization's projects, see [Enforce presets on an organization's projects](/guides/enforce-org-presets/).
 - The notices list the must-have items the write added to or took off the required floor, and the artifacts it put under
   or released from a lock. They name activatable kinds only. An entry of another kind (a template, an asset, a guard, a
   lifecycle) is left out and logged at WARN with its URN. Issue
@@ -339,5 +350,7 @@ Decision `DM-01M6RA8XSM9CZZX1ADX6G80T3X`; see also `depth` in the [activation ch
 - [Divergence register](/conformance/divergence-register/#registration-div-601699-adr-0065): where registration differs from core.
 - [Changelog: pack registration](/changelog/2026-11-07-a-pack-registration/).
 - [Descriptors](/architecture/descriptors/#packyaml--pack-descriptor): the `pack.yaml` fields.
+- [Enforce presets on an organization's projects](/guides/enforce-org-presets/): a governing preset and `policy.yaml`, in
+  place of the retired `org-charter.yaml`.
 - [Resolution model](/architecture/resolution-model/): where the compose sits in the pipeline.
 - [Changelog: pack composition](/changelog/2026-11-03-pack-composition-depends-on-and-resolver/).

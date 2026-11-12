@@ -2,7 +2,7 @@
 title: "Journey 04: Set an organization's house rules"
 description: A governance lead ships an org pack with a required preset and a locked directive, and every project using it keeps the directive on its plate unaltered.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -76,7 +76,9 @@ flowchart TD
   (`src/specify_cli/cli/commands/charter/org.py`); the org pack is loaded through
   `.kittify/config.yaml` (`charter_packs.org.packs`).
 - Requirement is authored as `required_<plural>` lists in `org-charter.yaml`; a deactivation of
-  an org-required id is refused (`src/charter/activation/activation_engine.py`).
+  an org-required id is refused (`src/charter/activation/activation_engine.py`). This is core. The
+  service retired `org-charter.yaml` (#431): it refuses the file by name and enforces a governing
+  preset's must-have items instead ([Enforce presets on an organization's projects](/guides/enforce-org-presets/)).
 
 Gaps against the conceptual model:
 
