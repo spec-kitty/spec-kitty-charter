@@ -209,7 +209,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
                     InvalidParameter.In.PATH,
                     "packId",
                     String.valueOf(value),
-                    "which does not match " + PACK_ID.pattern());
+                    "which is not in the form this parameter accepts");
         }
         return packId;
     }

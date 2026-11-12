@@ -744,5 +744,5 @@ Feature: One artifact or one registered relationship is removed from a pack
 
     Examples:
       | query                         | detail                                                                                                      |
-      | from=D1&to=directive:D2       | The query parameter from is \"D1\", which does not match ^([a-z0-9][a-z0-9_-]*::)?[a-z_]+:.+$.              |
+      | from=D1&to=directive:D2       | The query parameter from is \"D1\", which is not in the form this parameter accepts. |
       | from=directive:D1             | The query parameter to is missing, and it is required.                                                      |
