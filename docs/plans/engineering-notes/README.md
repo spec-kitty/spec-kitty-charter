@@ -32,3 +32,5 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Service usability run, 2026-11-10: mission types](/plans/engineering-notes/service-usability-run-2026-11-10-mission-types/) —
   a client that starts at the API root reaches `software-dev`, its 13 steps, its 5 step contracts and its skeletons,
   from the pack and under an activation. It is the proof of SC-001 of the mission type reads (#99).
+- [Service usability run, 2026-11-12: the slice B pin](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/) —
+  at open-packs `1692a3b`, `internal` and `qa` register as they are and the run passes all 146 hops (#466).
