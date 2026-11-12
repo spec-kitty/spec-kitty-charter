@@ -96,4 +96,5 @@ done
 (cd "$work/assets" && sha256sum --check --strict charter-openapi.yaml.sha256)
 # grep reads the whole listing: grep -q would exit at the first match and tar would die on SIGPIPE under pipefail.
 tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -x 'scenarios/README.md' >/dev/null
+tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -x 'scenarios/switch-gate.yaml' >/dev/null
 echo "Rehearsed $tag: refused while unreleased or unassembled, assembled once released. Nothing was published."
