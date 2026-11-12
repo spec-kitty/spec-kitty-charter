@@ -85,7 +85,7 @@
       "wp": "WP07"
     },
     "#450": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Scoping half: WP01, WP02, WP08; body links shipped in PR #486",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,8 +93,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP02"
     },
     "#466": {
       "evidence_ref": "<auto-classified: no action required>",
