@@ -266,7 +266,7 @@ public final class ReleaseGate {
                         : "contracts/charter/CHANGELOG.md records no released " + top.line() + " version,"
                                 + (top.major() > 0
                                         ? " and a new major version is not compared with an older one."
-                                        : " and a new minor version of 0.x is not compared with an older" + " one.")));
+                                        : " and a new minor version of 0.x is not compared with an older one.")));
     }
 
     /**
