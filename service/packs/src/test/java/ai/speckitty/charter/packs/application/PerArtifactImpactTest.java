@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 class PerArtifactImpactTest {
 
     private static final String MID_ID = PackRegistrationServiceTest.ulid('Q');
+    private static final String ALPHA_ID = PackRegistrationServiceTest.ulid('A');
 
     /** The registration services over the rig's real stores and the gate the deployment wires. */
     private static final class Writes {
@@ -193,7 +194,7 @@ class PerArtifactImpactTest {
         Rig rig = new Rig(host);
         rig.register(
                 "alpha",
-                rig.stage(Packs.of(MID_ID, "alpha", "1.0.0", "org")
+                rig.stage(Packs.of(ALPHA_ID, "alpha", "1.0.0", "org")
                         .directive("ALPHA_ONE", "Own")
                         .file("presets/team.yaml", NAMES_GUARD)),
                 Preconditions.none());
