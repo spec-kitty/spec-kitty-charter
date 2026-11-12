@@ -47,7 +47,7 @@ class EffectiveContextTest {
                 PackLevel.ORG,
                 state,
                 false,
-                Optional.empty(),
+                List.of(),
                 Policy.OPEN,
                 reason,
                 reason == Reason.NOT_SELECTED

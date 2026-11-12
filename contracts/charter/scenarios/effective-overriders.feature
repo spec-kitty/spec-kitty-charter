@@ -8,7 +8,8 @@
 # Fixture: the org pack "main" holds T, which its governing preset requires, and E3, which overrides T; the project pack
 # "proj" holds E1 and E2, which both override T. The ids are chosen so that the order by URN alone (E1, E2, E3) differs
 # from the ruled order (E3 at org, then E1 and E2 at project, by URN within the level). PW is scoped by nothing and
-# suggests T, so the action context lists T as a suggestion when the activation does not select it; jenny requires T.
+# suggests T, so the action context lists T as a suggestion when the activation does not select it; so does jenny, so
+# the effective read of jenny at depth 1 lists T in its governance.
 
 @contract @activations
 Feature: Every overrider in force that satisfies or hides an artifact is named, by level then URN
@@ -83,7 +84,10 @@ Feature: Every overrider in force that satisfies or hides an artifact is named, 
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: directive:E3
         target: directive:T
@@ -93,7 +97,7 @@ Feature: Every overrider in force that satisfies or hides an artifact is named, 
         relation: suggests
       - source: agent_profile:jenny
         target: directive:T
-        relation: requires
+        relation: suggests
       """
     And the project pack "proj" with the file "pack.yaml":
       """
@@ -195,7 +199,7 @@ Feature: Every overrider in force that satisfies or hides an artifact is named, 
   Scenario: A required T the document does not select names every overrider wherever it is carried
     T is not selected, so its reason is not_selected, the row before overridden, and it carries satisfiedBy all the same:
     on the effective list, on its effective read, on the action context, which lists it as a suggestion of PW, and on the
-    governance entry of jenny, which requires it. Each names E3, E1, E2.
+    governance entry of jenny, which suggests it (walked at depth 1). Each names E3, E1, E2.
     Given the activation "a-2" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {
@@ -241,7 +245,7 @@ Feature: Every overrider in force that satisfies or hides an artifact is named, 
       directive:E2
       """
     And the field at "/artifacts/3/satisfiedBy" is absent
-    When I GET "/activations/a-2/artifacts/agent_profile/jenny"
+    When I GET "/activations/a-2/artifacts/agent_profile/jenny?depth=1"
     Then the response status is 200
     And the field at "/governance" holds exactly the ids:
       """

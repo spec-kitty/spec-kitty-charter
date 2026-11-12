@@ -10,7 +10,9 @@ import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +78,7 @@ public class EffectiveProfileDtos {
                 ProfileDtos.profile(read.profile()),
                 read.governance().stream().map(entry -> entry(entry, read)).toList(),
                 links(read, depth));
-        winner.satisfiedBy().map(EffectiveProfileDtos::reference).ifPresent(wire::setSatisfiedBy);
+        references(winner.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         winner.suggestion().map(EffectiveProfileDtos::suggestion).ifPresent(wire::setSuggestion);
         return wire;
     }
@@ -127,8 +129,18 @@ public class EffectiveProfileDtos {
                 entry.hops(),
                 ProfileDtos.edge(entry.edge()),
                 links);
-        facts.satisfiedBy().map(EffectiveProfileDtos::reference).ifPresent(wire::setSatisfiedBy);
+        references(facts.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         return wire;
+    }
+
+    /**
+     * The overriders of a {@code satisfiedBy}, in the order the read gives (#439); absent when there is none, since the
+     * member is absent rather than empty ({@code minItems: 1}).
+     */
+    private static Optional<List<ArtifactReference>> references(List<ai.speckitty.charter.kernel.domain.Urn> urns) {
+        return urns.isEmpty()
+                ? Optional.empty()
+                : Optional.of(urns.stream().map(EffectiveProfileDtos::reference).toList());
     }
 
     private static ArtifactReference reference(ai.speckitty.charter.kernel.domain.Urn urn) {

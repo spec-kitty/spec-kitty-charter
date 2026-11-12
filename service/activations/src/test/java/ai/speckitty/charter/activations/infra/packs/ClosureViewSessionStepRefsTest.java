@@ -87,12 +87,10 @@ class ClosureViewSessionStepRefsTest {
     // ---- the states of the in-force resolution: one case per call site ----
 
     private static ArtifactState active(Urn urn) {
-        return new ArtifactState(
-                urn, State.ACTIVE, Reason.SELECTED, false, Optional.empty(), Optional.empty(), Optional.empty());
+        return new ArtifactState(urn, State.ACTIVE, Reason.SELECTED, false, List.of(), List.of(), Optional.empty());
     }
 
-    private static ArtifactState state(
-            Urn urn, Optional<Urn> satisfiedBy, Optional<Urn> overriddenBy, boolean required) {
+    private static ArtifactState state(Urn urn, List<Urn> satisfiedBy, List<Urn> overriddenBy, boolean required) {
         return new ArtifactState(
                 urn, State.INACTIVE, Reason.NOT_SELECTED, required, satisfiedBy, overriddenBy, Optional.empty());
     }
@@ -118,14 +116,27 @@ class ClosureViewSessionStepRefsTest {
     void aStepThatSatisfiesARequirementIsNotNamedAndAnArtifactIs() {
         Urn required = urn("directive:R");
         Urn required2 = urn("directive:R2");
-        InForceAnswer answer = ClosureViewSession.inForceOf(states(byUrn(
-                state(required, Optional.of(STEP), Optional.empty(), true),
-                state(required2, Optional.of(D), Optional.empty(), true))));
+        InForceAnswer answer = ClosureViewSession.inForceOf(states(
+                byUrn(state(required, List.of(STEP), List.of(), true), state(required2, List.of(D), List.of(), true))));
 
         assertThat(answer.states().get(ref("directive:R")).satisfiedBy())
                 .as("a step satisfies nothing")
                 .isEmpty();
-        assertThat(answer.states().get(ref("directive:R2")).satisfiedBy()).contains(D_REF);
+        assertThat(answer.states().get(ref("directive:R2")).satisfiedBy()).containsExactly(D_REF);
+    }
+
+    @Test
+    void everyOverriderThatIsAnArtifactIsCarriedInTheResolutionsOrderAndTheOthersAreDropped() {
+        // #439: the resolution names every overrider in force, by level then URN; D16 drops what is no artifact of an
+        // activatable kind and keeps the rest in the order given, never sorting it again.
+        Urn later = urn("directive:A");
+        Urn template = urn("template:tpl");
+        InForceAnswer answer = ClosureViewSession.inForceOf(states(byUrn(
+                state(urn("directive:R"), List.of(D, STEP, template, later), List.of(), true),
+                state(urn("directive:H"), List.of(), List.of(D, STEP, later), false))));
+
+        assertThat(answer.states().get(ref("directive:R")).satisfiedBy()).containsExactly(D_REF, ref("directive:A"));
+        assertThat(answer.states().get(ref("directive:H")).overriddenBy()).containsExactly(D_REF, ref("directive:A"));
     }
 
     @Test
@@ -141,8 +152,8 @@ class ClosureViewSessionStepRefsTest {
                 State.INACTIVE,
                 Reason.OVERRIDDEN,
                 true,
-                Optional.of(template),
-                Optional.of(template),
+                List.of(template),
+                List.of(template),
                 Optional.empty())));
 
         MergedSnapshot.ArtifactState read =
@@ -171,14 +182,13 @@ class ClosureViewSessionStepRefsTest {
     void aStepThatHidesAnArtifactIsNotNamedAndAnArtifactIs() {
         Urn hidden = urn("directive:H");
         Urn hidden2 = urn("directive:H2");
-        InForceAnswer answer = ClosureViewSession.inForceOf(states(byUrn(
-                state(hidden, Optional.empty(), Optional.of(STEP), false),
-                state(hidden2, Optional.empty(), Optional.of(D), false))));
+        InForceAnswer answer = ClosureViewSession.inForceOf(states(
+                byUrn(state(hidden, List.of(), List.of(STEP), false), state(hidden2, List.of(), List.of(D), false))));
 
         assertThat(answer.states().get(ref("directive:H")).overriddenBy())
                 .as("a step overrides nothing")
                 .isEmpty();
-        assertThat(answer.states().get(ref("directive:H2")).overriddenBy()).contains(D_REF);
+        assertThat(answer.states().get(ref("directive:H2")).overriddenBy()).containsExactly(D_REF);
     }
 
     @Test
@@ -207,15 +217,16 @@ class ClosureViewSessionStepRefsTest {
                 List.of(),
                 List.of(),
                 List.of(
-                        new InForceStates.OverrideNotApplied(STEP, D),
-                        new InForceStates.OverrideNotApplied(D, STEP),
-                        new InForceStates.OverrideNotApplied(D, other)),
+                        new InForceStates.OverrideNotApplied(STEP, List.of(D)),
+                        new InForceStates.OverrideNotApplied(D, List.of(STEP, other)),
+                        new InForceStates.OverrideNotApplied(other, List.of(STEP))),
                 List.of(),
                 List.of(),
                 Map.of());
 
         assertThat(ClosureViewSession.inForceOf(kept).overrideNotApplied())
-                .containsExactly(new EffectiveSkippedReport.OverrideNotApplied(D_REF, ref("directive:O")));
+                .as("a target with no overrider left once the steps are dropped is not carried")
+                .containsExactly(new EffectiveSkippedReport.OverrideNotApplied(D_REF, List.of(ref("directive:O"))));
     }
 
     @Test
@@ -330,9 +341,9 @@ class ClosureViewSessionStepRefsTest {
     @Test
     void aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution() {
         // The resolution's own branch for an unheld step (rule E6 as amended by OD-6), below the compose: a step
-        // enhancer
-        // selected next to its mission type, whose one target step no pack holds, is not in force, and the report names
-        // the step as a node of kind action. The shape is not production-shaped any more: C37 (ADR-0066 decision 8,
+        // enhancer selected next to its mission type, whose one target step no pack holds, is not in force, and the
+        // report names the step as a node of kind action. The shape is not production-shaped any more: C37 (ADR-0066
+        // decision 8,
         // WP04) refuses it at compose, so no composed closure reaches this branch. The closure here is built directly,
         // without the compose, to pin what the resolution answers if it ever meets one. A two-target enhancer is no
         // stand-in: rule E6 as built drops its unheld action targets and it never reaches this branch.

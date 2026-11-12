@@ -76,7 +76,8 @@ public record EffectiveProfileRead(
      * @param required whether a governing preset requires it or a pack locks it
      * @param policy the mutability level of the version in force, in the contract's spelling
      * @param reason the rule that decided the state, in the contract's spelling
-     * @param satisfiedBy the artifact in force that satisfies a requirement this one is out of force for
+     * @param satisfiedBy every artifact in force that satisfies a requirement this one is out of force for, by the level
+     *     of its winning pack and then by URN (operator ruling of 2026-11-12 on #439); empty when none does
      * @param suggestion the winner's own effective suggestion, as the effective list gives it: present only for an
      *     artifact out of force that is reached only through a {@code suggests} edge of an artifact in force. The facts
      *     of a governance entry leave it empty: an entry says the words of its edge in {@link Entry#edge()}
@@ -89,7 +90,7 @@ public record EffectiveProfileRead(
             boolean required,
             String policy,
             String reason,
-            Optional<Urn> satisfiedBy,
+            List<Urn> satisfiedBy,
             Optional<EdgeWords> suggestion) {
 
         /**
@@ -112,7 +113,7 @@ public record EffectiveProfileRead(
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(policy, "policy");
             Objects.requireNonNull(reason, "reason");
-            Objects.requireNonNull(satisfiedBy, "satisfiedBy");
+            satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
             Objects.requireNonNull(suggestion, "suggestion");
         }
     }

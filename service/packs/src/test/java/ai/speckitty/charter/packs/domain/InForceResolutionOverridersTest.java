@@ -116,7 +116,9 @@ class InForceResolutionOverridersTest {
         ArtifactState target = stateOf(states, "directive:T");
         assertThat(target.reason()).isEqualTo(Reason.NOT_SELECTED);
         assertThat(target.satisfiedBy()).containsExactlyElementsOf(list("directive:C", "directive:B", "directive:A"));
-        assertThat(target.overriddenBy()).as("overriddenBy is for the reason overridden alone").isEmpty();
+        assertThat(target.overriddenBy())
+                .as("overriddenBy is for the reason overridden alone")
+                .isEmpty();
     }
 
     @Test
@@ -135,7 +137,8 @@ class InForceResolutionOverridersTest {
 
     @Test
     void theUrnsOfOneLevelAreComparedByCodePointNotByUtf16Unit() {
-        // U+FFFF and U+1F600: as UTF-16 units the surrogate pair of U+1F600 (0xD83D) sorts first; as code points it sorts last.
+        // U+FFFF and U+1F600: as UTF-16 units the surrogate pair of U+1F600 (0xD83D) sorts first; as code points it
+        // sorts last.
         String bmp = "directive:X￿";
         String astral = "directive:X😀";
         InForceStates states = new Closure()
@@ -202,8 +205,8 @@ class InForceResolutionOverridersTest {
                 .select("directive:A", "directive:B", "directive:C");
 
         assertThat(states.overrideNotApplied())
-                .containsExactly(new OverrideNotApplied(
-                        u("directive:L"), list("directive:C", "directive:B", "directive:A")));
+                .containsExactly(
+                        new OverrideNotApplied(u("directive:L"), list("directive:C", "directive:B", "directive:A")));
         assertThat(stateOf(states, "directive:L").state()).isEqualTo(State.ACTIVE);
         assertThat(stateOf(states, "directive:L").overriddenBy()).isEmpty();
     }

@@ -75,7 +75,7 @@ class EffectiveReadMapperTest {
             new ActivationId("a-1"), ActivationDocument.builder().build().document());
 
     private static EffectiveArtifact item(
-            ArtifactRef ref, Optional<ArtifactRef> satisfiedBy, Optional<Suggestion> suggestion) {
+            ArtifactRef ref, List<ArtifactRef> satisfiedBy, Optional<Suggestion> suggestion) {
         return new EffectiveArtifact(
                 ref,
                 "main",
@@ -102,9 +102,9 @@ class EffectiveReadMapperTest {
                 List.of(
                         item(
                                 A,
-                                Optional.of(B),
+                                List.of(T, B),
                                 Optional.of(new Suggestion(Optional.of("on release"), Optional.of("it helps")))),
-                        item(T, Optional.empty(), Optional.empty())));
+                        item(T, List.of(), Optional.empty())));
 
         EffectiveArtifactList wire = mapper.toList(page, true);
 
@@ -127,7 +127,11 @@ class EffectiveReadMapperTest {
         assertThat(first.getPolicy()).isEqualTo(ai.speckitty.charter.api.model.EffectiveArtifact.PolicyEnum.LOCKED);
         assertThat(first.getReason())
                 .isEqualTo(ai.speckitty.charter.api.model.EffectiveArtifact.ReasonEnum.NOT_SELECTED);
-        assertThat(first.getSatisfiedBy()).isEqualTo(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
+        assertThat(first.getSatisfiedBy())
+                .as("every overrider, in the order the resolution gave (#439), never sorted again")
+                .containsExactly(
+                        new ArtifactReference(ArtifactReference.KindEnum.TACTIC, "t"),
+                        new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
         assertThat(first.getSuggestion().getWhen()).isEqualTo("on release");
         assertThat(first.getSuggestion().getReason()).as("the edge's rationale").isEqualTo("it helps");
         ai.speckitty.charter.api.model.EffectiveArtifact second =
@@ -143,13 +147,10 @@ class EffectiveReadMapperTest {
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
                         List.of(
-                                item(
-                                        A,
-                                        Optional.empty(),
-                                        Optional.of(new Suggestion(Optional.empty(), Optional.of("why")))),
+                                item(A, List.of(), Optional.of(new Suggestion(Optional.empty(), Optional.of("why")))),
                                 item(
                                         B,
-                                        Optional.empty(),
+                                        List.of(),
                                         Optional.of(new Suggestion(Optional.of("when"), Optional.empty()))))),
                 true);
 
@@ -166,7 +167,7 @@ class EffectiveReadMapperTest {
                 page(
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
-                        List.of(item(A, Optional.empty(), Optional.empty()))),
+                        List.of(item(A, List.of(), Optional.empty()))),
                 true);
 
         assertThat(wire.getPageInfo().getHasNextPage()).isFalse();
@@ -185,9 +186,7 @@ class EffectiveReadMapperTest {
                 page(
                         query,
                         Optional.of(new After(B, SET_TAG, "unused")),
-                        List.of(
-                                item(A, Optional.empty(), Optional.empty()),
-                                item(B, Optional.empty(), Optional.empty()))),
+                        List.of(item(A, List.of(), Optional.empty()), item(B, List.of(), Optional.empty()))),
                 true);
 
         String cursor = wire.getPageInfo().getNextPageCursor();
@@ -229,7 +228,7 @@ class EffectiveReadMapperTest {
                 page(
                         query,
                         Optional.of(new After(B, SET_TAG, "unused")),
-                        List.of(item(A, Optional.empty(), Optional.empty()))),
+                        List.of(item(A, List.of(), Optional.empty()))),
                 false);
 
         assertThat(wire.getPageInfo().getPageSize())
@@ -276,14 +275,14 @@ class EffectiveReadMapperTest {
                 List.of(A),
                 List.of(new DenyNotApplied(B, DenyReason.LOCKED)),
                 List.of(new EnhancerWithoutTarget(T, List.of(NodeRef.of(B), NodeRef.of(A)))),
-                List.of(new OverrideNotApplied(A, B)),
+                List.of(new OverrideNotApplied(A, List.of(T, B))),
                 List.of(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE")),
                 List.of(new RequiredNotInForce(T, PruningReason.ENHANCED_TARGET_NOT_IN_FORCE)),
                 List.of(new PinNotHeld("main", "9.9.9")),
                 List.of(B),
                 List.of(new ArtifactRef(ArtifactKind.TACTIC, "step")),
                 List.of(new SkippedDeactivated(A, false, List.of())),
-                List.of(new Overridden(T, A)));
+                List.of(new Overridden(T, List.of(B, A))));
 
         ActivationSkippedReport wire = mapper.toSkipped(new Report(stored, "sha256:source", "sha256:closure", skipped));
 
@@ -308,7 +307,9 @@ class EffectiveReadMapperTest {
         assertThat(report.getOverrideNotApplied()).singleElement().satisfies(entry -> {
             assertThat(entry.getArtifactId()).isEqualTo("A");
             assertThat(entry.getOverriddenBy())
-                    .isEqualTo(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
+                    .containsExactly(
+                            new ArtifactReference(ArtifactReference.KindEnum.TACTIC, "t"),
+                            new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
         });
         assertThat(report.getRequiredNotHeld())
                 .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "GONE"));
@@ -334,7 +335,9 @@ class EffectiveReadMapperTest {
         assertThat(report.getOverridden()).singleElement().satisfies(entry -> {
             assertThat(entry.getArtifactId()).isEqualTo("t");
             assertThat(entry.getOverriddenBy())
-                    .isEqualTo(new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"));
+                    .containsExactly(
+                            new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"),
+                            new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"));
         });
         assertThat(report.getSkippedByScope()).isEmpty();
         assertThat(report.getUnreachedBehindDeactivated()).isEmpty();
@@ -365,9 +368,7 @@ class EffectiveReadMapperTest {
                 page(
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
-                        List.of(
-                                item(A, Optional.empty(), Optional.empty()),
-                                item(T, Optional.empty(), Optional.empty()))),
+                        List.of(item(A, List.of(), Optional.empty()), item(T, List.of(), Optional.empty()))),
                 true);
 
         assertThat(wire.getItems().get(0).getLinks()).containsOnlyKeys("effective-artifact", "artifact");
@@ -390,9 +391,7 @@ class EffectiveReadMapperTest {
                 page(
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
-                        List.of(
-                                item(paradigm, Optional.empty(), Optional.empty()),
-                                item(A, Optional.empty(), Optional.empty()))),
+                        List.of(item(paradigm, List.of(), Optional.empty()), item(A, List.of(), Optional.empty()))),
                 true);
 
         assertThat(wire.getItems().get(0).getLinks()).as("not served").isNull();
@@ -408,13 +407,13 @@ class EffectiveReadMapperTest {
                 page(
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
-                        List.of(item(spaced, Optional.empty(), Optional.empty()))),
+                        List.of(item(spaced, List.of(), Optional.empty()))),
                 true);
         EffectiveArtifactList narrower = onlyTactics.toList(
                 page(
                         new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                         Optional.empty(),
-                        List.of(item(spaced, Optional.empty(), Optional.empty()))),
+                        List.of(item(spaced, List.of(), Optional.empty()))),
                 true);
 
         assertThat(wire.getItems()
@@ -455,7 +454,7 @@ class EffectiveReadMapperTest {
     @Test
     void anItemOfTheActionContextLinksLikeAnItemOfTheList() {
         EffectiveContext context = new EffectiveContext(
-                List.of(new EffectiveContext.Item(item(A, Optional.empty(), Optional.empty()), AppliesThrough.ACTION)),
+                List.of(new EffectiveContext.Item(item(A, List.of(), Optional.empty()), AppliesThrough.ACTION)),
                 List.of(),
                 EffectiveSkippedReport.empty());
 
@@ -485,9 +484,7 @@ class EffectiveReadMapperTest {
         Page page = page(
                 new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                 Optional.empty(),
-                List.of(
-                        item(contract, Optional.empty(), Optional.empty()),
-                        item(type, Optional.empty(), Optional.empty())));
+                List.of(item(contract, List.of(), Optional.empty()), item(type, List.of(), Optional.empty())));
 
         EffectiveArtifactList wire = missions.toList(page, false);
 
@@ -623,7 +620,7 @@ class EffectiveReadMapperTest {
                                         PackLevel.ORG,
                                         State.ACTIVE,
                                         false,
-                                        Optional.empty(),
+                                        List.of(),
                                         Policy.OPEN,
                                         Reason.SELECTED,
                                         Optional.empty()),
@@ -631,7 +628,7 @@ class EffectiveReadMapperTest {
                         new EffectiveContext.Item(
                                 item(
                                         T,
-                                        Optional.empty(),
+                                        List.of(B, A),
                                         Optional.of(new Suggestion(Optional.of("when"), Optional.of("why")))),
                                 AppliesThrough.PROJECT)),
                 List.of(
@@ -662,6 +659,14 @@ class EffectiveReadMapperTest {
         assertThat(wire.getArtifacts().get(1).getState().getValue()).isEqualTo("inactive");
         assertThat(wire.getArtifacts().get(1).getReason().getValue()).isEqualTo("not_selected");
         assertThat(wire.getArtifacts().get(0).getSuggestion()).isNull();
+        assertThat(wire.getArtifacts().get(0).getSatisfiedBy())
+                .as("absent, never empty")
+                .isNull();
+        assertThat(wire.getArtifacts().get(1).getSatisfiedBy())
+                .as("every overrider, in the resolution's order (#439)")
+                .containsExactly(
+                        new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"),
+                        new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"));
         assertThat(wire.getArtifacts().get(1).getSuggestion().getWhen()).isEqualTo("when");
         assertThat(wire.getArtifacts().get(1).getSuggestion().getReason()).isEqualTo("why");
         assertThat(wire.getEnhancements()).hasSize(2);
@@ -677,7 +682,7 @@ class EffectiveReadMapperTest {
     @Test
     void everyAppliesThroughIsMappedToTheValueTheContractSpells() {
         List<EffectiveContext.Item> items = java.util.Arrays.stream(AppliesThrough.values())
-                .map(through -> new EffectiveContext.Item(item(A, Optional.empty(), Optional.empty()), through))
+                .map(through -> new EffectiveContext.Item(item(A, List.of(), Optional.empty()), through))
                 .toList();
 
         EffectiveActionContext wire = mapper.toContext(

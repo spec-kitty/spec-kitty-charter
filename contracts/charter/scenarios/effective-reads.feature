@@ -447,8 +447,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
       directive:T
       """
-    And the field at "/report/overridden/0/overriddenBy/artifactId" is "F"
-    And the field at "/report/overridden/0/overriddenBy/kind" is "directive"
+    And the field at "/report/overridden/0/overriddenBy" holds exactly the ids:
+      """
+      directive:F
+      """
 
   Scenario: A3 - in a chain F overrides E overrides T only F stays in force
     A3, R13 stratum 2: F overrides E and E overrides T, all selected. Overrides apply from the active set before any
@@ -598,8 +600,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/items/1/state" is "inactive"
     And the field at "/items/1/reason" is "overridden"
     And the field at "/items/1/required" is true
-    And the field at "/items/1/satisfiedBy/artifactId" is "F"
-    And the field at "/items/1/satisfiedBy/kind" is "directive"
+    And the field at "/items/1/satisfiedBy" holds exactly the ids:
+      """
+      directive:F
+      """
     And the field at "/items/0/satisfiedBy" is absent
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
@@ -621,7 +625,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/items/0/reason" is "not_selected"
     And the field at "/items/0/required" is true
-    And the field at "/items/0/satisfiedBy/artifactId" is "F"
+    And the field at "/items/0/satisfiedBy" holds exactly the ids:
+      """
+      directive:F
+      """
     When I GET "/activations/a-2/skipped"
     Then the response status is 200
     And the field at "/report/requiredNotInForce" holds exactly 0 items
@@ -867,7 +874,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
       directive:T
       """
-    And the field at "/report/overrideNotApplied/0/overriddenBy/artifactId" is "E"
+    And the field at "/report/overrideNotApplied/0/overriddenBy" holds exactly the ids:
+      """
+      directive:E
+      """
     And the field at "/report/overridden" holds exactly the ids:
       """
       directive:T2

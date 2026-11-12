@@ -389,8 +389,8 @@ final class ClosureViewSession implements PacksSession {
                 EffectiveSet.State.valueOf(state.state().name()),
                 EffectiveSet.Reason.valueOf(state.reason().name()),
                 state.required(),
-                state.satisfiedBy().flatMap(ClosureViewSession::activatable),
-                state.overriddenBy().flatMap(ClosureViewSession::activatable),
+                activatableOf(state.satisfiedBy()),
+                activatableOf(state.overriddenBy()),
                 state.bucket().map(bucket -> EffectiveSet.Bucket.valueOf(bucket.name())));
     }
 
@@ -409,11 +409,20 @@ final class ClosureViewSession implements PacksSession {
     private static List<EffectiveSkippedReport.OverrideNotApplied> overrideNotApplied(InForceStates states) {
         List<EffectiveSkippedReport.OverrideNotApplied> kept = new ArrayList<>();
         for (InForceStates.OverrideNotApplied entry : states.overrideNotApplied()) {
+            List<ArtifactRef> by = activatableOf(entry.overriddenBy());
             activatable(entry.target())
-                    .ifPresent(target -> activatable(entry.overriddenBy())
-                            .ifPresent(by -> kept.add(new EffectiveSkippedReport.OverrideNotApplied(target, by))));
+                    .filter(target -> !by.isEmpty())
+                    .ifPresent(target -> kept.add(new EffectiveSkippedReport.OverrideNotApplied(target, by)));
         }
         return kept;
+    }
+
+    /**
+     * The overriders the resolution names, in its order (the level of the winning pack, then the URN; #439), less any
+     * that is no artifact of an activatable kind (decision D16).
+     */
+    private static List<ArtifactRef> activatableOf(List<Urn> overriders) {
+        return overriders.stream().flatMap(urn -> activatable(urn).stream()).toList();
     }
 
     /**
