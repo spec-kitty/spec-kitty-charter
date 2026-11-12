@@ -15,4 +15,4 @@
   revision on its next write, so re-registering it unchanged at the same `pack_version`, which answered `unchanged`,
   now answers `409` (same version, another revision): send a new `pack_version`. Pack authors: regenerate each
   `pack-manifest.yaml` from the derived lists, or drop it and let the service generate it. open-packs's `built-in`, the
-  one pack there that holds a manifest, differs from its derived lists and is refused until it does.
+  one pack there that holds a manifest, differs from its derived lists and is refused until it does (spec-kitty-open-packs#250).
