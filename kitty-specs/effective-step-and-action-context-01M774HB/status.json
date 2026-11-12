@@ -196,7 +196,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -207,7 +207,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "FR-014 (#447 option 1): OverrideSourceRule refuses an overrides edge from template/asset/guard/lifecycle. putPackRelationship: 422 validation_failed, violation overrides_source_not_activatable at /from, nothing written. Load: FilesystemPackStore.read records a violation at the graph document, so registration lists it (422) and composing reads answer 500 pack_unreadable naming the document; DomainRepositoryService untouched. Contract: violation code in CharterRefusalCode description and validation_failed entry, putPackRelationship 422 description, two examples, ### Breaking fragment. override-source-kind.feature (7 scenarios), :packs:test, CharterContractSuite, contract checks, HexagonalArchitectureTest, spotless/checkstyle green.",
-        "Cycle 1 fixes: validate mode (PackPolicy.judge) reports OVERRIDES_SOURCE_NOT_ACTIVATABLE (blocking, token = OverrideSourceRule.CODE via violationKind), red test 69b22084b then d3f651e86; putPackRelationship 422 names all four kinds; commit records FilesystemPackStore as shared with slice B WP06 (#501), rebase conflict expected. :packs:test 4736/0, CharterContractSuite+Hexagonal+Reserved 840/0, :contracts:check -PcontractBaseline=none, spotless/checkstyle green."
+        "Cycle 1 fixes: validate mode (PackPolicy.judge) reports OVERRIDES_SOURCE_NOT_ACTIVATABLE (blocking, token = OverrideSourceRule.CODE via violationKind), red test 69b22084b then d3f651e86; putPackRelationship 422 names all four kinds; commit records FilesystemPackStore as shared with slice B WP06 (#501), rebase conflict expected. :packs:test 4736/0, CharterContractSuite+Hexagonal+Reserved 840/0, :contracts:check -PcontractBaseline=none, spotless/checkstyle green.",
+        "Review passed (cycle 2): the MEDIUM is fixed. Validate mode reports overrides_source_not_activatable through PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE (BLOCKING), and OverrideSourceRule.CODE is the one token. The red test bites: dropping the overrideSourceFindings call fails validateModeReportsTheEdge... The two LOWs are fixed: the 422 description names all four kinds, and the FilesystemPackStore record names slice-B WP06 (PR #501) as a shared owner, so the #501 rebase should expect it. Tests: packs 4736 tests, 0 failures; CharterContractSuite 745, 0 failures; contracts:check green with -PcontractBaseline=none (shallow clone); spotless, checkstyle and javadoc green. Accepted LOW: a guard or lifecycle source in validate mode gets drg_schema_error plus the new finding, while the load reports only the schema fault because the document does not read. Both block. Open question for the run lead: should the ruling cover a step source (action:)? Not built here."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
