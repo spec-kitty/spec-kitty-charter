@@ -581,3 +581,115 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     Then the response status is 200
     And the field at "/title" is "Specification at project"
     And the field at "/_links/self/href" is "/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/specify"
+
+  Scenario: WP09, A7 - a step only the replaced version keeps is read from its place, as the context and the prompt read it
+    FR-003, research R8, DIV-243. main's software-dev declares review, and its graph declares the step, so main holds
+    action:software-dev/review; proj's software-dev, which wins the layer merge, drops it. A winning mission type keeps
+    the unique steps of the versions it replaced (A7): the step's place is the merged winner of the action, main. The
+    step read answers main's step with main's prompt, as the prompt read does, and its skeleton link names main, whose
+    version stores the skeleton (the activation's skeleton read serves proj's and answers skeleton_not_found for it).
+    The context's artifact link is the step's read in main. Every link followed answers 200. The twin, deploy, differs
+    only in the step id: no version declares it, and the three reads answer 404 action_not_found.
+    Given the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: software-dev
+      title: Software Development at org
+      description: The org's software development
+      steps:
+      - id: specify
+        title: Specification
+        prompt_path: steps/specify.prompt.md
+        guidelines_path: steps/specify.guidelines.md
+        expected_output_artifacts:
+        - artifact_key: input.spec.main
+          artifact_class: input
+          path_pattern: spec.md
+          blocking: true
+          template_path: templates/spec-template.md
+      - id: review
+        title: Review at org
+        role: reviewer
+        prompt_path: steps/review.prompt.md
+        expected_output_artifacts:
+        - artifact_key: input.review.notes
+          artifact_class: input
+          path_pattern: review.md
+          blocking: true
+          template_path: templates/old-template.md
+      """
+    And the org pack "main" with the file "missions/software-dev/steps/review.prompt.md":
+      """
+      # Review at org
+      """
+    And the org pack "main" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/review
+        kind: action
+        label: review
+      edges: []
+      """
+    When I GET "/activations/a-1/artifacts/mission_type/software-dev"
+    Then the response status is 200
+    And the field at "/packId" is "proj"
+    And the field at "/missionType/steps/1/id" is "implement"
+    And the field at "/missionType/steps/2" is absent
+    When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/review"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the field at "/id" is "review"
+    And the field at "/title" is "Review at org"
+    And the field at "/role" is "reviewer"
+    And the field at "/prompt" is the lines:
+      """
+      # Review at org
+      """
+    And the field at "/_links/self/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"
+    And the field at "/_links/mission-type/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev"
+    And the field at "/expectedOutputArtifacts/0/_links/skeleton/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/old-template.md"
+    When I follow the link "self"
+    Then the response status is 200
+    And the field at "/title" is "Review at org"
+    When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/old-template.md"
+    Then the response status is 200
+    And the field at "/content" is the lines:
+      """
+      # A skeleton only the org holds
+      """
+    When I GET "/activations/a-1/artifacts/mission_type/software-dev/skeletons/old-template.md"
+    Then the response status is 404
+    And the problem code is "skeleton_not_found"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/review/prompt"
+    Then the response status is 200
+    And the field at "/promptPackId" is "main"
+    And the field at "/prompt" is the lines:
+      """
+      # Review at org
+      """
+    And the field at "/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"
+    When I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Review at org"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/review/context"
+    Then the response status is 200
+    And the field at "/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"
+    And the field at "/_links/artifact/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev/steps/review"
+    When I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Review at org"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/review/context"
+    And I follow the link "artifact"
+    Then the response status is 200
+    And the field at "/title" is "Review at org"
+    When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/deploy"
+    Then the response status is 404
+    And the problem code is "action_not_found"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/deploy/context"
+    Then the response status is 404
+    And the problem code is "action_not_found"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/deploy/prompt"
+    Then the response status is 404
+    And the problem code is "action_not_found"
