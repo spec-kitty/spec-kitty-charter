@@ -1,0 +1,55 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-12T05:44:04.117294Z",
+      "decision_id": "01M774HQ8N5EVYDRTP16MBJCN3",
+      "final_answer": null,
+      "input_key": "context_scoping_rule",
+      "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
+      "mission_slug": "effective-step-and-action-context-01M774HB",
+      "opened_by": "cli",
+      "options": [
+        "A: keep the drop, record a divergence, link the effective listing",
+        "B: ownership rule: in-force directive/tactic/paradigm applies when walked, unscoped by any action or mission type, or scoped by the action's mission type (recommended)",
+        "C: required floor only",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "#450: is ADR-0018's action scoping meant to drop in-force artifacts no walk from the action reaches (required or project-selected but unscoped)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scoping.unscoped-in-force",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-12T05:44:06.515272Z",
+      "decision_id": "01M774HSKK0SSA4147QEG9ZCKR",
+      "final_answer": null,
+      "input_key": "prompt_read_mission_type_not_in_force",
+      "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
+      "mission_slug": "effective-step-and-action-context-01M774HB",
+      "opened_by": "cli",
+      "options": [
+        "200 with no fragments, missionTypeInForce false (recommended)",
+        "409 mission_type_not_in_force (OD-5 as ruled)",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "OD-5 vs PR C: does the effective-prompt read answer 409 mission_type_not_in_force, or 200 with no fragments like the context read?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.prompt-read.mission-type-not-in-force",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
+  "version": 1
+}
