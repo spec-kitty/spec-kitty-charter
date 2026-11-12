@@ -86,12 +86,12 @@
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
+      "description": "Each context item carries appliesThrough",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "EffectiveContextArtifact.yaml; EffectiveReadMapperTest.everyAppliesThroughIsMappedToTheValueTheContractSpells; scoping scenarios (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:13.509911+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
