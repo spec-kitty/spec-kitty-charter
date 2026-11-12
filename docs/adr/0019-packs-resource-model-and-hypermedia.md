@@ -128,7 +128,7 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
    and `Vary: Accept`. The pack resource links it with the relation `doc` when the pack holds a document.*
    *Amended 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 2, 9 to 11 and 13):
    the two asset rows are replaced. An asset is an artifact read by its id: listed at `/packs/{packId}/artifacts/asset`,
-   read at `/packs/{packId}/artifacts/asset/{assetId}`, and its bytes at `…/payload`. The presets row stands, with an
+   read at `/packs/{packId}/artifacts/asset/{artifactId}`, and its bytes at `…/payload`. The presets row stands, with an
    item read, `GET /packs/{packId}/presets/{presetId}` (decision 1).*
 
    `{packId}` is the pack's minted `pack_id` ULID, which `PackSummary.packId` already answers.

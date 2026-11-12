@@ -301,7 +301,7 @@ Four facts force a decision:
    *(Amended 2026-11-11, #432: `text` exists as a companion form, a skill body's; no rule may name it. See the
    amendment under Status.)*
    *(Amended 2026-11-12, [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 11: the payload read of an asset,
-   `…/artifacts/asset/{assetId}/payload`, answers the asset's `mime` as its `Content-Type` when it is a well-formed
+   `…/artifacts/asset/{artifactId}/payload`, answers the asset's `mime` as its `Content-Type` when it is a well-formed
    `type/subtype`, and `application/octet-stream` when it is not. The store still never chooses a content form by
    `mime`.)*
 2. **Files with no schema have their own section, `payloads`.** A payload rule names `match`,
