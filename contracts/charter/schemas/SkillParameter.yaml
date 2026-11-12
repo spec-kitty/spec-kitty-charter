@@ -1,0 +1,37 @@
+title: SkillParameter
+description: >-
+  One declared parameter of a skill, kept as written: a member the file does not write is left out, so an absent
+  required is not false.
+type: object
+additionalProperties: false
+required:
+  - name
+properties:
+  name:
+    type: string
+    minLength: 1
+    description: The parameter's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java
+      symbol: SkillParameter.name
+  required:
+    type: boolean
+    description: Whether the parameter is required; left out when the file does not say.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java
+      symbol: SkillParameter.required
+  description:
+    type: string
+    description: What the parameter is; left out when the file writes none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java
+      symbol: SkillParameter.description
+  default:
+    type: string
+    description: The parameter's default; left out when the file writes none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java
+      symbol: SkillParameter.defaultValue
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java
+  symbol: SkillParameter

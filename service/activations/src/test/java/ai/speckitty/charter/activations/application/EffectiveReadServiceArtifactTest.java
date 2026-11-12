@@ -60,6 +60,8 @@ class EffectiveReadServiceArtifactTest {
             ArtifactKind.STYLEGUIDE,
             ArtifactKind.PARADIGM,
             ArtifactKind.TOOLGUIDE,
+            ArtifactKind.ASSET,
+            ArtifactKind.SKILL,
             ArtifactKind.AGENT_PROFILE);
 
     private final InMemoryActivationRepository repository = new InMemoryActivationRepository();

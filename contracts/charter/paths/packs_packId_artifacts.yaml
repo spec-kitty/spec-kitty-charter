@@ -3,8 +3,9 @@ get:
   summary: List one page of a Charter Pack's artifacts of the served kinds.
   description: >-
     The artifacts of one pack of the served kinds (tactic, directive, styleguide, paradigm,
-    toolguide, procedure and agent_profile) as summaries, each with the link to read it whole; the link of an
-    agent_profile is the read getPackAgentProfile answers. They are ordered by the served-kind
+    toolguide, procedure, asset, skill and agent_profile) as summaries, each with the link to read it whole; the link
+    of an agent_profile is the read getPackAgentProfile answers, and an asset's or a skill's names its own literal
+    read. An asset's title is its title, or its id when it has none. They are ordered by the served-kind
     order, then by id in code-point order, so Zeta comes before alpha. kind filters on one served
     kind; a value that is not one is a 400 Problem without a code. The list is paged: pageSize items
     at most (1 to 200, 50 by default; a value out of range or not a number is a 400 Problem without a

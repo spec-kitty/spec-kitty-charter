@@ -1,0 +1,26 @@
+title: PresetList
+description: >-
+  Every preset a Charter Pack holds, as listPackPresets answers it: in id order and unpaged, deliberately, because a
+  pack holds few presets (paging it later would be an additive change). A pack with no preset answers an empty list.
+  _links holds self and pack.
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The pack's presets in id order, each as getPackPreset answers it.
+    items:
+      $ref: Preset.yaml
+    x-derived:
+      rule: The presets of the pack, sorted by id.
+      inputs:
+        - the presets/ directory of the pack
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The presets the service holds for the pack, read inside one verified read.
+  inputs:
+    - the presets/ directory of the pack

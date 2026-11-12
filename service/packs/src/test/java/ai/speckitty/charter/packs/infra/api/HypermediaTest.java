@@ -134,6 +134,7 @@ class HypermediaTest {
                         "next",
                         "artifact",
                         "pack",
-                        "doc");
+                        "doc",
+                        "presets");
     }
 }

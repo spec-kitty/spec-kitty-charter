@@ -1,0 +1,110 @@
+title: Skill
+description: >-
+  One skill of a Charter Pack (skills/<id>.skill.yaml, URN skill:<id>), as the pack declares it, in camel case: a
+  prompt skill carries its body, the text of the file its body_path names, exactly as held; a wrapper skill carries
+  what it expands to and no body. The body path itself is not answered (the contract answers content, not paths), and
+  the overrides and enhances fields are edges, read through listArtifactReferences as for every kind (ADR-0064). A
+  skill is answered in the Artifact envelope's member skill by its own literal read, never by the templated item read.
+type: object
+additionalProperties: false
+required:
+  - schemaVersion
+  - id
+  - title
+  - description
+  - form
+  - triggers
+  - parameters
+  - tools
+properties:
+  schemaVersion:
+    type: string
+    description: The schema version the skill file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.schemaVersion
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The skill's identity within its pack, one lowercase kebab-case segment of at most 64 characters.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.id
+  title:
+    type: string
+    minLength: 1
+    description: The skill's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.title
+  description:
+    type: string
+    minLength: 1
+    description: When the skill applies.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.description
+  form:
+    type: string
+    enum:
+      - prompt
+      - wrapper
+    description: prompt, a skill whose body is the prompt, or wrapper, a skill that expands to a command.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillForm.java
+      symbol: SkillForm.token
+  triggers:
+    type: array
+    description: The phrases that trigger the skill, in authored order; empty when the file writes none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.triggers
+  parameters:
+    type: array
+    description: The skill's declared parameters, in authored order; empty when the file writes none.
+    items:
+      $ref: SkillParameter.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.parameters
+  invocation:
+    $ref: SkillInvocation.yaml
+  expandsTo:
+    $ref: SkillExpansion.yaml
+  tools:
+    type: array
+    description: The tools the skill uses, in authored order; empty when the file writes none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.tools
+  version:
+    type: string
+    description: The skill's own version text; left out when the file writes none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.version
+  maintainers:
+    type: array
+    minItems: 1
+    description: The skill's maintainers, in authored order; left out when the file writes none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.maintainers
+  body:
+    type: string
+    description: >-
+      The prompt, the text of the file the skill's body_path names, exactly as held: present exactly when form is
+      prompt, and left out for a wrapper skill.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.body
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+  symbol: Skill
