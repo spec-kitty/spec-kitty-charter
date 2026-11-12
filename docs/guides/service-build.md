@@ -180,8 +180,8 @@ fail the check too.
 `-Dpit.classes` and `-Dpit.tests`, for one work package's classes; its header has the full command. A narrowed run is
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
-**The weekly run.** `.github/workflows/mutation-nightly.yml` runs on Mondays and on `workflow_dispatch` only (it
-kept its file name). PIT runs in three shards, each on its own runner with a 120-minute timeout, 110 of them for the
+**The mutation run.** `.github/workflows/mutation-testing.yml` runs on its schedule and on `workflow_dispatch` only;
+the schedule is the operator's to set. PIT runs in three shards, each on its own runner with a 120-minute timeout, 110 of them for the
 mutation step (#461): `:packs`'s floor groups in two halves (`-PmutationGroups=domain+application,infra.fetch` and
 `-PmutationGroups=infra.storage,infra.archive`) and every other module. A shard mutates and scores only its groups, so
 each group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Each shard syncs the packs at
@@ -193,7 +193,7 @@ strength, uncovered and timed-out mutants, floor, margin to the floor, verdict a
 or uncovered mutants), shows "no report" for a listed module or group that wrote none, and quotes PIT's lines about
 any test that fails with no mutation applied (#461). The module list, each shard's output (`pitest-<shard>.log`) and
 every module's report go up as the `mutation-report-<shard>` artifacts, kept for 14 days. When a scheduled run does
-not succeed, a timeout or a red summary included, the workflow opens one issue labelled `mutation-nightly`, or
+not succeed, a timeout or a red summary included, the workflow opens one issue labelled `mutation-testing`, or
 comments on the open one; a `workflow_dispatch` with `force_issue` tests that path.
 
 **Never in the required check.** PIT runs only in the nightly (ADR-0060). The root build fails any invocation in which

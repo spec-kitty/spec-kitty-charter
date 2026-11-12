@@ -9,7 +9,7 @@ import org.gradle.work.DisableCachingByDefault
 /**
  * Writes the modules under the mutation floor, one per line (#388): every project that applies
  * `charter.mutation-conventions`, as the build sees it. A line is the module's directory relative to the repository
- * root, then its floor group names, separated by tabs (#461). The nightly passes the file to
+ * root, then its floor group names, separated by tabs (#461). The mutation run passes the file to
  * `scripts/ci/mutation_summary.py`, so a module whose PIT run fails before it writes `floors.json`, or a group whose
  * shard wrote no report, still gets a "no report" row, without a list kept by hand beside the build.
  */

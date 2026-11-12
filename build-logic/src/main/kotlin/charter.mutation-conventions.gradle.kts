@@ -1,5 +1,5 @@
-// Mutation testing with PIT and its nightly floor (spec FR-009, #239). `./gradlew pitest` is its own task, run by the
-// nightly workflow; it is never part of `check`, so pull requests do not run it. A module declares its floors:
+// Mutation testing with PIT and its floor (spec FR-009, #239). `./gradlew pitest` is its own task, run by
+// mutation-testing.yml; it is never part of `check`, so pull requests do not run it. A module declares its floors:
 //
 //   mutationFloors {
 //       group("kernel") {
@@ -33,7 +33,7 @@ val mutationFloors = extensions.create<MutationFloorsExtension>("mutationFloors"
 fun declaredGroups() = mutationFloors.groups.map { it.toGroup() }
 
 // A shard of the module's PIT run (#461): -PmutationGroups=g1,g2 mutates and scores only those floor groups, and
-// writes build/reports/pitest-<shard> and build/reports/mutation-floors/floors-<shard>.json, so the nightly can run one
+// writes build/reports/pitest-<shard> and build/reports/mutation-floors/floors-<shard>.json, so the mutation workflow can run one
 // module's groups on several runners. Each group's score is the one a whole-module run gives. Unknown names fail the
 // run (MutationFloors.shard). Without the property, the module runs whole.
 val requestedGroups = providers.gradleProperty("mutationGroups")

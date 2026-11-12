@@ -6,11 +6,11 @@ import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
 
 /**
- * Mutation testing never runs on a pull request or in the required check (ADR-0060, #387): `mutation-nightly.yml` has
+ * Mutation testing never runs on a pull request or in the required check (ADR-0060, #387): `mutation-testing.yml` has
  * only the schedule and workflow_dispatch triggers, no other workflow calls it or waits for it, and no other workflow
  * runs PIT or the floor check. That `verifyAll` and `check` never depend on pitest is the build's own rule
- * ([MutationIsolation], applied to every task graph by the root build). The nightly also takes its module list from the
- * build (#388). The workflows are parsed as YAML, so comments and path filters that name the nightly do not count; each
+ * ([MutationIsolation], applied to every task graph by the root build). The mutation also takes its module list from the
+ * build (#388). The workflows are parsed as YAML, so comments and path filters that name the mutation do not count; each
  * rule has a negative control planted on the parsed structure of the real workflows.
  */
 class MutationWorkflowGuardTest {
@@ -19,32 +19,32 @@ class MutationWorkflowGuardTest {
         .map { File(it, ".github/workflows") }
         .first { File(it, "ci.yml").isFile }
 
-    private val nightlyFile = "mutation-nightly.yml"
-    private val nightly get() = File(workflows, nightlyFile).readText()
+    private val mutationFile = "mutation-testing.yml"
+    private val mutation get() = File(workflows, mutationFile).readText()
     private val ci get() = File(workflows, "ci.yml").readText()
     private val service get() = File(workflows, "service.yml").readText()
 
-    /** Every workflow but the nightly, by file name. */
+    /** Every workflow but the mutation, by file name. */
     private val others: Map<String, String>
-        get() = workflows.listFiles { f -> f.name.endsWith(".yml") && f.name != nightlyFile }.orEmpty()
+        get() = workflows.listFiles { f -> f.name.endsWith(".yml") && f.name != mutationFile }.orEmpty()
             .sortedBy { it.name }
             .associate { it.name to it.readText() }
 
     @Test
-    fun theNightlyRunsOnTheScheduleAndOnDispatchOnly() {
-        assertThat(MutationGuard.triggers(nightly)).isEmpty()
+    fun theMutationRunHasTheScheduleAndDispatchTriggersOnly() {
+        assertThat(MutationGuard.triggers(mutation)).isEmpty()
         for (trigger in listOf("pull_request", "push", "merge_group", "workflow_call", "workflow_run")) {
-            assertThat(MutationGuard.triggers(nightly.mutate { sub("on")[trigger] = null })).`as`(trigger).isNotEmpty()
+            assertThat(MutationGuard.triggers(mutation.mutate { sub("on")[trigger] = null })).`as`(trigger).isNotEmpty()
         }
-        assertThat(MutationGuard.triggers(nightly.mutate { sub("on").remove("schedule") })).`as`("no schedule").isNotEmpty()
+        assertThat(MutationGuard.triggers(mutation.mutate { sub("on").remove("schedule") })).`as`("no schedule").isNotEmpty()
     }
 
     @Test
-    fun noOtherWorkflowCallsOrWaitsForTheNightly() {
-        val name = MutationGuard.parse(nightly)["name"].toString()
+    fun noOtherWorkflowCallsOrWaitsForTheMutationRun() {
+        val name = MutationGuard.parse(mutation)["name"].toString()
         others.forEach { (file, text) -> assertThat(MutationGuard.callers(text, name)).`as`(file).isEmpty() }
         val planted = mapOf(
-            "a job that calls it" to ci.mutate { sub("jobs")["mutation"] = mutableMapOf("uses" to "./.github/workflows/$nightlyFile") },
+            "a job that calls it" to ci.mutate { sub("jobs")["mutation"] = mutableMapOf("uses" to "./.github/workflows/$mutationFile") },
             "a workflow_run on it" to service.mutate {
                 put("on", mutableMapOf("workflow_run" to mutableMapOf("workflows" to listOf(name), "types" to listOf("completed"))))
             },
@@ -65,24 +65,24 @@ class MutationWorkflowGuardTest {
     }
 
     @Test
-    fun theNightlyTakesItsModulesFromTheBuildAndKeepsPitsOutput() {
-        assertThat(MutationGuard.moduleList(nightly)).isEmpty()
+    fun theMutationRunTakesItsModulesFromTheBuildAndKeepsPitsOutput() {
+        assertThat(MutationGuard.moduleList(mutation)).isEmpty()
         val planted = mapOf(
-            "no mutationModules" to nightly.mutate {
+            "no mutationModules" to mutation.mutate {
                 step("Mutation testing")["run"] = "./gradlew pitest --continue -PrequireSymlinks=true"
             },
-            "no pipefail" to nightly.mutate {
+            "no pipefail" to mutation.mutate {
                 step("Mutation testing").let { it["run"] = it["run"].toString().replace("set -o pipefail\n", "") }
             },
-            "PIT output not kept" to nightly.mutate {
+            "PIT output not kept" to mutation.mutate {
                 step("Mutation testing").let { it["run"] = it["run"].toString().replace(Regex("""\|\s*tee\s+\S+"""), "") }
             },
-            "summary without the log" to nightly.mutate {
+            "summary without the log" to mutation.mutate {
                 step("Summarise the mutation floors").let {
                     it["run"] = it["run"].toString().replace(Regex("""--log\s+\S+"""), "")
                 }
             },
-            "summary without the list" to nightly.mutate {
+            "summary without the list" to mutation.mutate {
                 step("Summarise the mutation floors").let {
                     it["run"] = it["run"].toString().replace(Regex("""--modules\s+\S+"""), "")
                 }
@@ -103,7 +103,7 @@ private fun Node.firstJob(): Node = sub("jobs").values.first() as Node
 @Suppress("UNCHECKED_CAST")
 private fun Node.steps(): MutableList<Node> = this["steps"] as MutableList<Node>
 
-/** The nightly's step named [name], in whichever job holds it: the PIT shards and the summary are separate jobs. */
+/** The mutation workflow's step named [name], in whichever job holds it: the PIT shards and the summary are separate jobs. */
 @Suppress("UNCHECKED_CAST")
 private fun Node.step(name: String): Node =
     sub("jobs").values.flatMap { (it as Node).steps() }.first { it["name"] == name }
@@ -119,7 +119,7 @@ private fun String.mutate(change: Node.() -> Unit): String {
 /** Rules over a parsed workflow; each returns its violations. */
 private object MutationGuard {
 
-    private const val NIGHTLY = "mutation-nightly.yml"
+    private const val WORKFLOW = "mutation-testing.yml"
     private const val MODULES = "build/reports/mutation-floors/modules.txt"
     private const val LOG = "build/reports/mutation-floors/pitest.log"
     private val mutationTask = Regex("""(?<![\w-])(pitest|checkMutationFloors)\b""")
@@ -147,12 +147,12 @@ private object MutationGuard {
             listOf("schedule", "workflow_dispatch").filterNot { it in found }.map { "missing trigger $it" }
     }
 
-    /** Jobs or steps that use the nightly, and a `workflow_run` trigger on it by its [name]. */
+    /** Jobs or steps that use the mutation, and a `workflow_run` trigger on it by its [name]. */
     fun callers(text: String, name: String): List<String> {
         val doc = parse(text)
         val uses = jobs(doc).flatMap { (job, body) ->
             (listOfNotNull(body["uses"]) + steps(body).mapNotNull { it["uses"] })
-                .filter { NIGHTLY in it.toString() }
+                .filter { WORKFLOW in it.toString() }
                 .map { "$job uses $it" }
         }
         val waits = doc["on"].map()["workflow_run"].map()["workflows"].list()
@@ -170,7 +170,7 @@ private object MutationGuard {
     }
 
     /**
-     * The nightly writes the module list and keeps PIT's output in its mutation step, and the summary reads both
+     * The mutation writes the module list and keeps PIT's output in its mutation step, and the summary reads both
      * (#388, #461).
      */
     fun moduleList(text: String): List<String> {

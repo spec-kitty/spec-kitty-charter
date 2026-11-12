@@ -7,11 +7,11 @@ name: service-native
 # on a pull request (ADR-0060, superseding the per-PR build of ADR-0046 decision 5): it was too slow for each PR. The
 # release calls it from service-release.yml with the Gradle cache off; `workflow_dispatch` runs it on demand on any
 # branch, for a change that risks the native build. It is not part of `CI gate / gate` and ci.yml does not call it.
-# A red night is reported as a red run of this workflow, as mutation-nightly.yml's is. No notification is wired.
+# A red night is reported as a red run of this workflow, as mutation-testing.yml's is. No notification is wired.
 # It builds and publishes nothing else.
 #
 # Schedule: 03:11 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), and between
-# mutation-nightly.yml at 02:43 UTC and sonar.yml at 04:23 UTC.
+# mutation-testing.yml at 02:43 UTC and sonar.yml at 04:23 UTC.
 on:
   schedule:
     - cron: "11 3 * * *"

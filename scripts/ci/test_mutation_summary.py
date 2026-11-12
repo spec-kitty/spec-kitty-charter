@@ -1,4 +1,4 @@
-"""The nightly mutation summary renders every module's floors.json, and says so when one is missing or red.
+"""The mutation summary renders every module's floors.json, and says so when one is missing or red.
 
 Standard library only (unittest), so it runs with either runner from the repository root::
 

@@ -1,6 +1,6 @@
-name: Mutation testing (weekly)
+name: Mutation testing
 
-# The weekly mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
+# The scheduled mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
 # (kernel, missions, profiles, profiles-edge, missions-edge, packs and activations). `./gradlew pitest` is its own task, never part of
 # `check` or `verifyAll`, and this workflow has only the schedule and workflow_dispatch triggers, so no pull-request
 # run invokes it or waits for it.
@@ -16,24 +16,23 @@ name: Mutation testing (weekly)
 #   (#461). Each shard's PIT reports, floors files and log go up as a `mutation-report-<shard>` artifact, on a red run
 #   too, kept 14 days.
 # - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
-#   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
+#   `mutation-testing`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
 #   with force_issue takes the same path whatever the result, marked as a forced test run, so the open-or-comment path
 #   can be proven without breaking a floor.
 # - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the run red
 #   but can never stop PIT from running. Pull requests run the same tests (docs-cleanliness.yml, through ci.yml).
 # spec-kitty-open-packs is checked out at the pin and synced, as in service.yml, for governance; the tests read the example packs (ADR-0070).
 
-# Weekly, not nightly (operator ruling, 2026-11-12): a mutation result is worth a run only when someone acts on it,
-# and a week is the cadence its findings are triaged at. The file and the `mutation-nightly` label keep their names,
-# which other workflows, ADR-0062 and the open alert issue use.
+# The schedule is the operator's to set (ADR-0062): a mutation result is worth a run only when someone acts on it, so
+# the run follows the cadence its findings are triaged at. Names here say what runs, never when (2026-11-12).
 on:
   schedule:
-    # Mondays, off the hour.
+    # Off the hour.
     - cron: '43 2 * * 1'
   workflow_dispatch:
     inputs:
       force_issue:
-        description: "Test the alert: open or comment on the mutation-nightly issue whatever the result, marked as a forced test run."
+        description: "Test the alert: open or comment on the mutation-testing issue whatever the result, marked as a forced test run."
         type: boolean
         default: false
 
@@ -41,7 +40,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mutation-nightly-${{ github.ref }}
+  group: mutation-testing-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -51,7 +50,7 @@ jobs:
   # groups, about half of its test runs each (`-PmutationGroups`, charter.mutation-conventions): ~47 min each on a
   # runner. Every group is scored on all of its mutants, as in a whole-module run. The six other modules take ~15 min.
   # Budget (operator ruling, 2026-11-12, raising ADR-0062's 90): 120 minutes a shard, 110 of them for the mutation
-  # step, so the copy and the upload still run when PIT runs out of time. A timeout raises the mutation-nightly issue.
+  # step, so the copy and the upload still run when PIT runs out of time. A timeout raises the mutation-testing issue.
   # The summary job merges the shards' reports into one table.
   pitest:
     name: pitest (${{ matrix.shard }})
@@ -194,8 +193,8 @@ jobs:
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
 
-  # One open issue labelled `mutation-nightly` at a time: opened on the first red run, commented on after that.
-  # Closing it is the maintainers' call once the weekly run is green again. A scheduled run that is red, timed out or
+  # One open issue labelled `mutation-testing` at a time: opened on the first red run, commented on after that.
+  # Closing it is the maintainers' call once the run is green again. A scheduled run that is red, timed out or
   # cancelled alerts (cancel-in-progress is false, so a cancel is not a superseded run); a green one never runs this job;
   # a workflow_dispatch with force_issue runs it whatever the result, as a forced test run.
   alert:
@@ -210,7 +209,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Open or comment on the mutation-nightly issue
+      - name: Open or comment on the mutation-testing issue
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -221,19 +220,19 @@ jobs:
           SUMMARY: ${{ needs.summary.outputs.summary }}
         run: |
           set -euo pipefail
-          label=mutation-nightly
+          label=mutation-testing
           # --force: creates the label, or updates it when it exists, so the step is idempotent.
           gh label create "$label" --repo "$REPO" --force --color B60205 \
-            --description "The weekly mutation-testing run did not succeed (mutation-nightly.yml)"
+            --description "The scheduled mutation-testing run did not succeed (mutation-testing.yml)"
 
           body="$RUNNER_TEMP/mutation-issue.md"
           {
             if [ "$EVENT" = workflow_dispatch ]; then
               echo "**Forced test run** (workflow_dispatch with force_issue), not a scheduled alert:"
-              echo "it checks that the weekly run can open or comment on this issue."
+              echo "it checks that the run can open or comment on this issue."
               echo "The \`pitest\` job result was: **$RESULT**, the \`summary\` job's **$SUMMARY_RESULT**. Run: $RUN_URL"
             else
-              echo "The weekly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**, \`summary\`: **$SUMMARY_RESULT**): $RUN_URL"
+              echo "The scheduled mutation testing run did not succeed (\`pitest\` job result: **$RESULT**, \`summary\`: **$SUMMARY_RESULT**): $RUN_URL"
             fi
             echo
             if [ -n "$SUMMARY" ]; then
@@ -250,9 +249,9 @@ jobs:
             gh issue comment "$issue" --repo "$REPO" --body-file "$body"
             echo "Commented on #$issue"
           else
-            title="Mutation testing weekly run did not succeed"
+            title="Mutation testing did not succeed"
             if [ "$EVENT" = workflow_dispatch ]; then
-              title="Mutation testing weekly run: forced alert test (pitest $RESULT)"
+              title="Mutation testing: forced alert test (pitest $RESULT)"
             fi
             gh issue create --repo "$REPO" --label "$label" --title "$title" --body-file "$body"
           fi

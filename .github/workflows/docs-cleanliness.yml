@@ -4,7 +4,7 @@ name: Docs cleanliness
 # freshness, link and anchor integrity, ADR/changelog indexes, orphans and diagram freshness. The external link check
 # asks remote sites, so it runs nightly in docs-nightly.yml, not on pull requests.
 # Each check is its own job or step so a failure names itself. It also runs the unit tests of scripts/ci
-# (the mutation nightly's summary script), which no other pull-request workflow runs. The docsite build and its
+# (the mutation run's summary script), which no other pull-request workflow runs. The docsite build and its
 # deploy live in docs-site.yml. Rule -> check table: docs/_meta/doc-rules.yaml.
 # Run the same checks locally: docs/guides/docsite.md.
 
@@ -22,7 +22,7 @@ on:
       - '.markdownlint-cli2.jsonc'
       - 'cspell.json'
       - '.github/workflows/docs-cleanliness.yml'
-      - '.github/workflows/mutation-nightly.yml'
+      - '.github/workflows/mutation-testing.yml'
   schedule:
     # Weekly, so a page that goes stale on its own is noticed without a docs change.
     - cron: '17 5 * * 1'
@@ -60,7 +60,7 @@ jobs:
       - name: Check unit tests
         if: always()
         run: python -m pytest -p no:cacheprovider scripts/docs/tests -q
-      # The mutation nightly's summary script (standard library only); never PIT itself, which runs nightly only.
+      # The mutation run's summary script (standard library only); never PIT itself, which runs only in mutation-testing.yml.
       - name: CI script unit tests
         if: always()
         run: python -m unittest discover -s scripts/ci -p 'test_*.py'

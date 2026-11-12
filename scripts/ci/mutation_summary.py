@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The nightly mutation summary (#239): one Markdown table of every module's mutation floors.
+"""The mutation summary (#239): one Markdown table of every module's mutation floors.
 
 Reads each ``<module>/build/reports/mutation-floors/floors.json`` that the floor check
 (``checkMutationFloors``, build-logic ``MutationFloors.kt``) writes, or the ``floors-<shard>.json`` files of a module
