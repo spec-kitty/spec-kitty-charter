@@ -6,10 +6,10 @@
 |---|---|---|
 | `activationId`, `revision`, `governanceFingerprint`, `missionType`, `action` | as `EffectiveActionContext` | echo and validators |
 | `prompt` | string | the stored prompt companion of the prompt in force, unchanged (research R8); empty when the step has none |
-| `promptPackId` | string | the configured id of the pack that holds the prompt in force |
+| `promptPackId` | string, optional | absent when the step has no prompt companion; else the configured id of the pack that holds the prompt in force |
 | `slots` | `[EffectivePromptSlot]` | every slot the prompt declares, in declaration order |
 | `diagnostics` | `[Diagnostic]` | `prompt_slot_not_empty` per slot holding legacy text (OD-7) |
-| `_links` | `Links` | `self`; `effective-artifact` (the step under the activation); `context` (the action context) |
+| `_links` | `Links` | `self`; `effective-artifact` (the step under the activation); `effective-context` (the action context) |
 
 `EffectivePromptSlot { slot: SlotId, fragments: [EffectivePromptFragment] }`.
 `EffectivePromptFragment { packId, packName, level, enhancement, text }`, ordered by `level` (built-in < org < project),
@@ -27,10 +27,10 @@ tactic or a paradigm, or is reached from one by ADR-0018 steps 2 to 5.
 Per artifact URN, the held steps and mission types with a held `scope` edge to it on the merged closure (research R2).
 `projectWide(u) ⇔ owners(u) = ∅`; `typeScoped(u, M) ⇔ mission_type:M ∈ owners(u)`.
 
-## PromptSlotFacts (internal port, packs)
+## Prompt facts (part of `PackCompositionFacts`, packs)
 
 Per pack: `declaredSlots: Map<action URN, List<SlotId>>` (from the canonical render of each held step prompt) and, per
-held step enhancement, `fills: List<(SlotId, canonical fragment text)>`.
+held step enhancement, `fills: List<(SlotId, canonical fragment text)>`; filled where the facts are built (research R9).
 
 ## Refusal codes
 

@@ -83,54 +83,70 @@ docs/                     adr/0018, adr/0066, architecture/composition-and-activ
 ```
 
 **Structure Decision**: The existing hexagonal layout. The walk and the prompt query stay in `packs.application`,
-served through `activations` as the context read is (`ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER`). Markdown rendering
-stays in `packs.infra.storage` behind a domain port (R9). No slice-B file is edited (C-006): not
-`DomainRepositoryService`, `PackCommitStore`, `PackLocator`, `CommitStorePackWriteStore`, `FileSystemPackSources`,
-`Loader`/`LoadedPack`, `CharterWiring` or `file-kinds.yaml`. The shared `CharterRefusalCode.yaml` gains one enum value
-and edits to existing entries; the overlap is announced to the orchestrator.
+served through `activations` as the context read is (`ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER`). Slot facts are part
+of `PackCompositionFacts` (research R9), the compose's one verified, staged-aware input. That needs **one additive hunk
+in `DomainRepositoryService.compositionFacts`**, slice B's file, written after the rebase onto #501 and announced to the
+orchestrator. No other slice-B file is edited: not `PackCommitStore`, `PackLocator`, `CommitStorePackWriteStore`,
+`FileSystemPackSources`, `Loader`/`LoadedPack`, `CharterWiring` or `file-kinds.yaml`. The shared
+`CharterRefusalCode.yaml` gains one enum value and edits to existing entries. The example packs are not edited; cases
+they lack use scenario fixtures. The plan-point squad's findings and their dispositions are in
+[research/plan-squad-2026-11-12.md](research/plan-squad-2026-11-12.md).
 
 ## Design
 
-### The ownership rule in the walk (R1 to R4)
+### The ownership rule in the walk (research R1 to R4)
 
 ```mermaid
 flowchart LR
   A["pass 1: action:mt/a<br/>scope, requires, suggests,<br/>requires-of-suggested, vocabulary"] --> B["pass 2: roots = in-force D/T/P<br/>scoped by mission_type:mt"]
   B --> C["pass 3: roots = in-force D/T/P<br/>scoped by no action and no mission type"]
-  A -.->|appliesThrough: action| L[(one listing,<br/>first pass wins)]
+  A -.->|appliesThrough: action| L[(one listing,<br/>first reach wins)]
   B -.->|appliesThrough: mission_type| L
   C -.->|appliesThrough: project| L
 ```
 
-- `ActionContextWalk` gains an effective form (the offering read keeps the five-step walk as it is, ADR-0018 D1). The
-  same `Engine` runs the passes over one listing, so deduplication, `via` and `hops` keep their meaning inside a pass.
-  A pass-2 root is listed with `via = mission_type:mt`; a pass-3 root with `via` = the action node and `hops` 1, an
-  internal value the effective context does not serialize.
-- Ownership is read from held `scope` edges of the merged closure whose source is a held step or a mission type the
-  closure holds, whatever is in force (R2). It is computed once per merged index (memoized like `heldSteps`), so the
-  rule is linear (NFR-003).
-- `EffectiveContext.of` carries `appliesThrough` per item; the suggestion takes its suggester's.
+- `ActionContextWalk` gains an effective form. The offering read keeps the five-step walk unchanged (ADR-0018 D1).
+- One `Engine` runs the passes over one listing. Each entry carries its pass and, for passes 2 and 3, its root. Pass
+  roots are seeded with explicit hops, so the engine never asks the hops of a node it did not reach (squad A7).
+- A suggestion and its candidate carry the pass that lists them.
+- First reach wins in every step, vocabulary included.
+- Owners are every authored `scope` edge whose source kind is `action` or `mission_type`, held or not (research R2,
+  squad A6). They are memoized once per merged index, which keeps the rule linear (NFR-003).
+- `EffectiveContext.of` carries `appliesThrough` per item. The context's `enhancements` cover the artifacts of every
+  pass (E12).
 
-### Compose checks (FR-001, FR-002; R7, R9)
+### Compose checks (FR-001, FR-002; research R7, R9)
 
-| Check | Pure rule | Reads (500) | Registration and impact-checked writes (422) | Activation writes (422) |
+| Check | Pure rule (packs.domain) | Reads (500) | Registration and impact-checked writes (422) | Activation writes (422) |
 |---|---|---|---|---|
-| target held | an enhancement's `enhances` target `action:M/s` is held by a pack of its `depends_on` closure (`StepHolding.heldByPack`) | `pack_reference_pack_missing` / `pack_reference_artifact_missing`, from `OfferingReadService.composed` | same, through `RegistrationImpact.judge` | composes as reads |
-| inherited lock | `mission_type:M` is `LOCKED` in the closure without the enhancing pack (`PerPackPolicy.levelIn`) | `pack_unreadable` | `override_not_permitted`, a new rule in `ImpactRelations` beside `notPermitted` | composes as reads |
-| slot declared | every slot an **in-force** enhancement names is declared by the prompt in force of its target (R8) | `prompt_slot_missing`, after `InForceResolution` in `ClosureView.inForce` | per stored activation the change joins, through the impact port (R7) | before the document is stored |
+| C37 target held | the `enhances` target `action:M/s` of a step enhancement is held by a pack of its `depends_on` closure (`StepHolding.heldByPack`) | `pack_reference_pack_missing` / `pack_reference_artifact_missing`, in `OfferingReadService.composed` | the same, through `Views.over(staged)` | composes as reads |
+| C22/C25 inherited lock | `mission_type:M` is `LOCKED` in the closure without the enhancing pack (`PerPackPolicy.levelIn`, as `judgedWithout`) | `pack_unreadable`, from `MergeInputs.merged()` | `override_not_permitted`, from `ImpactRelations` beside `notPermitted` | composes as reads |
+| C38 slot declared | every slot an **in-force** enhancement names is declared by the prompt in force of its target (R8), from the prompt facts | `prompt_slot_missing`, from an explicit `ClosureView.requireSlots(states)` that the read session calls; `inForce` stays pure | through a new `ActivationImpact` gate method, called on every check path, per stored activation the change joins; never swallowed | `requireSlots` before the document is stored |
 
-- The pack-qualified target of an `enhances` edge whose kind is `action` is today never `artifact_missing`
-  (`NodeKind.ACTION.artifactKind()` is empty). The target-held rule closes that for step enhancements only.
+- E6's unheld-target branch now covers only the enhancer shapes C37 does not refuse. It is amended with its pinning
+  tests (squad A5).
+- On reads, the order is defined in F6: composition codes, then `pack_unreadable` (merge), then
+  `prompt_slot_missing`.
 
-### The effective-prompt read (FR-003 to FR-007; R5, R8, R10)
+### The effective-prompt read (FR-003 to FR-007; research R5, R8, R10)
 
-- `packs.application.EffectivePromptQuery`: for a merged closure, in-force states, `M` and `s`: the prompt in force
-  (R8), its slots in declaration order, and per slot the fragments of the in-force enhancements whose sole target is
-  `action:M/s`, ordered by level, pack descriptor name, enhancement id (code points). Legacy slot text yields a
-  `prompt_slot_not_empty` diagnostic (OD-7, OD-8).
-- `activations`: `EffectiveReadService.prompt` judges in the order of R10, the mission-type check reading the effective
-  set; `EffectiveTag.Read.PROMPT`; `ActivationController.getEffectiveStepPrompt`; `EffectiveReadMapper.toPrompt`.
-- The context's `_links.prompt` is set when the mission type is in force (the read would answer `409` otherwise).
+- `packs.application.EffectivePromptQuery` takes a merged closure, in-force states, `M` and `s`. It answers:
+  - the prompt in force: the stored companion at the merged winner's place of `action:M/s` (R8), read through
+    `PackCompanionFiles.stepFiles` under the closure fingerprint check;
+  - its slots, in declaration order, taken from the prompt facts;
+  - per slot, the canonical fragment texts of the in-force enhancements whose sole target is `action:M/s`, ordered by
+    level, pack descriptor name and enhancement id, compared by code point;
+  - `prompt_slot_not_empty` diagnostics (OD-7, OD-8).
+- In `activations`:
+  - `EffectiveReadService.prompt` judges in the order of R10;
+  - the tag is `EffectiveTag.Read.PROMPT`, and E17's separator moves to `v3`;
+  - the read is served by `ActivationController.getEffectiveStepPrompt` and mapped by `EffectiveReadMapper.toPrompt`.
+- The prompt read's links:
+  - `self`;
+  - `effective-artifact`: the step under the activation (squad R13: it can 404 for a step only a replaced version
+    keeps; deferred to a follow-up);
+  - `effective-context`.
+- The context's `_links.prompt` is set when the mission type is in force.
 
 ## Complexity Tracking
 
@@ -142,68 +158,105 @@ None.
 
 - **Purpose**: Write the contract changes and the BDD scenarios before code, so the generated interface and the
   scenarios drive the build (C-004).
-- **Relevant requirements**: FR-001 to FR-009, C-001, C-004.
-- **Affected surfaces**: `contracts/charter/paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml`
-  (new), `schemas/EffectiveStepPrompt.yaml`, `EffectivePromptSlot.yaml`, `EffectivePromptFragment.yaml`, `SlotId.yaml`,
-  `EffectiveContextArtifact.yaml` (new), `EffectiveActionContext.yaml`, `CharterRefusalCode.yaml`, `openapi.yaml`,
-  `schemas/_index.yaml`, examples, `contracts/lint/ruleset.yaml` (`prompt` relation), `changes/2026-11-12-*.md`,
-  scenarios `effective-step-prompt.feature`, `step-enhancement-compose.feature`, `effective-context-scoping.feature`,
-  `errors.feature` raised-code rows.
-- **Sequencing/depends-on**: none. The generated interface lands with its controller (IC-05), so the path file can
-  merge only with IC-05.
-- **Risks**: `CharterRefusalCode.yaml` is shared with slice B: keep the edit to one enum value and the existing entries.
+- **Relevant requirements**: FR-001 to FR-009, C-001, C-004, SC-001 to SC-004.
+- **Affected surfaces**:
+  - New path: `contracts/charter/paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml`.
+  - New schemas: `schemas/EffectiveStepPrompt.yaml`, `EffectivePromptSlot.yaml`, `EffectivePromptFragment.yaml`,
+    `SlotId.yaml`, `EffectiveContextArtifact.yaml`.
+  - Changed schemas: `EffectiveActionContext.yaml`, and `CharterRefusalCode.yaml` (the enum value, the
+    `prompt_slot_missing` operations map listing every 422 operation, and `override_not_permitted`).
+  - Also: `openapi.yaml`, `schemas/_index.yaml`, the examples, and `contracts/lint/ruleset.yaml` (the `prompt` relation,
+    in the same commit as the `RelationTableParityTest` row).
+  - Change fragments under `changes/2026-11-12-*.md`: one `### Breaking` fragment naming every newly refusing operation
+    and the item swap; `### Added` for the read and the link.
+  - Scenarios:
+    - `effective-step-prompt.feature`, including the three-levels ordering fixture (squad R1);
+    - `step-enhancement-compose.feature`, with one twin per rule × surface;
+    - `effective-context-scoping.feature`: the 16-directive table as its example table, the type-scoped, other-type,
+      other-type-not-in-force and required-scoped-elsewhere cases (squad R2, R8);
+    - rewrites of `effective-graph-and-context.feature` US5 AS4 and the #484 case (squad R3);
+    - `errors.feature` raised-code rows and declaration pins;
+    - the step vocabulary printing `appliesThrough`, with its binding in `EffectiveGraphSteps` and the scenarios README.
+  - Tests: `WireTokenParityTest` pairs, and the contract-marks test gaining `PROMPT_SLOT_MISSING` and
+    `MISSION_TYPE_NOT_IN_FORCE`.
+- **Sequencing/depends-on**: none. The prompt path and its controller land together (IC-05).
+- **Risks**: `CharterRefusalCode.yaml` is shared with slice B.
 
 ### IC-02 — The ownership rule in the effective walk
 
 - **Purpose**: List every in-force directive, tactic and paradigm the ruling says applies, with `appliesThrough`.
 - **Relevant requirements**: FR-008, FR-009, NFR-003, NFR-004, SC-004.
-- **Affected surfaces**: `packs/application/ActionContextWalk`, `EdgeIndex` (scope owners), `ClosureView.actionContext`;
-  `activations/application/PacksSession`, `activations/infra/packs/ClosureViewSession`,
-  `activations/domain/{ActionContext, EffectiveContext}`, `activations/infra/api/EffectiveReadMapper`.
-- **Sequencing/depends-on**: IC-01 (the schema with `appliesThrough`).
-- **Risks**: existing walk tests pin the action-only answer; they must stay green for the offering read and for
-  closures with no root to add. A fixture shaped like the evidence proves the 15/1 split.
+- **Affected surfaces**:
+  - `packs/application`: `ActionContextWalk`, `EdgeIndex` (scope owners, memoized) and `ClosureView.actionContext`.
+  - `activations`: `application/PacksSession`, `infra/packs/ClosureViewSession`, `domain/{ActionContext,
+    EffectiveContext, EffectiveTag}` and `infra/api/EffectiveReadMapper`.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: The offering walk's tests must stay unchanged. The effective-read tests on example packs that list
+  unscoped artifacts change meaning, and are audited and rewritten.
 
-### IC-03 — Slot facts port and its storage adapter
+### IC-03 — Prompt facts in the composition facts
 
-- **Purpose**: Give the compose check and the read one source of declared slots, fragment slots and fragment text.
-- **Relevant requirements**: FR-001, FR-003, FR-005; R8, R9.
-- **Affected surfaces**: `packs/domain/PromptSlotFacts` (port), `packs/infra/storage/StoredPromptSlotFacts` (new),
-  wiring in `packs` configuration (not `CharterWiring`).
-- **Sequencing/depends-on**: none.
-- **Risks**: the canonical render must match the load rule's (A5); a test parses both and compares.
+- **Purpose**: Give the compose checks and the read one verified source of declared slots, fragment slots and fragment
+  text (research R9).
+- **Relevant requirements**: FR-001, FR-003, FR-005.
+- **Affected surfaces**: `packs/domain/PackCompositionFacts` (the new `prompts` member); the one hunk in
+  `packs/infra/storage/DomainRepositoryService.compositionFacts`; `packs/application/WriteFacts` (keeping the member on
+  write transforms); `CompositionFactsCacheTest`.
+- **Sequencing/depends-on**: the rebase onto #501, for the `DomainRepositoryService` hunk. The record change can come
+  first.
+- **Risks**: The canonical render must equal the load rule's (A5); a test compares the facts with
+  `PackContents.promptSlots`.
 
 ### IC-04 — Compose checks
 
 - **Purpose**: Refuse a compose that would misplace or drop a fragment.
 - **Relevant requirements**: FR-001, FR-002, FR-006, SC-002, SC-003.
-- **Affected surfaces**: `packs/application/{OfferingReadService, ClosureView, ImpactRelations, RegistrationImpact}`,
-  `packs/domain/EnhancementCompose` (pure rules), `activations/infra/packs/ActivationImpactAdapter` (report, not
-  swallow, `prompt_slot_missing`), `activations/application/ActivationService` (activation writes),
-  `web-transport/RefusalHandler` (422 per operation), `ReservedRefusalCodesTest`.
+- **Affected surfaces**:
+  - `packs/domain`: pure rules (target held, inherited lock, slots declared).
+  - `packs/application`: `OfferingReadService.composed` (C37), `ClosureView` (`MergeInputs.merged()` lock and
+    `requireSlots`), `ImpactRelations`, `RegistrationImpact` (the gate on every path) and `ActivationImpact` (the gate
+    method).
+  - `activations`: `infra/packs/ActivationImpactAdapter` (implements the gate), `application/ActivationWrites` and
+    `ActivationService` (`requireSlots` before storing).
+  - `web-transport/RefusalHandler` (the 422 per operation) and `ReservedRefusalCodesTest`.
 - **Sequencing/depends-on**: IC-01, IC-03.
-- **Risks**: registration path overlaps slice B's `StagedPacks`/`WholePackStore` by call only; the hook is
-  `RegistrationImpact.judge`. Each refusal gets a failing fixture and a passing twin.
+- **Risks**: Each rule needs a failing fixture and a passing twin on every surface.
 
 ### IC-05 — The effective-prompt read
 
 - **Purpose**: Serve the prompt in force and its ordered fragments, with `409 mission_type_not_in_force` and the
   context's `prompt` link.
 - **Relevant requirements**: FR-003, FR-004, FR-005, FR-007, NFR-001, NFR-002, SC-001.
-- **Affected surfaces**: `packs/application/{EffectivePromptQuery, ClosureView}`, `activations/application/{EffectiveReadService,
-  PacksSession}`, `activations/domain/{EffectivePrompt, EffectiveTag}`, `activations/infra/{packs/ClosureViewSession,
-  api/ActivationController, api/EffectiveReadMapper, api/ActivationMapper}`, `kernel/RefusalCode`,
-  `web-transport/RefusalHandler`.
-- **Sequencing/depends-on**: IC-01, IC-03; IC-04 for the slot-missing refusal on this read.
-- **Risks**: NFR-001/002 gates; the A7 mismatch with `getEffectiveMissionStep` is recorded, not fixed (R8).
+- **Affected surfaces**:
+  - `packs/application`: `EffectivePromptQuery` and `ClosureView`.
+  - `activations`: `application/{EffectiveReadService, PacksSession}`, `domain/{EffectivePrompt, EffectiveTag}` and
+    `infra/{packs/ClosureViewSession, api/ActivationController, api/EffectiveReadMapper, api/ActivationMapper}`.
+  - `kernel/RefusalCode` and `web-transport/RefusalHandler`.
+- **Sequencing/depends-on**: IC-01, IC-03; IC-04 for `requireSlots`.
+- **Risks**: The NFR-001 and NFR-002 gates.
 
 ### IC-06 — Records and docs
 
-- **Purpose**: Make the docs and records say what the service does.
+- **Purpose**: Make the records say what the service does.
 - **Relevant requirements**: FR-010, FR-011, FR-012, SC-005.
-- **Affected surfaces**: ADR-0018 (amendment of D5), ADR-0066 (annotations on d7, d8, d9), rules page E16 and new
-  compose rules, divergence register (mission-type scope; context scoping), `docs/api/service-contract.md` (R3 row,
-  operation lists), `docs/development/{hypermedia-hateoas, http-status-codes, rest-resource-conventions}.md`,
-  conceptual model integrity note, glossary terms, changelog page, the 16-directive table.
-- **Sequencing/depends-on**: IC-02, IC-04, IC-05 (records follow behaviour).
+- **Affected surfaces**:
+  - ADR-0018: dated amendments on D2, D3 and D5, with `decision_status` and `updated` bumped.
+  - ADR-0066: annotations on d4, d7, d8 and d9, a "now built" annotation, and the built marker on the Follow-ups.
+  - The rules page (`composition-and-activation-rules.md`):
+    - define the "Built (slice C)" label;
+    - amend E6, E12, E16 (remove the ⚠ note), E17 (`v3`, `PROMPT`) and E18 (the `409`);
+    - amend C22 and C25 for the inherited lock;
+    - add C37 and C38;
+    - amend F6 and G8, and fix the section 8 intro and its "reserved" paragraph;
+    - add the section 7 status rows;
+    - state the R-REL `relate` path.
+  - The conceptual-model integrity note.
+  - `divergence-register.md` and `divergences.yaml`: a dated note on DIV-244, the new DIV-245, and the block prose.
+  - `docs/api/service-contract.md`: the R3 and R9 rows and the operation lists.
+  - `docs/development/`: `hypermedia-hateoas.md`, `http-status-codes.md` and `rest-resource-conventions.md`.
+  - The glossary: effective step prompt, project-wide artifact and scope owner; the effective action context
+    definition amended.
+  - `docs/changelog/2026-11-12-*.md` and its index.
+  - `docs/plans/roadmap.md` and `next-slices-2026-11-11.md`: reword "match core".
+- **Sequencing/depends-on**: IC-02, IC-04, IC-05.
 - **Risks**: `RelationTableParityTest` and the docs checks pin the text.
