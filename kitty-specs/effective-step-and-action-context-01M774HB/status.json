@@ -233,6 +233,9 @@
       "last_event_id": "01M78TC1SNXVRSZGFFEYAKBEKE",
       "last_transition_at": "2026-11-12T21:24:41.397543+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 12188,
