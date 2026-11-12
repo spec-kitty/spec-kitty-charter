@@ -264,6 +264,8 @@ public final class PackRegistrationService {
         WholePackWriteStore.Contents contents = loader.loadStaged(staged);
         // The files the load reports as not held leave the staged tree before its revision and the commit (FR-005).
         loader.removeNotHeld(staged, contents);
+        // #110: the manifest the service will hold is derived from the tree and stamped before the revision.
+        loader.stampManifest(staged);
         PackRevision revision = store.revisionOf(staged);
         Upload upload = new Upload(packId, staged, contents, revision, preconditions);
         return store.exclusively(packId, () -> decide(upload, beforeCommit));

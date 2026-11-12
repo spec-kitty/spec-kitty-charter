@@ -453,6 +453,7 @@ class InterruptedCommitRepairTest {
         Map<String, String> expected = new TreeMap<>(committed);
         expected.put("fd.toolguide.yaml", "");
         expected.put("fd.guide.md", "");
+        expected.put(PackFileSet.MANIFEST, ""); // #110: every commit restamps the manifest, generating it here
         return expected;
     }
 
@@ -523,7 +524,13 @@ class InterruptedCommitRepairTest {
         try (Stream<Path> files = Files.walk(directory)) {
             for (Path file : files.filter(Files::isRegularFile).toList()) {
                 String relative = directory.relativize(file).toString();
-                out.put(relative, relative.startsWith("fd.") ? "" : Files.readString(file));
+                // The written toolguide and the restamped manifest (#110) are compared by presence: their bytes follow
+                // the write, and the manifest's freshness is ManifestMembershipTest's.
+                out.put(
+                        relative,
+                        relative.startsWith("fd.") || relative.equals(PackFileSet.MANIFEST)
+                                ? ""
+                                : Files.readString(file));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

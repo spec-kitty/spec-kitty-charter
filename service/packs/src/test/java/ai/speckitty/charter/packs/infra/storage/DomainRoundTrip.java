@@ -664,6 +664,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!misplaced.isEmpty()) {
             return new Refused(String.join("; ", misplaced));
         }
+        // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses.
+        List<String> membership =
+                ManifestMembership.mismatch(good.value(), ManifestMembership.derivedAt(source, strategy));
+        if (!membership.isEmpty()) {
+            return new Refused(String.join("; ", membership));
+        }
         Map<String, String> pairing = pairing(good.value(), target, written);
         PackManifests.Recomputed recomputed = PackManifests.recompute(
                 good.value(),

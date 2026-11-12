@@ -254,7 +254,7 @@ class MarkdownCompanionTest {
                 gate(source, host.resolve("out").resolve(PACK), loaded -> loaded);
 
         assertThat(observed)
-                .containsOnlyKeys("pack.yaml", SKILL_FILE, BODY_FILE)
+                .containsOnlyKeys("pack.yaml", PackFileSet.MANIFEST, SKILL_FILE, BODY_FILE)
                 .allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
         assertThat(host.resolve("out").resolve(PACK).resolve(BODY_FILE))
                 .as("written in the canonical form")
@@ -284,13 +284,21 @@ class MarkdownCompanionTest {
      * declared form. Every written file must pair with a source file.
      */
     private Map<String, Optional<String>> gate(
-            Path source, Path target, UnaryOperator<WholePackStore.LoadedPack> change) {
+            Path source, Path target, UnaryOperator<WholePackStore.LoadedPack> change) throws IOException {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy(), BINDINGS, RULES);
+        // #110: a pack holds its derived manifest, so the source is given the one this store derives, stamped over the
+        // source's bytes; the written manifest is then paired with it and compared by meaning.
+        WholePackStore.LoadedPack read = store.load(source);
+        PackManifests.Recomputed stamped = PackManifests.recompute(
+                ManifestMembership.derived(read.pack(), read.layout()),
+                path -> FilesystemPackStore.readBytes(source.resolve(path)));
+        Files.writeString(
+                source.resolve(PackFileSet.MANIFEST), new YamlSerializationStrategy().writeManifest(stamped.stamped()));
         SortedMap<String, String> census = WholePackCensus.of(source);
         WholePackRoundTrip throughTheStore = new WholePackRoundTrip() {
             @Override
             public Set<String> modelledKinds() {
-                return Set.of(DomainRoundTrip.DESCRIPTOR, "skill");
+                return Set.of(DomainRoundTrip.DESCRIPTOR, DomainRoundTrip.MANIFEST, "skill");
             }
 
             @Override

@@ -102,7 +102,7 @@ class PresetRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack without presets or a manifest is written without a presets directory or a manifest")
+    @DisplayName("a pack without presets is written without a presets directory, and with a generated manifest (#110)")
     void aPackWithoutPresetsHasNoPresetsDirectory(@TempDir Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("bare"));
         Files.writeString(pack.resolve(PackFileSet.PACK_YAML), PACK_YAML);
@@ -111,7 +111,12 @@ class PresetRoundTripTest {
         store.write(store.load(pack), target);
 
         assertThat(target.resolve("presets")).doesNotExist();
-        assertThat(target.resolve(PackFileSet.MANIFEST)).doesNotExist();
+        assertThat(store.load(target).manifest())
+                .as("#110: every write generates the manifest; with no presets it lists none")
+                .hasValueSatisfying(manifest -> {
+                    assertThat(manifest.constituents()).isEmpty();
+                    assertThat(manifest.presets()).isEmpty();
+                });
     }
 
     @ParameterizedTest(name = "{0}")
