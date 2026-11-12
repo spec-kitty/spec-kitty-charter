@@ -480,6 +480,9 @@ provenance cases where the operation has them. The mission makes both one rule t
   activation storage or of the registration job table raises; both are kept in memory and no seam lets a scenario fail them. They
   stay held until a seam can fail that storage; the other 44 operations are ready. Each held entry names the
   `statuses` it is held for (here `[500]`), so a held operation that gains another gap fails the suite.
+- **Not yet enforced.** Nothing compares the register with the previous release, so "an operation moved from ready to
+  held is a `### Breaking` change" is a release-review responsibility: the reviewer of a contract release diffs
+  `switch-gate.yaml` against the last tag and records the change. A check of that diff is not built.
 - **Core's half.** Refusing a switch the register does not hold ready is core's proxy (ADR-0021 D5), built at
   incorporation; it is recorded in the [work breakdown](/plans/pack-ecosystem-work-breakdown/), not filed here
   (issue-tracker Rule 5).
