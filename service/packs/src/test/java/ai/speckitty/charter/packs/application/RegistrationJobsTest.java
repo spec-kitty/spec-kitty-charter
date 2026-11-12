@@ -640,6 +640,19 @@ class RegistrationJobsTest {
         for (int i = 1; i <= 4; i++) {
             waiting.add(h.start("pack-" + i, Preconditions.none(), h.stage(h.pack("pack-" + i, "1.0.0"))));
         }
+        // The two workers stay held until close() has refused all four jobs, then wake inside close()'s grace and must
+        // write nothing. Left held, they would keep close() waiting out its whole 30 s grace on every run, and under PIT
+        // on every mutant this test covers (#461).
+        Thread releaser = new Thread(() -> {
+            h.await(() -> waiting.stream()
+                    .allMatch(reservation -> h.jobs.status(reservation.id())
+                            .map(Status::state)
+                            .filter(state -> state == State.REFUSED)
+                            .isPresent()));
+            h.gate.releaseBeforeRun();
+        });
+        releaser.setDaemon(true);
+        releaser.start();
 
         h.jobs.close();
 
