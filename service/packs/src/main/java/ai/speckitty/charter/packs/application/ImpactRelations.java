@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
@@ -26,13 +27,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
- * The relation rules of the registration impact check (IC-15, C28, C36, A6, A8, A11, A12), judged over one composed
- * closure. They are pure checks over the typed edges the packs write ({@code PackCompositionFacts.edges()}), never over
- * {@code GraphWalk}, which sees derived relations only (#397). Each endpoint is resolved to a place, a pack and an
- * artifact, by {@link PackCompositionResolver#holderOf}, the one owner of which pack a reference means; the layer
- * re-pointing is the merge's (IC-07, PR B), which judges {@code self_override} again.
+ * The relation rules of the registration impact check (IC-15, C28, C36, A6, A8, A11, A12, and the lock a step inherits
+ * from its mission type, OD-2 (A)), judged over one composed closure. They are pure checks over the typed edges the
+ * packs write ({@code PackCompositionFacts.edges()}), never over {@code GraphWalk}, which sees derived relations only
+ * (#397). Each endpoint is resolved to a place, a pack and an artifact, by {@link PackCompositionResolver#holderOf}, the
+ * one owner of which pack a reference means; the layer re-pointing is the merge's (IC-07, PR B), which judges
+ * {@code self_override} again.
  *
  * <p>One pass collects the {@code enhances} and {@code overrides} edges; each rule then reads that list, so the cost is
  * linear in the edges, and every walk is iterative, so a long chain cannot exhaust the stack.
@@ -71,6 +74,7 @@ final class ImpactRelations {
     private final Map<PackIdentifier, PackUnderResolution> byConfigured = new HashMap<>();
     private final List<Edge> edges = new ArrayList<>();
     private final OfferingReadService.ComposedClosure composed;
+    private @Nullable Map<String, MutabilityPolicySource> scopedPolicies;
 
     private ImpactRelations(OfferingReadService.ComposedClosure composed) {
         this.composed = composed;
@@ -94,6 +98,7 @@ final class ImpactRelations {
                 relations::selfOverride,
                 relations::conflicting,
                 relations::notPermitted,
+                relations::lockedStepEnhanced,
                 relations::overrideCycle,
                 relations::enhancesCycle,
                 relations::ungroundedEnhancer);
@@ -181,8 +186,7 @@ final class ImpactRelations {
      * left out as it is by the write gate (B8).
      */
     private Optional<Violation> notPermitted() {
-        Map<String, MutabilityPolicySource> scoped = PackMutabilityPolicy.scopedPolicies(
-                packs, member -> composed.factsOf(member).policy());
+        Map<String, MutabilityPolicySource> scoped = scoped();
         Map<PackIdentifier, PerPackPolicy> judging = new HashMap<>();
         for (Edge edge : edges) {
             if (!edge.is(RelationType.OVERRIDES) || edge.target().isEmpty()) {
@@ -197,6 +201,34 @@ final class ImpactRelations {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * An enhancement of a step whose mission type is locked (C22 and C25 as amended, OD-2 (A)): a step takes its mission
+     * type's level, judged along the closure with the enhancing pack's own policy left out, as {@link #notPermitted}
+     * leaves out the source's pack. The read refuses the same closure {@code pack_unreadable} from the merge.
+     */
+    private Optional<Violation> lockedStepEnhanced() {
+        return EnhancementCompose.lockedTargets(
+                        packs, member -> composed.factsOf(member).edges(), new PerPackPolicy(scoped()))
+                .stream()
+                .findFirst()
+                .map(locked -> {
+                    List<PackUnderResolution> involved = new ArrayList<>(List.of(locked.enhancingPack()));
+                    locked.lockedBy()
+                            .filter(pack -> !pack.equals(locked.enhancingPack()))
+                            .ifPresent(involved::add);
+                    return new Violation(RefusalCode.OVERRIDE_NOT_PERMITTED, locked.detail(), involved);
+                });
+    }
+
+    /** Each closure pack's policy, scoped to what it and the packs it builds on hold (A15), read once. */
+    private Map<String, MutabilityPolicySource> scoped() {
+        if (scopedPolicies == null) {
+            scopedPolicies = PackMutabilityPolicy.scopedPolicies(
+                    packs, member -> composed.factsOf(member).policy());
+        }
+        return scopedPolicies;
     }
 
     private PerPackPolicy judgedWithout(PackIdentifier pack, Map<String, MutabilityPolicySource> scoped) {
