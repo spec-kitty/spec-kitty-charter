@@ -3,7 +3,7 @@ title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
 updated: 2026-11-12T00:00:00Z
-decision_status: Accepted, with Amendment 2026-11-07
+decision_status: Accepted, with Amendments 2026-11-07 and 2026-11-12
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR
@@ -88,6 +88,10 @@ an artifact that an author-written graph document names or starts an edge from, 
 `putPackRelationship` remains the only operation that writes one edge into a pack without re-sending the pack.
 Decisions 1 and 2 stand: no artifact field mints an edge, and the author's graph documents remain the home of an
 authored edge. An artifact registration still writes the artifact's own content only.
+
+### Amendment 2026-11-12
+
+Operator ruling on [#515](https://github.com/spec-kitty/spec-kitty-charter/issues/515): each relation names the source and target kinds it may connect, typed in the domain; an edge that breaks them is refused when the pack is read or written (decision 13).
 
 ## Context
 
