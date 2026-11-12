@@ -36,12 +36,12 @@
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "A held but not-in-force mission type answers 409 mission_type_not_in_force",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "effective-step-prompt.feature (409 scenarios incl. R10 probe 1bd7396c5); errors.feature; EffectiveReadServiceTest (WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:48.790191+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
