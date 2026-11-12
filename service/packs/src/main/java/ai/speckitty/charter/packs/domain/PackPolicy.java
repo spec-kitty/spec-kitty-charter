@@ -545,9 +545,7 @@ public final class PackPolicy {
             }
             if (escapes(asset)) {
                 findings.add(assetFinding(
-                        PackFindingCode.ASSET_PATH_ESCAPE,
-                        asset,
-                        asset.file() + ": asset path '" + asset.path() + "' escapes the pack's assets/ root"));
+                        PackFindingCode.ASSET_PATH_ESCAPE, asset, asset.file() + ": " + assetPathEscape(asset.path())));
             } else if (!asset.mime().isEmpty()) {
                 mimeProblem(asset)
                         .ifPresent(detail ->
@@ -702,6 +700,16 @@ public final class PackPolicy {
     public static Optional<String> bodyPathEscape(String id, Optional<String> bodyPath) {
         return bodyPath.filter(PackRelativePaths::leavesRoot)
                 .map(path -> "node " + id + " body_path '" + path + "' escapes the pack root");
+    }
+
+    /**
+     * The reason an asset path leaves {@code assets/}, in the one wording validate mode and the load share.
+     *
+     * @param path the path as the sidecar wrote it
+     * @return {@code asset path '<path>' escapes the pack's assets/ root}
+     */
+    public static String assetPathEscape(String path) {
+        return "asset path '" + path + "' escapes the pack's assets/ root";
     }
 
     private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
