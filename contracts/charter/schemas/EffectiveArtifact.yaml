@@ -12,7 +12,7 @@ description: >-
   mission kinds among them. It is absent for any other kind, so a client follows the link when it is
   there and never builds the path. An item has no self: the list, the graph or the context that holds it is the answered
   resource. The members of this schema are copied by EffectiveArtifactRead, EffectiveGovernanceEntry and
-  EffectiveAgentProfileRead, which carry a _links of their own.
+  EffectiveAgentProfileRead, which carry a _links of their own, and by EffectiveContextArtifact, which adds appliesThrough.
 type: object
 additionalProperties: false
 required:
