@@ -11,6 +11,7 @@ import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
@@ -133,6 +134,11 @@ class WireTokenParityTest {
                         ACTIVATABLE,
                         values(EffectiveArtifact.KindEnum.values(), EffectiveArtifact.KindEnum::getValue),
                         EffectiveArtifact.KindEnum::fromValue),
+                new Pair(
+                        "EffectiveContextArtifact.kind (ActivatableKind)",
+                        ACTIVATABLE,
+                        values(EffectiveContextArtifact.KindEnum.values(), EffectiveContextArtifact.KindEnum::getValue),
+                        EffectiveContextArtifact.KindEnum::fromValue),
                 new Pair(
                         "SharedSkip.kind (ActivatableKind)",
                         ACTIVATABLE,

@@ -10,6 +10,7 @@ import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRe
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
+import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -40,6 +41,7 @@ import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
@@ -453,7 +455,9 @@ class EffectiveReadMapperTest {
     @Test
     void anItemOfTheActionContextLinksLikeAnItemOfTheList() {
         EffectiveContext context = new EffectiveContext(
-                List.of(item(A, Optional.empty(), Optional.empty())), List.of(), EffectiveSkippedReport.empty());
+                List.of(new EffectiveContext.Item(item(A, Optional.empty(), Optional.empty()), AppliesThrough.ACTION)),
+                List.of(),
+                EffectiveSkippedReport.empty());
 
         EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
 
@@ -612,20 +616,24 @@ class EffectiveReadMapperTest {
     void theContextIsMappedWithItsArtifactsSuggestionEnhancementsAndSkippedReport() {
         EffectiveContext context = new EffectiveContext(
                 List.of(
-                        new EffectiveArtifact(
-                                A,
-                                "main",
-                                PackLevel.ORG,
-                                State.ACTIVE,
-                                false,
-                                Optional.empty(),
-                                Policy.OPEN,
-                                Reason.SELECTED,
-                                Optional.empty()),
-                        item(
-                                T,
-                                Optional.empty(),
-                                Optional.of(new Suggestion(Optional.of("when"), Optional.of("why"))))),
+                        new EffectiveContext.Item(
+                                new EffectiveArtifact(
+                                        A,
+                                        "main",
+                                        PackLevel.ORG,
+                                        State.ACTIVE,
+                                        false,
+                                        Optional.empty(),
+                                        Policy.OPEN,
+                                        Reason.SELECTED,
+                                        Optional.empty()),
+                                AppliesThrough.MISSION_TYPE),
+                        new EffectiveContext.Item(
+                                item(
+                                        T,
+                                        Optional.empty(),
+                                        Optional.of(new Suggestion(Optional.of("when"), Optional.of("why")))),
+                                AppliesThrough.PROJECT)),
                 List.of(
                         new EffectiveContext.Enhancement(
                                 new NodeRef(NodeKind.ACTION, "software-dev/implement"),
@@ -640,8 +648,19 @@ class EffectiveReadMapperTest {
         assertThat(wire.getAction()).isEqualTo("implement");
         assertThat(wire.getGovernanceFingerprint()).isEqualTo("sha256:closure");
         assertThat(wire.getArtifacts())
-                .extracting(ai.speckitty.charter.api.model.EffectiveArtifact::getArtifactId)
-                .containsExactly("A", "t");
+                .extracting(
+                        EffectiveContextArtifact::getArtifactId,
+                        item -> item.getAppliesThrough().getValue())
+                .as("each item carries its own appliesThrough")
+                .containsExactly(tuple("A", "mission_type"), tuple("t", "project"));
+        assertThat(wire.getArtifacts().get(0).getKind().getValue()).isEqualTo("directive");
+        assertThat(wire.getArtifacts().get(0).getPackId()).isEqualTo("main");
+        assertThat(wire.getArtifacts().get(0).getLevel().getValue()).isEqualTo("org");
+        assertThat(wire.getArtifacts().get(0).getState().getValue()).isEqualTo("active");
+        assertThat(wire.getArtifacts().get(0).getPolicy().getValue()).isEqualTo("open");
+        assertThat(wire.getArtifacts().get(0).getReason().getValue()).isEqualTo("selected");
+        assertThat(wire.getArtifacts().get(1).getState().getValue()).isEqualTo("inactive");
+        assertThat(wire.getArtifacts().get(1).getReason().getValue()).isEqualTo("not_selected");
         assertThat(wire.getArtifacts().get(0).getSuggestion()).isNull();
         assertThat(wire.getArtifacts().get(1).getSuggestion().getWhen()).isEqualTo("when");
         assertThat(wire.getArtifacts().get(1).getSuggestion().getReason()).isEqualTo("why");
@@ -653,6 +672,20 @@ class EffectiveReadMapperTest {
         assertThat(wire.getEnhancements().get(1).getTarget())
                 .isEqualTo(new NodeReference(NodeReference.KindEnum.DIRECTIVE, "A"));
         assertThat(wire.getSkipped().getMissionTypeNotInForce()).isEmpty();
+    }
+
+    @Test
+    void everyAppliesThroughIsMappedToTheValueTheContractSpells() {
+        List<EffectiveContext.Item> items = java.util.Arrays.stream(AppliesThrough.values())
+                .map(through -> new EffectiveContext.Item(item(A, Optional.empty(), Optional.empty()), through))
+                .toList();
+
+        EffectiveActionContext wire = mapper.toContext(
+                contextRead(new EffectiveContext(items, List.of(), EffectiveSkippedReport.empty())), true);
+
+        assertThat(wire.getArtifacts())
+                .extracting(item -> item.getAppliesThrough().getValue())
+                .containsExactly("action", "mission_type", "project");
     }
 
     @Test
