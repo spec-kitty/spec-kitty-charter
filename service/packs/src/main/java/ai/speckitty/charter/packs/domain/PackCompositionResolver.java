@@ -517,10 +517,16 @@ public final class PackCompositionResolver {
 
     /**
      * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
-     * reference may name (FR-015). It is not the {@linkplain #compositionClosure composition closure}, which also
-     * follows {@code parent_pack}.
+     * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37,
+     * {@link EnhancementCompose#targetHeld}). It is not the {@linkplain #compositionClosure composition closure}, which
+     * also follows {@code parent_pack}.
+     *
+     * @param packId the descriptor {@code pack_id} of the pack the walk starts at
+     * @param byId the packs of the compose, by descriptor {@code pack_id}
+     * @return the {@code pack_id}s reached, the start included; a target no pack of {@code byId} declares is included
+     *     and not descended from
      */
-    private static Set<String> dependsOnClosure(String packId, Map<String, PackUnderResolution> byId) {
+    static Set<String> dependsOnClosure(String packId, Map<String, PackUnderResolution> byId) {
         Set<String> reached = new LinkedHashSet<>();
         List<String> pending = new ArrayList<>(List.of(packId));
         while (!pending.isEmpty()) {

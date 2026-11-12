@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -190,32 +191,104 @@ class ClosureViewTest {
         expect(select("step_enhancement:x"), "step_enhancement:x", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
     }
 
+    // E6's unheld-target branch (squad A5): C37 now refuses the compose of a step enhancer whose sole step no pack
+    // holds, so a composed closure never reaches the branch. The two cases that pinned it here are C37 refusal tests,
+    // each beside the twin that composes; the branch itself stays pinned on the pure resolution (InForceResolutionTest,
+    // aStepEnhancerWhoseKeptEnhancesEdgeEndsAtNoWinnerIsPrunedForItsTarget).
+
     @Test
-    void aStepEnhancerOfAStepNoPackHoldsKeepsItsEdgeAndIsPrunedForItsTarget() {
+    void aStepEnhancerOfAStepNoPackHoldsIsRefusedByTheComposeAsTargetMissing() {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"));
 
-        InForceStates states = select("step_enhancement:x", "mission_type:M");
-
-        expect(states, "step_enhancement:x", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
-        assertThat(states.enhancedTargets()).containsEntry(u("step_enhancement:x"), List.of(u("action:M/missing")));
+        assertThatThrownBy(() -> select("step_enhancement:x", "mission_type:M"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                    assertThat(refused.getMessage()).contains("action:M/missing");
+                });
     }
 
     @Test
-    void aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsPrunedForItsTarget() {
+    void theTwinAStepEnhancerOfTheHeldStepComposesAndIsInForce() {
+        pack(
+                "alpha",
+                List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"));
+
+        expect(select("step_enhancement:x", "mission_type:M"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
+    }
+
+    // beta is a project pack, so its mission type in the twin is a layer override of alpha's, no sibling contest.
+    @Test
+    void aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsRefusedByTheComposeAsTargetMissing() {
         pack("alpha", List.of("mission_type:M", "action:M/s"));
         pack(
                 "beta",
-                PackLevel.ORG,
+                PackLevel.PROJECT,
                 List.of("alpha"),
                 List.of("action:M/other", "step_enhancement:x"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/other"));
 
-        InForceStates states = select("step_enhancement:x", "mission_type:M");
+        assertThatThrownBy(() -> select("step_enhancement:x", "mission_type:M"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                    assertThat(refused.getMessage()).contains("action:M/other");
+                });
+    }
 
-        expect(states, "step_enhancement:x", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+    @Test
+    void theTwinAStepEnhancerOfAnActionDeclaredWithItsMissionTypeComposes() {
+        pack("alpha", List.of("mission_type:M", "action:M/s"));
+        pack(
+                "beta",
+                PackLevel.PROJECT,
+                List.of("alpha"),
+                List.of("mission_type:M", "action:M/other", "step_enhancement:x"),
+                edge("step_enhancement:x", RelationType.ENHANCES, "action:M/other"));
+
+        expect(select("step_enhancement:x", "mission_type:M"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
+    }
+
+    // ---- the inherited lock at read (C22, C25 as amended, OD-2 (A)): a closure-level refusal, as C21 is -----------
+
+    private void anEnhancerOfPlanUnder(MutabilityLevel missionTypeLevel) {
+        pack(
+                "base",
+                PackLevel.BUILT_IN,
+                List.of(),
+                MutabilityPolicySource.builder()
+                        .entry(u("mission_type:M"), missionTypeLevel)
+                        .build(),
+                List.of("mission_type:M", "action:M/s"));
+        pack(
+                "enhancer",
+                PackLevel.ORG,
+                List.of("base"),
+                List.of("step_enhancement:x"),
+                edge("step_enhancement:x", RelationType.ENHANCES, "base::action:M/s"));
+    }
+
+    @Test
+    void anEnhancementOfAStepWhoseMissionTypeIsLockedMakesTheMergeUnreadableWhateverIsSelected() {
+        anEnhancerOfPlanUnder(MutabilityLevel.LOCKED);
+
+        assertThatThrownBy(() -> select()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.getMessage())
+                    .contains("step_enhancement:x")
+                    .contains("mission_type:M")
+                    .contains("locked");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+        });
+    }
+
+    @Test
+    void theTwinAnEnhancementOfAStepWhoseMissionTypeIsExtendableIsMerged() {
+        anEnhancerOfPlanUnder(MutabilityLevel.EXTENDABLE);
+
+        expect(select("step_enhancement:x", "mission_type:M"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
     }
 
     @Test
