@@ -119,8 +119,12 @@ class EffectiveMissionTypeReadServiceTest {
 
     @Test
     void aStepIsTheWinnersWithTheHoldingPacksFilesAndTheMergedStepContract() {
-        Fingerprinted<StepView> step = reads.step("a-1", "software-dev", "specify");
+        EffectiveMissionTypeReadService.StepRead read = reads.step("a-1", "software-dev", "specify");
+        Fingerprinted<StepView> step = read.read();
 
+        assertThat(read.place())
+                .as("a step of the winning type is read from the winner")
+                .isEmpty();
         assertThat(step.fingerprint()).isEqualTo(FINGERPRINT);
         assertThat(step.value().prompt()).contains("# Specify\n");
         assertThat(step.value().stepContractId())
@@ -266,8 +270,10 @@ class EffectiveMissionTypeReadServiceTest {
 
     @Test
     void aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFilesAndTheMergedStepContract() {
-        Fingerprinted<StepView> step = reads.step("a-1", "software-dev", "review");
+        EffectiveMissionTypeReadService.StepRead read = reads.step("a-1", "software-dev", "review");
+        Fingerprinted<StepView> step = read.read();
 
+        assertThat(read.place()).as("the step's links name its place").contains(MAIN);
         assertThat(step.value().step().title()).isEqualTo("Review at main");
         assertThat(step.value().prompt())
                 .as("the prompt the place's pack stores, as the prompt read serves it (R8)")

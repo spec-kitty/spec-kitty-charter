@@ -4,10 +4,16 @@ get:
   description: >-
     It answers the step of the layer-merge winner of the mission type, as getPackMissionStep does, with its prompt and guidelines
     files as the pack that holds the winner stores them; its step-contract link names the layer-merge winner of the
-    step contract of the merged closure bound to the step, and every link stays under the activation. An unknown
-    activation is a 404 activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step
-    the winning type does not hold a 404 action_not_found. A holding pack that is configured no longer or no longer
-    holds the type between the two reads is stale_input, as for getEffectiveMissionType. No ETag.
+    step contract of the merged closure bound to the step, and every link stays under the activation. A step the winning
+    type does not declare is answered from the step's place, the pack that holds the merged winner of
+    action:<missionTypeId>/<stepId>, when the closure holds the step: a winning mission type keeps the unique steps of
+    the versions it replaced (A7), as getEffectiveActionContext and getEffectiveStepPrompt read them. Such a step is the
+    place's version, with the place pack's prompt and guidelines files, and its skeleton links name the place pack's
+    getPackMissionSkeleton, which serves that version's skeletons. An unknown activation is a 404
+    activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step no version of the
+    closure holds a 404 action_not_found, judged as getEffectiveActionContext judges it. A holding pack, or the pack of
+    the step's place, that is configured no longer or no longer holds the type between the reads is stale_input, as for
+    getEffectiveMissionType. No ETag.
 
     Where this read differs from getPackMissionStep: here the step is the winning type's and its prompt and guidelines
     files are those of the pack that holds the winner, while its step-contract link names the merged closure's winner,

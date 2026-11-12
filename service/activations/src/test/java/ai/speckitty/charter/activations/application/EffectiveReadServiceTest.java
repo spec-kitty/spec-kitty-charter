@@ -557,10 +557,11 @@ class EffectiveReadServiceTest {
     }
 
     @Test
-    void theContextNamesThePackThatHoldsTheMissionTypesVersionInForceAndNoneWhenTheSetDoesNotListIt() {
+    void theContextNamesThePackOfTheStepsPlaceAndNoneWhenTheSetDoesNotListTheMissionType() {
         packs.contexts(ask -> walked());
+        packs.places((type, action) -> Optional.of("main"));
 
-        assertThat(context(IMPLEMENT).missionTypePack())
+        assertThat(context(IMPLEMENT).stepPack())
                 .as("the set lists no mission type")
                 .isEmpty();
 
@@ -591,7 +592,9 @@ class EffectiveReadServiceTest {
                     plain.enhancedTargets());
         });
 
-        assertThat(context(IMPLEMENT).missionTypePack()).contains("proj");
+        assertThat(context(IMPLEMENT).stepPack())
+                .as("the step's place, main, which keeps the step proj's winning version drops (A7)")
+                .contains("main");
     }
 
     @Test

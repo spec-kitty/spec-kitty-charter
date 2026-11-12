@@ -22,9 +22,10 @@ description: >-
   mission type that is not in force is absent from it here.
 
   _links holds self, the context; effective-artifact, the read of the action's step under the activation
-  (getEffectiveMissionStep); and artifact, the read of the step in the pack that holds the version in force of the
-  mission type (getPackMissionStep), the packId of the mission type's item of the effective list. Each answers the step
-  of that version of the mission type, or action_not_found when it declares no such step. prompt, the effective prompt
+  (getEffectiveMissionStep); and artifact, present when the effective list lists the mission type, the read of the step
+  in the pack of the step's place (getPackMissionStep): the pack that holds the merged winner of the action, whose
+  version of the mission type declares the step, also when only a version the winning mission type replaced keeps it
+  (A7). Both answer the step the context starts from. prompt, the effective prompt
   of the same action (getEffectiveStepPrompt), is present exactly when the activation puts the mission type in force:
   for one it does not, that read answers 409 mission_type_not_in_force, so the context does not offer it.
 type: object

@@ -27,6 +27,12 @@
 # winning mission type. Written red first: run before the mapper changed, the five scenarios that pin these links (the
 # three below, and one each in effective-reads.feature and effective-graph-and-context.feature) failed on their first
 # link assertion.
+#
+# WP09 of effective-step-and-action-context (A7, DIV-243, research R8; operator ruling of 2026-11-12) makes the step read
+# agree with the action context and the effective prompt for a step that only a version the winner replaced keeps: it is
+# read from the step's place, the merged winner of action:<type>/<step>, and its skeleton links name that pack's reads,
+# which serve its version's skeletons. Written red first: run before the read changed, the scenario failed on the step
+# read's 404 action_not_found.
 
 @contract @activations @mission-types
 Feature: A mission type, its steps and its skeletons are read under an activation, as the layer merge keeps them

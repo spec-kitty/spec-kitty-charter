@@ -11,7 +11,6 @@ import ai.speckitty.charter.missions.application.Fingerprinted;
 import ai.speckitty.charter.missions.application.MissionTypeView;
 import ai.speckitty.charter.missions.application.SkeletonView;
 import ai.speckitty.charter.missions.application.StepContractView;
-import ai.speckitty.charter.missions.application.StepView;
 import java.util.EnumMap;
 import java.util.Objects;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
  * carries no body, so Spring routes a {@code mission_type} or {@code mission_step_contract} item here.
  *
  * <p>The bodies are the pack-scoped reads' ({@link MissionBodies}), linked under the activation; the envelope's
- * {@code packId} is the pack that holds the winner, and its {@code artifact} link is that pack's read of it. A refusal
+ * {@code packId} is the pack that holds the winner, and its {@code artifact} link is that pack's read of it. A step only
+ * a version the winner replaced keeps (A7) is read from its place, and its skeleton links name that pack's reads, which
+ * serve its version's skeletons. A refusal
  * the service throws is answered by the shared refusal handler. Each 200 carries the source fingerprint its read
  * verified and no ETag.
  */
@@ -85,8 +86,12 @@ public class EffectiveMissionTypesController implements EffectiveMissionTypesApi
     @Override
     public ResponseEntity<MissionStep> getEffectiveMissionStep(
             String activationId, String missionTypeId, String stepId) {
-        Fingerprinted<StepView> read = reads.step(activationId, missionTypeId, stepId);
-        return MissionBodies.ok(read).body(MissionBodies.step(read.value(), links.activation(activationId)));
+        EffectiveMissionTypeReadService.StepRead read = reads.step(activationId, missionTypeId, stepId);
+        MissionLinks.Scope scope = links.activation(activationId);
+        // A step only a replaced version keeps is read from its place, whose skeletons the place's pack serves (A7).
+        MissionLinks.Scope skeletons =
+                read.place().map(place -> links.pack(place.value())).orElse(scope);
+        return MissionBodies.ok(read.read()).body(MissionBodies.step(read.read().value(), scope, skeletons));
     }
 
     @Override

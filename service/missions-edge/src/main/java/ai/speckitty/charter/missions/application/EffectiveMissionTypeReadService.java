@@ -1,9 +1,13 @@
 package ai.speckitty.charter.missions.application;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.missions.domain.MissionType;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,9 +24,15 @@ import org.springframework.stereotype.Service;
  * ({@link MissionTypeReadService}), from one {@link MissionTypeHolding}; its step contracts are the merged closure's
  * winners, never the holding pack's own.
  *
+ * <p>A step the winning type does not declare is read from the step's place (research R8, A7, DIV-243): the pack that
+ * holds the merged winner of {@code action:<type>/<step>}, which keeps a step that only a version the winner replaced
+ * declares, as the action context and the effective prompt read it. That pack's version of the type, its skeletons and
+ * step files are read as the winner's are, at the same fingerprint, with the merged closure's step contracts.
+ *
  * <p>Refusals come in order: the activations port judges the activation ({@code activation_not_found}) and then the
- * mission type ({@code mission_type_not_found}); then an unknown step is {@link RefusalCode#ACTION_NOT_FOUND} and a name
- * that does not decode to a skeleton of the holding pack's type is {@link RefusalCode#SKELETON_NOT_FOUND}.
+ * mission type ({@code mission_type_not_found}); then a step no version of the closure holds is
+ * {@link RefusalCode#ACTION_NOT_FOUND}, judged by the activations port as the action context judges it, and a name that
+ * does not decode to a skeleton of the holding pack's type is {@link RefusalCode#SKELETON_NOT_FOUND}.
  */
 @Service
 public final class EffectiveMissionTypeReadService {
@@ -64,20 +74,38 @@ public final class EffectiveMissionTypeReadService {
     }
 
     /**
-     * One step of the mission type in force under an activation.
+     * One step of the mission type in force under an activation: the winning type's when it declares the step, else the
+     * step of the version at the step's place (research R8, A7), so the step read answers the step the action context and
+     * the effective prompt answer.
      *
      * @param activationId the activation's id
      * @param missionTypeId the mission type's id
      * @param stepId the step's id
-     * @return the step's view and the verified fingerprint
+     * @return the step's view, the verified fingerprint and, for a step the winning type does not declare, the pack of its
+     *     place
      * @throws CharterRefusal as {@link ActivationMissionTypes#missionType} or {@link PackMissionTypes#holding}
-     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the two were read at different fingerprints or the
-     *     holding pack is configured no longer or no longer holds the type at the second read, then with
-     *     {@link RefusalCode#ACTION_NOT_FOUND} when the winning type holds no such step
+     *     refuses, or with {@link RefusalCode#STALE_INPUT} when the reads were made at different fingerprints or the
+     *     holding pack, or the pack of the step's place, is configured no longer or no longer holds the type at the
+     *     second read; for a step the winning type does not declare, as {@link ActivationMissionTypes#stepPlace} refuses,
+     *     {@link RefusalCode#ACTION_NOT_FOUND} when no version of the closure holds the step
      */
-    public Fingerprinted<StepView> step(String activationId, String missionTypeId, String stepId) {
-        MissionTypeHolding holding = holding(activationId, activations.missionType(activationId, missionTypeId));
-        return MissionTypeReadService.stepOf(holding, scopeOf(activationId), missionTypeId, stepId);
+    public StepRead step(String activationId, String missionTypeId, String stepId) {
+        EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
+        if (declares(winner.type(), stepId)) {
+            return new StepRead(
+                    MissionTypeReadService.stepOf(
+                            holding(activationId, winner), scopeOf(activationId), missionTypeId, stepId),
+                    Optional.empty());
+        }
+        EffectiveStepPlace place = activations.stepPlace(activationId, missionTypeId, stepId);
+        if (!place.fingerprint().equals(winner.fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
+        MissionTypeHolding placed =
+                holding(activationId, place.pack(), missionTypeId, winner.stepContracts(), winner.fingerprint());
+        return new StepRead(
+                MissionTypeReadService.stepOf(placed, scopeOf(activationId), missionTypeId, stepId),
+                Optional.of(place.pack()));
     }
 
     /**
@@ -113,8 +141,7 @@ public final class EffectiveMissionTypeReadService {
                 winner.contract(),
                 "The read of the step contract " + stepContractId + " under " + scopeOf(activationId));
         boolean stepHeld = winner.missionType()
-                .map(type -> Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
-                        .anyMatch(step -> step.id().equals(contract.action())))
+                .map(type -> declares(type, contract.action()))
                 .orElse(false);
         Set<HeldArtifact> candidates = contract.steps().stream()
                 .flatMap(step -> step.delegatesTo().stream())
@@ -135,58 +162,116 @@ public final class EffectiveMissionTypeReadService {
      * skeletons and step files, and the merged closure's step contracts bound to the type.
      */
     private MissionTypeHolding holding(String activationId, EffectiveMissionType winner) {
-        String read = "The read of the mission type " + winner.type().localId() + " under " + scopeOf(activationId);
-        MissionTypeHolding stored = storedBeside(activationId, winner);
-        if (!stored.fingerprint().equals(winner.fingerprint())) {
-            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
-        }
+        MissionTypeHolding stored =
+                storedBeside(activationId, winner.holder(), winner.type().localId(), winner.fingerprint());
         return new MissionTypeHolding(
                 winner.type(),
                 stored.skeletons(),
-                winner.stepContracts().stream()
-                        .map(contract -> contracts.view(contract, read).bound())
-                        .toList(),
+                bound(activationId, winner.type().localId(), winner.stepContracts()),
                 stored.stepFiles(),
                 winner.fingerprint());
     }
 
     /**
-     * What the pack that holds the winner stores beside it. The activation's read found the type in that pack a moment
-     * ago, so a pack that is configured no longer ({@code pack_not_found}) or no longer holds the type
-     * ({@code mission_type_not_found}) means the packs changed between the two reads: {@link RefusalCode#STALE_INPUT},
-     * never a refusal of a pack or type the request did not name. {@code pack_unreadable} is {@code stale_input} only when
-     * the packs fingerprint now differs from the winner's (a pack file vanished between the two reads). With the
-     * fingerprint unchanged it passes: the second read reads files the first does not (the step files), and one that
-     * stays unreadable is no change to read again.
+     * The version of the type a pack of the closure holds, the pack of a step's place, with what it stores beside it and
+     * the merged closure's step contracts bound to the type, at the winner's fingerprint.
      */
-    private MissionTypeHolding storedBeside(String activationId, EffectiveMissionType winner) {
+    private MissionTypeHolding holding(
+            String activationId,
+            PackIdentifier pack,
+            String missionTypeId,
+            List<CharterArtifact> stepContracts,
+            String fingerprint) {
+        MissionTypeHolding stored = storedBeside(activationId, pack, missionTypeId, fingerprint);
+        return new MissionTypeHolding(
+                stored.type(),
+                stored.skeletons(),
+                bound(activationId, missionTypeId, stepContracts),
+                stored.stepFiles(),
+                fingerprint);
+    }
+
+    /** The merged closure's step contracts bound to the type, as the views bind them. */
+    private List<MissionTypeHolding.BoundContract> bound(
+            String activationId, String missionTypeId, List<CharterArtifact> stepContracts) {
+        String read = "The read of the mission type " + missionTypeId + " under " + scopeOf(activationId);
+        return stepContracts.stream()
+                .map(contract -> contracts.view(contract, read).bound())
+                .toList();
+    }
+
+    /**
+     * What a pack the activation's read named stores of the type, at the fingerprint of that read, else
+     * {@link RefusalCode#STALE_INPUT}. The activation's read found the type, or the step, in that pack a moment ago, so a
+     * pack that is configured no longer ({@code pack_not_found}) or no longer holds the type
+     * ({@code mission_type_not_found}) means the packs changed between the two reads: {@code stale_input}, never a refusal
+     * of a pack or type the request did not name. {@code pack_unreadable} is {@code stale_input} only when the packs
+     * fingerprint now differs from the first read's (a pack file vanished between the two reads). With the fingerprint
+     * unchanged it passes: the second read reads files the first does not (the step files), and one that stays unreadable
+     * is no change to read again.
+     */
+    private MissionTypeHolding storedBeside(
+            String activationId, PackIdentifier pack, String missionTypeId, String fingerprint) {
+        MissionTypeHolding stored;
         try {
-            return packs.holding(winner.holder(), winner.type().localId());
+            stored = packs.holding(pack, missionTypeId);
         } catch (CharterRefusal refusal) {
             if (refusal.code() == RefusalCode.PACK_NOT_FOUND || refusal.code() == RefusalCode.MISSION_TYPE_NOT_FOUND) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE, refusal);
             }
-            if (refusal.code() == RefusalCode.PACK_UNREADABLE && packsChangedSince(activationId, winner)) {
+            if (refusal.code() == RefusalCode.PACK_UNREADABLE
+                    && packsChangedSince(activationId, missionTypeId, fingerprint)) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE, refusal);
             }
             throw refusal;
         }
+        if (!stored.fingerprint().equals(fingerprint)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
+        return stored;
     }
 
     /** Whether the activation's read now answers at another fingerprint; a read that refuses is not a known change. */
-    private boolean packsChangedSince(String activationId, EffectiveMissionType winner) {
+    private boolean packsChangedSince(String activationId, String missionTypeId, String fingerprint) {
         try {
             return !activations
-                    .missionType(activationId, winner.type().localId())
+                    .missionType(activationId, missionTypeId)
                     .fingerprint()
-                    .equals(winner.fingerprint());
+                    .equals(fingerprint);
         } catch (CharterRefusal refusal) {
             return false;
         }
     }
 
+    /** Whether a type declares a step, in its steps or its on-demand steps. */
+    private static boolean declares(MissionType type, String stepId) {
+        return Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
+                .anyMatch(step -> step.id().equals(stepId));
+    }
+
     private static String scopeOf(String activationId) {
         return "activation " + activationId;
+    }
+
+    /**
+     * A step's read, with the pack of the step's place when the winning type does not declare the step: the pack whose
+     * version of the type the step is read from, so that the step's links name it.
+     *
+     * @param read the step's view and the verified fingerprint
+     * @param place the configured identifier of the pack of the step's place; empty for a step of the winning type
+     */
+    public record StepRead(Fingerprinted<StepView> read, Optional<PackIdentifier> place) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param read the read
+         * @param place the pack of the step's place, if the step is read from it
+         */
+        public StepRead {
+            Objects.requireNonNull(read, "read");
+            Objects.requireNonNull(place, "place");
+        }
     }
 
     /**

@@ -133,6 +133,11 @@ public class ActivationTestWiring {
                 public void requireAction(String missionType, String action) {
                     // the fixture holds no mission type
                 }
+
+                @Override
+                public Optional<String> stepPlace(String missionType, String action) {
+                    return Optional.empty();
+                }
             };
         }
 

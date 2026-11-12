@@ -160,8 +160,9 @@ public class EffectiveReadService {
      * @param governanceFingerprint the digest of the closure's own packs
      * @param query the mission type, the action and the depth
      * @param context what the action's step names
-     * @param missionTypePack the pack that holds the version in force of the mission type, as the effective set names
-     *     it; empty when the set does not list the mission type
+     * @param stepPack the pack of the step's place, the merged winner of {@code action:<missionType>/<action>} (research
+     *     R8, A7), whose version of the mission type declares the step; empty when the effective set does not list the
+     *     mission type
      * @param missionTypeInForce whether the activation puts the mission type in force, so that the effective prompt of
      *     the action answers (FR-007: the context links it only then)
      */
@@ -171,7 +172,7 @@ public class EffectiveReadService {
             String governanceFingerprint,
             EffectiveTag.ContextQuery query,
             EffectiveContext context,
-            Optional<String> missionTypePack,
+            Optional<String> stepPack,
             boolean missionTypeInForce) {
 
         /**
@@ -182,11 +183,11 @@ public class EffectiveReadService {
          * @param governanceFingerprint the digest of the closure's own packs
          * @param query the mission type, the action and the depth
          * @param context what the action's step names
-         * @param missionTypePack the pack that holds the mission type's version in force
+         * @param stepPack the pack of the step's place
          * @param missionTypeInForce whether the activation puts the mission type in force
          */
         public ContextRead {
-            Objects.requireNonNull(missionTypePack, "missionTypePack");
+            Objects.requireNonNull(stepPack, "stepPack");
         }
 
         /**
@@ -416,7 +417,7 @@ public class EffectiveReadService {
                         closure.closureFingerprint(),
                         query,
                         context,
-                        listed.map(EffectiveSet.EffectiveArtifact::packId),
+                        listed.flatMap(artifact -> session.stepPlace(query.missionType(), query.action())),
                         listed.filter(artifact -> artifact.state() == State.ACTIVE)
                                 .isPresent()),
                 etag);

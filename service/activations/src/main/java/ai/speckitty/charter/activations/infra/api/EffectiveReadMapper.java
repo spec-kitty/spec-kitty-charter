@@ -70,9 +70,10 @@ import org.springframework.web.util.UriComponentsBuilder;
  * <p>While mission types are served, a step links the read of the step under the activation
  * ({@code getEffectiveMissionStep}) as its {@code effective-artifact}: an action node of the graph
  * ({@code action:<type>/<step>}), which names no pack either, and the action context, whose step is the action it
- * answers; the context also links {@code artifact}, the step's read in the pack that holds the mission type's version in
- * force ({@code getPackMissionStep}), when the effective set names that pack. A step is linked when the closure holds it,
- * as the graph and the context judge it; whether the winning mission type declares it is the step read's to answer.
+ * answers; the context also links {@code artifact}, the step's read in the pack of the step's place, the merged winner
+ * of the action (research R8, A7: a version the winning mission type replaced may keep the step), when the effective
+ * set lists the mission type ({@code getPackMissionStep}). A step is linked when the closure holds it, as the graph and
+ * the context judge it, and the step read answers it from its place when the winning mission type does not declare it.
  */
 @Component
 public class EffectiveReadMapper {
@@ -189,7 +190,7 @@ public class EffectiveReadMapper {
             String type = read.query().missionType();
             String step = read.query().action();
             links.put("effective-artifact", new Link(activations.effectiveMissionStep(id, type, step)));
-            read.missionTypePack()
+            read.stepPack()
                     .ifPresent(pack -> links.put("artifact", new Link(activations.packMissionStep(pack, type, step))));
         }
         if (read.missionTypeInForce()) {
