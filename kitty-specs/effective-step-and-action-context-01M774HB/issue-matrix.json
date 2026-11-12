@@ -145,7 +145,7 @@
       "wp": null
     },
     "#97": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "R3 decided in WP08 (research R6)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -153,8 +153,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP08"
     }
   },
   "schema_version": 1
