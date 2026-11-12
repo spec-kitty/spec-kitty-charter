@@ -128,7 +128,8 @@
       "last_transition_at": "2026-11-12T23:55:12.524532+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Reviewed: one media-type rule, validate unchanged; DeferredETag shared; nosniff+sandbox on 200; byte-exact payload scenario; deployable 1768/0"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
