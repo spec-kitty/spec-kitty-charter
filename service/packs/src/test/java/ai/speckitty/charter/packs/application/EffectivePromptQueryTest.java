@@ -377,6 +377,29 @@ class EffectivePromptQueryTest {
     }
 
     @Test
+    @DisplayName("NFR-002: every edge the query reads to find the step's enhancers is counted, once per pack")
+    void everyEdgeTheQueryReadsIsCountedOncePerPack() {
+        aBuiltInStepDeclaringTheReasonsBlock();
+        pack("org", "org");
+        int size = 10;
+        for (int i = 0; i < size; i++) {
+            enhancer("org", "e-" + i, Urn.action("software-dev", "other"), REASONS, "Fragment " + i + ".\n");
+            win(enhancement("e-" + i), "org", PackLevel.ORG);
+            inForce.add(enhancement("e-" + i));
+        }
+        AtomicLong count = new AtomicLong();
+
+        answer(count::incrementAndGet);
+
+        assertThat(count.get())
+                .as(
+                        "one declared slot, %d winners and the %d edges of org, read once: a rescan of the edges per"
+                                + " winner would be quadratic, so the gate must see the edges",
+                        size, size)
+                .isEqualTo(1 + size + size);
+    }
+
+    @Test
     @DisplayName("NFR-002: twice the enhancements on one step cost at most 2.5 times the visits")
     void theCountGrowsLinearlyWithTheEnhancementsOfOneStep() {
         long thousand = visits(1_000, 1);
