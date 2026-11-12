@@ -1059,7 +1059,7 @@ An activation preset with at least one must-have item: it states what every proj
 
 ## Pack manifest
 
-A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent artifacts (`kind`, `id`, `path`, `content_hash`) and its presets (`id`, `path`, `content_hash`), with a `manifest_hash` over the whole. Only the authored-pack variant is a pack file; the fetched-pack and charter-bundle fields are refused. Its hashes are derived fields. The service holds it beside the pack aggregate, not in it (ADR-0042).
+A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent artifacts (`kind`, `id`, `path`, `content_hash`) and its presets (`id`, `path`, `content_hash`), with a `manifest_hash` over the whole. Only the authored-pack variant is a pack file; the fetched-pack and charter-bundle fields are refused. Its hashes are derived fields. Its lists are derived from the pack on every write, and a registration refuses an uploaded manifest whose lists differ (`manifest_membership`; ADR-0042 amendment of 2026-11-12, #110). The service holds it beside the pack aggregate, not in it (ADR-0042).
 
 **Meta:**
 
