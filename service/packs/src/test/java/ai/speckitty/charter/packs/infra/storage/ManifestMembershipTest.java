@@ -44,6 +44,9 @@ class ManifestMembershipTest {
     private static final String STYLEGUIDE_ENTRY =
             "- kind: styleguide\n  id: reasons-canvas-writing\n  path: " + STYLEGUIDE + "\n";
 
+    private static final String DIRECTIVE_ENTRY =
+            "- kind: directive\n  id: PROJECT_001\n  path: directives/PROJECT_001.directive.yaml\n";
+
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
     private final WholePackStore store = new WholePackStore(strategy);
 
@@ -134,7 +137,7 @@ class ManifestMembershipTest {
 
     @Test
     @DisplayName(
-            "a registration refuses an uploaded manifest whose lists differ from the pack, one violation per entry")
+            "a registration refuses an uploaded manifest whose lists differ from the pack: unheld, repeated or left out, one violation per entry")
     void aRegistrationRefusesAManifestWhoseListsDifferFromThePack(@TempDir Path host) throws IOException {
         Path pack = ExamplePacks.copyOf(PROJECT, host);
         editManifest(
@@ -143,7 +146,8 @@ class ManifestMembershipTest {
                                 .replace(
                                         "presets:\n",
                                         "- kind: tactic\n  id: ghost\n  path: tactics/ghost.tactic.yaml\n  content_hash: "
-                                                + "0".repeat(64) + "\npresets:\n")
+                                                + "0".repeat(64) + "\n" + DIRECTIVE_ENTRY
+                                                + "  content_hash: " + "0".repeat(64) + "\npresets:\n")
                         + "- id: ghost\n  path: presets/ghost.yaml\n  content_hash: " + "0".repeat(64) + "\n");
 
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
@@ -164,6 +168,12 @@ class ManifestMembershipTest {
                                             PackFileSet.MANIFEST
                                                     + ": lists preset ghost at presets/ghost.yaml, which the pack does"
                                                     + " not hold"),
+                                    tuple(
+                                            PackFileSet.MANIFEST,
+                                            "manifest_membership",
+                                            PackFileSet.MANIFEST
+                                                    + ": lists constituent directive:PROJECT_001 at"
+                                                    + " directives/PROJECT_001.directive.yaml twice"),
                                     tuple(
                                             PackFileSet.MANIFEST,
                                             "manifest_membership",
