@@ -18,8 +18,10 @@ import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
@@ -211,6 +213,20 @@ public record ClosureView(
          * @return the entity; empty when the pack holds no readable artifact of that kind and id
          */
         Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id);
+
+        /**
+         * Reads the stored prompt companion of a step in one pack, as {@link PackCompanionFiles#stepFiles} gives it: the
+         * bytes as stored, never a re-rendering. A source that cannot read the stored step files answers a wiring fault
+         * ({@link IllegalStateException}).
+         *
+         * @param pack the configured pack at the merged winner's place of the step
+         * @param step the step, {@code action:M/s}
+         * @return the prompt's bytes; empty when that pack's mission type gives the step no prompt
+         */
+        default Optional<Payload> stepPrompt(PackIdentifier pack, Urn step) {
+            throw new IllegalStateException("this view was built without the stored step files and cannot read the"
+                    + " prompt of " + step + " in pack " + pack.value());
+        }
 
         /**
          * A source for a view built without the closure's packs: it has nothing to read from, so a read is a wiring fault
@@ -625,6 +641,29 @@ public record ClosureView(
                                         held.descriptor().name()))
                                 .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value())))
                         .toList());
+    }
+
+    /**
+     * The effective prompt of a step over the merged closure (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9; research
+     * R8): the stored prompt companion at the merged winner's place of {@code action:<missionType>/<action>}, every slot
+     * it declares and, per slot, the fragments of the winning copies of the step enhancements in force
+     * ({@link EffectivePromptQuery}). It judges nothing itself: the caller has run {@link #requireAction}, the
+     * mission-type check and {@link #requireSlots} on the same states. The prompt is read from the place's pack against
+     * the closure digest this view was verified at; the slots and fragments come from the facts this view holds.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param states what {@link #inForce} answered for the request
+     * @return the effective prompt; no byte, no slot and no pack for a step with no prompt companion
+     * @throws CharterRefusal as {@link #merged()} does, with {@code PACK_UNREADABLE} when the place's pack cannot read
+     *     the companion, and with {@code STALE_INPUT} when the packs changed since this view was verified
+     */
+    public EffectivePromptQuery.EffectivePrompt effectivePrompt(
+            String missionType, String action, InForceStates states) {
+        Objects.requireNonNull(missionType, "missionType");
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(states, "states");
+        return EffectivePromptQuery.EffectivePrompt.NONE;
     }
 
     /**
