@@ -35,10 +35,11 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
-- **Activation (DIV-201..244, ADR-0020)** is below. DIV-201 and DIV-202 were proposed until the effective reads were
+- **Activation (DIV-201..245, ADR-0020)** is below. DIV-201 and DIV-202 were proposed until the effective reads were
   built and are open since PR B; DIV-203 to DIV-207 are open, because the register, the closure read and the
   per-artifact writes are built. DIV-216 to DIV-237 are PR B's: the layer merge and the effective reads. DIV-239 to DIV-244 are PR C's (DIV-238 is claimed
-  by the step-enhancements mission): the graph, the action context and the rulings of 2026-11-09.
+  by the step-enhancements mission): the graph, the action context and the rulings of 2026-11-09. DIV-245 is slice C's
+  (2026-11-12): the ownership rule of the effective action context.
 - **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
 - **Mission types (DIV-501..599, ADR-0044)** is after the procedures block.
@@ -429,7 +430,7 @@ entry from the contract scenario that pins it. Add it to
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 too, with the same id and status.
 
-## Activation (DIV-201..244, ADR-0020)
+## Activation (DIV-201..245, ADR-0020)
 
 DIV-201 and DIV-202 were proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with
 core's activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries (core
@@ -489,9 +490,24 @@ predicate, D16). DIV-204 is updated for the write rule. DIV-238 is claimed by th
 - **What is in force and reported:** DIV-239 (the floor of activatable kinds, `NodeReference` targets), DIV-241 (a step
   enhancer's binding), DIV-244 (the context's suggestions, `enhancements` and order).
 
+DIV-245 was added on 2026-11-12 by mission `effective-step-and-action-context-01M774HB` (slice C,
+[#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467); the scoping half of
+[#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450)). It records the operator's ruling of that date
+(Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`, option B, the ownership rule; ADR-0018 D5 as amended and rule E16) as
+one entry with two parts: the context lists the in-force directives, tactics and paradigms that no action and no
+mission type scopes, and those its own mission type scopes, with their closure; and mission-type scope is honoured,
+where core ignores it. DIV-244 carries a dated note, since "the artifacts in force the walk reaches" is now the first
+pass of that rule. `effective-context-scoping.feature` pins it, its first example table explaining each of the 16
+directives of the 2026-11-12 evidence, and the unit tests named in `divergences.yaml` pin the rest. The block now groups
+one more way:
+
+- **What the context lists:** DIV-245 (the ownership rule and `appliesThrough`), with the note on DIV-244.
+
 Not divergences, because they are PR B behavior as found: when several artifacts in force satisfy or hide one artifact,
 `satisfiedBy` and `overriddenBy` name the smallest URN. No ruling settles that tie, so it is not a difference from core
 either; it is tracked in #439 for an operator ruling.
+*Note 2026-11-12:* #439 is ruled (option (b), slice C): `satisfiedBy` and `overriddenBy` name every overrider in force,
+by level then URN (rule E9). Core has no counterpart for either member, so this is still no divergence.
 
 | Id | The charter answers | Core answers | Ruling | Corpus case |
 |---|---|---|---|---|
@@ -536,7 +552,8 @@ either; it is tracked in #439 for an operator ruling.
 | DIV-241 | A step enhancer, a `step_enhancement` with exactly one distinct `enhances` target that is an action `action:M/s`, is in force exactly when the mission type `M` is in force, and is pruned with the reason `mission_type_not_in_force` (bucket `missionTypeNotInForce`) otherwise. When no pack holds the target step it keeps its edge and is pruned with `enhanced_target_not_in_force`. Every other shape of enhancer keeps the rule of DIV-224. | The service's understanding of core, to be confirmed against core: core applies a step enhancement at the prompt read and has no in-force state for it. | Operator ruling OD-6 (decision `01M702A8XYB588PSGTXRKQ4NKK`); decision `01M7037V93Y077H8M4W9V8Y6B3`; rule E6 | `step-enhancer-bound-to-mission-type` |
 | DIV-242 | The write cascade follows only held steps: a mission type reaches `action:M/s` when a pack of the closure defines `M` and declares the action, so an action declared where no pack defines its mission type, and one declared by a pack beside a mission type another pack defines, is no longer followed. | The service's understanding of core, to be confirmed against core: core's cascade follows the steps of the mission type its graph declares. | Operator ruling OD-9 (decision `01M7037V93Y077H8M4W9V8Y6B3`); rule W20 | `cascade-follows-held-steps` |
 | DIV-243 | A step is held by one predicate in two forms, used by the cascade, by `action_not_found` and by the action context's walk: per pack (the pack defines `mission_type:M` and declares `action:M/s`), and on the closure (some pack holds it, with the merged winner as its place, so a layer override of a held step counts). A winning mission type keeps the unique steps of the versions it replaced (A7). The mission type in one pack and the action in another pack alone is not a held step. | The service's understanding of core, to be confirmed against core: core reads a step by the mission type's `steps` list and reports no per-pack form. | Decision `01M7037V93Y077H8M4W9V8Y6B3` (the architect's C17/C18 dissent is recorded in the PR C dispositions); rules W20, E16 | `step-held-per-pack-and-on-the-closure` |
-| DIV-244 | The effective action context lists the artifacts in force the ADR-0018 walk reaches and, beside them, suggestions: an artifact the listing gives a suggestion that a listed entry reaches through `suggests`, with the nearest edge's `when` and `reason`, never walked through, so the suggestions are a subset of the listing's. It carries `enhancements` (`[{target, enhancedBy}]`, one per node with an enhancer in force, the start step included), sorts its entries by full URN string, and answers `missionTypeNotInForce` with the mission type itself. An unknown mission type or action is `404` before a `304`. `depth` is 0 or 1, and absent is 0. | The service's understanding of core, to be confirmed against core: core's action context has no `enhancements` member, orders entries by step, and allows `depth` 0 to 2, defaulting to 2 (ADR-0018 D4). | Decisions `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`, `01M70C42KC78KB9H6KB7TK9224`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`; ADR-0018 D3; FR-019; rule E16 | `effective-context-enhancements-and-suggestions` |
+| DIV-244 | The effective action context lists the artifacts in force the ADR-0018 walk reaches and, beside them, suggestions: an artifact the listing gives a suggestion that a listed entry reaches through `suggests`, with the nearest edge's `when` and `reason`, never walked through, so the suggestions are a subset of the listing's. It carries `enhancements` (`[{target, enhancedBy}]`, one per node with an enhancer in force, the start step included), sorts its entries by full URN string, and answers `missionTypeNotInForce` with the mission type itself. An unknown mission type or action is `404` before a `304`. `depth` is 0 or 1, and absent is 0. *Note 2026-11-12:* "the artifacts in force the ADR-0018 walk reaches" is now the ownership rule (DIV-245): the walk is its first pass, the context also lists the type-scoped and project-wide roots with their closure, and each item carries `appliesThrough`; the rest of this entry stands. | The service's understanding of core, to be confirmed against core: core's action context has no `enhancements` member, orders entries by step, and allows `depth` 0 to 2, defaulting to 2 (ADR-0018 D4). | Decisions `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`, `01M70C42KC78KB9H6KB7TK9224`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`; ADR-0018 D3; FR-019; rule E16 | `effective-context-enhancements-and-suggestions` |
+| DIV-245 | The effective action context applies the ownership rule. Beside what the action's walk reaches (`appliesThrough: action`), it lists the directives, tactics and paradigms in force that the action's mission type scopes (`mission_type`) and those that no action and no mission type scopes (`project`), each with what ADR-0018's steps 2 to 5 reach from it, under the same `appliesThrough`. One scoped only by other actions or other mission types is not listed, required or not. Ownership is judged on the authored `scope` edges of the merged closure, whatever is in force, so a root that only another mission type scopes stays out of this one's actions even while that mission type is not in force. Of the 16 directives core lists for `software-dev/implement` on this repository's charter, 15 are listed and `DIRECTIVE_003`, scoped only by other actions, is not. | Confirmed in core 4.0.0rc9 (`delivery_table.py`, `_classify_artifact_urns`): an action gets every selected or required directive, tactic and paradigm root that no other action scopes, and mission-type scope is ignored, so a root that only one mission type scopes is listed on the actions of every mission type. `charter context` also renders the whole project directive set (`all_directives`) as "Directive IDs" on every action. | Operator ruling of 2026-11-12, Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3` (option B); ADR-0018 D5 as amended 2026-11-12; rule E16; slice C FR-008 to FR-010 | `effective-context-ownership-rule` |
 
 Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a
 deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
@@ -568,6 +585,11 @@ For PR C, core's seam regenerates its strict DTOs once more, because `EffectiveG
 `ActionEnhancement` are new. Then it may read the graph and the context (DIV-240, DIV-244), no longer cleans a deny entry on a
 required artifact out of a document when an active override satisfies it (DIV-204), reads a step enhancer as bound to its
 mission type (DIV-241) and expects the cascade to follow held steps only (DIV-242, DIV-243). Nothing is edited in core (C-003).
+
+For slice C, core's seam regenerates its strict DTOs again, because the items of `EffectiveActionContext.artifacts` are
+`EffectiveContextArtifact`, with a required `appliesThrough`. Then it may read the context as the whole governance of an
+action: the project-wide and type-scoped roots core adds itself are in the answer (DIV-245), and a root that only another
+mission type scopes is not. Nothing is edited in core (epic #186).
 
 Some A0 rulings change what #399 built and have no counterpart in core's seam, so they are no divergence: a pack's
 policy locks only the artifacts of the pack and of the packs it builds on (A15), a pack's own policy never refuses its
