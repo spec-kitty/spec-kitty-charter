@@ -223,6 +223,15 @@ class SwitchGateTest {
         assertThat(SwitchGate.violations(operations, everyAnswerOfGetThing(), register))
                 .containsExactly("getLater: is ready, but it is reserved (x-reserved): a 501 pin does not count"
                         + " toward the gate (ADR-0059 D1)");
+
+        Map<String, Entry> held = SwitchGate.register("""
+                operations:
+                  getThing: {switch: ready}
+                  getLater: {switch: held, statuses: [501], reason: reserved until built}
+                """);
+        assertThat(SwitchGate.violations(operations, everyAnswerOfGetThing(), held))
+                .as("a held reserved operation is not judged on its statuses")
+                .isEmpty();
     }
 
     @Test
