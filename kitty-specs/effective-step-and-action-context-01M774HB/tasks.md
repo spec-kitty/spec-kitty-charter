@@ -53,6 +53,9 @@ passing twin. Gradle runs in the foreground with `--max-workers=1`, one run at a
 | T037 | Rules page (E6, E12, E16, E17, E18, C22, C25, C37, C38, F6, G8, section 7 and 8) | WP08 | |
 | T038 | Divergence register and `divergences.yaml` (DIV-244 note, DIV-245) | WP08 | [P] |
 | T039 | Service contract, status and resource docs, glossary, conceptual model, changelog, roadmap | WP08 | |
+| T040 | Red: the step read of a step only a replaced version keeps | WP09 | |
+| T041 | The step's place through the activations port | WP09 | |
+| T042 | `getEffectiveMissionStep` reads at the step's place | WP09 | |
 
 ## Work packages
 
@@ -160,6 +163,18 @@ T038 Divergence register (WP08)
 T039 Contract docs, glossary, changelog, plans (WP08)
 
 Dependencies: WP02, WP04, WP05, WP07.
+
+### WP09 — The effective step read follows the step's place
+
+**Goal**: `getEffectiveMissionStep`, the context and the prompt read agree for a step only a replaced version keeps
+(operator ruling 2026-11-12, folds squad A8/R13). **Priority**: P1.
+**Prompt**: [tasks/WP09-effective-step-follows-its-place.md](tasks/WP09-effective-step-follows-its-place.md)
+
+T040 Red (WP09)
+T041 The step's place (WP09)
+T042 The read uses it (WP09)
+
+Dependencies: WP07.
 
 ## Twin matrix (squad R12)
 

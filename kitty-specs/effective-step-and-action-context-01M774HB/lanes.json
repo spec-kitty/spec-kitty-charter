@@ -201,6 +201,29 @@
       "parallel_group": 3
     },
     {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-effective-step-follows-its-place.md",
+        "contracts/charter/scenarios/effective-mission-types.feature",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/ActivationMissionTypes.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/EffectiveMissionTypeReadService.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/EffectiveStepPlace.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/infra/activations/ActivationsMissionTypes.java",
+        "service/missions-edge/src/test/java/ai/speckitty/charter/missions/application/EffectiveMissionTypeReadServiceTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-g"
+      ],
+      "parallel_group": 4
+    },
+    {
       "lane_id": "lane-planning",
       "wp_ids": [
         "WP08"
@@ -233,7 +256,7 @@
       "parallel_group": 4
     }
   ],
-  "computed_at": "2026-11-12T06:12:11.154951+00:00",
+  "computed_at": "2026-11-12T06:14:25.867036+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP08"

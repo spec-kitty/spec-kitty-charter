@@ -121,8 +121,8 @@ relayed by the orchestrator); the rest are this mission's planning decisions, pu
   the model's (DIV-243).
 - **Known mismatch, recorded, not fixed here.** `getEffectiveMissionStep` reads only the winner's steps, so it answers
   `action_not_found` for a step only a replaced version keeps, where the context and prompt reads answer. This is
-  pre-existing (slice A) and outside slice C. It is a correctness defect, so it is filed as a `follow-up` issue at
-  closeout (Rule 1) and listed under "Not done" in the PR.
+  pre-existing (slice A). Operator ruling of 2026-11-12: fold the fix into this mission (WP09), so the step, context
+  and prompt reads agree.
 
 ## R9. Slot facts are composition facts (planning decision, revised after the squad, A1)
 

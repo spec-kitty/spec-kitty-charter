@@ -27,7 +27,7 @@ Disposition key: **accepted** (artifact changed, location given), **changed** (r
 | A5 | MED | The target-held refusal makes E6's unheld branch unreachable for step enhancers. | **accepted**: IC-06 amends E6 (the unheld-target branch now covers only the enhancer shapes the new check does not refuse) and its pinning tests. |
 | A6 | MED | An edge from an unheld source would make a directive project-wide and leak it. | **accepted**: research R2 (revised). Owners are every authored `scope` edge whose source kind is `action` or `mission_type`, held or not. |
 | A7 | MED | Pass roots break `via`/`hops`, `Engine.hopsOf` throws for `mission_type:mt`, the suggestion-label rule conflicts, and vocabulary first-reach is unclear. | **accepted**: research R3 (revised). Each entry carries its pass and root. Pass roots are seeded with explicit hops. A suggestion and its candidate carry the pass that lists them. First reach wins, vocabulary included, and is recorded. ADR-0018 D3 is annotated for the effective form. |
-| A8 | MED | "Highest-level version" is undefined at one level. The step-read mismatch is a correctness risk. | **accepted**: research R8 (revised). The prompt in force is the companion at the merged winner's place of `action:M/s` (`StepHolding`). **deferred** for the `getEffectiveMissionStep` mismatch: a pre-existing correctness defect of slice A's read, filed as a `follow-up` issue (Rule 1) at closeout and listed under "Not done". |
+| A8 | MED | "Highest-level version" is undefined at one level. The step-read mismatch is a correctness risk. | **accepted**: research R8 (revised). The prompt in force is the companion at the merged winner's place of `action:M/s` (`StepHolding`). **changed (operator ruling 2026-11-12)**: the `getEffectiveMissionStep` mismatch is folded into this mission as WP09, not filed. |
 | A9 | MED | `PromptSlotFacts` escapes `isPortOf`, collides with `PackContents.PromptSlotFacts`, and has no wiring home. | **changed**: there is no new port (A1). |
 | A10 | LOW | Judging the 409 before the 304 costs a resolution on every conditional read. | **accepted**: research R10 records the cost and the order, with `500 prompt_slot_missing` before the 304. |
 | A11 | LOW | `promptPackId` is required but undefined when there is no prompt. | **accepted**: `data-model.md`, now optional. |
@@ -48,7 +48,7 @@ Disposition key: **accepted** (artifact changed, location given), **changed** (r
 | R10 | MED | The legacy-text test conflicts with C-005. | **changed**: it is the warning path of the load rule, an error-handling test, recorded in spec FR-005 and C-005. |
 | R11 | LOW | NFR details. | **accepted**: spec NFR-001 to NFR-004 name the counted operation (memo build included), permute the closure's pack order under one canonical revision, and use a ratio of at most 2.5. |
 | R12 | LOW | List the twins. | **accepted**: tasks get one row per rule × surface. |
-| R13 | LOW | The prompt read's `effective-artifact` link can 404. | **deferred**: the same defect as A8, on its follow-up issue. |
+| R13 | LOW | The prompt read's `effective-artifact` link can 404. | **changed**: fixed by WP09 (operator ruling 2026-11-12). |
 
 ## Doctrine (D)
 

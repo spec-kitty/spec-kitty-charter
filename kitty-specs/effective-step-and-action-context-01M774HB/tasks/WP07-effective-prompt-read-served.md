@@ -204,5 +204,5 @@ and loaded (the activation's revision fixed) gives the same body and ETag.
 
 - Many shared files: every out-of-map edit is listed in the commit message.
 - The 409 is judged after the 404s and before the 304; the 500 slot refusal before the 304 too.
-- Known, deferred (squad A8/R13): `effective-artifact` points at `getEffectiveMissionStep`, which answers 404 for a step
-  only a replaced version keeps; a follow-up issue is filed at closeout.
+- Squad A8/R13: `effective-artifact` points at `getEffectiveMissionStep`; WP09 makes that read answer for a step only
+  a replaced version keeps (operator ruling 2026-11-12).
