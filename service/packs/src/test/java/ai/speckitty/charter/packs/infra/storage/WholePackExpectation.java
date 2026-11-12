@@ -301,8 +301,7 @@ final class WholePackExpectation {
         private final Set<String> redKinds = new HashSet<>();
         private final Set<String> excludedPaths = new HashSet<>();
 
-        Judgement(
-                SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
+        Judgement(SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
             this.census = census;
             this.modelledKinds = modelledKinds;
             this.observed = observed;
@@ -359,7 +358,8 @@ final class WholePackExpectation {
             if (modelled) {
                 problems.add("EXCLUDED_MODELLED " + path + " (" + kind + "): a modelled file must not be excluded");
             }
-            results.add(new FileResult(path, kind, Status.EXCLUDED, exclusions.get(exclusion).reason()));
+            results.add(new FileResult(
+                    path, kind, Status.EXCLUDED, exclusions.get(exclusion).reason()));
         }
 
         private void judgeGreen(String path, String kind) {

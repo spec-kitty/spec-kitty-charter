@@ -234,7 +234,8 @@ class HostileArchiveCorpusTest {
     static Stream<Hostile> hostileZips() {
         return Stream.of(
                         zipTraversalAndEntryKinds(),
-                        zipEntryCountsAndNames(),
+                        zipEntryCounts(),
+                        zipExtraFieldsNamesAndOverlaps(),
                         zipBombsAndStructure(),
                         zipPathFormsAndLimits())
                 .flatMap(rows -> rows);
@@ -264,7 +265,7 @@ class HostileArchiveCorpusTest {
                         v(COMPRESSION_METHOD, "pack/a.txt")));
     }
 
-    private static Stream<Hostile> zipEntryCountsAndNames() {
+    private static Stream<Hostile> zipEntryCounts() {
         return Stream.of(
                 zip(
                         "zip end record claims 10,001 entries",
@@ -298,7 +299,11 @@ class HostileArchiveCorpusTest {
                             z.file("pack/a.txt", "x");
                             z.declaredCount(2);
                         }),
-                        v(ZIP_COUNT_MISMATCH, "")),
+                        v(ZIP_COUNT_MISMATCH, "")));
+    }
+
+    private static Stream<Hostile> zipExtraFieldsNamesAndOverlaps() {
+        return Stream.of(
                 zip(
                         "zip with an honest count and over 1,024 bytes of central extra fields",
                         zipOf(z -> z.file("pack/a.txt", "x").extra(unknownExtra(1_025))),
