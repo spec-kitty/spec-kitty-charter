@@ -5,7 +5,7 @@ import org.springframework.boot.diagnostics.AbstractFailureAnalyzer;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 
 /**
- * Reports a {@link StartupRefusal} as its one line (#454). Spring Boot finds it in {@code META-INF/spring.factories}
+ * Reports a {@link StartupRefusal} with its message, without a stack trace (#454). Spring Boot finds it in {@code META-INF/spring.factories}
  * and, once a failure is analysed, prints the analysis instead of the stack trace of the bean that refused.
  */
 public final class StartupRefusalAnalyzer extends AbstractFailureAnalyzer<StartupRefusal> {

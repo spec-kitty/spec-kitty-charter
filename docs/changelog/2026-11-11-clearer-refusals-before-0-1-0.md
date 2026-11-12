@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
-title: Parameter 400s say what was wrong, and a refused start is one line
-description: A parameter 400 names the parameter; a refused start is one line without a stack trace; a path outside /api/v1 points to the API root.
+title: Parameter 400s say what was wrong, and a refused start has no stack trace
+description: A parameter 400 names the parameter; a refused start is reported without a stack trace; a path outside /api/v1 points to the API root.
 doc_status: active
 updated: 2026-11-11T00:00:00Z
 type: Changelog
@@ -24,10 +24,10 @@ The contract clean-up of [#493](https://github.com/spec-kitty/spec-kitty-charter
   `The query parameter kind is "bogus", which is not one of tactic, directive, ... or mission_step_contract.` Before,
   most routes answered a bare `{"title":"Bad Request","status":400}`, and the activation routes a validator's own
   message. The wording is the service's, the same on every route.
-- **A startup refusal is one line**
+- **A startup refusal has no stack trace**
   ([#454](https://github.com/spec-kitty/spec-kitty-charter/issues/454)). A setting the service refuses, such as the
-  worktree token passed on the command line, is reported by Spring Boot's failure report as the one line that names
-  the setting and the fix, with no stack trace of bean-creation frames.
+  worktree token passed on the command line, is reported by Spring Boot's failure report with the message that names the
+  setting and the fix, without a stack trace of bean-creation frames.
 - **A path outside the API points to it** ([#454](https://github.com/spec-kitty/spec-kitty-charter/issues/454)).
   `GET /` and `GET /info` (outside `/api/v1`) still answer `404`, now with the detail `This service answers under
   /api/v1/; start at GET /api/v1/.` A path inside `/api/v1` that matches nothing stays the bare `404`. The token is
