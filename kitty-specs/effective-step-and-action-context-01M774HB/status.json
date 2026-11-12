@@ -224,9 +224,9 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -234,7 +234,8 @@
       "last_transition_at": "2026-11-12T22:07:26.056990+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order)."
+        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order).",
+        "Cycle 1 fix 1bd7396c5: R10 scenario pins 409 before 500 prompt_slot_missing (M8 now caught); out-of-map: ClosureQueriesTest import nit"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
