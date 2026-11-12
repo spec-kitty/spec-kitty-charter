@@ -38,20 +38,24 @@ class MissionTypeHoldingCorpusTest {
     private static final PackIdentifier BUILT_IN = new PackIdentifier("built-in");
     private static final String TYPE = "software-dev";
 
-    @Test
-    @DisplayName("every step's prompt and guidelines are the stored files, byte for byte")
-    void everyStepOfSoftwareDevIsServedByteForByte() throws IOException {
+    private static MissionTypeHoldingRead readsOverTheBuiltInPackAlone() {
         // The built-in pack alone: the other packs of the example pack have no pack.yaml, which the first digest
         // refuses.
         List<PackLocation> locations = List.of(new PackLocation(
                 "built-in", PackLevel.BUILT_IN, ExamplePacks.packsDirectory().resolve("built-in")));
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
-        MissionTypeHoldingRead reads = new MissionTypeHoldingRead(
+        return new MissionTypeHoldingRead(
                 store,
                 store,
                 new ConsistentRead(new FileSystemPackSources(() -> locations)),
                 store,
                 pack -> PackRevision.compute(List.of(pack.value())));
+    }
+
+    @Test
+    @DisplayName("every step's prompt and guidelines are the stored files, byte for byte")
+    void everyStepOfSoftwareDevIsServedByteForByte() throws IOException {
+        MissionTypeHoldingRead reads = readsOverTheBuiltInPackAlone();
         Path mission = ExamplePacks.packsDirectory().resolve("built-in/missions/" + TYPE);
         Path steps = mission.resolve("steps");
 

@@ -443,17 +443,7 @@ class GuardAndLifecycleLoadTest {
                 .filter(g -> g.localId().equals("traceability-ready"))
                 .findFirst()
                 .orElseThrow();
-        Guard dangling = new Guard(
-                guard.id(),
-                guard.packId(),
-                guard.schemaVersion().orElseThrow(),
-                guard.title(),
-                guard.description(),
-                guard.interfaceName(),
-                GuardImplementation.parse("asset:missing-lint"),
-                guard.configSchema(),
-                guard.limits(),
-                guard.onIndeterminate());
+        Guard dangling = danglingGuardOf(guard);
         WholePackStore.LoadedPack broken = new WholePackStore.LoadedPack(
                 loaded.pack().with(dangling), loaded.layout(), loaded.graphs(), loaded.unmodelled(), loaded.manifest());
         Path out = host.resolve("out");
@@ -469,18 +459,7 @@ class GuardAndLifecycleLoadTest {
                 .filter(a -> a.localId().equals("carrier-lint"))
                 .findFirst()
                 .orElseThrow();
-        Asset strayEntry = Asset.builder()
-                .id(asset.id())
-                .packId(asset.packId())
-                .mime(asset.mime())
-                .path(asset.path())
-                .title(asset.title().orElse(null))
-                .executable(new Executable(
-                        ExecutableRuntime.PYTHON,
-                        asset.executable().orElseThrow().minVersion(),
-                        "other.py",
-                        asset.executable().orElseThrow().args()))
-                .build();
+        Asset strayEntry = strayEntryOf(asset);
         WholePackStore.LoadedPack strayed = new WholePackStore.LoadedPack(
                 loaded.pack().with(strayEntry),
                 loaded.layout(),
@@ -494,6 +473,37 @@ class GuardAndLifecycleLoadTest {
         try (Stream<Path> left = Files.exists(out) ? Files.list(out) : Stream.empty()) {
             assertThat(left).as("no staging directory is left").isEmpty();
         }
+    }
+
+    /** The guard, implemented by an asset the pack does not hold. */
+    private static Guard danglingGuardOf(Guard guard) {
+        return new Guard(
+                guard.id(),
+                guard.packId(),
+                guard.schemaVersion().orElseThrow(),
+                guard.title(),
+                guard.description(),
+                guard.interfaceName(),
+                GuardImplementation.parse("asset:missing-lint"),
+                guard.configSchema(),
+                guard.limits(),
+                guard.onIndeterminate());
+    }
+
+    /** The asset, with an executable entry that names a payload the pack does not hold. */
+    private static Asset strayEntryOf(Asset asset) {
+        return Asset.builder()
+                .id(asset.id())
+                .packId(asset.packId())
+                .mime(asset.mime())
+                .path(asset.path())
+                .title(asset.title().orElse(null))
+                .executable(new Executable(
+                        ExecutableRuntime.PYTHON,
+                        asset.executable().orElseThrow().minVersion(),
+                        "other.py",
+                        asset.executable().orElseThrow().args()))
+                .build();
     }
 
     private static PackElementViolation guardLosesItsAsset() {

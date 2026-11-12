@@ -120,7 +120,8 @@ class WireTokenParityTest {
             .toList();
 
     private static List<Pair> pairs() {
-        return Stream.concat(activatableKindCopies().stream(), inlinedEnumAndTokenPairs().stream())
+        return Stream.of(activatableKindCopies(), inlinedEnumAndTokenPairs(), inlinedGraphLevelAndRelationPairs())
+                .flatMap(List::stream)
                 .toList();
     }
 
@@ -170,7 +171,7 @@ class WireTokenParityTest {
                         OverriddenArtifact.KindEnum::fromValue));
     }
 
-    /** The pairs that are not copies of ActivatableKind: NodeKind, the selected members, refusal codes and kind tokens. */
+    /** The pairs that are not copies of ActivatableKind: the node reference, selected members, refusal codes and kinds. */
     private static List<Pair> inlinedEnumAndTokenPairs() {
         return List.of(
                 // NodeReference.kind is a copy of NodeKind the generator inlines; the targets of an enhancer without a
@@ -197,7 +198,12 @@ class WireTokenParityTest {
                         "ArtifactKindToken",
                         tokens(ArtifactReadService.LISTED.toArray(ArtifactKind[]::new), ArtifactKind::token),
                         ARTIFACT_KIND_TOKENS,
-                        token -> member(ARTIFACT_KIND_TOKENS, token)),
+                        token -> member(ARTIFACT_KIND_TOKENS, token)));
+    }
+
+    /** The graph-facing copies: NodeKind, the diagnostic codes, the pack levels and the relation of an edge. */
+    private static List<Pair> inlinedGraphLevelAndRelationPairs() {
+        return List.of(
                 // NodeKind reaches the wire through EffectiveGraphNode.kind (the effective graph, served since PR C)
                 // and
                 // NodeReference.kind (below); the domain side is the kinds authored in graphs (see AUTHORED_NODE_KINDS

@@ -403,14 +403,9 @@ class WholePackRoundTripTest {
         }
     }
 
-    /**
-     * The bytes branch over a PNG/OTF-like fixture (NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final
-     * newline): equal bytes are green, one changed byte is red at its offset, a shorter file is red at its length, and
-     * no file is ever read as text (that would throw on the bytes that are not UTF-8).
-     */
-    @Test
-    void theBytesBranchComparesBytesAndNeverReadsText(@TempDir Path temp) throws IOException {
-        byte[] png = {
+    /** A PNG-like fixture: NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final newline. */
+    private static byte[] pngLikeFixture() {
+        return new byte[] {
             (byte) 0x89,
             'P',
             'N',
@@ -430,6 +425,16 @@ class WholePackRoundTripTest {
             (byte) 0xFF,
             (byte) 0xFE
         };
+    }
+
+    /**
+     * The bytes branch over a PNG/OTF-like fixture (NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final
+     * newline): equal bytes are green, one changed byte is red at its offset, a shorter file is red at its length, and
+     * no file is ever read as text (that would throw on the bytes that are not UTF-8).
+     */
+    @Test
+    void theBytesBranchComparesBytesAndNeverReadsText(@TempDir Path temp) throws IOException {
+        byte[] png = pngLikeFixture();
         byte[] otf = {'O', 'T', 'T', 'O', 0, 0x0B, 0, (byte) 0x80, '\r', '\n', (byte) 0xC3, 0, '\r', '\n', 'x'};
         byte[] changedOtf = otf.clone();
         changedOtf[10] = (byte) 0xC4;
