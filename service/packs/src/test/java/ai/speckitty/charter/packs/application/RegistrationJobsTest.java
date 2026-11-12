@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -641,7 +643,8 @@ class RegistrationJobsTest {
             waiting.add(h.start("pack-" + i, Preconditions.none(), h.stage(h.pack("pack-" + i, "1.0.0"))));
         }
         // The two workers stay held until close() has refused all four jobs, then wake inside close()'s grace and must
-        // write nothing. Left held, they would keep close() waiting out its whole 30 s grace on every run, and under PIT
+        // neither run a refused job nor write anything. Left held, they would keep close() waiting out its whole 30 s
+        // grace on every run, and under PIT
         // on every mutant this test covers (#461).
         Thread releaser = new Thread(() -> {
             h.await(() -> waiting.stream()
@@ -663,6 +666,7 @@ class RegistrationJobsTest {
                     .isInstanceOfSatisfying(
                             Refused.class, why -> assertThat(why.kind()).isEqualTo(Kind.BUSY));
         }
+        assertThat(h.gate.ran()).as("a job refused before it ran never runs").isEmpty();
         assertThat(h.audit.entries()).hasSize(4);
         assertThat(h.stagingEntries()).isEmpty();
         assertThat(h.rig.packs).isEmptyDirectory();
@@ -818,6 +822,7 @@ class RegistrationJobsTest {
     static final class TestGate implements RegistrationJobs.JobGate {
         private volatile CountDownLatch before = new CountDownLatch(0);
         private volatile CountDownLatch running = new CountDownLatch(0);
+        private final Set<String> ran = ConcurrentHashMap.newKeySet();
 
         void holdBeforeRun() {
             before = new CountDownLatch(1);
@@ -842,7 +847,13 @@ class RegistrationJobsTest {
 
         @Override
         public void whileRunning(String id) {
+            ran.add(id);
             await(running);
+        }
+
+        /** The jobs whose worker reached the running step. */
+        Set<String> ran() {
+            return Set.copyOf(ran);
         }
     }
 
