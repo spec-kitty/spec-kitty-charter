@@ -162,10 +162,15 @@ class PromptFactsTest {
     void eachStepPromptDeclaresItsSlotsInDeclarationOrderUnderItsAction() {
         PromptFacts facts = PromptFacts.of(
                 List.of(
-                        prompt(
-                                "missions/software-dev/steps/plan.prompt.md",
-                                "# Plan\n\n<!-- team:notes:start -->\n<!-- team:notes:end -->\n\n"
-                                        + "<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->\n"),
+                        prompt("missions/software-dev/steps/plan.prompt.md", """
+                                # Plan
+
+                                <!-- team:notes:start -->
+                                <!-- team:notes:end -->
+
+                                <!-- spdd:reasons-block:start -->
+                                <!-- spdd:reasons-block:end -->
+                                """),
                         prompt("missions/software-dev/steps/specify.prompt.md", "# Specify\n")),
                 StepEnhancementFacts.none());
 
