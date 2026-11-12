@@ -96,6 +96,18 @@
       "verdict": "in-mission",
       "wp": "WP10"
     },
+    "#447": {
+      "evidence_ref": "Operator ruling 2026-11-12, option 1: WP11",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP11"
+    },
     "#450": {
       "evidence_ref": "Scoping half: WP01, WP02, WP08; body links shipped in PR #486",
       "fr": null,
