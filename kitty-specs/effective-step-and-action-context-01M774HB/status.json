@@ -154,7 +154,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -165,7 +165,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "C38 slots-declared check: SlotCompose pure rule; ClosureView.requireSlots (inForce pure); reads 500 via ClosureViewSession.statesOf after merge codes (F6); ActivationImpact.requireComposable gate on every RegistrationImpact path, adapter per stored activation, never swallowed, skips activations with no before view (G21); activation writes check before storing (422). prompt_slot_missing raised with a 19-operation 422 map; RefusalHandler per-operation 422; Breaking + Changed fragments. packs/activations/web-transport/deployable tests, wholePackRoundTrip, contracts:check, spotless, checkstyle green.",
-        "Cycle 2: registration gate no longer skips an activation with no before view (G8/G21); failing fixture + twin in ActivationImpactAdapterTest; Javadoc and Breaking fragment corrected; activation-write scenario asserts the stored file unchanged; Comparator imported; wording fragment recorded out-of-map. Gates green."
+        "Cycle 2: registration gate no longer skips an activation with no before view (G8/G21); failing fixture + twin in ActivationImpactAdapterTest; Javadoc and Breaking fragment corrected; activation-write scenario asserts the stored file unchanged; Comparator imported; wording fragment recorded out-of-map. Gates green.",
+        "Review passed (cycle 2): G21 skip removed in f94e8677b; new fixture aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves fails when the early return is re-planted, twin passes; Javadoc and Breaking fragment cite G8/G21 correctly; nothing-stored asserted from the stored file; out-of-map wording fragment recorded; Comparator imported. packs, activations, web-transport tests and CharterContractSuite green; spotless/checkstyle/javadoc green. Lane-sync merges unsigned (tool-made)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
