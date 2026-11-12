@@ -1,21 +1,21 @@
 {
-  "event_count": 35,
-  "last_event_id": "01M77N7MY0Z47G46K3ZSV9B4Z0",
-  "materialized_at": "2026-11-12T10:35:39.840220+00:00",
+  "event_count": 101,
+  "last_event_id": "01M792M66S38YFETJZ3QP9C90G",
+  "materialized_at": "2026-11-12T23:48:56.665187+00:00",
   "mission_number": "",
   "mission_slug": "effective-step-and-action-context-01M774HB",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 3,
+    "approved": 11,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 7
+    "in_review": 0,
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -88,11 +88,36 @@
       }
     },
     "WP03": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7764SC1CXAJJBZWWC46AY3R",
-      "last_transition_at": "2026-11-12T06:11:57.441884+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M78D2RGTQC83RW43B9N38VZ9",
+      "last_transition_at": "2026-11-12T17:32:25.498731+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: PromptFacts (declared slots per action, fills per step enhancement) is the 9th member of PackCompositionFacts, filled in DomainRepositoryService.compositionFacts from the one resolved read; WriteFacts carries it (recomputed on mission type / step enhancement removal); staged facts carry staged prompts. Gates green: packs test/spotless/checkstyle, wholePackRoundTrip, full deployable test, contracts check.",
+        "Review passed (reviewer-renata). Checks: (a) promptSlotFacts parses PromptSlots.parse(MarkdownCodec.write(step.prompt())) exactly as recordPromptSlotFaults and FileSystemPackInspector do; no second parser; A1 equality test kills a dropped-on-demand-steps mutation. (b) compositionFacts uses only resolved.store, no nested resolve or public reader; load's assemble(pack, resolved) keeps read-then-readGraphs order. (c) staged facts via WholePackStore.contentsOf carry staged prompts (tested). (d) :packs:wholePackRoundTrip green. (e) 8-arg ctor = NONE; per-artifact writes are directive/paradigm/styleguide/toolguide only, so keeping prompts is correct; withoutArtifact drop for mission type/step enhancement is correct and tested. (f) mutations killed: DRS NONE (5/5 DRS tests), holdsText inverted, withArtifact/withRegisteredEdges/withoutArtifact prompts dropped, on-demand steps dropped. (g) 4 WP commits signed, no trailer; tool-made 13a7361/c6afeea/190e67d unsigned (noted). (h) spotless, checkstyle, javadoc, Error Prone green. Anti-pattern checklist 1-8 PASS. Shared-file: DomainRepositoryService is slice B's file, owned here for the one R9 hunk post-#501; no other WP owns these files. LOW notes: promptSlotFacts duplicates recordPromptSlotFaults' loop; PromptFacts.stepOf re-derives the steps/<id>.prompt.md convention by path."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP03-prompt-facts/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP03-prompt-facts/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 16109,
+      "shell_pid_created_at": "1794504048.61",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done"
+      }
     },
     "WP04": {
       "actor": "claude",
@@ -128,55 +153,200 @@
       }
     },
     "WP05": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7764Y8GBDCHFKVVXTYQ8JGC",
-      "last_transition_at": "2026-11-12T06:12:02.448852+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M78JAJG6HHJ73A6RBWPQ5NH7",
+      "last_transition_at": "2026-11-12T19:04:04.358786+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "C38 slots-declared check: SlotCompose pure rule; ClosureView.requireSlots (inForce pure); reads 500 via ClosureViewSession.statesOf after merge codes (F6); ActivationImpact.requireComposable gate on every RegistrationImpact path, adapter per stored activation, never swallowed, skips activations with no before view (G21); activation writes check before storing (422). prompt_slot_missing raised with a 19-operation 422 map; RefusalHandler per-operation 422; Breaking + Changed fragments. packs/activations/web-transport/deployable tests, wholePackRoundTrip, contracts:check, spotless, checkstyle green.",
+        "Cycle 2: registration gate no longer skips an activation with no before view (G8/G21); failing fixture + twin in ActivationImpactAdapterTest; Javadoc and Breaking fragment corrected; activation-write scenario asserts the stored file unchanged; Comparator imported; wording fragment recorded out-of-map. Gates green.",
+        "Review passed (cycle 2): G21 skip removed in f94e8677b; new fixture aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves fails when the early return is re-planted, twin passes; Javadoc and Breaking fragment cite G8/G21 correctly; nothing-stored asserted from the stored file; out-of-map wording fragment recorded; Comparator imported. packs, activations, web-transport tests and CharterContractSuite green; spotless/checkstyle/javadoc green. Lane-sync merges unsigned (tool-made)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP05-compose-slots-declared/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP05-compose-slots-declared/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 30163,
+      "shell_pid_created_at": "1794509833.54",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
     },
     "WP06": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M77650QTQQ63AAST0DNP4WQ5",
-      "last_transition_at": "2026-11-12T06:12:04.986667+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M78P8D79AGZN4ZK2QKYSDPFC",
+      "last_transition_at": "2026-11-12T20:12:47.721718+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "EffectivePromptQuery (pure) + ClosureView.effectivePrompt: stored prompt at the merged winner's place of action:M/s (R8) read via WinnerSource.stepPrompt/PackCompanionFiles under the closure fingerprint check; slots from that pack's PromptFacts in declaration order; fragments of in-force winning copies with sole target the step, ordered level/packName/id by code point (d5); prompt_slot_not_empty per text-holding slot (OD-7/8); NFR-002 visit counts at 1k/2k (one step and spread) <= 2.5. Out-of-map: ClosureView, ClosureQueries (5-arg @Autowired ctor with PackCompanionFiles), ClosureViewTest (example-pack SC-001 pin). Gates: :packs:test (4914, 0 fail), spotlessCheck, checkstyleMain/Test, HexagonalArchitectureTest green.",
+        "Cycle 2: NFR-002 count now visits each edge enhancersOf reads (gate test e4f1217eb red first; reviewer's unmemoized mutation fails both ratios ~4.0 and the gate, real ~2.0); STALE_INPUT fixture + twin on effectivePrompt (07b2ed924, red under local removal of checkUnchanged); 4-arg ClosureQueries ctor removed, callers moved; missing pack name throws IllegalStateException. :packs:test 4917/0 fail, :profiles-edge:test 111/0, spotless+checkstyle green, full :deployable:test 1740/0.",
+        "Review cycle 2 passed. Issue 1 (NFR-002 count): enhancersOf counts each edge once per pack; the planted un-memoized rescan fails 3 tests (ratio ~4.0). Issue 2 (STALE_INPUT): ClosureViewGovernanceTest pins it with a twin; dropping checkUnchanged from stepPrompt fails it. 4-arg ClosureQueries constructor removed; missing pack name throws. Green: :packs 4917 (4 pre-existing symlink skips), :activations 889, :profiles-edge 111, :deployable 1740 (Spring boots on the @Autowired 5-arg constructor); spotless/checkstyle/javadoc green. Commits signed, no trailer or model name. Shared-file note: ClosureView (WP05-owned), ClosureQueries, ClosureViewTest, ClosureViewGovernanceTest, ForeignArtifactReadTest, ProfileGovernanceCorpusTest and PacksProfileSourceTest are edited out-of-map and recorded in the commits; WP07 should rebase onto lane-f."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP06-effective-prompt-query/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP06-effective-prompt-query/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 7461,
+      "shell_pid_created_at": "1794513969.39",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done"
+      }
     },
     "WP07": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7765361NGMN1BWXGHPQNHAR",
-      "last_transition_at": "2026-11-12T06:12:07.489202+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M78WVEBHZ1WV9RZTEJV8P0A3",
+      "last_transition_at": "2026-11-12T22:08:02.929288+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order).",
+        "Cycle 1 fix 1bd7396c5: R10 scenario pins 409 before 500 prompt_slot_missing (M8 now caught); out-of-map: ClosureQueriesTest import nit",
+        "Cycle 2: 1bd7396c5 pins 409 before 500 prompt_slot_missing end to end; mutant M8 (isInForce via statesOf) now fails the R10 scenario (expected 409); effective-step-prompt.feature green; :packs ClosureQueriesTest, spotless, checkstyle green."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP07-effective-prompt-read-served/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP07-effective-prompt-read-served/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 29781,
+      "shell_pid_created_at": "1794521261.7",
+      "subtasks": {
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
+      }
     },
     "WP08": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M77655Q0ER8WFTZS82S8898S",
-      "last_transition_at": "2026-11-12T06:12:10.080244+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M792M66S38YFETJZ3QP9C90G",
+      "last_transition_at": "2026-11-12T23:48:56.665187+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Records and docs: ADR-0018 D5 amendment (ownership rule) with D2/D3 annotations; ADR-0066 annotations on d4, d7, d8, d9, now-built and Follow-ups marker; rules page Built (slice C) label, E16 rewritten, E5/E6/E9/E12/E14/E17/E18, C22/C25/C27, new C37/C38/F8, F6, G8, G21, A7, section 7 rows; DIV-245 + DIV-244 note (page and yaml); service contract R3/R9/operation lists; status codes, REST conventions; glossary terms; conceptual-model note; changelog page; roadmap and next-slices. check_docs all, markdownlint-cli2 and cspell clean.",
+        "Cycle 2: M3 addressed in f3ab945df (M1, M2 fixed by the coordinator in 825f61455). WP09's one place rule (ClosureView.stepPlace, StepBearer.declaresStep) recorded on the rules page A7 amendment and F8 wording, the changelog bullet, getEffectiveMissionStep in service-contract.md and the artifact/step relations in hypermedia-hateoas.md; the prompt read recorded as unchanged pending Q3. Pins verified on lane-h. check_docs all, markdownlint-cli2 and cspell clean.",
+        "Cycle 2: M1/M2 (825f61455) and M3 (f3ab945df) resolved; pins verified on lane-h; docs checks green."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP08-records-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP08-records-and-docs/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 25347,
+      "shell_pid_created_at": "1794527255.74",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done"
+      }
     },
     "WP09": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M776992DYA4CWVFX29JAPS6C",
-      "last_transition_at": "2026-11-12T06:14:24.589664+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M792DH8QGS751CTDC3GP98Z3",
+      "last_transition_at": "2026-11-12T23:45:18.615730+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green.",
+        "Cycle 1 fixes: one place rule in ClosureView.stepPlace (mission type winner if it declares s, else held action winner whose version declares s), used by stepPlace, the step read and the context artifact link; probes 1 and 2 as scenarios (red first, e80394a33); L1 step-contract step link by the place; M1, L3 contract wording; L4 controller test. Prompt read unchanged. activations, missions-edge, packs ClosureViewTest, feature, contracts:check and full deployable:test (1781/0) green.",
+        "Cycle 2: H1/M1/L1/L3/L4 resolved (f3ad8c480); one place rule ClosureView.stepPlace; mutations A-D caught; Hexagonal green; full deployable 1781 green. LOW L-a (placed() refusal pass-through test) folded into consolidation."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP09-effective-step-follows-its-place/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP09-effective-step-follows-its-place/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 16947,
+      "shell_pid_created_at": "1794526137.16",
+      "subtasks": {
+        "T040": "done",
+        "T041": "done",
+        "T042": "done"
+      }
     },
     "WP10": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M77N7MY0Z47G46K3ZSV9B4Z0",
-      "last_transition_at": "2026-11-12T10:35:39.840220+00:00",
+      "lane": "approved",
+      "last_event_id": "01M77NZWC5EDCMBHGSWPJMM31M",
+      "last_transition_at": "2026-11-12T10:48:53.893466+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: #439 option (b). satisfiedBy and overriddenBy list every overrider in force, sorted by winning-pack level then URN by code point (packs InForceResolution/InForceStates; activations and profiles-edge carry lists; contract arrays minItems 1; Breaking fragment 2026-11-12-every-overrider-named.md). Red commit 2a3b40aa, green f5a88cc9. overrideNotApplied is grouped one entry per locked target (OverriddenArtifact is shared). URN-only and UTF-16 mutations fail InForceResolutionOverridersTest. packs, activations, profiles-edge tests, CharterContractSuite, HexagonalArchitectureTest, contract checks, spotless and checkstyle all green."
+        "Ready for review: #439 option (b). satisfiedBy and overriddenBy list every overrider in force, sorted by winning-pack level then URN by code point (packs InForceResolution/InForceStates; activations and profiles-edge carry lists; contract arrays minItems 1; Breaking fragment 2026-11-12-every-overrider-named.md). Red commit 2a3b40aa, green f5a88cc9. overrideNotApplied is grouped one entry per locked target (OverriddenArtifact is shared). URN-only and UTF-16 mutations fail InForceResolutionOverridersTest. packs, activations, profiles-edge tests, CharterContractSuite, HexagonalArchitectureTest, contract checks, spotless and checkstyle all green.",
+        "Review passed (reviewer-renata): FR-013/SC-006 applied in every carrier (EffectiveArtifact + 4 copies, OverriddenArtifact for overridden and overrideNotApplied; parity test unchanged and green). Order level-then-code-point verified; URN-only mutation re-run fails 4/8 InForceResolutionOverridersTest; reverted. State/reason/bucket unchanged; D16 drop keeps order and drops emptied overrideNotApplied targets. Fragment ### Breaking complete. No assertion weakened (contains->containsExactly, property test strengthened). Commits signed, no trailer, out-of-map recorded. Green: :packs:test, :activations:test, :profiles-edge:test, CharterContractSuite 747/747, contracts bundle/lint/closed/refusal/changelog/test, spotless/checkstyle/javadoc (checkContractCompatibility not runnable: shallow clone). Anti-pattern checklist 1-8 PASS. OPERATOR DECISION: overrideNotApplied regrouped to one entry per locked target (ActivationSummary.skipped counts it once) - not named by the #439 ruling; reviewer recommends keeping it (matches 'each artifact counted once' and the shared OverriddenArtifact 'every overrider' meaning) but the operator should confirm; WP08 must then update E14 and the divergence-register #439 note. Coordination: touches WP02-owned ClosureViewSession, EffectiveReadMapper, EffectiveTag, EffectiveContextArtifact.yaml (recorded out-of-map)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP10-every-overrider-named/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP10-every-overrider-named/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 26398,
       "shell_pid_created_at": "1794479733.88",
@@ -188,11 +358,37 @@
       }
     },
     "WP11": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M77C19DQKY7TW1TXSVM8ATJE",
-      "last_transition_at": "2026-11-12T07:54:54.263952+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M77SN990JEYKRM8B8ZGJQMKB",
+      "last_transition_at": "2026-11-12T11:53:00.960275+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "FR-014 (#447 option 1): OverrideSourceRule refuses an overrides edge from template/asset/guard/lifecycle. putPackRelationship: 422 validation_failed, violation overrides_source_not_activatable at /from, nothing written. Load: FilesystemPackStore.read records a violation at the graph document, so registration lists it (422) and composing reads answer 500 pack_unreadable naming the document; DomainRepositoryService untouched. Contract: violation code in CharterRefusalCode description and validation_failed entry, putPackRelationship 422 description, two examples, ### Breaking fragment. override-source-kind.feature (7 scenarios), :packs:test, CharterContractSuite, contract checks, HexagonalArchitectureTest, spotless/checkstyle green.",
+        "Cycle 1 fixes: validate mode (PackPolicy.judge) reports OVERRIDES_SOURCE_NOT_ACTIVATABLE (blocking, token = OverrideSourceRule.CODE via violationKind), red test 69b22084b then d3f651e86; putPackRelationship 422 names all four kinds; commit records FilesystemPackStore as shared with slice B WP06 (#501), rebase conflict expected. :packs:test 4736/0, CharterContractSuite+Hexagonal+Reserved 840/0, :contracts:check -PcontractBaseline=none, spotless/checkstyle green.",
+        "Review passed (cycle 2): the MEDIUM is fixed. Validate mode reports overrides_source_not_activatable through PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE (BLOCKING), and OverrideSourceRule.CODE is the one token. The red test bites: dropping the overrideSourceFindings call fails validateModeReportsTheEdge... The two LOWs are fixed: the 422 description names all four kinds, and the FilesystemPackStore record names slice-B WP06 (PR #501) as a shared owner, so the #501 rebase should expect it. Tests: packs 4736 tests, 0 failures; CharterContractSuite 745, 0 failures; contracts:check green with -PcontractBaseline=none (shallow clone); spotless, checkstyle and javadoc green. Accepted LOW: a guard or lifecycle source in validate mode gets drg_schema_error plus the new finding, while the load reports only the schema fault because the document does not read. Both block. Open question for the run lead: should the ruling cover a step source (action:)? Not built here."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP11-override-source-activatable/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP11-override-source-activatable/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4917,
+      "shell_pid_created_at": "1794483873.21",
+      "subtasks": {
+        "T047": "done",
+        "T048": "done",
+        "T049": "done"
+      }
     }
   }
 }

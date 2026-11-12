@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,7 @@ class ExposureStartupCheckTest {
                 .run(context -> assertThat(context)
                         .hasFailed()
                         .getFailure()
-                        .hasRootCauseInstanceOf(IllegalStateException.class)
+                        .hasRootCauseInstanceOf(StartupRefusal.class)
                         .rootCause()
                         .hasMessageStartingWith(property + " must"));
     }

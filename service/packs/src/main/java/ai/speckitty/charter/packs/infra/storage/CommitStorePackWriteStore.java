@@ -159,28 +159,33 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     /** The digest of the pack's files with the path of each, as the closure's fingerprint digests them (#416). */
     @Override
     public String digestOf(PackIdentifier pack) {
-        return FileSystemPackSources.digestOfPack(resolve(pack), pack.value());
+        return reading(pack, directory -> FileSystemPackSources.digestOfPack(directory, pack.value()));
     }
 
     @Override
     public PackRevision currentRevision(PackIdentifier pack) {
-        Path directory = resolve(pack);
-        try {
-            // Over bytes, as PackCommitStore.revisionOf: a digested file need not be UTF-8 text.
-            List<byte[]> contents = new ArrayList<>();
-            for (String relative : PackFileSet.digested(directory)) {
-                contents.add(Files.readAllBytes(directory.resolve(relative)));
+        return reading(pack, directory -> {
+            try {
+                // Over bytes, as PackCommitStore.revisionOf: a digested file need not be UTF-8 text.
+                List<byte[]> contents = new ArrayList<>();
+                for (String relative : PackFileSet.digested(directory, pack.value())) {
+                    contents.add(Files.readAllBytes(directory.resolve(relative)));
+                }
+                return PackRevision.computeOverBytes(contents);
+            } catch (IOException failure) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "cannot read the revision of pack " + pack.value(), failure);
             }
-            return PackRevision.computeOverBytes(contents);
-        } catch (IOException failure) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "cannot read the revision of pack " + pack.value(), failure);
-        }
+        });
     }
 
     @Override
     public List<Relationship> registeredRelationships(PackIdentifier pack) {
-        Path shard = resolve(pack).resolve(RelationshipShard.SHARD_PATH);
+        return reading(pack, directory -> registeredRelationships(pack, directory));
+    }
+
+    private static List<Relationship> registeredRelationships(PackIdentifier pack, Path directory) {
+        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
         if (!Files.isRegularFile(shard)) {
             return List.of(); // a pack nothing has been registered into yet
         }
@@ -281,7 +286,10 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     @Override
     public Authored authored(PackIdentifier pack) {
-        Path directory = resolve(pack);
+        return reading(pack, directory -> authored(pack, directory));
+    }
+
+    private Authored authored(PackIdentifier pack, Path directory) {
         Path parent = directory.getParent();
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
@@ -337,9 +345,17 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         });
     }
 
-    /** The pack's live directory, at the location {@link PackLocator} resolves. */
+    /** The pack's live directory, at the location {@link PackLocator} resolves: what a write under the lock addresses. */
     private Path resolve(PackIdentifier pack) {
         return PackLocator.directoryOf(location(pack));
+    }
+
+    /**
+     * A lock-free read of the pack at the location {@link PackLocator} resolves, over the directory a reader reads during
+     * a replace's swap window too, kept only when no swap moved it ({@link PackLocator#read}, #490).
+     */
+    private <T> T reading(PackIdentifier pack, Function<Path, T> body) {
+        return PackLocator.read(locations, location(pack), body);
     }
 
     /** The configured location of a pack, as {@link PackLocator} resolves it. */

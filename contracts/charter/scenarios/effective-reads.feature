@@ -2071,6 +2071,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=2" with the remembered cursor
     Then the response status is 400
+    And the field at "/detail" starts with "The query parameter pageCursor is \""
+    And the field at "/detail" ends with "\", which belongs to another set of effective artifacts; read the first page again."
     When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=1"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
@@ -3280,3 +3282,28 @@ Feature: The effective reads answer what an activation puts in force, and why th
       D
       X
       """
+
+  Scenario Outline: A filter or cursor the effective list cannot read is a 400 Problem without a code that says why (<query>)
+    #411: the detail names the parameter, the value it carried and what it accepts.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    When I GET "/activations/a-1/artifacts?<query>"
+    Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" is "<detail>"
+
+    Examples:
+      | query           | detail                                                                                                                                                                                                                  |
+      | kind=template   | The query parameter kind is \"template\", which is not one of directive, tactic, styleguide, toolguide, paradigm, procedure, agent_profile, mission_step_contract, glossary_pack, skill, anti_pattern, mission_type or step_enhancement. |
+      | state=retired   | The query parameter state is \"retired\", which is not one of active, inactive or excluded.                                                                                                                             |
+      | pageCursor=YQ   | The query parameter pageCursor is \"YQ\", which is not a cursor this list gave.                                                                                                                                         |

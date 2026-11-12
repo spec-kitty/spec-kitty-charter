@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -79,7 +79,7 @@ Following core ADR `2026-10-03-1` ("Cross-language contract"), the **charter con
 the OpenAPI document plus four more parts:
 
 1. the versioned **OpenAPI 3.1** document and the **YAML document schemas** of the inputs
-   (pack descriptor, org charter, CRG fragment and graph shards, artifact files,
+   (pack descriptor, presets and the pack document, CRG fragment and graph shards, artifact files,
    `charter.yaml`);
 2. the **semantic rules**: merge, activation, traversal and resolution;
 3. **canonical identifiers and diagnostics**: refusal and diagnostic codes such as

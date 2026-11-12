@@ -302,7 +302,20 @@ public final class MarkdownScanner {
         if (level > 2) {
             return null;
         }
-        String name = level == 1 ? "an H1" : "an H2";
+        String title = unambiguousTitle(number, level == 1 ? "an H1" : "an H2", indent, after);
+        return new Line(number, text, level == 1 ? Kind.H1 : Kind.H2, title);
+    }
+
+    /**
+     * The title of an H1 or H2, after its {@code #} run; refused when the heading is ambiguous.
+     *
+     * @param number the line number
+     * @param name {@code "an H1"} or {@code "an H2"}
+     * @param indent the spaces before the {@code #} run
+     * @param after the line after the {@code #} run: empty, or starting with a space or a tab
+     * @return the stripped title
+     */
+    private static String unambiguousTitle(int number, String name, int indent, String after) {
         if (indent > 0) {
             throw refused(
                     number,
@@ -319,7 +332,7 @@ public final class MarkdownScanner {
         if (CLOSING_SEQUENCE.matcher(title).matches()) {
             throw refused(number, name + " with a closing # sequence is ambiguous");
         }
-        return new Line(number, text, level == 1 ? Kind.H1 : Kind.H2, title);
+        return title;
     }
 
     /**

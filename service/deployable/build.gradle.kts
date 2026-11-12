@@ -148,4 +148,9 @@ tasks.test {
     inputs.dir(contracts.dir("examples")).withPathSensitivity(PathSensitivity.RELATIVE)
         .withPropertyName("contractExamples")
     systemProperty("charter.contractsDir", contracts.asFile.absolutePath)
+    // The switch gate's per-operation report (ADR-0059 D1): a declared output, so a run restored from the build cache
+    // restores the report with it.
+    val switchGateReport = layout.buildDirectory.dir("reports/switch-gate")
+    outputs.dir(switchGateReport).withPropertyName("switchGateReport")
+    systemProperty("charter.switchGateReport", switchGateReport.get().file("switch-gate.md").asFile.absolutePath)
 }

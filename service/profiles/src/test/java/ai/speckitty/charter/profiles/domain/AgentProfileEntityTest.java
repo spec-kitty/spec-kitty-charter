@@ -113,6 +113,50 @@ class AgentProfileEntityTest {
                 .excluding(Optional.of(new Exclusion.WholeFields(List.of("capabilities", "mode-defaults"))));
     }
 
+    private static void hasJennysTexts(AgentProfile p) {
+        assertThat(p.name()).isEqualTo("Java Jenny");
+        assertThat(p.label()).isEqualTo("Java Jenny");
+        assertThat(p.description()).contains("Java-specialist implementer applying ATDD/TDD discipline");
+        assertThat(p.purpose())
+                .isEqualTo("Deliver idiomatic, well-tested Java code that faithfully implements" + " specifications.");
+        assertThat(p.initializationDeclaration())
+                .contains("I am Java Jenny. I write idiomatic, well-tested Java code.");
+        assertThat(p.avatarImage()).contains("avatars/java-jenny.png");
+    }
+
+    private static void hasJennysRouting(AgentProfile p) {
+        assertThat(p.role()).isEqualTo("implementer");
+        assertThat(p.altRoles()).containsExactly("reviewer");
+        assertThat(p.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
+        assertThat(p.routingPriority()).contains(80);
+        assertThat(p.maxConcurrentTasks()).contains(5);
+        assertThat(p.model()).contains("a-model");
+        assertThat(p.effort()).contains("high");
+        assertThat(p.sentinel()).contains(true);
+        assertThat(p.appliesToLanguages()).containsExactly("java", "kotlin");
+    }
+
+    private static void hasJennysReferences(AgentProfile p) {
+        assertThat(p.directiveReferences())
+                .extracting(DirectiveReference::code, DirectiveReference::name)
+                .containsExactly(
+                        tuple("010", "Specification Fidelity Requirement"), tuple("034", "Test-First Development"));
+        assertThat(p.directiveReferences().get(1).rationale())
+                .isEqualTo("Tests define the contract before production code");
+        assertThat(p.tacticReferences())
+                .containsExactly(
+                        new ArtifactReference("acceptance-test-first", "ATDD outside-in"),
+                        new ArtifactReference("tdd-red-green-refactor", "Unit-level red-green-refactor"));
+        assertThat(p.toolguideReferences())
+                .containsExactly(
+                        new ArtifactReference("java-supply-chain", "Exact commands for dependency checks"),
+                        new ArtifactReference("gradle-build", "The build runs through the wrapper"));
+        assertThat(p.styleguideReferences())
+                .containsExactly(
+                        new ArtifactReference("java-style", "Naming and null-safety conventions"),
+                        new ArtifactReference("test-style", "Given-when-then test names"));
+    }
+
     @Test
     @DisplayName("a profile built with every field set reads every field back, in authored order")
     void everyFieldRoundTrips() {
@@ -126,29 +170,9 @@ class AgentProfileEntityTest {
                     assertThat(p.schemaVersion()).contains("1.0");
                 })
                 .as("descriptive texts")
-                .satisfies(p -> {
-                    assertThat(p.name()).isEqualTo("Java Jenny");
-                    assertThat(p.label()).isEqualTo("Java Jenny");
-                    assertThat(p.description()).contains("Java-specialist implementer applying ATDD/TDD discipline");
-                    assertThat(p.purpose())
-                            .isEqualTo("Deliver idiomatic, well-tested Java code that faithfully implements"
-                                    + " specifications.");
-                    assertThat(p.initializationDeclaration())
-                            .contains("I am Java Jenny. I write idiomatic, well-tested Java code.");
-                    assertThat(p.avatarImage()).contains("avatars/java-jenny.png");
-                })
+                .satisfies(AgentProfileEntityTest::hasJennysTexts)
                 .as("routing and execution")
-                .satisfies(p -> {
-                    assertThat(p.role()).isEqualTo("implementer");
-                    assertThat(p.altRoles()).containsExactly("reviewer");
-                    assertThat(p.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
-                    assertThat(p.routingPriority()).contains(80);
-                    assertThat(p.maxConcurrentTasks()).contains(5);
-                    assertThat(p.model()).contains("a-model");
-                    assertThat(p.effort()).contains("high");
-                    assertThat(p.sentinel()).contains(true);
-                    assertThat(p.appliesToLanguages()).containsExactly("java", "kotlin");
-                })
+                .satisfies(AgentProfileEntityTest::hasJennysRouting)
                 .as("specialization, its context and collaboration")
                 .satisfies(p -> {
                     assertThat(p.specialization()).isEqualTo(JENNY_SPECIALIZATION);
@@ -169,27 +193,7 @@ class AgentProfileEntityTest {
                                         "Investigating and fixing defects with reproduction tests",
                                         "Resolving bug reports with a failing test first")))
                 .as("governance references, each list on its own")
-                .satisfies(p -> {
-                    assertThat(p.directiveReferences())
-                            .extracting(DirectiveReference::code, DirectiveReference::name)
-                            .containsExactly(
-                                    tuple("010", "Specification Fidelity Requirement"),
-                                    tuple("034", "Test-First Development"));
-                    assertThat(p.directiveReferences().get(1).rationale())
-                            .isEqualTo("Tests define the contract before production code");
-                    assertThat(p.tacticReferences())
-                            .containsExactly(
-                                    new ArtifactReference("acceptance-test-first", "ATDD outside-in"),
-                                    new ArtifactReference("tdd-red-green-refactor", "Unit-level red-green-refactor"));
-                    assertThat(p.toolguideReferences())
-                            .containsExactly(
-                                    new ArtifactReference("java-supply-chain", "Exact commands for dependency checks"),
-                                    new ArtifactReference("gradle-build", "The build runs through the wrapper"));
-                    assertThat(p.styleguideReferences())
-                            .containsExactly(
-                                    new ArtifactReference("java-style", "Naming and null-safety conventions"),
-                                    new ArtifactReference("test-style", "Given-when-then test names"));
-                })
+                .satisfies(AgentProfileEntityTest::hasJennysReferences)
                 .as("self-review steps with their record fields, a step without a command included")
                 .satisfies(p -> assertThat(p.selfReviewSteps())
                         .extracting(SelfReviewStep::name, SelfReviewStep::command, SelfReviewStep::gate)

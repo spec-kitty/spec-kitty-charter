@@ -15,10 +15,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * The shared answer to a method-validation violation (issue #268): a parameter out of its declared bound is the plain
- * 400 problem, whichever controller it reaches; a violation elsewhere is the service's own failure, a 500. Real
+ * The shared answer to a method-validation violation (issue #268): a parameter out of its declared bound is the 400
+ * problem whose detail names it (#411), whichever controller it reaches; a violation elsewhere is the service's own failure, a 500. Real
  * violations come from a real validator, so the property path is the one the method validation proxy builds. It lives
  * in the web transport, where the handler is, with the validator the service runs with.
  */
@@ -50,8 +51,37 @@ class ValidationProblemTest {
         return FACTORY.getValidator().forExecutables().validateReturnValue(new Operation(), page, null);
     }
 
+    /** A stand-in for a generated interface, whose parameter is bound from the query. */
+    interface Paged {
+        String page(@RequestParam("pageSize") @Min(1) int pageSize);
+    }
+
+    static class PagedController implements Paged {
+        @Override
+        public String page(int size) {
+            return "";
+        }
+    }
+
     @Test
-    void aParameterOutOfItsDeclaredBoundIsA400ProblemWithoutACodeOrADetail() throws Exception {
+    void aQueryParameterOutOfItsDeclaredBoundIsA400ProblemWithoutACodeWhoseDetailNamesIt() throws Exception {
+        Method page = PagedController.class.getMethod("page", int.class);
+        Set<ConstraintViolation<PagedController>> violations = FACTORY.getValidator()
+                .forExecutables()
+                .validateParameters(new PagedController(), page, new Object[] {0});
+        assertThat(violations).hasSize(1);
+
+        ResponseEntity<Object> answer = handler.invalidParameter(new ConstraintViolationException(violations));
+
+        Problem expected = new Problem("Bad Request", 400);
+        expected.setDetail("The query parameter pageSize is \"0\", which is less than 1.");
+        assertThat(answer.getStatusCode().value()).isEqualTo(400);
+        assertThat(answer.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(answer.getBody()).isEqualTo(expected);
+    }
+
+    @Test
+    void aParameterNotBoundFromTheRequestIsA400ProblemWithoutACodeOrADetail() throws Exception {
         Set<ConstraintViolation<Operation>> violations = parameterViolations();
         assertThat(violations).hasSize(1);
 

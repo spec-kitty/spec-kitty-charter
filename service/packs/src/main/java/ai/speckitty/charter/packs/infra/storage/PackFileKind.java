@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -21,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * the schema that validates it, or none for a schema-less payload) and its {@link ContentForm}, excluded for a reviewed
  * reason, retired (a file of a layout the service no longer reads, refused by name, ADR-0044 decision 6), or not classified at
  * all. The {@code files} rules are consulted first, then the {@code exclusions}, then the {@code retired} rules, then the
- * {@code payloads}. A top-level key the table does not define is refused when it loads, never ignored.
+ * {@code payloads}, and last the {@code ignored} fallback, which excludes what nothing else takes (#451). A top-level key the table does not define is refused when it loads, never ignored.
  *
  * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
  * rule declares a form other than {@code yaml} or {@code markdown} (its schema validates the parsed YAML document, or
@@ -48,18 +49,24 @@ final class PackFileKind {
     private static final Set<String> PAYLOAD_KEYS = Set.of(MATCH, "kind", CONTENT_FORM);
     private static final Set<String> RETIRED_KEYS = Set.of(MATCH, "reason");
     private static final String RETIRED = "retired";
+    private static final String IGNORED = "ignored";
+    private static final Set<String> IGNORED_KEYS = Set.of(MATCH, "reason");
+
+    /** A rule that names one file at the pack root: {@code *}{@code /<name>}, the name with no wildcard or slash. */
+    private static final Pattern ROOT_FILE = Pattern.compile("\\*/([^*/]+)");
+
     private static final String PAYLOADS = "payloads";
 
     /** The table's top-level keys; any other is refused when the table loads (#194). */
     private static final Set<String> TOP_LEVEL_KEYS =
-            Set.of("node_kinds", "artifact_kinds", "fragment_kinds", "files", "exclusions", PAYLOADS, RETIRED);
+            Set.of("node_kinds", "artifact_kinds", "fragment_kinds", "files", "exclusions", PAYLOADS, RETIRED, IGNORED);
 
     /**
      * The content forms the table admits. A rule naming another form fails when the table loads (C-004). Admitting a
      * form is one entry here plus its codec; holding it also takes the store's read and write path, the digest and
      * validate mode, each an exhaustive switch over {@link ContentForm}. {@code markdown} is admitted and classified,
      * and the store reads it as a bound kind's companion (a toolguide's guide, #194) or as the pack document
-     * ({@code pack.md}, #260); any other file of it fails loudly ({@code PackFileSet.notStored}) until the rule that
+     * ({@code README.md}, #260); any other file of it fails loudly ({@code PackFileSet.notStored}) until the rule that
      * adds it wires its own store path.
      */
     private static final Set<ContentForm> BUILT_FORMS =
@@ -93,10 +100,12 @@ final class PackFileKind {
     record Mapped(String kind, Optional<String> schema, ContentForm contentForm) implements Classification {}
 
     /**
-     * A file that is not pack content or has no schema, for a reviewed reason.
+     * A file that is not pack content or has no schema, for a reviewed reason: a file an {@code exclusions} rule names,
+     * or Markdown that only the {@code ignored} fallback takes. It is not held, not served, not digested and not
+     * refused (#451).
      *
-     * @param exclusionClass the exclusion's {@code match} glob, which names the class of files it covers
-     * @param reason why the class has no schema
+     * @param exclusionClass the rule's {@code match} glob, which names the class of files it covers
+     * @param reason why the class is not pack content
      */
     record Excluded(String exclusionClass, String reason) implements Classification {}
 
@@ -151,6 +160,14 @@ final class PackFileKind {
     record RetiredRule(String match, String reason) {}
 
     /**
+     * An {@code ignored} rule: the fallback for a file no other rule and no companion claim takes (#451).
+     *
+     * @param match the glob, matched without regard to letter case
+     * @param reason the reviewable reason, which a registration reports for each file it does not hold
+     */
+    record IgnoredRule(String match, String reason) {}
+
+    /**
      * A rule's glob, compiled as written and case-folded.
      *
      * @param match the glob as the table writes it
@@ -175,6 +192,8 @@ final class PackFileKind {
     private final List<ExclusionRule> exclusionRules;
     private final List<PayloadRule> payloadRules;
     private final List<RetiredRule> retiredRules;
+    private final List<IgnoredRule> ignoredRules;
+    private final List<Pattern> ignoredPatterns;
     private final List<Compiled> compiled;
     private final List<Compiled> payloadsCompiled;
 
@@ -210,6 +229,11 @@ final class PackFileKind {
         this.exclusionRules = List.copyOf(table.exclusionRules());
         this.payloadRules = List.copyOf(table.payloadRules());
         this.retiredRules = List.copyOf(table.retiredRules());
+        this.ignoredRules = List.copyOf(table.ignoredRules());
+        // The fallback matches in any letter case; the other sections match as written (and, for a companion, folded).
+        this.ignoredPatterns = ignoredRules.stream()
+                .map(r -> glob(r.match(), Pattern.CASE_INSENSITIVE))
+                .toList();
         List<Compiled> all = new ArrayList<>();
         fileRules.forEach(r -> all.add(new Compiled(r.match())));
         exclusionRules.forEach(r -> all.add(new Compiled(r.match())));
@@ -225,7 +249,8 @@ final class PackFileKind {
             List<FileRule> fileRules,
             List<ExclusionRule> exclusionRules,
             List<PayloadRule> payloadRules,
-            List<RetiredRule> retiredRules) {}
+            List<RetiredRule> retiredRules,
+            List<IgnoredRule> ignoredRules) {}
 
     /** The table bundled with this adapter, read once. */
     static PackFileKind bundled() {
@@ -262,10 +287,15 @@ final class PackFileKind {
         return retiredRules;
     }
 
+    /** The fallback rules, in table order (#451). They are not among {@link #matchingRules}. */
+    List<IgnoredRule> ignoredRules() {
+        return ignoredRules;
+    }
+
     /**
      * Every {@code files}, {@code exclusions} or {@code retired} rule glob that matches {@code path}; the table
      * promises at most one, but for the one README overlap of an exclusion and a retired rule its header names.
-     * The payload rules are left out: they overlap the other two by design (a sidecar under {@code assets/} matches a
+     * The payload rules and the {@code ignored} fallback are left out: they overlap the other two by design (a sidecar under {@code assets/} matches a
      * {@code files} rule and a payload rule), and only the first match counts.
      */
     List<String> matchingRules(String path) {
@@ -305,14 +335,68 @@ final class PackFileKind {
      * @return how the path is handled
      */
     Classification classify(String path) {
-        return classify(path, Compiled::pattern);
+        Classification exact = classify(path, Compiled::pattern);
+        if (!(exact instanceof Unclassified)) {
+            return exact;
+        }
+        // A case variant of a ruled root file is refused by name; only then is the fallback consulted (FR-022).
+        Optional<Classification> variant = caseVariant(path);
+        return variant.isPresent() ? variant.get() : ignored(path).orElse(exact);
+    }
+
+    /**
+     * The first {@code ignored} rule that matches {@code path}, as the file's exclusion; empty when none does, and
+     * empty when a files, retired or payload rule takes the path in another letter case ({@code a.guide.MD}): such a
+     * file is refused as unmodelled, never swept up by the fallback.
+     */
+    private Optional<Classification> ignored(String path) {
+        Classification folded = classifyFolded(path);
+        if (!(folded instanceof Unclassified) && !(folded instanceof Excluded)) {
+            return Optional.empty();
+        }
+        for (int i = 0; i < ignoredPatterns.size(); i++) {
+            if (ignoredPatterns.get(i).matcher(path).matches()) {
+                IgnoredRule rule = ignoredRules.get(i);
+                return Optional.of(new Excluded(rule.match(), rule.reason()));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * A root file that differs only in letter case from a root-anchored {@code files} or {@code retired} rule's file
+     * ({@code Readme.md}, {@code Pack.md}, {@code PROVENANCE.MD}, FR-022), as a {@link Retired} refusal naming that
+     * rule. Exact classification is case-sensitive, so such a file would otherwise be unclassified: on a
+     * case-insensitive file system it is the rule's file under another name, and it is refused rather than guessed at.
+     * It is a property of classification, so the load, validate mode, registration, the digest and the census treat it
+     * as they treat any retired file. Payload rules are not consulted: a folded {@code Assets/x} is not an asset.
+     */
+    private Optional<Classification> caseVariant(String path) {
+        String folded = path.toLowerCase(Locale.ROOT);
+        // `compiled` is the files rules, then the exclusions, then the retired rules; the exclusions are skipped.
+        int exclusionsStart = fileRules.size();
+        int retiredStart = exclusionsStart + exclusionRules.size();
+        int retiredEnd = retiredStart + retiredRules.size();
+        for (int i = 0; i < retiredEnd; i++) {
+            if (i >= exclusionsStart && i < retiredStart) {
+                continue;
+            }
+            Compiled rule = compiled.get(i);
+            Matcher root = ROOT_FILE.matcher(rule.match());
+            if (root.matches() && rule.folded().matcher(folded).matches()) {
+                return Optional.of(
+                        new Retired(rule.match(), "differs only in letter case from '" + root.group(1) + "'"));
+            }
+        }
+        return Optional.empty();
     }
 
     /**
      * Classifies a path case-folded: the path and every rule's glob in lower case ({@link Locale#ROOT}), the fold the
      * write's claim check applies to a written path ({@code Companions.Inside#claim}). It is how a companion's path is
-     * classified (#272, ADR-0039 decision 3): on a case-insensitive file system {@code PACK.md} is {@code pack.md}, so
-     * a rule owns every spelling of its file. A real file is classified as written ({@link #classify}).
+     * classified (#272, ADR-0039 decision 3): on a case-insensitive file system {@code README.MD} is {@code README.md}, so
+     * a rule owns every spelling of its file. A real file is classified as written ({@link #classify}). The {@code ignored}
+     * fallback is not consulted: a file only the fallback matches is claimable by a companion (#451).
      *
      * @param path the path relative to the directory that holds the pack directories, with forward slashes
      * @return how the path would be handled in any letter case
@@ -355,6 +439,17 @@ final class PackFileKind {
     }
 
     private static Pattern glob(String match) {
+        return glob(match, 0);
+    }
+
+    /**
+     * Compiles a rule glob with {@code flags}: the one path that compiles a glob, so the regex guard judges it once.
+     *
+     * @param match the glob
+     * @param flags the {@link Pattern} flags to compile with, such as {@link Pattern#CASE_INSENSITIVE}
+     * @return the compiled pattern
+     */
+    private static Pattern glob(String match, int flags) {
         StringBuilder regex = new StringBuilder();
         int i = 0;
         while (i < match.length()) {
@@ -373,7 +468,7 @@ final class PackFileKind {
                 i = next;
             }
         }
-        return Pattern.compile(regex.toString());
+        return Pattern.compile(regex.toString(), flags);
     }
 
     private static PackFileKind load() {
@@ -410,7 +505,7 @@ final class PackFileKind {
             Map<String, Object> rule = rule(entry, "exclusions", EXCLUSION_KEYS);
             exclusions.add(new ExclusionRule(string(rule, MATCH), string(rule, "reason")));
         }
-        return new Table(nodeKinds, fragments, files, exclusions, payloads(table), retired(table));
+        return new Table(nodeKinds, fragments, files, exclusions, payloads(table), retired(table), ignored(table));
     }
 
     /** The optional {@code payloads} section: a table without schema-less files has none. */
@@ -448,6 +543,19 @@ final class PackFileKind {
             retired.add(new RetiredRule(string(rule, MATCH), string(rule, "reason")));
         }
         return retired;
+    }
+
+    /**
+     * The optional {@code ignored} section (#451): each rule a {@code match} and a {@code reason}, both required. A
+     * table without a fallback has none.
+     */
+    private static List<IgnoredRule> ignored(Map<String, Object> table) {
+        List<IgnoredRule> ignored = new ArrayList<>();
+        for (Object entry : section(table, IGNORED)) {
+            Map<String, Object> rule = rule(entry, IGNORED, IGNORED_KEYS);
+            ignored.add(new IgnoredRule(string(rule, MATCH), string(rule, "reason")));
+        }
+        return ignored;
     }
 
     /** The entries of an optional list section; none when the table leaves it out. */

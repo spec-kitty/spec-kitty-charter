@@ -995,7 +995,7 @@ terms:
   synonyms_to_avoid:
   - doctrine catalog
 - confidence: 0.95
-  definition: "A distributable bundle of charter components (artifacts and their DRG edges) together with optional activation presets shipped as presets/<name>.yaml. An org pack may also enforce activations through required_<kind> lists in its org-charter.yaml. Identified by charter_pack_id (built-in, an org pack's configured name, or project); org packs are configured under charter_packs.org.packs. Not a named starting set of activations (say activation preset) and not the project's activation state (say active charter). See the Charter Pack entry in docs/context/charter.md."
+  definition: "A distributable bundle of charter components (artifacts and their DRG edges) together with optional activation presets shipped as presets/<name>.yaml. An org pack enforces activations through a governing activation preset whose items are must-have, and through the levels of its policy.yaml. Identified by charter_pack_id (built-in, an org pack's configured name, or project); org packs are configured under charter_packs.org.packs. Not a named starting set of activations (say activation preset) and not the project's activation state (say active charter). See the Charter Pack entry in docs/context/charter.md."
   status: active
   surface: charter pack
   synonyms_to_avoid:

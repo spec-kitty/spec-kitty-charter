@@ -111,22 +111,6 @@ remove_work() { # rm -rf of the temporary directory, only if it is the one this 
     fi
 }
 
-remove_inside() { # path: rm -rf of a path whose parent resolves to somewhere inside the temporary directory
-    # Only the parent is resolved: a symlink as the last component is removed as a link, never followed to its target.
-    local parent base target
-    base=$(basename -- "$1")
-    if [[ -z $WORK_MADE || $base == / || $base == . || $base == .. ]] ||
-        ! parent=$(realpath -e -- "$(dirname -- "$1")" 2>/dev/null); then
-        printf 'error: not removing %s: it cannot be resolved\n' "$1" >&2
-        return 1
-    fi
-    target=${parent%/}/$base
-    case $target in
-        "$(realpath -- "$WORK_MADE")"/?*) rm -rf -- "$target" ;;
-        *) printf 'error: not removing %s: it is outside the temporary directory %s\n' "$1" "$WORK_MADE" >&2; return 1 ;;
-    esac
-}
-
 KEEP_HINTED=0
 keep_hint() {
     [[ $KEEP_HINTED -eq 0 && $KEEP -eq 1 && -n $SERVER_PID ]] || return 0
@@ -400,7 +384,7 @@ refusal_lines() { # prints the refusal of the status in REG, one violation per l
         ($p.violations[]? | "      - \(.pointer) [\(.code)] \(.detail)")' "$REG"
 }
 
-provision_pack() { # dir-name: registers packs/<dir-name> of the open-packs checkout, unmodified or with a named workaround
+provision_pack() { # dir-name: registers packs/<dir-name> of the open-packs checkout as it is; a refusal fails the hop
     local dir=$1
     local src="$SOURCES/$dir"
     if [[ ! -d $src ]]; then die 4 "the open-packs checkout holds no packs/$dir at $PIN"; fi
@@ -413,29 +397,7 @@ provision_pack() { # dir-name: registers packs/<dir-name> of the open-packs chec
         return 0
     fi
     refusal_lines
-    local round removed=() staged="$dir-registrable" path
-    cp -a "$src" "$SOURCES/$staged"
-    for round in 1 2 3; do
-        if [[ -n $(jq -r '(.problem // .).violations[]? | select(.code != "unmodelled") | .code' "$REG") ]] ||
-            [[ -z $(jq -r '(.problem // .).violations[]? | .pointer' "$REG") ]]; then
-            hop_fail "R-$dir" "registration of '$pack_id' refused for a reason no workaround covers"
-            return 1
-        fi
-        while IFS= read -r path; do
-            case /$path/ in
-                /../* | */../* | //*) hop_fail "R-$dir" "the service named the path '$path', which is absolute or climbs out; not removed"; return 1 ;;
-            esac
-            remove_inside "$SOURCES/$staged/$path" || { hop_fail "R-$dir" "refused to remove '$path' outside the temporary directory"; return 1; }
-            removed+=("$path")
-        done < <(jq -r '(.problem // .).violations[]? | .pointer' "$REG")
-        if register_pack "$pack_id" "$staged"; then
-            workaround "unmodelled-files (#451): '$pack_id' was refused over ${removed[*]}; registered a staged copy of packs/$dir without them. The checkout is untouched."
-            hop_ok "R-$dir" "registered '$pack_id' from a staged copy of packs/$dir"
-            return 0
-        fi
-        refusal_lines
-    done
-    hop_fail "R-$dir" "registration of '$pack_id' is still refused after the staged copy lost ${removed[*]}"
+    hop_fail "R-$dir" "registration of '$pack_id' was refused; the pack is registered only as it is (no staged copy, no workaround)"
     return 1
 }
 
@@ -966,23 +928,6 @@ self_check() {
     for href in "http://evil.example/a" "https://127.0.0.1:9/a" "//evil.example/a" "a/b" "$BASE.evil/a"; do
         if resolve "$href"; then check "refuse $href" "followed as $URL" "refused"; else check "refuse $href" "refused" "refused"; fi
     done
-    echo "== self-check: removal stays inside the temporary directory"
-    mkdir "$WORK/inside"
-    remove_inside "$WORK/inside" 2>/dev/null
-    check "a path inside is removed" "$([[ -e $WORK/inside ]] && echo present || echo removed)" "removed"
-    local outside
-    outside=$(mktemp -d "${TMPDIR:-/tmp}/service-usability-run-check.XXXXXX") || return 1
-    for href in "$outside" "$WORK/../$(basename "$outside")" "$WORK" "$WORK/" "/"; do
-        remove_inside "$href" 2>/dev/null
-        check "refuse to remove $href" "$?" "1"
-    done
-    check "the outside directory is still there" "$([[ -d $outside ]] && echo present || echo removed)" "present"
-    rmdir "$outside"
-    mkdir "$WORK/sibling-dir" && : >"$WORK/sibling-dir/kept"
-    ln -s sibling-dir "$WORK/link"
-    remove_inside "$WORK/link" 2>/dev/null
-    check "a symlink inside is removed as a link" "$([[ -L $WORK/link ]] && echo present || echo removed)" "removed"
-    check "the target of a removed symlink stays" "$([[ -e $WORK/sibling-dir/kept ]] && echo present || echo removed)" "present"
     echo "== self-check: option parsing"
     local rc err
     for href in --open-packs --profile --jar --attach --packs; do

@@ -57,7 +57,8 @@ class ChunkedArchiveBodyTest {
                     mock(PackArchiveReader.class),
                     new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
                     PackSourceIntake.none(),
-                    mock(PackRemovalController.class));
+                    mock(PackRemovalController.class),
+                    mock(PackDocumentController.class));
             MockMvc mvc = MockMvcBuilders.standaloneSetup(controller)
                     .addInterceptors(new RegistrationAdmission(new RegistrationSwitch(true), jobs, info))
                     .setControllerAdvice(new ArchiveBodyAdvice(), new RefusalHandler())

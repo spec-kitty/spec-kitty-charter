@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -52,6 +53,7 @@ public class CharterSteps {
     private static final Pattern UNFINGERPRINTED =
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
+    private static final MediaType MARKDOWN = new MediaType("text", "markdown");
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
@@ -125,16 +127,37 @@ public class CharterSteps {
     }
 
     /**
+     * Every exchange of the scenario, success or not, is recorded with the scenario for the switch gate that runs after
+     * the last scenario ({@link SwitchGate}, ADR-0059 D1), with whether a step asserted its status. It runs apart from
+     * the checks of the exchanges, so a failing check never leaves an exchange unrecorded.
+     *
+     * @param scenario the scenario that made the exchanges
+     */
+    @After
+    public void everyExchangeIsRecordedForTheSwitchGate(Scenario scenario) {
+        List<ScenarioHttp.Exchange> exchanges = http.exchanges();
+        for (int index = 0; index < exchanges.size(); index++) {
+            ScenarioHttp.Exchange exchange = exchanges.get(index);
+            SwitchGate.record(
+                    CONTRACT,
+                    new SwitchGate.Exchange(
+                            exchange.method(),
+                            exchange.path(),
+                            exchange.result().getResponse().getStatus()),
+                    http.statusAsserted(index),
+                    scenario.getUri().toString(),
+                    scenario.getLine());
+        }
+    }
+
+    /**
      * Every success answer with a JSON body is linked as {@link LinkChecks} requires: its {@code self}, every link
-     * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20). Every success
-     * answer, JSON or not, is recorded for the operation-coverage check that runs after the last scenario
-     * ({@link OperationCoverage}).
+     * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20).
      */
     @After
     public void everySuccessAnswerIsLinked() throws Exception {
         for (ScenarioHttp.Exchange exchange : http.exchanges()) {
             MockHttpServletResponse response = exchange.result().getResponse();
-            OperationCoverage.record(CONTRACT, exchange.method(), exchange.path(), response.getStatus());
             JsonNode body = json(response.getContentAsString());
             if (!isSuccess(response) || body == null || !isJson(response.getContentType())) {
                 continue;
@@ -203,7 +226,7 @@ public class CharterSteps {
     }
 
     /**
-     * A {@code GET} answer of a verified read: 200, a JSON body, and any path but the root and the two activation reads
+     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read), and any path but the root and the two activation reads
      * that send no fingerprint ({@link #UNFINGERPRINTED}).
      */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
@@ -212,7 +235,8 @@ public class CharterSteps {
                 && !path.equals("/")
                 && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
-                && MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type));
+                && (MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type))
+                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type)));
     }
 
     @When("the file {string} of the pack {string} is deleted")
@@ -257,15 +281,38 @@ public class CharterSteps {
         http.perform("GET", path, Map.of(HttpHeaders.ACCEPT, accept), null);
     }
 
+    /** The same, with the {@code If-None-Match} a remembered header gave (the {@code ETag} of an earlier answer). */
+    @When("I GET {string} accepting {string} with If-None-Match the remembered header {string}")
+    public void getAcceptingIfNoneMatchRemembered(String path, String accept, String header) throws Exception {
+        String held = remembered.get(HEADER + header);
+        assertThat(held).as("the header %s was remembered", header).isNotNull();
+        http.perform("GET", path, Map.of(HttpHeaders.ACCEPT, accept, HttpHeaders.IF_NONE_MATCH, held), null);
+    }
+
     @Then("the response status is {int}")
     public void status(int status) throws Exception {
         assertThat(http.response().getStatus()).as(http.body()).isEqualTo(status);
+        http.statusAsserted();
     }
 
     @Then("the response body is:")
     public void body(String expected) throws Exception {
         JsonNode actual = JSON.readTree(http.body());
         assertThat(actual).isEqualTo(JSON.readTree(expected));
+    }
+
+    /**
+     * The body as text, not as JSON: a {@code text/markdown} answer. The doc string leaves off the final newline that
+     * "the pack ... with the file" step writes after its own, so the body is the doc string and that newline.
+     */
+    @Then("the response body is the text:")
+    public void bodyIsText(String expected) throws Exception {
+        assertThat(http.body()).isEqualTo(expected + "\n");
+    }
+
+    @Then("the response body is empty")
+    public void bodyIsEmpty() throws Exception {
+        assertThat(http.body()).isEmpty();
     }
 
     @Then("the response body, apart from {string}, is:")
@@ -410,6 +457,13 @@ public class CharterSteps {
         JsonNode field = at(pointer);
         assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
         assertThat(field.asString()).startsWith(prefix);
+    }
+
+    @Then("the field at {string} ends with {string}")
+    public void fieldAtEndsWith(String pointer, String suffix) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
+        assertThat(field.asString()).endsWith(suffix);
     }
 
     /**

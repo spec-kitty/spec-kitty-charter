@@ -166,8 +166,9 @@ class WholePackExamplesRoundTripTest {
     }
 
     /**
-     * No file under {@code assets/} or {@code templates/} is left unmodelled, other than the excluded READMEs and the
-     * files the load refused (a refused sidecar is a violation, checked against the pinned list).
+     * No file under {@code assets/} or {@code templates/} is left unmodelled, other than the files the load refused (a
+     * refused sidecar is a violation, checked against the pinned list). An excluded README is not unmodelled: the load
+     * lists it as excluded (#451).
      */
     private static List<String> payloadsLeftUnmodelled(Path pack, WholePackStore.LoadedPack loaded) {
         Set<String> refused = loaded.pack().violations().stream()
@@ -175,7 +176,7 @@ class WholePackExamplesRoundTripTest {
                 .collect(Collectors.toSet());
         return loaded.unmodelled().stream()
                 .filter(file -> file.startsWith(PackFileSet.ASSETS) || file.startsWith(PackFileSet.TEMPLATES))
-                .filter(file -> !file.endsWith("/" + README) && !refused.contains(file))
+                .filter(file -> !refused.contains(file))
                 .map(file -> pack + " leaves " + file + " unmodelled")
                 .toList();
     }

@@ -1,0 +1,72 @@
+# The switch gate (ADR-0059 D1, amended 2026-11-12): which operations core may switch to.
+#
+# An operation is ready when every status its responses declare by number (not `default`) is asserted on it by a
+# @contract scenario of this directory, and every exchange of those scenarios passes the contract checks (schema,
+# links, fingerprint) of `./gradlew verifyAll`. A success answer counts from any exchange; any other answer counts
+# only where a step asserts its status. A reserved operation (x-reserved, a 501 pin) is never ready.
+#
+# The contract suite checks this file after the last scenario (SwitchGate): it fails when an operation of the
+# contract has no entry or an entry names no operation, when a ready operation has an answer no scenario asserts,
+# when a held operation would pass as ready or the answers no scenario asserts are not exactly the statuses it names, and when a
+# reserved one is ready. The suite also writes a per-operation report of the scenarios that cover each answer.
+#
+# Each entry is {switch: ready} or {switch: held, statuses: [<declared statuses>], reason: <why>}: statuses names the
+# answers no scenario asserts, and a gap not named, or a named status asserted now, fails the suite. A new operation
+# gets an entry in the change that adds it: ready with its scenarios, or held with the reason. Ready is necessary for a switch, not sufficient: the
+# first operation core switches needs contract 1.0.0 (ADR-0022 D6). This file ships in charter-scenarios.tar.gz; a
+# change to its keys, or an operation moved from ready to held, is a breaking change of the contract
+# (contracts/charter/CHANGELOG.md, ### Breaking).
+operations:
+  applyActivationPreset: {switch: ready}
+  createActivation: {switch: ready}
+  deactivateActivationArtifact: {switch: ready}
+  deleteActivation:
+    switch: held
+    statuses: [500]
+    reason: its declared 500 is a failure of the activation storage alone (a quoted revision or * reads no packs), and the scenarios hold activations in memory with no seam to fail it
+  deletePackArtifact: {switch: ready}
+  deletePackRelationship: {switch: ready}
+  getActivation: {switch: ready}
+  getActivationSkippedReport: {switch: ready}
+  getApiRoot: {switch: ready}
+  getEffectiveActionContext: {switch: ready}
+  getEffectiveAgentProfile: {switch: ready}
+  getEffectiveArtifact: {switch: ready}
+  getEffectiveGraph: {switch: ready}
+  getEffectiveMissionSkeleton: {switch: ready}
+  getEffectiveMissionStep: {switch: ready}
+  getEffectiveMissionStepContract: {switch: ready}
+  getEffectiveMissionType: {switch: ready}
+  getOffering: {switch: ready}
+  getOpenApiDocument: {switch: ready}
+  getPack: {switch: ready}
+  getPackDocument: {switch: ready}
+  getPackAgentProfile: {switch: ready}
+  getPackArtifact: {switch: ready}
+  getPackMissionSkeleton: {switch: ready}
+  getPackMissionStep: {switch: ready}
+  getPackMissionType: {switch: ready}
+  getPackRegistration:
+    switch: held
+    statuses: [500]
+    reason: its declared 500 is a failure of the registration job table alone (the status reads no pack), and the scenarios have no seam to fail it
+  getServiceInfo: {switch: ready}
+  listActivationPacks: {switch: ready}
+  listArtifactReferences: {switch: ready}
+  listEffectiveArtifacts: {switch: ready}
+  listPackArtifacts: {switch: ready}
+  putPackDirective: {switch: ready}
+  putPackParadigm: {switch: ready}
+  putPackRelationship: {switch: ready}
+  putPackStyleguide: {switch: ready}
+  putPackToolguide: {switch: ready}
+  reactivateActivationArtifact: {switch: ready}
+  registerPackDirective: {switch: ready}
+  registerPackFromArchive: {switch: ready}
+  registerPackFromSource: {switch: ready}
+  registerPackParadigm: {switch: ready}
+  registerPackStyleguide: {switch: ready}
+  registerPackToolguide: {switch: ready}
+  replaceActivation: {switch: ready}
+  selectActivationArtifact: {switch: ready}
+  unselectActivationArtifact: {switch: ready}

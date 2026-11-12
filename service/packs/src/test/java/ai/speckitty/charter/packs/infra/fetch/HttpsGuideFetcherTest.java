@@ -949,10 +949,19 @@ class HttpsGuideFetcherTest {
                 return never;
             }
             HttpHeaders headers = HttpHeaders.of(canned.headers(), (name, value) -> true);
-            HttpResponse.BodySubscriber<byte[]> subscriber = bodyHandler.apply(new HttpResponse.ResponseInfo() {
+            HttpResponse.BodySubscriber<byte[]> subscriber = bodyHandler.apply(responseInfo(canned.status(), headers));
+            deliver(canned.chunks(), subscriber);
+            return subscriber
+                    .getBody()
+                    .toCompletableFuture()
+                    .thenApply(body -> new Response(canned.status(), request, headers, body));
+        }
+
+        private static HttpResponse.ResponseInfo responseInfo(int status, HttpHeaders headers) {
+            return new HttpResponse.ResponseInfo() {
                 @Override
                 public int statusCode() {
-                    return canned.status();
+                    return status;
                 }
 
                 @Override
@@ -964,7 +973,11 @@ class HttpsGuideFetcherTest {
                 public HttpClient.Version version() {
                     return HttpClient.Version.HTTP_1_1;
                 }
-            });
+            };
+        }
+
+        /** Feeds the chunks to the subscriber, one by one, until it cancels; completes it when it did not. */
+        private void deliver(List<byte[]> chunks, HttpResponse.BodySubscriber<byte[]> subscriber) {
             cancelled = false;
             chunksDelivered = 0;
             subscriber.onSubscribe(new Flow.Subscription() {
@@ -976,7 +989,7 @@ class HttpsGuideFetcherTest {
                     cancelled = true;
                 }
             });
-            for (byte[] chunk : canned.chunks()) {
+            for (byte[] chunk : chunks) {
                 if (cancelled) {
                     break;
                 }
@@ -986,10 +999,6 @@ class HttpsGuideFetcherTest {
             if (!cancelled) {
                 subscriber.onComplete();
             }
-            return subscriber
-                    .getBody()
-                    .toCompletableFuture()
-                    .thenApply(body -> new Response(canned.status(), request, headers, body));
         }
     }
 

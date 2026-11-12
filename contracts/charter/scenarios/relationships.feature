@@ -15,7 +15,6 @@ Feature: A relationship may be authored from a mission type
       name: qa
       pack_level: org
       requires_core: '>=1.0'
-      active_charter: org-charter.yaml
       pack_drg: drg/fragment.yaml
       """
     And the org pack "qa" with the file "missions/research/research.mission-type.yaml":

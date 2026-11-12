@@ -1,0 +1,13 @@
+summary: The held README.md of the pack acme-review-pack, frontmatter included.
+value: |
+  ---
+  audience: pack authors
+  ---
+
+  # Acme review pack
+
+  What the pack is for.
+
+  ## Contents
+
+  Directives and tactics.

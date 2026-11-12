@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -66,7 +66,7 @@ names the project's activated set as a whole.
 |---|---|
 | **Pack level** | [Glossary](/glossary/governance/#pack-level). Implementations check every level; core today refuses only org packs at load (see [Resolution model](/architecture/resolution-model/)). |
 | **Built-in pack** | The pack that ships with Spec Kitty. Its source of truth is `spec-kitty-open-packs`; core re-vendors a **pinned, checksummed** open-packs ref into its own `packs/built-in` at release — the committed tree stays, guarded by a pin + drift gate rather than materialized at build (core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md) Option B, amended by core #6045). The content is now seeded upstream (open-packs #32); the re-vendor pipeline (core #3504) is in progress. |
-| **Org pack** | A pack listed under `charter_packs.org.packs` in `.kittify/config.yaml`. It carries `org-charter.yaml` and a single `drg/fragment.yaml`. |
+| **Org pack** | A pack listed under `charter_packs.org.packs` in `.kittify/config.yaml`. It carries a single `drg/fragment.yaml`, and enforces what its projects must keep with a governing preset and `policy.yaml` ([Enforce presets on an organization's projects](/guides/enforce-org-presets/)). Core's org packs also carry `org-charter.yaml`, which the service retired (#431). |
 | **Project pack** (core glossary: *Project layer*) | The project's own charter components under `.kittify/charter-packs/`, `pack_level: project`. It ships no presets. |
 | **`parent_pack`** | A pack's declared parent. A pack with no parent is a *root pack*, which is why the level is not called "root". |
 

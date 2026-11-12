@@ -164,11 +164,14 @@ Feature: The winner of one artifact is read under an activation, with its state 
     When I GET "/activations/a-1/artifacts/directive/D" with If-None-Match the remembered header "ETag"
     Then the response status is 200
 
-  Scenario: A depth outside 0 to 1 is a 400 without a code
+  Scenario: A depth outside 0 to 1 is a 400 without a code that names the bound
     When I GET "/activations/a-1/artifacts/directive/X?depth=2"
     Then the response status is 400
+    And the field at "/detail" is "The query parameter depth is \"2\", which is greater than 1."
     When I GET "/activations/a-1/artifacts/directive/X?depth=-1"
     Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" is "The query parameter depth is \"-1\", which is less than 0."
     When I GET "/activations/a-1/artifacts/directive/X?depth=0"
     Then the response status is 200
 

@@ -6,9 +6,9 @@ kind: Glossary
 glossary_context: "Charter"
 doc_status: active
 generated:
-  by: "doc-kitty-glossary/0.6.0"
-  at: "2026-11-03T21:36:49Z"
-  content_hash: "sha256:c4d4fe665e39"
+  by: "doc-kitty-glossary/0.7.0"
+  at: "2026-11-12T09:07:53Z"
+  content_hash: "sha256:f84722b84d87"
 ---
 
 # Charter
@@ -117,7 +117,7 @@ Everything a project could adopt: the buffet. It is made of Charter Packs, mostl
 
 ## Charter Pack
 
-A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack has two identities and a name. Its configured pack id is the `charter_pack_id` it is configured under (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Its descriptor declares a pack id (a ULID) and a pack name (an identifier that qualifies cross-pack references, not an identity). Pack ids and pack names are unique without exception. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. ADR-0048 composes packs through `depends_on`, and this part is built: the resolver orders the compose and the reads refuse a broken one. Still decided and not yet built: the named-packs split that makes `built-in` a distribution pack over the foundation, specialist, topical and stack packs.
+A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through a governing preset, whose must-have items are the required floor of its projects, and lock artifacts through `policy.yaml`; `org-charter.yaml` and its `required_<kind>` lists are retired in the service (#431). A pack has two identities. Its configured pack id is the `charter_pack_id` it is configured under (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Its descriptor declares a pack id (a ULID) and a pack name (an identifier that qualifies cross-pack references). Pack ids and pack names are unique without exception. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. ADR-0048 composes packs through `depends_on`, and this part is built: the resolver orders the compose and the reads refuse a broken one. Still decided and not yet built: the named-packs split that makes `built-in` a distribution pack over the foundation, specialist, topical and stack packs.
 
 {#charter-mediated-selection}
 
@@ -135,7 +135,7 @@ A resolution context (`charter.scope::CharterScope`) that maps a filesystem path
 
 ## Closure
 
-The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (`pack_reference_pack_missing`: missing from that closure, even when the pack is in the compose) (ADR-0048, ADR-0053 decision 7).
+The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (ADR-0048, ADR-0053 decision 7).
 
 **Meta:**
 
@@ -145,7 +145,17 @@ The set of packs reachable from one pack through `depends_on`, each pack id once
 
 ## Compose
 
-The closure of `depends_on` rooted at every configured pack, across levels, including dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with #360. It is ordered dependencies first, each level contiguous in merge order. A pack id and a pack name are each unique across it without exception, and an artifact id is unique within a level except where an `overrides` edge settles it (ADR-0048 decisions 8 and 10, ADR-0053 decision 6).
+The closure rooted at one level's configured packs, including dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with #360. It is ordered dependencies first, each level contiguous in merge order. A pack id and a pack name are each unique across it without exception, and an artifact id is unique within a level except where an `overrides` edge settles it (ADR-0048 decisions 8 and 10, ADR-0053 decision 6).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#composed-read}
+
+## Composed read
+
+A read that resolves the compose before it answers: `GET /offering` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references`. A broken compose refuses it whole with the composition code, and any unreadable file of a configured pack refuses it as `pack_unreadable`, because it names every configured pack. Compare Pack-scoped read.
 
 **Meta:**
 
@@ -176,16 +186,6 @@ A pack whose artifacts the active charter puts in force. The effective reads ans
 ## Available pack
 
 A pack the catalog offers and the service may hold, whether or not a project configures or activates it. Compare Configured pack and Activated pack.
-
-**Meta:**
-
-- **status:** `canonical`
-
-{#composed-read}
-
-## Composed read
-
-A read that resolves the compose before it answers: `GET /offering` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references`. A broken compose refuses it whole with the composition code, and any unreadable file of a configured pack refuses it as `pack_unreadable`, because it names every configured pack. Compare Pack-scoped read.
 
 **Meta:**
 
@@ -451,19 +451,29 @@ A mission step invoked by an explicit command, outside its mission type's run or
 
 ## Organization Tier
 
-The middle layer of the three-layer CRG model, contributed by one or more org Charter Packs configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Each pack ships an `org-charter.yaml` (governance policies and required artifact selections) and an optional `drg/fragment.yaml` (CRG extension nodes and edges). Organization-tier content propagates to all consumer projects via `apply_org_charter_to_interview` and the standard charter pre-fill path.
+The middle layer of the three-layer CRG model, contributed by one or more org Charter Packs configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Each pack ships an optional `drg/fragment.yaml` (CRG extension nodes and edges), and may require artifacts of its projects through a governing preset's must-have items and lock them through `policy.yaml`. In core, an org pack also ships an `org-charter.yaml` (governance policies and required artifact selections), propagated to consumer projects via `apply_org_charter_to_interview`; the service retired that file (#431).
 
 {#overlay-enhancement-enhances-crg-relation}
 
 ## Overlay Enhancement — `enhances` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. An activation pulls an enhancer and its target into force together (ADR-0059 decision 2). Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
+A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
 
 {#overlay-override-overrides-crg-relation}
 
 ## Overlay Override — `overrides` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`. Not to be confused with the Overrides edge, a pack descriptor entry that settles a sibling conflict ([Overrides edge](#overrides-edge)), or with a layer override, the artifact of the level that applies (project over org over built-in) taking the place of the same id from a level nearer built-in, whole and with no field merge, which needs no relation or edge (ADR-0059 decision 3) ([Sibling conflict](#sibling-conflict)).
+A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`.
+
+{#pack-scoped-read}
+
+## Pack-scoped read
+
+A read that judges only the pack and the artifact its path names, such as `GET /packs/{packId}/artifacts/{kind}/{artifactId}`. It does not resolve the compose, so it still answers while the compose is broken or while another file of the pack is unreadable. Compare Composed read.
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#paradigm}
 
@@ -559,7 +569,7 @@ What ADR-0018's walk reaches from a held step over the artifacts in force of an 
 
 ## Overrides edge
 
-An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it. Settling puts the named member's version in force (#357). Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at the level that applies taking the place of the one nearer built-in, whole, which needs no edge (ADR-0059 decision 3).
+An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it. Settling puts the named member's version in force (#357).
 
 **Meta:**
 
@@ -569,7 +579,7 @@ An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a s
 
 ## Pack id (descriptor)
 
-The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape. It is `OfferingPack.descriptorPackId`, `dependsOn[].descriptorPackId` and a refusal's `packs[].descriptorPackId` on the wire, and the identity a dependency edge names. Unique across a compose without exception (`pack_duplicate_id`). Not the configured pack id.
+The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape. It is `OfferingPack.descriptorPackId` and `dependsOn[].descriptorPackId` on the wire, and the identity a dependency edge names. Unique across a compose without exception (`pack_duplicate_id`). Not the configured pack id.
 
 **Meta:**
 
@@ -585,21 +595,11 @@ The `name` in `pack.yaml`, matching `^[a-z0-9][a-z0-9_-]*$`. It is the `<pack-na
 
 - **status:** `canonical`
 
-{#pack-scoped-read}
-
-## Pack-scoped read
-
-A read that judges only the pack and the artifact its path names, such as `GET /packs/{packId}/artifacts/{kind}/{artifactId}`. It does not resolve the compose, so it still answers while the compose is broken or while another file of the pack is unreadable. Compare Composed read.
-
-**Meta:**
-
-- **status:** `canonical`
-
 {#pep-440-range}
 
 ## PEP 440 range
 
-The grammar of `depends_on[].range`: a PEP 440 version-specifier set such as `>=1.2,<2` or `~=1.4`, the grammar `requires_core` already uses (ADR-0053 decision 4). Two ranges on one pack that share no version, or a range the held version misses, are refused as `pack_dependency_out_of_range`; a range that is no PEP 440 specifier set, like a `pack_version` that is no PEP 440 version, makes the `pack.yaml` unreadable (`pack_unreadable`). A range does not exclude prereleases unless it says so, a deliberate deviation from `packaging`'s default.
+The grammar of `depends_on[].range`: a PEP 440 version-specifier set such as `>=1.2,<2` or `~=1.4`, the grammar `requires_core` already uses (ADR-0053 decision 4). A malformed range, or two ranges on one pack that share no version, is refused as `pack_dependency_out_of_range`.
 
 **Meta:**
 
@@ -697,7 +697,7 @@ A machine-validated contract that defines allowed structure and fields for chart
 
 ## `selected_<kind>` / `required_<kind>`
 
-Superseded. In the new model a mission type's guidance is named by id as its recipe ingredients, and a requirement is authored as a preset whose must-have items are the required set; the service derives the required list from the preset (ADR-0031). How the old `required_<kind>` lists are read for compatibility is an open question. Former definition, kept for history: The field-naming convention for Global Selection entries. On the project charter (`GovernanceCharterConfig`), each artifact kind gets a `selected_<kind>: [<id>, ...]` field — `selected_directives`, `selected_styleguides`, `selected_toolguides`, `selected_paradigms`, `selected_tactics`, `selected_procedures`, `selected_agent_profiles`, `selected_mission_step_contracts`. On the org charter (`OrgCharterPolicy`), the mirror is `required_<kind>: [<id>, ...]`. `apply_org_charter_to_interview` unions the org `required_<kind>` into the project `selected_<kind>` non-destructively. The architectural test `test_artifact_selection_completeness.py` enforces parity — every `ActiveCharterService` artifact kind has both a `selected_*` and a `required_*` field. These fields are the CHARTER-AUTHORED record of a selection, not an independent activation source: they are unioned as an additive project-local layer over the resolved activated_&lt;kind&gt; base (`PackContext.from_config`) at the surfaces that resolve activation today (e.g. `_resolve_directive_base` in `resolver.py`).
+Superseded. In the new model a mission type's guidance is named by id as its recipe ingredients, and a requirement is authored as a preset whose must-have items are the required set; the service derives the required list from the preset (ADR-0031). The old `required_<kind>` lists are not read: `org-charter.yaml`, which held them, is retired and refused by name (#431). Former definition, kept for history: The field-naming convention for Global Selection entries. On the project charter (`GovernanceCharterConfig`), each artifact kind gets a `selected_<kind>: [<id>, ...]` field — `selected_directives`, `selected_styleguides`, `selected_toolguides`, `selected_paradigms`, `selected_tactics`, `selected_procedures`, `selected_agent_profiles`, `selected_mission_step_contracts`. On the org charter (`OrgCharterPolicy`), the mirror is `required_<kind>: [<id>, ...]`. `apply_org_charter_to_interview` unions the org `required_<kind>` into the project `selected_<kind>` non-destructively. The architectural test `test_artifact_selection_completeness.py` enforces parity — every `ActiveCharterService` artifact kind has both a `selected_*` and a `required_*` field. These fields are the CHARTER-AUTHORED record of a selection, not an independent activation source: they are unioned as an additive project-local layer over the resolved activated_&lt;kind&gt; base (`PackContext.from_config`) at the surfaces that resolve activation today (e.g. `_resolve_directive_base` in `resolver.py`).
 
 **Meta:**
 
@@ -713,7 +713,7 @@ A directional Three-layer CRG relation pointing at content that is relevant but 
 
 ## Specialist pack
 
-A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change or define the same artifact id are a sibling conflict, refused unless an `overrides` edge settles it; until #358 any pack of the compose may declare that edge, not only the distribution pack (ADR-0048, ADR-0053 decision 5).
+A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change the same artifact are refused unless the distribution pack settles it (ADR-0048).
 
 **Meta:**
 
@@ -845,7 +845,7 @@ A structured set of charter templates that shape output artifacts and interactio
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict. Two packs at one level that hold a preset with the same id conflict too, unless one is on the other's `parent_pack` line; an overrides edge does not settle a preset (operator ruling of 2026-11-06).
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
 
 **Meta:**
 
@@ -959,7 +959,7 @@ A named, ordered list of mission-action steps with declared entry conditions, ex
 
 ## Asset
 
-A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused, and so is one whose `path` leaves `assets/`, as an escape. Its `mime` is metadata and never decides how the payload is read (ADR-0040). Decided, not built yet: an optional `executable` block makes the asset able to implement a guard (ADR-0054 decision 5).
+A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040). Decided, not built yet: an optional `executable` block makes the asset able to implement a guard (ADR-0054 decision 5).
 
 **Meta:**
 
@@ -1039,7 +1039,7 @@ One entry of an activation preset's list: the `id` of an artifact or a mission t
 
 ## Must-have mark
 
-The per-item flag `must_have: true` on a preset item. It makes the item part of the preset's required set, which the service derives from the marks and never reads from a second list. An item without the mark is not must-have; there is no `false` spelling. Not to be confused with the legacy `required_<plural>` lists of `org-charter.yaml` (#206) or with JSON Schema's `required` (ADR-0031, ADR-0042).
+The per-item flag `must_have: true` on a preset item. It makes the item part of the preset's required set, which the service derives from the marks and never reads from a second list. An item without the mark is not must-have; there is no `false` spelling. Not to be confused with the `required_<plural>` lists of core's retired `org-charter.yaml` (#431) or with JSON Schema's `required` (ADR-0031, ADR-0042).
 
 **Meta:**
 
@@ -1069,7 +1069,7 @@ A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent 
 
 ## Pack document
 
-A pack's `pack.md`, at the pack root: its hand-authored Markdown description. The service holds it in the pack aggregate as the pack's document (optional frontmatter, an optional title, a preamble and the H2 sections), read and written through the `markdown` content form and validated by the `pack-document` structure schema. Its title is independent of the descriptor's `name` (ADR-0042, #260).
+A pack's `README.md`, at the pack root: its hand-authored Markdown description, with a `## Provenance` section where `PROVENANCE.md` used to be. The service holds it in the pack aggregate as the pack's document (optional frontmatter, an optional title, a preamble and the H2 sections), read and written through the `markdown` content form and validated by the `pack-document` structure schema, and serves it at `GET /packs/{packId}/doc`. Its title is independent of the descriptor's `name`. `pack.md` and `PROVENANCE.md` are retired and refused by name (ADR-0042 as amended 2026-11-11, #260, #451).
 
 **Meta:**
 

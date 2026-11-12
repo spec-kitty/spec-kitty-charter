@@ -44,9 +44,8 @@ class PacksMissionTypesTest {
     private static final String FINGERPRINT = "sha256:" + "c".repeat(64);
     private static final PackRevision REVISION = PackRevision.compute(List.of("main"));
 
-    @Test
-    void theHoldingIsTheMissionsSlicesOwnAtTheReadsFingerprint() {
-        MissionType type = MissionType.builder()
+    private static MissionType softwareDev() {
+        return MissionType.builder()
                 .id(new MissionTypeIdentifier("software-dev"))
                 .packId(PACK)
                 .schemaVersion("1.0")
@@ -62,6 +61,23 @@ class PacksMissionTypesTest {
                         List.of(),
                         List.of()))
                 .build();
+    }
+
+    private static MissionStepContract specifyContract() {
+        return MissionStepContract.builder()
+                .id(new MissionStepContractIdentifier("specify-contract"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .action("specify")
+                .mission("software-dev")
+                .step(new ContractStep(
+                        "first", "The first step", Optional.empty(), List.of(), Optional.empty(), Optional.empty()))
+                .build();
+    }
+
+    @Test
+    void theHoldingIsTheMissionsSlicesOwnAtTheReadsFingerprint() {
+        MissionType type = softwareDev();
         Pack pack = Pack.builder()
                 .id(PACK)
                 .descriptor(descriptor())
@@ -72,20 +88,7 @@ class PacksMissionTypesTest {
                         .content(Payload.of(new byte[] {(byte) 0xff, 1}))
                         .missionType("software-dev")
                         .build())
-                .artifact(MissionStepContract.builder()
-                        .id(new MissionStepContractIdentifier("specify-contract"))
-                        .packId(PACK)
-                        .schemaVersion("1.0")
-                        .action("specify")
-                        .mission("software-dev")
-                        .step(new ContractStep(
-                                "first",
-                                "The first step",
-                                Optional.empty(),
-                                List.of(),
-                                Optional.empty(),
-                                Optional.empty()))
-                        .build())
+                .artifact(specifyContract())
                 .build();
         PackCompanionFiles files = (id, held) -> Map.of(
                 "specify",

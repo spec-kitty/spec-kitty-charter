@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -38,7 +38,7 @@ The service reads only configured inputs, never directory presence:
 | Input | Where | Notes |
 |---|---|---|
 | Built-in pack | the pack root the CLI resolves for `built-in` | sharded `*.graph.yaml` plus a generated `pack-manifest.yaml`; `pack_level: built-in` |
-| Org packs | each directory under `charter_packs.org.packs` in `.kittify/config.yaml` | `pack.yaml` (`pack_level: org`), `org-charter.yaml`, one `drg/fragment.yaml` |
+| Org packs | each directory under `charter_packs.org.packs` in `.kittify/config.yaml` | `pack.yaml` (`pack_level: org`), one `drg/fragment.yaml`, optional presets and `policy.yaml`; core also reads `org-charter.yaml`, which the service retired (#431) |
 | Project pack | `.kittify/charter-packs/` | `pack_level: project` |
 | Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys, `activated_kinds` and `mission_type_activations`. In the service: the stored activation document, whose `packs` are the compose roots ([Offering and activation](/architecture/offering-and-activation/)) |
 | Mission type | the request (`--mission-type` in the CLI) or the mission's `meta.json` | keys the action grain: action nodes are `action:<mission-type>/<action>` |
@@ -105,9 +105,9 @@ flowchart LR
    ([DIV-203](/conformance/divergence-register/)), and the required floor is the must-have items of
    the governing presets in the activation's closure ([DIV-205](/conformance/divergence-register/)). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either
-   ([ADR-0013](/adr/0013-persistent-deactivation/)). Org `required_<kind>` lists apply where
+   ([ADR-0013](/adr/0013-persistent-deactivation/)). In core, org `required_<kind>` lists apply where
    the kind is org-requirable, and union into the charter's `selected_<kind>` list where it is
-   selection-overlayable.
+   selection-overlayable; the service retired the `org-charter.yaml` that holds them (#431).
 4. **Answer.** Action-scoped context, profile resolution with `specializes_from` lineage and
    `enhances` / `overrides` applied, graph queries and listings. Profile selection for a role
    follows the order of [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/):
