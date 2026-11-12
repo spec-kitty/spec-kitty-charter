@@ -18,7 +18,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * than the fixture's own walk, which is derived from it below (the cycle check visits each node it starts from once, and
  * the fixed point runs the strata twice, over the chain of overrides and then over the chain without its pruned head);
  * and it digests the pack files three times, the two of the verified read and the one
- * of the closure's own digest, which the closure-scoped tags (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}) added. Wall time is
+ * of the closure's own digest, which the closure-scoped tags (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}) added: each pack
+ * of the closure once, digested on its own so the digest does not depend on the configured order (NFR-001). Wall time is
  * {@link EffectiveReadBudgetTest}'s, which only reports. The counts are taken through the test hooks on
  * {@code CompositionFactsCache} and {@code InForceResolution}, as a delta around the request, with the cache cold and
  * then warm.
@@ -95,8 +96,8 @@ class EffectiveReadOperationBudgetTest {
                 .as("the verified read digests before and after the load")
                 .isEqualTo(2);
         assertThat(cold.closureDigests())
-                .as("and the closure's own digest, once")
-                .isEqualTo(1);
+                .as("and the closure's own digest, once over each pack of the closure")
+                .isEqualTo(EffectiveReadFixture.PACKS);
     }
 
     @Test
@@ -112,7 +113,7 @@ class EffectiveReadOperationBudgetTest {
         assertThat(warm.resolutions()).isEqualTo(1);
         assertThat(warm.walkVisits()).isLessThanOrEqualTo(ONE_RESOLUTION).isGreaterThan(CYCLE_CHECK + CHAIN_REACH);
         assertThat(warm.wholeDigests()).isEqualTo(2);
-        assertThat(warm.closureDigests()).isEqualTo(1);
+        assertThat(warm.closureDigests()).isEqualTo(EffectiveReadFixture.PACKS);
     }
 
     @Test

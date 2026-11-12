@@ -164,15 +164,18 @@ public final class ClosureQueries {
 
     /**
      * The digest of the packs IN the closure: each pack's configured id and level in closure order, then the digest of
-     * those packs' files alone. A configured pack outside the closure is not in it, so it leaves the digest as it is.
+     * each of those packs' files alone, in the same order. A configured pack outside the closure is not in it, so it
+     * leaves the digest as it is. The closure order is the compose's (level, then pack id, dependencies first), never
+     * the order the packs are configured in, and each pack's files are digested on their own in that order, so the
+     * digest, and every effective read's tag over it, is the same however the packs are configured (NFR-001, NFR-004).
      */
     private String closureFingerprint(List<PackUnderResolution> packs) {
         Fingerprint digest = Fingerprint.sha256().add(CLOSURE_DOMAIN);
         packs.forEach(pack -> digest.add(pack.configured().id().value())
                 .add(pack.configured().level().token()));
-        List<String> names =
-                packs.stream().map(pack -> pack.configured().id().value()).toList();
-        return digest.add(read.fingerprintOf(names)).value();
+        packs.forEach(pack ->
+                digest.add(read.fingerprintOf(List.of(pack.configured().id().value()))));
+        return digest.value();
     }
 
     /** The compose of the roots, once every root is a configured pack (checked first, in the same verified read). */

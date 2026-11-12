@@ -242,6 +242,40 @@ class ClosureQueriesTest {
     }
 
     @Test
+    void theClosureFingerprintIsTheSameWhateverOrderThePacksAreConfiguredIn() {
+        // Sources that digest the packs they are asked for in configured order, as the file system does.
+        Map<String, String> contents = Map.of("alpha", "a1", "beta", "b1", "gamma", "g1");
+        PackSources inConfiguredOrder = new PackSources() {
+            @Override
+            public String fingerprint() {
+                return "whole:" + configured;
+            }
+
+            @Override
+            public String fingerprintOf(java.util.Collection<String> packNames) {
+                return "scoped:"
+                        + configured.stream()
+                                .map(pack -> pack.id().value())
+                                .filter(packNames::contains)
+                                .map(name -> name + "=" + contents.get(name))
+                                .toList();
+            }
+        };
+        alphaBetaGamma();
+        String asConfigured =
+                queriesOver(inConfiguredOrder).snapshot(roots("alpha", "gamma")).closureFingerprint();
+        List<ConfiguredPack> reversed = new ArrayList<>(configured.reversed());
+        configured.clear();
+        configured.addAll(reversed);
+
+        assertThat(queriesOver(inConfiguredOrder)
+                        .snapshot(roots("gamma", "alpha"))
+                        .closureFingerprint())
+                .as("NFR-001: the same closure, configured and named in the other order")
+                .isEqualTo(asConfigured);
+    }
+
+    @Test
     void absentRootsMeanEveryConfiguredPack() {
         alphaBetaGamma();
         ClosureQueries queries = queries();
