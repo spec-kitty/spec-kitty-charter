@@ -35,6 +35,8 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<ReachPlan> walked = new ArrayList<>();
     private MergedSnapshot merged = MergedSnapshot.empty();
     private Function<InForceQuery, InForceAnswer> resolution = query -> InForceAnswer.empty();
+    private Function<InForceQuery, Optional<CharterRefusal>> composability = query -> Optional.empty();
+    private final List<InForceQuery> composabilityChecks = new ArrayList<>();
     private int merges;
     private final List<InForceQuery> queries = new ArrayList<>();
     private Function<InForceQuery, GraphSnapshot> graphAnswer = query -> GraphSnapshot.empty();
@@ -125,6 +127,24 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void resolves(Function<InForceQuery, InForceAnswer> next) {
         this.resolution = next;
+    }
+
+    /**
+     * Refuses the compose of the documents the function names from now on, as the slot check of a session does (C38).
+     *
+     * @param next the refusal for a document's request; empty when it composes
+     */
+    public void composes(Function<InForceQuery, Optional<CharterRefusal>> next) {
+        this.composability = next;
+    }
+
+    /**
+     * The requests whose compose a session was asked to judge, in order.
+     *
+     * @return the requests
+     */
+    public List<InForceQuery> composabilityChecks() {
+        return List.copyOf(composabilityChecks);
     }
 
     /**
@@ -290,6 +310,14 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public InForceAnswer inForce(InForceQuery query) {
             queries.add(query);
             return resolution.apply(query);
+        }
+
+        @Override
+        public void requireComposable(InForceQuery query) {
+            composabilityChecks.add(query);
+            composability.apply(query).ifPresent(refusal -> {
+                throw refusal;
+            });
         }
 
         @Override
