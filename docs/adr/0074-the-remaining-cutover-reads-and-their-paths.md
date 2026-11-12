@@ -1,6 +1,6 @@
 ---
 title: "ADR-0074: The remaining cutover reads, and the paths a client reads them by"
-description: How the cutover reads R4 and R11 to R16 are decided, and the paths assets, skills, glossary contexts and presets are read by.
+description: How the seven open cutover reads (R4, R11 to R16) are decided, and the paths assets, skills, glossary contexts and presets are read by.
 doc_status: active
 updated: 2026-11-12T00:00:00Z
 decision_status: Accepted
@@ -44,8 +44,9 @@ It **amends** two Accepted records, and each is annotated where it stands:
 - [ADR-0040](/adr/0040-content-form-and-payload-kinds/) decision 1: an asset's `mime` stays metadata for the store,
   but it becomes the `Content-Type` of the payload read when it is a well-formed `type/subtype` (decision 11).
 
-It **affirms and extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) decision 7: the per-kind list read it
-rules for glossary contexts is given to assets and skills too (decision 9).
+It **amends and extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) decision 7: `?kind=glossary` is not
+replaced by the per-kind list read; it stays beside it, and the per-kind list is given to assets and skills too
+(decision 9).
 
 ## Context
 
@@ -113,7 +114,7 @@ both to the operator, who ruled on each (decisions 9 to 14).
 3. **R12, glossary contexts and terms (#106): a contract operation, in slice A.** #106 is retitled to glossary
    contexts and terms. The kind becomes `glossary`, in ADR-0049's shape. That shape replaces `glossary-pack` outright,
    with no reader of the old shape beside it. A term is an item inside its context, read as a part of it
-   (decision 11).
+   (decisions 11 and 12).
 4. **R13, pack skills (#107): a contract operation, in slice A; command projection is core-side.** `skill` joins the
    served kinds, and its item read carries the skill body, the `text` companion #432 made readable. Projecting a skill into
    a harness's command files is installation work. It runs in core and is not a read of the offering.
@@ -226,7 +227,7 @@ both to the operator, who ruled on each (decisions 9 to 14).
 
 ## References
 
-- Epic [#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94); issues #98, #105 to #110, #151, #432
+- Epic [#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94); issues #98, #105 to #110, #151, #432, #532, #533; #109 is served and closed, and #110 is re-scoped to a write concern (decision 7)
 - [Service contract](/api/service-contract/), "The other reads"
 - [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0040](/adr/0040-content-form-and-payload-kinds/), [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
   [ADR-0049](/adr/0049-glossary-contexts-and-terms/), [ADR-0063](/adr/0063-pack-mutability-policy-file/)
