@@ -105,3 +105,9 @@ files:
   - MissionStepDelegationCandidate.yaml
   - MissionStepSummary.yaml
   - MissionType.yaml
+  - Asset.yaml
+  - AssetExecutable.yaml
+  - Skill.yaml
+  - SkillExpansion.yaml
+  - SkillInvocation.yaml
+  - SkillParameter.yaml

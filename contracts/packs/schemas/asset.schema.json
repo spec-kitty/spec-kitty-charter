@@ -50,7 +50,9 @@
   "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.\nexecutable:\n    Optional. Declares that the asset runs (ADR-0054 decision 5): the runtime from a\n    fixed allowlist, the entry (a payload file of the same pack, one argv element), and\n    the arguments after it. Only an asset with this block can implement a guard.",
   "properties": {
     "id": {
-      "minLength": 1,
+      "description": "One lowercase kebab-case segment of at most 64 characters, the pattern a skill id has: no slash, no upper case, no newline (FR-006 of slice A2).",
+      "maxLength": 64,
+      "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
       "title": "Id",
       "type": "string"
     },

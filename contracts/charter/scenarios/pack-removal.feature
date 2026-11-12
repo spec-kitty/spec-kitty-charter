@@ -273,6 +273,51 @@ Feature: One artifact or one registered relationship is removed from a pack
       | /packs/qa/artifacts/agent_profile/NOPE | artifact_not_found  |
       | /packs/qa/artifacts/procedure/NOPE     | artifact_not_found  |
 
+  # Slice A2 (R14): an asset and a skill are listed and read, but the removal keeps its own kinds, so a DELETE of one
+  # the pack holds answers as before they were listed, and removes nothing.
+  Scenario Outline: An asset or a skill the pack holds is not removed: the removal serves no such kind (<kind>)
+    Given the org pack "qa" with the file "assets/run.py.asset.yaml":
+      """
+      id: run
+      mime: text/x-python
+      path: run.py
+      """
+    And the org pack "qa" with the file "assets/run.py":
+      """
+      print("run")
+      """
+    And the org pack "qa" with the file "skills/land-pr.skill.yaml":
+      """
+      schema_version: '1.0'
+      id: land-pr
+      title: Land a PR
+      description: Use when a pull request needs landing.
+      form: prompt
+      body_path: land-pr.skill.md
+      """
+    And the org pack "qa" with the file "skills/land-pr.skill.md":
+      """
+      Goal: land it.
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/qa/artifacts/<kind>/<id>" with the header "If-Match": "*"
+    Then the response status is 404
+    And the response body is:
+      """
+      {"title": "Kind not found", "status": 404, "code": "kind_not_found", "detail": "The service serves no artifact kind <kind>."}
+      """
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    When I GET "/packs/qa/artifacts?kind=<kind>"
+    Then the response status is 200
+    And the field at "/items/0/id" is "<id>"
+
+    Examples:
+      | kind  | id      |
+      | asset | run     |
+      | skill | land-pr |
+
   # bound by: WP19 (US2 AS2: another pack's edge refers to the artifact; the refusal changes nothing)
   Scenario: An artifact another pack refers to is not deleted, and the refusal names the referrer
     Given the org pack "other" with the file "pack.yaml":
