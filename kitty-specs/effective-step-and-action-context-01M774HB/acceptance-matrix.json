@@ -26,12 +26,12 @@
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "getEffectiveStepPrompt serves the prompt in force as stored with ordered fragments per slot",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "effective-step-prompt.feature SC-001 on example packs and three-levels order; EffectivePromptQueryTest; EffectivePromptDeterminismTest; effective-mission-types.feature (WP06, WP07, WP09)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:43.818720+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
