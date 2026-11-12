@@ -15,7 +15,7 @@ audience:
 
 # 2026-11-12 — Sharper refusals for escaping paths and a placeholder token
 
-Three refusals now say what is actually wrong
+Four refusals now say what is actually wrong
 ([#496](https://github.com/spec-kitty/spec-kitty-charter/issues/496)).
 
 - **An asset path that leaves `assets/` is refused as an escape**
@@ -32,3 +32,6 @@ Three refusals now say what is actually wrong
   ([#121](https://github.com/spec-kitty/spec-kitty-charter/issues/121)). Before: `charter.worktree-token=${X}` resolved
   the token from another source, the command line among them, where other processes can read it. After: the service
   refuses to start and says the value must be the token itself.
+- **Removing an item from a pack with an unreadable graph document is refused**. Before: a pack whose graph document
+  could not be read (for example a malformed relationship shard) was treated as having nothing authored, so the removal
+  went ahead. After: the removal is refused, as the document may hold the item.
