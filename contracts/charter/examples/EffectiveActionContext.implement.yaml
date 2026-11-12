@@ -1,7 +1,8 @@
 summary: >-
-  The effective context of one action: the directive in force that the step scopes, the enhancer in force of the step
-  itself, and a tactic the directive suggests that the activation does not select, listed as a suggestion with the
-  edge's when and reason. self is the context; effective-artifact is the step's read under the activation and artifact
+  The effective context of one action: the directive in force that the step scopes (appliesThrough action), a directive
+  in force that no action and no mission type scopes (appliesThrough project), the enhancer in force of the step itself,
+  and a tactic the first directive suggests that the activation does not select, listed as a suggestion with the edge's
+  when and reason and the appliesThrough of the directive that suggests it. self is the context; effective-artifact is the step's read under the activation and artifact
   its read in main, the pack that holds the mission type's version in force.
 value:
   activationId: a-1
@@ -18,11 +19,26 @@ value:
       required: false
       policy: open
       reason: selected
+      appliesThrough: action
       _links:
         effective-artifact:
           href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
         artifact:
           href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_010
+    - kind: directive
+      artifactId: DIRECTIVE_032
+      packId: main
+      level: org
+      state: active
+      required: false
+      policy: open
+      reason: selected
+      appliesThrough: project
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_032
+        artifact:
+          href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_032
     - kind: tactic
       artifactId: acceptance-test-first
       packId: main
@@ -31,6 +47,7 @@ value:
       required: false
       policy: open
       reason: not_selected
+      appliesThrough: action
       suggestion:
         when: the change has no test yet
         reason: a failing test shows the change is needed

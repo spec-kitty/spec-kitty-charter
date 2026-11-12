@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
@@ -28,6 +30,8 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ActionContextWalk;
+import ai.speckitty.charter.packs.application.ActionContextWalk.Pass;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.EdgeIndex;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -126,10 +130,11 @@ class ClosureViewSessionStepRefsTest {
 
     @Test
     void aTemplateThatOverridesARequiredDirectiveIsNoSatisfierOnTheWriteWhileTheReadShowsItOverridden() {
-        // R-4: a pack can author `overrides` from a template (the edge endpoints are bare URNs), and a locked template
-        // is in force inside the packs, so the resolution reports the required directive T as overridden by it. D16
-        // drops a node that is no artifact: the read names no overrider, and the write (IC-13) finds no satisfier, so
-        // a deactivate of T is 409 artifact_required while the read shows T out of force. Pinned, not changed (#447).
+        // R-4: D16 drops a node that is no activatable artifact: given a resolution that reports the required directive
+        // T as overridden by a template, the read names no overrider, and the write (IC-13) finds no satisfier, so a
+        // deactivate of T is 409 artifact_required. Since FR-014 (#447, option 1) the packs refuse an overrides edge
+        // from a template at registration, on the relationship write and at load, so no stored pack yields this
+        // resolution; the test pins only the projection of D16.
         Urn template = urn("template:tpl");
         Urn required = urn("directive:T");
         InForceStates hidden = states(byUrn(new ArtifactState(
@@ -325,8 +330,13 @@ class ClosureViewSessionStepRefsTest {
 
     @Test
     void aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution() {
-        // The production-shaped source (OD-6): a step enhancer selected next to its mission type, whose target step no
-        // pack holds, is not in force, and the report names the step as a node of kind action.
+        // The resolution's own branch for an unheld step (rule E6 as amended by OD-6), below the compose: a step
+        // enhancer
+        // selected next to its mission type, whose one target step no pack holds, is not in force, and the report names
+        // the step as a node of kind action. The shape is not production-shaped any more: C37 (ADR-0066 decision 8,
+        // WP04) refuses it at compose, so no composed closure reaches this branch. The closure here is built directly,
+        // without the compose, to pin what the resolution answers if it ever meets one. A two-target enhancer is no
+        // stand-in: rule E6 as built drops its unheld action targets and it never reaches this branch.
         Closure closure = new Closure()
                 .pack(
                         "alpha",
@@ -341,8 +351,78 @@ class ClosureViewSessionStepRefsTest {
 
         assertThat(answer.states().get(ref("step_enhancement:x")).state())
                 .isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.INACTIVE);
+        assertThat(answer.states().get(ref("mission_type:M")).state())
+                .as("the control: the mission type selected beside it is in force")
+                .isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.ACTIVE);
         assertThat(answer.enhancedTargets())
                 .containsEntry(ref("step_enhancement:x"), List.of(new NodeRef(NodeKind.ACTION, "M/missing")));
+    }
+
+    // ---- the action context: each pass of the walk is the appliesThrough of its entry (FR-009) ----
+
+    @Test
+    void theContextMapsEachPassOfTheWalkToTheAppliesThroughOfItsEntryAndOfItsCandidate() {
+        Urn action = Urn.action("M", "s");
+        ActionContextWalk.Context walked = new ActionContextWalk.Context(
+                action,
+                true,
+                List.of(
+                        entry("directive:A", Pass.ACTION, Optional.empty()),
+                        entry("directive:T", Pass.MISSION_TYPE, Optional.of(urn("directive:T"))),
+                        entry("directive:P", Pass.PROJECT, Optional.of(urn("directive:P")))),
+                List.of(
+                        new ActionContextWalk.SuggestionCandidate(
+                                urn("tactic:s1"),
+                                urn("directive:A"),
+                                2,
+                                Optional.empty(),
+                                Optional.empty(),
+                                Pass.ACTION),
+                        new ActionContextWalk.SuggestionCandidate(
+                                urn("tactic:s3"),
+                                urn("directive:P"),
+                                2,
+                                Optional.of("when"),
+                                Optional.of("why"),
+                                Pass.PROJECT)),
+                List.of(),
+                List.of());
+
+        ActionContext context = ClosureViewSession.contextOf(walked);
+
+        assertThat(context.entries())
+                .extracting(entry -> entry.ref().urn(), ActionContext.Reached::appliesThrough)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("directive:A", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("directive:T", AppliesThrough.MISSION_TYPE),
+                        org.assertj.core.groups.Tuple.tuple("directive:P", AppliesThrough.PROJECT));
+        assertThat(context.suggestionCandidates())
+                .extracting(candidate -> candidate.ref().urn(), ActionContext.SuggestionCandidate::appliesThrough)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("tactic:s1", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("tactic:s3", AppliesThrough.PROJECT));
+    }
+
+    @Test
+    void everyPassOfTheWalkHasAnAppliesThroughOfTheSameName() {
+        assertThat(Arrays.stream(Pass.values()).map(ClosureViewSession::appliesThroughOf))
+                .extracting(AppliesThrough::name)
+                .containsExactlyElementsOf(
+                        Arrays.stream(Pass.values()).map(Pass::name).toList());
+    }
+
+    private static ActionContextWalk.Entry entry(String urn, Pass pass, Optional<Urn> root) {
+        return new ActionContextWalk.Entry(
+                urn(urn),
+                ActionContextWalk.Step.SCOPE,
+                Urn.action("M", "s"),
+                1,
+                Optional.empty(),
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                pass,
+                root);
     }
 
     // ---- the merged closure: winners, languages, edges and layer overrides ----
