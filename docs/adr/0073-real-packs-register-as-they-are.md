@@ -1,9 +1,9 @@
 ---
 title: "ADR-0073: Real packs register as they are: the pack document, excluded files, and readers during a swap"
-description: The calls slice B made beyond the operator's rulings on #451, #431 and #490, each with the alternatives it rejected, for the operator to accept.
-doc_status: draft
+description: The calls slice B made beyond the operator's rulings on #451, #431 and #490, each with the alternatives it rejected.
+doc_status: active
 updated: 2026-11-12T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-12'
 type: ADR
 kind: ADR
@@ -30,9 +30,9 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-12, by the slice B mission (`slice-b-real-packs-register-01M7649C`,
-[#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)). Decider: Stijn Dejongh (operator); acceptance
-pending, asked for on the slice B pull request.
+**Accepted**, 2026-11-12, by the operator (Stijn Dejongh), who ruled on the slice B pull request. Raised by the
+slice B mission (`slice-b-real-packs-register-01M7649C`,
+[#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)).
 
 The operator ruled on 2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) (the README is
 the pack document, `pack.md` and `PROVENANCE.md` are retired, unmodelled Markdown is excluded, the document is served
@@ -47,8 +47,7 @@ spec ("Calls made by the mission") and the decisions D1 to D9 of its research, a
 squad reviewed each one (verdict PROCEED-WITH-FOLDS, 3 of 3); its dispositions are in
 `kitty-specs/slice-b-real-packs-register-01M7649C/research/squad-plan-point.md`. The doc read's contract shape was
 decided by a spike, `research/doc-read-spike.md` in the same mission, accepted by the operator on 2026-11-11. The code
-of slice B implements every decision below, so they are in force for that code; the record stays Proposed until the
-operator accepts it.
+of slice B implements every decision below, so they are in force for that code.
 
 ## Context
 
@@ -150,9 +149,12 @@ answers `304` with the tag and `Vary`, and a value that is not an entity-tag lis
 the `304` itself; Spring's implicit check is kept off the entity, because it scans a header for any quoted tag and does
 not match `*` on a `GET`.
 
-RFC 9110 prefers a distinct strong validator per representation. This is a deliberate call: the ruling names "the
-pack revision as `ETag`", and the revision is what a client compares with `getPack` and sends as `If-Match` on a
-write. `Vary: Accept` tells a cache that the representations differ, so a shared cache keys by both.
+RFC 9110 section 8.8.1 requires a strong validator to change whenever the representation changes, so two forms with
+different bytes (Markdown and JSON) should carry different strong tags. This decision deliberately deviates from
+that. It is an accepted operator call (2026-11-12): the ruling names "the pack revision as `ETag`", and the revision is
+what a client compares with `getPack` and sends as `If-Match` on a write. The deviation is mitigated by `Vary: Accept`,
+which tells a cache that the representations differ, so a shared cache keys by both and never serves one form for
+the other.
 
 *Alternatives rejected:* a tag per form (for example the revision with a suffix), which breaks the "same revision"
 comparison with `getPack`; no `304` at all (research D9), which the squad's A4 and the spike overturned.
@@ -247,7 +249,7 @@ verified read in the window.
 
 ### Negative
 
-- The two forms of the document share one strong `ETag`, against RFC 9110's preference (decision 8).
+- The two forms of the document share one strong `ETag`, a deliberate deviation from RFC 9110 section 8.8.1, accepted by the operator and mitigated by `Vary: Accept` (decision 8).
 - `file_not_held` is a new `DiagnosticCode` value: a generated client regenerates, and a client that read the absence
   of `diagnostics` as "the whole tree was stored" must read it.
 - A pack stored before slice B with a retired file (`pack.md`, `PROVENANCE.md` or `org-charter.yaml`) cannot have

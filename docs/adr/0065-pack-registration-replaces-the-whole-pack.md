@@ -49,7 +49,7 @@ decision 4, as [Amends](#amends) sets out.
 Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of
 2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
 [#490](https://github.com/spec-kitty/spec-kitty-charter/issues/490); the calls beyond the rulings are
-[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 4, 11 and 12 (Proposed). The decision text below is
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 4, 11 and 12. The decision text below is
 unchanged, and D1 and D12 are annotated where they stand.
 
 - **D1.** The service holds the staged tree **less the files it reports as not held**. A file that an exclusion of
