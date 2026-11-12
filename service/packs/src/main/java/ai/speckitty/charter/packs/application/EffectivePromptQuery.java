@@ -1,17 +1,28 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.domain.StepHolding;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -19,8 +30,30 @@ import java.util.function.Predicate;
  * The packs side of the effective-prompt read (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9): for one step of a merged
  * closure, the prompt in force as stored, every slot it declares and, per slot, the fragments of the step enhancements
  * in force that fill it. A pure function of its inputs: it reads nothing but what it is handed.
+ *
+ * <ul>
+ *   <li>The prompt in force is the stored companion at the merged winner's place of {@code action:M/s} (research R8,
+ *       {@link StepHolding}): the winner's pack when the winning mission type declares the step, else the pack of the
+ *       version that keeps it. It is served as stored (decision 9); a step with no companion answers no byte, no slot
+ *       and no pack.
+ *   <li>Its slots are that pack's prompt facts for the step, in declaration order. A slot that holds text is listed
+ *       like any other, with its fragments and no flag (OD-8), and gives a {@code prompt_slot_not_empty} diagnostic
+ *       (OD-7).
+ *   <li>A fragment comes from the winning copy of a step enhancement in force whose sole {@code enhances} target is the
+ *       step, one per entry of its {@code prompt_fragments} (decision 4: nothing pulls an enhancement into force). The
+ *       fragments of a slot are ordered by level, then the descriptor {@code name} of the enhancing pack, then the
+ *       enhancement's id, each by code point (decision 5).
+ * </ul>
+ *
+ * <p>The slot check ({@link ClosureView#requireSlots}) runs before this query on every read, so no fill names an
+ * undeclared slot here. Each winner and each declared slot is visited once (NFR-002).
  */
 public final class EffectivePromptQuery {
+
+    /** ADR-0066 decision 5: level (built-in, org, project), then pack name, then enhancement id, each by code point. */
+    private static final Comparator<Fragment> ORDER = Comparator.comparing(Fragment::level)
+            .thenComparing(Fragment::packName, EffectivePromptQuery::byCodePoint)
+            .thenComparing(Fragment::enhancement, EffectivePromptQuery::byCodePoint);
 
     private EffectivePromptQuery() {}
 
@@ -150,6 +183,108 @@ public final class EffectivePromptQuery {
             Function<PackIdentifier, String> packNames,
             Function<PackIdentifier, Optional<Payload>> promptOf,
             Visits visits) {
-        return EffectivePrompt.NONE;
+        Objects.requireNonNull(step, "step");
+        Objects.requireNonNull(merged, "merged");
+        Objects.requireNonNull(facts, "facts");
+        Objects.requireNonNull(inForce, "inForce");
+        Objects.requireNonNull(packNames, "packNames");
+        Objects.requireNonNull(promptOf, "promptOf");
+        Objects.requireNonNull(visits, "visits");
+        Optional<MergedClosure.Winner> place = merged.winnerOf(step);
+        if (place.isEmpty()) {
+            return EffectivePrompt.NONE;
+        }
+        PackIdentifier promptPack = place.get().packId();
+        Optional<Payload> prompt = promptOf.apply(promptPack);
+        if (prompt.isEmpty()) {
+            return EffectivePrompt.NONE;
+        }
+        List<PromptFacts.DeclaredSlot> declared =
+                factsOf(facts, promptPack).prompts().declared().getOrDefault(step, List.of());
+        Map<SlotId, List<Fragment>> bySlot = new LinkedHashMap<>();
+        List<Diagnostic> diagnostics = new ArrayList<>();
+        for (PromptFacts.DeclaredSlot slot : declared) {
+            visits.visit();
+            bySlot.put(slot.id(), new ArrayList<>());
+            if (slot.holdsText()) {
+                diagnostics.add(notEmpty(step, slot.id()));
+            }
+        }
+        fill(step, merged, facts, inForce, packNames, bySlot, visits);
+        List<Slot> slots = new ArrayList<>();
+        bySlot.forEach((slot, fragments) -> {
+            fragments.sort(ORDER);
+            slots.add(new Slot(slot, fragments));
+        });
+        return new EffectivePrompt(prompt.get(), Optional.of(promptPack), slots, diagnostics);
+    }
+
+    /**
+     * Files the fills of the winning copy of each step enhancement in force whose sole target is the step under the
+     * slots it names. Each winner is visited once and each pack's edges are indexed once, so the work is linear in the
+     * winners, the edges and the fills. A fill of an undeclared slot is left out: the slot check
+     * ({@link ClosureView#requireSlots}) refuses one before this query runs.
+     */
+    private static void fill(
+            Urn step,
+            MergedClosure merged,
+            Map<String, PackCompositionFacts> facts,
+            Predicate<Urn> inForce,
+            Function<PackIdentifier, String> packNames,
+            Map<SlotId, List<Fragment>> bySlot,
+            Visits visits) {
+        if (bySlot.isEmpty()) {
+            return;
+        }
+        Map<PackIdentifier, Set<Urn>> enhancersByPack = new HashMap<>();
+        merged.winners().forEach((urn, winner) -> {
+            if (urn.kind() != NodeKind.STEP_ENHANCEMENT) {
+                return;
+            }
+            visits.visit();
+            if (!inForce.test(urn)) {
+                return;
+            }
+            PackCompositionFacts held = factsOf(facts, winner.packId());
+            if (!enhancersByPack
+                    .computeIfAbsent(winner.packId(), pack -> enhancersOf(held, step))
+                    .contains(urn)) {
+                return;
+            }
+            String packName = packNames.apply(winner.packId());
+            for (PromptFacts.Fill fill : held.prompts().fills().getOrDefault(urn, List.of())) {
+                visits.visit();
+                Optional.ofNullable(bySlot.get(fill.slot()))
+                        .ifPresent(fragments -> fragments.add(
+                                new Fragment(winner.packId(), packName, winner.level(), urn.id(), fill.text())));
+            }
+        });
+    }
+
+    /** The step enhancements a pack writes whose sole {@code enhances} target is the step, read once from its edges. */
+    private static Set<Urn> enhancersOf(PackCompositionFacts held, Urn step) {
+        Set<Urn> enhancers = new HashSet<>();
+        EnhancementCompose.stepEnhancementsOf(held.edges()).stream()
+                .filter(enhancement -> enhancement.target().equals(step))
+                .forEach(enhancement -> enhancers.add(enhancement.enhancement()));
+        return enhancers;
+    }
+
+    private static Diagnostic notEmpty(Urn step, SlotId slot) {
+        String file = StepHolding.missionTypeOf(step)
+                .map(missionType -> "missions/" + missionType.id() + "/steps/"
+                        + step.id().substring(missionType.id().length() + 1) + ".prompt.md")
+                .orElse(step.toString());
+        return new Diagnostic(
+                Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY,
+                file + ": slot " + slot.value() + " holds text; the text is kept and the slot's fragments follow it");
+    }
+
+    private static PackCompositionFacts factsOf(Map<String, PackCompositionFacts> facts, PackIdentifier pack) {
+        return facts.getOrDefault(pack.value(), PackCompositionFacts.NONE);
+    }
+
+    private static int byCodePoint(String left, String right) {
+        return Arrays.compare(left.codePoints().toArray(), right.codePoints().toArray());
     }
 }
