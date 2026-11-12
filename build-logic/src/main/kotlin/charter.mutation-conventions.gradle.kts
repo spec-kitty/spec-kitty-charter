@@ -37,7 +37,15 @@ fun declaredGroups() = mutationFloors.groups.map { it.toGroup() }
 // module's groups on several runners. Each group's score is the one a whole-module run gives. Unknown names fail the
 // run (MutationFloors.shard). Without the property, the module runs whole.
 val requestedGroups = providers.gradleProperty("mutationGroups")
-val shard = requestedGroups.map { MutationFloors.shard(project.path, it, declaredGroups()) }
+// The module's own PIT scope, taken before a shard narrows it (below).
+var moduleTargets: Set<String> = emptySet()
+// Resolved only for a module whose task runs: -PmutationGroups reaches every project's configuration, and a module
+// the run does not shard must not be refused. A package PIT mutates that no group holds would be dropped by the shard.
+val shard = requestedGroups.map {
+    val groups = declaredGroups()
+    MutationFloors.requireTargetsHeld(project.path, moduleTargets, groups)
+    MutationFloors.shard(project.path, it, groups)
+}
 
 val checkMutationFloors = tasks.register<CheckMutationFloors>("checkMutationFloors") {
     group = "verification"
@@ -55,11 +63,9 @@ val checkMutationFloors = tasks.register<CheckMutationFloors>("checkMutationFloo
 // After the module's own pitest block, which sets its scope: a shard narrows that scope to its groups.
 afterEvaluate {
     // The module's own scope, before a shard narrows it: every package PIT mutates must sit in a floor group, or a shard
-    // would drop it and no floor would score it.
-    val moduleTargets = pitest.targetClasses.get().toSet()
-    checkMutationFloors.configure { targetClasses.set(moduleTargets) }
+    // would drop it and no floor would score it (checkMutationFloors refuses a mutant no group holds on any run).
+    moduleTargets = pitest.targetClasses.get().toSet()
     if (requestedGroups.isPresent) {
-        MutationFloors.requireTargetsHeld(project.path, moduleTargets, declaredGroups())
         pitest.targetClasses.set(shard.map { it.targetClasses })
         pitest.excludedClasses.addAll(shard.map { it.excludedClasses })
         pitest.reportDir.set(layout.buildDirectory.dir(shard.map { "reports/pitest-${it.name}" }))

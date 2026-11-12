@@ -201,10 +201,16 @@ object MutationFloors {
             )
         }
         val results = score(report.mutants, groups)
+        // A mutant no group holds is scored by no floor, however the module's PIT targets are written.
+        val unscored = report.mutants.map { it.topLevelClass }.filter { cls -> groups.none { it.contains(cls) } }.toSortedSet()
+        val gap = if (unscored.isEmpty()) emptyList() else listOf(
+            "$projectPath: PIT mutated ${unscored.take(5).joinToString()}${if (unscored.size > 5) ", ..." else ""}," +
+                " which no floor group holds (${groups.joinToString { it.name }}) $REFERENCE",
+        )
         return Outcome(
             lines = results.map { it.line(projectPath) },
             summary = toJson(projectPath, report.mutants.size, results),
-            failures = failures(projectPath, results),
+            failures = failures(projectPath, results) + gap,
         )
     }
 
@@ -246,14 +252,17 @@ object MutationFloors {
     /**
      * The module's [targetClasses] patterns (PIT's `targetClasses`) that no floor group holds: a package PIT mutates
      * but no group scores, which a shard would silently drop (#461). A pattern is held when a group's package is it,
-     * inside it or above it.
+     * or above it, and does not exclude it: a narrower group leaves the rest of the pattern unscored.
      */
     fun unheldTargets(targetClasses: Set<String>, groups: List<Group>): List<String> = targetClasses.sorted().filter { target ->
         val prefix = target.removeSuffix("*").removeSuffix(".")
         groups.none { group ->
             group.packages.any { pkg ->
                 val held = pkg.removeSuffix(".*").removeSuffix(".")
-                held == prefix || held.startsWith("$prefix.") || prefix.startsWith("$held.")
+                held == prefix || prefix.startsWith("$held.")
+            } && group.excludes.none { ex ->
+                val excluded = ex.removeSuffix(".*").removeSuffix(".")
+                prefix == excluded || prefix.startsWith("$excluded.")
             }
         }
     }
@@ -421,10 +430,6 @@ abstract class CheckMutationFloors : DefaultTask() {
     @get:Input
     abstract val groups: ListProperty<MutationFloors.Group>
 
-    /** The module's own PIT `targetClasses`, before a shard narrows them: each must be held by a floor group. */
-    @get:Input
-    abstract val targetClasses: SetProperty<String>
-
     @get:OutputFile
     abstract val summary: RegularFileProperty
 
@@ -433,7 +438,6 @@ abstract class CheckMutationFloors : DefaultTask() {
         // A summary from an earlier run must never outlive a check that cannot write a new one.
         val summaryFile = summary.get().asFile
         summaryFile.delete()
-        MutationFloors.requireTargetsHeld(projectPath.get(), targetClasses.get(), groups.get())
         val reportFile = report.get().asFile
         val outcome = MutationFloors.evaluate(
             projectPath.get(),

@@ -41,6 +41,8 @@ class MutationFloorsTest {
         )
         // A package PIT mutates that no floor group holds would be dropped by every shard: refused, never silent.
         assertThat(MutationFloors.unheldTargets(shard.targetClasses, packs)).isEmpty()
+        // A broad pattern is not held by a group that covers only part of it.
+        assertThat(MutationFloors.unheldTargets(setOf("ai.speckitty.charter.packs.infra.*"), listOf(packs[1]))).isNotEmpty()
         val mutated = shard.targetClasses + "ai.speckitty.charter.packs.infra.archive.*"
         assertThatThrownBy { MutationFloors.requireTargetsHeld(":packs", mutated, packs) }
             .hasMessageContaining(":packs: PIT mutates ai.speckitty.charter.packs.infra.archive.*, which no floor group holds")
@@ -117,6 +119,10 @@ class MutationFloorsTest {
         assertThat(MutationFloors.failures(":kernel", listOf(result))).containsExactly(
             ":kernel kernel: mutation score 64.0 % is below its floor 65 % (#239, ADR-0062)",
         )
+        // A mutant outside every group fails the check too, whatever the module's PIT targets say.
+        val stray = mutations(mutation("ai.speckitty.charter.other.C\$D", "KILLED"))
+        assertThat(MutationFloors.evaluate(":kernel", "r", stray, listOf(kernel)).failures)
+            .anyMatch { it.contains(":kernel: PIT mutated ai.speckitty.charter.other.C, which no floor group holds") }
     }
 
     @Test
