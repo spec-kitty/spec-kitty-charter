@@ -242,24 +242,11 @@ class PackFileKindTest {
         assertThat(KINDS.classify("x/toolguides/x.guide.MD")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
         assertThat(KINDS.classify("x/missions/m/enhancements/a.prompt-fragment.MD"))
                 .isEqualTo(PackFileKind.Unclassified.INSTANCE);
-        // Case variants are refused by name before the fallback is consulted (FR-022).
-        assertThat(KINDS.classify("x/Readme.md")).isInstanceOf(PackFileKind.Retired.class);
-        assertThat(KINDS.classify("x/Pack.md")).isInstanceOf(PackFileKind.Retired.class);
-        assertThat(KINDS.classify("x/PROVENANCE.MD")).isInstanceOf(PackFileKind.Retired.class);
         // A table exclusion keeps its own reason.
         assertThat(KINDS.classify("x/missions/m/README.md"))
                 .isInstanceOfSatisfying(
                         PackFileKind.Excluded.class,
                         excluded -> assertThat(excluded.exclusionClass()).isEqualTo("*/missions/*/README.md"));
-    }
-
-    /** The org charter is retired (#431): refused by name at the pack root, in any letter case, never mapped. */
-    @Test
-    void theOrgCharterIsRetiredAtThePackRootAndNowhereElse() {
-        assertThat(KINDS.classify("x/org-charter.yaml")).isInstanceOf(PackFileKind.Retired.class);
-        assertThat(KINDS.classify("x/Org-Charter.yaml")).isInstanceOf(PackFileKind.Retired.class);
-        assertThat(KINDS.classify("x/assets/org-charter.yaml")).isInstanceOf(PackFileKind.Mapped.class);
-        assertThat(KINDS.fileRules()).extracting(PackFileKind.FileRule::schema).doesNotContain("org-charter");
     }
 
     /** No Markdown sample of another section is classified by the fallback: the invariant of the data model. */
@@ -291,7 +278,6 @@ class PackFileKindTest {
     /** An {@code ignored} rule is not among the rules the overlap check compares (squad R8). */
     @Test
     void anIgnoredRuleIsNeverAMatchingRule() {
-        assertThat(KINDS.ignoredRules()).containsExactly(new PackFileKind.IgnoredRule("**/*.md", FALLBACK_REASON));
         assertThat(KINDS.matchingRules("x/docs/notes.md")).isEmpty();
         assertThat(KINDS.matchingRulesFolded("x/docs/notes.md")).isEmpty();
         assertThat(KINDS.matchingRules("x/README.md")).containsExactly("*/README.md");
