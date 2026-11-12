@@ -5,9 +5,11 @@ import ai.speckitty.charter.activations.application.EffectiveReadService.Context
 import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
+import ai.speckitty.charter.activations.application.EffectiveReadService.PromptRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
@@ -19,6 +21,7 @@ import ai.speckitty.charter.api.model.ActionEnhancement;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.DenyNotApplied;
+import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
@@ -26,6 +29,9 @@ import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptFragment;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
 import ai.speckitty.charter.api.model.LayerOverride;
 import ai.speckitty.charter.api.model.LayerOverrideSide;
@@ -186,6 +192,12 @@ public class EffectiveReadMapper {
             read.missionTypePack()
                     .ifPresent(pack -> links.put("artifact", new Link(activations.packMissionStep(pack, type, step))));
         }
+        if (read.missionTypeInForce()) {
+            links.put(
+                    "prompt",
+                    new Link(activations.prompt(
+                            id, read.query().missionType(), read.query().action())));
+        }
         return new EffectiveActionContext(
                 id,
                 read.stored().revision().token(),
@@ -202,6 +214,57 @@ public class EffectiveReadMapper {
                         .toList(),
                 skipped(context.skipped()),
                 links);
+    }
+
+    /**
+     * The effective prompt of a step: the prompt as stored, its slots with their fragments in the order the read gave
+     * them, its diagnostics, and its links: {@code self}, {@code effective-context} (the action context of the same
+     * action) and, while mission types are served, {@code effective-artifact} (the step under the activation). An
+     * absent {@code promptPackId} stays absent.
+     *
+     * @param read what the service read
+     * @return its wire form
+     */
+    public EffectiveStepPrompt toPrompt(PromptRead read) {
+        String id = read.stored().id().value();
+        String type = read.query().missionType();
+        String step = read.query().action();
+        EffectivePrompt prompt = read.prompt();
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put("self", new Link(activations.prompt(id, type, step)));
+        if (linkedKinds.get().contains(ArtifactKind.MISSION_TYPE)) {
+            links.put("effective-artifact", new Link(activations.effectiveMissionStep(id, type, step)));
+        }
+        links.put("effective-context", new Link(activations.effectiveContext(id, type, step)));
+        EffectiveStepPrompt wire = new EffectiveStepPrompt(
+                id,
+                read.stored().revision().token(),
+                read.governanceFingerprint(),
+                type,
+                step,
+                prompt.prompt(),
+                prompt.slots().stream().map(EffectiveReadMapper::slot).toList(),
+                prompt.diagnostics().stream()
+                        .map(diagnostic -> new Diagnostic(
+                                Diagnostic.CodeEnum.fromValue(diagnostic.code().token()), diagnostic.detail()))
+                        .toList(),
+                links);
+        prompt.promptPackId().ifPresent(wire::setPromptPackId);
+        return wire;
+    }
+
+    private static EffectivePromptSlot slot(EffectivePrompt.Slot slot) {
+        return new EffectivePromptSlot(
+                slot.slot(),
+                slot.fragments().stream()
+                        .map(fragment -> new EffectivePromptFragment(
+                                fragment.packId(),
+                                fragment.packName(),
+                                EffectivePromptFragment.LevelEnum.fromValue(
+                                        fragment.level().token()),
+                                fragment.enhancement(),
+                                fragment.text()))
+                        .toList());
     }
 
     /** The context's own request: its path, and the depth when the request named one. */

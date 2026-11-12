@@ -1,0 +1,18 @@
+description: >-
+  The activation's merged closure holds the mission type the path names, and the activation does not put it in force,
+  refused with 409 mission_type_not_in_force (OD-5, research R5): the mission type has no step to run, so there is no
+  prompt to render. The client resolves the conflict by changing the activation (selecting the mission type). Judged
+  after the 404 codes and before any 304. The action context of the same action answers 200 with no artifacts instead,
+  because it describes what governs the action, which here is nothing.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      mission-type-not-in-force:
+        $ref: ../examples/CharterRefusal.mission-type-not-in-force.yaml

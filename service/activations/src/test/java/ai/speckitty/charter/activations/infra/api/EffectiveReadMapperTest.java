@@ -9,12 +9,14 @@ import ai.speckitty.charter.activations.application.EffectiveReadService.Context
 import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
+import ai.speckitty.charter.activations.application.EffectiveReadService.PromptRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Policy;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Reason;
@@ -45,6 +47,9 @@ import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptFragment;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -611,6 +616,102 @@ class EffectiveReadMapperTest {
         assertThat(wire.getNodes()).isEmpty();
         assertThat(wire.getEdges()).isEmpty();
         assertThat(wire.getLayerOverrides()).isEmpty();
+    }
+
+    // ---- the effective prompt (WP07; FR-003, FR-007)
+
+    @Test
+    void theContextOfAMissionTypeInForceLinksThePromptOfTheSameActionAndOneNotInForceDoesNot() {
+        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
+        EffectiveTag.ContextQuery query = new EffectiveTag.ContextQuery("software-dev", "implement", 0);
+        ContextRead inForce =
+                new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), true);
+        ContextRead notInForce =
+                new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), false);
+
+        assertThat(missions.toContext(inForce, false).getLinks())
+                .containsOnlyKeys("self", "effective-artifact", "artifact", "prompt");
+        assertThat(missions.toContext(inForce, true).getLinks().get("prompt").getHref())
+                .as("the prompt takes no depth")
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/prompt");
+        assertThat(mapper.toContext(inForce, false).getLinks())
+                .as("the prompt is linked whether or not mission types are served")
+                .containsOnlyKeys("self", "prompt");
+        assertThat(missions.toContext(notInForce, false).getLinks()).doesNotContainKey("prompt");
+    }
+
+    @Test
+    void thePromptIsMappedWithItsSlotsInOrderItsDiagnosticsAndItsThreeLinks() {
+        EffectivePrompt prompt = new EffectivePrompt(
+                "# Plan\n",
+                Optional.of("base"),
+                List.of(
+                        new EffectivePrompt.Slot(
+                                "spdd:reasons-block",
+                                List.of(
+                                        new EffectivePrompt.Fragment(
+                                                "built-in", "built-in", PackLevel.BUILT_IN, "zz-note", "Note.\n"),
+                                        new EffectivePrompt.Fragment(
+                                                "zz-org", "architecture-notes", PackLevel.ORG, "arch", "ADR.\n"))),
+                        new EffectivePrompt.Slot("team:checklist", List.of())),
+                List.of(new EffectivePrompt.Diagnostic(
+                        EffectivePrompt.Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY, "plan.prompt.md: slot holds text")));
+
+        EffectiveStepPrompt wire = missions.toPrompt(new PromptRead(
+                stored,
+                "sha256:source",
+                "sha256:closure",
+                new EffectiveTag.PromptQuery("software-dev", "plan"),
+                prompt));
+
+        assertThat(wire.getActivationId()).isEqualTo("a-1");
+        assertThat(wire.getRevision()).isEqualTo(stored.revision().token());
+        assertThat(wire.getGovernanceFingerprint()).isEqualTo("sha256:closure");
+        assertThat(wire.getMissionType()).isEqualTo("software-dev");
+        assertThat(wire.getAction()).isEqualTo("plan");
+        assertThat(wire.getPrompt()).isEqualTo("# Plan\n");
+        assertThat(wire.getPromptPackId()).isEqualTo("base");
+        assertThat(wire.getSlots())
+                .extracting(EffectivePromptSlot::getSlot)
+                .containsExactly("spdd:reasons-block", "team:checklist");
+        assertThat(wire.getSlots().get(0).getFragments())
+                .extracting(
+                        EffectivePromptFragment::getPackId,
+                        EffectivePromptFragment::getPackName,
+                        fragment -> fragment.getLevel().getValue(),
+                        EffectivePromptFragment::getEnhancement,
+                        EffectivePromptFragment::getText)
+                .containsExactly(
+                        tuple("built-in", "built-in", "built-in", "zz-note", "Note.\n"),
+                        tuple("zz-org", "architecture-notes", "org", "arch", "ADR.\n"));
+        assertThat(wire.getSlots().get(1).getFragments()).isEmpty();
+        assertThat(wire.getDiagnostics()).singleElement().satisfies(diagnostic -> {
+            assertThat(diagnostic.getCode().getValue()).isEqualTo("prompt_slot_not_empty");
+            assertThat(diagnostic.getDetail()).isEqualTo("plan.prompt.md: slot holds text");
+        });
+        assertThat(wire.getLinks()).containsOnlyKeys("self", "effective-artifact", "effective-context");
+        assertThat(wire.getLinks().get("self").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt");
+        assertThat(wire.getLinks().get("effective-artifact").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/plan");
+        assertThat(wire.getLinks().get("effective-context").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/plan/context");
+    }
+
+    @Test
+    void aStepWithNoPromptLeavesThePromptPackOutAndNamesNoStepWhileMissionTypesAreNotServed() {
+        EffectiveStepPrompt wire = mapper.toPrompt(new PromptRead(
+                stored,
+                "sha256:source",
+                "sha256:closure",
+                new EffectiveTag.PromptQuery("software-dev", "review"),
+                EffectivePrompt.NONE));
+
+        assertThat(wire.getPrompt()).isEmpty();
+        assertThat(wire.getPromptPackId()).isNull();
+        assertThat(wire.getSlots()).isEmpty();
+        assertThat(wire.getDiagnostics()).isEmpty();
+        assertThat(wire.getLinks()).containsOnlyKeys("self", "effective-context");
     }
 
     private ContextRead contextRead(EffectiveContext context) {

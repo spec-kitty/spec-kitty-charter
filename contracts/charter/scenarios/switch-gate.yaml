@@ -37,6 +37,7 @@ operations:
   getEffectiveMissionStep: {switch: ready}
   getEffectiveMissionStepContract: {switch: ready}
   getEffectiveMissionType: {switch: ready}
+  getEffectiveStepPrompt: {switch: ready}
   getOffering: {switch: ready}
   getOpenApiDocument: {switch: ready}
   getPack: {switch: ready}

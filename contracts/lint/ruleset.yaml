@@ -296,6 +296,7 @@ rules:
               - delete
               - skipped
               - effective-context
+              - prompt
               - select
               - unselect
               - exclude

@@ -24,7 +24,9 @@ description: >-
   _links holds self, the context; effective-artifact, the read of the action's step under the activation
   (getEffectiveMissionStep); and artifact, the read of the step in the pack that holds the version in force of the
   mission type (getPackMissionStep), the packId of the mission type's item of the effective list. Each answers the step
-  of that version of the mission type, or action_not_found when it declares no such step.
+  of that version of the mission type, or action_not_found when it declares no such step. prompt, the effective prompt
+  of the same action (getEffectiveStepPrompt), is present exactly when the activation puts the mission type in force:
+  for one it does not, that read answers 409 mission_type_not_in_force, so the context does not offer it.
 type: object
 additionalProperties: false
 required:

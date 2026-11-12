@@ -23,6 +23,7 @@ files:
   - ResolvedDependency.yaml
   - ServiceInfo.yaml
   - Sha256Digest.yaml
+  - SlotId.yaml
   - Slug.yaml
   - Tactic.yaml
   - TacticStep.yaml
@@ -50,6 +51,9 @@ files:
   - EffectiveArtifactReason.yaml
   - EffectiveArtifactState.yaml
   - EffectiveContextArtifact.yaml
+  - EffectivePromptFragment.yaml
+  - EffectivePromptSlot.yaml
+  - EffectiveStepPrompt.yaml
   - EffectiveGraph.yaml
   - EffectiveGraphEdge.yaml
   - EffectiveGraphNode.yaml

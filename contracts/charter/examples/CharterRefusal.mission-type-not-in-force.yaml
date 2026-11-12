@@ -1,0 +1,10 @@
+summary: >-
+  The activation's closure holds the mission type research and the activation does not select it, so its step gather
+  has no prompt to render.
+value:
+  title: Mission type not in force
+  status: 409
+  code: mission_type_not_in_force
+  detail: >-
+    The activation a-1 does not put the mission type research in force, so its step gather has no prompt to render;
+    select it.
