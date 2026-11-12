@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Hypermedia (HATEOAS)
 description: How charter API responses link to what a client can do next, through one closed Links component and documented relation names.
 doc_status: draft
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -151,11 +151,11 @@ used.
 | `select`, `unselect` | `…/selections/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact | Proposed |
 | `exclude`, `include` | `…/exclusions/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact; `exclude` is absent on a required or locked one, `include` present only on an excluded one | Proposed |
 | `apply-preset` | `…/presets/{presetId}` | `PUT` | An offered preset, seen from an activation | Proposed |
-| `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names; an effective artifact read, an effective agent profile read, and the `Artifact` envelope of `getEffectiveMissionType` and `getEffectiveMissionStepContract` (the winner's pack read); an effective list item, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve; a step contract's delegation candidate of a served kind; an effective action context: its step in the pack that holds the mission type in force (`…/packs/{packId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`) | In the contract |
+| `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names; an effective artifact read, an effective agent profile read, and the `Artifact` envelope of `getEffectiveMissionType` and `getEffectiveMissionStepContract` (the winner's pack read); an effective list item, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve; a step contract's delegation candidate of a served kind; an effective action context: its step in the pack of the step's place (`…/packs/{packId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`), by the one place rule of rule E16 as amended 2026-11-12 (the winner of the mission type when its version declares the step, else the winner of the step's action), so it answers the same step as `effective-artifact` | In the contract |
 | `effective-artifact` | `…/activations/{activationId}/artifacts/{kind}/{artifactId}` | `GET` | An effective list item, an effective graph node, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve; an effective graph node of a step and an effective action context: the step under the activation (`…/activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`); a delegation candidate of a served kind of a step contract read under an activation, when the activation's closure holds it | In the contract |
 | `references` | `…/packs/{packId}/artifacts/{kind}/{artifactId}/references` | `GET` | An agent profile: the references its pack writes for it | In the contract on an agent profile |
 | `mission-type` | `…/artifacts/mission_type/{missionTypeId}` | `GET` | A step and a skeleton: the read of their mission type, under the same pack or activation. A step contract: the read of the type its `mission` names, when its scope holds it (in a pack, that pack; under an activation, the merged closure, so `getEffectiveMissionType`) | In the contract |
-| `step` | `…/artifacts/mission_type/{missionTypeId}/steps/{stepId}` | `GET` | A step contract: the step its `mission` and `action` name, when its scope holds it | In the contract |
+| `step` | `…/artifacts/mission_type/{missionTypeId}/steps/{stepId}` | `GET` | A step contract: the step its `mission` and `action` name, when its scope holds it; under an activation, whenever the step has a place (2026-11-12) | In the contract |
 | `step-contract` | `…/artifacts/mission_step_contract/{artifactId}` | `GET` | A step: the step contract bound to it (its `mission` and `action`; the lowest id when several are); absent when none is | In the contract |
 | `skeleton` | `…/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}` | `GET` | An expected output artifact of a step whose `templatePath` names a stored skeleton of the type | In the contract |
 
