@@ -56,10 +56,27 @@ public interface PacksSession {
      *
      * @param query what the document selects, denies and filters
      * @return the states and the rules not applied; empty for a session that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, or with
-     *     {@code pack_unreadable} for an {@code overrides} cycle among the artifacts in force
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, with
+     *     {@code pack_unreadable} for an {@code overrides} cycle among the artifacts in force, or with
+     *     {@code prompt_slot_missing} when the request puts a step enhancement in force without its slot (C38): every
+     *     composing read of an activation that does refuses, after the composition and merge codes (F6)
      */
     InForceAnswer inForce(InForceQuery query);
+
+    /**
+     * Refuses a document that would put a step enhancement in force whose slot the prompt in force of its step does not
+     * declare (C38, FR-001). An activation write asks it explicitly for the document it is about to store, before it
+     * stores it (squad A3), so the refusal never depends on a rule of the document reaching the in-force resolution. It
+     * answers from this session's read and its in-force resolution.
+     *
+     * <p>It judges the slots alone: a closure whose merge refuses is not judged here, and the write keeps the answer its
+     * own rules give it, while every composing read of the activation refuses with the merge's code. The default judges
+     * nothing: a session that holds no closure puts nothing in force.
+     *
+     * @param query what the document selects, denies and filters
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code prompt_slot_missing}
+     */
+    default void requireComposable(InForceQuery query) {}
 
     /**
      * The effective graph under a document's request (FR-018, rule E15): the nodes in force, the merged edges among them

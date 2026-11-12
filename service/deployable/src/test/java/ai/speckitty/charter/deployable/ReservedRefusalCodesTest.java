@@ -197,6 +197,16 @@ class ReservedRefusalCodesTest {
                         "PRESET_NOT_FOUND",
                         "ACTION_NOT_FOUND");
         assertThat(unraisedCodes()).doesNotContain("PRESET_NOT_FOUND", "ACTION_NOT_FOUND");
+        // #438 (FR-006, SC-003): the compose check of a step enhancement in force (C38) raises prompt_slot_missing on
+        // the composing reads, at registration, on the impact-checked writes and on the activation writes, so none of
+        // ADR-0066's four codes is reserved any more.
+        assertThat(raisedCodes())
+                .contains(
+                        "PROMPT_SLOT_MISSING",
+                        "PROMPT_SLOT_MALFORMED",
+                        "PROMPT_SLOT_NOT_EMPTY",
+                        "PROMPT_FRAGMENT_INVALID");
+        assertThat(unraisedCodes()).doesNotContain("PROMPT_SLOT_MISSING");
     }
 
     @ParameterizedTest
