@@ -33,5 +33,5 @@ Four refusals now say what is actually wrong
   the token from another source, the command line among them, where other processes can read it. After: the service
   refuses to start and says the value must be the token itself.
 - **Removing an item from a pack with an unreadable graph document is refused**. Before: a pack whose graph document
-  could not be read (for example a malformed relationship shard) was treated as having nothing authored, so the removal
+  could not be read (for example a fragment whose `body_path` leaves the pack) was treated as having nothing authored, so the removal
   went ahead. After: the removal is refused, as the document may hold the item.
