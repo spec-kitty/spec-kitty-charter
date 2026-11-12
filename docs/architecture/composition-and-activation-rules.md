@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -54,7 +54,10 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > the layer merge and two effective reads, the artifact list and the skipped report. **Built (PR C)** marks a rule its
 > PR C built on 2026-11-09: the effective graph and the action context, the relaxed write rule, and the operator
 > rulings of that date (the step enhancer's binding, the one step predicate, the node predicate, the floor of
-> activatable kinds).
+> activatable kinds). **Built (slice C)** marks a rule the slice C mission (`effective-step-and-action-context-01M774HB`,
+> [#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) built on 2026-11-12: the ownership rule of the
+> effective action context, the compose checks of a step enhancement, the effective step prompt, and the operator
+> rulings on #439 and #447. Every rule marked so names the tests and scenarios that pin it.
 >
 > **Rulings of 2026-11-06.** The operator's answers to the ruleset consistency review (layer-merge mission,
 > `research/ruleset-review-2026-11-06.md`, items A1–A15 and B1–B8) are folded into the rules and cite their decision ids (`DM-01M6RA…`, under the layer-merge mission's `decisions/`).
@@ -64,10 +67,17 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > `01M7059…`, `01M70C4…`, `01M70CT…`). Each amended rule names the test that pins it, so a rule cannot pass on its
 > wording alone.
 >
+> **Rulings of 2026-11-12.** The operator's rulings for slice C, relayed by the orchestrator, are folded in as dated
+> amendments: the ownership rule (Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`) into E12 and E16; OD-5, the `409` of the
+> prompt read (Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`), into E18 and F8; OD-1, OD-2 and OD-4 of the phase-2
+> mission into C22, C25, C37, C38, G8 and F6; #439 option (b) into E5, E9 and E14; and #447 option 1 into C25 and C27.
+>
 > **Explicit rulings, never accidental order.** Every sentence of this page that describes a contest, a winner or a
 > tie cites the ruling that settles it or the refusal that stops it. Where a tie is broken by a rule no ruling
 > covers, the page says so and names the issue that tracks it (the smallest-URN tie of `satisfiedBy` and
 > `overriddenBy`, E5 and E9, is #439).
+> *Note 2026-11-12:* #439 is ruled (option (b)): `satisfiedBy` and `overriddenBy` name every overrider in force, by level
+> then URN, so no tie is left (E9).
 
 ## 1. Notation
 
@@ -275,6 +285,19 @@ only for what it or a pack it builds on holds (notation, A15): a pack may lock t
 (an enterprise pack enforcing a built-in practice), not those of an unrelated pack that shares the closure.
 *Source:* ADR-0063 D3; ADR-0012 d3; `PerPackPolicy.levelIn`; A15, decision `DM-01M6RA97220XBR7RR447FE2JXD`.
 **Built (PR A0):** the strictest level, and the scope limit: a `kind_defaults` entry locks only the artifacts of the pack and of the packs it builds on.
+*Amended 2026-11-12 (slice C, OD-2 (A)): the inherited lock.* A step has no level of its own; it takes its mission
+type's. For a step enhancement `u` held by `p` whose sole `enhances` target is `action:M/s`, the level judged is
+`μ_{C ∖ {p}}(mission_type:M)`, without the enhancing pack's own policy (B8); a level declared on the step itself is not
+judged. `locked` refuses the enhancement: `422 override_not_permitted` at registration and on the impact-checked writes,
+naming the enhancing pack and then the locking pack (C25), and `500 pack_unreadable` on the reads and the activation
+writes, whatever the activation selects, as C21 refuses a forbidden layer override. `extendable` and `open` take it.
+**Built (slice C).** *Pinned by:* `EnhancementComposeTest` (`anEnhancementOfAStepWhoseMissionTypeIsLockedIsNamedWithTheLockingPack`,
+`theTwinAnExtendableMissionTypeTakesTheEnhancement`, `theEnhancingPacksOwnLockIsLeftOut`,
+`aLevelOnTheStepItselfIsNotTheSubject`), `ClosureViewTest`
+(`anEnhancementOfAStepWhoseMissionTypeIsLockedMakesTheMergeUnreadableWhateverIsSelected`,
+`theTwinAnEnhancementOfAStepWhoseMissionTypeIsExtendableIsMerged`) and the scenarios of
+`step-enhancement-compose.feature` `An enhancement of a step whose mission type is locked makes the activation reads
+unreadable, whatever is selected` and its twin.
 
 **C23 Tighten, never loosen.** `S ⊆ S' ⇒ μ_S(u) ≤ μ_{S'}(u)`.
 Adding a pack to a closure can raise a target's mutability, never relax it. (A consequence of C22.)
@@ -293,6 +316,16 @@ from other packs and does not bind `p` itself (B8, as C21 excludes the winning p
 *Source:* ADR-0012 d1, d9; ADR-0026 D4; ADR-0063 D3; `PackMutabilityPolicy`, `MutabilityLevel.permits`; B8, decision
 `DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Built (PR A0):** the gate is built over `C({p}) ∖ {p}`; `p`'s own policy never
 refuses its own write.
+*Amended 2026-11-12 (slice C):* two refusals come with the gate. A `relate` that makes a step enhancement of `p` enhance
+a step whose mission type is `locked` along `C({p}) ∖ {p}` is refused `422 override_not_permitted`, not
+`409 governance_policy_violation`: it is the inherited lock of C22, judged by the impact check (G8) on the registration
+and on every impact-checked write. And an `overrides` edge from a kind outside `Kₐ` is refused before the gate is
+asked (C27, #447). **Built (slice C).** *Pinned by:* `ImpactRelationsEnhancementTest`
+(`anEnhancementOfAStepWhoseMissionTypeIsLockedIsOverrideNotPermittedNamingBothPacks`,
+`theTwinAnExtendableMissionTypeTakesTheEnhancement`, `theEnhancingPacksOwnLockOnTheMissionTypeIsLeftOut`) and the
+scenarios of `step-enhancement-compose.feature` `A registration that enhances a step whose mission type is locked is
+refused override_not_permitted` and `A relationship write into a pack that enhances a step whose mission type is locked
+is refused 422 override_not_permitted`, each with its twin.
 
 **C26 Removal by a derived pack.** A derived pack's pack-wide removal of `u` is allowed iff `μ(u) ≠ locked`.
 `open` and `extendable` artifacts may be removed by a pack built on them; `locked` ones may not.
@@ -307,6 +340,22 @@ Both override paths share one gate: only an `open` artifact can be overridden, b
 another pack tightened it later, is not applied.
 *Source:* decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`; research R11; spec FR-016;
 A6, decision `DM-01M6RA86QPBM1VE5QZTB9AZ195`. **Built:** the registration refusal (PR A) and the read (PR B, DIV-221).
+*Amended 2026-11-12 (slice C, #447, operator ruling option 1):* `overrides(E, T) ⇒ kind(E) ∈ Kₐ`. An `overrides` edge
+whose source is a template, an asset, a guard or a lifecycle is refused, because such a source has no activation state
+and cannot stand in for governance: at registration as the violation `overrides_source_not_activatable` of
+`422 validation_failed`, at the pack-relative graph document; on `putPackRelationship` as the same violation at `/from`,
+nothing written; and on a composing read that meets one in a stored pack, `500 pack_unreadable` naming the graph
+document. The read and the write then never disagree on what satisfies a required artifact. An edge of another relation
+from such a kind, and an `overrides` edge to one, are not judged by this rule. **Built (slice C).** *Pinned by:*
+`OverrideSourceRuleTest` (`anOverridesEdgeFromEachKindThatIsNotActivatableIsOneFaultAtItsFile`,
+`anOverridesEdgeFromEachActivatableKindPasses`, `theFourKindsTheRuleRefusesAreExactlyTheKindsThatAreNotActivatable`,
+`aSourceQualifiedWithAPackNameIsJudgedLikeABareOne`, `anEdgeOfAnotherRelationFromATemplatePasses`,
+`theRuleJudgesTheSourceOnlySoAnOverridesEdgeToATemplatePasses`, `aRelationshipOverridingFromATemplateIsRefusedAndItsTwinFromADirectivePasses`,
+`validateModeReportsTheEdgeAsOneBlockingFindingAtItsGraphDocumentAndTheTwinPasses`),
+`RelationshipRegistrationServiceTest` (`anOverridesEdgeFromATemplateOrAnAssetIsRefusedAndTheSameEdgeFromADirectiveRegisters`,
+`aStoredOverridesEdgeFromATemplateIsALoadViolationAtItsGraphDocument`) and the seven scenarios of
+`override-source-kind.feature` (a registration, two edges as two violations, a `requires` edge that registers, the
+relationship write and its twin, the unreadable closure and its positive control).
 
 **C28 Override cycle.** A cycle of `ov` that is reachable from `Base ∪ Req(C)` (E3, C31) is refused: at registration by the
 impact check (G8), and at read `500 pack_unreadable` should one remain.
@@ -385,6 +434,69 @@ ruling Q8 ("enhancers do not stand on their own"). **Built:** the registration r
 to the winner, ends at its own source is refused at `merged()` as `500 pack_unreadable` (`self_override`), on a read and
 on a write.
 
+**C37 Step enhancement target held.** For a step enhancement `u` held by `p` whose sole `enhances` edge names
+`action:M/s`, bare or qualified `n::action:M/s`: let `q = p` for a bare target, else the pack of `C` whose `name(q) = n`.
+`q ∈ Cdep({p})`, else `pack_reference_pack_missing`; and `hold(q, M, s)` (OD-9), else `pack_reference_artifact_missing`.
+Both name the enhancing pack and the pack the edge names.
+A step enhancement lands only on a step that the pack it names holds, inside its own `depends_on` closure. It closes,
+for step enhancements, the gap C12 leaves: an `action:` reference names no artifact kind, so C12 never finds one
+missing. An enhancer of another shape (two targets, an action and an artifact, another kind whose target is an action)
+is not judged here and keeps E6. Moments: every composing read (`getOffering` included) and the activation writes
+answer `500`; a registration and the impact-checked writes (the per-artifact registrations, `putPackRelationship`)
+answer `422`, as for every composition code (G8).
+*Source:* ADR-0066 d7 and d8 (the target step resolves in the `depends_on` closure); OD-9, decision
+`01M7037V93Y077H8M4W9V8Y6B3`; slice C spec FR-002, plan-point squad A5. **Built (slice C).** *Pinned by:*
+`EnhancementComposeTest` (`aQualifiedTargetTheNamedPackDoesNotHoldIsArtifactMissingNamingBothPacks`,
+`theTwinAQualifiedTargetTheNamedPackHoldsPasses`, `aQualifierNamingAPackOutsideTheDependsOnClosureIsPackMissing`,
+`theTwinAQualifierNamingAPackOfTheDependsOnClosurePasses`, `aQualifierNamingNoPackOfTheComposeIsPackMissingNamingTheEnhancingPack`,
+`aBareTargetIsResolvedInTheEnhancingPackItself`, `aBareTargetTheEnhancingPackDoesNotHoldIsArtifactMissingThoughAnotherPackHoldsIt`,
+`anActionDeclaredWithoutItsMissionTypeIsNoHeldStep`, `anEnhancerOfAnotherShapeIsNotJudged`,
+`eachEdgeIsVisitedOnceSoTheCheckIsLinear`), `ClosureViewTest` (`aStepEnhancerOfAStepNoPackHoldsIsRefusedByTheComposeAsTargetMissing`,
+`theTwinAStepEnhancerOfTheHeldStepComposesAndIsInForce`,
+`aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsRefusedByTheComposeAsTargetMissing`,
+`theTwinAStepEnhancerOfAnActionDeclaredWithItsMissionTypeComposes`), `OfferingReadServiceTest`
+(`aStepEnhancementOfAStepTheNamedPackDoesNotHoldRefusesTheCompose`, `theTwinAStepEnhancementOfAHeldStepComposes`) and
+the scenarios of `step-enhancement-compose.feature` on the reads (`pack_reference_artifact_missing`,
+`pack_reference_pack_missing`), the registration and the relationship write, each with its twin.
+
+**C38 Slot declared, in force only.** For every step enhancement `u ∈ Eff`, the winning copy (C17), whose sole target
+is `action:M/s`, and every slot id `σ` its `prompt_fragments` name: `σ ∈ slots(prompt(win(action:M/s)))`, the slots
+the prompt companion at the merged winner's place of the step declares (F5; a step with no prompt declares none), else
+`prompt_slot_missing`, naming the enhancement, its pack, the slot and the pack of the prompt. `u ∉ Eff ⇒` no refusal
+(OD-1 (B)).
+No fragment is ever dropped silently: a prompt override that drops a slot an enhancement in force fills is refused,
+and one that drops a slot no enhancement in force fills composes. Moments and statuses (OD-4 (i)):
+
+- every composing read answers `500`, after the composition codes and the merge's `pack_unreadable` (F6), through an
+  explicit `ClosureView.requireSlots(states)` that the read session calls, so the in-force resolution stays pure;
+- a registration and the impact-checked pack writes answer `422`, judged for each stored activation whose closure the
+  change joins, on that closure as the write leaves it, through the gate `ActivationImpact.requireComposable`, the
+  activation named in the detail and the refusal never swallowed (G8, research R7). A change that joins no stored
+  activation's closure passes;
+- the activation writes answer `422` before the document is stored.
+
+*Source:* ADR-0066 d2, d7 and d8; OD-1 (B), OD-4 (i); slice C spec FR-001, FR-006; research R7, R9; plan-point squad
+A2, A3. **Built (slice C).** *Pinned by:* `SlotComposeTest` (`aSlotTheBasePromptDeclaresIsComposed`,
+`aSlotAnOverrideDropsIsMissingNamingTheEnhancementItsPackTheSlotAndThePromptsPack`, `theTwinAnOverrideThatDeclaresTheSlotComposes`,
+`aStepWithNoPromptInForceDeclaresNoSlot`, `ofTwoEnhancementsOnlyTheOneWhoseSlotIsMissingRefuses`,
+`anEnhancementThatIsNotInForceNeverRefuses`, `onlyTheWinningCopyOfASameIdEnhancementIsJudged`,
+`theTwinTheWinningCopyThatNamesAnUndeclaredSlotRefuses`, `thePromptInForceIsAtTheWinnersPlaceOfTheStepNotTheWinningMissionTypes`,
+`eachEnhancementIsVisitedOnceAndEachMissingSlotIsNamedOnce`), `ClosureViewTest`
+(`anInForceEnhancementOfASlotTheOverrideDropsIsRefusedPromptSlotMissingWhileInForceStaysPure`,
+`theTwinTheSameEnhancementNotSelectedIsNotJudged`, `theTwinAnOverrideThatDeclaresTheSlotComposes`),
+`ActivationImpactAdapterTest` (`aChangeThatLeavesAnEnhancementInForceWithoutItsSlotIsRefusedNamingTheActivation`,
+`theTwinTheSameChangeWhereNoStoredActivationPutsTheEnhancementInForcePasses`, `theTwinAChangeWhoseOverrideDeclaresTheSlotPasses`,
+`anActivationWhoseClosureTheChangeDoesNotJoinIsNotJudged`, `aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves`,
+`theTwinARepairThatLeavesTheClosureComposingIsLetThrough`, `theNoticesNeverRefuseWhereTheGateDoes`),
+`RegistrationImpactTest` (`theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`,
+`thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`, `theTwinAGateThatFindsNothingLetsEveryPathThrough`),
+`ActivationServiceTest` (`createRefusesADocumentThatDoesNotComposeAndStoresNothing`,
+`putRefusesADocumentThatDoesNotComposeAndLeavesTheStoredOne`, `aPerArtifactWriteRefusesADocumentThatDoesNotComposeBeforeItIsStored`,
+each with its twin), `RefusalHandlerTest` (the `422` of each operation) and `ReservedRefusalCodesTest`; the eight
+scenarios of `step-enhancement-slots.feature` (a composing read, a registration, a relationship write and an activation
+write, each with its twin), and the `errors.feature` outline `prompt_slot_missing is a 422 on <operation>, which judges
+an enhancement in force before it stores`.
+
 ## 3. Registration rules
 
 Registration writes pack content. The per-artifact registrations are built (ADR-0026); the whole-pack registration
@@ -442,6 +554,22 @@ composition and the relation rules (C1–C16, C25, C27, C28, C34–C36) over eve
 naming the packs (DIV-604). The registration code does not run the layer merge, so C21 is judged at read, not at
 registration, and a floor that stops holding is reported as a notice (G20), not refused. The scope replaces the plan's
 one global compose.
+*Amended 2026-11-12 (slice C):* the check also judges the compose checks of a step enhancement.
+
+- C37 and the inherited lock (C22, C25) are closure-level: they are judged over every closure the pack joins, and refuse
+  `422` with `pack_reference_pack_missing`, `pack_reference_artifact_missing` or `override_not_permitted`.
+- C38 needs an activation to say what is in force. It is judged through the gate `ActivationImpact.requireComposable`,
+  separate from the notices and called on every check path: the full registration, the per-artifact registrations,
+  the relationship write and both `DELETE`s. "Active" is judged per stored activation whose closure the change joins:
+  an enhancement is active when it is in force under that stored document, on its closure as the write leaves it
+  (research R7). With no activation stored the gate judges nothing.
+- The relationship write (`putPackRelationship`, a `relate` in C25's terms) runs, in order, before anything is
+  written: #447's `overrides_source_not_activatable` (C27), R-REL's `prompt_fragment_invalid` (F4), the reference
+  check of its target (C12), the mutability gate (C25), then this check, with C37, the inherited lock and C38.
+
+**Partly built (slice C)** for these additions; C21 and the floor stay as above. *Pinned by:* the tests named under
+C37, C38, C22 and C25, among them `RegistrationImpactTest.theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`
+and `RegistrationImpactTest.thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`.
 
 **G9 Reference check.** For each artifact `u` a `DELETE` or replace removes from `p`, judged against the configured
 packs as the request would leave them (`P'`, with `p`'s new tree): `Inbound(p, u) = {(q, a) | q ∈ P', a held by q in
@@ -522,6 +650,10 @@ closure composes after it (G8 holds for the new state); one that leaves it broke
 A write that fixes a broken compose is not blocked by the breakage it fixes.
 *Source:* ADR-0063 amendment of 2026-11-06 (repair writes); issue #404. **Ruled, not built:** today any write into a
 closure that cannot compose is refused.
+*Note 2026-11-12 (slice C):* the C38 gate (G8) already judges each joined closure as the write leaves it: a write is
+let through when the slots compose after it, and refused when it leaves them broken, whatever they were before.
+**Partly built (slice C)** for that gate alone. *Pinned by:* `ActivationImpactAdapterTest`
+(`aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves`, `theTwinARepairThatLeavesTheClosureComposingIsLetThrough`).
 
 ## 4. Activation write rules
 
@@ -793,6 +925,8 @@ Two of the four effective reads, `listEffectiveArtifacts` and `getActivationSkip
 (2026-11-08); `getEffectiveGraph` and `getEffectiveActionContext` answer since PR C (2026-11-09), so no operation is
 reserved. Every rule in this section is **Built (PR B)** or **Built (PR C)** as it says. `M` is the merged closure of `C(D)` (C17–C21, C15), `W` its winning URNs of a kind
 in `Kₐ`, `Lk = Lk(C)` and `Req = Req(C)`.
+*Note 2026-11-12:* slice C builds a fifth effective read, the effective step prompt (`getEffectiveStepPrompt`). Its
+rule is F8, in section 8; E17, E18 and E19 hold for it as they say.
 
 **E1 Stale ids.** `staleIds = (Sel(D) ∪ Den(D)) ∖ W`; a stale id has no state.
 A stored document is served as stored; what the packs no longer hold is reported, not refused.
@@ -838,6 +972,11 @@ decisions `DM-01M6R2X2SW8KVAJCDX23PGJBMT`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`; rese
 > force, because US3 AS4 stated it only for the kind gate, which A7 withdrew. The service puts it in force (DIV-226),
 > pinned by a unit test of the in-force resolution; no contract scenario states it.
 
+*Amended 2026-11-12 (slice C, #439 option (b)):* a requirement that several artifacts in force satisfy by overriding it is
+satisfied as by one; `satisfiedBy` names them all (E9). **Built (slice C).** *Pinned by:*
+`InForceResolutionOverridersTest.aRequiredArtifactTheDocumentDoesNotSelectIsSatisfiedByEveryOverriderInTheSameOrder` and
+`DocumentRulesOverrideTest.aRequirementSatisfiedBySeveralOverridersIsSatisfiedAsByOne`.
+
 **E6 Enhancer and binding pruning.** `Eff₀ = lfp X. {u ∈ A₂ | G(u, X) ∧ (bnd(u) = ⊥ ∨ bnd(u) ∈ X)}`, with
 `G(u, X) = ¬∃T. enhances(u, T) ∨ ∃T ∈ X. enhances(u, T)`, except for a **step enhancer** `u` (OD-6): a
 `step_enhancement` with exactly one distinct `enhances` target, an action `a = action:M/s`. For it `bnd(u) =
@@ -870,6 +1009,17 @@ for the step enhancer's binding and the unheld target ([DIV-241](/conformance/di
 enhancer rule: two targets, an action and an artifact, one artifact, another kind), and `EffectiveSetTest`
 (`aSelectedStepEnhancerIsInForceWhileTheMissionTypeOfItsStepIsAndNeitherListsNorWarnsAboutIt`,
 `aSelectedStepEnhancerWhoseMissionTypeIsNotSelectedIsListedUnderTheMissionTypeBucket`).
+*Amended 2026-11-12 (slice C, plan-point squad A5):* C37 now refuses the compose of a step enhancer whose step the pack
+it names does not hold, so a closure that composes never reaches the unheld-target branch with such a step enhancer.
+The branch now covers only what C37 does not refuse: the pure resolution handed an edge that ends at no winner. The
+other shapes keep the enhancer rule as written. The two `ClosureViewTest` cases that pinned the branch
+(`aStepEnhancerOfAStepNoPackHoldsKeepsItsEdgeAndIsPrunedForItsTarget`,
+`aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsPrunedForItsTarget`) are now C37 refusal tests
+(`aStepEnhancerOfAStepNoPackHoldsIsRefusedByTheComposeAsTargetMissing`,
+`aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsRefusedByTheComposeAsTargetMissing`), each beside its twin that
+composes. **Built (slice C).** *Pinned by:* `InForceResolutionTest.aStepEnhancerWhoseKeptEnhancesEdgeEndsAtNoWinnerIsPrunedForItsTarget`
+(the branch on the pure resolution) and `ClosureViewSessionStepRefsTest.aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution`
+(the report's `NodeReference` of that branch), beside the C37 tests above.
 
 **E7 Withdrawn overrides.** Let `Pr` be the artifacts that declare `overrides` and that E6 removed. E5 and E6 run again without the overrides of
 every artifact of `Pr`, and `Pr` grows until no such artifact is newly removed. If an artifact of `Pr` is in force on the
@@ -901,6 +1051,26 @@ chain, keeps its row and gains `satisfiedBy` (the overrider in force): a require
 When several artifacts in force satisfy or hide one artifact, `satisfiedBy` and `overriddenBy` name the smallest URN
 (`InForceResolution.overriderOf`). No ruling settles that choice: it is PR B's behavior as found, deterministic and not
 changed by PR C, and an operator ruling is tracked in #439.
+*Amended 2026-11-12 (slice C, #439, operator ruling option (b)):* there is no "smallest URN" any more.
+`satisfiedBy(u)` and `overriddenBy(u)` are lists of every overrider in force that satisfies or hides `u`, directly or
+through a chain (the top of a chain is the one in force), sorted by the level of the pack that holds the version in
+force of each overrider (built-in, then org, then project), then by full URN in code points. `satisfiedBy` is absent when
+no overrider satisfies `u`. No order picks one; the state and the reason do not depend on how many are named. The lists
+are carried by `EffectiveArtifact` and its copies (`EffectiveArtifactRead`, `EffectiveContextArtifact`,
+`EffectiveGovernanceEntry`, `EffectiveAgentProfileRead`) and by the skipped report (E14). **Built (slice C).**
+*Pinned by:* `InForceResolutionOverridersTest`
+(`aSelectedArtifactHiddenByOverridersAtThreeLevelsNamesEveryOneBuiltInThenOrgThenProject`,
+`aRequiredArtifactTheDocumentDoesNotSelectIsSatisfiedByEveryOverriderInTheSameOrder`,
+`theOverridersOfOnePackAreSortedByUrnWithinTheirLevel`, `onlyTheOverridersInForceAreNamedAndOneIsAListOfOne`,
+`anArtifactNoOverriderHidesNamesNoneAndTheTopOfAChainIsTheOneInForce`,
+`theStateTheReasonAndTheBucketDoNotDependOnHowManyOverridersAreNamed`),
+`InForceResolutionTest.aSatisfiedRequirementNamesEveryOverriderInForceOfOneLevelByUrn`,
+`ActivationsEffectiveProfilesTest.aSatisfiedByIsTheUrnsOfEveryOverrideInTheOrderGiven`, `EffectiveSetTest.everyOverriderTheResolutionNamesIsCarriedInItsOrderAndNeverSortedAgain`,
+`ClosureViewSessionStepRefsTest.everyOverriderThatIsAnArtifactIsCarriedInTheResolutionsOrderAndTheOthersAreDropped`
+and the scenarios of `effective-overriders.feature`:
+`A selected T hidden by three overriders in force names them all, org before project, by URN within a level`,
+`A required T the document does not select names every overrider wherever it is carried` and
+`One overrider in force is named in a one-element list`.
 There is no `kind_not_activated` and no `kind_default` reason (A7).
 *Source:* ADR-0020 D7; data model (EffectiveArtifact, Precedence); decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`
 (`kind_default` dropped); A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (`kind_not_activated` dropped). **Built (PR B)** (DIV-229).
@@ -930,6 +1100,11 @@ artifact entry names (decision `01M70C42KC78KB9H6KB7TK9224`).
 `ActionContextWalkTest.theContextCarriesTheEnhancersInForceOfTheStartStepAndTheArtifactsInForceItEnhancesInUrnOrder`, and the
 scenarios `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not` and
 `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests`.
+*Amended 2026-11-12 (slice C, the ownership rule):* the context's `enhancements` and each item's `enhancedBy` cover the
+artifacts of every pass of E16, whatever pass listed them, and still pull nothing in. **Built (slice C).** *Pinned by:*
+the scenario `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not`,
+which now lists the tactic `e` project-wide beside `directive:T is enhanced by tactic:e`, and leaves the enhancer out of
+force listed nowhere.
 
 **E13 Floor satisfaction.** For every `T ∈ Fl` that is not an ungrounded enhancer (E6): `T ∈ Req ⇒ T ∈ Eff ∨ ∃E ∈ Eff.
 ov⁺(E, T)`, and `T ∈ Lk ⇒ T ∈ Eff`; an enhancer never satisfies `T`. An ungrounded floor enhancer is reported
@@ -955,6 +1130,14 @@ design names `requiredUngrounded`, `unheldRequired` and `deadPins` are the contr
 `theTargetsOfAnEnhancerNameTheStepsItEnhancesAndTheArtifactsAlike`,
 `aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution`) and the scenario `#429 - a target of an enhancer
 without a target in force is a NodeReference, on the report and on the context`.
+*Amended 2026-11-12 (slice C, #439 option (b)):* `overridden` is `{artifact, overriddenBy}` with `overriddenBy` the
+sorted list of E9, and `overrideNotApplied` names its locked target once, with every overrider in force whose edge was
+not applied (it was one entry per edge), so `summary.skipped` counts such a target once. **Built (slice C).** *Pinned
+by:* `InForceResolutionOverridersTest.anOverrideOfALockedArtifactNotAppliedNamesEveryOverriderInForceOnceForTheTarget`,
+`InForceResolutionTest.anOverriddenArtifactNamesTheTopOfTheChainAndEveryOneOfSeveral`,
+`ClosureViewSessionStepRefsTest.everyOverriderThatIsAnArtifactIsCarriedInTheResolutionsOrderAndTheOthersAreDropped`
+and, in `effective-overriders.feature`, the scenario
+`A selected T hidden by three overriders in force names them all, org before project, by URN within a level`.
 
 **E15 Graph projection.** `Nd(D, M) = Eff ∪ {action:M'/s | held(C, M', s) ∧ mission_type:M' ∈ Eff}`: the nodes are the
 artifacts in force and the held steps of the mission types in force (the node predicate). `nodes = Nd`; `edges = {(x, r, y) ∈ E_M | x, y ∈ Nd}`;
@@ -976,31 +1159,96 @@ steps), `01M7037V93Y077H8M4W9V8Y6B3` (the step predicate, OD-9). **Built (PR C).
 `ClosureViewSessionStepRefsTest` (`theGraphListsTheOverrideOfAHeldStepAndOfAnArtifactInForce`,
 `theGraphListsNoOverrideOfATemplateAnAssetAGuardALifecycleOrAnArtifactOutOfForce`) and the scenarios `US5 AS1`, `US5 AS2` (two).
 
-**E16 Action context.** `getEffectiveActionContext(mt, a)` is ADR-0018's five-step walk from the held step `action:mt/a`,
-started only when `mission_type:mt ∈ Eff`, over `E_M` restricted to `Eff`: the walk lists and walks `Eff` only, and the start
-node is its one step (E15). Each listed artifact brings its `enhancedBy` (E12); the start step's own enhancers are in
-`enhancements`, one `{target, enhancedBy}` per node with an enhancer in force, sorted by `target` and each `enhancedBy`
-in one order: kind token, then id, by Unicode code point (the order of the full URNs). A **suggestion** is an artifact the listing
-gives a suggestion (E11: `not_selected`, reached through no hard relation by any artifact in force) that a listed entry reaches
-through a `suggests` edge; it carries the nearest edge's `when` and `reason`, is not walked through, and so the context's
-suggestions are a subset of the listing's. Entries are sorted by full URN string (ADR-0018 D3). `mission_type:mt ∉ Eff ⇒
-artifacts = [], enhancements = []` and `missionTypeNotInForce = {mt}`; an unknown `mt`, or an `a` no pack holds as a step
-of `mt` (OD-9: `held(C, mt, a)`), is `404 mission_type_not_found` or `action_not_found`, judged on the merged closure
-whether or not `mt` is in force and before a `304`.
+**E16 Action context.** `getEffectiveActionContext(mt, a)` is started only when `mission_type:mt ∈ Eff`, from the held step
+`action:mt/a`, over `E_M` restricted to `Eff`: it lists and walks `Eff` only, and its start node is its one step (E15).
+It runs ADR-0018's five steps in three passes over one listing (the ownership rule, ADR-0018 D5 as amended 2026-11-12):
+
+1. `action`: the five steps from `action:mt/a`, ADR-0018's walk as built in PR C;
+2. `mission_type`: the five steps from the roots `R₂ = {u ∈ Eff | kind(u) ∈ {directive, tactic, paradigm} ∧
+   scope(mission_type:mt, u)}`;
+3. `project`: the five steps from the roots `R₃ = {u ∈ Eff | kind(u) ∈ {directive, tactic, paradigm} ∧ own(u) = ∅}`,
+
+where `own(u) = {x | scope(x, u), kind(x) ∈ {action, mission_type}}` is read from every authored `scope` edge of the
+merged closure, whether its source is held or not and whatever is in force (research R2; squad A6). The first pass
+that reaches an artifact lists it, in every step, vocabulary included; an artifact an earlier pass listed still seeds
+the later steps and passes (ADR-0018 D3). Each item carries `appliesThrough`, the pass that lists it. So an artifact
+in force that only other actions or other mission types scope is not listed, unless what a listed entry reaches
+through steps 2 to 5 reaches it; a required one is no exception. The roots of passes 2 and 3 are directives, tactics
+and paradigms only; what their steps 2 to 5 reach is of any kind, as in pass 1. Each pass root is seeded with explicit
+hops from its own origin, and the context serializes neither `via` nor `hops`.
+
+Each listed artifact brings its `enhancedBy` (E12); the start step's own enhancers are in `enhancements`, one
+`{target, enhancedBy}` per node with an enhancer in force, sorted by `target` and each `enhancedBy` in one order: kind
+token, then id, by Unicode code point (the order of the full URNs). A **suggestion** is an artifact the listing gives a
+suggestion (E11: `not_selected`, reached through no hard relation by any artifact in force) that a listed entry reaches
+through a `suggests` edge; it carries the nearest edge's `when` and `reason` and the `appliesThrough` of the entry whose
+`suggests` edge reached it, is not walked through, and so the context's suggestions are a subset of the listing's.
+Entries are sorted by full URN string (ADR-0018 D3). `depth` is 0 or 1 and absent is 0, narrower than ADR-0018 D4
+([DIV-244](/conformance/divergence-register/)). `mission_type:mt ∉ Eff ⇒ artifacts = [], enhancements = []` in every pass
+and `missionTypeNotInForce = {mt}`; an unknown `mt`, or an `a` no pack holds as a step of `mt` (OD-9: `held(C, mt, a)`),
+is `404 mission_type_not_found` or `action_not_found`, judged on the merged closure whether or not `mt` is in force and
+before a `304`. While `mission_type:mt ∈ Eff`, the context's `_links` carry `prompt`, the effective step prompt of the
+same action (F8).
 Whether a mission type is in force is read from the effective set, the one predicate E6 and E9 use; the walk stays on
-the packs side.
-*Source:* ADR-0018 D1, D2, D3, D5; spec FR-019, US5 AS4–AS5; research open review item 4; A7, decision
-`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; decisions `01M7059T4K64TAVKXN3T1FKWYG` (suggestions), `01M70CTZP7P2EHSCK2G0RET74B` (the
-listing's scope), `01M70C42KC78KB9H6KB7TK9224` (`enhancements`), `01M6Y6VE6VZQ4MXD98N93JB3GJ` (one suggestion definition).
-**Built (PR C)** ([DIV-243](/conformance/divergence-register/), [DIV-244](/conformance/divergence-register/)). *Pinned by:*
-`ActionContextWalkTest` (the five steps, `theEntriesAreSortedByFullUrnStringWhateverStepListedThem`,
+the packs side, and the offering's walk (ADR-0018 D1, D2) is unchanged.
+*Source:* ADR-0018 D1, D2, D3, D5 (D5 as amended 2026-11-12); spec FR-019, US5 AS4–AS5 of the layer-merge mission; slice
+C spec FR-007 to FR-009, research R1 to R4, operator ruling Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3` (option B);
+research open review item 4; A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; decisions `01M7059T4K64TAVKXN3T1FKWYG`
+(suggestions), `01M70CTZP7P2EHSCK2G0RET74B` (the listing's scope), `01M70C42KC78KB9H6KB7TK9224` (`enhancements`),
+`01M6Y6VE6VZQ4MXD98N93JB3GJ` (one suggestion definition).
+**Built (PR C)** for pass 1 ([DIV-243](/conformance/divergence-register/), [DIV-244](/conformance/divergence-register/)).
+*Pinned by:* `ActionContextWalkTest` (the five steps, `theEntriesAreSortedByFullUrnStringWhateverStepListedThem`,
 `theWalkStartsAtAHeldStepWhoseWinnerIsAPackThatDoesNotDefineTheMissionType`, `anActionDeclaredWhereNoPackDefinesItsMissionTypeIsActionNotFound`,
 `aMissionTypeNotInForceAnswersNoEntry`), `StepHoldingTest`, `ClosureViewTest.theWalkStartsAtTheHeldStepOfAMissionTypeInForceAndListsOnlyArtifactsInForce`,
 `EffectiveSetTest.anArtifactAnotherArtifactInForceRequiresOutsideTheContextIsNoSuggestionOfTheContextAndOneNobodyRequiresIs`,
 `EffectiveContextTest`, `EffectiveReadServiceTest.anUnknownNameIsRefusedBeforeTheTagIsComparedWhateverIfNoneMatchSays` and
 `ClosureViewSessionStepRefsTest.theNamesOfAnActionAreJudgedAgainstTheMergedClosureAndNothingElse`; the scenarios `US5 AS4` and `US5 AS5` (two).
-> ⚠ **Unclear:** FR-019 says the context is what "the step contract names"; the plan reads it as the ADR-0018 walk.
-> The data model allows `depth` 0 or 1, while ADR-0018 D4 allows 0 to 2.
+**Built (slice C)** for passes 2 and 3, `appliesThrough` and the `prompt` link
+([DIV-245](/conformance/divergence-register/)). *Pinned by:* `ActionContextWalkOwnershipTest`
+(`anUnscopedDirectiveInForceIsListedProjectWideOnEveryActionOfAMissionTypeInForce`,
+`aDirectiveScopedOnlyByAnotherActionIsAbsentWhetherOrNotItIsRequired`, `aDirectiveScopedByTheMissionTypeIsListedThroughTheMissionType`,
+`aDirectiveScopedByAnotherMissionTypeIsAbsent`, `aScopeEdgeFromAnUnheldSourceStillOwnsItsTarget`,
+`theSameDirectiveWithoutTheEdgeIsListedProjectWide`, `onlyDirectivesTacticsAndParadigmsAreRoots`,
+`theFirstPassThatReachesAnArtifactListsIt`, `anArtifactTheActionScopesAndTheMissionTypeAlsoScopesIsListedThroughTheAction`,
+`anEligibleRootFirstReachedByVocabularyIsListedThroughTheActionAndStillSeedsItsPass`,
+`whatARootReachesThroughAnArtifactAnEarlierPassListedNamesThatRoot`, `anArtifactAnEarlierPassListedStillSeedsTheVocabularyStepOfALaterPass`,
+`anArtifactAnEarlierPassListedStillSeedsTheRequiresOfSuggestedStepOfALaterPass`, `theMissionTypePassRunsBeforeTheProjectPass`,
+`aRootOutOfForceIsNoRoot`, `aSuggestionCandidateCarriesThePassThatListsIt`, `aSuggestedArtifactInForceOfAProjectRootIsListedThroughTheProject`,
+`aMissionTypeNotInForceAnswersNoEntryInEveryPass`, `theOfferingWalkIsUnchanged`,
+`whereNoRootAddsAnythingTheEffectiveFormAnswersWhatTheOfferingFormAnswers`, `theEvidenceListsFifteenOfSixteen`,
+`theContextIsTheSameAcrossRepeatedWalksAndEveryOrderOfThePacksAndTheirLinks`, `theOwnershipRuleAddsAtMostLinearWork`),
+`EdgeIndexTest` (`theScopeOwnersOfAnArtifactAreTheActionsAndMissionTypesThatScopeItHeldOrNot`,
+`aScopeEdgeToATargetItsPackDoesNotHoldStillOwnsTheTargetItNames`, `onlyAScopeEdgeFromAnActionOrAMissionTypeOwnsItsTarget`,
+`theScopeEdgesOfAVersionALaterLevelReplacedOwnNothing`, `theScopeOwnerBuildVisitsEachEdgeOnceAndOnlyOnce`,
+`theScopeOwnersAreWorkedOutOnceAndTheHeldUrnsListEveryArtifactInUrnOrder`), `EffectiveContextTest`
+(`eachItemCarriesTheAppliesThroughOfThePassThatListedIt`, `aSuggestionTakesTheAppliesThroughOfItsCandidate`,
+`eachAppliesThroughHasTheTokenTheContractSpells`), `ClosureViewSessionStepRefsTest`
+(`theContextMapsEachPassOfTheWalkToTheAppliesThroughOfItsEntryAndOfItsCandidate`, `everyPassOfTheWalkHasAnAppliesThroughOfTheSameName`),
+`EffectiveReadMapperTest` (`everyAppliesThroughIsMappedToTheValueTheContractSpells`,
+`theContextOfAMissionTypeInForceLinksThePromptOfTheSameActionAndOneNotInForceDoesNot`), `EffectiveArtifactCopiesParityTest`
+(`theContextItemRepeatsEveryMemberOfTheItemAndItsRequiredMembersAndAddsAppliesThroughAlone`,
+`theAppliesThroughOfTheContextItemIsOneOfTheThreeRulesOfTheOwnershipRule`); the three scenarios of
+`effective-context-scoping.feature`, whose first example table is the one record of the 16 directives of the
+2026-11-12 evidence (`The 16 directives of software-dev/implement: <directive> is <expected>`; `A type-scoped directive
+is listed through the mission type, and another type's stays out while research is <research>`; `A suggestion carries
+the appliesThrough of the pass whose suggests edge reached it`); the rewritten scenarios `US5 AS3`, `US5 AS4` and `The
+context holds every kind the action scopes and the activation selects, and the unscoped directive and tactic in force
+(#484)` of `effective-graph-and-context.feature`, which keep negative twins of kinds that are no root; and `FR-007 - the
+context of an action of a mission type in force links its prompt, and one not in force does not` of
+`effective-step-prompt.feature`.
+*Resolved 2026-11-12:* the ⚠ note this rule carried ("FR-019 says the context is what the step contract names") is
+settled by the ownership rule above.
+*Amended 2026-11-12 (slice C, A7, OD-9; operator ruling of 2026-11-12, research R8): one place for a step.* The
+effective step read `getEffectiveMissionStep` follows the step's place as the context and the prompt read do: the pack
+that holds `win(action:mt/a)`, with that pack's prompt and guidelines. A step only a version the winning mission type
+replaced keeps answers `200` on the step read, the context and the prompt read; a step no version of the closure holds
+is `404 action_not_found` on all three. The context's `artifact` link names the pack of the step's place.
+**Built (slice C).** *Pinned by:* the scenario `WP09, A7 - a step only the replaced version keeps is read from its
+place, as the context and the prompt read it` of `effective-mission-types.feature`, `EffectiveMissionTypeReadServiceTest`
+(`aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFilesAndTheMergedStepContract`,
+`aStepNoVersionDeclaresIsTheRefusalOfThePlaceAsTheContextGivesItAndNoPackIsRead`,
+`aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`) and `EffectiveReadServiceMissionWinnerTest`
+(`aStepsPlaceIsThePackOfTheMergedWinnerOfItsActionWithTheSourceFingerprint`).
 
 **E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
@@ -1011,11 +1259,37 @@ recipe with no query; an activation write's `If-Match` takes `*`, `rev(D)` or th
 longer matches is `412`.
 *Source:* ADR-0059 D5 and its amendment of 2026-11-08; research R5; decisions `01M6Y11E55YP5TG1EJ1MDKCFRP`,
 `01M6Y3GZFRC5WEQQ7G6GT0YMW3`; spec FR-020. **Built (PR B)** (DIV-231, DIV-233, DIV-234).
+*Amended 2026-11-12 (slice C, research R10, squad D1):* the domain separator is `"charter-effective-read\0v3\n"` for every
+effective read, because the context answers more under an unchanged revision and closure fingerprint (E16), so a tag
+from before never matches and every effective read moves once. A read `PROMPT` is added, the effective step prompt
+(F8), with the query `(mt, a)`; the closure fingerprint digests every loaded file, the step prompts and the prompt
+fragments included, so a fragment's bytes move the tag and a pack outside the closure does not. The closure fingerprint
+digests each pack's files on its own, in closure order (level, then pack id, dependencies first), so it no longer
+depends on the order in which the packs are configured; the tags of a closure of several packs change once with it.
+**Built (slice C).** *Pinned by:* `EffectiveTagTest` (`theContextTagOfAFixedInputIsAFixedLiteral`,
+`thePromptHasATagOfItsOwnPerStepThatMovesWithTheClosureAndNotWithAPackOutsideIt`),
+`ClosureQueriesTest.theClosureFingerprintIsTheSameWhateverOrderThePacksAreConfiguredIn`, `EffectivePromptDeterminismTest`
+(`oneHundredReadsAnswerTheSameBodyAndTheSameTag`, `everyPermutationOfTheConfiguredOrderOfTheThreePacksAnswersTheSameBodyAndTheSameTag`)
+and the scenario `Research R10 - the ETag changes with a fragment's bytes and not with a pack outside the closure` of
+`effective-step-prompt.feature`.
 
 **E18 Read refusals.** `404 activation_not_found` for an unknown activation; `500` with the composition code, or
 `pack_unreadable` for C21, C28 or E7, when `C` cannot compose or merge.
 *Source:* spec FR-021. **Built (PR B).** `getActivation` answers the same `500`s. **Built (PR C)** for the graph and the context
 (the context adds the `404`s of E16).
+*Amended 2026-11-12 (slice C, OD-5, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`):* the effective step prompt (F8)
+answers, in this order and every one before a `304`: `404 activation_not_found`; `404 mission_type_not_found` and
+`404 action_not_found`, judged on the merged closure as E16 judges them; `409 mission_type_not_in_force` for a mission
+type the closure holds and the activation does not put in force; then the `500`s of the closure, the composition codes,
+`pack_unreadable` and `prompt_slot_missing` in F6's order. The action context answers `200` with an empty context for the
+same mission type (E16); the two reads differ on purpose, and ADR-0066's annotation of decision 9 records why. Every
+composing effective read also answers C37's codes, the inherited lock's `pack_unreadable` and C38's
+`500 prompt_slot_missing`. **Built (slice C).** *Pinned by:* `EffectiveReadServiceTest.thePromptIsTheSessionsPromptOfTheStepUnderItsOwnTagWithTheReadsFingerprints`,
+`ActivationControllerTest.thePromptAnswersItsBodyWithItsTagAndTheFingerprintItVerified`, `RefusalHandlerTest` and the
+scenarios of `effective-step-prompt.feature` `FR-004 - a mission type the closure holds and the activation does not put
+in force is 409, where the context answers empty`, `Research R10 - each 404 is judged before the 304, and so is the
+409; a path segment outside its pattern is 400` and `Research R10 - a closure whose enhancement in force names a slot
+the prompt in force does not declare is 500 before the 304`.
 
 **E19 One verified read.** Each effective read composes and merges `C` once, from one verified read (G15), retried up
 to 3 times on `stale_input`.
@@ -1136,12 +1410,12 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C19 Edges from a loser | ADR-0059 D3 | Built (PR B) |
 | C20 Edges to a loser | ADR-0059 D3; A12 | Built (PR B) |
 | C21 Override gate | ADR-0012 d1, d8; ADR-0059 D3; FR-011 | Built (PR B) |
-| C22 Mutability along the closure | ADR-0063 D3; A15 | Built (PR A0) |
+| C22 Mutability along the closure | ADR-0063 D3; A15; OD-2 (A) | Built (PR A0); the inherited lock of a step enhancement built (slice C) |
 | C23 Tighten, never loosen | ADR-0012 d3 | Built |
 | C24 Unreadable policy | ADR-0063 D4 | Built |
-| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4; B8 | Built (PR A0) |
+| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4; B8; OD-2 (A); #447 | Built (PR A0); `422 override_not_permitted` for the inherited lock built (slice C) |
 | C26 Removal by a derived pack | ADR-0030 d1 to d3 | Ruled, not built |
-| C27 CRG overrides at read | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; R11; A6 | Built (registration PR A, read PR B) |
+| C27 CRG overrides at read | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; R11; A6; #447 option 1 | Built (registration PR A, read PR B); an activatable source only built (slice C) |
 | C28 Override cycle | spec FR-016; A2 | Built (registration PR A, read PR B) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
@@ -1151,6 +1425,8 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
 | C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
 | C36 Edge shape | A8, A11, A12 | Built (registration PR A; the merge-time refusal PR B) |
+| C37 Step enhancement target held | ADR-0066 d7, d8; OD-9; slice C FR-002; squad A5 | Built (slice C) |
+| C38 Slot declared, in force only | ADR-0066 d2, d7, d8; OD-1 (B), OD-4 (i); slice C FR-001, FR-006; R7 | Built (slice C) |
 | G1 Writable levels | `DM-01M6R1GQYF` | Built (PR A) for a registration |
 | G2 Full replacement | operator 2026-11-06; `DM-01M6R0TA37` | Built (PR A) |
 | G3 Version rule | `DM-01M6R0TCAG`; B1 | Built (PR A) |
@@ -1158,7 +1434,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G5 Archive validity | FR-003, NFR-004, NFR-005 | Built (PR A) |
 | G6 Preconditions | FR-003; research R-lock | Built (PR A) |
 | G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Built (PR A) |
-| G8 Impact check | plan IC-04; A5 | Partly built (PR A): composition and relation rules; not C21 or a floor refusal |
+| G8 Impact check | plan IC-04; A5; slice C R7 | Partly built (PR A): composition and relation rules; not C21 or a floor refusal. C37, the inherited lock and the C38 gate per stored activation built (slice C) |
 | G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Built (PR A) |
 | G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Built (PR A) |
 | G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Built (PR A) |
@@ -1171,7 +1447,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G18 Activations unaffected | research R-lock; B4 | Built (PR A); the read of G20 (PR B) |
 | G19 Asynchronous registration | A5 | Built (PR A) |
 | G20 Impact report | B4 | Partly built: floor and lock lists (PR A), `activationsAffected` (PR B); no `Unheld` |
-| G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
+| G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built; partly built (slice C) for the C38 gate |
 | W1 Closed body | ADR-0020 D4, D9 | Built |
 | W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form built (PR A0) |
 | W3 Canonical form | ADR-0020 D4; operator 2026-11-06; `ArtifactSpellings` | Built (spellings normalized; DIV-208 withdrawn) |
@@ -1210,20 +1486,20 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013; A7 | Built (PR B) |
 | E3 Base set | ADR-0012 d7; ADR-0020 D7; Q6 | Built (PR B) |
 | E4 Override hiding | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; A3, A6 | Built (PR B) |
-| E5 Requirement | operator 2026-11-06; `DM-01M6R3YTNT`; A2, A3 | Built (PR B) |
-| E6 Enhancer and binding pruning | operator 2026-11-06; `DM-01M6R3YTNT`, `DM-01M6R4W3ZM`; A8; A7 Q1; OD-6 `01M702A8XY` | Built (PR B); the step enhancer's binding and the unheld target built (PR C) |
+| E5 Requirement | operator 2026-11-06; `DM-01M6R3YTNT`; A2, A3; #439 | Built (PR B); every overrider named built (slice C) |
+| E6 Enhancer and binding pruning | operator 2026-11-06; `DM-01M6R3YTNT`, `DM-01M6R4W3ZM`; A8; A7 Q1; OD-6 `01M702A8XY`; squad A5 | Built (PR B); the step enhancer's binding and the unheld target built (PR C); the unheld branch narrowed by C37 (slice C) |
 | E7 Withdrawn overrides | research R13; A2, A8, A11 | Built (PR B) |
 | E8 The effective set | research R2, R11, R12, R13 | Built (PR B); asked by W26 (PR C) |
-| E9 State and reason | ADR-0020 D7; data model; A7; research R11 | Built (PR B) |
+| E9 State and reason | ADR-0020 D7; data model; A7; research R11; #439 option (b) | Built (PR B); every overrider by level then URN built (slice C) |
 | E10 In force | `DM-01M6R2WPZM` | Built (PR B) |
 | E11 The listing | `DM-01M6R2WPZM`, `DM-01M6R0TNEB`; ADR-0059 D5 | Built (PR B) |
-| E12 Enhancement, both ways | operator ruling A4; FR-015; `01M70C42KC` | Built (PR B) for the list and the report (no pull); built (PR C) for the two-ended read |
+| E12 Enhancement, both ways | operator ruling A4; FR-015; `01M70C42KC`; `01M774HQ8N` | Built (PR B) for the list and the report (no pull); built (PR C) for the two-ended read; every pass of the context built (slice C) |
 | E13 Floor satisfaction | operator 2026-11-06 (Q6, Q8); `DM-01M6R4W3ZM` (A9) | Built (PR B) |
-| E14 Skipped buckets | `DM-01M6R0TNEB`; FR-017; D16 | Built (PR B); activatable kinds only and step targets built (PR C) |
+| E14 Skipped buckets | `DM-01M6R0TNEB`; FR-017; D16; #439 | Built (PR B); activatable kinds only and step targets built (PR C); `overriddenBy` lists built (slice C) |
 | E15 Graph projection | `DM-01M6R0TNEB`; FR-018; `01M702A71Y`, `01M7037ZNK` | Built (PR C) |
-| E16 Action context | ADR-0018 D1, D2, D3; FR-019; A7; `01M7059T4K`, `01M70CTZP7`, `01M7037V93` | Built (PR C) |
-| E17 Validators | ADR-0059 D5 and its amendment of 2026-11-08; FR-020 | Built (PR B); the graph and the context built (PR C) |
-| E18 Read refusals | FR-021 | Built (PR B); the graph and the context built (PR C) |
+| E16 Action context | ADR-0018 D1, D2, D3, D5 (amended 2026-11-12); FR-019; A7; `01M7059T4K`, `01M70CTZP7`, `01M7037V93`; `01M774HQ8N` | Built (PR C); the ownership rule, `appliesThrough`, the `prompt` link and the step's place (A7) built (slice C) |
+| E17 Validators | ADR-0059 D5 and its amendment of 2026-11-08; FR-020; slice C R10 | Built (PR B); the graph and the context built (PR C); `v3` and `PROMPT` built (slice C) |
+| E18 Read refusals | FR-021; OD-5 `01M774HSKK` | Built (PR B); the graph and the context built (PR C); the prompt read and its `409` built (slice C) |
 | E19 One verified read | NFR-007; `DM-01M6R2X563` | Built (PR B) |
 | E20 Writes walk merged edges | research R2; `DM-01M6R4W1H9` | Built (PR B) |
 | E21 Deny entries not applied | B4 | Built (PR B) |
@@ -1232,13 +1508,16 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | F3 Identity | FR-006; D8; operator ruling A2 | Built |
 | F4 Target and edges | FR-006; ADR-0064; ADR-0066 d7; R-OVR; R-REL | Built |
 | F5 Base prompt slots | FR-007; ADR-0066 d8 | Built |
-| F6 Precedence | research P9 | Built |
+| F6 Precedence | research P9; slice C | Built; the compose checks' order built (slice C) |
 | F7 Same-id enhancements | ADR-0048 d9, d10; ADR-0066 d6 | Built |
+| F8 Effective step prompt | ADR-0066 d4, d5, d9; OD-5, OD-7, OD-8; slice C FR-003 to FR-005, R8, R10 | Built (slice C) |
 
 Decision ids are shortened to their first twelve characters in the table; the full ids are in the rule text. "Spec",
 "FR", "NFR" and "plan IC" without a mission name are the layer-merge mission's
 (`kitty-specs/layer-merge-and-effective-reads-01M6R0J6/`); "activation mission" is
-`kitty-specs/activation-register-and-closure-01M6NXBD/`.
+`kitty-specs/activation-register-and-closure-01M6NXBD/`; "slice C" is
+`kitty-specs/effective-step-and-action-context-01M774HB/`, whose research R7, R8 and R10 and plan-point squad findings
+(A5, D1) the rows cite.
 
 ## 8. Step enhancements and prompt fragments
 
@@ -1251,6 +1530,8 @@ equal meaning. This section states what is **built** (the step-enhancement servi
 step's effective prompt, are **planned** in the phase-2 mission
 ([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)); no rule below depends on them. The phase-2 mission adds their
 sub-headings after this one when it builds them.
+*Note 2026-11-12:* the slice C mission builds them (#438): the compose checks are C37, C38 and the inherited lock of
+C22 and C25 in section 2, judged when packs compose, and the read is F8. Their sub-headings follow the load rules.
 
 ### Load rules
 
@@ -1309,6 +1590,13 @@ kind in binding order, the templates, the presets and the pack document, then th
 faults of F1 to F4 (marker, repeated slot, edges, directory, repeated id, no entries) by path, then by rule. A
 registration lists them all.
 *Source:* research P9; plan IC-02. **Built.**
+*Amended 2026-11-12 (slice C):* the compose checks come after the load. A composing read answers, in this order: the
+composition codes (C1 to C16, C34 to C36 and C37's `pack_reference_pack_missing` and `pack_reference_artifact_missing`),
+then the merge's `pack_unreadable` (C21, C28, E7, the inherited lock of C22 and #447's `overrides` source of C27), then
+C38's `prompt_slot_missing`. So a slot is judged only on a closure that composes and merges, and the answer stays one
+code whatever else is wrong. **Built (slice C).** *Pinned by:* the scenario `Research R10 - a closure whose
+enhancement in force names a slot the prompt in force does not declare is 500 before the 304` of
+`effective-step-prompt.feature`, `ClosureQueriesTest` and the C38 tests of `ClosureViewTest`.
 
 **F7 Same-id enhancements.** A step enhancement defines its own URN `step_enhancement:<id>`, so C14 and C15 apply as to
 any definer: two packs at one level that define the same id are refused `pack_sibling_conflict` unless a descriptor
@@ -1319,6 +1607,61 @@ override (ADR-0048 d10). The enhancement is selectable like any other artifact (
 Not built, planned in the phase-2 mission (#438): refusal when a named slot is missing from the prompt in force
 (`prompt_slot_missing`), resolution of the target step across the `depends_on` closure, the integrity check of the
 target, and the read of a step's effective prompt. `prompt_slot_missing` stays reserved.
+*Note 2026-11-12:* all four are built in slice C, below, and `prompt_slot_missing` is raised: none of ADR-0066's four
+codes is reserved any more.
+
+### Compose checks
+
+The compose checks of [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/) decision 8 are
+composition rules, stated in section 2 with their moments and pins: **C37** (the target held), **C22** and **C25** as
+amended (the inherited lock, OD-2 (A)) and **C38** (the slot declared, an enhancement in force only, OD-1 (B), OD-4
+(i)). G8 says how a registration judges them, and F6 their order on a read. Moment: **C**, and the registration (G8)
+and the activation writes.
+
+### The effective step prompt
+
+**F8 Effective step prompt.** `getEffectiveStepPrompt(mt, a)`, under an activation `D` with `mission_type:mt ∈ Eff`
+and `held(C, mt, a)`, answers:
+
+- `prompt`: the prompt companion at the place of `win(action:mt/a)` (the place E16 and `StepHolding` give the step,
+  research R8), served as it is stored (ADR-0066 d9: unchanged), and `promptPackId`, that place's pack; a step with no
+  prompt answers an empty prompt, no `promptPackId` and no slots;
+- `slots`: every slot the prompt declares (F5), in declaration order, each with `fragments`: the fragments of the step
+  enhancements `u ∈ Eff`, winning copies only (C17), whose sole target is `action:mt/a` and that name the slot, ordered
+  by `lv` of the enhancing pack (`B ≺ O ≺ R`), then `name` of that pack, then the enhancement id, each by code point
+  (ADR-0066 d5), each with its pack (id, name, level) and enhancement. A slot nothing fills is listed with no fragment.
+  A held enhancement that is not in force is absent, and nothing is pulled into force because its target is (ADR-0066
+  d4, E12);
+- `diagnostics`: `prompt_slot_not_empty` for a slot that still holds legacy text under an unversioned descriptor; the
+  slot is listed with its fragments and no flag (OD-7, OD-8);
+- `_links`: `self`, `effective-context` (the action context of the same action) and `effective-artifact` (the step
+  under the activation, which answers for a step only a replaced version keeps, A7).
+
+Its refusals and their order are E18's (the `409 mission_type_not_in_force` among them), its tag is E17's read
+`PROMPT`, and it is one verified read (E19). The answer is byte-identical across repeated reads and every order in
+which the closure's packs are configured, and its work is linear in the enhancements of the closure (slice C NFR-001,
+NFR-002).
+*Source:* ADR-0066 d4, d5, d9 and its annotations of 2026-11-12; OD-5, OD-7, OD-8; slice C spec FR-003 to FR-005,
+FR-007; research R5, R8, R10. **Built (slice C).** *Pinned by:* `EffectivePromptQueryTest`
+(`fragmentsAreOrderedByLevelThenPackNameThenEnhancementId`, `enhancementIdsOfOnePackAreComparedByCodePoint`,
+`anEnhancementHeldButNotInForceIsAbsent`, `anEnhancementOfAnotherStepOrWithTwoTargetsIsAbsent`,
+`aSlotNoInForceEnhancementFillsIsListedEmpty`, `aStepWithNoSlotsAnswersItsPromptAndNoSlot`,
+`aStepWithNoPromptCompanionAnswersAnEmptyPromptAndNoPack`, `thePromptIsServedAsStored`,
+`aSlotHoldingLegacyTextIsListedWithItsFragmentsAndADiagnostic`, `onlyTheWinningCopyOfAnEnhancementIsServed`,
+`thePromptIsReadAtTheWinnersPlaceOfTheStep`, `everyEdgeTheQueryReadsIsCountedOncePerPack`,
+`theCountGrowsLinearlyWithTheEnhancementsOfOneStep`, `theCountGrowsLinearlyWithTheEnhancementsSpreadOverSteps`),
+`ClosureViewGovernanceTest` (`theStepPromptIsReadAgainstTheDigestOfTheClosureTheViewWasVerifiedAt`,
+`theTwinTheStepPromptOfAClosureThatDidNotMoveIsServedAsStored`), `EffectivePromptTest`, `ClosureViewSessionArtifactTest`
+(`theEffectivePromptIsMappedAsTextWithItsPacksSlotsFragmentsAndDiagnostic`, `aDiagnosticThePromptQueryNeverListsIsAFault`),
+`EffectiveReadMapperTest` (`thePromptIsMappedWithItsSlotsInOrderItsDiagnosticsAndItsThreeLinks`,
+`aStepWithNoPromptLeavesThePromptPackOutAndNamesNoStepWhileMissionTypesAreNotServed`,
+`theEffectivePromptOfSoftwareDevPlanServesBothExampleFragmentsBuiltInFirst`,
+`theTwinWithOnlyTheMissionTypeInForceTheSlotIsListedWithNoFragment`), `EffectivePromptDeterminismTest` and the scenarios
+of `effective-step-prompt.feature` (`SC-001 - on charter's example packs, plan's slot holds plan-risk-notes of built-in,
+then spdd-plan of org-base`; `SC-001, squad R1 - the fragments of a slot are ordered by level, then pack name, then
+enhancement id, and in no other order`; `FR-003 - an enhancement held and not in force is absent, a slot nothing fills
+is listed empty, and a prompt with no slot lists none`; `FR-005, C-005 - a slot that still holds legacy text is listed
+with its fragments and a prompt_slot_not_empty diagnostic`; and the refusal scenarios named under E18).
 
 ## Sources
 
@@ -1338,15 +1681,19 @@ target, and the read of a step's effective prompt. `prompt_slot_missing` stays r
   [ADR-0063](/adr/0063-pack-mutability-policy-file/).
 - Design: [Logical model](/architecture/logical-model/), [Resolution model](/architecture/resolution-model/),
   [Offering and activation](/architecture/offering-and-activation/).
-- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-244).
+- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-245).
 - Missions: `kitty-specs/activation-register-and-closure-01M6NXBD/` (spec, research) and
   `kitty-specs/layer-merge-and-effective-reads-01M6R0J6/` (spec, the resolved decisions under `decisions/`, plan,
-  research, data model).
+  research, data model), and `kitty-specs/effective-step-and-action-context-01M774HB/` (slice C: spec, research
+  R1 to R10, the plan-point squad's findings and the Decision Moments `01M774HQ8N5EVYDRTP16MBJCN3` and
+  `01M774HSKK0SSA4147QEG9ZCKR`).
 - Code, `service/packs`: `PackCompositionResolver`, `ComposeResolver`, `ClosureQueries`, `ClosureView`,
   `RequiredFloor`, `PerPackPolicy`, `Reachability`, `ReachRequest`, `PackMutabilityPolicy`, `MutabilityLevel`.
   `service/activations`: `DocumentRules`, `InForceFacts`, `CascadeRules`, `StaleIds`, `PresetRules`, `ActivationWrites`,
   `ActivationExclusionService`, `EffectiveSet`, `EffectiveContext`. PR C adds, in `service/packs`: `StepHolding`, `GraphProjection`,
-  `ActionContextWalk`, `InForceResolution`'s step enhancer binding.
+  `ActionContextWalk`, `InForceResolution`'s step enhancer binding. Slice C adds, in `service/packs`: `EnhancementCompose`,
+  `SlotCompose`, `OverrideSourceRule`, `EffectivePromptQuery`, the effective form of `ActionContextWalk` and
+  `EdgeIndex`'s scope owners; in `service/activations`: `EffectivePrompt` and `ActivationImpactAdapter`'s gate.
 - Operator rulings of 2026-11-06 not yet in an ADR: registration is a full replacement (planned ADR-0065), and the answers to the ruleset consistency review
   (`research/ruleset-review-2026-11-06.md` of the layer-merge mission; decisions `DM-01M6RA7FHR…` to `DM-01M6RAA6Y7…`).
 - Code read for the fidelity corrections: `PackCompositionResolver` (`refuseContests`, `refusePresetContests`,
