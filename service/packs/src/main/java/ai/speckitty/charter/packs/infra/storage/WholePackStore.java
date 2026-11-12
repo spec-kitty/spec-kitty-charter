@@ -288,6 +288,31 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
+        Set<String> modelled = modelledFiles(packDir, read, places, graphs, pack, manifestFile, namedPolicy);
+        List<ExcludedFile> excluded = new ArrayList<>();
+        List<String> unmodelled = unmodelled(packDir, modelled, key, excluded);
+        return new Loaded(
+                new LoadedPack(
+                        pack,
+                        new PackLayout(places),
+                        graphs.documents(),
+                        unmodelled,
+                        manifest,
+                        policy,
+                        warnings,
+                        excluded),
+                List.copyOf(graphFaults));
+    }
+
+    /** Every pack-relative file the loaded pack models, so that what is left over is unmodelled. */
+    private Set<String> modelledFiles(
+            Path packDir,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs,
+            Pack pack,
+            Path manifestFile,
+            Optional<String> namedPolicy) {
         Set<String> modelled = new HashSet<>(places.values());
         modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
@@ -305,19 +330,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             modelled.add(PackFileSet.MANIFEST);
         }
         namedPolicy.ifPresent(modelled::add);
-        List<ExcludedFile> excluded = new ArrayList<>();
-        List<String> unmodelled = unmodelled(packDir, modelled, key, excluded);
-        return new Loaded(
-                new LoadedPack(
-                        pack,
-                        new PackLayout(places),
-                        graphs.documents(),
-                        unmodelled,
-                        manifest,
-                        policy,
-                        warnings,
-                        excluded),
-                List.copyOf(graphFaults));
+        return modelled;
     }
 
     /**
