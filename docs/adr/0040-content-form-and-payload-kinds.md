@@ -225,8 +225,8 @@ stays Proposed, pending the acceptance that the pull request for #193 asks for.
   asset file, a file another rule classifies, or a link the store's read does not hold, is still
   `payload assets/<path> does not exist`.
 - **On the wire,** the code is unchanged: the composing read answers `500 pack_unreadable` and a registration lists
-  the sidecar's violation; the detail names the escape. A registration lists every sidecar the store refuses once, at
-  its file, no longer a second time as `unmodelled`.
+  the sidecar's violation; the detail names the escape. A registration lists every file the store reports a violation
+  for (a refused sidecar among them) once, at its file, no longer a second time as `unmodelled`.
 
 ## Context
 
