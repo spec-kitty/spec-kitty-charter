@@ -259,7 +259,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -272,6 +272,7 @@
         "Records and docs: ADR-0018 D5 amendment (ownership rule) with D2/D3 annotations; ADR-0066 annotations on d4, d7, d8, d9, now-built and Follow-ups marker; rules page Built (slice C) label, E16 rewritten, E5/E6/E9/E12/E14/E17/E18, C22/C25/C27, new C37/C38/F8, F6, G8, G21, A7, section 7 rows; DIV-245 + DIV-244 note (page and yaml); service contract R3/R9/operation lists; status codes, REST conventions; glossary terms; conceptual-model note; changelog page; roadmap and next-slices. check_docs all, markdownlint-cli2 and cspell clean."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP08-records-and-docs/review-cycle-1.md",
         "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP08-records-and-docs/review-cycle-1.md",
@@ -279,14 +280,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 21956,
-      "shell_pid_created_at": "1794524398.42",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done"
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned"
       }
     },
     "WP09": {
