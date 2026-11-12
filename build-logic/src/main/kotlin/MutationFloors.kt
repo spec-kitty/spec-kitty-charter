@@ -210,6 +210,39 @@ object MutationFloors {
 
     private fun refused(failure: String) = Outcome(emptyList(), null, listOf(failure))
 
+    /**
+     * A shard of a module's PIT run (#461): the floor groups that `-PmutationGroups` names, in the module's own order.
+     * The shard mutates exactly those groups' classes ([targetClasses] less [excludedClasses]) and is scored on exactly
+     * those groups, so each group's score is the one a whole-module run gives: PIT runs a mutant's covering tests either
+     * way. [name] names the shard's report directory and floors file, so two shards of one module never overwrite
+     * each other.
+     */
+    data class Shard(val name: String, val groups: List<Group>) {
+        val targetClasses: Set<String> get() = groups.flatMap { it.packages }.map { "$it.*" }.toSet()
+        val excludedClasses: Set<String> get() = groups.flatMap { it.excludes }.map { "$it.*" }.toSet()
+    }
+
+    /**
+     * The shard that [requested] (`-PmutationGroups`, comma-separated group names) selects from a module's [groups].
+     * Every name must be one of the module's groups, and at least one must be given: a misspelt name never widens a
+     * shard back to the whole module, nor narrows it to nothing.
+     */
+    fun shard(projectPath: String, requested: String, groups: List<Group>): Shard {
+        val names = requested.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        if (names.isEmpty()) {
+            throw GradleException("$projectPath: -PmutationGroups names no floor group")
+        }
+        val unknown = names - groups.map { it.name }.toSet()
+        if (unknown.isNotEmpty()) {
+            throw GradleException(
+                "$projectPath: -PmutationGroups names ${unknown.sorted().joinToString()}, which are not among its" +
+                    " floor groups (${groups.joinToString { it.name }})",
+            )
+        }
+        val selected = groups.filter { it.name in names }
+        return Shard(selected.joinToString("_") { it.name.replace(Regex("[^A-Za-z0-9.-]"), "-") }, selected)
+    }
+
     /** Scores [mutants] per group, in the order of [groups]. */
     fun score(mutants: List<Mutant>, groups: List<Group>): List<GroupResult> = groups.map { group ->
         val mine = mutants.filter { group.contains(it.mutatedClass) }

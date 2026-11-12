@@ -156,10 +156,6 @@ characters in mutator descriptions, so it is not well-formed XML.
      the same path, marked as a forced test run. Proving the alert with `force_issue` costs a full PIT run.
    - `timeout-minutes` is 90 (operator ruling). The mutation step has 80 of them, so the summary and the upload
      still run when PIT runs out of time.
-   - PIT runs in two shards, each on its own runner with that budget: `:packs` alone, and every other module (#461).
-     A full `:packs:pitest` measured 1h06m34s alone on a 4-core machine on 2026-11-12, so the modules no longer fit one
-     runner. A summary job merges the shards' `mutation-report-<shard>` artifacts into the one table; a red summary
-     job raises the alert as a red shard does.
 9. **Never on a pull request.** No pull-request or `merge_group` trigger runs PIT, `verifyAll` contains no `pitest` or
    `checkMutationFloors` task, and the nightly is never part of the required check of
    [ADR-0023](/adr/0023-ci-gate-required-check/).
@@ -306,3 +302,24 @@ change:
   `build/reports/mutation-floors/pitest-<shard>.log` in the `mutation-report-<shard>` artifacts (14 days), and the summary, which the
   alert issue quotes, lists PIT's lines about tests that fail with no mutation applied. Such a test leaves its module
   without a report. On 2026-11-11 the job log that named one returned errors and then expired before anyone read it.
+
+## Amendment, 2026-11-12 (#461): weekly, in shards, 120 minutes a shard
+
+The operator ruled three changes after the nightly ran out of its 80-minute step two nights running.
+
+- **Weekly, not nightly.** The run is scheduled on Mondays. A mutation result is worth a run only when someone acts
+  on it, and a week is the cadence its findings are triaged at. `workflow_dispatch` is unchanged. The workflow file
+  and the `mutation-nightly` label keep their names. Where this ADR says "the nightly", read "the weekly run".
+- **Shards.** PIT runs on three runners: `:packs`'s floor groups in two halves (domain+application with infra.fetch,
+  and infra.storage with infra.archive, about half of its test runs each) and every other module. A module's shard
+  is `-PmutationGroups=<groups>` (`charter.mutation-conventions`): it mutates and scores exactly those groups, so each
+  group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Unknown names fail the run.
+  The module list names each module's groups, and the summary shows "no report" for a group no shard reported.
+- **120 minutes a shard**, 110 of them for the mutation step, replacing the 90 and 80 of section 8.
+
+Why: a full `:packs:pitest` measured 1h06m34s alone on an idle 4-core machine (7129 mutants), and a GitHub runner is
+about 1.4 times slower through the whole mutation phase (run 43176780670), so `:packs` needs about 93 minutes on one
+runner. Test bodies are about 9 % of that time; the rest is PIT's per-run overhead over 52,898 test runs, half of them
+for survivors and late kills. A squad of three lenses measured this; its levers that change no floor and no scope are
+the shards, three test-design fixes in this change, and two follow-ups (minion JVM tuning; the remaining test fixes).
+Floors and the PIT scope are unchanged.

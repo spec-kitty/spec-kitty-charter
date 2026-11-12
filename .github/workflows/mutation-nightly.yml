@@ -1,31 +1,35 @@
-name: Mutation testing (nightly)
+name: Mutation testing (weekly)
 
-# The nightly mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
+# The weekly mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
 # (kernel, missions, profiles, profiles-edge, missions-edge, packs and activations). `./gradlew pitest` is its own task, never part of
 # `check` or `verifyAll`, and this workflow has only the schedule and workflow_dispatch triggers, so no pull-request
 # run invokes it or waits for it.
 # - `pitest --continue` runs every module even when one is below its floor; each module's checkMutationFloors
 #   fails naming the module, the group, the score and the floor, and writes
-#   build/reports/mutation-floors/floors.json.
+#   build/reports/mutation-floors/floors.json (floors-<shard>.json for a shard of the module's groups).
 # - The job summary (scripts/ci/mutation_summary.py) shows every module and group, red or green, with its margin to
-#   the floor and its timed-out mutants (#389), and "no report" for a module that wrote no floors.json. The modules
-#   come from the build (`mutationModules`, #388), not from a list kept beside it.
+#   the floor and its timed-out mutants (#389), and "no report" for a module or a group that wrote no summary. The
+#   modules and their groups come from the build (`mutationModules`, #388), not from a list kept beside it.
 # - The rules of this paragraph are pinned by build-logic's MutationWorkflowGuardTest, and the root build fails any
 #   invocation in which verifyAll or a check depends on pitest (MutationIsolation, ADR-0060, #387).
-# - PIT runs in two shards (:packs, and the other modules), each on its own runner; each shard's PIT reports,
-#   floors.json files and log go up as a `mutation-report-<shard>` artifact, on a red run too, kept 14 days.
+# - PIT runs in three shards, each on its own runner: :packs's floor groups in two halves, and the other modules
+#   (#461). Each shard's PIT reports, floors files and log go up as a `mutation-report-<shard>` artifact, on a red run
+#   too, kept 14 days.
 # - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
 #   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
 #   with force_issue takes the same path whatever the result, marked as a forced test run, so the open-or-comment path
 #   can be proven without breaking a floor.
-# - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the nightly red
+# - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the run red
 #   but can never stop PIT from running. Pull requests run the same tests (docs-cleanliness.yml, through ci.yml).
 # spec-kitty-open-packs is checked out at the pin and synced, as in service.yml, for governance; the tests read the example packs (ADR-0070).
 
+# Weekly, not nightly (operator ruling, 2026-11-12): a mutation result is worth a run only when someone acts on it,
+# and a week is the cadence its findings are triaged at. The file and the `mutation-nightly` label keep their names,
+# which other workflows, ADR-0062 and the open alert issue use.
 on:
   schedule:
-    # Nightly, off the hour.
-    - cron: '43 2 * * *'
+    # Mondays, off the hour.
+    - cron: '43 2 * * 1'
   workflow_dispatch:
     inputs:
       force_issue:
@@ -41,23 +45,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # PIT runs in two shards, each on its own 4-core runner (#461): :packs alone, and every other module. A full
-  # :packs:pitest measured 1h06m34s alone on an idle 4-core machine (2026-11-12, 7129 mutants, 79 timed out); the six
-  # other modules add ~20 min. Together they no longer fit one runner's budget, and run side by side they starve each
-  # other's minions into timeouts. Each shard keeps the ruled 90 minutes (ADR-0062), >25 % headroom over :packs as
-  # measured; the mutation step has 80 of them, so the copy and the upload still run when PIT runs out of time. A
-  # timeout raises the mutation-nightly issue. The summary job merges both shards' reports into one table.
+  # PIT runs in three shards, each on its own 4-core runner (#461). A full :packs:pitest measured 1h06m34s alone on an
+  # idle 4-core machine (2026-11-12, 7129 mutants, 69 timed out), and a GitHub runner is ~1.4x slower through the
+  # whole mutation phase (run 43176780670 ran out of its 80-minute step), so :packs runs as two shards of its floor
+  # groups, about half of its test runs each (`-PmutationGroups`, charter.mutation-conventions): ~47 min each on a
+  # runner. Every group is scored on all of its mutants, as in a whole-module run. The six other modules take ~15 min.
+  # Budget (operator ruling, 2026-11-12, raising ADR-0062's 90): 120 minutes a shard, 110 of them for the mutation
+  # step, so the copy and the upload still run when PIT runs out of time. A timeout raises the mutation-nightly issue.
+  # The summary job merges the shards' reports into one table.
   pitest:
     name: pitest (${{ matrix.shard }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     strategy:
-      # Both shards always report: a red :packs does not cancel the others.
+      # Every shard always reports: a red shard does not cancel the others.
       fail-fast: false
       matrix:
         include:
-          - shard: packs
-            tasks: ":packs:pitest"
+          # :packs's floor groups in two halves, by test runs (domain+application with infra.fetch ~50 %).
+          - shard: packs-core
+            tasks: ":packs:pitest -PmutationGroups=domain+application,infra.fetch"
+          - shard: packs-storage
+            tasks: ":packs:pitest -PmutationGroups=infra.storage,infra.archive"
           # -x: :packs:pitest is skipped here, and with it its checkMutationFloors finalizer.
           - shard: others
             tasks: "pitest -x :packs:pitest"
@@ -107,7 +116,7 @@ jobs:
       # applied leaves its module without a report, and the job log that named it can be gone before anyone reads it
       # (#461). The summary quotes PIT's lines about such tests.
       - name: Mutation testing
-        timeout-minutes: 80
+        timeout-minutes: 110
         run: |
           set -o pipefail
           mkdir -p build/reports/mutation-floors
@@ -154,7 +163,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
+      # The summary script's own tests (standard library only): a broken summary turns the run red. They run after
       # PIT, whatever its result, so they can never keep PIT from running.
       - name: Test the summary script
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
@@ -184,8 +193,8 @@ jobs:
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
 
-  # One open issue labelled `mutation-nightly` at a time: opened on the first red night, commented on after that.
-  # Closing it is the maintainers' call once the nightly is green again. A scheduled run that is red, timed out or
+  # One open issue labelled `mutation-nightly` at a time: opened on the first red run, commented on after that.
+  # Closing it is the maintainers' call once the weekly run is green again. A scheduled run that is red, timed out or
   # cancelled alerts (cancel-in-progress is false, so a cancel is not a superseded run); a green one never runs this job;
   # a workflow_dispatch with force_issue runs it whatever the result, as a forced test run.
   alert:
@@ -214,16 +223,16 @@ jobs:
           label=mutation-nightly
           # --force: creates the label, or updates it when it exists, so the step is idempotent.
           gh label create "$label" --repo "$REPO" --force --color B60205 \
-            --description "The nightly mutation-testing run did not succeed (mutation-nightly.yml)"
+            --description "The weekly mutation-testing run did not succeed (mutation-nightly.yml)"
 
           body="$RUNNER_TEMP/mutation-issue.md"
           {
             if [ "$EVENT" = workflow_dispatch ]; then
               echo "**Forced test run** (workflow_dispatch with force_issue), not a scheduled alert:"
-              echo "it checks that the nightly can open or comment on this issue."
+              echo "it checks that the weekly run can open or comment on this issue."
               echo "The \`pitest\` job result was: **$RESULT**, the \`summary\` job's **$SUMMARY_RESULT**. Run: $RUN_URL"
             else
-              echo "The nightly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**, \`summary\`: **$SUMMARY_RESULT**): $RUN_URL"
+              echo "The weekly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**, \`summary\`: **$SUMMARY_RESULT**): $RUN_URL"
             fi
             echo
             if [ -n "$SUMMARY" ]; then
@@ -240,9 +249,9 @@ jobs:
             gh issue comment "$issue" --repo "$REPO" --body-file "$body"
             echo "Commented on #$issue"
           else
-            title="Mutation testing nightly did not succeed"
+            title="Mutation testing weekly run did not succeed"
             if [ "$EVENT" = workflow_dispatch ]; then
-              title="Mutation testing nightly: forced alert test (pitest $RESULT)"
+              title="Mutation testing weekly run: forced alert test (pitest $RESULT)"
             fi
             gh issue create --repo "$REPO" --label "$label" --title "$title" --body-file "$body"
           fi

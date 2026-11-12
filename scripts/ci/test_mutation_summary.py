@@ -214,6 +214,54 @@ class RenderTest(unittest.TestCase):
         listed.write_text("\n", encoding="utf-8")
         self.assertIsNone(ms.read_modules(listed))
 
+    def test_read_listing_reads_each_modules_floor_groups(self) -> None:
+        listed = self.root / "modules.txt"
+        listed.write_text("service/kernel\tkernel\n\nservice/packs\tdomain+application\tinfra.storage\n", encoding="utf-8")
+        self.assertEqual(
+            ms.read_listing(listed),
+            {"service/kernel": ["kernel"], "service/packs": ["domain+application", "infra.storage"]},
+        )
+        self.assertEqual(ms.read_modules(listed), ["service/kernel", "service/packs"])
+
+    def write_shard(self, module: str, shard: str, text: str) -> None:
+        path = self.root / "service" / module / ms.SUMMARY_PATH.parent / f"floors-{shard}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def test_a_modules_shards_render_as_one_module(self) -> None:
+        # #461: :packs runs as two shards, each writing floors-<shard>.json.
+        self.write_shard(
+            "packs", "domain-application", summary(":packs", group("domain+application", score="91.0", floor=85, passed=True))
+        )
+        self.write_shard(
+            "packs", "infra.storage", summary(":packs", group("infra.storage", score="90.0", floor=85, passed=True))
+        )
+        text = ms.render(
+            self.root, ["service/packs"], expected={"service/packs": ["domain+application", "infra.storage"]}
+        )
+        self.assertIn("✅ pass", self.row(text, "| `:packs` domain+application |"))
+        self.assertIn("✅ pass", self.row(text, "| `:packs` infra.storage |"))
+        self.assertIn("**✅ Every group is at or above its floor.**", text)
+
+    def test_a_group_whose_shard_wrote_nothing_shows_no_report(self) -> None:
+        # One shard of :packs timed out: its groups must not vanish from a table that reads green.
+        self.write_shard(
+            "packs", "domain-application", summary(":packs", group("domain+application", score="91.0", floor=85, passed=True))
+        )
+        text = ms.render(
+            self.root, ["service/packs"], expected={"service/packs": ["domain+application", "infra.storage"]}
+        )
+        self.assertIn("⚠️ **no report**", self.row(text, "| `:packs` infra.storage |"))
+        self.assertIn("**❌ Not every group is at its floor:** `:packs` infra.storage (no report).", text)
+
+    def test_one_unreadable_shard_makes_the_module_unreadable(self) -> None:
+        self.write_shard(
+            "packs", "domain-application", summary(":packs", group("domain+application", score="91.0", floor=85, passed=True))
+        )
+        self.write_shard("packs", "infra.storage", "{not json")
+        text = ms.render(self.root, ["service/packs"])
+        self.assertIn(ms.UNREADABLE, self.row(text, "| `:packs` |"))
+
     def test_the_margin_and_the_timed_out_count_are_shown(self) -> None:
         self.write("kernel", summary(":kernel", group("kernel", score="64.9", floor=65, passed=False)))
         row = self.row(ms.render(self.root, MODULES), "| `:kernel` kernel |")
@@ -356,6 +404,15 @@ class RenderTest(unittest.TestCase):
         written = step_summary.read_text(encoding="utf-8")
         self.assertTrue(written.startswith("earlier step\n## Mutation floors\n"))
         self.assertEqual(written.removeprefix("earlier step\n"), out.getvalue())
+
+
+    def test_main_holds_each_module_to_the_groups_the_build_lists(self) -> None:
+        self.write("kernel", summary(":kernel", group("kernel", score="72.4", floor=65, passed=True)))
+        listed = self.root / "modules.txt"
+        listed.write_text("service/kernel\tkernel\tkernel.extra\n", encoding="utf-8")
+        with redirect_stdout(io.StringIO()) as out:
+            ms.main(["--root", str(self.root), "--modules", str(listed)])
+        self.assertIn("⚠️ **no report**", self.row(out.getvalue(), "| `:kernel` kernel.extra |"))
 
 
 if __name__ == "__main__":
