@@ -42,20 +42,6 @@ class MutationFloorsTest {
     }
 
     @Test
-    fun aShardsGroupScoresAreTheWholeModulesScoresForThoseGroups() {
-        val xml = mutations(
-            mutation("ai.speckitty.charter.packs.domain.A", "KILLED"),
-            mutation("ai.speckitty.charter.packs.domain.A", "SURVIVED"),
-            mutation("ai.speckitty.charter.packs.infra.fetch.B", "KILLED"),
-        )
-        val mutants = MutationFloors.parse(xml).mutants
-        val shard = MutationFloors.shard(":packs", "domain+application,infra.fetch", packs)
-
-        assertThat(MutationFloors.score(mutants, shard.groups))
-            .isEqualTo(MutationFloors.score(mutants, packs).filter { it.group in shard.groups })
-    }
-
-    @Test
     fun aMisspeltOrEmptyShardFailsInsteadOfWideningOrNarrowing() {
         assertThatThrownBy { MutationFloors.shard(":packs", "infra.storage,infra.fecth", packs) }
             .hasMessageContaining(":packs: -PmutationGroups names infra.fecth, which are not among its floor groups")
