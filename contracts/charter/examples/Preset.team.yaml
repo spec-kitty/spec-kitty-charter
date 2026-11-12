@@ -1,0 +1,15 @@
+summary: The preset team of the pack acme-review-pack, with a must-have directive and a plain tactic.
+value:
+  id: team
+  description: What a review team puts in force.
+  activatedDirectives:
+    - id: DIRECTIVE_001
+      mustHave: true
+  activatedTactics:
+    - id: tdd-red-green-refactor
+      mustHave: false
+  _links:
+    self:
+      href: /api/v1/packs/acme-review-pack/presets/team
+    pack:
+      href: /api/v1/packs/acme-review-pack
