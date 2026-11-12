@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-12T23:52:07.522282+00:00",
+      "accepted_by": "claude::reviewer-renata",
+      "accepted_from_commit": "f3ab945df93faf822ff42f65c9624a53f91fd2a2"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-12T23:52:07.522282+00:00",
+  "accepted_by": "claude::reviewer-renata",
+  "accepted_from_commit": "f3ab945df93faf822ff42f65c9624a53f91fd2a2",
   "coordination_branch": "kitty/mission-effective-step-and-action-context-01M774HB",
   "create_return_branch": "slice-c/effective-step-context",
   "created_at": "2026-11-12T05:43:53.404051+00:00",
@@ -14,6 +26,7 @@
   "purpose_context": "Core cannot yet use the charter service for an action's governance: the effective action context leaves out in-force directives that no action walk reaches, links to bodies only since PR #486, and there is no read of a step's effective prompt with its enhancement fragments. This mission completes ADR-0066 phase 2 (compose checks and the effective-prompt read), settles how required and project-wide artifacts reach an action's context, and decides what remains of the merged-graph read R3.",
   "purpose_tldr": "Serve the effective step prompt and an action context that explains every directive in force for an action.",
   "slug": "effective-step-and-action-context-01M774HB",
+  "status_phase": "1",
   "target_branch": "slice-c/effective-step-context",
   "topology": "lanes_with_coord",
   "topology_decision": {
