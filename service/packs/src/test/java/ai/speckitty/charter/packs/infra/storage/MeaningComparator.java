@@ -199,8 +199,9 @@ final class MeaningComparator {
     /**
      * A manifest without its derived fields, {@code manifest_hash} and every entry's {@code content_hash}: ADR-0042
      * recomputes them on write, so they are verified against the bytes ({@code PackManifests.stale}), not compared.
-     * Everything else (each entry's {@code kind}, {@code id} and {@code path}, the lists' order, {@code schema_version})
-     * still counts.
+     * The lists' order is derived too (#110, ADR-0042 amendment of 2026-11-12: every write lists the entries in path
+     * order), so each list is compared in path order. Everything else (each entry's {@code kind}, {@code id} and
+     * {@code path}, which entries are listed, {@code schema_version}) still counts.
      */
     private static Map<?, ?> withoutDerived(Map<?, ?> manifest) {
         Map<Object, Object> out = new LinkedHashMap<>(manifest);
@@ -217,6 +218,8 @@ final class MeaningComparator {
                         stripped.add(entry);
                     }
                 }
+                stripped.sort(java.util.Comparator.comparing(
+                        entry -> entry instanceof Map<?, ?> map ? String.valueOf(map.get("path")) : ""));
                 out.put(list, stripped);
             }
         }

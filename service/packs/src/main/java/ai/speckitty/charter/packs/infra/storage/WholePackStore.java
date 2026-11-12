@@ -249,6 +249,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return load(directory, true, new ArrayList<>()).pack();
     }
 
+    /**
+     * Loads a pack as {@link #load} does, but tolerates an unreadable graph document as a read does: the manifest's
+     * derivation of a stored pack (#110) lists what the pack holds and judges nothing else.
+     *
+     * @param directory the pack directory
+     * @return the aggregate, its layout, the DRG documents that could be read and the unmodelled files
+     */
+    LoadedPack loadTolerant(Path directory) {
+        return load(directory, false, new ArrayList<>()).pack();
+    }
+
     /** What a load read: the pack, and the graph documents that could not be read, when the load did not refuse them. */
     private record Loaded(LoadedPack pack, List<PackElementViolation> graphFaults) {}
 
@@ -369,6 +380,12 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                                     "no pack file kind models this file; a registration holds only modelled files"));
         });
         reservedShard(directory).ifPresent(violations::add);
+        Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
+        if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
+                && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
+            // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
+            violations.add(violationOf(PackFileSet.MANIFEST, "unreadable", "the manifest is not a regular file"));
+        }
         if (violations.isEmpty()) {
             // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
             loaded.manifest()
@@ -491,7 +508,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     @Override
     public void stampManifest(StagedPack staged) {
         try {
-            ManifestMembership.stamp(staged.directory(), strategy);
+            ManifestMembership.stamp(staged.directory(), this, strategy);
         } catch (IOException e) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "The staged " + PackFileSet.MANIFEST + " could not be written", e);

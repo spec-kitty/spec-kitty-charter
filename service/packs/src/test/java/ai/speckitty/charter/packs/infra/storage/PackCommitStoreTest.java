@@ -710,6 +710,14 @@ class PackCommitStoreTest {
                 .doesNotExist();
         assertThat(packDir).as("the pack root stays").isDirectory();
         assertThat(snapshot(packDir)).containsOnlyKeys(PackFileSet.PACK_YAML, PackFileSet.MANIFEST);
+        assertThat(new WholePackStore(new YamlSerializationStrategy())
+                        .load(packDir)
+                        .manifest())
+                .as("#110: the restamped manifest of an emptied pack lists nothing")
+                .hasValueSatisfying(manifest -> {
+                    assertThat(manifest.constituents()).isEmpty();
+                    assertThat(manifest.presets()).isEmpty();
+                });
         assertThat(Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8))
                 .isEqualTo(descriptor);
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();

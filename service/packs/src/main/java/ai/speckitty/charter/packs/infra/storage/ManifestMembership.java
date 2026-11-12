@@ -2,9 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.Preset;
 import java.io.IOException;
@@ -13,10 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -70,27 +66,20 @@ final class ManifestMembership {
     }
 
     /**
-     * The derived manifest of the pack stored in a directory, read the way a registration assembles it.
+     * The derived manifest of the pack stored in a directory, as {@code store} loads it: the one assembly the store's
+     * whole-pack load, its registration check and its write share, with its own bindings and companion rules, so the
+     * lists name exactly the artifacts that load holds. A file the load does not hold (a read violation, a step
+     * enhancement withheld for a repeated stem) is not listed.
      *
      * @param directory the pack's directory
-     * @param strategy the serialization format
+     * @param store the whole-pack store that reads it
      * @return the manifest with the derived lists, in path order
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the directory has no parent or its descriptor cannot be
-     *     read
+     * @throws CharterRefusal as {@link WholePackStore#load} does, except that an unreadable graph document is tolerated,
+     *     as a read tolerates it
      */
-    static PackManifestDso derivedAt(Path directory, SerializationStrategy strategy) {
-        Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
-        }
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(parent, strategy, Companions.Rules.bundled())
-                .read(new PackIdentifier(String.valueOf(packDir.getFileName())), KindBindings.all());
-        Map<Urn, String> places = new HashMap<>();
-        Pack pack = DomainRepositoryService.assembly(
-                        new PackIdentifier(read.descriptor().packId()), read, places)
-                .build();
-        return derived(pack, new PackLayout(places));
+    static PackManifestDso derivedAt(Path directory, WholePackStore store) {
+        WholePackStore.LoadedPack loaded = store.loadTolerant(directory);
+        return derived(loaded.pack(), loaded.layout());
     }
 
     /**
@@ -98,12 +87,13 @@ final class ManifestMembership {
      * writes it to {@code pack-manifest.yaml}, replacing the manifest the directory held or creating it.
      *
      * @param directory the pack's directory, a staged copy the caller owns
-     * @param strategy the serialization format
+     * @param store the whole-pack store that reads it ({@link #derivedAt})
+     * @param strategy the serialization format the manifest is written in
      * @throws IOException when the manifest cannot be written
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be read, or a derived path holds no file
+     * @throws CharterRefusal when the pack cannot be read, or a derived path holds no file
      */
-    static void stamp(Path directory, SerializationStrategy strategy) throws IOException {
-        PackManifestDso derived = derivedAt(directory, strategy);
+    static void stamp(Path directory, WholePackStore store, SerializationStrategy strategy) throws IOException {
+        PackManifestDso derived = derivedAt(directory, store);
         PackManifests.Recomputed recomputed = PackManifests.recompute(derived, path -> bytesAt(directory, path));
         if (!recomputed.missing().isEmpty()) {
             throw new CharterRefusal(

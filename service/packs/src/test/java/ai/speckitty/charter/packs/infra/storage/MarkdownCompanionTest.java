@@ -286,11 +286,16 @@ class MarkdownCompanionTest {
     private Map<String, Optional<String>> gate(
             Path source, Path target, UnaryOperator<WholePackStore.LoadedPack> change) throws IOException {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy(), BINDINGS, RULES);
-        // #110: a pack holds its derived manifest, so the source is given the one this store derives, stamped over the
-        // source's bytes; the written manifest is then paired with it and compared by meaning.
-        WholePackStore.LoadedPack read = store.load(source);
+        // #110: a pack holds its manifest. Its lists are written out here (the one skill, at its own file; no preset);
+        // only the hashes come from the recipe, over the source's bytes. The written manifest is then paired with it
+        // and
+        // compared by meaning.
         PackManifests.Recomputed stamped = PackManifests.recompute(
-                ManifestMembership.derived(read.pack(), read.layout()),
+                new PackManifestDso(
+                        "1.0",
+                        "",
+                        List.of(new PackManifestDso.Constituent("skill", "land", SKILL_FILE, "")),
+                        List.of()),
                 path -> FilesystemPackStore.readBytes(source.resolve(path)));
         Files.writeString(
                 source.resolve(PackFileSet.MANIFEST), new YamlSerializationStrategy().writeManifest(stamped.stamped()));

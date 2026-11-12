@@ -142,10 +142,12 @@ decision 5 carries a note where it changes.
 - **Membership is derived, not carried as read** (operator). `pack-manifest.yaml` lists one constituent per artifact
   the pack holds, as `{kind, id, path}` with its kind token, its id and the file it is stored in, and one preset entry
   per preset, at `presets/<id>.yaml`. Each list is in path order (by UTF-16 code unit). The rule lives in one place,
-  `ManifestMembership`, and every writer uses it.
+  `ManifestMembership`, and every writer uses it over one assembly, the whole-pack load's: "holds" means what that load
+  reads, so a file it refuses or withholds (a read violation, a step enhancement withheld for a repeated stem) is not
+  listed.
 - **Every write restamps it** (ADR-0074 decision 7; operator: one rule for every writer). The writers are:
   - a whole-pack registration, on the staged tree after the files it does not hold are removed and before its
-    revision is computed, so a re-upload of the same pack is still `unchanged`;
+    revision is computed, so a re-upload of a pack stored since this rule is still `unchanged`;
   - a per-artifact `PUT` and a `DELETE`, which commit through one choke point (`PackCommitStore`), as does a write that
     only changes the registered relationships;
   - the store's whole-pack write (`WholePackStore.write`);
@@ -157,12 +159,17 @@ decision 5 carries a note where it changes.
   derived manifest: `org-base` gained one, and `built-in`'s lists grew from 22 constituents to all 40 of its artifacts.
 - **A registration refuses a manifest whose lists differ** (operator). An uploaded manifest that lists an entry the
   pack does not hold, or leaves out one it holds, is refused `422 validation_failed`, one violation per entry, code
-  `manifest_membership`, at `pack-manifest.yaml`. The gate refuses such a source manifest with the same reasons.
+  `manifest_membership`, at `pack-manifest.yaml`. On an otherwise clean pack, the gate refuses such a source manifest
+  with the same reasons, and writes the derived lists, as the store's write does.
 
 The calls the Op made beyond the rulings, open to review:
 
 - **Order and hashes are not judged.** The entries are compared as sets, and the write writes them in path order. The
-  derived hashes are restamped, as decision 5 already held for the reader.
+  derived hashes are restamped, as decision 5 already held for the reader. The lists' order is therefore a derived
+  field: the gate's comparator compares each list in path order (ADR-0036's `pack-manifest.yaml` row, amended the same
+  day).
+- **A `pack-manifest.yaml` that is not a regular file is refused.** A registration writes the manifest at that path, so
+  a directory or a link there is refused `422` (`unreadable`) before the stamp.
 - **The check runs on an otherwise clean upload.** An artifact refused for its own fault would also read as left out,
   so the membership check is made only when the upload has no other violation.
 - **The general load does not check membership.** `WholePackStore.load` is unchanged, so a stored pack whose manifest
@@ -171,6 +178,13 @@ The calls the Op made beyond the rulings, open to review:
   path}` has it. A skill body, an asset payload or a guide is not listed, so editing one changes no `content_hash`
   ([ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) left this to #110). Listing them
   would need a new entry shape in the manifest schema.
+- **What it costs.** Every per-artifact write now loads the staged copy whole once more, to derive the lists, and reads
+  the listed files to hash them; a `PUT` paid only the copy and the digest before. A registration loads the staged tree
+  once more as well.
+- **A pack stored before this rule changes revision on its next write.** A re-upload of such a pack, unchanged, at the
+  same `pack_version`, is no longer `unchanged`: the staged tree gains the stamped manifest, its revision differs from
+  the stored one, and the version rule refuses it `409` (ADR-0065). It needs a new `pack_version`, or any write first.
+  No reader of the older state is kept (charter: the model is canonical).
 - **Not done: validate mode.** Validate mode inspects each file on its own and does not assemble the pack, so it has no
   derived lists and does not report a membership difference. A registration does.
 
