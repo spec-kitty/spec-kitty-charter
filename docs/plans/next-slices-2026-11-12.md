@@ -40,10 +40,11 @@ Taken after the review, so that slices F and G can be planned:
 - **Role pin** (ADR-0032 decision 9): a pin narrows the candidates to the pinned profile and its
   specializations before the selection order runs, and settles a tie when the pinned profile is among the
   tied.
-- **Launched:** #110 (B close-out), the slice B half of #367 (D) and slice A2 run now, ahead of the order
-  below, beside slice C.
 
 ## Where the slices stand
+
+Launched: #110 (B close-out), the slice B half of #367 (D) and slice A2 run now, ahead of the order
+below, beside slice C.
 
 | Slice | State | What is left |
 | --- | --- | --- |
