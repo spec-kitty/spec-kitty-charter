@@ -680,7 +680,8 @@ class FileSystemPackInspectorTest {
 
     /**
      * #254: a fragment node whose body_path leaves the pack root refuses the whole fragment, in validate mode as on the
-     * load and in the same words, so neither judges its edges (here one to a node the fragment declares).
+     * load and in the same words, so neither judges its edges (here one to a node the fragment declares). Both report
+     * the first escaping node only, as the fragment is refused whole (a second node escapes too, and is not listed).
      */
     @Test
     void aFragmentWithABodyPathOutsideThePackIsRefusedWholeInValidateModeAsOnTheLoad(@TempDir Path host)
@@ -700,6 +701,7 @@ class FileSystemPackInspectorTest {
                   body_path: ../outside.directive.yaml
                 - id: D2
                   kind: directives
+                  body_path: /etc/second.directive.yaml
                 edges:
                 - {source: 'directive:D1', target: 'directive:D2', relation: suggests}
                 """);
