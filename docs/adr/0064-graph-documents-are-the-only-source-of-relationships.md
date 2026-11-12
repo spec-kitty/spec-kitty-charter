@@ -2,7 +2,7 @@
 title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Accepted, with Amendment 2026-11-07
 decision_date: '2026-11-05'
 type: ADR
@@ -220,6 +220,16 @@ such pair. Several later records kept their reference fields "until #189 rules o
     documents keep `action:<type>/<step>` as a step's node (ADR-0044 decision 2). Whether the domain's
     merge of the graph documents is set-based (ADR-0036, ADR-0037) is not ruled here: with one source,
     the merge no longer meets a field-minted edge, and comparison stays set-based.
+
+13. **Each relation names the kinds it may connect** (amendment, operator ruling of 2026-11-12 on
+    [#515](https://github.com/spec-kitty/spec-kitty-charter/issues/515)). With the reference fields gone,
+    core's question of which kinds a `<kind>_reference.type` may name becomes: which source and target
+    kinds each relation may join. The answer is part of the model, not a validation table beside it. In
+    the domain, a relationship is built through constructors typed by its endpoint kinds (generics), so a
+    combination the model does not allow does not compile. A graph document that authors such an edge
+    is refused when the pack is read or written, with a named refusal. The endpoint kinds of each
+    relation are set by slice F (#537), which also settles #447 (an `overrides` edge from a kind an
+    activation cannot select).
 
 ## Consequences
 

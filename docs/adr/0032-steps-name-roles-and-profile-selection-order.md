@@ -2,7 +2,7 @@
 title: "ADR-0032: Steps name roles, and a profile is selected by role fit, then specialization, then fallback"
 description: Mission steps ask for a role, never a profile; the service picks the most specialized fitting profile, a declared fallback, or refuses; a derived pack may pin a role.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-26'
 type: ADR
@@ -17,7 +17,7 @@ audience:
   - profile: contract-consumer
     guidance_text: Read this for what the service answers when you ask for a profile, including the fallback and the not-found refusal.
   - profile: charter-service-contributor
-    guidance_text: Read this for the selection order the service implements and the tie question still open.
+    guidance_text: Read this for the selection order the service implements, how ties and role pins are ruled, and the fallback.
 ---
 
 # ADR-0032: Steps name roles, and a profile is selected by role fit, then specialization, then fallback
@@ -28,8 +28,10 @@ audience:
 ("Profiles: specialists who fill roles", "How a profile is chosen", "Selection order" and
 "Pinning a role" in the [conceptual model working notes](/context/conceptual-model/)).
 
-A new decision; it supersedes no record of this repository. Tie handling is an **open question**
-(see [Open questions](#open-questions)).
+A new decision; it supersedes no record of this repository.
+
+**Amended 2026-11-12 (operator ruling, issue #42).** The two open questions are ruled: ties and the role
+pin (decisions 8 and 9, in [Rulings on the open questions](#rulings-on-the-open-questions)).
 
 ## Context
 
@@ -73,16 +75,22 @@ roles are extensible by packs, and an explicit selection order.
 7. **Representation is a candidate only.** The query shape, the role value object and the
    endpoint are left to later records. No contract path changes (C-003).
 
-## Open questions
+## Rulings on the open questions
 
-- **Ties.** When two or more profiles are equally fit after steps 1 and 2, there is no hidden
-  tie-break. Either the service returns all equal candidates and the client decides (simplest),
-  or it picks one at random with a warning. Not decided.
-- **Role pin and the selection order.** This record does not say how a role pin (a derived pack
-  pinning the profile for a role) combines with the selection order. The reading recorded in the
-  [conceptual model](/context/conceptual-model/#role-pin) and journey 08: a pin restricts the
-  candidates to the pinned profile and its specializations, and is applied before the selection
-  order. Not decided.
+Ruled by the operator on 2026-11-12 (issue #42). Both questions were open when this record was accepted.
+
+**Decision 8. Ties: the service returns every equal candidate, and the client picks.** When two or more profiles are
+equally fit after role fit, specialization and specificity (`routing-priority`), the answer lists all of
+them and marks the answer as a tie. There is no hidden tie-break: the service picks no candidate at
+random and does not refuse. A pack author who wants one winner says so with `routing-priority` or a role
+pin (decision 9).
+
+**Decision 9. A role pin filters first, and breaks a tie.** A pin in a derived pack's `policy.yaml` restricts the
+candidates to the pinned profile and the profiles that specialize it (`specializes_from`), before the
+selection order of decision 3 runs, so a more specialized refinement of the pinned profile can still
+win. When candidates are still tied after the order, and the pinned profile is among them, the pinned
+profile is the answer. With no pin, a tie is answered by decision 8. This is the reading the
+[conceptual model](/context/conceptual-model/#role-pin) and journey 08 recorded, plus the tie-break.
 
 ## Consequences
 
@@ -100,8 +108,9 @@ roles are extensible by packs, and an explicit selection order.
 
 ### Risks
 
-- With only `routing-priority` and lineage to rank, ties may be common. Mitigation: the open
-  question is answered before the selection is built.
+- With only `routing-priority` and lineage to rank, ties may be common. Mitigation: a tie is
+  returned whole, never broken silently (decision 8), and a pack author can settle it with
+  `routing-priority` or a pin (decision 9).
 
 ## Alternatives considered
 
