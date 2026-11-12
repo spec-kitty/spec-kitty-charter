@@ -8,6 +8,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -94,9 +95,15 @@ final class ManifestMembership {
      * @param store the whole-pack store that reads it ({@link #derivedAt})
      * @param strategy the serialization format the manifest is written in
      * @throws IOException when the manifest cannot be written
-     * @throws CharterRefusal when the pack cannot be read, or a derived path holds no file
+     * @throws CharterRefusal when the pack cannot be read, a derived path holds no file, or the manifest path holds
+     *     something that is not a regular file (a directory, a link: the write would follow it)
      */
     static void stamp(Path directory, WholePackStore store, SerializationStrategy strategy) throws IOException {
+        Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
+        if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
+                && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, PackFileSet.MANIFEST + " is not a regular file");
+        }
         PackManifestDso derived = derivedAt(directory, store);
         PackManifests.Recomputed recomputed = PackManifests.recompute(derived, path -> bytesAt(directory, path));
         if (!recomputed.missing().isEmpty()) {
@@ -105,10 +112,7 @@ final class ManifestMembership {
                     PackFileSet.MANIFEST + " would list " + recomputed.missing().getFirst()
                             + ", which the pack does not hold as a file");
         }
-        Files.writeString(
-                directory.resolve(PackFileSet.MANIFEST),
-                strategy.writeManifest(recomputed.stamped()),
-                StandardCharsets.UTF_8);
+        Files.writeString(manifestFile, strategy.writeManifest(recomputed.stamped()), StandardCharsets.UTF_8);
     }
 
     /**
