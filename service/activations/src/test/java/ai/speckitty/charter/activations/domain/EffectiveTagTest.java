@@ -204,7 +204,55 @@ class EffectiveTagTest {
     @Test
     void theGraphTagOfAFixedInputIsAFixedLiteral() {
         assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
-                .as("graph, domain v2")
-                .isEqualTo("sha256:a01f7179ac5e8f92de38adcaa3b6af17adbd68e4ac36e4f9c509da95de2654e9");
+                .as("graph, domain v3")
+                .isEqualTo("sha256:2fbffbb0d62e9a547dc75f1adfa62a4aa6dbf5af7a6cef81a54179685ee8412b");
+    }
+
+    @Test
+    void theContextTagOfAFixedInputIsAFixedLiteral() {
+        assertThat(EffectiveTag.context(
+                                GOLDEN_REVISION,
+                                closure("sha256:one"),
+                                new EffectiveTag.ContextQuery("software-dev", "implement", 0))
+                        .token())
+                .as("context, domain v3")
+                .isEqualTo("sha256:e70a49ba757301126af1b78987c6b4a3036178fce258f36bdbe9e048faf0d3e3");
+    }
+
+    /**
+     * Rule E17 as amended (research R10, squad D1): the context answers the ownership rule under an unchanged revision
+     * and closure fingerprint, so the domain moved to {@code v3} for every effective read, and a tag a client kept from
+     * {@code v2} never matches again. The {@code v2} tokens are the literals the earlier recipe gave for the same inputs.
+     */
+    @Test
+    void aTagOfTheV2RecipeNoLongerMatchesAnyEffectiveRead() {
+        String graphV2 = "sha256:a01f7179ac5e8f92de38adcaa3b6af17adbd68e4ac36e4f9c509da95de2654e9";
+        String contextV2 = "sha256:2abe372a3a96ccbb03e1f250bd6f7f34bff98e0a12e0fc43e766ebf03300705a";
+
+        assertThat(sha256("charter-effective-read\0v2\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
+                .as("the v2 literal is the v2 recipe over the same inputs")
+                .isEqualTo(graphV2);
+        assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
+                .isNotEqualTo(graphV2);
+        assertThat(EffectiveTag.context(
+                                GOLDEN_REVISION,
+                                closure("sha256:one"),
+                                new EffectiveTag.ContextQuery("software-dev", "implement", 0))
+                        .token())
+                .isNotEqualTo(contextV2);
+        assertThat(sha256("charter-effective-read\0v3\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
+                .as("the control: the v3 recipe over the same inputs is the tag")
+                .isEqualTo(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token());
+    }
+
+    private static String sha256(String preimage) {
+        try {
+            return "sha256:"
+                    + java.util.HexFormat.of()
+                            .formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                                    .digest(preimage.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

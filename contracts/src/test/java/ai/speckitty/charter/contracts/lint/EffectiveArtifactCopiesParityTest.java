@@ -22,6 +22,10 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * under one activation. Each copy repeats every member of the item, with the same schema, except what the item or the copy
  * says apart: {@code _links}, which the copies require and the item leaves optional (the item links only the kinds the
  * pack-scoped routes serve), and {@code suggestion}, which a governance entry replaces with {@code edge}.
+ *
+ * <p>{@code EffectiveContextArtifact}, the item of the effective action context, is a copy of another sort: it is an item
+ * too, so it repeats every member of the item, {@code _links} included and optional as the item's, and adds the one
+ * member of its own, the required {@code appliesThrough} (mission effective-step-and-action-context, FR-009).
  */
 class EffectiveArtifactCopiesParityTest {
 
@@ -32,6 +36,39 @@ class EffectiveArtifactCopiesParityTest {
     private static final List<String> APART = List.of("_links");
     private static final Map<String, List<String>> ABSENT_BY_DESIGN =
             Map.of("EffectiveGovernanceEntry", List.of("suggestion"));
+    private static final String CONTEXT_ITEM = "EffectiveContextArtifact";
+
+    @Test
+    void theContextItemRepeatsEveryMemberOfTheItemAndItsRequiredMembersAndAddsAppliesThroughAlone() {
+        Map<String, Object> item = properties(ITEM);
+        Map<String, Object> copied = properties(CONTEXT_ITEM);
+
+        for (Map.Entry<String, Object> member : item.entrySet()) {
+            assertThat(copied)
+                    .as("%s has the member %s of %s", CONTEXT_ITEM, member.getKey(), ITEM)
+                    .containsEntry(member.getKey(), member.getValue());
+        }
+        assertThat(copied.keySet())
+                .as("the one member of its own")
+                .containsExactlyInAnyOrderElementsOf(concat(item.keySet(), List.of("appliesThrough")));
+        assertThat(required(CONTEXT_ITEM))
+                .as("the required members of %s", CONTEXT_ITEM)
+                .containsExactlyInAnyOrderElementsOf(concat(required(ITEM), List.of("appliesThrough")));
+    }
+
+    @Test
+    void theAppliesThroughOfTheContextItemIsOneOfTheThreeRulesOfTheOwnershipRule() {
+        Map<?, ?> appliesThrough = (Map<?, ?>) properties(CONTEXT_ITEM).get("appliesThrough");
+
+        assertThat((List<?>) appliesThrough.get("enum")).containsExactly("action", "mission_type", "project");
+        assertThat(appliesThrough.containsKey("x-derived")).as("appliesThrough cites its rule").isTrue();
+    }
+
+    private static List<String> concat(java.util.Collection<String> first, List<String> second) {
+        List<String> all = new ArrayList<>(first);
+        all.addAll(second);
+        return all;
+    }
 
     @Test
     void everyCopyRepeatsTheMembersOfTheItemWithTheSameSchema() {

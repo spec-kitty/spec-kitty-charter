@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
@@ -28,6 +30,8 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ActionContextWalk;
+import ai.speckitty.charter.packs.application.ActionContextWalk.Pass;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.EdgeIndex;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -325,15 +329,18 @@ class ClosureViewSessionStepRefsTest {
 
     @Test
     void aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution() {
-        // The production-shaped source (OD-6): a step enhancer selected next to its mission type, whose target step no
-        // pack holds, is not in force, and the report names the step as a node of kind action.
+        // A step enhancer selected next to its mission type, whose two target steps no pack holds, is not in force, and
+        // the report names each step as a node of kind action. Two targets, because a step enhancement with one
+        // unheld action target is refused at compose by C37 (WP04, ADR-0066 decision 8); a two-target enhancer keeps
+        // rule E6 as built (OD-6), so the unheld-target branch stays reachable on the real resolution.
         Closure closure = new Closure()
                 .pack(
                         "alpha",
                         PackLevel.ORG,
                         List.of(),
                         List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
-                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"));
+                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"),
+                        relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/gone"));
         PacksSession session = closure.session();
 
         InForceAnswer answer = session.inForce(new InForceQuery(
@@ -341,8 +348,73 @@ class ClosureViewSessionStepRefsTest {
 
         assertThat(answer.states().get(ref("step_enhancement:x")).state())
                 .isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.INACTIVE);
-        assertThat(answer.enhancedTargets())
-                .containsEntry(ref("step_enhancement:x"), List.of(new NodeRef(NodeKind.ACTION, "M/missing")));
+        assertThat(answer.states().get(ref("mission_type:M")).state())
+                .as("the control: the mission type selected beside it is in force")
+                .isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.ACTIVE);
+        assertThat(answer.enhancedTargets().get(ref("step_enhancement:x")))
+                .containsExactlyInAnyOrder(new NodeRef(NodeKind.ACTION, "M/gone"), new NodeRef(NodeKind.ACTION, "M/missing"));
+    }
+
+    // ---- the action context: each pass of the walk is the appliesThrough of its entry (FR-009) ----
+
+    @Test
+    void theContextMapsEachPassOfTheWalkToTheAppliesThroughOfItsEntryAndOfItsCandidate() {
+        Urn action = Urn.action("M", "s");
+        ActionContextWalk.Context walked = new ActionContextWalk.Context(
+                action,
+                true,
+                List.of(
+                        entry("directive:A", Pass.ACTION, Optional.empty()),
+                        entry("directive:T", Pass.MISSION_TYPE, Optional.of(urn("directive:T"))),
+                        entry("directive:P", Pass.PROJECT, Optional.of(urn("directive:P")))),
+                List.of(
+                        new ActionContextWalk.SuggestionCandidate(
+                                urn("tactic:s1"), urn("directive:A"), 2, Optional.empty(), Optional.empty(), Pass.ACTION),
+                        new ActionContextWalk.SuggestionCandidate(
+                                urn("tactic:s3"),
+                                urn("directive:P"),
+                                2,
+                                Optional.of("when"),
+                                Optional.of("why"),
+                                Pass.PROJECT)),
+                List.of(),
+                List.of());
+
+        ActionContext context = ClosureViewSession.contextOf(walked);
+
+        assertThat(context.entries())
+                .extracting(entry -> entry.ref().urn(), ActionContext.Reached::appliesThrough)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("directive:A", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("directive:T", AppliesThrough.MISSION_TYPE),
+                        org.assertj.core.groups.Tuple.tuple("directive:P", AppliesThrough.PROJECT));
+        assertThat(context.suggestionCandidates())
+                .extracting(candidate -> candidate.ref().urn(), ActionContext.SuggestionCandidate::appliesThrough)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("tactic:s1", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("tactic:s3", AppliesThrough.PROJECT));
+    }
+
+    @Test
+    void everyPassOfTheWalkHasAnAppliesThroughOfTheSameName() {
+        assertThat(Arrays.stream(Pass.values()).map(ClosureViewSession::appliesThroughOf))
+                .extracting(AppliesThrough::name)
+                .containsExactlyElementsOf(
+                        Arrays.stream(Pass.values()).map(Pass::name).toList());
+    }
+
+    private static ActionContextWalk.Entry entry(String urn, Pass pass, Optional<Urn> root) {
+        return new ActionContextWalk.Entry(
+                urn(urn),
+                ActionContextWalk.Step.SCOPE,
+                Urn.action("M", "s"),
+                1,
+                Optional.empty(),
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                pass,
+                root);
     }
 
     // ---- the merged closure: winners, languages, edges and layer overrides ----
