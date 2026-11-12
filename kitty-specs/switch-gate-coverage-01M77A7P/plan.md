@@ -95,3 +95,21 @@ roadmap's slice D row, and the core consequence in `docs/plans/pack-ecosystem-wo
   for `GET /packs/{packId}/doc`, whichever lands second.
 - A shared status hides a per-operation defect. Mitigation: only 401, 403 and 500 are shared, each answered by a
   filter or handler in front of every controller; 503 and 415 are not shared.
+
+## Plan-point squad (2026-11-12) and what changed
+
+Two reviewers, test-architecture and governance lenses. Folded:
+
+- **500 is not one mechanism** (HIGH): no shared statuses at all. 401 and 403 are asserted on every operation by
+  `every-operation.feature`; 500 is asserted per operation by `unexpected-failure.feature`.
+- **Incidental refusals** (MEDIUM): a non-2xx answer counts only where `Then the response status is <n>` asserted it.
+- **Reserved and held** (MEDIUM): a held reserved operation is never reported stale; a planted control proves it.
+- **503 seam** (MEDIUM): the busy-registry scenarios hold the real `RegistryWriteLock`.
+- **CHANGELOG** (HIGH): a fragment under `contracts/charter/changes/`, not the CHANGELOG itself.
+- **Breaking surface** (HIGH): the register's header, the README and the ADR amendment say a key change or a
+  ready-to-held move is `### Breaking`. A release-gate comparison of the register against the baseline is not built
+  (PR "Not done").
+- **ADR** (MEDIUM): a dated amendment to ADR-0059 D1, not a note.
+- **Issues** (MEDIUM): #72 closes and core's half is C13 in the work breakdown; #14 and #69 are edited; #9's
+  provenance bullet maps to the fingerprint rule.
+- **Collisions** (MEDIUM): the spec's constraints name the shared files.

@@ -50,14 +50,16 @@ mechanism gives in front of every operation, which are proven once and named in 
 
 **Acceptance**
 
-1. Every operation's declared 2xx, 3xx and 4xx answers, and its 503, are exercised by a scenario of that operation,
-   or are a shared answer the register names with the scenario that proves it.
-2. Every operation is marked switchable, and `./gradlew verifyAll` is green.
+1. Every status an operation declares by number is asserted on that operation by a scenario: a success answer from
+   any exchange, any other answer only where a step asserts its status. There are no shared statuses; the worktree
+   guard's 401 and 403 are asserted on every operation.
+2. Every operation is ready, except one whose declared answer no scenario can raise, which is held with that reason;
+   `./gradlew verifyAll` is green.
 
 ### User Story 3 — Core's half is recorded, not built (P2)
 
 The part of #72 that makes the register block core's switch is core work at incorporation (issue-tracker Rule 5).
-It is recorded in the pack-ecosystem work breakdown, and #72 is narrowed to it.
+It is recorded in the pack-ecosystem work breakdown (C13), and #72 closes with evidence (governance squad M3).
 
 ### Edge Cases
 
@@ -73,11 +75,11 @@ It is recorded in the pack-ecosystem work breakdown, and #72 is narrowed to it.
 
 - **FR-001** A register `contracts/charter/scenarios/switch-gate.yaml` holds one entry per operation, by
   `operationId`, with `switch: ready` or `switch: held` and a reason for held.
-- **FR-002** The register's `shared` section names each status answered by one mechanism in front of every
-  operation, with the scenario that proves the mechanism. The check fails when that scenario did not run.
+- **FR-002** A refusal counts toward its operation only when a step asserted its status (plan-point squad: a setup
+  request's incidental refusal covers nothing). A success answer counts from any exchange, as R-20 always did.
 - **FR-003** After the last scenario, the suite records every exchange by operation and status and fails when an
-  entry is missing or extra, a ready operation has an unexercised declared status that is not shared, a held
-  operation is complete, or a reserved operation is ready.
+  entry is missing or extra, a ready operation has a declared status no scenario asserts, a held operation that is not
+  reserved is complete, or a reserved operation is ready.
 - **FR-004** It writes the per-operation report to `build/reports/switch-gate/`.
 - **FR-005** It subsumes `OperationCoverage`'s 2xx check (R-20) with no loss: a missing 2xx answer still fails, with
   the R-20 wording.
@@ -94,12 +96,16 @@ It is recorded in the pack-ecosystem work breakdown, and #72 is narrowed to it.
 
 - Contract operations, schemas and responses are not changed. A declared status that cannot be raised is a contract
   defect: it is reported, not dropped.
-- Do not edit files slices B and C change (registration, `PackCommitStore`, `file-kinds.yaml`, in-force resolution,
-  action context).
+- Keep out of the code slices B and C change (registration, `PackCommitStore`, `file-kinds.yaml`, in-force resolution,
+  action context): the new scenarios go in new files. Shared files this mission does edit, listed honestly:
+  `CharterSteps.java` (the hook and the status step), `ScenarioHttp.java`, `scenarios/README.md`; and it replaces
+  `OperationCoverage`, which slice B's plan relies on for R-20 (the rule is kept, under `SwitchGate`). Slice C has no
+  PR yet. A new operation of either slice adds a register entry and a row of `every-operation.feature`.
 
 ## Success Criteria
 
-- **SC-001** All 46 operations are `ready`, with no unexercised declared status beyond the shared ones.
+- **SC-001** Every operation is `ready` but those whose declared answer no scenario can raise, each held with the
+  reason (outcome: 44 ready; `deleteActivation` and `getPackRegistration` held, their 500 being a storage failure only).
 - **SC-002** Deleting a covering scenario, adding an operation, or marking a reserved operation ready each fails the
   suite (proven by the unit tests).
-- **SC-003** #9 closes with evidence; #72 is narrowed to core's half.
+- **SC-003** #9 and #72 close with evidence; core's half of #72 is recorded as C13 in the work breakdown (Rule 5).
