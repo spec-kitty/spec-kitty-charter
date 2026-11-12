@@ -3,7 +3,7 @@ title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
 updated: 2026-11-12T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431)'
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431); decision 5 amended 2026-11-12 (manifest membership derived and restamped on every write, #110)'
 decision_date: '2026-10-28'
 type: ADR
 kind: ADR
@@ -130,6 +130,49 @@ point this note changes is annotated where it stands.
   it by name, and `pack.yaml` loses `active_charter`, which the closed descriptor now refuses as an unknown key. Its
   `required_<plural>` lists map to the must-have items of a governing preset (decision 6); nothing migrates or reads
   them. The conversion is in [Enforce presets on an organization's projects](/guides/enforce-org-presets/).
+
+### Amendment 2026-11-12 (#110): the manifest's membership is derived, and every write restamps it
+
+Made by [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), the close-out of slice B
+([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)), as
+[ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 7 asked. It records the operator's rulings
+of 2026-11-12 on three questions the Op (`01M78KRYD8EWWZ57FNW3T1Q7RA`) put. The decision text below is unchanged, and
+decision 5 carries a note where it changes.
+
+- **Membership is derived, not carried as read** (operator). `pack-manifest.yaml` lists one constituent per artifact
+  the pack holds, as `{kind, id, path}` with its kind token, its id and the file it is stored in, and one preset entry
+  per preset, at `presets/<id>.yaml`. Each list is in path order (by UTF-16 code unit). The rule lives in one place,
+  `ManifestMembership`, and every writer uses it.
+- **Every write restamps it** (ADR-0074 decision 7; operator: one rule for every writer). The writers are:
+  - a whole-pack registration, on the staged tree after the files it does not hold are removed and before its
+    revision is computed, so a re-upload of the same pack is still `unchanged`;
+  - a per-artifact `PUT` and a `DELETE`, which commit through one choke point (`PackCommitStore`), as does a write that
+    only changes the registered relationships;
+  - the store's whole-pack write (`WholePackStore.write`);
+  - the round-trip gate's manifest step.
+
+  The derived fields are then stamped from the written bytes, as decision 5 already did.
+- **A manifest is always generated** (operator). A write to a pack that held none writes one, so every pack the
+  service writes holds a manifest, and such a pack gets a new fingerprint and ETag once. Every example pack holds its
+  derived manifest: `org-base` gained one, and `built-in`'s lists grew from 22 constituents to all 40 of its artifacts.
+- **A registration refuses a manifest whose lists differ** (operator). An uploaded manifest that lists an entry the
+  pack does not hold, or leaves out one it holds, is refused `422 validation_failed`, one violation per entry, code
+  `manifest_membership`, at `pack-manifest.yaml`. The gate refuses such a source manifest with the same reasons.
+
+The calls the Op made beyond the rulings, open to review:
+
+- **Order and hashes are not judged.** The entries are compared as sets, and the write writes them in path order. The
+  derived hashes are restamped, as decision 5 already held for the reader.
+- **The check runs on an otherwise clean upload.** An artifact refused for its own fault would also read as left out,
+  so the membership check is made only when the upload has no other violation.
+- **The general load does not check membership.** `WholePackStore.load` is unchanged, so a stored pack whose manifest
+  predates this rule still loads; its next write restamps it.
+- **Companions are not constituents.** A constituent is one artifact at its own file, as the schema's `{kind, id,
+  path}` has it. A skill body, an asset payload or a guide is not listed, so editing one changes no `content_hash`
+  ([ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) left this to #110). Listing them
+  would need a new entry shape in the manifest schema.
+- **Not done: validate mode.** Validate mode inspects each file on its own and does not assemble the pack, so it has no
+  derived lists and does not report a membership difference. A registration does.
 
 ## Context
 
@@ -333,6 +376,9 @@ one walk serve the check, and the WP05 review accepted it.
 should be constituents, and restamping the manifest after a single-artifact registration, need the
 enumeration rules that [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110) owns.
 Until then, a registration leaves the presets byte-identical and the manifest stale.
+*(Amended 2026-11-12, #110: membership is derived from the pack every write holds, never carried as read; every write
+restamps the manifest and generates it where the pack held none; a registration and the gate refuse a manifest whose
+lists differ. See the amendment under Status.)*
 
 ### 6. Kinds without a schema
 
@@ -512,7 +558,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
   2026-11-01 (#251): 303, on nine files.)*
 - A pack with an unknown `pack.yaml` key is now unreadable where it loaded with a warning.
 - Packs that hold presets or a manifest get a new fingerprint and ETag once.
-- A registration leaves the manifest stale until #110 decides regeneration.
+- A registration leaves the manifest stale until #110 decides regeneration. *(Done 2026-11-12, #110: every write
+  restamps it.)*
 - Validate mode passes a preset that breaks only a domain invariant, such as a duplicated item id
   (decision 7).
 - `Pack` has two pack-level slots now, and a third is coming, before the extraction *(it came: the
@@ -539,7 +586,7 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 - #206: migrate `org-charter.yaml`'s `required_<plural>` lists into presets, then refuse them.
   *(Superseded 2026-11-11 by retiring `org-charter.yaml`, #431: the file is refused by name, and its lists map to a
   governing preset's must-have items.)*
-- #110: manifest membership and restamping after a registration.
+- #110: manifest membership and restamping after a registration. *(Done 2026-11-12; see the amendment under Status.)*
 - Epic #186: extract `PackLevelContent` (decision 10).
 - Epic #186: merged storage objects that break the sanitized-shape rules. They are listed in the
   grounding squad's §6 and not changed here:
