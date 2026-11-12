@@ -2,8 +2,8 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-11-11T00:00:00Z
-decision_status: 'Accepted, with Amendments through 2026-10-28 (D10 reconciled with ADR-0026 write surface; 304-no-body carve-out #208); superseded in part by ADR-0038 (2026-10-27) and ADR-0041 (2026-10-28)'
+updated: 2026-11-12T00:00:00Z
+decision_status: 'Accepted, with Amendments through 2026-11-12 (D10 reconciled with ADR-0026 write surface; 304-no-body carve-out #208; the ownership rule of the effective context on D5, 2026-11-12); superseded in part by ADR-0038 (2026-10-27) and ADR-0041 (2026-10-28)'
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -83,6 +83,12 @@ and `getPackArtifact`). A refusal, a write, the contract document (`getOpenApiDo
 do not declare it, since the service never sends it there. The lint rule `charter-headers-on-every-response`
 checks the two always-on headers; `fingerprint-on-verified-reads` and `fingerprint-only-on-verified-reads` check the
 fingerprint. The decision text of D11 is unchanged.
+
+**Amendment 2026-11-12** (slice C, operator ruling, Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`, option B, the
+ownership rule; [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450)): D5's "selection roots and their
+closure" is ruled for the effective action context. D5 carries the ruling where it stands, and D2 and D3 carry an
+annotation on how the effective form reads them. The decision text of D2, D3 and D5 is unchanged, and the offering's
+own walk (D1, D2) is unchanged.
 
 This record supersedes, point by point:
 
@@ -164,6 +170,12 @@ Evidence: 24 actions at depths 0, 1 and 2 are 72 cells over open-packs. 65 are i
 core, and 7 differ only by DIV-110. Core minus charter is empty in every cell. The via and hops
 invariant holds in all 1,227 entries.
 
+*(Annotation 2026-11-12, slice C, amendment of D5: "The mission-type node is not walked" still holds for the offering's
+walk. The effective action context walks the action's mission-type scope as its second pass: after the five steps from
+the action, the five steps run again from the directives, tactics and paradigms in force that `mission_type:<type>`
+scopes. That is how "type-wide guidance reaches an action through R9" is built. See D5's annotation and rule
+[E16](/architecture/composition-and-activation-rules/#5-read-rules).)*
+
 ### D3. Provenance and deduplication
 
 Each entry carries `relation` (the step that listed it), `via` (its parent in that step's walk;
@@ -172,6 +184,12 @@ otherwise `hops(via) + 1`).
 
 **Invariant.** Following `via` from any entry reaches the action node along a real path of the
 graph in exactly `hops` edges.
+
+*(Annotation 2026-11-12, slice C, amendment of D5: the invariant holds for the offering's walk, and within one pass of
+the effective form. A pass that starts from a mission-type or a project-wide root reaches that root, not the action
+node. The effective action context does not serialize `via` or `hops`; each of its items carries `appliesThrough`
+instead. The deduplication rule holds across the passes: the first pass that reaches an artifact lists it, and the
+artifact still seeds the later steps and passes.)*
 
 **Deduplication rule.** The first step that reaches an artifact lists it: scope, then `requires`, then
 `suggests`, then `requires` of suggested, then `vocabulary`. Within a walk a node takes the
@@ -216,6 +234,30 @@ compares this read with core in two ways:
 - Cases without activation keys must match core exactly, with no register exemption.
 - Activated cases assert charter = core(the same fixture without activation keys), and
   core(activated) is a subset of charter.
+
+*(Amendment 2026-11-12, slice C: the ownership rule. Operator ruling, Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`,
+option B, relayed by the orchestrator. It rules what "selection roots and their closure" means for the effective action
+context of action `<type>/<action>` (`getEffectiveActionContext`):*
+
+- *A directive, tactic or paradigm in force is listed when one of these holds, and the item says which in
+  `appliesThrough`:*
+  - *the action's walk reaches it (D2, as built): `action`;*
+  - *`mission_type:<type>` scopes it: `mission_type`;*
+  - *no action and no mission type scopes it: `project`.*
+- *What such an artifact reaches by D2's steps 2 to 5 is listed with it, under the same `appliesThrough`.*
+- *One scoped only by other actions, or only by other mission types, is not listed. Whether it is required does not
+  change that.*
+- *Ownership is judged on the authored `scope` edges of the merged closure whose source is an action or a mission type,
+  held or not and whatever is in force. Turning a mission type off does not make its artifacts project-wide.*
+- *The rule runs as three passes over one listing: the action, then the mission type, then the project-wide roots. The
+  first pass that reaches an artifact lists it, as D3 deduplicates within a walk.*
+
+*The mission-type scope is honoured where core ignores it, which is [DIV-245](/conformance/divergence-register/). For the
+activated cases, the corpus clause "core(activated) is a subset of charter" is superseded by that difference: core
+lists a type-scoped root on the actions of every mission type, and the service lists it only on its own. The
+16 directives core lists for `software-dev/implement` are explained one by one in the example table of
+`contracts/charter/scenarios/effective-context-scoping.feature`: 15 are listed, and `DIRECTIVE_003`, scoped only by
+other actions, is not. The rule is [E16](/architecture/composition-and-activation-rules/#5-read-rules).)*
 
 ### D6. Tensions go to the creed set (operator-confirmed)
 
