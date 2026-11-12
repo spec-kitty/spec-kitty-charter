@@ -16,12 +16,12 @@
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "Compose refuses an unheld target (C37) and an inherited lock (422 override_not_permitted / 500 pack_unreadable)",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "step-enhancement-compose.feature; EnhancementComposeTest; PackCompositionResolverTest (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:38.958000+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
