@@ -13,4 +13,6 @@
   a subset of its artifacts, which registered before, is refused until its lists are complete; a client that wrote the
   manifest by hand can leave it out and let the service generate it. A pack stored before this change gets a new
   revision on its next write, so re-registering it unchanged at the same `pack_version`, which answered `unchanged`,
-  now answers `409` (same version, another revision): send a new `pack_version`.
+  now answers `409` (same version, another revision): send a new `pack_version`. Pack authors: regenerate each
+  `pack-manifest.yaml` from the derived lists, or drop it and let the service generate it. open-packs's `built-in`, the
+  one pack there that holds a manifest, differs from its derived lists and is refused until it does.

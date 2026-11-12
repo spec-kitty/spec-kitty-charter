@@ -192,7 +192,13 @@ The calls the Op made beyond the rulings, open to review:
   invariant could not be repaired by `DELETE` before this rule either. What is new is one more build, of the edited
   copy: an edit that leaves a pack that no longer builds is refused before the swap, and a violation a read tolerates
   (an unreadable artifact file) still lets the write go ahead.
-
+- **What open-packs must do.** A pack-manifest.yaml in open-packs whose lists differ from the derived ones is refused on
+  registration. At the pinned ref (`a2a9379`) only `built-in` holds one, and it differs: it lists 53 files the load does
+  not hold (26 agent profiles and 27 styleguides, refused for their shape) and leaves out 54 it holds (4 mission types,
+  21 step contracts, 27 templates, a procedure and a toolguide). open-packs regenerates each `pack-manifest.yaml` from
+  the derived lists once its packs load clean, or drops it and lets the service generate it. The other packs hold no
+  manifest, and the service generates one. A pack the service registered before this rule gets a one-time `409` on its
+  first unchanged re-registration: send a new `pack_version`.
 
 ## Context
 
