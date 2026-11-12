@@ -89,7 +89,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -99,7 +99,8 @@
       "last_transition_at": "2026-11-12T17:32:25.498731+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: PromptFacts (declared slots per action, fills per step enhancement) is the 9th member of PackCompositionFacts, filled in DomainRepositoryService.compositionFacts from the one resolved read; WriteFacts carries it (recomputed on mission type / step enhancement removal); staged facts carry staged prompts. Gates green: packs test/spotless/checkstyle, wholePackRoundTrip, full deployable test, contracts check."
+        "Ready for review: PromptFacts (declared slots per action, fills per step enhancement) is the 9th member of PackCompositionFacts, filled in DomainRepositoryService.compositionFacts from the one resolved read; WriteFacts carries it (recomputed on mission type / step enhancement removal); staged facts carry staged prompts. Gates green: packs test/spotless/checkstyle, wholePackRoundTrip, full deployable test, contracts check.",
+        "Review passed (reviewer-renata). Checks: (a) promptSlotFacts parses PromptSlots.parse(MarkdownCodec.write(step.prompt())) exactly as recordPromptSlotFaults and FileSystemPackInspector do; no second parser; A1 equality test kills a dropped-on-demand-steps mutation. (b) compositionFacts uses only resolved.store, no nested resolve or public reader; load's assemble(pack, resolved) keeps read-then-readGraphs order. (c) staged facts via WholePackStore.contentsOf carry staged prompts (tested). (d) :packs:wholePackRoundTrip green. (e) 8-arg ctor = NONE; per-artifact writes are directive/paradigm/styleguide/toolguide only, so keeping prompts is correct; withoutArtifact drop for mission type/step enhancement is correct and tested. (f) mutations killed: DRS NONE (5/5 DRS tests), holdsText inverted, withArtifact/withRegisteredEdges/withoutArtifact prompts dropped, on-demand steps dropped. (g) 4 WP commits signed, no trailer; tool-made 13a7361/c6afeea/190e67d unsigned (noted). (h) spotless, checkstyle, javadoc, Error Prone green. Anti-pattern checklist 1-8 PASS. Shared-file: DomainRepositoryService is slice B's file, owned here for the one R9 hunk post-#501; no other WP owns these files. LOW notes: promptSlotFacts duplicates recordPromptSlotFaults' loop; PromptFacts.stepOf re-derives the steps/<id>.prompt.md convention by path."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
