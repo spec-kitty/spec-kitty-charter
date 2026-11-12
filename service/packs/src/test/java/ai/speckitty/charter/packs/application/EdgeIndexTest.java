@@ -494,4 +494,92 @@ class EdgeIndexTest {
                 .extracting(EdgeIndex.Link::target)
                 .containsExactly(urn("directive:New"));
     }
+    // ---- scope owners (research R2, squad A6; C-003) ---------------------------------------------------------------
+
+    @Test
+    void theScopeOwnersOfAnArtifactAreTheActionsAndMissionTypesThatScopeItHeldOrNot() {
+        EdgeIndex merged = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("mission_type:M", "action:M/a", "action:qa/x", "directive:D", "directive:Q"),
+                        edge("action:M/a", RelationType.SCOPE, "directive:D"),
+                        edge("mission_type:M", RelationType.SCOPE, "directive:D"),
+                        edge("action:qa/x", RelationType.SCOPE, "directive:Q"),
+                        edge("action:gone/y", RelationType.SCOPE, "directive:Q"))
+                .merged();
+
+        assertThat(merged.scopeOwners().get(urn("directive:D")))
+                .containsExactly(urn("action:M/a"), urn("mission_type:M"));
+        assertThat(merged.scopeOwners().get(urn("directive:Q")))
+                .as("action:qa/x is no held step (no pack defines mission_type:qa) and no pack holds action:gone/y:"
+                        + " both still own their target")
+                .containsExactly(urn("action:gone/y"), urn("action:qa/x"));
+        assertThat(merged.isScopedBy(urn("directive:D"), urn("mission_type:M"))).isTrue();
+        assertThat(merged.isScopedBy(urn("directive:Q"), urn("mission_type:M"))).isFalse();
+        assertThat(merged.isProjectWide(urn("directive:D"))).isFalse();
+        assertThat(merged.isProjectWide(urn("directive:Q"))).isFalse();
+    }
+
+    @Test
+    void aScopeEdgeToATargetItsPackDoesNotHoldStillOwnsTheTargetItNames() {
+        EdgeIndex merged = new Closure()
+                .pack("builtin", List.of(), List.of("directive:D"))
+                .pack(
+                        "qa",
+                        List.of("builtin"),
+                        List.of("mission_type:qa", "action:qa/x"),
+                        edge("action:qa/x", RelationType.SCOPE, "directive:D"))
+                .merged();
+
+        assertThat(merged.isProjectWide(urn("directive:D")))
+                .as("the bare target resolves in qa, which holds no directive:D, yet the author placed D on qa/x")
+                .isFalse();
+    }
+
+    @Test
+    void onlyAScopeEdgeFromAnActionOrAMissionTypeOwnsItsTarget() {
+        EdgeIndex merged = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("mission_type:M", "action:M/a", "tactic:T", "directive:R", "directive:S"),
+                        edge("action:M/a", RelationType.REQUIRES, "directive:R"),
+                        edge("mission_type:M", RelationType.SUGGESTS, "directive:R"),
+                        edge("tactic:T", RelationType.SCOPE, "directive:S"))
+                .merged();
+
+        assertThat(merged.scopeOwners()).isEmpty();
+        assertThat(merged.isProjectWide(urn("directive:R"))).isTrue();
+        assertThat(merged.isProjectWide(urn("directive:S")))
+                .as("a scope edge from a tactic is no owner")
+                .isTrue();
+    }
+
+    @Test
+    void theScopeEdgesOfAVersionALaterLevelReplacedOwnNothing() {
+        EdgeIndex merged = new Closure()
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("mission_type:M", "action:M/a", "directive:Old"),
+                        edge("action:M/a", RelationType.SCOPE, "directive:Old"))
+                .pack("project", PackLevel.PROJECT, List.of("action:M/a"))
+                .merged();
+
+        assertThat(merged.isProjectWide(urn("directive:Old"))).isTrue();
+    }
+
+    @Test
+    void theScopeOwnersAreWorkedOutOnceAndTheHeldUrnsListEveryArtifactInUrnOrder() {
+        EdgeIndex merged = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("tactic:T", "mission_type:M", "directive:D"),
+                        edge("mission_type:M", RelationType.SCOPE, "directive:D"))
+                .merged();
+
+        assertThat(merged.scopeOwners()).isSameAs(merged.scopeOwners());
+        assertThat(merged.heldUrns()).isSameAs(merged.heldUrns());
+        assertThat(merged.heldUrns())
+                .containsExactly(urn("directive:D"), urn("mission_type:M"), urn("tactic:T"));
+    }
 }
