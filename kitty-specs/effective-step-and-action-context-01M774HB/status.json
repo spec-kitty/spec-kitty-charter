@@ -164,7 +164,8 @@
       "last_transition_at": "2026-11-12T18:56:55.798088+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "C38 slots-declared check: SlotCompose pure rule; ClosureView.requireSlots (inForce pure); reads 500 via ClosureViewSession.statesOf after merge codes (F6); ActivationImpact.requireComposable gate on every RegistrationImpact path, adapter per stored activation, never swallowed, skips activations with no before view (G21); activation writes check before storing (422). prompt_slot_missing raised with a 19-operation 422 map; RefusalHandler per-operation 422; Breaking + Changed fragments. packs/activations/web-transport/deployable tests, wholePackRoundTrip, contracts:check, spotless, checkstyle green."
+        "C38 slots-declared check: SlotCompose pure rule; ClosureView.requireSlots (inForce pure); reads 500 via ClosureViewSession.statesOf after merge codes (F6); ActivationImpact.requireComposable gate on every RegistrationImpact path, adapter per stored activation, never swallowed, skips activations with no before view (G21); activation writes check before storing (422). prompt_slot_missing raised with a 19-operation 422 map; RefusalHandler per-operation 422; Breaking + Changed fragments. packs/activations/web-transport/deployable tests, wholePackRoundTrip, contracts:check, spotless, checkstyle green.",
+        "Cycle 2: registration gate no longer skips an activation with no before view (G8/G21); failing fixture + twin in ActivationImpactAdapterTest; Javadoc and Breaking fragment corrected; activation-write scenario asserts the stored file unchanged; Comparator imported; wording fragment recorded out-of-map. Gates green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
