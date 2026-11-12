@@ -11,10 +11,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The membership of a pack manifest (#110, ADR-0042 amendment of 2026-11-12, ADR-0074 decision 7): which files
@@ -111,24 +115,26 @@ final class ManifestMembership {
      * Each difference between a manifest's lists and the derived ones, as a reason: first the listed entries the pack
      * does not hold, then the held entries the manifest leaves out, each in the order of its own list. A constituent is
      * compared by kind token, id and path, a preset entry by id and path; the order of the entries and every derived
-     * field are not compared.
+     * field are not compared. An entry the manifest lists more than once is a reason of its own, after the unheld ones.
      *
      * @param listed the manifest as read
      * @param derived the derived manifest of the same pack
      * @return the reasons; empty when the lists hold the same entries
      */
     static List<String> mismatch(PackManifestDso listed, PackManifestDso derived) {
-        Set<String> listedConstituents = constituents(listed);
-        Set<String> derivedConstituents = constituents(derived);
-        Set<String> listedPresets = presets(listed);
-        Set<String> derivedPresets = presets(derived);
+        List<String> listedConstituents = constituents(listed);
+        Set<String> derivedConstituents = new LinkedHashSet<>(constituents(derived));
+        List<String> listedPresets = presets(listed);
+        Set<String> derivedPresets = new LinkedHashSet<>(presets(derived));
         List<String> out = new ArrayList<>();
-        listedConstituents.stream()
+        distinct(listedConstituents)
                 .filter(entry -> !derivedConstituents.contains(entry))
                 .forEach(entry -> out.add("lists constituent " + entry + ", which the pack does not hold"));
-        listedPresets.stream()
+        distinct(listedPresets)
                 .filter(entry -> !derivedPresets.contains(entry))
                 .forEach(entry -> out.add("lists preset " + entry + ", which the pack does not hold"));
+        repeated(listedConstituents, "constituent", out);
+        repeated(listedPresets, "preset", out);
         derivedConstituents.stream()
                 .filter(entry -> !listedConstituents.contains(entry))
                 .forEach(entry -> out.add("leaves out constituent " + entry + ", which the pack holds"));
@@ -138,16 +144,29 @@ final class ManifestMembership {
         return List.copyOf(out);
     }
 
-    private static Set<String> constituents(PackManifestDso manifest) {
-        Set<String> out = new LinkedHashSet<>();
-        manifest.constituents().forEach(c -> out.add(c.kind() + ":" + c.id() + " at " + c.path()));
-        return out;
+    private static Stream<String> distinct(List<String> entries) {
+        return new LinkedHashSet<>(entries).stream();
     }
 
-    private static Set<String> presets(PackManifestDso manifest) {
-        Set<String> out = new LinkedHashSet<>();
-        manifest.presets().forEach(p -> out.add(p.id() + " at " + p.path()));
-        return out;
+    /** One reason per entry the manifest lists more than once, in the order of its first listing. */
+    private static void repeated(List<String> entries, String what, List<String> out) {
+        Map<String, Long> counts =
+                entries.stream().collect(Collectors.groupingBy(e -> e, LinkedHashMap::new, Collectors.counting()));
+        counts.forEach((entry, count) -> {
+            if (count > 1) {
+                out.add("lists " + what + " " + entry + (count == 2 ? " twice" : " " + count + " times"));
+            }
+        });
+    }
+
+    private static List<String> constituents(PackManifestDso manifest) {
+        return manifest.constituents().stream()
+                .map(c -> c.kind() + ":" + c.id() + " at " + c.path())
+                .toList();
+    }
+
+    private static List<String> presets(PackManifestDso manifest) {
+        return manifest.presets().stream().map(p -> p.id() + " at " + p.path()).toList();
     }
 
     private static Optional<byte[]> bytesAt(Path directory, String path) {
