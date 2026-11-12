@@ -663,7 +663,21 @@ public record ClosureView(
         Objects.requireNonNull(missionType, "missionType");
         Objects.requireNonNull(action, "action");
         Objects.requireNonNull(states, "states");
-        return EffectivePromptQuery.EffectivePrompt.NONE;
+        Urn step = Urn.action(missionType, action);
+        Map<PackIdentifier, String> names = new LinkedHashMap<>();
+        mergeInputs
+                .packs()
+                .forEach(pack -> names.putIfAbsent(
+                        pack.configured().id(), pack.descriptor().name()));
+        return EffectivePromptQuery.answer(
+                step,
+                merged().closure(),
+                mergeInputs.facts(),
+                urn -> states.stateOf(urn)
+                        .filter(InForceStates.ArtifactState::active)
+                        .isPresent(),
+                pack -> names.getOrDefault(pack, pack.value()),
+                pack -> mergeInputs.winners().stepPrompt(pack, step));
     }
 
     /**
