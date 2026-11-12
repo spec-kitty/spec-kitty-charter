@@ -63,7 +63,7 @@ A client lists a pack's skills and reads one, with its body, to install it into 
 1. **Given** a pack with prompt skill `land-pr` and wrapper skill `wrap`, **When** the client lists skills, **Then** it gets both, each with id, title, description and form.
 2. **Given** that pack, **When** the client reads `land-pr`, **Then** the answer carries the skill's fields and its body text exactly as the body file holds it.
 3. **Given** that pack, **When** the client reads `wrap`, **Then** the answer carries no body.
-4. **Given** an activation that holds `land-pr` in force, **When** the client reads it under the activation, **Then** it gets the version in force. A skill that is not in force answers `404 artifact_not_found`.
+4. **Given** an activation whose closure holds `land-pr`, **When** the client reads it under the activation, **Then** it gets the winning version, with its state and reason (in force or not), as every effective item read answers. A skill no pack of the closure holds answers `404 artifact_not_found`.
 
 ### User Story 4 - Read an in-force artifact's references (Priority: P2)
 
@@ -74,7 +74,7 @@ A client reading an artifact in force under an activation reads what that artifa
 **Acceptance Scenarios**:
 
 1. **Given** an activation with directive `D` in force, which `requires` tactic `T`, **When** the client reads `D`'s references under the activation, **Then** it gets `T` with the relation `requires`.
-2. **Given** an activation where `D` is not in force, **When** the client reads `D`'s references, **Then** it is refused with `404 artifact_not_found`.
+2. **Given** an activation whose closure holds no `D`, **When** the client reads `D`'s references, **Then** it is refused with `404 artifact_not_found`. A `D` the closure holds but that is not in force answers the references of its winning version, as every effective item read answers whatever the state.
 
 ### User Story 5 - Reach the activation surface by links (Priority: P2)
 
@@ -109,7 +109,7 @@ Starting from the root, a client creates an activation and selects an artifact b
 | FR-007 | A client can list a pack's skills by the skill collection path, each with id, title, description and form (#107). | Approved | [build] | no |
 | FR-008 | A client can read a skill by its literal item path. A prompt skill's answer carries its body exactly as held; a wrapper skill carries none. | Approved | [build] | no |
 | FR-009 | Every asset and skill read of FR-003 to FR-008 has an activation twin at the same suffix, answering the version in force. For an asset, that is the closure's holder after layer override. For a skill, it is the activation's in-force resolution. | Approved | [build] | no |
-| FR-010 | An asset or skill that is not held, or not in force, is refused `404 artifact_not_found`. A missing pack is `pack_not_found`, and a missing activation is `activation_not_found`. | Approved | [build] | no |
+| FR-010 | An asset or skill that no pack (in a pack read) or no pack of the closure (under an activation) holds is refused `404 artifact_not_found`; an effective read answers a held artifact whatever its state, as `getEffectiveArtifact` does. A missing pack is `pack_not_found`, and a missing activation is `activation_not_found`. | Approved | [build] | no |
 | FR-011 | The templated item read does not render `asset` or `skill`; it refuses with `kind_not_found` and names the literal path. `?kind=asset` and `?kind=skill` list them in both trees. | Approved | [build] | no |
 | FR-012 | A client can read an in-force artifact's references under an activation, at the same suffix as the pack read (#532). | Approved | [build] | no |
 | FR-013 | An activation's answer links `self`, `offering`, the write relations `edit`, `delete`, `select`, `exclude` and `apply-preset` (templated by kind and id where the path needs them), and each built effective read (#409). | Approved | [build] | no |
@@ -155,6 +155,8 @@ Starting from the root, a client creates an activation and selects an artifact b
 - "Preset" (not "profile" or "bundle"); "payload" (not "content" or "blob") for an asset's bytes; "body" for a skill's text.
 
 ## Assumptions
+
+- Amended at plan (2026-11-12): the effective skill and references twins answer a held artifact whatever its state, following the existing effective item reads (`getEffectiveArtifact`, `getEffectiveAgentProfile`); the spec first said "not in force is 404", which would have made these two reads the only ones to judge state. Recorded in research.md R1.
 
 - The existing effective-read machinery resolves a skill's in-force version (skill is an activatable kind).
 - Scenario packs are written inline per scenario. Every asset id in charter's example packs and fixtures already matches FR-006's pattern (checked 2026-11-12), so no example pack changes. A new planted fixture proves the refusal.

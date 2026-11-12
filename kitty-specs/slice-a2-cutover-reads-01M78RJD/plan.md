@@ -59,7 +59,7 @@ kitty-specs/slice-a2-cutover-reads-01M78RJD/
 
 ```
 contracts/charter/
-├── openapi.yaml                         # 15 path registrations, 2 tags (Presets, Assets, Skills + Effective* twins)
+├── openapi.yaml                         # 13 path registrations; tags Presets, Assets, Skills, EffectiveAssets, EffectiveSkills
 ├── paths/packs_packId_presets*.yaml, packs_packId_artifacts_{asset,skill}*.yaml,
 │   activations_activationId_artifacts_{asset,skill}*.yaml,
 │   activations_activationId_artifacts_kind_artifactId_references.yaml

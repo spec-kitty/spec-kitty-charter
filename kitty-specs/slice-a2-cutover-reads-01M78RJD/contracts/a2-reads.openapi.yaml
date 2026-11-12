@@ -1,0 +1,15 @@
+# Sketch of the operations as they land in contracts/charter. Illustrative; the contract files are the source of record.
+/packs/{packId}/presets:                                   { get: { operationId: listPackPresets, tags: [Presets] } }        # 200 PresetList, 404 pack_not_found
+/packs/{packId}/presets/{presetId}:                        { get: { operationId: getPackPreset, tags: [Presets] } }          # 200 Preset, 404 pack_not_found|preset_not_found
+/packs/{packId}/artifacts/asset:                           { get: { operationId: listPackAssets, tags: [Assets] } }          # 200 AssetList
+/packs/{packId}/artifacts/asset/{artifactId}:              { get: { operationId: getPackAsset, tags: [Assets] } }            # 200 Artifact{asset}, 404 artifact_not_found
+/packs/{packId}/artifacts/asset/{artifactId}/payload:      { get: { operationId: getPackAssetPayload, tags: [Assets] } }     # 200 */* bytes; nosniff; CSP sandbox
+/packs/{packId}/artifacts/skill:                           { get: { operationId: listPackSkills, tags: [Skills] } }          # 200 SkillList
+/packs/{packId}/artifacts/skill/{artifactId}:              { get: { operationId: getPackSkill, tags: [Skills] } }            # 200 Artifact{skill}
+/activations/{activationId}/artifacts/asset:               { get: { operationId: listEffectiveAssets, tags: [EffectiveAssets] } }
+/activations/{activationId}/artifacts/asset/{artifactId}:  { get: { operationId: getEffectiveAsset, tags: [EffectiveAssets] } }          # EffectiveAssetRead, 304
+/activations/{activationId}/artifacts/asset/{artifactId}/payload: { get: { operationId: getEffectiveAssetPayload, tags: [EffectiveAssets] } }
+/activations/{activationId}/artifacts/skill:               { get: { operationId: listEffectiveSkills, tags: [EffectiveSkills] } }
+/activations/{activationId}/artifacts/skill/{artifactId}:  { get: { operationId: getEffectiveSkill, tags: [EffectiveSkills] } }          # EffectiveSkillRead, 304
+/activations/{activationId}/artifacts/{kind}/{artifactId}/references: { get: { operationId: listEffectiveArtifactReferences, tags: [Activation] } }
+# 13 operations. #409 adds no operation: it adds links to the activation answers.
