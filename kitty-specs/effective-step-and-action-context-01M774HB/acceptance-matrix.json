@@ -76,12 +76,12 @@
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
+      "description": "The effective context applies the ownership rule in three passes",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "effective-context-scoping.feature (16-directive table); ActionContextWalkOwnershipTest; effective-graph-and-context.feature (WP01, WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:08.705292+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
