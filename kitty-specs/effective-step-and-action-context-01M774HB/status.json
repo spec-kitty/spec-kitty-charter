@@ -29,6 +29,9 @@
       "last_event_id": "01M77824TG0J2Q59NTBDC85M11",
       "last_transition_at": "2026-11-12T06:45:28.016070+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ownership rule in the packs walk: ActionContextWalk.walkEffective (three passes, Pass/root on Entry, pass on SuggestionCandidate), EdgeIndex.scopeOwners/isProjectWide/isScopedBy/heldUrns (memoized; owners from every authored scope edge, held or not), ClosureView.actionContext calls walkEffective (out-of-map). Offering walk unchanged. :packs:test green (4708), style gates green, HexagonalArchitectureTest green; CharterContractSuite scenarios US5 AS3, US5 AS4 and #484 now fail as expected (meaning change, owned by WP02)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 16566,
