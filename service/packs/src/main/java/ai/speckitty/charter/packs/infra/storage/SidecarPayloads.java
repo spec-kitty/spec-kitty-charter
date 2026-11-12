@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRelativePaths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,8 +55,7 @@ final class SidecarPayloads {
             String payload = PackFileSet.ASSETS + sidecar.path();
             String claimant = namedBy.get(sidecar.path());
             if (PackRelativePaths.leavesRoot(sidecar.path())) {
-                refused.add(new Refused(
-                        sidecar.file(), "asset path '" + sidecar.path() + "' escapes the pack's assets/ root"));
+                refused.add(new Refused(sidecar.file(), PackPolicy.assetPathEscape(sidecar.path())));
             } else if (!payloads.contains(sidecar.path())) {
                 refused.add(new Refused(sidecar.file(), "payload " + payload + " does not exist"));
             } else if (claimant != null) {
