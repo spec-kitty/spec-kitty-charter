@@ -14,7 +14,7 @@ name: Sonar (nightly, reported)
 # starts no scan (!cancelled()).
 #
 # Schedule: 04:23 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), outside
-# 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-nightly.yml at 02:43 UTC.
+# 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-testing.yml at 02:43 UTC.
 #
 # build-logic/src/test/kotlin/SonarWorkflowGuardTest.kt guards the triggers, the SHA pins and where the
 # token may appear.

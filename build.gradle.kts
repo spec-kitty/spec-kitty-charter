@@ -14,7 +14,7 @@ tasks.register("verifyAll") {
 
 // The modules under the mutation floor, as the build sees them (#388): every project that applies
 // charter.mutation-conventions, each with its floor groups (#461), so the summary can name a group whose shard wrote no
-// report. mutation-nightly.yml runs this beside pitest and gives the file to the summary script.
+// report. mutation-testing.yml runs this beside pitest and gives the file to the summary script.
 val mutationModuleDirs = objects.listProperty<String>()
 subprojects {
     pluginManager.withPlugin("charter.mutation-conventions") {
@@ -25,12 +25,12 @@ subprojects {
 }
 tasks.register<WriteMutationModules>("mutationModules") {
     group = "verification"
-    description = "Lists the modules under the nightly mutation floor, for mutation-nightly.yml's summary (#388)."
+    description = "Lists the modules under the mutation floor, for mutation-testing.yml's summary (#388)."
     modules = mutationModuleDirs
     output = layout.buildDirectory.file("reports/mutation-floors/modules.txt")
 }
 
-// Mutation testing runs only in the nightly, never in verifyAll or a module's check (ADR-0060, #387): any invocation
+// Mutation testing runs only in mutation-testing.yml, never in verifyAll or a module's check (ADR-0060, #387): any invocation
 // whose graph has a gate reaching pitest or checkMutationFloors, through dependencies or finalizers however indirectly,
 // fails before it runs.
 gradle.taskGraph.whenReady {

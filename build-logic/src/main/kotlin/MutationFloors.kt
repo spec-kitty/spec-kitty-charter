@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * The nightly mutation floor (#239): the pure reading and scoring of PIT's `mutations.xml`, kept free of Gradle so
+ * The mutation floor (#239): the pure reading and scoring of PIT's `mutations.xml`, kept free of Gradle so
  * that it is unit-tested in build-logic. [CheckMutationFloors] is the task around it.
  *
  * **Score.** The score is PIT's own "mutation score" (`MutationStatistics.getPercentageDetected`): the mutants PIT
@@ -273,7 +273,7 @@ object MutationFloors {
     fun failures(projectPath: String, results: List<GroupResult>): List<String> =
         results.mapNotNull { it.failure(projectPath) }
 
-    /** The machine-readable summary (`floors.json`) the nightly workflow reads. */
+    /** The machine-readable summary (`floors.json`) the mutation workflow reads. */
     fun toJson(projectPath: String, totalMutants: Int, results: List<GroupResult>): String = buildString {
         append("{\n")
         append("  \"project\": ").append(quote(projectPath)).append(",\n")

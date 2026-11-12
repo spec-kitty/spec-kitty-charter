@@ -1,6 +1,6 @@
 /**
- * Mutation testing stays out of the required check (ADR-0060, #387): PIT and its floor check run only in the nightly
- * (`mutation-nightly.yml`), never as a dependency of `verifyAll` or of a module's `check`. The root build applies
+ * Mutation testing stays out of the required check (ADR-0060, #387): PIT and its floor check run only in the
+ * scheduled mutation run (`mutation-testing.yml`), never as a dependency of `verifyAll` or of a module's `check`. The root build applies
  * [reached] to the task graph of every invocation and fails it when a gate reaches a mutation task; the rule itself is
  * kept free of Gradle so that it is unit-tested in build-logic.
  */
@@ -38,7 +38,7 @@ object MutationIsolation {
             reached(gate, dependencies).takeIf { it.isNotEmpty() }?.let { "$gate reaches ${it.joinToString()}" }
         }
         return if (found.isEmpty()) null else
-            "Mutation testing runs only in mutation-nightly.yml, never in verifyAll or check (ADR-0060, #387): " +
+            "Mutation testing runs only in mutation-testing.yml, never in verifyAll or check (ADR-0060, #387): " +
                 found.joinToString("; ")
     }
 }

@@ -227,7 +227,7 @@ module, and asked whether the thresholds should live in `gradle.properties`. Not
   found during the kernel triage
 - [The service build guide](/guides/service-build/#mutation-testing) — how to run PIT and read the floors
 - `build-logic/src/main/kotlin/charter.mutation-conventions.gradle.kts` and `MutationFloors.kt`
-- `.github/workflows/mutation-nightly.yml` and `scripts/ci/mutation_summary.py`
+- `.github/workflows/mutation-testing.yml` (`mutation-nightly.yml` until 2026-11-12) and `scripts/ci/mutation_summary.py`
 
 ## Amendment, 2026-11-06: kernel and profiles floors raised
 
@@ -303,13 +303,16 @@ change:
   alert issue quotes, lists PIT's lines about tests that fail with no mutation applied. Such a test leaves its module
   without a report. On 2026-11-11 the job log that named one returned errors and then expired before anyone read it.
 
-## Amendment, 2026-11-12 (#461): weekly, in shards, 120 minutes a shard
+## Amendment, 2026-11-12 (#461): a scheduled run, in shards, 120 minutes a shard
 
-The operator ruled three changes after the nightly ran out of its 80-minute step two nights running.
+The operator ruled these changes after the nightly ran out of its 80-minute step two nights running.
 
-- **Weekly, not nightly.** The run is scheduled on Mondays. A mutation result is worth a run only when someone acts
-  on it, and a week is the cadence its findings are triaged at. `workflow_dispatch` is unchanged. The workflow file
-  and the `mutation-nightly` label keep their names. Where this ADR says "the nightly", read "the weekly run".
+- **A schedule, not a nightly.** The run is scheduled weekly for now; the cadence is the operator's to set, and the
+  names say what runs, never when. A mutation result is worth a run only when someone acts on it, so the run follows
+  the cadence its findings are triaged at. The workflow is renamed `.github/workflows/mutation-testing.yml` (name
+  "Mutation testing") and its alert label `mutation-testing`. `workflow_dispatch` is unchanged. Where this ADR says
+  "the nightly", `mutation-nightly.yml` or the `mutation-nightly` label, read the scheduled run,
+  `mutation-testing.yml` and `mutation-testing`.
 - **Shards.** PIT runs on three runners: `:packs`'s floor groups in two halves (domain+application with infra.fetch,
   and infra.storage with infra.archive, about half of its test runs each) and every other module. A module's shard
   is `-PmutationGroups=<groups>` (`charter.mutation-conventions`): it mutates and scores exactly those groups, so each
@@ -321,5 +324,6 @@ Why: a full `:packs:pitest` measured 1h06m34s alone on an idle 4-core machine (7
 about 1.4 times slower through the whole mutation phase (run 43176780670), so `:packs` needs about 93 minutes on one
 runner. Test bodies are about 9 % of that time; the rest is PIT's per-run overhead over 52,898 test runs, half of them
 for survivors and late kills. A squad of three lenses measured this; its levers that change no floor and no scope are
-the shards, three test-design fixes in this change, and two follow-ups (minion JVM tuning; the remaining test fixes).
-Floors and the PIT scope are unchanged.
+the shards, three test-design fixes in this change, and two follow-ups (#530, minion JVM tuning; #531, the remaining
+test fixes). Floors and the PIT scope are unchanged. The first sharded run (43209733136) took 48 minutes, the slowest
+shard 47 of its 110, with every group at the score of a whole-module run.
