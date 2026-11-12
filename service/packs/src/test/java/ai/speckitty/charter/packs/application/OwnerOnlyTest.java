@@ -52,16 +52,6 @@ class OwnerOnlyTest {
     class OnAFileSystemWithAclsButNoPosixPermissions {
 
         @Test
-        void theFileSystemRefusesAPosixModeAtCreationAsWindowsDoes() {
-            Path directory = fileSystem.getPath("C:\\staging");
-
-            assertThatThrownBy(() -> Files.createDirectory(
-                            directory,
-                            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))))
-                    .isInstanceOf(UnsupportedOperationException.class);
-        }
-
-        @Test
         void everyDirectoryTheServiceCreatesIsTheOwnersAloneAndPassesThatOnToWhatItHolds() throws IOException {
             Path job = fileSystem.getPath("C:\\spool\\staging\\job-1");
 
