@@ -120,6 +120,18 @@
       "verdict": "in-mission",
       "wp": "WP08"
     },
+    "#484": {
+      "evidence_ref": "Cited as the name of an existing scenario ('the #484 case') rewritten by WP02; no work owed to #484",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#486": {
       "evidence_ref": "<auto-classified: no action required>",
       "fr": null,
