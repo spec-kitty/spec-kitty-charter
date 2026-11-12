@@ -344,8 +344,16 @@ final class PackFileKind {
         return variant.isPresent() ? variant.get() : ignored(path).orElse(exact);
     }
 
-    /** The first {@code ignored} rule that matches {@code path}, as the file's exclusion; empty when none does. */
+    /**
+     * The first {@code ignored} rule that matches {@code path}, as the file's exclusion; empty when none does, and
+     * empty when a files, retired or payload rule takes the path in another letter case ({@code a.guide.MD}): such a
+     * file is refused as unmodelled, never swept up by the fallback.
+     */
     private Optional<Classification> ignored(String path) {
+        Classification folded = classifyFolded(path);
+        if (!(folded instanceof Unclassified) && !(folded instanceof Excluded)) {
+            return Optional.empty();
+        }
         for (int i = 0; i < ignoredPatterns.size(); i++) {
             if (ignoredPatterns.get(i).matcher(path).matches()) {
                 IgnoredRule rule = ignoredRules.get(i);
