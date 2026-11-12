@@ -1,7 +1,7 @@
 {
   "rows": {
     "#105": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by WP02/WP04/WP05/WP06",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": null
     },
     "#106": {
