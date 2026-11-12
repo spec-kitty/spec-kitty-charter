@@ -105,7 +105,7 @@ each slice and the reasons for the order are in [Next slices after the 2026-11-1
 |---|---|---|---|
 | **A. Every kind is readable** | Done (#492): profiles, mission types, steps, step contracts, skeletons, procedures; the template read decided (#104) | Bodies are served through the generic kind route with `_links` | — |
 | **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | Built in PR #501 (#451, #431, #432, #490; ADR-0073). Left: open-packs regenerates the manifests of `built-in`, `foundation` and `writing` (open-packs #250). The round trip over open-packs content moves to an open-packs gate (ADR-0070 amendment 2026-11-13, open-packs #252). #110 (manifest restamping) is built; a pack registered before gets a one-time `409` on its first unchanged re-registration, so send a new `pack_version`. #545 closed #509 and raised `openPacksRef` | Open-packs `main` registers unedited (proved by the open-packs gate), and the usability run's registration checks pass | open-packs #250 (#241 and #242 closed) |
-| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438, #450, #97, #439, #447. In flight | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | — |
+| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018), #97, #439, #447. *Progress 2026-11-12: built by mission `effective-step-and-action-context-01M774HB` (the ownership rule, the effective step prompt and its compose checks, every overrider named, an activatable `overrides` source); the spdd pack case waits on slice B and open-packs* | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | — |
 | **D. Release machinery and clean-up** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #367, #371 left; #454, #406, #312, #47, #9 and #72 done | Its tickets close. A release is not tied to any slice: the operator cuts a 0.x release when what the contract offers suits them (ruling, 2026-11-12) | — |
 | **A2. The reads ADR-0074 added** ([#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)) | Delivered by PR #546: #98 presets, #105 assets, #107 skills, #532, #409. Left: #106 glossary, now its own Mission (operator ruling at specify, 2026-11-12) | Presets, assets and skills are served by ADR-0074's paths, each through the ADR-0059 D1 gate; glossary contexts follow with #106 | — (runs after C and D); open-packs follows #106 |
 | **F. The kind taxonomy and the mission-type schema** ([#537](https://github.com/spec-kitty/spec-kitty-charter/issues/537)) | #112 (R18), #514, #520, #515 (needs a ruling), #533 | The kind table is served as data; `mission_step_contract` is retired; steps are the single authoring surface | A2 |
@@ -124,7 +124,8 @@ The action-context walk is decided in
 `GET /offering/mission-types/{missionType}/actions/{action}/context`
 ([ADR-0020](/adr/0020-offering-and-activations/) D1). What applies in one activation is the effective context under
 `/activations/{activationId}` (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built in PR #448;
-its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450).
+its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450), whose scoping half slice C builds as the
+ownership rule (ADR-0018 D5 as amended 2026-11-12).
 
 ## Before step 6
 
