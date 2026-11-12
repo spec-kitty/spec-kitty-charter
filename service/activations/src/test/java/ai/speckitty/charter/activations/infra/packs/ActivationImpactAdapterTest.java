@@ -304,13 +304,27 @@ class ActivationImpactAdapterTest {
     }
 
     @Test
-    void anActivationThatCouldNotBeReadBeforeTheChangeIsNotBlamedOnIt() {
-        // G21: a closure that did not compose before the change has no before view; the write is not refused for it.
+    void aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves() {
+        // G21: a write into a closure that did not compose before is let through only when the closure composes after
+        // it; one that leaves an enhancement in force without its slot is refused as before (G8).
+        InMemoryActivationRepository repository = new InMemoryActivationRepository();
+        repository.create(new ActivationId("a-1"), selecting("x"));
+        ActivationImpactAdapter adapter = new ActivationImpactAdapter(repository);
+
+        assertThatThrownBy(() -> adapter.requireComposable(every(new ClosureChange(Optional.empty(), closure(true)))))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
+                    assertThat(refused.getMessage()).contains("a-1");
+                });
+    }
+
+    @Test
+    void theTwinARepairThatLeavesTheClosureComposingIsLetThrough() {
         InMemoryActivationRepository repository = new InMemoryActivationRepository();
         repository.create(new ActivationId("a-1"), selecting("x"));
 
         new ActivationImpactAdapter(repository)
-                .requireComposable(every(new ClosureChange(Optional.empty(), closure(true))));
+                .requireComposable(every(new ClosureChange(Optional.empty(), closure(true, "spdd:reasons-block"))));
     }
 
     @Test

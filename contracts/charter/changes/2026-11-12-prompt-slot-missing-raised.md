@@ -13,7 +13,8 @@
     `registerPackDirective`, `putPackDirective`, `registerPackParadigm`, `putPackParadigm`, `registerPackStyleguide`,
     `putPackStyleguide`, `registerPackToolguide`, `putPackToolguide`, `putPackRelationship`, `deletePackArtifact` and
     `deletePackRelationship`, judged for every stored activation whose closure the write joins, the activation named in
-    the detail. An activation whose closure could not be composed before the write is not judged (G21).
+    the detail, on the closure as the write leaves it: a write that repairs a closure is let through only when the
+    closure composes after it, and one that leaves it broken is refused (G8, G21).
   - **Activation writes, `422`**, and nothing is stored: `createActivation`, `replaceActivation`,
     `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`,
     `reactivateActivationArtifact` and `applyActivationPreset`.

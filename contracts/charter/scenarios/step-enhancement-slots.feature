@@ -830,16 +830,15 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
       {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"]}}
       """
-    When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
+    When I remember the stored file of the activation "a-1"
+    And I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
       """
       {}
       """
     Then the response status is 422
     And the problem code is "prompt_slot_missing"
     And the field at "/detail" contains "step_enhancement:spdd-plan"
-    When I GET "/activations/a-1"
-    Then the response status is 200
-    And the field at "/config/selected/step_enhancement" is absent
+    And the stored file of the activation "a-1" is the remembered one
     When I PUT "/activations/a-2" with the body:
       """
       {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["spdd-plan"]}}

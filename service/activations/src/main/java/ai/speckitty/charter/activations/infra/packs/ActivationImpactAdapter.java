@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,9 +76,10 @@ public class ActivationImpactAdapter implements ActivationImpact {
      * The registration gate of C38 (squad A2): for each stored activation whose closure the write joins, in id order,
      * the in-force resolution of its document over the closure as the write leaves it, and the slot check over it
      * ({@link ClosureView#requireSlots}). The first {@code prompt_slot_missing} refuses the write, the activation named in
-     * the detail; it is never swallowed. An activation whose closure had no view before the write, because it could not
-     * be composed or held none of its packs, is not judged: a failure it already had is not blamed on the write (G21).
-     * A closure whose merge refuses after the write is judged at read, as the impact check judges a layer override (G8),
+     * the detail; it is never swallowed. Every activation whose closure the write joins is judged on the closure as the
+     * write leaves it, whatever its state before (G8): a write that repairs a closure is let through only when the
+     * closure composes after it, and one that leaves it broken is refused as before (G21). A closure whose merge refuses
+     * after the write is judged at read, as the impact check judges a layer override (G8),
      * so the gate leaves it to the reads.
      *
      * @param closures the closures the write joins
@@ -86,16 +88,12 @@ public class ActivationImpactAdapter implements ActivationImpact {
     @Override
     public void requireComposable(ClosureChanges closures) {
         stored().stream()
-                .sorted(java.util.Comparator.comparing(
-                        activation -> activation.id().value()))
+                .sorted(Comparator.comparing(activation -> activation.id().value()))
                 .forEach(activation ->
                         closures.of(rootsOf(activation)).ifPresent(change -> requireComposable(change, activation)));
     }
 
     private static void requireComposable(ClosureChange change, StoredActivation activation) {
-        if (change.before().isEmpty()) {
-            return;
-        }
         InForceRequest request = ClosureViewSession.requestOf(EffectiveSet.queryOf(activation.document()));
         ClosureView after = change.after();
         InForceStates states;
