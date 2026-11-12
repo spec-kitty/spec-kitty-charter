@@ -195,6 +195,35 @@ class EffectiveTagTest {
         assertThat(tags).as("no two contexts share a tag").hasSize(variants.size());
     }
 
+    // ---- the effective prompt (WP07, research R10): a tag of its own, per mission type and action ----
+
+    @Test
+    void thePromptHasATagOfItsOwnPerStepThatMovesWithTheClosureAndNotWithAPackOutsideIt() {
+        ClosureSnapshot closure = closure("sha256:one");
+        EffectiveTag.PromptQuery plan = new EffectiveTag.PromptQuery("software-dev", "implement");
+        List<EffectiveTag.PromptQuery> variants = List.of(
+                plan,
+                new EffectiveTag.PromptQuery("software-dev", "review"),
+                new EffectiveTag.PromptQuery("research", "implement"),
+                new EffectiveTag.PromptQuery("software-dev/implement", ""));
+        Set<EffectiveTag> tags = new HashSet<>();
+        variants.forEach(query -> tags.add(EffectiveTag.prompt(REVISION, closure, query)));
+        ClosureSnapshot outside = ClosureSnapshots.snapshot()
+                .pack("alpha", "1.0.0")
+                .fingerprint("sha256:a-pack-outside-the-closure-changed")
+                .closureFingerprint("sha256:one")
+                .build();
+
+        assertThat(tags).as("no two steps share a prompt tag").hasSize(variants.size());
+        assertThat(EffectiveTag.prompt(REVISION, closure, plan))
+                .as("the context of the same step is another representation")
+                .isNotEqualTo(EffectiveTag.context(REVISION, closure, IMPLEMENT));
+        assertThat(EffectiveTag.prompt(REVISION, closure("sha256:two"), plan))
+                .isNotEqualTo(EffectiveTag.prompt(REVISION, closure, plan));
+        assertThat(EffectiveTag.prompt(REVISION, outside, plan))
+                .isEqualTo(EffectiveTag.prompt(REVISION, closure, plan));
+    }
+
     // ---- one golden vector: it guards an accidental edit to DOMAIN or to the hash-input format, not a forgotten
     // ---- domain bump (a rule change that moves no input leaves the token as it was). ----
 

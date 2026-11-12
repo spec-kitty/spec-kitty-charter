@@ -1,8 +1,10 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -122,6 +124,40 @@ public interface PacksSession {
      *     changed since the session was verified
      */
     Optional<EffectiveArtifactRead> effectiveArtifact(ArtifactKind kind, String id, int depth, InForceQuery query);
+
+    /**
+     * Whether one artifact is in force under a document's request, from the in-force resolution alone, before the slot
+     * check (C38) that {@link #inForce} runs: a read that refuses an artifact out of force (the effective prompt's
+     * {@code mission_type_not_in_force}, research R10) judges it before the {@code 500} of a closure that does not
+     * compose. The resolution is kept for the request, so a later {@link #inForce} of the same query resolves nothing
+     * again.
+     *
+     * @param artifact the artifact
+     * @param query what the document selects, denies and filters
+     * @return whether the resolution puts the artifact in force; false for one the closure does not hold, and for a
+     *     session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, or with
+     *     {@code pack_unreadable} for an {@code overrides} cycle among the artifacts in force
+     */
+    boolean isInForce(ArtifactRef artifact, InForceQuery query);
+
+    /**
+     * The effective prompt of one step under a document's request (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9;
+     * research R8): the stored prompt at the merged winner's place of {@code action:<missionType>/<action>}, every slot
+     * it declares and the fragments of the step enhancements in force that fill each. It judges no name and no mission
+     * type: the caller has run {@link #requireAction} and found the mission type in force ({@link #isInForce}). It
+     * answers from this session's read and its in-force resolution, whose slot check it runs first, as {@link #inForce}
+     * does; the prompt is read against the digest the session was verified at.
+     *
+     * @param missionType the mission type of the step
+     * @param action the step
+     * @param query what the document selects, denies and filters
+     * @return the effective prompt; {@link EffectivePrompt#NONE} for a step with no prompt
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does, with {@code pack_unreadable}
+     *     when the pack of the prompt cannot read it, and with {@code stale_input} when the packs changed since the
+     *     session was verified
+     */
+    EffectivePrompt prompt(String missionType, String action, InForceQuery query);
 
     /**
      * Judges the names of an action context against the merged closure, and nothing else: no in-force resolution and no

@@ -233,7 +233,14 @@ public enum RefusalCode {
      */
     FALLBACK_PROFILE_CONFLICT("fallback_profile_conflict"),
     /** No profile fits the asked role and no fallback is in force (ADR-0068, ADR-0069; reserved for the selection read). */
-    NO_PROFILE_MATCHED("no_profile_matched");
+    NO_PROFILE_MATCHED("no_profile_matched"),
+    /**
+     * The asked mission type is held by the activation's merged closure and not put in force by the activation, so its
+     * steps have no prompt to render (operator ruling OD-5, research R5). Answered as 409 by
+     * {@code getEffectiveStepPrompt} alone, after the not-found codes and before any {@code 304}; the action context of
+     * the same action answers 200 with nothing in it.
+     */
+    MISSION_TYPE_NOT_IN_FORCE("mission_type_not_in_force");
 
     private final String token;
 

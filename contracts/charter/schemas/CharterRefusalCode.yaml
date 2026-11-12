@@ -6,8 +6,8 @@ description: >-
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
   kind_not_found, activation_not_found, artifact_not_found, preset_not_found, mission_step_contract_not_found,
   skeleton_not_found and pack_document_not_found are 404; validation_failed and
-  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
-  artifact_locked are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
+  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required,
+  artifact_locked and mission_type_not_in_force are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
@@ -198,6 +198,17 @@ description: >-
   pack_reference_pack_missing and
   pack_reference_artifact_missing keep their existing meanings for references between packs; no ADR-0066 refusal
   is artifact_locked.
+
+  mission_type_not_in_force (409) is raised by the effective-prompt read (getEffectiveStepPrompt) alone (operator ruling
+  OD-5, 2026-11-12; ADR-0066 decision 9): the activation's merged closure holds the mission type of the path, and the
+  activation does not put it in force. It is judged after activation_not_found, mission_type_not_found and
+  action_not_found, and before the closure's 500 codes (prompt_slot_missing among them) and any 304. The two reads of an
+  action answer such a mission type differently on purpose. The action context (getEffectiveActionContext) describes
+  what governs the action, and for a mission type not in force the truthful description is nothing, with the reason in
+  its skipped report, so it answers 200 empty. The prompt read hands a renderer the text it places in a running step; a
+  mission type not in force has no step to run, and an empty prompt would be rendered as if it were one, so the
+  activation's state conflicts with the request, and the client changes the activation to resolve it. A mission type
+  the closure does not hold is mission_type_not_found, whatever the activation selects.
 type: string
 enum:
   - mission_type_not_found
@@ -262,6 +273,7 @@ enum:
   - fallback_profile_missing
   - fallback_profile_conflict
   - no_profile_matched
+  - mission_type_not_in_force
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -874,6 +886,17 @@ x-refusal:
     retryable: false
     raised: false
     description: no profile fits the asked role and no fallback is in force (ADR-0068, ADR-0069, reserved for the selection read)
+  mission_type_not_in_force:
+    status: 409
+    retryable: false
+    raised: true
+    operations:
+      getEffectiveStepPrompt:
+        status: 409
+    description: >-
+      the activation's merged closure holds the mission type and the activation does not put it in force, so its steps
+      have no prompt to render (OD-5, research R5); raised by getEffectiveStepPrompt alone, the one operation its
+      operations map names, after the 404 codes and before any 304, where the action context answers 200 empty
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

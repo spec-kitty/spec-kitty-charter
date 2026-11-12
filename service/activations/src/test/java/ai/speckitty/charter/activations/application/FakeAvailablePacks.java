@@ -1,8 +1,11 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -46,6 +50,13 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<String> nameChecks = new ArrayList<>();
     private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
     private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
+    private BiPredicate<ArtifactRef, InForceQuery> active =
+            (ref, query) -> Optional.ofNullable(resolution.apply(query).states().get(ref))
+                    .filter(state -> state.state() == EffectiveSet.State.ACTIVE)
+                    .isPresent();
+    private final List<ArtifactRef> activeAsks = new ArrayList<>();
+    private Function<PromptAsk, EffectivePrompt> promptAnswer = ask -> EffectivePrompt.NONE;
+    private final List<PromptAsk> promptAsks = new ArrayList<>();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -73,6 +84,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
      * @param query the document's request
      */
     public record EffectiveAsk(ArtifactKind kind, String id, int depth, InForceQuery query) {}
+
+    /**
+     * What a session was asked of the effective prompt.
+     *
+     * @param missionType the mission type
+     * @param action the step
+     * @param query the document's request
+     */
+    public record PromptAsk(String missionType, String action, InForceQuery query) {}
 
     /**
      * A fake that answers the snapshot.
@@ -183,6 +203,43 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public List<EffectiveAsk> effectiveAsks() {
         return List.copyOf(effectiveAsks);
+    }
+
+    /**
+     * Answers whether an artifact is in force with this predicate from now on, where by default the resolution's state
+     * of it decides; a predicate that throws a refusal answers as the in-force resolution does.
+     *
+     * @param next the answers of {@link PacksSession#isInForce}
+     */
+    public void active(BiPredicate<ArtifactRef, InForceQuery> next) {
+        this.active = next;
+    }
+
+    /**
+     * The artifacts the sessions were asked whether they are in force, in order.
+     *
+     * @return the artifacts
+     */
+    public List<ArtifactRef> activeAsks() {
+        return List.copyOf(activeAsks);
+    }
+
+    /**
+     * Answers every effective prompt of a session with this function from now on.
+     *
+     * @param next the answers of {@link PacksSession#prompt}, by question
+     */
+    public void prompts(Function<PromptAsk, EffectivePrompt> next) {
+        this.promptAnswer = next;
+    }
+
+    /**
+     * The effective prompts the sessions were asked, in order.
+     *
+     * @return the questions
+     */
+    public List<PromptAsk> promptAsks() {
+        return List.copyOf(promptAsks);
     }
 
     /**
@@ -339,6 +396,19 @@ public final class FakeAvailablePacks implements AvailablePacks {
             EffectiveAsk ask = new EffectiveAsk(kind, id, depth, query);
             effectiveAsks.add(ask);
             return winnerAnswer.apply(ask);
+        }
+
+        @Override
+        public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+            activeAsks.add(artifact);
+            return active.test(artifact, query);
+        }
+
+        @Override
+        public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+            PromptAsk ask = new PromptAsk(missionType, action, query);
+            promptAsks.add(ask);
+            return promptAnswer.apply(ask);
         }
 
         @Override

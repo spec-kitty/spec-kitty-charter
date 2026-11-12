@@ -43,6 +43,7 @@ class RefusalHandlerTest {
         "GOVERNANCE_POLICY_VIOLATION, 409",
         "ARTIFACT_REQUIRED, 409",
         "ARTIFACT_LOCKED, 409",
+        "MISSION_TYPE_NOT_IN_FORCE, 409",
         "PACK_UNREADABLE, 500",
         "DRG_SCHEMA_ERROR, 500",
         "UNRESOLVED_EDGE_ENDPOINT, 500",
@@ -90,6 +91,7 @@ class RefusalHandlerTest {
         "ARTIFACT_REQUIRED, Artifact required",
         "ARTIFACT_LOCKED, Artifact locked",
         "ACTIVATION_INVALID, Activation invalid",
+        "MISSION_TYPE_NOT_IN_FORCE, Mission type not in force",
     })
     @DisplayName("each code is answered with its title")
     void eachCodeHasItsTitle(RefusalCode code, String title) {
@@ -114,6 +116,19 @@ class RefusalHandlerTest {
         assertThat(RefusalCode.valueOf("KIND_NOT_FOUND").notFound())
                 .as("a not-found code")
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("mission_type_not_in_force is a 409 on the effective-prompt read, the one operation that raises it")
+    void aMissionTypeNotInForceIsAConflictOnThePromptRead() throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> response =
+                refusedIn("getEffectiveStepPrompt", RefusalCode.MISSION_TYPE_NOT_IN_FORCE);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        CharterRefusal body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getCode().getValue()).isEqualTo("mission_type_not_in_force");
+        assertThat(body.getStatus()).isEqualTo(409);
     }
 
     @Test
@@ -233,6 +248,8 @@ class RefusalHandlerTest {
         void listEffectiveArtifacts() {}
 
         void getEffectiveGraph() {}
+
+        void getEffectiveStepPrompt() {}
     }
 
     private ResponseEntity<CharterRefusal> refusedIn(String operation, RefusalCode code) throws NoSuchMethodException {

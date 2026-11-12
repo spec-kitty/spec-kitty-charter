@@ -5,6 +5,7 @@ import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
@@ -23,16 +24,19 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActionContextWalk;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.EffectivePromptQuery;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.GraphProjection;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.StepHolding;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -137,6 +141,66 @@ final class ClosureViewSession implements PacksSession {
                         winner.holder().packId().value(),
                         winner.holder().level(),
                         winner.governance().map(ClosureViewSession::governanceOf)));
+    }
+
+    /**
+     * Whether the pure resolution of the query, kept for the request, puts the artifact in force: no slot check, so a
+     * read can refuse an artifact out of force before the closure's slot check refuses (research R10).
+     */
+    @Override
+    public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+        return resolvedFor(query)
+                .stateOf(new Urn(NodeKind.of(artifact.kind()), artifact.id()))
+                .filter(InForceStates.ArtifactState::active)
+                .isPresent();
+    }
+
+    @Override
+    public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+        return promptOf(view.effectivePrompt(missionType, action, statesOf(query)));
+    }
+
+    /**
+     * The activation domain's effective prompt for the packs slice's: the stored bytes as UTF-8 text (the load checks
+     * read every prompt as UTF-8), the configured id of each pack, and each diagnostic by an exhaustive switch.
+     *
+     * @param answer the packs slice's answer
+     * @return the effective prompt, as values
+     */
+    static EffectivePrompt promptOf(EffectivePromptQuery.EffectivePrompt answer) {
+        List<EffectivePrompt.Slot> slots = new ArrayList<>();
+        for (EffectivePromptQuery.Slot slot : answer.slots()) {
+            slots.add(new EffectivePrompt.Slot(
+                    slot.slot().value(),
+                    slot.fragments().stream()
+                            .map(fragment -> new EffectivePrompt.Fragment(
+                                    fragment.packId().value(),
+                                    fragment.packName(),
+                                    fragment.level(),
+                                    fragment.enhancement(),
+                                    fragment.text()))
+                            .toList()));
+        }
+        return new EffectivePrompt(
+                new String(answer.prompt().bytes(), StandardCharsets.UTF_8),
+                answer.promptPackId().map(pack -> pack.value()),
+                slots,
+                answer.diagnostics().stream()
+                        .map(ClosureViewSession::diagnosticOf)
+                        .toList());
+    }
+
+    /**
+     * A finding of the prompt read. The prompt query lists only a slot that holds text, the one code it carries; any
+     * other is a fault (only the pack policy names the level diagnostic, {@code HexagonalArchitectureTest}).
+     */
+    private static EffectivePrompt.Diagnostic diagnosticOf(Diagnostic diagnostic) {
+        if (diagnostic.code() != Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY) {
+            throw new IllegalStateException(
+                    "The prompt read lists no " + diagnostic.code().token() + " diagnostic: " + diagnostic.detail());
+        }
+        return new EffectivePrompt.Diagnostic(
+                EffectivePrompt.Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY, diagnostic.detail());
     }
 
     @Override

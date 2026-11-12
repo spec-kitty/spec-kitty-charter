@@ -541,7 +541,7 @@ class EffectiveReadMapperTest {
         EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
         EffectiveTag.ContextQuery query = new EffectiveTag.ContextQuery("software-dev", "implement", 0);
         ContextRead held =
-                new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"));
+                new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), false);
 
         EffectiveActionContext wire = missions.toContext(held, false);
 

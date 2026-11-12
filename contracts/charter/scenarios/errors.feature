@@ -135,6 +135,17 @@ Feature: Failures outside the charter's refusals
     And the contract says "mission_type_not_found" may not be retried
     And the contract says "mission_type_not_found" is raised by an operation
 
+  Scenario: mission_type_not_in_force is raised by the effective prompt read
+    A declaration pin (OD-5, research R5): the effective prompt read (getEffectiveStepPrompt) raises the code, as a 409,
+    when the activation's merged closure holds the mission type of the path and the activation does not put it in
+    force, and effective-step-prompt.feature pins the behavior beside the action context's 200. ReservedRefusalCodesTest
+    fails when the contract marks it raised and no main class names it. Nothing here calls the service.
+    Then the contract declares the refusal code "mission_type_not_in_force"
+    And the contract says "mission_type_not_in_force" is answered with status 409
+    And the contract says "mission_type_not_in_force" may not be retried
+    And the contract says "mission_type_not_in_force" is raised by an operation
+    And the contract says "mission_type_not_in_force" is answered with status 409 by the operation "getEffectiveStepPrompt"
+
   Scenario: preset_not_found is raised by the preset application
     A declaration pin: applying a preset raises the code when the path names a preset no pack of the
     activation's closure holds, and activation-presets.feature pins the behavior. ReservedRefusalCodesTest
@@ -231,7 +242,7 @@ Feature: Failures outside the charter's refusals
     the activation writes refuse an enhancement in force whose slot the prompt in force does not declare. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
-    preset_not_found.
+    preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5).
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -290,3 +301,4 @@ Feature: Failures outside the charter's refusals
       | fallback_profile_unknown    |
       | fallback_profile_not_locked |
       | fallback_profile_not_role_neutral |
+      | mission_type_not_in_force   |

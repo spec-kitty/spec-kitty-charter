@@ -386,7 +386,8 @@ public class RefusalHandler {
                     ARTIFACT_LOCKED,
                     PACK_VERSION_CONFLICT,
                     ARTIFACT_REFERENCED,
-                    RELATIONSHIP_NOT_REGISTERED -> HttpStatus.CONFLICT;
+                    RELATIONSHIP_NOT_REGISTERED,
+                    MISSION_TYPE_NOT_IN_FORCE -> HttpStatus.CONFLICT;
             case PACK_SOURCE_UNAVAILABLE, PACK_STORAGE_FULL -> HttpStatus.SERVICE_UNAVAILABLE;
             case REGISTRATION_TIMED_OUT -> HttpStatus.GATEWAY_TIMEOUT;
             case PACK_LEVEL_MISMATCH,

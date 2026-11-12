@@ -352,7 +352,8 @@ class ReservedRefusalCodesTest {
                 RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
                 RefusalCode.FALLBACK_PROFILE_MISSING,
                 RefusalCode.FALLBACK_PROFILE_CONFLICT,
-                RefusalCode.NO_PROFILE_MATCHED
+                RefusalCode.NO_PROFILE_MATCHED,
+                RefusalCode.MISSION_TYPE_NOT_IN_FORCE
             };
         }
     }
