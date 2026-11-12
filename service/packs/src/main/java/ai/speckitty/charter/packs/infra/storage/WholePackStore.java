@@ -444,6 +444,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         Path root = staged.directory().toAbsolutePath().normalize();
         for (ExcludedFile notHeld : contents.notHeld()) {
             Path file = root.resolve(notHeld.file()).normalize();
+            // A symlink or an entry outside the root is skipped: the census buckets such entries first, so none is
+            // listed.
             if (!file.startsWith(root) || file.equals(root)) {
                 continue;
             }

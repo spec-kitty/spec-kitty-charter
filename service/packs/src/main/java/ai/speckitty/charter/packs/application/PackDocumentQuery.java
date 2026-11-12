@@ -87,6 +87,7 @@ public final class PackDocumentQuery {
         return read.read(STALE, () -> documentOf(identifier));
     }
 
+    // The ETag and the body agree because README.md is in PackFileSet.digested: the revision digests the bytes served.
     private Read documentOf(String identifier) {
         ConfiguredPack pack =
                 summaries.described(identifier).pack(); // judged as getPack judges it, descriptor included
