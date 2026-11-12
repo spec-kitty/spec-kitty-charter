@@ -181,9 +181,10 @@ public class GuardWiring {
         for (ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
             ConfigurationProperty supplied = source.getConfigurationProperty(name);
             if (supplied != null && String.valueOf(supplied.getValue()).contains("${")) {
-                throw new IllegalStateException(TOKEN_PROPERTY + " must be the token itself, not a placeholder: a"
-                        + " placeholder resolves it from another source, the command line or a system property among"
-                        + " them, where other processes can read it");
+                throw new IllegalStateException(
+                        TOKEN_PROPERTY + " must be the token itself, not a placeholder: it must not contain ${, since a"
+                                + " placeholder resolves it from another source, the command line or a system property among"
+                                + " them, where other processes can read it");
             }
         }
     }
