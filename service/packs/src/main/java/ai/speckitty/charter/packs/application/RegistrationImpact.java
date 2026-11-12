@@ -43,6 +43,10 @@ import org.springframework.stereotype.Component;
  * packs cannot change under it and it needs no verification of its inputs; each pack's files are read once, however
  * many closures hold the pack. A closure's floor and locks are read before and after to give the notices of FR-027.
  *
+ * <p>Every path then asks the activations slice's gate ({@link ActivationImpact#requireComposable}, C38, squad A2): a
+ * stored activation whose closure the write joins may not be left with a step enhancement in force whose slot the
+ * prompt in force does not declare. Its refusal is the write's, never swallowed.
+ *
  * <p>Read side: stored packs registered before a rule are not re-judged here, only when a write joins their closure.
  */
 @Component
@@ -206,7 +210,9 @@ public final class RegistrationImpact {
      * @return the floor and lock changes over those closures
      * @throws CharterRefusal a composition code, or {@code override_not_permitted}, {@code enhances_cycle},
      *     {@code conflicting_relations}, {@code self_override} or {@code override_cycle} (422), naming the closure's
-     *     roots and the packs involved, or {@code pack_unreadable} when a pack of a closure cannot be read
+     *     roots and the packs involved, {@code prompt_slot_missing} (422) when a stored activation whose closure the
+     *     pack joins would put a step enhancement in force without its slot ({@link ActivationImpact#requireComposable}),
+     *     or {@code pack_unreadable} when a pack of a closure cannot be read
      */
     public Notices check(Replacement replacement) {
         Objects.requireNonNull(replacement, "replacement");
@@ -301,10 +307,10 @@ public final class RegistrationImpact {
             changes.put(roots, new ActivationImpact.ClosureChange(was, now));
         }
         judgeFallbacks(found, replacement, after, staged, session);
-        List<String> affected = namingActivations
-                ? activations.activationsAffected(
-                        roots -> found.holding().apply(roots).map(changes::get))
-                : List.of();
+        ActivationImpact.ClosureChanges joined =
+                roots -> found.holding().apply(roots).map(changes::get);
+        activations.requireComposable(joined);
+        List<String> affected = namingActivations ? activations.activationsAffected(joined) : List.of();
         return diff.notices(affected);
     }
 

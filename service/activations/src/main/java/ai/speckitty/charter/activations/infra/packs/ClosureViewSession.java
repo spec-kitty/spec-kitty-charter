@@ -16,6 +16,7 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -64,6 +65,9 @@ final class ClosureViewSession implements PacksSession {
 
     private @Nullable InForceStates resolved;
 
+    /** Whether the slot check passed for {@link #resolved}. */
+    private boolean slotsChecked;
+
     /**
      * A session over a verified view.
      *
@@ -93,6 +97,23 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public InForceAnswer inForce(InForceQuery query) {
         return inForceOf(statesOf(query));
+    }
+
+    /**
+     * The slot check of an activation write (C38, squad A3), asked of the document it is about to store. A closure whose
+     * merge refuses has nothing to judge here: the write keeps the answer its own rules give it, as before this check,
+     * and every composing read of the activation refuses with the merge's code (F6). The slot check's own refusal is
+     * never caught.
+     */
+    @Override
+    public void requireComposable(InForceQuery query) {
+        InForceStates states;
+        try {
+            states = resolvedFor(query);
+        } catch (CharterRefusal unmergeable) {
+            return;
+        }
+        requireSlotsOnce(states);
     }
 
     @Override
@@ -128,17 +149,35 @@ final class ClosureViewSession implements PacksSession {
     /**
      * What is in force under the query: resolved on the first ask and kept for a read request that asks again. The cache
      * holds one query: a write that asks for another document (a deactivate judges the early floor, then the committed
-     * document) resolves again.
+     * document) resolves again. Every states this session answers compose: the slot check (C38,
+     * {@link ClosureView#requireSlots}) runs once per resolution, after the merge's own refusals (F6), so every composing
+     * read of the request refuses {@code prompt_slot_missing} alike, and a states that refused is never answered.
      */
     InForceStates statesOf(InForceQuery query) {
+        InForceStates states = resolvedFor(query);
+        requireSlotsOnce(states);
+        return states;
+    }
+
+    /** The pure resolution of the query, kept for the request ({@link ClosureView#inForce}). */
+    private InForceStates resolvedFor(InForceQuery query) {
         InForceRequest request = requestOf(query);
         InForceStates states = resolved;
         if (states == null || !request.equals(resolvedFor)) {
             states = view.inForce(request);
             resolved = states;
             resolvedFor = request;
+            slotsChecked = false;
         }
         return states;
+    }
+
+    /** The slot check of the kept resolution, once: a states that refused is judged, and refuses, again. */
+    private void requireSlotsOnce(InForceStates states) {
+        if (!slotsChecked) {
+            view.requireSlots(states);
+            slotsChecked = true;
+        }
     }
 
     /**

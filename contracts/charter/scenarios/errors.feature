@@ -171,6 +171,40 @@ Feature: Failures outside the charter's refusals
     And the contract says "activation_invalid" may not be retried
     And the contract says "activation_invalid" is raised by an operation
 
+  Scenario Outline: prompt_slot_missing is a 422 on <operation>, which judges an enhancement in force before it stores
+    A declaration pin (squad R4): the code is 500 on a composing read and 422 on every operation that refuses the
+    request that would leave a step enhancement in force without its slot (OD-4 (i)): a registration, each
+    impact-checked pack write and each activation write. step-enhancement-slots.feature pins the behavior on one
+    operation of each surface; ReservedRefusalCodesTest holds the raised flag to the main code. Nothing here calls the
+    service.
+    Then the contract declares the refusal code "prompt_slot_missing"
+    And the contract says "prompt_slot_missing" is answered with status 500
+    And the contract says "prompt_slot_missing" may not be retried
+    And the contract says "prompt_slot_missing" is raised by an operation
+    And the contract says "prompt_slot_missing" is answered with status 422 by the operation "<operation>"
+
+    Examples:
+      | operation                      |
+      | getPackRegistration            |
+      | registerPackDirective          |
+      | putPackDirective               |
+      | registerPackParadigm           |
+      | putPackParadigm                |
+      | registerPackStyleguide         |
+      | putPackStyleguide              |
+      | registerPackToolguide          |
+      | putPackToolguide               |
+      | putPackRelationship            |
+      | deletePackArtifact             |
+      | deletePackRelationship         |
+      | createActivation               |
+      | replaceActivation              |
+      | selectActivationArtifact       |
+      | unselectActivationArtifact     |
+      | deactivateActivationArtifact   |
+      | reactivateActivationArtifact   |
+      | applyActivationPreset          |
+
   Scenario: The refusal codes the contract marks raised are exactly those an operation raises
     The contract's machine-readable x-refusal map agrees with the behavior of this suite: each
     refusal a scenario observes has the status and the raised flag the contract declares for its
@@ -192,7 +226,9 @@ Feature: Failures outside the charter's refusals
     which the amended definition of raised counts: the whole-pack load that the registration runs refuses a graph that
     breaks its schema as drg_schema_error, a step enhancement or fragment that breaks a rule as
     prompt_fragment_invalid, and a step prompt whose slot declaration is malformed, or whose slot holds text under
-    schema_version 1.0, as prompt_slot_malformed and prompt_slot_not_empty. The activation
+    schema_version 1.0, as prompt_slot_malformed and prompt_slot_not_empty. prompt_slot_missing is raised by the compose
+    check of a step enhancement in force (C38): a composing read, a registration, the impact-checked pack writes and
+    the activation writes refuse an enhancement in force whose slot the prompt in force does not declare. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
     preset_not_found.
@@ -248,6 +284,7 @@ Feature: Failures outside the charter's refusals
       | prompt_fragment_invalid     |
       | prompt_slot_malformed       |
       | prompt_slot_not_empty       |
+      | prompt_slot_missing         |
       | mission_step_contract_not_found |
       | skeleton_not_found |
       | fallback_profile_unknown    |
