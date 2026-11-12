@@ -354,10 +354,10 @@ public class ActivationService {
 
     private static Precondition preconditionOf(@Nullable String ifMatch, @Nullable String ifNoneMatch) {
         if (ifMatch != null && ifNoneMatch != null) {
-            throw new MalformedPreconditionException("A write carries If-Match or If-None-Match, not both.");
+            throw MalformedPreconditionException.bothSent();
         }
         if (ifNoneMatch != null && !EntityTags.isWildcard(ifNoneMatch)) {
-            throw new MalformedPreconditionException("A write's If-None-Match is *, to create only; nothing else.");
+            throw MalformedPreconditionException.notAWildcard(ifNoneMatch);
         }
         if (ifNoneMatch != null) {
             return new Precondition.CreateOnly();

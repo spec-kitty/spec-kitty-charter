@@ -806,7 +806,7 @@ class RegistrationImpactTest {
         rig.register("base", rig.stage(basePolicy("1.0.0")), Preconditions.none());
         rig.register("derived", rig.stage(derived("1.0.0")), Preconditions.none());
         ConsistentRead read = new ConsistentRead(
-                new ai.speckitty.charter.packs.infra.storage.FileSystemPackSources(rig.locations::all), rig.generation);
+                new ai.speckitty.charter.packs.infra.storage.FileSystemPackSources(rig.locations), rig.generation);
         PackMutabilityPolicy gate = new PackMutabilityPolicy(
                 new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
                 rig.repository,

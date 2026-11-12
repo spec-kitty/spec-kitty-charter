@@ -47,8 +47,13 @@ class PromptSlotsTest {
 
     /** Label, text, the declared slots, the kinds of the faults, and whether the text holds a marker candidate. */
     static Stream<Arguments> table() {
+        return Stream.of(candidates(), commentsThatAreText(), placements(), pairing(), emptiness())
+                .flatMap(rows -> rows);
+    }
+
+    /** Candidates: what makes a comment a marker, and what its id may be. */
+    private static Stream<Arguments> candidates() {
         return Stream.of(
-                // Candidates: what makes a comment a marker, and what its id may be.
                 Arguments.of(
                         "accepted: no spaces", "<!--a:b:start-->\n<!--a:b:end-->", List.of("a:b"), NO_FAULTS, true),
                 Arguments.of(
@@ -80,8 +85,12 @@ class PromptSlotsTest {
                         List.of("a:b"),
                         NO_FAULTS,
                         true),
-                Arguments.of("accepted: no markers at all", "# T\n\nJust text.\n", NO_SLOTS, NO_FAULTS, false),
-                // Comments that are text.
+                Arguments.of("accepted: no markers at all", "# T\n\nJust text.\n", NO_SLOTS, NO_FAULTS, false));
+    }
+
+    /** Comments that are text. */
+    private static Stream<Arguments> commentsThatAreText() {
+        return Stream.of(
                 Arguments.of("text: decision_id", "<!-- decision_id: x -->", NO_SLOTS, NO_FAULTS, false),
                 Arguments.of("text: an empty comment", "<!---->\n<!-- -->", NO_SLOTS, NO_FAULTS, false),
                 Arguments.of(
@@ -109,8 +118,12 @@ class PromptSlotsTest {
                         NO_FAULTS,
                         true),
                 Arguments.of("text: <!--> alone is no marker", "<!--> hi", NO_SLOTS, NO_FAULTS, false),
-                Arguments.of("text: a comment never opened", "a:b:start -->", NO_SLOTS, NO_FAULTS, false),
-                // Where a marker may stand: any marker counts (d7).
+                Arguments.of("text: a comment never opened", "a:b:start -->", NO_SLOTS, NO_FAULTS, false));
+    }
+
+    /** Where a marker may stand: any marker counts (d7). */
+    private static Stream<Arguments> placements() {
+        return Stream.of(
                 Arguments.of(
                         "candidate: in an HTML block", "<div>\n" + PAIR + "\n</div>", List.of("a:b"), NO_FAULTS, true),
                 Arguments.of("candidate: in inline code", "`" + START + "`", NO_SLOTS, List.of(Kind.MALFORMED), true),
@@ -120,8 +133,12 @@ class PromptSlotsTest {
                         "---\ndescription: Create a plan " + START + END + "\n---\n# T\n",
                         List.of("a:b"),
                         NO_FAULTS,
-                        true),
-                // Pairing.
+                        true));
+    }
+
+    /** Pairing. */
+    private static Stream<Arguments> pairing() {
+        return Stream.of(
                 Arguments.of("refused: an end with no start", END, NO_SLOTS, List.of(Kind.MALFORMED), true),
                 Arguments.of(
                         "refused: an end before its start",
@@ -159,8 +176,12 @@ class PromptSlotsTest {
                         START + "\n<!-- not closed\n" + END,
                         NO_SLOTS,
                         List.of(Kind.MALFORMED, Kind.MALFORMED),
-                        true),
-                // Emptiness: the explicit set of space, tab and LF.
+                        true));
+    }
+
+    /** Emptiness: the explicit set of space, tab and LF. */
+    private static Stream<Arguments> emptiness() {
+        return Stream.of(
                 Arguments.of("empty: nothing between", START + END, List.of("a:b"), NO_FAULTS, true),
                 Arguments.of(
                         "empty: spaces, tabs and LFs", START + " \t\n \n\t " + END, List.of("a:b"), NO_FAULTS, true),

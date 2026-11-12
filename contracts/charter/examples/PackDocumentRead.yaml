@@ -1,0 +1,14 @@
+summary: The document of the pack acme-review-pack, the README.md below its title.
+value:
+  title: Acme review pack
+  body: |
+    What the pack is for.
+
+    ## Contents
+
+    Directives and tactics.
+  _links:
+    self:
+      href: /api/v1/packs/acme-review-pack/doc
+    pack:
+      href: /api/v1/packs/acme-review-pack

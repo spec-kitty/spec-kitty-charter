@@ -106,6 +106,20 @@ public final class MarkdownCodec {
         return text;
     }
 
+    /**
+     * The canonical text of what follows the frontmatter and the title: the preamble, then each section with its H2.
+     * Unlike {@link #write}, it does not stand the result up as a document of its own, so it cannot refuse a model the
+     * codec has parsed (a preamble that opens with a {@code ---} line is a thematic break after an H1, but would read
+     * back as frontmatter at the start of a document). It is for a reader of the parts, not for a file to be written.
+     *
+     * @param document the document
+     * @return the text of the preamble and sections, ending with a newline; empty when the document holds neither
+     */
+    public static String canonicalBody(MarkdownDocument document) {
+        Objects.requireNonNull(document, "document");
+        return renderBlocks(document, false);
+    }
+
     private static String render(MarkdownDocument document) {
         StringBuilder out = new StringBuilder();
         document.frontmatter().ifPresent(mapping -> {
@@ -115,8 +129,15 @@ public final class MarkdownCodec {
             }
             out.append(DELIMITER).append('\n');
         });
+        return out.append(renderBlocks(document, true)).toString();
+    }
+
+    private static String renderBlocks(MarkdownDocument document, boolean withTitle) {
+        StringBuilder out = new StringBuilder();
         List<String> blocks = new ArrayList<>();
-        document.title().ifPresent(title -> blocks.add("# " + title));
+        if (withTitle) {
+            document.title().ifPresent(title -> blocks.add("# " + title));
+        }
         if (!document.preamble().isEmpty()) {
             blocks.add(document.preamble());
         }

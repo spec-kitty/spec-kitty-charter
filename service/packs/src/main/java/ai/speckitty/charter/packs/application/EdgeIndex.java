@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -20,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReferen
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -104,7 +108,22 @@ public final class EdgeIndex implements ComposeResolver {
         }
     }
 
+    /**
+     * A count of the work the index and the walks over it do (NFR-003): one call per visit of an edge or a node. The
+     * reads never use one; an operation-count test hands one in through {@link #merged(MergedClosure, Visits)}.
+     */
+    @FunctionalInterface
+    interface Visits {
+
+        /** Counts nothing. */
+        Visits NONE = () -> {};
+
+        /** Counts one visit of an edge or a node. */
+        void visit();
+    }
+
     private final List<PackUnderResolution> closure;
+    private final Visits visits;
     private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
@@ -112,10 +131,17 @@ public final class EdgeIndex implements ComposeResolver {
     /** The steps the closure holds, worked out once on first use: the index never changes, so neither does the set. */
     private volatile @Nullable Set<Urn> heldSteps;
 
+    /** The scope owners per target, worked out once on first use: the index never changes, so neither do they. */
+    private volatile @Nullable Map<Urn, Set<Urn>> scopeOwners;
+
+    /** The URNs the closure holds, worked out once on first use, in URN order. */
+    private volatile @Nullable List<Urn> heldUrns;
+
     /** The place of the version in force per URN under a layer merge; empty for an index that is not merged. */
     private final Map<Urn, Place> winners;
 
-    private EdgeIndex(List<PackUnderResolution> closure, Map<Urn, Place> winners) {
+    private EdgeIndex(List<PackUnderResolution> closure, Map<Urn, Place> winners, Visits visits) {
+        this.visits = visits;
         this.winners = Map.copyOf(winners);
         this.closure = List.copyOf(closure);
         this.closure.forEach(pack -> byPack.put(idOf(pack), pack));
@@ -135,7 +161,7 @@ public final class EdgeIndex implements ComposeResolver {
     public static EdgeIndex of(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
-        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of());
+        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of(), Visits.NONE);
         for (PackUnderResolution pack : index.closure) {
             List<Relationship> edges = factsByConfiguredId
                     .getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
@@ -165,12 +191,26 @@ public final class EdgeIndex implements ComposeResolver {
      *     at its own source
      */
     public EdgeIndex merged(MergedClosure merged) {
+        return merged(merged, visits);
+    }
+
+    /**
+     * The index as the layer merge sees it ({@link #merged(MergedClosure)}), counting to {@code visits} each edge its
+     * edge lists, its scope-owner build and the walks over it visit, and each node its held-URN build visits.
+     *
+     * @param merged the layer merge of this index's closure
+     * @param visits the count
+     * @return the merged index
+     * @throws CharterRefusal as {@link #merged(MergedClosure)} does
+     */
+    EdgeIndex merged(MergedClosure merged, Visits visits) {
         Objects.requireNonNull(merged, "merged");
+        Objects.requireNonNull(visits, "visits");
         Map<Urn, Place> placesInForce = new LinkedHashMap<>();
         merged.winners()
                 .forEach((urn, winner) ->
                         placesInForce.put(urn, new Place(new PackIdentifier(winner.descriptorPackId()), urn)));
-        EdgeIndex view = new EdgeIndex(closure, placesInForce);
+        EdgeIndex view = new EdgeIndex(closure, placesInForce, visits);
         outgoing.forEach((place, edges) -> {
             if (view.wins(place)) {
                 edges.forEach(edge -> view.put(place, repointed(edge, view)));
@@ -280,6 +320,80 @@ public final class EdgeIndex implements ComposeResolver {
         return steps;
     }
 
+    /**
+     * The scope owners of each artifact (research R2, squad A6; C-003): for each target URN, the sources of the
+     * authored {@code scope} edges of this index whose source is an {@code action} or a {@code mission_type} node,
+     * held or not. An edge counts whether or not its source is a held step, whether or not any pack holds its source,
+     * and whether or not its target resolves to a held place, because ownership is where the author placed the
+     * artifact and turning a mission type off must not make what it scopes project-wide. In a merged index the edges
+     * of a version a later level replaced are gone (C19), so they own nothing. Worked out once, in one pass over the
+     * edges, on first use.
+     *
+     * @return the owners by target, each set in URN order; a target no action and no mission type scopes is absent
+     */
+    Map<Urn, Set<Urn>> scopeOwners() {
+        Map<Urn, Set<Urn>> owners = scopeOwners;
+        if (owners == null) {
+            Map<Urn, Set<Urn>> collected = new HashMap<>();
+            forEachEdge((place, edge) -> {
+                if (edge.type() == RelationType.SCOPE
+                        && (edge.from().kind() == NodeKind.ACTION || edge.from().kind() == NodeKind.MISSION_TYPE)) {
+                    collected
+                            .computeIfAbsent(edge.to(), ignored -> new TreeSet<>())
+                            .add(edge.from());
+                }
+            });
+            Map<Urn, Set<Urn>> frozen = new HashMap<>();
+            collected.forEach((target, sources) -> frozen.put(target, Collections.unmodifiableSet(sources)));
+            owners = Collections.unmodifiableMap(frozen);
+            scopeOwners = owners;
+        }
+        return owners;
+    }
+
+    /**
+     * Whether no action and no mission type scopes the artifact ({@link #scopeOwners()}): a project-wide artifact
+     * when it is in force.
+     *
+     * @param artifact the artifact
+     * @return whether it has no scope owner
+     */
+    boolean isProjectWide(Urn artifact) {
+        return !scopeOwners().containsKey(artifact);
+    }
+
+    /**
+     * Whether the mission type is one of the artifact's scope owners ({@link #scopeOwners()}).
+     *
+     * @param artifact the artifact
+     * @param missionType the mission type, {@code mission_type:<id>}
+     * @return whether an authored {@code scope} edge runs from the mission type to the artifact
+     */
+    boolean isScopedBy(Urn artifact, Urn missionType) {
+        return scopeOwners().getOrDefault(artifact, Set.of()).contains(missionType);
+    }
+
+    /**
+     * Every URN a place of the closure holds, in URN order, each once: in a merged index, the URNs whose version in
+     * force a pack holds. Worked out once on first use.
+     *
+     * @return the held URNs
+     */
+    List<Urn> heldUrns() {
+        List<Urn> urns = heldUrns;
+        if (urns == null) {
+            Set<Urn> held = new TreeSet<>();
+            closure.forEach(pack -> pack.definedArtifacts().stream()
+                    .map(this::visited)
+                    .flatMap(defined -> Urn.parse(defined).stream())
+                    .filter(urn -> wins(new Place(idOf(pack), urn)))
+                    .forEach(held::add));
+            urns = List.copyOf(held);
+            heldUrns = urns;
+        }
+        return urns;
+    }
+
     /** Whether the closure holds the step ({@link StepHolding#heldByClosure}). */
     boolean holdsStep(Urn step) {
         return heldSteps().contains(step);
@@ -317,12 +431,12 @@ public final class EdgeIndex implements ComposeResolver {
      */
     List<Link> links() {
         List<Link> links = new ArrayList<>();
-        outgoing.forEach((place, edges) -> {
+        forEachEdge((place, edge) -> {
             if (holds(place)) {
-                edges.forEach(edge -> neighbour(edge)
+                neighbour(edge)
                         .filter(this::holds)
                         .ifPresent(target -> links.add(
-                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale()))));
+                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale())));
             }
         });
         return links;
@@ -339,21 +453,41 @@ public final class EdgeIndex implements ComposeResolver {
      */
     List<Link> writtenLinks() {
         List<Link> links = new ArrayList<>();
-        outgoing.forEach((place, edges) -> {
+        forEachEdge((place, edge) -> {
             if (holds(place)) {
-                edges.forEach(edge -> {
-                    Optional<Place> target = neighbour(edge);
-                    links.add(new Link(
-                            place.urn(),
-                            edge.type(),
-                            edge.to(),
-                            edge.when(),
-                            edge.rationale(),
-                            target.filter(this::holds).isPresent()));
-                });
+                Optional<Place> target = neighbour(edge);
+                links.add(new Link(
+                        place.urn(),
+                        edge.type(),
+                        edge.to(),
+                        edge.when(),
+                        edge.rationale(),
+                        target.filter(this::holds).isPresent()));
             }
         });
         return links;
+    }
+
+    /** Hands every edge of the index, with the place of its source, to the action, counting each one visited. */
+    private void forEachEdge(BiConsumer<Place, Relationship> action) {
+        outgoing.forEach((place, edges) -> edges.forEach(edge -> {
+            visits.visit();
+            action.accept(place, edge);
+        }));
+    }
+
+    /** Counts one visit of a node and hands it back. */
+    private <T> T visited(T node) {
+        visits.visit();
+        return node;
+    }
+
+    /**
+     * Counts one visit of an edge for a walk over this index ({@link ActionContextWalk}); counts nothing unless an
+     * operation-count test handed in a {@link Visits}.
+     */
+    void visitEdge() {
+        visits.visit();
     }
 
     /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */

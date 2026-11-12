@@ -184,7 +184,7 @@
     - "core: offering/agent_profiles/profile.py:54-55 and :93 (role lowercasing in Role)"
     - "core: activation/org_charter.py:217-235 (schema_version \"1\" to an integer)"
     - "core: pydantic lax mode, no strict config (a quoted number to an integer)"
-    - "charter: contracts/packs/schemas/agent-profile.schema.json and org-charter.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
+    - "charter: contracts/packs/schemas/agent-profile.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16); org-charter.schema.json, which dropped them too, is deleted with the retired file (#431, DIV-303)"
     - "charter: contracts/packs/schemas/glossary-pack.schema.json and skill.schema.json (#192): a quoted confidence or a quoted boolean, which core's pydantic models convert, is refused (ADR-0039)"
 
 - id: DIV-011
@@ -350,7 +350,7 @@
   surface: charter.yaml inside a pack
   core: >-
     Never reads it: `charter pack validate` has no leg for charter.yaml (only org-charter.yaml,
-    offering/packs/pack_validator.py:595-604).
+    offering/packs/pack_validator.py:607-609 and 2133-2157 at 78c48ce9).
   service: >-
     Validates it with charter.schema.json, including cli_timeout_seconds, which refuses .nan and
     .inf.
@@ -361,7 +361,8 @@
   status: open
   since: 2026-10-20
   evidence:
-    - "core: offering/packs/pack_validator.py:595-604 (the only charter leg is org-charter.yaml)"
+    - "core: offering/packs/pack_validator.py:607-609 (the call) and 2133-2157 (_check_org_charter), at 78c48ce9: the only charter leg is org-charter.yaml"
+    - "charter: the service has no org-charter.yaml leg either: the file is retired and refused by name (#431, DIV-303)"
     - "charter: planted plants charter-invalid and charter-cli-timeout-not-a-number (core verdicts in planted/core-verdicts.json: ok, no findings)"
 
 - id: DIV-022
@@ -1687,6 +1688,57 @@
     - "core: offering/packs/pack_validator.py:592-593 and 662-690 (_validate_presets); no manifest check"
     - "corpus case: the pinned open-packs built-in pack (openPacksRef): 283 manifest and 14 preset findings, pinned in FileSystemPackInspectorTest"
     - "charter: FileSystemPackInspectorTest, a preset whose id is not its stem, refused in validate mode and by the load"
+
+- id: DIV-302
+  surface: The pack document, README.md, and the retired pack.md and PROVENANCE.md
+  core: >-
+    Reads no pack document: the pack loader (charter/offering/packs at 78c48ce9) neither models nor
+    refuses a pack's README.md or pack.md. Core does use a root PROVENANCE.md: charter synthesize
+    writes .kittify/charter-packs/PROVENANCE.md, the project pack's root, as a required artifact of
+    the fresh project seed (_fresh_project_layer.py:22,34; synthesize.py:157), and the freshness
+    check reads it as the legacy seed marker (freshness/computer.py:739). The service refuses that
+    file as retired, so core's fresh project pack does not register as it is (#452).
+  service: >-
+    README.md at the pack root is the pack document: held as a PackDocument, validated by the
+    pack-document structure schema, digested in the pack-level tail and served at
+    GET /packs/{packId}/doc. pack.md and PROVENANCE.md at the root are retired and refused by
+    name (violation code retired), as is a root file that differs from a rule's file only in
+    letter case. Other Markdown that no rule models is excluded and reported as file_not_held.
+  rationale: >-
+    Every pack already ships a README; one document, served, replaces a second file few authors
+    keep, and the charter's model is canonical (no reader of the old file beside the new).
+  ruling: operator ruling on #451 (2026-11-11); ADR-0042 decision 8 as amended 2026-11-11; ADR-0073
+  status: open
+  since: 2026-11-12
+  evidence:
+    - "core: charter/offering/packs/ at 78c48ce9: no reader of README.md or pack.md"
+    - "core: src/specify_cli/cli/commands/charter/_fresh_project_layer.py:22,34 and synthesize.py:157 (the fresh project seed writes .kittify/charter-packs/PROVENANCE.md); src/specify_cli/charter_runtime/freshness/computer.py:739 (reads it), at 78c48ce9"
+    - "charter: contracts/packs/file-kinds.yaml (the */README.md files rule; the */pack.md and */PROVENANCE.md retired rules; the ignored fallback)"
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (retired pack.md and PROVENANCE.md refused as retired); pack-document.feature"
+
+- id: DIV-303
+  surface: org-charter.yaml and the pack.yaml key active_charter
+  core: >-
+    Reads org-charter.yaml (OrgCharterPolicy, activation/org_charter.py:136; loaded by
+    load_org_charter_policy, :487) through the
+    descriptor's active_charter pointer or the org-level convention (offering/packs/pack_layout.py:81-88;
+    pack_descriptor.py:122), and unions its required_<plural> lists into the project's selection.
+  service: >-
+    Both are retired. A pack that ships org-charter.yaml at its root is refused by name (violation
+    code retired); the closed descriptor refuses active_charter as an unknown key (pack_unreadable).
+    The org-charter schema and the validate-mode finding org_charter_schema_error are deleted. Org
+    enforcement is a governing preset whose must-have items are the required floor, plus policy.yaml
+    levels.
+  rationale: >-
+    A requirement is authored as a preset (ADR-0031); a second, list-shaped authoring form would
+    say one thing two ways. The charter's model is canonical, so the old file is not read beside it.
+  ruling: operator ruling on #431 (2026-11-11); ADR-0042 amendment 2026-11-11; ADR-0073 decision 10
+  status: open
+  since: 2026-11-12
+  evidence:
+    - "core: activation/org_charter.py:487 (load_org_charter_policy); offering/packs/pack_layout.py:81-88; offering/packs/pack_descriptor.py:122 (active_charter), at 78c48ce9"
+    - "charter: contracts/packs/file-kinds.yaml (the */org-charter.yaml retired rule); contracts/packs/schemas/pack-descriptor.schema.json (closed, no active_charter)"
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (org-charter.yaml refused as retired; active_charter refused)"
 
 # Procedures and toolguide guides (DIV-401..499), mission procedure-antipattern-toolguide-round-trip-01M60H9B
 # (#194, ADR-0043). Core paths at spec-kitty 3131fffa.

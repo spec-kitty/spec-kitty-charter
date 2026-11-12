@@ -4,16 +4,20 @@ import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
@@ -33,6 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Whole-pack load and write (ADR-0037 decision 5)")
@@ -319,15 +324,106 @@ class WholePackStoreTest {
     @DisplayName("every file nothing models is listed on load and is not written")
     void unmodelledFilesAreListedNotCopied(@TempDir Path host) throws IOException {
         Path source = richPack(host.resolve("source"));
-        write(source, "README.md", "# hello\n");
+        write(source, "notes.txt", "hello\n");
         write(source, "sub/r.yaml", "a: 1\n");
         WholePackStore.LoadedPack loaded = store.load(source);
         Path target = host.resolve("out");
 
         store.write(loaded, target);
 
-        assertThat(loaded.unmodelled()).containsExactly("README.md", "sub/r.yaml");
-        assertThat(filesUnder(target)).doesNotContain("README.md", "sub/r.yaml");
+        assertThat(loaded.unmodelled()).containsExactly("notes.txt", "sub/r.yaml");
+        assertThat(filesUnder(target)).doesNotContain("notes.txt", "sub/r.yaml");
+    }
+
+    private static final String FALLBACK_REASON =
+            PackFileKind.bundled().ignoredRules().getFirst().reason();
+
+    private static String exclusionReason(String match) {
+        return PackFileKind.bundled().exclusionRules().stream()
+                .filter(rule -> rule.match().equals(match))
+                .findFirst()
+                .orElseThrow()
+                .reason();
+    }
+
+    @Test
+    @DisplayName("a file an exclusion names and Markdown nothing models are listed as excluded with their reasons,"
+            + " never as unmodelled, and are not written (#451)")
+    void excludedFilesAreListedApartWithTheirReasonsAndNotCopied(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, "docs/notes.md", "# Notes\n");
+        write(source, "missions/x/README.md", "# x\n");
+        write(source, "notes.txt", "hello\n");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        store.write(loaded, target);
+
+        assertThat(loaded.excluded())
+                .containsExactly(
+                        new WholePackWriteStore.ExcludedFile("docs/notes.md", FALLBACK_REASON),
+                        new WholePackWriteStore.ExcludedFile(
+                                "missions/x/README.md", exclusionReason("*/missions/*/README.md")));
+        assertThat(loaded.unmodelled()).containsExactly("notes.txt");
+        assertThat(filesUnder(target)).doesNotContain("docs/notes.md", "missions/x/README.md");
+    }
+
+    @Test
+    @DisplayName("loadStaged does not refuse an excluded file: it reports it as a file_not_held warning with the"
+            + " rule's reason, and refuses only what is unmodelled")
+    void loadStagedReportsExcludedFilesAndRefusesOnlyUnmodelledOnes(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "docs/notes.md", "# Notes\n");
+        write(pack, "missions/x/templates/README.md", "# Templates\n");
+
+        WholePackWriteStore.Contents contents = store.loadStaged(new StagedPack(pack));
+
+        assertThat(contents.warnings())
+                .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
+                .containsExactly(
+                        tuple(
+                                PackFindingCode.FILE_NOT_HELD,
+                                "docs/notes.md",
+                                "docs/notes.md: not held (" + FALLBACK_REASON + ")"),
+                        tuple(
+                                PackFindingCode.FILE_NOT_HELD,
+                                "missions/x/templates/README.md",
+                                "missions/x/templates/README.md: not held ("
+                                        + exclusionReason("*/missions/*/templates/**/README.md") + ")"));
+        assertThat(contents.warnings())
+                .allSatisfy(warning ->
+                        assertThat(warning.toDiagnostic().code().token()).isEqualTo("file_not_held"));
+
+        write(pack, "notes.txt", "stray");
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(violation -> violation.pointer())
+                                .containsExactly("notes.txt"));
+    }
+
+    @Test
+    @DisplayName("removeNotHeld deletes the reported files and the directories they leave empty from the staged tree,"
+            + " and nothing else")
+    void removeNotHeldStripsOnlyTheReportedFilesFromTheStagedTree(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "docs/notes.md", "# Notes\n");
+        write(pack, "missions/x/README.md", "# x\n");
+        write(pack, "missions/x/templates/spec.md", "# Spec\n");
+        StagedPack staged = new StagedPack(pack);
+        List<String> before = filesUnder(pack);
+        WholePackWriteStore.Contents contents = store.loadStaged(staged);
+
+        store.removeNotHeld(staged, contents);
+
+        List<String> expected = new java.util.ArrayList<>(before);
+        expected.removeAll(List.of("docs/notes.md", "missions/x/README.md"));
+        assertThat(filesUnder(pack)).isEqualTo(expected);
+        assertThat(pack.resolve("docs")).as("the directory the file left empty").doesNotExist();
+        assertThat(pack.resolve("missions/x"))
+                .as("a directory that still holds a file")
+                .isDirectory();
     }
 
     @Test
@@ -335,7 +431,7 @@ class WholePackStoreTest {
             "a pack whose root is a link lists the unmodelled files of its target; links below it are not followed")
     void aLinkedRootListsItsUnmodelledFiles(@TempDir Path host) throws IOException {
         Path real = richPack(host.resolve("checkout"));
-        write(real, "README.md", "# hello\n");
+        write(real, "notes.txt", "hello\n");
         write(real, "sub/r.yaml", "a: 1\n");
         Path outside = Files.createDirectories(host.resolve("outside"));
         write(outside, "beyond.md", "# not the pack's\n");
@@ -347,7 +443,7 @@ class WholePackStoreTest {
 
         assertThat(loaded.unmodelled())
                 .as("the link's target walked from its real path (#284), the link below the root not entered")
-                .containsExactly("README.md", "sub/r.yaml")
+                .containsExactly("notes.txt", "sub/r.yaml")
                 .isEqualTo(store.load(real).unmodelled());
     }
 
@@ -452,7 +548,9 @@ class WholePackStoreTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack.yaml of pack-a cannot be read");
+                .hasMessage(
+                        "pack.yaml of pack-a cannot be read: additionalProperties violated at the document: undeclared"
+                                + " key 'surprise'");
     }
 
     @Test
@@ -540,16 +638,23 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("of the files under assets/ and templates/, only the READMEs and the hidden files are unmodelled")
-    void onlyTheReadmesAndHiddenFilesUnderAssetsAndTemplatesAreUnmodelled(@TempDir Path host) throws IOException {
+    @DisplayName(
+            "of the files under assets/ and templates/, the READMEs and the hidden files are excluded, none unmodelled")
+    void theReadmesAndHiddenFilesUnderAssetsAndTemplatesAreExcludedNotUnmodelled(@TempDir Path host)
+            throws IOException {
         WholePackStore.LoadedPack loaded = store.load(payloadPack(host));
 
-        assertThat(loaded.unmodelled())
+        assertThat(loaded.unmodelled()).isEmpty();
+        assertThat(loaded.excluded())
+                .extracting(WholePackWriteStore.ExcludedFile::file)
                 .containsExactly(
                         "assets/README.md",
                         "assets/debrief/.DS_Store",
                         "assets/debrief/README.md",
                         "templates/.gitkeep");
+        assertThat(loaded.excluded())
+                .as("each carries the reason of the rule that excludes it")
+                .allSatisfy(file -> assertThat(file.reason()).isNotBlank());
     }
 
     @Test
@@ -604,16 +709,16 @@ class WholePackStoreTest {
     }
 
     /**
-     * One file has one owner (ADR-0039 decision 3, #260): a skill whose body names the pack's {@code pack.md} is refused
+     * One file has one owner (ADR-0039 decision 3, #260): a skill whose body names the pack's {@code README.md} is refused
      * as a {@code companion} violation, and the file stays the pack document; the same skill naming its own body loads.
      */
     @Test
-    @DisplayName("a companion that is the pack document is refused; pack.md keeps its one owner")
+    @DisplayName("a companion that is the pack document is refused; README.md keeps its one owner")
     void aCompanionThatIsThePackDocumentIsRefused(@TempDir Path host) throws IOException {
         Path clean = richPack(host.resolve("clean"));
         write(clean, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
         Path claimed = richPack(host.resolve("claimed"));
-        write(claimed, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: ../pack.md"));
+        write(claimed, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: ../README.md"));
         write(claimed, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
 
         assertThat(store.load(clean).pack().violations()).isEmpty();
@@ -621,7 +726,7 @@ class WholePackStoreTest {
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(SKILL_FILE);
             assertThat(violation.kind()).isEqualTo("companion");
-            assertThat(violation.reason()).startsWith("../pack.md: is a pack file of kind pack-document");
+            assertThat(violation.reason()).startsWith("../README.md: is a pack file of kind pack-document");
         });
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
         assertThat(loaded.pack().document()).isPresent();
@@ -629,13 +734,53 @@ class WholePackStoreTest {
     }
 
     /**
+     * One fault, one violation (#451): a {@code README.md} the store cannot read is a violation at its file, and the
+     * registration does not list it again as {@code unmodelled} because the read held no document. A carriage return
+     * and a second H1 are both refusals of the Markdown read.
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "a carriage return | # P\\r\\n\\r\\nThe pack.\\r\\n | line 1: a carriage return is not admitted",
+                "a second H1       | # P\\n\\nThe pack.\\n\\n# Q\\n   | line 5: a second H1 (the first is at line 1)"
+            })
+    @DisplayName("registration reports an unreadable pack document once, at its file, never also as unmodelled")
+    void anUnreadablePackDocumentIsReportedOnce(String fault, String text, String reason, @TempDir Path host)
+            throws IOException {
+        Path clean = richPack(host.resolve("clean"));
+        write(clean, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
+        Path broken = richPack(host.resolve("broken"));
+        write(broken, PackDocumentMarkdown.FILE, text.translateEscapes());
+
+        assertThat(store.loadStaged(new StagedPack(clean)).pack().document()).isPresent();
+        WholePackStore.LoadedPack loaded = store.load(broken);
+        assertThat(loaded.pack().violations())
+                .as("the load reports the fault at the file, as it does an unreadable graph document")
+                .extracting(PackElementViolation::file)
+                .containsExactly(PackDocumentMarkdown.FILE);
+        assertThat(loaded.unmodelled())
+                .as("and does not also list the file as unmodelled (squad R-1)")
+                .doesNotContain(PackDocumentMarkdown.FILE);
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(broken)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .containsExactly(new RefusalViolation(
+                                    PackDocumentMarkdown.FILE,
+                                    "unreadable",
+                                    PackDocumentMarkdown.FILE + ": " + reason));
+                });
+    }
+
+    /**
      * #272: the load classifies a companion path case-folded, as the write's claim check does, so a name that differs
      * from a ruled file only in case is refused at load like the exact name. On a case-insensitive file system
-     * {@code PACK.md} reads the bytes of {@code pack.md}; the load must not admit what the write then refuses as two
+     * {@code README.MD} reads the bytes of {@code README.md}; the load must not admit what the write then refuses as two
      * parts written to one file. The refusal is by name, so it holds on any file system.
      */
     @ParameterizedTest(name = "body_path {0}")
-    @ValueSource(strings = {"../PACK.md", "../Pack.md", "../pack.MD"})
+    @ValueSource(strings = {"../README.MD", "../Readme.md", "../readme.MD"})
     @DisplayName("a companion that names the pack document in another letter case is refused at load")
     void aCompanionThatIsThePackDocumentInAnotherCaseIsRefused(String bodyPath, @TempDir Path host) throws IOException {
         Path claimed = richPack(host.resolve("claimed"));
@@ -648,8 +793,9 @@ class WholePackStoreTest {
             assertThat(violation.file()).isEqualTo(SKILL_FILE);
             assertThat(violation.kind()).isEqualTo("companion");
             assertThat(violation.reason())
-                    .isEqualTo(bodyPath + ": is a pack file of kind pack-document (file-kinds rule '*/pack.md'), not a"
-                            + " companion");
+                    .isEqualTo(
+                            bodyPath + ": is a pack file of kind pack-document (file-kinds rule '*/README.md'), not a"
+                                    + " companion");
         });
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
         assertThat(loaded.pack().document()).isPresent();

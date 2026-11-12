@@ -2,8 +2,8 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
-decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+updated: 2026-11-12T00:00:00Z
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates); file-kinds.yaml gains an ignored section and the text form is reworded (2026-11-11, #451, #432)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -228,6 +228,27 @@ stays Proposed, pending the acceptance that the pull request for #193 asks for.
   the sidecar's violation; the detail names the escape. A registration lists every file the store reports a violation
   for (a refused sidecar among them) once, at its file, no longer a second time as `unmodelled`.
 
+### Amendment 2026-11-11 (#451, #432): the `ignored` section, and what `text` is
+
+Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of
+2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
+[#432](https://github.com/spec-kitty/spec-kitty-charter/issues/432); the calls beyond them are
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 1 to 3. The decision text below is
+unchanged, and decisions 1, 2 and 9 are annotated where they stand. The record stays Proposed.
+
+- **Decision 2: a last section, `ignored`.** `contracts/packs/file-kinds.yaml` gains `ignored`, with one rule,
+  `**/*.md` and its reason (`match` and `reason`, both required). It is consulted after `files`, `exclusions`,
+  `retired` and `payloads`, and after the companion claims of the kind bindings, so a skill body or a guide stays a
+  companion. A file it matches is excluded: not held, not served, not refused, not digested. It matches
+  case-insensitively, and it is never among the rules the overlap check compares. An excluded file, whether an
+  `exclusions` or an `ignored` match, is no longer refused at registration (ADR-0065 D1 as amended 2026-11-11).
+- **Decision 1: `text` exists as a companion form, not as a rule form.** A skill body is held as a `text` companion of
+  its skill (#192, ADR-0039). No standalone `text` kind and no `files` rule exists, so a rule naming `text` still fails
+  when the table loads (#432). The comment in `file-kinds.yaml` and `contracts/packs/README.md` say so.
+- **Decision 9 and the pack document.** The pack-level tail holds `README.md` where it held `pack.md` (ADR-0042 as
+  amended 2026-11-11). Where the amendments above name `pack.md` as the first stored `markdown` files rule, the rule
+  is now `*/README.md`; `pack.md` is retired.
+
 ## Context
 
 Issue #193 asks for the two payload-bearing kinds: an **asset** (a `*.asset.yaml` sidecar and the
@@ -276,6 +297,8 @@ Four facts force a decision:
    *(Amended 2026-10-29, see Status: the table admits `markdown` too, and a `files` rule may
    declare it with a structure schema that validates the parsed model; `text` stays refused, and a
    `files` rule naming `bytes` still fails.)*
+   *(Amended 2026-11-11, #432: `text` exists as a companion form, a skill body's; no rule may name it. See the
+   amendment under Status.)*
 2. **Files with no schema have their own section, `payloads`.** A payload rule names `match`,
    `kind` and `content_form`, all required. It is consulted only when no `files` and no
    `exclusions` rule matches, so it overlaps them by design and the first match counts; no two
@@ -292,6 +315,10 @@ Four facts force a decision:
      content. A hidden file that a `files` rule maps keeps that kind, since `files` rules come first;
    - the `**/*.config.yaml` exclusion is retired: its only match is the sidecar-less asset payload
      above (R1).
+
+   *(Amended 2026-11-11, #451: a last section, `ignored`, consulted after `payloads` and the companion claims,
+   excludes Markdown that nothing else takes, and an excluded file is not refused at registration. See the amendment
+   under Status.)*
 
    Validate mode walks `*.yaml` files only: it lists a YAML payload (the sidecar-less
    `*.config.yaml`) with its kind and does not parse it, and of the rest it checks that a sidecar's
@@ -403,6 +430,8 @@ Four facts force a decision:
    *(Extended by ADR-0042, 2026-10-28: after the templates come the presets, in path order, then
    `pack-manifest.yaml`; `pack.md` joins between them with #194's form. See the amendment under
    Status. `pack.md` joined there in #260, 2026-10-30.)*
+   *(Amended 2026-11-11, #451: `README.md` holds that place; `policy.yaml` (ADR-0063) ends the tail and the retired
+   files follow it. See the amendment under Status.)*
 
 ## Consequences
 

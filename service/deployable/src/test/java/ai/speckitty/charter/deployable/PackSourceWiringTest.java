@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
@@ -72,7 +73,7 @@ class PackSourceWiringTest {
         PackSourceProperties on = properties(true, null);
 
         assertThatThrownBy(() -> wiring.filesystemSourceFetcher(on, tree, NO_CONFIG_ROOT))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(StartupRefusal.class)
                 .hasMessageContaining("charter.pack-sources.filesystem.root");
     }
 

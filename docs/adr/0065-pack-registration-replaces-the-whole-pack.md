@@ -2,8 +2,8 @@
 title: "ADR-0065: Registering a pack replaces the whole pack"
 description: Registering a whole pack replaces the known pack, removals included; per-artifact writes are helpers; removal is by DELETE; registration is asynchronous and impact-checked.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-12T00:00:00Z
+decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490)
 decision_date: '2026-11-07'
 type: ADR
 kind: ADR
@@ -44,6 +44,25 @@ rulings of the phase A delta squad:
 It supersedes ADR-0026 decision 2 and amends ADR-0005 decision 1, ADR-0019 decision 2, ADR-0063 and ADR-0064
 decision 4, as [Amends](#amends) sets out.
 
+### Amendment 2026-11-11 (#451, #490): excluded files, and readers during a swap
+
+Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of
+2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
+[#490](https://github.com/spec-kitty/spec-kitty-charter/issues/490); the calls beyond the rulings are
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 4, 11 and 12. The decision text below is
+unchanged, and D1 and D12 are annotated where they stand.
+
+- **D1.** The service holds the staged tree **less the files it reports as not held**. A file that an exclusion of
+  `file-kinds.yaml` names, or Markdown that no rule models, is removed from the staged tree before the revision is
+  computed and the tree committed, and each is reported in the answer's `diagnostics` as a `file_not_held` warning
+  naming the file and the rule's reason. A registration that differs from the stored pack only in such files ends
+  `unchanged`.
+- **D12, readers during a swap.** A reader takes no lock. Between the swap's two renames it reads the single
+  `<name>.pack-old-*` aside copy, which holds the last committed state, and it re-reads when the directory's identity
+  (path, `fileKey`, creation time) changed under it, at most 8 times before `500 stale_input`. A verified read that
+  starts and ends in one odd write generation is answered when its digests agree. An empty reserved directory reads as
+  no pack, and the listing does not wait on a held lock.
+
 ## Context
 
 [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) made whole-pack registration the way content enters the
@@ -75,6 +94,9 @@ change; they are not the way to bring a pack to a known state.
 
 The write is atomic: the staged tree is swapped in by a two-rename swap under the write generation, or nothing
 changes. A registration of a pack that does not exist yet creates it.
+
+*(Amended 2026-11-11, #451: the service holds the pack that was sent less the files it reports as not held, each a
+`file_not_held` diagnostic. See the amendment under Status.)*
 
 ### D2. The version rule
 
@@ -283,6 +305,8 @@ impact check and the commit) then run under one registry write lock, taken with 
 and then the pack's own lock, always in that order. Every pack write takes the registry lock: the per-artifact writes,
 `putPackRelationship` (so a relationship check cannot race a `DELETE`), the whole-pack registrations and both
 `DELETE`s. A write generation, odd for the duration of the swap, lets a reader detect a mixed answer.
+*(Amended 2026-11-11, #490: a reader during the swap reads the aside copy without a lock, and a verified read inside
+one odd generation is answered when its digests agree, ADR-0073 decisions 11 and 12. See the amendment under Status.)*
 
 The locks and the generation are in-JVM and assume **one replica**
 ([ADR-0061](/adr/0061-one-replica-per-deployment/)). This is revisited with ADR-0061's cross-process lock item.

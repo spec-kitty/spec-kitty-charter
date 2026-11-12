@@ -1,8 +1,8 @@
 ---
 title: Charter descriptor files
-description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
+description: Every charter descriptor file — pack, manifest, graph fragment, pack document, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -82,7 +82,6 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `parent_pack` | parent pack, or `null` for a root pack; lineage only, and a pack may take one only at its own level or one nearer built-in |
 | `pack_level` | required when `depends_on` is non-empty, otherwise optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
-| `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 | `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `pack_id` is a ULID and `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4). A pack that declares one must also declare `pack_level`. A pack may depend only on packs at its own level or one nearer built-in. The offering read resolves the compose and refuses a broken one; each refusal is in the table of [Compose packs](/guides/compose-packs/#read-a-refusal) |
 | `overrides` | optional; the sibling conflicts this pack settles, each a closed item `{artifact, member}` where `member` is the contesting member's `pack_id`, a ULID; until #358 any pack of the compose may declare it, and until #357 it only clears the refusal, the member's version is not yet put in force ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5); a second edge on one artifact refuses the descriptor |
@@ -104,12 +103,13 @@ core version that understands it. Older CLIs then refuse the pack instead of ign
 locks. Field names are fixed when the schema lands.
 
 An explicit `null` is refused ("must be a string") for `pack_id`, `pack_version`, `name` and
-`pack_level`. `parent_pack`, `requires_core`, `active_charter` and `pack_drg` accept `null`, as
+`pack_level`. `parent_pack`, `requires_core` and `pack_drg` accept `null`, as
 well as a string. Only the fields the schema marks optional may be left out. The schema is
 closed ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) decision 3): a key it
 does not declare, a retired core field such as `accompanies_doctrine_pack` included, is a schema
 violation, and the pack is refused as `pack_unreadable`, naming the key. `pack_unknown_key` is
-retired and never raised; DIV-005 and DIV-006 are closed (#195).
+retired and never raised; DIV-005 and DIV-006 are closed (#195). `active_charter` is no longer a key (#431): a
+`pack.yaml` that still declares it is refused as an unknown key, `pack_unreadable`.
 
 CRG: none directly; it scopes the nodes the pack contributes.
 
@@ -182,30 +182,41 @@ number, and reported as `NaN`, `Infinity` or `-Infinity`, not as written in the 
 both read `Infinity`; a free-form place accepts it. The
 `impacts` strength keeps the domain's own text, for example `'impacts' Infinity is outside [-1, 1]`.
 
-### `org-charter.yaml` — org charter policy
+### `README.md` — pack document
 
-What an org pack enforces on every project that registers it.
+The pack's one documentation file, at the pack root (#451; [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)
+decision 8 as amended 2026-11-11). Schema: the Markdown structure schema `pack-document`.
+
+| Part | Meaning |
+|---|---|
+| frontmatter | optional YAML |
+| H1 | optional title; independent of `pack.yaml`'s `name` |
+| preamble, H2 sections | free Markdown; a `## Provenance` section takes what `PROVENANCE.md` held |
+
+The service holds it as the pack's `PackDocument` and serves it at `GET /packs/{packId}/doc`, as `text/markdown` (the
+file) or JSON (`title`, `body`). A carriage return, a byte order mark or an ambiguous heading refuses it; it is never
+normalized. A `README.md` deeper in the pack is not the document. Other Markdown that no rule models is excluded: not
+held, not refused.
+
+### Retired pack-level files
+
+`pack.md`, `PROVENANCE.md` and `org-charter.yaml` at the pack root are refused by name, with violation code `retired`
+and a reason that says where the content moved (#451, #431). So is a root file that differs from one of them, or from
+`README.md`, only in letter case. Org enforcement that `org-charter.yaml` held is a governing preset plus
+`policy.yaml`: see [Enforce presets on an organization's projects](/guides/enforce-org-presets/).
+
+### `presets/<id>.yaml` — activation preset
+
+A named set of activations a pack ships. Schema: `preset`, closed
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)).
 
 | Field | Meaning |
 |---|---|
-| `org_name` | the organization |
-| `skill_namespace` | prefix for rendered skills; lowercase ASCII, starts with a letter, at most 32 characters; `spk-`, `spec-kitty-` and `spec-kitty.` are reserved |
-| `required_<plural>` | per org-requirable kind, for example `required_directives` and `required_skills`; semantics in [Artifact kinds](/architecture/logical-model/#artifact-kinds) |
+| `schema_version`, `id`, `description` | required; `id` is the file stem |
+| `activated_<plural>` | per-kind list of items `{id}` or `{id, must_have: true}`, `activated_mission_types` included; a list holds at least one item |
 
-Current state. [ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/) makes requirement
-authored as a preset, with the required set derived from its must-have items; whether
-`required_<plural>` keeps being read is an open question there.
-
-### `presets/<name>.yaml` — activation preset
-
-A named set of activations a pack ships. Schema: `activation-preset.schema.yaml`.
-
-| Field | Meaning |
-|---|---|
-| `name`, `description` | required |
-| `activated_<plural>` | per-kind allowlist; absent-key behavior is in [Artifact kinds](/architecture/logical-model/#artifact-kinds) |
-| `activated_kinds` | optional kind gate |
-| `mission_type_activations` | mission types the preset activates |
+A preset with at least one must-have item is a governing preset: its must-have items are the required floor of every
+project whose closure holds the pack. `activated_kinds` is refused (amendment 2026-11-07).
 
 The built-in pack ships `default` (no per-kind lists) and `minimal` (curated directives and
 tactics for `software-dev`).

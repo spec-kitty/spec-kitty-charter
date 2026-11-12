@@ -1,0 +1,259 @@
+schema_version: 1
+mission_id: 01M7649C0GKZVR0PWAWJSAV6K9
+mission_slug: slice-b-real-packs-register-01M7649C
+mission_number: 23
+friendly_name: 'Slice B: real packs register as they are'
+mission_type: software-dev
+target_branch: feat/466-slice-b-real-packs-register
+created_at: '2026-11-12T07:56:46.457712+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-12T07:56:46.457712+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-014
+- id: h-002
+  category: implementation
+  summary: WP06 completed without rejection cycles
+  evidence_refs:
+  - e-014
+- id: h-003
+  category: implementation
+  summary: WP07 completed without rejection cycles
+  evidence_refs:
+  - e-014
+not_helpful:
+- id: n-014
+  category: doc
+  summary: analysis-report.md records 6 finding(s)
+  evidence_refs:
+  - e-028
+  details: The analysis-report.md artifact for this mission records 6 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-007
+  category: process
+  summary: WP03 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-021
+  details: WP WP03 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-008
+  category: process
+  summary: WP04 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-022
+  details: WP WP04 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-009
+  category: process
+  summary: WP05 required 5 --force override(s) during workflow
+  evidence_refs:
+  - e-023
+  details: WP WP05 required 5 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-010
+  category: process
+  summary: WP06 required 3 --force override(s) during workflow
+  evidence_refs:
+  - e-024
+  details: WP WP06 required 3 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-011
+  category: process
+  summary: WP07 required 3 --force override(s) during workflow
+  evidence_refs:
+  - e-025
+  details: WP WP07 required 3 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-012
+  category: process
+  summary: WP08 required 5 --force override(s) during workflow
+  evidence_refs:
+  - e-026
+  details: WP WP08 required 5 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-013
+  category: process
+  summary: WP09 required 3 --force override(s) during workflow
+  evidence_refs:
+  - e-027
+  details: WP WP09 required 3 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-001
+  category: review_loop
+  summary: WP02 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-015
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP03 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-016
+  details: WP WP03 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP04 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-017
+  details: WP WP04 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-004
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-018
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-005
+  category: review_loop
+  summary: WP08 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-019
+  details: WP WP08 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-006
+  category: review_loop
+  summary: WP09 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-020
+  details: WP WP09 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP01-doc-read-contract-spike.md
+- id: e-006
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP02-readme-is-the-pack-document.md
+- id: e-007
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP03-excluded-files-reported-and-stripped.md
+- id: e-008
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP04-retire-org-charter.md
+- id: e-009
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP05-pack-document-read.md
+- id: e-010
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP06-swap-window-readers.md
+- id: e-011
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP07-consistent-read-during-swap.md
+- id: e-012
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP08-record-and-docs.md
+- id: e-013
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP09-open-packs-drafts.md
+- id: e-014
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+- id: e-015
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76923WR3798HSZ2A3E6EHF2
+- id: e-016
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76EPN19R19D6033RG7KFWNT
+- id: e-017
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76MBD2302KG02C06WHVATY9
+- id: e-018
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76SSFA1PYN4KT8MWXPW8TYY
+- id: e-019
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M779HD445NJFG5RCVRGG5AER
+- id: e-020
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M777N7N0JDY4SGR88BME790E
+- id: e-021
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76G25551ZMDR1WF0MT62RQZ
+- id: e-022
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76N8BKKA07EH5J17TSS5JRY
+- id: e-023
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M76S3AGS3EVSXJ0A7ZKQPDE5..01M76VGWHN1GFA7QGBWT3371DG
+- id: e-024
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M77394Q4AVW46SJC2M6ER5X3..01M774NB283CVNBSJ40N1GJP6F
+- id: e-025
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M776J79D74JSWS63FQJ08350..01M776Z1V08RHFSVJBG2Z6YBT3
+- id: e-026
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M77949SY69BDWAZF694Y9ZJV..01M77BX47F7C7V3RCHE26AWBR2
+- id: e-027
+  kind: event_range
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/status.events.jsonl
+  range: 01M777MSPNNJ4AXZ2V1DCNGP6G..01M77854FCZCBGBJCZWHM8VRTR
+- id: e-028
+  kind: file
+  path: kitty-specs/slice-b-real-packs-register-01M7649C/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

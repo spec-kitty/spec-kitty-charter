@@ -21,7 +21,12 @@ public record Diagnostic(Code code, String detail) {
          */
         PACK_LEVEL_MISSING("pack_level_missing"),
         /** Legacy text in a slot of an unversioned pack descriptor (ADR-0066; reserved for #424). */
-        PROMPT_SLOT_NOT_EMPTY("prompt_slot_not_empty");
+        PROMPT_SLOT_NOT_EMPTY("prompt_slot_not_empty"),
+        /**
+         * A file of the registered tree that is not pack content (an exclusion names it, or it is Markdown nothing
+         * models): the registration does not hold it, and says so (#451).
+         */
+        FILE_NOT_HELD("file_not_held");
 
         private final String token;
 

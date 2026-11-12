@@ -5,15 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,5 +82,34 @@ class ExamplePacksTest {
         assertThat(loaded.pack().violations()).as(name).isEmpty();
         assertThat(loaded.unmodelled()).as(name).isEmpty();
         assertThat(loaded.warnings()).as(name).isEmpty();
+    }
+
+    /**
+     * The example packs hold one excluded file of each kind (#451): an author's note the {@code ignored} fallback takes
+     * ({@code org-base/docs/authoring-notes.md}) and an orientation README an exclusion names. Neither is unmodelled and
+     * neither is held: the write does not reproduce it.
+     */
+    @Test
+    void anAuthorNoteAndAnOrientationReadmeAreExcludedAndNotHeld(@TempDir Path host) throws IOException {
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+
+        WholePackStore.LoadedPack org = store.load(ExamplePacks.pack(ExamplePacks.ORG));
+        WholePackStore.LoadedPack builtIn = store.load(ExamplePacks.pack(ExamplePacks.BUILT_IN));
+
+        assertThat(org.excluded()).singleElement().satisfies(file -> {
+            assertThat(file.file()).isEqualTo("docs/authoring-notes.md");
+            assertThat(file.reason()).startsWith("Author aid: Markdown that no files rule models");
+        });
+        assertThat(builtIn.excluded())
+                .extracting(WholePackWriteStore.ExcludedFile::file)
+                .contains("missions/software-dev/templates/README.md");
+        Path written = host.resolve("org-base");
+        store.write(org, written);
+        try (Stream<Path> files = Files.walk(written)) {
+            assertThat(files.filter(Files::isRegularFile)
+                            .map(path -> written.relativize(path).toString()))
+                    .as("the note is not held")
+                    .doesNotContain("docs/authoring-notes.md");
+        }
     }
 }

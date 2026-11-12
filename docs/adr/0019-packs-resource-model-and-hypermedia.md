@@ -2,8 +2,8 @@
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: active
-updated: 2026-11-07T00:00:00Z
-decision_status: Accepted; decision 2 (R12) superseded in part by ADR-0049 (2026-11-02); decisions 2 and 5 amended by ADR-0065 (2026-11-07)
+updated: 2026-11-12T00:00:00Z
+decision_status: Accepted; decision 2 (R12) superseded in part by ADR-0049 (2026-11-02); decisions 2 and 5 amended by ADR-0065 (2026-11-07); decision 2 gains /packs/{packId}/doc (2026-11-11, #451)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -121,6 +121,11 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
 
    *Amended 2026-11-07 ([ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/)): `POST /packs` answers `202 Accepted`, not `201 Created`; the
    map gains `PUT /packs/{packId}`, the two `DELETE` operations and `GET /pack-registrations/{registrationId}`. Decision 5 is annotated below.*
+
+   *Amended 2026-11-11 ([#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451),
+   [ADR-0073](/adr/0073-real-packs-register-as-they-are/)): the map gains `GET /packs/{packId}/doc`, the pack's
+   document (its `README.md`) as `text/markdown` or as JSON (`PackDocumentRead`), with the pack revision as its `ETag`
+   and `Vary: Accept`. The pack resource links it with the relation `doc` when the pack holds a document.*
 
    `{packId}` is the pack's minted `pack_id` ULID, which `PackSummary.packId` already answers.
    Glossary packs are packs: their terms are artifacts of kind `glossary`, read through

@@ -105,7 +105,7 @@ class PackValidationTest {
     void aFileThatDoesNotParseOrBreaksItsSchemaIsAFindingOfTheCodeOfItsKind() {
         PackRoot root = root(Optional.of(PackLevel.ORG));
         SchemaViolation missing = new SchemaViolation(
-                "org-charter.yaml", List.of(), "required", Optional.of("schema_version"), Optional.empty(), Map.of());
+                "tactics/b.tactic.yaml", List.of(), "required", Optional.of("id"), Optional.empty(), Map.of());
         PackContents contents = facts(
                 root,
                 List.of(),
@@ -114,7 +114,11 @@ class PackValidationTest {
                                 "tactics/a.tactic.yaml",
                                 new ParseFailure("tactics/a.tactic.yaml", "while parsing a block mapping"),
                                 List.of()),
-                        new FileRead.Unreadable<Object>("org-charter.yaml", null, List.of(missing))));
+                        new FileRead.Unreadable<Object>("tactics/b.tactic.yaml", null, List.of(missing)),
+                        new FileRead.Unreadable<Object>(
+                                "org-charter.yaml",
+                                ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)"),
+                                List.of())));
 
         List<PackFinding> findings =
                 new PackValidation(new FakeInspector(contents)).validate(root).findings();
@@ -127,14 +131,19 @@ class PackValidationTest {
                                 "tactics/a.tactic.yaml",
                                 PackFindingCode.Severity.BLOCKING),
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ORG_CHARTER_SCHEMA_ERROR,
+                                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
+                                "tactics/b.tactic.yaml",
+                                PackFindingCode.Severity.BLOCKING),
+                        org.assertj.core.api.Assertions.tuple(
+                                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
                                 "org-charter.yaml",
                                 PackFindingCode.Severity.BLOCKING));
         assertThat(findings)
                 .extracting(PackFinding::detail)
                 .contains(
                         "qa/tactics/a.tactic.yaml is not valid YAML: while parsing a block mapping",
-                        "qa/org-charter.yaml: missing 'schema_version'");
+                        "qa/tactics/b.tactic.yaml: missing 'id'",
+                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)");
     }
 
     @Test

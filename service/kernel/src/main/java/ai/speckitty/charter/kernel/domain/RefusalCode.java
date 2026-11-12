@@ -37,6 +37,11 @@ public enum RefusalCode {
     STALE_INPUT("stale_input"),
     /** The asked pack is not one the service has, or its files cannot be read as a pack; the caller asked wrongly. */
     PACK_NOT_FOUND("pack_not_found"),
+    /**
+     * The asked pack holds no document ({@code README.md}). Answered as 404. Raised by {@code getPackDocument} (#451); a
+     * pack that is not there is {@link #PACK_NOT_FOUND}, judged first.
+     */
+    PACK_DOCUMENT_NOT_FOUND("pack_document_not_found"),
     /** The asked pack has no tactic with the asked identity. */
     TACTIC_NOT_FOUND("tactic_not_found"),
     /** The asked pack has no directive with the asked identity. Added for the directive read path (WP05). */
@@ -249,7 +254,7 @@ public enum RefusalCode {
      * Whether the refusal is about what was asked rather than about the offering.
      *
      * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND},
-     *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
+     *     {@link #PACK_DOCUMENT_NOT_FOUND}, {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
      *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #KIND_NOT_FOUND},
      *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND}, {@link #PRESET_NOT_FOUND},
      *     {@link #RELATIONSHIP_NOT_FOUND}, {@link #REGISTRATION_NOT_FOUND}, {@link #MISSION_STEP_CONTRACT_NOT_FOUND} and
@@ -259,6 +264,7 @@ public enum RefusalCode {
         return this == MISSION_TYPE_NOT_FOUND
                 || this == ACTION_NOT_FOUND
                 || this == PACK_NOT_FOUND
+                || this == PACK_DOCUMENT_NOT_FOUND
                 || this == TACTIC_NOT_FOUND
                 || this == DIRECTIVE_NOT_FOUND
                 || this == STYLEGUIDE_NOT_FOUND

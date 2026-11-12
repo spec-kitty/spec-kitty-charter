@@ -1,0 +1,3 @@
+# A startup refusal is reported as its one line, without a stack trace (#454).
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+ai.speckitty.charter.deployable.StartupRefusalAnalyzer

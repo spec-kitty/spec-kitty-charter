@@ -17,7 +17,6 @@ Feature: Directives are read and registered functionally
       name: qa
       pack_level: org
       requires_core: '>=1.0'
-      active_charter: org-charter.yaml
       pack_drg: drg/fragment.yaml
       """
 

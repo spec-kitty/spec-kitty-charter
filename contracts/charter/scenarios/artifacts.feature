@@ -7,7 +7,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   code-point order, and its cursor is a position: a page holds the artifacts strictly after it. An
   unknown pack is pack_not_found, a path kind the service does not serve is kind_not_found, and an
   unknown kind filter, a bad cursor or a page size out of range is a 400 Problem without a code
-  (FR-007). Each answer is one verified read and carries the fingerprint it verified.
+  (FR-007), whose detail names the parameter, the value it carried and what it accepts (#411). Each answer is one verified read and carries the fingerprint it verified.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -281,13 +281,20 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the problem code is "artifact_not_found"
     And the field at "/detail" is "Pack qa has no agent_profile nobody."
 
-  Scenario: A kind filter the service does not know is a 400 Problem without a code
+  Scenario Outline: A kind filter that names no listed kind is a 400 Problem without a code that lists them (<kind>)
     When I GET "/packs/qa/artifacts?kind=tactic"
     Then the response status is 200
-    When I GET "/packs/qa/artifacts?kind=bogus"
+    When I GET "/packs/qa/artifacts?kind=<kind>"
     Then the response status is 400
     And the problem has no code
+    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, agent_profile, mission_type or mission_step_contract."
     And the response has no "Charter-Source-Fingerprint" header
+
+    Examples:
+      | kind     |
+      | bogus    |
+      | template |
+      | Tactic   |
 
   Scenario: A summary's title is the name of a tactic or a paradigm and the title of the other kinds
     When I GET "/packs/qa/artifacts"
@@ -564,30 +571,32 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the field at "/page/hasNextPage" is false
     And the answer has no link "next"
 
-  Scenario Outline: A bad page cursor is a 400 Problem without a code (<case>)
+  Scenario Outline: A bad page cursor is a 400 Problem without a code that says why (<case>)
     When I GET "/packs/qa/artifacts?<query>"
     Then the response status is 400
     And the problem has no code
+    And the field at "/detail" is "The query parameter pageCursor is \"<cursor>\", which <reason>."
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
-      | case                               | query                                        |
-      | a cursor for another kind          | kind=tactic&pageCursor=ZGlyZWN0aXZlL0dVQVJE  |
-      | a cursor that is not base64url     | pageCursor=***                               |
-      | a cursor of a kind not served      | pageCursor=dGVtcGxhdGUveA                    |
-      | a cursor without a slash           | pageCursor=dGFjdGlj                          |
+      | case                           | query                                       | cursor               | reason                                                   |
+      | a cursor for another kind      | kind=tactic&pageCursor=ZGlyZWN0aXZlL0dVQVJE | ZGlyZWN0aXZlL0dVQVJE | names a directive, not a tactic as the kind filter asks |
+      | a cursor that is not base64url | pageCursor=***                              | ***                  | is not a cursor this list gave                           |
+      | a cursor of a kind not served  | pageCursor=dGVtcGxhdGUveA                   | dGVtcGxhdGUveA       | is not a cursor this list gave                           |
+      | a cursor without a slash       | pageCursor=dGFjdGlj                         | dGFjdGlj             | is not a cursor this list gave                           |
 
-  Scenario Outline: A page size out of range or not a number is a 400 Problem without a code (<pageSize>)
+  Scenario Outline: A page size out of range or not a number is a 400 Problem without a code that says why (<pageSize>)
     When I GET "/packs/qa/artifacts?pageSize=<pageSize>"
     Then the response status is 400
     And the problem has no code
+    And the field at "/detail" is "The query parameter pageSize is \"<pageSize>\", which <reason>."
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
-      | pageSize |
-      | 0        |
-      | 201      |
-      | abc      |
+      | pageSize | reason                 |
+      | 0        | is less than 1         |
+      | 201      | is greater than 200    |
+      | abc      | is not an integer      |
 
   # ---- refusals --------------------------------------------------------------------------------------------------
 

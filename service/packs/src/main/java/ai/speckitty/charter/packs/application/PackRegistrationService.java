@@ -123,6 +123,8 @@ public final class PackRegistrationService {
      * @param notices the floor and lock notices of FR-027
      * @param diagnostics the load warnings of the staged pack, kept apart from its violations (OD-7); empty when the
      *     load found nothing to warn about
+     * @param hasDocument whether the stored pack holds a document ({@code README.md}), which its {@code doc} link is
+     *     present for
      */
     public record RegistrationOutcome(
             Outcome outcome,
@@ -131,7 +133,8 @@ public final class PackRegistrationService {
             PackLevel level,
             PackRevision revision,
             RegistrationImpact.Notices notices,
-            List<Diagnostic> diagnostics) {
+            List<Diagnostic> diagnostics,
+            boolean hasDocument) {
 
         /**
          * Checks the fields and copies the lists.
@@ -143,6 +146,7 @@ public final class PackRegistrationService {
          * @param revision the revision
          * @param notices the notices
          * @param diagnostics the load warnings
+         * @param hasDocument whether the stored pack holds a document
          */
         public RegistrationOutcome {
             Objects.requireNonNull(outcome, "outcome");
@@ -258,6 +262,8 @@ public final class PackRegistrationService {
         requireValidPackId(packId);
         // The slow steps run before any lock: the load (step 2) and the revision of the staged tree (step 4).
         WholePackWriteStore.Contents contents = loader.loadStaged(staged);
+        // The files the load reports as not held leave the staged tree before its revision and the commit (FR-005).
+        loader.removeNotHeld(staged, contents);
         PackRevision revision = store.revisionOf(staged);
         Upload upload = new Upload(packId, staged, contents, revision, preconditions);
         return store.exclusively(packId, () -> decide(upload, beforeCommit));
@@ -623,6 +629,7 @@ public final class PackRegistrationService {
                 notices,
                 upload.contents().warnings().stream()
                         .map(PackFinding::toDiagnostic)
-                        .toList());
+                        .toList(),
+                upload.contents().pack().document().isPresent());
     }
 }

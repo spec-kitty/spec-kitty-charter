@@ -93,7 +93,8 @@ class StreamedUploadTest {
                 reader,
                 new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
                 PackSourceIntake.none(),
-                mock(PackRemovalController.class));
+                mock(PackRemovalController.class),
+                mock(PackDocumentController.class));
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setMessageConverters(serviceConverters().toArray(new HttpMessageConverter<?>[0]))
                 .addInterceptors(new RegistrationAdmission(new RegistrationSwitch(true), jobs, info))

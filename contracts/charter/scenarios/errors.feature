@@ -2,7 +2,10 @@
 Feature: Failures outside the charter's refusals
   A request the service cannot answer for a reason that is not a charter refusal is answered with
   a Problem body too, never with a framework's own error document. A 4xx Problem carries the
-  title and the status of the HTTP status and nothing else: no code, because no refusal applies.
+  title and the status of the HTTP status and no code, because no refusal applies. Under the API
+  it carries a detail only where the service writes one in its own words: a malformed request
+  parameter or precondition header names the parameter, its value and what it accepts (#411).
+  No other 4xx under the API carries one, so no framework's wording reaches a client.
   Every 500 is a CharterRefusal: an unexpected failure is refused with internal_error and a
   generic detail that says nothing about the failure. A read whose packs change while it is
   answered is refused with stale_input, never answered from a mix of old and new files, and no
@@ -198,6 +201,7 @@ Feature: Failures outside the charter's refusals
       | internal_error              |
       | stale_input                 |
       | pack_not_found              |
+      | pack_document_not_found     |
       | tactic_not_found            |
       | directive_not_found         |
       | styleguide_not_found        |
