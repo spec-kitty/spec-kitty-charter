@@ -140,6 +140,11 @@ class InvalidParameterTest {
                     .as("U+%04X", c)
                     .isEqualTo("The header If-Match is \"a" + String.format("\\u%04x", c) + "b\", which is not *.");
         }
+        // A format character beyond the BMP, a tag, is written as its two UTF-16 escapes, each four digits.
+        assertThat(new InvalidParameter(
+                                In.HEADER, "If-Match", "a" + Character.toString(0xe0001) + "b", "which is not *")
+                        .detail())
+                .isEqualTo("The header If-Match is \"a\\udb40\\udc01b\", which is not *.");
     }
 
     @Test
