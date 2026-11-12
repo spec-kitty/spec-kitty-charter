@@ -143,7 +143,7 @@ class PacksProfileSourceTest {
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
         PackRepository packs = pack -> stored.get(pack.value());
         PackRevisions revisions = pack -> PackRevision.compute(List.of(pack.value()));
-        ClosureQueries queries = new ClosureQueries(offering, catalog, read, packs);
+        ClosureQueries queries = new ClosureQueries(offering, catalog, read, packs, (pack, type) -> Map.of());
         return new PacksProfileSource(
                 new ForeignArtifactRead(packs, repository, catalog, read, revisions, new ProfileGovernance(queries)));
     }
