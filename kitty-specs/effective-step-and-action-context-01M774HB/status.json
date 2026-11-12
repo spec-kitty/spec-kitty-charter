@@ -196,7 +196,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -209,6 +209,7 @@
         "FR-014 (#447 option 1): OverrideSourceRule refuses an overrides edge from template/asset/guard/lifecycle. putPackRelationship: 422 validation_failed, violation overrides_source_not_activatable at /from, nothing written. Load: FilesystemPackStore.read records a violation at the graph document, so registration lists it (422) and composing reads answer 500 pack_unreadable naming the document; DomainRepositoryService untouched. Contract: violation code in CharterRefusalCode description and validation_failed entry, putPackRelationship 422 description, two examples, ### Breaking fragment. override-source-kind.feature (7 scenarios), :packs:test, CharterContractSuite, contract checks, HexagonalArchitectureTest, spotless/checkstyle green."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP11-override-source-activatable/review-cycle-1.md",
         "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP11-override-source-activatable/review-cycle-1.md",
@@ -216,12 +217,12 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 16397,
-      "shell_pid_created_at": "1794482125.31",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T047": "done",
-        "T048": "done",
-        "T049": "done"
+        "T047": "planned",
+        "T048": "planned",
+        "T049": "planned"
       }
     }
   }
