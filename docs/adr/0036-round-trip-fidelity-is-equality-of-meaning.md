@@ -144,7 +144,7 @@ Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/
 2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
 [#431](https://github.com/spec-kitty/spec-kitty-charter/issues/431), recorded in
 [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (amendment 2026-11-11) and
-[ADR-0073](/adr/0073-real-packs-register-as-they-are/) (Proposed). The decision text below is unchanged; the points
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/). The decision text below is unchanged; the points
 this note changes are annotated where they stand:
 
 - **Decision 3's table.** The `org-charter.yaml` row is gone: the file is retired, refused by name as `retired`, and

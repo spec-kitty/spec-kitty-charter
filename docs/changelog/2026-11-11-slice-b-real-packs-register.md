@@ -20,7 +20,7 @@ audience:
 # 2026-11-11 — Real packs register as they are
 
 Slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)). The calls beyond the rulings are
-[ADR-0073](/adr/0073-real-packs-register-as-they-are/) (Proposed).
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/).
 
 - **`README.md` is the pack document** (#451). It takes `pack.md`'s place in the model, the digest and the gate.
   `pack.md` and `PROVENANCE.md` at the pack root are refused by name as `retired`, and so is a case variant

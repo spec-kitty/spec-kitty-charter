@@ -233,7 +233,7 @@ stays Proposed, pending the acceptance that the pull request for #193 asks for.
 Made by slice B ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of
 2026-11-11 on [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
 [#432](https://github.com/spec-kitty/spec-kitty-charter/issues/432); the calls beyond them are
-[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 1 to 3 (Proposed). The decision text below is
+[ADR-0073](/adr/0073-real-packs-register-as-they-are/) decisions 1 to 3. The decision text below is
 unchanged, and decisions 1, 2 and 9 are annotated where they stand. The record stays Proposed.
 
 - **Decision 2: a last section, `ignored`.** `contracts/packs/file-kinds.yaml` gains `ignored`, with one rule,

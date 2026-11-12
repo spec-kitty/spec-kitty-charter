@@ -111,7 +111,7 @@ Made by slice B (mission `slice-b-real-packs-register-01M7649C`,
 [#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) on the operator's rulings of 2026-11-11 on
 [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) and
 [#431](https://github.com/spec-kitty/spec-kitty-charter/issues/431). The calls the mission made beyond the rulings are
-in [ADR-0073](/adr/0073-real-packs-register-as-they-are/) (Proposed). The decision text below is unchanged, and each
+in [ADR-0073](/adr/0073-real-packs-register-as-they-are/). The decision text below is unchanged, and each
 point this note changes is annotated where it stands.
 
 - **Decision 8: the pack document is `README.md`.** `*/README.md` is the `files` rule of `content_form: markdown` with
