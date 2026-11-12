@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +22,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -75,6 +77,10 @@ public final class StorageRootLocations implements Locations {
 
     private final Path packs;
 
+    private final PackWriteGeneration generation;
+
+    private final Function<Path, PackLevel> levelReader;
+
     /** Each refused entry's reason, as last warned, so a listing on every read warns once per entry and reason. */
     private final Map<String, String> reported = new ConcurrentHashMap<>();
 
@@ -87,7 +93,20 @@ public final class StorageRootLocations implements Locations {
      * @param packs the pack domain's directory; it need not exist yet
      */
     public StorageRootLocations(Path packs) {
+        this(packs, PackWriteGeneration.shared(), StorageRootLocations::levelIn);
+    }
+
+    /**
+     * A test passes its own write generation and level read, to drive a read a swap keeps moving.
+     *
+     * @param packs the pack domain's directory; it need not exist yet
+     * @param generation the write generation the pack reads check their directory against
+     * @param levelReader reads a pack's level from the directory a reader reads
+     */
+    StorageRootLocations(Path packs, PackWriteGeneration generation, Function<Path, PackLevel> levelReader) {
         this.packs = packs.toAbsolutePath().normalize();
+        this.generation = generation;
+        this.levelReader = levelReader;
     }
 
     /**
@@ -461,7 +480,7 @@ public final class StorageRootLocations implements Locations {
      */
     private Optional<PackLevel> declaredLevel(Path entry, String name) {
         try {
-            return Optional.of(PackDirectories.read(entry, name, this, StorageRootLocations::levelIn));
+            return Optional.of(PackDirectories.read(entry, name, this, generation, levelReader));
         } catch (CharterRefusal refusal) {
             if (refusal.code() == RefusalCode.PACK_NOT_FOUND) {
                 return Optional.empty();
