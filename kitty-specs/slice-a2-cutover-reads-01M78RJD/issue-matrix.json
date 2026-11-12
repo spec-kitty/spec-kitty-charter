@@ -120,6 +120,18 @@
       "verdict": "unknown",
       "wp": null
     },
+    "#467": {
+      "evidence_ref": "Slice C coordination reference; no work owed here",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#532": {
       "evidence_ref": "<link or commit>",
       "fr": null,
