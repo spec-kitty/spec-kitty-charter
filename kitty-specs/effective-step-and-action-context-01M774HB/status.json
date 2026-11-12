@@ -98,6 +98,9 @@
       "last_event_id": "01M78CCJ1J5WPAW0BD286J9B1W",
       "last_transition_at": "2026-11-12T17:20:17.970823+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: PromptFacts (declared slots per action, fills per step enhancement) is the 9th member of PackCompositionFacts, filled in DomainRepositoryService.compositionFacts from the one resolved read; WriteFacts carries it (recomputed on mission type / step enhancement removal); staged facts carry staged prompts. Gates green: packs test/spotless/checkstyle, wholePackRoundTrip, full deployable test, contracts check."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 450,
