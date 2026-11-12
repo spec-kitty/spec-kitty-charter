@@ -1,6 +1,8 @@
-# Research: the in-force rulings of #439 and #447 (pending the scope confirmation)
+# Research: the in-force rulings of #439 and #447
 
-Both are offered to slice C by the triage session (2026-11-12), pending confirmation through the orchestrator.
+Both joined slice C on 2026-11-12 (operator, relayed by the orchestrator, after the triage session offered them).
+
+**Ruled (2026-11-12): #439 option (b), #447 option 1, both `### Breaking`.** Built as WP10 and WP11 (spec FR-013, FR-014).
 
 ## #439: which overrider `satisfiedBy` and `overriddenBy` name
 

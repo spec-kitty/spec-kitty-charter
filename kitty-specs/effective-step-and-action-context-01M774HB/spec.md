@@ -175,6 +175,8 @@ org-required. Read the context, and compare it with the ownership rule (Decision
 | FR-010 | The ruling is recorded | As a maintainer, I want the scoping ruling recorded as a dated amendment to ADR-0018 (D5) and rule E16, a divergence-register entry for honouring mission-type scope (core ignores it), and the 16 directives of the 2026-11-12 evidence explained in a recorded table. So the next usability run can check them. | High | Open | [build] | yes: positive control is FR-008's fixture test, which fails without the rule |
 | FR-011 | R3 decided | As a maintainer, I want R3's decision recorded in `docs/api/service-contract.md`: the merged graph under an activation (`getEffectiveGraph`), the per-artifact graph queries (`listArtifactReferences`) and the reference checks at registration answer core's graph reads; the unfiltered `/offering/graph` waits for the minor that brings the offering merge, as R5's `/offering/mission-types` does. #97 is then closed with that evidence. | Medium | Open | [build] | yes: positive control is the docs checks and the issue state |
 | FR-012 | Phase-2 rulings recorded | As a maintainer, I want these recorded: dated annotations on ADR-0066 decision 8 (OD-1: active only; the moments widened to registration, the impact-checked writes and the activation writes, OD-4), decision 7's integrity bullet (OD-2), decision 9 (OD-5: the 409, why it differs from the context, and that it is `### Breaking`, not additive; the text served as stored), decision 4 cited for the 409, a "now built" annotation, and the Follow-ups' built marker; the conceptual-model integrity note; the rules page's compose rules, the effective step prompt and the amended E16; the operation and status lists; the `prompt` relation; the glossary terms "effective step prompt" and "project-wide artifact"; and a dated changelog page. So docs and contract say what the service does. | Medium | Open | [build] | yes: positive control is the docs checks, `RelationTableParityTest` and the contract tests that pin the text |
+| FR-013 | Every overrider in force is named (#439) | As a client, I want `satisfiedBy` and `overriddenBy` to list every overrider in force that satisfies or hides an artifact, sorted by level (built-in, org, project), then URN, in `EffectiveArtifact`, `EffectiveContextArtifact`, the effective artifact and profile reads that copy those members, and the skipped report's `overridden`, instead of the one with the smallest URN (operator ruling of 2026-11-12, option (b); `### Breaking`), so that no order picks one silently. | Medium | Open | [build] | no |
+| FR-014 | An override comes from an activatable artifact (#447) | As an activation owner, I want an `overrides` edge whose source is not of an activatable kind (template, asset, guard, lifecycle) refused: at registration and on `putPackRelationship` as a violation `overrides_source_not_activatable` inside `422 validation_failed`, and on a composing read that meets one in a stored pack with `500 pack_unreadable` (operator ruling of 2026-11-12, option 1; `### Breaking`), so that the read and the write never disagree about what satisfies a required artifact. | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
 
@@ -212,7 +214,10 @@ org-required. Read the context, and compare it with the ownership rule (Decision
   one at registration. — [build] · no-op passable: no
 - **SC-004** For a fixture shaped like the 2026-11-12 evidence, each of the 16 directives is listed by the context or
   left out by a recorded rule, and the recorded table explains each one by id. — [build] · no-op passable: no
-- **SC-005** #438, #450 and #97 are closed or narrowed with evidence, and #467's checklist is ticked. — [build] · no-op
+- **SC-006** A fixture with two overriders in force of one required artifact, at two levels, lists both in level-then-URN
+  order wherever the carriers appear; a fixture with a template overriding a directive is refused at registration and on
+  the relationship write, and its passing twin (a directive overriding it) is accepted. — [build] · no-op passable: no
+- **SC-005** #438, #450, #97, #439 and #447 are closed or narrowed with evidence, and #467's checklist is ticked. — [build] · no-op
   passable: no
 
 ## Key Entities
@@ -255,6 +260,8 @@ directive/tactic/paradigm roots to an action, unless another action scopes them,
 
 ## Dependencies
 
+- The operator's rulings of 2026-11-12 adding #439 (option b) and #447 (option 1) to the slice, relayed by the
+  orchestrator (research `research/in-force-rulings-439-447.md`).
 - The operator's rulings of 2026-11-12, relayed by the orchestrator: Decision Moment `01M774HQ8N5EVYDRTP16MBJCN3`
   (#450 scoping: option B, the ownership rule) and `01M774HSKK0SSA4147QEG9ZCKR` (OD-5 stands: `409`).
 - Slice B (PR #501): this mission rebases onto it once it merges, before the pre-merge squad.
