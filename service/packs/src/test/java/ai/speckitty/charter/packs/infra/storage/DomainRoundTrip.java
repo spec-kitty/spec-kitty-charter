@@ -260,37 +260,49 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             Loaded reloaded) {}
 
     /** The outcome of a file that is no companion, by its gate kind; none for a kind the round trip does not model. */
-    private @Nullable Outcome outcomeOf(String path, String kind, Rewrite r) {
+    private @Nullable Outcome outcomeOf(String path, String kind, Rewrite rewrite) {
         if (DESCRIPTOR.equals(kind)) {
-            return r.descriptorFailure() != null
-                    ? new Refused(r.descriptorFailure())
-                    : readBackOr(PackFileSet.PACK_YAML, r.readBack());
-        } else if (r.missingPayloads().containsKey(path)) {
-            return new Refused(String.join("; ", r.missingPayloads().get(path)));
+            return rewrite.descriptorFailure() != null
+                    ? new Refused(rewrite.descriptorFailure())
+                    : readBackOr(PackFileSet.PACK_YAML, rewrite.readBack());
+        } else if (rewrite.missingPayloads().containsKey(path)) {
+            return new Refused(String.join("; ", rewrite.missingPayloads().get(path)));
         } else if (ARTEFACT_KINDS.contains(kind)) {
             return artefact(
-                    r.source(),
+                    rewrite.source(),
                     path,
                     kind,
-                    r.refusals(),
-                    r.readBack(),
-                    r.written(),
-                    r.kindOf(),
-                    r.sourceIds(),
-                    r.assemblyFailure());
+                    rewrite.refusals(),
+                    rewrite.readBack(),
+                    rewrite.written(),
+                    rewrite.kindOf(),
+                    rewrite.sourceIds(),
+                    rewrite.assemblyFailure());
         } else if (GRAPH_SHARD.equals(kind)) {
-            return r.shards().get(path);
+            return rewrite.shards().get(path);
         } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
-            return payload(path, kind, r.pack(), r.assemblyFailure(), r.reloaded());
+            return payload(path, kind, rewrite.pack(), rewrite.assemblyFailure(), rewrite.reloaded());
         } else if (MANIFEST.equals(kind)) {
-            return manifest(r.source(), r.target(), path, r.written());
+            return manifest(rewrite.source(), rewrite.target(), path, rewrite.written());
         } else if (PRESET.equals(kind)) {
-            return inPlace(path, "preset", DomainRoundTrip::holdsPreset, r.pack(), r.assemblyFailure(), r.reloaded());
+            return inPlace(
+                    path,
+                    "preset",
+                    DomainRoundTrip::holdsPreset,
+                    rewrite.pack(),
+                    rewrite.assemblyFailure(),
+                    rewrite.reloaded());
         } else if (POLICY.equals(kind)) {
-            return policy(r.target(), path, r.descriptorFailure(), r.policyFailure(), r.readBack());
+            return policy(
+                    rewrite.target(), path, rewrite.descriptorFailure(), rewrite.policyFailure(), rewrite.readBack());
         } else if (PACK_DOCUMENT.equals(kind)) {
             return inPlace(
-                    path, "document", DomainRoundTrip::holdsDocument, r.pack(), r.assemblyFailure(), r.reloaded());
+                    path,
+                    "document",
+                    DomainRoundTrip::holdsDocument,
+                    rewrite.pack(),
+                    rewrite.assemblyFailure(),
+                    rewrite.reloaded());
         }
         return null;
     }
