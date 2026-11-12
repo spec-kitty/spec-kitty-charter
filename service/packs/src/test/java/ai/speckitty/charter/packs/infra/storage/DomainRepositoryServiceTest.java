@@ -860,35 +860,8 @@ class DomainRepositoryServiceTest {
             @TempDir Path host) throws IOException {
         String qId = "01M5DEH8R0VNDTR1PF1XTVRE0Q";
         String pId = "01M5DEH8R0VNDTR1PF1XTVRE0P";
-        Path q = Files.createDirectories(host.resolve("q"));
-        Files.writeString(q.resolve("pack.yaml"), """
-                pack_id: %s
-                pack_version: 1.0.0
-                name: q
-                pack_level: built-in
-                mutability_policy: policy.yaml
-                """.formatted(qId));
-        Files.writeString(q.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:X: locked}\n");
-        // q holds directive:X: a pack's lock reaches only what it or a pack it builds on holds (A15, rule C22).
-        Files.writeString(q.resolve("X.directive.yaml"), """
-                id: X
-                schema_version: '1.0'
-                title: X
-                intent: x
-                enforcement: required
-                """);
-        Path p = Files.createDirectories(host.resolve("p"));
-        Files.writeString(p.resolve("pack.yaml"), """
-                pack_id: %s
-                pack_version: 1.0.0
-                name: p
-                pack_level: org
-                depends_on:
-                  - pack_id: %s
-                    range: '>=1.0'
-                """.formatted(pId, qId));
-        List<PackLocation> locations =
-                List.of(new PackLocation("q", PackLevel.BUILT_IN, q), new PackLocation("p", PackLevel.ORG, p));
+        List<PackLocation> locations = registerLockingDependencyPair(host, qId, pId);
+        Path q = host.resolve("q");
         DomainRepositoryService over = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         OfferingReadService offerings = new OfferingReadService(
                 over, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
@@ -917,6 +890,42 @@ class DomainRepositoryServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /**
+     * Lays out pack {@code q} (locks {@code directive:X}, which it holds) and pack {@code p}, which depends on it,
+     * under {@code host}, and returns their locations.
+     */
+    private static List<PackLocation> registerLockingDependencyPair(Path host, String qId, String pId)
+            throws IOException {
+        Path q = Files.createDirectories(host.resolve("q"));
+        Files.writeString(q.resolve("pack.yaml"), """
+                pack_id: %s
+                pack_version: 1.0.0
+                name: q
+                pack_level: built-in
+                mutability_policy: policy.yaml
+                """.formatted(qId));
+        Files.writeString(q.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:X: locked}\n");
+        // q holds directive:X: a pack's lock reaches only what it or a pack it builds on holds (A15, rule C22).
+        Files.writeString(q.resolve("X.directive.yaml"), """
+                id: X
+                schema_version: '1.0'
+                title: X
+                intent: x
+                enforcement: required
+                """);
+        Path p = Files.createDirectories(host.resolve("p"));
+        Files.writeString(p.resolve("pack.yaml"), """
+                pack_id: %s
+                pack_version: 1.0.0
+                name: p
+                pack_level: org
+                depends_on:
+                  - pack_id: %s
+                    range: '>=1.0'
+                """.formatted(pId, qId));
+        return List.of(new PackLocation("q", PackLevel.BUILT_IN, q), new PackLocation("p", PackLevel.ORG, p));
     }
 
     private static DomainRepositoryService overOne(String name, Path directory) {
