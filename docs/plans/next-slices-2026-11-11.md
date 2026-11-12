@@ -2,7 +2,7 @@
 title: Next slices after the 2026-11-11 triage
 description: The next slice to run (B, with its two rulings first), the parallel slice C lane, and six quick-win slices drawn from the 2026-11-11 issue triage.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -76,6 +76,14 @@ Slice C touches different code from slice B and can run as a separate Mission no
 - #438: compose checks for step enhancements and the effective step prompt read. Both blockers
   (PR #448, PR #460) are merged. Re-plan it against `main`.
 - #450: the scoping of required and project directives. The body-links half shipped in PR #486.
+
+*Status 2026-11-12:* slice C runs as mission `effective-step-and-action-context-01M774HB`, on the branch
+`slice-c/effective-step-context`. The operator ruled #450 (the ownership rule, Decision Moment
+`01M774HQ8N5EVYDRTP16MBJCN3`) and OD-5 (the prompt read's `409`, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`), and
+added #439 and #447 to the slice. Its done-when is now "explain every directive in force", not "match core": the 16 directives
+core lists for `software-dev/implement` are each listed or left out by a recorded rule. The work packages are built
+and in review; R3 (#97) is decided on the [service contract](/api/service-contract/). The spdd pack case still waits on
+slice B and open-packs.
 
 ## Quick-win slices
 

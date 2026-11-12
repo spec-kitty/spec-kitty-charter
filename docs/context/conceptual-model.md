@@ -2,7 +2,7 @@
 title: Conceptual model
 description: What packs, the charter, its two levers, artifacts, mission types, profiles, values and the active charter mean, before any field, file or endpoint.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -139,6 +139,9 @@ it is introduced: open, extendable or locked.
 - **Extendable** allows a derived pack to enhance or remove it, not override it.
 - **Locked** allows nothing.
 - The **artifact's author** sets it. Anyone further down may **tighten** it, never loosen it.
+- *Note 2026-11-12 (operator ruling OD-2):* a mission step has no integrity of its own. It inherits its mission type's,
+  so a step of a locked mission type takes no enhancement, and an extendable one does
+  ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/), annotation of decision 7).
 
 ## Removal is not deactivation
 
