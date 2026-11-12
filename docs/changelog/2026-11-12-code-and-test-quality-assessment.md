@@ -25,10 +25,10 @@ and adds a lens on production code. It is judged against the charter's testing a
 The suite is still strong, and it has more than doubled:
 
 - 10,623 JUnit tests pass, against 4,488 nine days earlier;
-- 96.6 % of lines and 89.9 % of branches are covered;
-- a static triage flags 3.1 % of 4,652 test methods, and most flags do not hold up when read.
+- 96.6% of lines and 89.9% of branches are covered;
+- a static triage flags 3.1% of 4,652 test methods, and most flags do not hold up when read.
 
-Six rules are proved unguarded: each was broken on purpose and its tests stayed green. The note ranks
+Planted breaks show six rules that no test guards: each break went into production code and the tests stayed green. The note ranks
 five weaknesses by risk. It also asks the operator four questions: the unversioned pack descriptor,
 the activation store's version 1 reader, the "Doctrine" type names, and the null-check constructor
 tests. The assessment changes no code.

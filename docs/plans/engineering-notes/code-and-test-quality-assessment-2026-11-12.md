@@ -31,13 +31,13 @@ so the two can be compared. It adds a fourth lens on production code.
 
 **The suite is still strong, and it has more than doubled.** `./gradlew verifyAll` ran **10,623
 JUnit tests green**, against 4,488 on 2026-11-03. It had the same 4 skips, all of them platform guards.
-Aggregated coverage is **96.6 % of lines and 89.9 % of branches**, against 95.8 % and 88.0 %. A static
-triage of 4,652 test methods flags only 3.1 %, and most of those flags do not hold up when read.
+Aggregated coverage is **96.6% of lines and 89.9% of branches**, against 95.8% and 88.0%. A static
+triage of 4,652 test methods flags only 3.1%, and most of those flags do not hold up when read.
 
 The weaknesses have moved from what is missing to what is quietly not checked:
 
-- **Six rules are proved unguarded.** Each was broken on purpose in production code, and the tests
-  that should guard it stayed green. The most serious is the rule that keeps an expected artifact's
+- **Planted breaks show six rules that no test guards.** Each break went into production code on
+  purpose, and the tests that should guard the rule stayed green. The most serious is the rule that keeps an expected artifact's
   template path inside `templates/`.
 - **The mutation nightly has had no `:packs` report for three nights** (#461). The run now times
   out, and one test that burns a 30-second production timeout on every run is a large part of the cost.
@@ -53,6 +53,7 @@ The weaknesses have moved from what is missing to what is quietly not checked:
   - `./gradlew verifyAll :charter-reports:testCodeCoverageReport --continue -PrequireSymlinks=true`
     ran on JDK 25 at `ac6af296` (main after #506), with the packs synced at the `openPacksRef` pin. It
     passed in 768 s. The test-result XML and the aggregated JaCoCo XML were read with throwaway scripts.
+    Line references checked at `fd20faacb`.
   - The 2026-11-12 mutation nightly on `main` (run 43143758531) and SonarCloud's analysis of
     `9cd0ad85` (2026-11-12 04:34 UTC) give the mutation and static-analysis figures.
 - **The internal pack's `test-suite-quality-assessment` procedure, step by step.**
@@ -78,7 +79,7 @@ The weaknesses have moved from what is missing to what is quietly not checked:
 | A. Inventory and structure | 4 / 5 | **4 / 5** | 10,623 tests. Every contract operation has a success scenario (`OperationCoverageTest`). Promise-first scenarios not wired to a runner: 27 → 0. | missions-edge is the thinnest module. Two wiring tests assert only that their own configuration exists. |
 | B. Effectiveness | 4 / 5 | **4 / 5** | Of 112 ledger files read, 81 are KEEP, and most type-only exception flags are real single-throw-site contracts. | Six rules proved unguarded by planted breaks. Four tests rely on a sleep where they should wait on a condition. |
 | C. CI and quality gates | 4 / 5 | **3 / 5** | The PIT scope guard, the module list from the build and the margins (#506). Security rating A. | No `:packs` mutation report for three nights. Reliability E stays until 5 false positives are marked (#463). The complexity gate is still off. |
-| D. Production code (new) | — | **3 / 5** | Duplication 0.7 %, 80 min of Sonar debt, 0 vulnerabilities, 0 TODOs, and ArchUnit covers every module. | Four old shapes or retired names are kept beside the canonical ones. The top 9 complexity hotspots are all in `packs`. |
+| D. Production code (new) | — | **3 / 5** | Duplication 0.7%, 80 min of Sonar debt, 0 vulnerabilities, 0 TODOs, and ArchUnit covers every module. | Four old shapes or retired names are kept beside the canonical ones. The top 9 complexity hotspots are all in `packs`. |
 
 ### A. Inventory and structure
 
@@ -101,7 +102,7 @@ The weaknesses have moved from what is missing to what is quietly not checked:
 
 - The Python tests of `scripts/ci` (24) and of `scripts/docs/tests` run in CI outside Gradle.
 - **The 4 skips are platform guards.** Three are root-user guards in `FileSystemPackSourcesTest`
-  (`:149`, `:163`, `:236`), skipped here because this sandbox runs as root; GitHub's runner is not
+  (`:149`, `:163`, `:236`), which skip here because this sandbox runs as root; GitHub's runner is not
   root, so they run in CI. One is `SymbolicLinksTest`'s GitHub-Actions-only check. The symbolic-link
   skips have a switch that turns them into failures on CI (`-PrequireSymlinks=true`, in every workflow
   that runs tests). The root-user skips have none (weakness 4).
@@ -124,7 +125,7 @@ The weaknesses have moved from what is missing to what is quietly not checked:
 
 ### B. Effectiveness
 
-**The static triage** scanned 487 files and 4,652 test methods, and flagged 142 (3.1 %):
+**The static triage** scanned 487 files and 4,652 test methods, and flagged 142 (3.1%):
 
 | Flag | Count | Read verdict |
 |---|---:|---|
@@ -150,8 +151,8 @@ null-check constructor tests on the grounds that NullAway forbids null at compil
 YAML and JSON binders can still pass null. PR #481 kept such a check (`Relationship`) for exactly
 that reason. It is listed as a question for the operator.
 
-**Six gaps proved by planted breaks.** Each production edit below was applied alone in its own
-class, and only the named tests were run. All six stayed green. The control, `GuardWiring`'s
+**Six gaps proved by planted breaks.** Each production edit below changes one class alone, and
+only the named tests ran. All six stayed green. The control, `GuardWiring`'s
 `<` changed to `<=`, turned `GuardWiringTest.aTokenOfExactlyThirtyTwoCharactersIsAccepted` red as
 it should, so the method can detect a break.
 
@@ -220,7 +221,7 @@ of gap as one proved above.
   ready to mark on #463 (S2095, S6416 ×3, S9428).
 - **S1314 is cleared** by the `0_` octal form of ADR-0072. **S1845 shows 6:** the 5 deferred to
   slices B and C, plus `ArtifactReadService.java:110` (`LISTED`). A seventh,
-  `AgentProfile.java:30` (`ROLE`), was added on 2026-11-11, after the ruling. Nothing enforces
+  `AgentProfile.java:30` (`ROLE`), arrived on 2026-11-11, after the ruling. Nothing enforces
   ADR-0072 on new code.
 - **S8786** remains at `ReservedOperationCoverageTest.java:54`, though #481 made that file's regex
   possessive.
@@ -237,7 +238,7 @@ of gap as one proved above.
 |---|---|
 | Lines of code | 49,324 in 675 files |
 | Cyclomatic / cognitive complexity | 10,199 / 4,681 |
-| Duplication | 0.7 % (26 blocks) |
+| Duplication | 0.7% (26 blocks) |
 | Technical debt | 80 min (A) |
 | Open issues | 12: 7 code smells (S1845 ×6, S8786), 5 false-positive bugs |
 | TODO / FIXME in main code | 0 |
@@ -319,7 +320,7 @@ catch. `PackPolicy.handles` (`:428`), `RegistrationJobs.retained` (`:801`) and
        each mutant this test covers costs about 30–42 s.
      - `PackFileSetExactnessTest` takes 16.7 s, because its fingerprint test re-digests the whole pack
        for every appended file.
-   - **Status:** the nightly timeout is owned by another session (#461).
+   - **Status:** another session owns the nightly timeout (#461).
 3. **Old shapes and retired names beside the canonical model.** Four places:
    - the unversioned-descriptor branch (a legacy reader; violation pending a ruling);
    - the activation store's version 1 reader (a legacy reader; violation pending a ruling);
@@ -336,7 +337,7 @@ catch. `PackPolicy.handles` (`:428`), `RegistrationJobs.retained` (`:801`) and
      deadline.
    - **Waits for something not to happen:** `RegistrationWiringStagingTest:116` and
      `RegistrationAuditWiringTest:156`.
-   - **Duplicated:** the same "wait until the registration ends" poll is copied four times in
+   - **Duplicated:** the same "wait until the registration ends" poll appears four times in
      `deployable`.
    - **No CI switch:** the three root-user skips of `FileSystemPackSourcesTest` have none that would make
      them fail instead of skip, unlike the symbolic-link skips.
