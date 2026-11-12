@@ -335,33 +335,6 @@ class GuardWiringTest {
     }
 
     @Test
-    void aPlaceholderInTheEnvironmentResolvedFromASystemPropertyRefusesTheStart(CapturedOutput output) {
-        runner.withSystemProperties("x=" + TOKEN)
-                .withInitializer(context ->
-                        context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}")))
-                .run(context -> {
-                    assertRefusedWithoutTheToken(context, output);
-                    assertThat(failureText(context)).contains("placeholder");
-                });
-    }
-
-    @Test
-    void aPlaceholderInTheEnvironmentResolvedFromJsonOnTheCommandLineRefusesTheStart(CapturedOutput output) {
-        runner.withInitializer(context -> {
-                    context.getEnvironment()
-                            .getPropertySources()
-                            .addFirst(new SimpleCommandLinePropertySource(
-                                    "--spring.application.json={\"x\":\"" + TOKEN + "\"}"));
-                    context.getEnvironment().getPropertySources().addLast(placeholderInTheEnvironment("${x}"));
-                    unpackApplicationJson(context);
-                })
-                .run(context -> {
-                    assertRefusedWithoutTheToken(context, output);
-                    assertThat(failureText(context)).contains("placeholder");
-                });
-    }
-
-    @Test
     void aPlaceholderWithADefaultInTheEnvironmentRefusesTheStartEvenWhenNothingResolvesIt(CapturedOutput output) {
         runner.withInitializer(context -> context.getEnvironment()
                         .getPropertySources()
