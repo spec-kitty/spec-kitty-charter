@@ -2,8 +2,8 @@
 title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary"
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
 doc_status: active
-updated: 2026-11-02T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
+updated: 2026-11-12T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decisions 7 and 8 affirmed and extended by ADR-0074 (2026-11-12)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -130,6 +130,10 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
 ### Reads (ruled)
 
 7. `GET /packs/{packId}/artifacts/glossary` lists the pack's contexts: id, name, description, tags and term count.
+   *Affirmed 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 9 to 12): this list
+   stands, beside `?kind=glossary`, and assets and skills get the same per-kind list. The context item gets an
+   operation of its own, a term is read at `…/artifacts/glossary/{contextId}/terms/{termId}`, and each read has an
+   activation twin.*
 8. `GET /packs/{packId}/artifacts/glossary/{contextId}` returns one context with its terms.
 9. **The `artifacts` segment stays** in `/packs/{packId}/artifacts/{kind}/{artifactId}` (ADR-0019 decision 2). It
    keeps kinds apart from the other pack sub-resources, gives the cross-kind listing a home, and lets one route
