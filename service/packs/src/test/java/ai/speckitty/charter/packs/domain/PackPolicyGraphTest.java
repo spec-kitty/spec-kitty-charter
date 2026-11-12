@@ -105,7 +105,7 @@ class PackPolicyGraphTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"directives/b.directive.yaml", "directives/b..md", "./b.md"})
-    void aBodyPathThatStaysInsideThePackRootOrNoneIsNoEscape(String bodyPath) {
+    void aBodyPathThatStaysInsideThePackRootIsNoEscape(String bodyPath) {
         assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath))).isEmpty();
     }
 
