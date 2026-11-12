@@ -175,6 +175,11 @@ public final class PackCommitStore implements WholePackWriteStore {
                     try {
                         moveDirectory(aside, live);
                     } catch (IOException restoreFailed) {
+                        LOG.warn(
+                                "pack {} could not be restored from {} after a failed swap; it stays aside",
+                                live,
+                                aside,
+                                restoreFailed);
                         swapFailed.addSuppressed(restoreFailed);
                     }
                     throw swapFailed;
