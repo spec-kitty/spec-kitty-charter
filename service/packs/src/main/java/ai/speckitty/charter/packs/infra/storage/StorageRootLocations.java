@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -136,7 +137,7 @@ public final class StorageRootLocations implements Locations {
                     .toList();
             if (overlapping.isEmpty()) {
                 reported.remove(nameOf(candidate.entry()));
-                out.add(location(candidate.entry()));
+                location(candidate.entry()).ifPresent(out::add);
             } else {
                 refuse(candidate.entry(), "overlaps " + overlapping + " (the same or a nested directory)");
             }
@@ -446,20 +447,26 @@ public final class StorageRootLocations implements Locations {
         return !name.startsWith(".") && !name.contains(ASIDE_MARKER);
     }
 
-    private PackLocation location(Path entry) {
+    /** The pack's location; empty when the entry turned out to be a create's reservation as it was read. */
+    private Optional<PackLocation> location(Path entry) {
         String name = String.valueOf(entry.getFileName());
-        return new PackLocation(name, declaredLevel(entry, name), entry);
+        return declaredLevel(entry, name).map(level -> new PackLocation(name, level, entry));
     }
 
     /**
      * The {@code pack_level} the pack's {@code pack.yaml} declares, read from the directory a reader reads (the aside
-     * copy while a commit is between its renames); org when there is no readable declaration.
+     * copy while a commit is between its renames); org when there is no readable declaration; empty when the entry is a
+     * create's reservation, as {@link #directoryOf} treats it. A read that kept meeting a swap ({@code STALE_INPUT}) is
+     * not an absent declaration: it propagates, so the pack is never listed at a level it was not read at.
      */
-    private PackLevel declaredLevel(Path entry, String name) {
+    private Optional<PackLevel> declaredLevel(Path entry, String name) {
         try {
-            return PackDirectories.read(entry, name, this, StorageRootLocations::levelIn);
-        } catch (CharterRefusal unreadable) {
-            return PackLevel.ORG;
+            return Optional.of(PackDirectories.read(entry, name, this, StorageRootLocations::levelIn));
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() == RefusalCode.PACK_NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw refusal;
         }
     }
 
