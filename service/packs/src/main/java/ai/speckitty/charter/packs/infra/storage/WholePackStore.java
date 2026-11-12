@@ -369,6 +369,14 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                                     "no pack file kind models this file; a registration holds only modelled files"));
         });
         reservedShard(directory).ifPresent(violations::add);
+        if (violations.isEmpty()) {
+            // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
+            loaded.manifest()
+                    .ifPresent(listed -> ManifestMembership.mismatch(
+                                    listed, ManifestMembership.derived(loaded.pack(), loaded.layout()))
+                            .forEach(reason -> violations.add(
+                                    violationOf(PackFileSet.MANIFEST, ManifestMembership.VIOLATION_CODE, reason))));
+        }
         if (!violations.isEmpty()) {
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
@@ -473,6 +481,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                         "The staged file " + notHeld.file() + " could not be removed before the commit",
                         e);
             }
+        }
+    }
+
+    /**
+     * Writes the staged tree's manifest with the derived membership and fresh derived fields, creating it when the upload
+     * held none (#110). It touches the staging directory only.
+     */
+    @Override
+    public void stampManifest(StagedPack staged) {
+        try {
+            ManifestMembership.stamp(staged.directory(), strategy);
+        } catch (IOException e) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "The staged " + PackFileSet.MANIFEST + " could not be written", e);
         }
     }
 
@@ -1007,9 +1029,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                             pack.id(), pack.document().get())),
                     written);
         }
-        if (loaded.manifest().isPresent()) {
-            putManifest(staging, pack, loaded.manifest().get(), written);
-        }
+        // #110: the manifest is always written, its membership derived from the pack written, never carried as read.
+        putManifest(staging, pack, ManifestMembership.derived(pack, loaded.layout()), written);
     }
 
     /**
@@ -1037,7 +1058,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /**
      * Writes the manifest last, every derived field recomputed from the bytes staged (ADR-0042): what was read is never
-     * copied. A listed path the write does not hold refuses the write.
+     * copied. Its lists are the derived ones (#110), so a listed path the write does not hold is a fault of this store,
+     * and refuses the write.
      */
     private void putManifest(Path staging, Pack pack, PackManifestDso manifest, Set<String> written)
             throws IOException {

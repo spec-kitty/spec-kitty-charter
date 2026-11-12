@@ -170,7 +170,9 @@ class GuardAndLifecycleLoadTest {
 
         Map<String, String> before = yamlOf(source);
         Map<String, String> after = yamlOf(target);
-        assertThat(after.keySet()).containsExactlyElementsOf(before.keySet());
+        java.util.SortedSet<String> expected = new java.util.TreeSet<>(before.keySet());
+        expected.add(PackFileSet.MANIFEST); // #110: every write generates the manifest
+        assertThat(after.keySet()).containsExactlyElementsOf(expected);
         MeaningComparator comparator = MeaningComparator.adr0036();
         before.forEach((file, text) -> {
             String kind = file.startsWith("guards/") ? "guard" : file.startsWith("lifecycles/") ? "lifecycle" : null;

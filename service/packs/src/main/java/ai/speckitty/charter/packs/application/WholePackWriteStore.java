@@ -152,6 +152,18 @@ public interface WholePackWriteStore {
         void removeNotHeld(StagedPack staged, Contents contents);
 
         /**
+         * Writes the staged tree's {@code pack-manifest.yaml} with the membership derived from the tree and every
+         * derived field stamped from its bytes, creating it when the upload held none (#110, ADR-0042 amendment of
+         * 2026-11-12), so the revision of the tree and the commit that follow see the manifest the service will hold.
+         * Only the staging directory is touched; it runs after {@link #removeNotHeld}.
+         *
+         * @param staged the extracted upload {@link #loadStaged} accepted
+         * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the manifest cannot be
+         *     written
+         */
+        void stampManifest(StagedPack staged);
+
+        /**
          * Reads a stored pack's directory as it is, refusing what cannot be read as the reads do.
          *
          * @param directory the stored pack's directory

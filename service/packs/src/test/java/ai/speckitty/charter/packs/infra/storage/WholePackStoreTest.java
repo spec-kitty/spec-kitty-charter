@@ -203,6 +203,7 @@ class WholePackStoreTest {
                         PackFixtures.BETA_FILE,
                         DIRECTIVE_FILE,
                         PackFileSet.FRAGMENT,
+                        PackFileSet.MANIFEST,
                         PackFileSet.PACK_YAML,
                         SHARD,
                         NESTED_TACTIC);

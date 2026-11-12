@@ -389,6 +389,8 @@ public final class PackCommitStore implements WholePackWriteStore {
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
             edit.apply(staging, parent);
+            // #110: every commit restamps the manifest over the edited copy, and generates it when the pack held none.
+            ManifestMembership.stamp(staging, strategy);
             PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up

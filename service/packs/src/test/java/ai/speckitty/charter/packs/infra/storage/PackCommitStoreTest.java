@@ -124,8 +124,10 @@ class PackCommitStoreTest {
     }
 
     @Test
-    @DisplayName("a successful commit adds only the new artefact and the shard, leaves every other file byte-identical,"
-            + " and returns the revision the store then reports")
+    @DisplayName(
+            "a successful commit adds only the new artefact, the shard and the generated manifest (#110), leaves every"
+                    + " other file byte-identical,"
+                    + " and returns the revision the store then reports")
     void aSuccessfulCommitReplacesContentAndReturnsARevision(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);
         Path packYaml = packDir.resolve(PackFileSet.PACK_YAML);
@@ -153,7 +155,11 @@ class PackCommitStoreTest {
         assertThat(after.keySet())
                 .containsExactlyInAnyOrderElementsOf(Stream.concat(
                                 before.keySet().stream(),
-                                Stream.of("ripgrep.toolguide.yaml", "ripgrep.guide.md", RelationshipShard.SHARD_PATH))
+                                Stream.of(
+                                        "ripgrep.toolguide.yaml",
+                                        "ripgrep.guide.md",
+                                        RelationshipShard.SHARD_PATH,
+                                        PackFileSet.MANIFEST))
                         .toList());
         before.forEach((file, content) ->
                 assertThat(after.get(file)).as("%s is byte-unchanged", file).isEqualTo(content));
@@ -703,7 +709,7 @@ class PackCommitStoreTest {
                 .as("every emptied directory went")
                 .doesNotExist();
         assertThat(packDir).as("the pack root stays").isDirectory();
-        assertThat(snapshot(packDir)).containsOnlyKeys(PackFileSet.PACK_YAML);
+        assertThat(snapshot(packDir)).containsOnlyKeys(PackFileSet.PACK_YAML, PackFileSet.MANIFEST);
         assertThat(Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8))
                 .isEqualTo(descriptor);
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
