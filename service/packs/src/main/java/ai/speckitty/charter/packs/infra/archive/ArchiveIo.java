@@ -1,34 +1,23 @@
 package ai.speckitty.charter.packs.infra.archive;
 
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Set;
 
 /** The file-system side of an extraction: owner-only creation, and copying that tells a read failure from a write one. */
 final class ArchiveIo {
 
-    private static final FileAttribute<Set<PosixFilePermission>> FILE_MODE =
-            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"));
-    private static final FileAttribute<Set<PosixFilePermission>> DIR_MODE =
-            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-
     private ArchiveIo() {}
 
-    /** Creates a directory with mode {@code 0700}. */
+    /** Creates an owner-only directory ({@link OwnerOnly}). */
     static void createDirectory(Path directory) {
         try {
-            Files.createDirectory(directory, DIR_MODE);
+            OwnerOnly.directory(directory);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -39,12 +28,10 @@ final class ArchiveIo {
         return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS);
     }
 
-    /** Creates a new file with mode {@code 0600}, never following a link and never replacing a file. */
+    /** Creates a new owner-only file ({@link OwnerOnly}), never following a link and never replacing a file. */
     static OutputStream createFile(Path file) {
-        Set<OpenOption> options =
-                Set.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS);
         try {
-            return Channels.newOutputStream(Files.newByteChannel(file, options, FILE_MODE));
+            return OwnerOnly.newFile(file);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

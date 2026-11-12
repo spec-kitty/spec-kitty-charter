@@ -1,17 +1,14 @@
 package ai.speckitty.charter.packs.infra.fetch.git;
 
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 
@@ -34,8 +31,6 @@ public final class GitVersionCheck {
     private static final int MAX_ANSWER_BYTES = 4096;
     private static final String PROPERTY = "charter.pack-sources.git.executable";
     private static final String HOME_PREFIX = "charter-git-version-";
-    private static final FileAttribute<Set<PosixFilePermission>> OWNER_ONLY =
-            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
 
     /** What the check found. */
     public enum Status {
@@ -147,10 +142,11 @@ public final class GitVersionCheck {
     /**
      * The directory git runs in and takes as its {@code HOME}, made the owner's alone: in the shared temporary
      * directory, another user could otherwise plant a config or a hook for git to read, or read what git writes.
-     * Where the file system has no POSIX modes this throws, and the check answers unreadable, like the git fetcher.
+     * Where the file system has no POSIX modes it is restricted with an ACL ({@link OwnerOnly}); where it has neither,
+     * this throws, and the check answers unreadable, like the git fetcher.
      */
     private static Path privateHome() throws IOException {
-        return Files.createTempDirectory(HOME_PREFIX, OWNER_ONLY);
+        return OwnerOnly.temporaryDirectory(HOME_PREFIX);
     }
 
     private static Optional<GitVersion> answer(Process process) throws IOException, InterruptedException {
