@@ -341,6 +341,148 @@ Feature: Registering a whole pack replaces the pack the service holds
       | ../outside.yaml             | a path that leaves the pack                  |
       | directives/C.directive.yaml | id: C, a directive missing its required keys |
 
+  # FR-004, FR-005, FR-021 (#451): a file the pack model excludes is not pack content. The registration does not refuse
+  # it, does not hold it, and reports each one as a file_not_held warning naming the file and the rule's reason. The
+  # stored pack is the staged tree less those files, so the answer is `unchanged` against the same pack without them.
+  Scenario: Excluded files are not refused, not held, and reported in the answer
+    Given the archive "noted" is a copy of the archive "v1"
+    And the archive "noted" holds the file "docs/notes.md":
+      """
+      # Notes
+
+      An author's note that is not pack content.
+      """
+    And the archive "noted" holds the file "missions/x/README.md":
+      """
+      # x
+
+      Orientation notes beside a mission type.
+      """
+    And the archive "noted" holds the file "missions/x/templates/README.md":
+      """
+      # Templates of x
+
+      Orientation notes beside the mission templates.
+      """
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    And I GET "/packs/acme"
+    And I remember the field "revision" of the response body
+    And I PUT "/packs/acme" with the archive "noted"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "unchanged"
+    And the field at "/result/revision" is the remembered one
+    And the field at "/result/diagnostics" holds exactly 3 item(s)
+    And the field at "/result/diagnostics/0/code" is "file_not_held"
+    And the field at "/result/diagnostics/0/detail" contains "docs/notes.md: not held (Author aid: Markdown that no files rule models"
+    And the field at "/result/diagnostics/1/code" is "file_not_held"
+    And the field at "/result/diagnostics/1/detail" contains "missions/x/README.md: not held (Orientation notes beside the mission type they describe"
+    And the field at "/result/diagnostics/2/code" is "file_not_held"
+    And the field at "/result/diagnostics/2/detail" contains "missions/x/templates/README.md: not held (Orientation notes beside the mission templates they describe"
+    When I GET "/packs/acme"
+    Then the field "revision" of the response body is the remembered one
+
+  # FR-005, FR-021: a first registration holds the pack without the excluded file, and says so.
+  Scenario: A pack created with an excluded file is stored without it
+    Given the archive "noted" is a copy of the archive "v1"
+    And the archive "noted" holds the file "docs/notes.md":
+      """
+      # Notes
+      """
+    When I PUT "/packs/acme" with the archive "noted"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "created"
+    And the field at "/result/diagnostics" holds exactly 1 item(s)
+    And the field at "/result/diagnostics/0/code" is "file_not_held"
+    When I GET "/packs/acme/artifacts/directive/A"
+    Then the response status is 200
+
+  # FR-022, SC-002 (#451): the retired pack-level files are refused by their own code, never as an unmodelled file.
+  Scenario: The retired pack.md and PROVENANCE.md are refused as retired, never as unmodelled
+    Given the archive "stale" is a copy of the archive "v1"
+    And the archive "stale" holds the file "pack.md":
+      """
+      # acme
+      """
+    And the archive "stale" holds the file "PROVENANCE.md":
+      """
+      # Provenance
+      """
+    When I PUT "/packs/acme" with the archive "stale"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 2 item(s)
+    And the field at "/problem/violations/0/code" is "retired"
+    And the field at "/problem/violations/0/pointer" is "PROVENANCE.md"
+    And the field at "/problem/violations/1/code" is "retired"
+    And the field at "/problem/violations/1/pointer" is "pack.md"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
+  # FR-009, FR-011 (#431): the org charter is retired, so it is refused by name and not as a file nothing models.
+  Scenario: The retired org-charter.yaml is refused as retired, never as unmodelled
+    Given the archive "org-charter" is a copy of the archive "v1"
+    And the archive "org-charter" holds the file "org-charter.yaml":
+      """
+      schema_version: 2
+      required_directives: [A]
+      """
+    When I PUT "/packs/acme" with the archive "org-charter"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "retired"
+    And the field at "/problem/violations/0/pointer" is "org-charter.yaml"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
+  # FR-010 (#431): active_charter is no key of the closed descriptor any more, so a pack.yaml that declares it is refused
+  # like any unknown key: the descriptor cannot be read, and the refusal names the key it does not declare.
+  Scenario: A pack.yaml that declares the retired active_charter key is refused
+    Given the archive "active-charter" is a copy of the archive "v1"
+    And the archive "active-charter" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      active_charter: charter.yaml
+      """
+    When I PUT "/packs/acme" with the archive "active-charter"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "pack_unreadable"
+    And the field at "/problem/violations/0/pointer" is "pack"
+    And the field at "/problem/violations/0/detail" contains "undeclared key 'active_charter'"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
+  # FR-004: only Markdown is excluded by the fallback; any other file nothing models is still refused (the control).
+  Scenario: A text file the pack model does not know stays refused as unmodelled
+    Given the archive "stray" is a copy of the archive "v1"
+    And the archive "stray" holds the file "notes.txt":
+      """
+      a file the pack model does not know
+      """
+    When I PUT "/packs/acme" with the archive "stray"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "unmodelled"
+    And the field at "/problem/violations/0/pointer" is "notes.txt"
+
   # Operator ruling D-1 (ADR-0066 closeout): a registration answers every fault of the pack in one report, a graph
   # document that breaks its schema included, one violation per fault at the pack-relative file of the document. A
   # fault that is not a graph fault (a file the pack model does not know) is listed after the graph faults.

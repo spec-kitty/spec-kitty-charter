@@ -15,7 +15,6 @@ Feature: Journey 06 — a pack author publishes a pack
       name: qa
       pack_level: org
       requires_core: '>=1.0'
-      active_charter: org-charter.yaml
       pack_drg: drg/fragment.yaml
       """
 

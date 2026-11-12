@@ -201,6 +201,7 @@ Feature: Failures outside the charter's refusals
       | internal_error              |
       | stale_input                 |
       | pack_not_found              |
+      | pack_document_not_found     |
       | tactic_not_found            |
       | directive_not_found         |
       | styleguide_not_found        |

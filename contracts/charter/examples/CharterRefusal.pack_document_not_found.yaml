@@ -1,0 +1,6 @@
+summary: The pack holds no README.md.
+value:
+  title: Pack document not found
+  status: 404
+  code: pack_document_not_found
+  detail: Pack qa holds no document (README.md).

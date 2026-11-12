@@ -33,9 +33,15 @@ Keep it small; add a step only when a scenario cannot be written without it.
     (`Host` replaces the default host `localhost`);
   - `When I <method> "<path>" without the worktree token and with the header "<name>": "<value>"`;
   - `When I <method> "<path>" with the headers "<name>": "<value>" and "<name>": "<value>"`.
+- `When I GET "<path>" accepting "<media type>" with If-None-Match the remembered header "<name>"` — the same, with the
+  `If-None-Match` a header remembered earlier with `When I remember the header "<name>"` (the `ETag` of an answer the client
+  now holds).
 - `Then the response status is <n>`
 - `Then the response body is:` — the JSON body, compared exactly (order of arrays and the
   `detail` sentences included).
+- `Then the response body is the text:` — a body that is text, not JSON (the `text/markdown` answer of the pack document
+  read), compared exactly with the doc string and the final newline that the `Given the <level> pack ... with the file`
+  step writes after its own. `Then the response body is empty` — no body at all, as a `304` has none.
 - `Then the response body, apart from "<field>", is:` — the same, after taking that top-level
   field out of the body, which must have it; for a digest whose value no scenario pins.
 - `Then the field "<field>" of the response body is "<text>"`, `... is a sha256 digest` and

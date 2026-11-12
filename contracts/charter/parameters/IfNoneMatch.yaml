@@ -5,6 +5,7 @@ description: >-
   One or more entity tags of an answer the client holds, or *. Compared weakly (RFC 9110, section 13.1.2): when * is
   sent or any listed tag matches the current ETag, the answer is 304 without a body. A value that is not an
   entity-tag list matches nothing, so the answer is 200. It is read only after the request passed the browser and
-  token checks, and after the activation was found: a refused request is answered its refusal whatever it carries.
+  token checks, and after the resource it conditions (the activation, the pack) was found: a refused request is
+  answered its refusal whatever it carries.
 schema:
   type: string

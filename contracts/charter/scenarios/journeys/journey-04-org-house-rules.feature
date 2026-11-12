@@ -1,9 +1,10 @@
 @contract @journey-04
 # Journey: docs/context/user-journeys/04-org-house-rules.md
 Feature: Journey 04 — a governance lead sets the organisation's house rules
-  A governance lead publishes an org pack that requires a preset and locks a directive, so every
-  project of the organisation keeps them. Registering a required directive in an org pack works today;
-  required presets and locks are not in the contract yet.
+  A governance lead publishes an org pack whose governing activation preset carries must-have items and
+  whose policy.yaml locks a directive, so every project of the organisation keeps them. Registering a
+  required directive in an org pack works today; the effect of a governing preset's must-have items and
+  of policy.yaml locks on a project's activations is not covered by a scenario here yet.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -14,7 +15,6 @@ Feature: Journey 04 — a governance lead sets the organisation's house rules
       name: qa
       pack_level: org
       requires_core: '>=1.0'
-      active_charter: org-charter.yaml
       pack_drg: drg/fragment.yaml
       """
 
@@ -31,13 +31,13 @@ Feature: Journey 04 — a governance lead sets the organisation's house rules
 
   @WIP
   Scenario: A project of the organisation gets the required preset
-    Given the org pack "qa" requires the preset "house-rules"
-    When a project of the organisation activates its charter
-    Then the active charter holds the preset "house-rules"
+    Given the org pack "qa" ships the governing preset "house-rules" with the directive "GUARD" as a must-have item
+    When a project of the organisation applies the preset "house-rules"
+    Then the directive "GUARD" is a required item of the project's activations
 
   @WIP
   Scenario: A locked directive cannot be deactivated by a project
-    Given the org pack "qa" locks the directive "GUARD"
+    Given the org pack "qa" locks the directive "GUARD" in its policy.yaml
     When a project deactivates the directive "GUARD"
     Then the request is refused naming the pack "qa"
     And the directive "GUARD" stays in the effective set
