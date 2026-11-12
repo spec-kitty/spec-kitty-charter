@@ -5,8 +5,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * What ADR-0018's walk reached from one action's step over the artifacts in force (IC-11, FR-019, rule E16), as the
- * activations slice reads it: the packs slice walked the merged closure, and this is the adapter's copy, as values only.
+ * What the effective form of ADR-0018's walk reached for one action over the artifacts in force (IC-11, FR-019, rule E16
+ * as amended by FR-008: the ownership rule), as the activations slice reads it: the packs slice walked the merged
+ * closure, and this is the adapter's copy, as values only. Each entry and each candidate carries the part of the rule
+ * that listed it ({@link AppliesThrough}, FR-009).
  * It names artifacts, never states: which of them is in force, why, and whether a candidate is a suggestion is judged
  * against the {@link EffectiveSet}, the one place that rule lives.
  *
@@ -25,22 +27,54 @@ public record ActionContext(
     private static final ActionContext NOT_IN_FORCE = new ActionContext(false, List.of(), List.of(), List.of());
 
     /**
+     * The part of the ownership rule that lists an artifact for the action (research R1 and R3, operator ruling of
+     * 2026-11-12): the first that reaches it, in declaration order. It mirrors the walk's passes, which the packs slice
+     * names; the adapter maps one to the other.
+     */
+    public enum AppliesThrough {
+        /** The action's own walk: ADR-0018's five steps from the action's step. */
+        ACTION("action"),
+        /** The walk from the directives, tactics and paradigms in force that the action's mission type scopes. */
+        MISSION_TYPE("mission_type"),
+        /** The walk from the directives, tactics and paradigms in force that no action and no mission type scopes. */
+        PROJECT("project");
+
+        private final String token;
+
+        AppliesThrough(String token) {
+            this.token = token;
+        }
+
+        /**
+         * The value the contract spells ({@code EffectiveContextArtifact.appliesThrough}).
+         *
+         * @return the token
+         */
+        public String token() {
+            return token;
+        }
+    }
+
+    /**
      * An artifact in force the walk lists.
      *
      * @param ref the artifact
      * @param enhancedBy the enhancers in force that enhance it, in URN order
+     * @param appliesThrough the part of the rule that lists it
      */
-    public record Reached(ArtifactRef ref, List<ArtifactRef> enhancedBy) {
+    public record Reached(ArtifactRef ref, List<ArtifactRef> enhancedBy, AppliesThrough appliesThrough) {
 
         /**
          * Checks and copies the fields.
          *
          * @param ref the artifact
          * @param enhancedBy its enhancers in force
+         * @param appliesThrough the part of the rule that lists it
          */
         public Reached {
             Objects.requireNonNull(ref, "ref");
             enhancedBy = List.copyOf(Objects.requireNonNull(enhancedBy, "enhancedBy"));
+            Objects.requireNonNull(appliesThrough, "appliesThrough");
         }
     }
 
@@ -50,8 +84,10 @@ public record ActionContext(
      * @param ref the suggested artifact
      * @param when the {@code when} of the {@code suggests} edge that reaches it, if it states one
      * @param reason the {@code reason} of that edge, if it states one
+     * @param appliesThrough the part of the rule whose {@code suggests} edge reached it, which a suggestion carries
      */
-    public record SuggestionCandidate(ArtifactRef ref, Optional<String> when, Optional<String> reason) {
+    public record SuggestionCandidate(
+            ArtifactRef ref, Optional<String> when, Optional<String> reason, AppliesThrough appliesThrough) {
 
         /**
          * Checks the fields.
@@ -59,11 +95,13 @@ public record ActionContext(
          * @param ref the suggested artifact
          * @param when the edge's condition
          * @param reason the edge's reason
+         * @param appliesThrough the part of the rule that reached it
          */
         public SuggestionCandidate {
             Objects.requireNonNull(ref, "ref");
             Objects.requireNonNull(when, "when");
             Objects.requireNonNull(reason, "reason");
+            Objects.requireNonNull(appliesThrough, "appliesThrough");
         }
     }
 

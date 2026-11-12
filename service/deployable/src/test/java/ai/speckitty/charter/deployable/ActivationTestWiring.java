@@ -3,8 +3,10 @@ package ai.speckitty.charter.deployable;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -115,6 +117,16 @@ public class ActivationTestWiring {
                 public Optional<EffectiveArtifactRead> effectiveArtifact(
                         ArtifactKind kind, String id, int depth, InForceQuery query) {
                     return Optional.empty();
+                }
+
+                @Override
+                public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+                    return false;
+                }
+
+                @Override
+                public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+                    return EffectivePrompt.NONE;
                 }
 
                 @Override

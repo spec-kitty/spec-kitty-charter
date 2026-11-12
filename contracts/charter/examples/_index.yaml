@@ -50,3 +50,7 @@ files:
   - Artifact.activation-mission-step-contract.yaml
   - MissionStep.activation-implement.yaml
   - MissionSkeleton.activation-spec-template.yaml
+  - EffectiveStepPrompt.three-levels.yaml
+  - EffectiveStepPrompt.empty-slot.yaml
+  - EffectiveStepPrompt.legacy-slot.yaml
+  - CharterRefusal.mission-type-not-in-force.yaml

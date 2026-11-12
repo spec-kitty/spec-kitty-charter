@@ -8,10 +8,14 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
@@ -277,6 +281,51 @@ class CompositionFactsCacheTest {
         cache.facts(new PackIdentifier("a"), this::load);
 
         assertThat(loads).as("a was used after b, so c's arrival evicted b").hasValue(before);
+    }
+
+    /** Facts whose prompt member is all the text says: the slot the plan step declares and the fill's text. */
+    private static PackCompositionFacts promptFactsOf(String text) {
+        SlotId reasons = new SlotId("spdd:reasons-block");
+        return new PackCompositionFacts(
+                List.of(),
+                List.of("mission_type:software-dev"),
+                List.of(),
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(),
+                Map.of(),
+                Map.of(),
+                new PromptFacts(
+                        Map.of(
+                                Urn.action("software-dev", "plan"),
+                                List.of(new PromptFacts.DeclaredSlot(reasons, false))),
+                        Map.of(
+                                Urn.parse("step_enhancement:reasons").orElseThrow(),
+                                List.of(new PromptFacts.Fill(reasons, text)))));
+    }
+
+    @Test
+    void thePromptFactsAreKeptWithTheOtherFactsAndReadOncePerState() {
+        content.put("alpha", "one");
+        CompositionFactsCache cache = cache();
+        Function<PackIdentifier, PackCompositionFacts> readPrompts = pack -> {
+            loads.incrementAndGet();
+            return promptFactsOf(content.get(pack.value()));
+        };
+
+        PackCompositionFacts first = cache.facts(ALPHA, readPrompts);
+        PackCompositionFacts second = cache.facts(ALPHA, readPrompts);
+
+        assertThat(second.prompts()).isEqualTo(promptFactsOf("one").prompts());
+        assertThat(second.prompts()).as("served from the entry, not rebuilt").isSameAs(first.prompts());
+        assertThat(loads).hasValue(1);
+
+        generation.bracket("alpha", () -> content.put("alpha", "two"));
+
+        assertThat(cache.facts(ALPHA, readPrompts).prompts())
+                .as("a write moves the prompt facts with the rest")
+                .isEqualTo(promptFactsOf("two").prompts());
+        assertThat(loads).hasValue(2);
     }
 
     @Test

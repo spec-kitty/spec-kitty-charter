@@ -1,0 +1,113 @@
+title: EffectiveStepPrompt
+description: >-
+  The prompt one step of one mission type gets under an activation (ADR-0066 decision 9; FR-003 to FR-005): the prompt
+  in force as it is stored, and every slot it declares, in declaration order, each with the fragments of the step
+  enhancements in force that fill it and where each came from. The charter serves it and does not render: a renderer
+  replaces each slot's marker pair with its fragments, one blank line between them, and a slot with no fragment leaves
+  nothing, not even the markers; a slot that still holds legacy text keeps that text, and its fragments follow it
+  (OD-8).
+
+  _links holds self, this read; effective-artifact, the read of the step under the activation
+  (getEffectiveMissionStep); and effective-context, the action context of the same action (getEffectiveActionContext).
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- governanceFingerprint
+- missionType
+- action
+- prompt
+- slots
+- diagnostics
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment.
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The charter-closure/v1 digest of the packs of the activation's closure alone, taken in the same consistent read
+      as the answer, as on the other effective reads; it digests every loaded file of those packs, step prompts and
+      prompt fragments included. With revision, it ties the answer to both the document and the packs of its closure.
+    x-derived:
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  missionType:
+    allOf:
+    - $ref: Slug.yaml
+    description: The mission type.
+    x-derived:
+      rule: The {missionType} path segment.
+      inputs:
+      - parameters/MissionTypePath.yaml
+  action:
+    allOf:
+    - $ref: Slug.yaml
+    description: The step (action) of the mission type.
+    x-derived:
+      rule: The {action} path segment.
+      inputs:
+      - parameters/ActionPath.yaml
+  prompt:
+    type: string
+    description: >-
+      The prompt in force for the step, as it is stored (decision 9: unchanged), slot markers in place: the prompt
+      companion at the merged winner's place of action:{missionType}/{action}, the place the closure holds the step at
+      (the winning mission type's pack when it declares the step, else the pack of the version that keeps it; research
+      R8). Outside the slots it is the base text (decision 7). Empty when the step has no prompt.
+    x-derived:
+      rule: The stored prompt companion of step {action} at the merged winner's place of action:{missionType}/{action}.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  promptPackId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the prompt in force. Absent when the step has no prompt.
+    x-derived:
+      rule: The pack of the merged winner's place of action:{missionType}/{action}, when it holds a prompt companion.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  slots:
+    type: array
+    items:
+      $ref: EffectivePromptSlot.yaml
+    description: Every slot the prompt declares, in declaration order, filled or not; empty when it declares none.
+    x-derived:
+      rule: The slot declarations of the prompt in force, each with the fragments in force that name it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  diagnostics:
+    type: array
+    items:
+      $ref: Diagnostic.yaml
+    description: >-
+      A prompt_slot_not_empty per declared slot that still holds legacy text under an unversioned pack descriptor (OD-7),
+      in declaration order, naming the prompt file and the slot; empty otherwise. Under descriptor schema_version "1.0"
+      such a slot is refused at load, so it never reaches the read.
+    x-derived:
+      rule: One prompt_slot_not_empty per declared slot of the prompt in force that holds text.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml

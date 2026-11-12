@@ -5,9 +5,11 @@ import ai.speckitty.charter.activations.application.EffectiveReadService.Context
 import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
+import ai.speckitty.charter.activations.application.EffectiveReadService.PromptRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
@@ -19,12 +21,17 @@ import ai.speckitty.charter.api.model.ActionEnhancement;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.DenyNotApplied;
+import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptFragment;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
 import ai.speckitty.charter.api.model.LayerOverride;
 import ai.speckitty.charter.api.model.LayerOverrideSide;
@@ -185,13 +192,21 @@ public class EffectiveReadMapper {
             read.missionTypePack()
                     .ifPresent(pack -> links.put("artifact", new Link(activations.packMissionStep(pack, type, step))));
         }
+        if (read.missionTypeInForce()) {
+            links.put(
+                    "prompt",
+                    new Link(activations.prompt(
+                            id, read.query().missionType(), read.query().action())));
+        }
         return new EffectiveActionContext(
                 id,
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
                 read.query().missionType(),
                 read.query().action(),
-                items(context.artifacts(), id, served),
+                context.artifacts().stream()
+                        .map(item -> contextItem(id, item, served))
+                        .toList(),
                 context.enhancements().stream()
                         .map(enhancement -> new ActionEnhancement(
                                 node(enhancement.target()),
@@ -199,6 +214,57 @@ public class EffectiveReadMapper {
                         .toList(),
                 skipped(context.skipped()),
                 links);
+    }
+
+    /**
+     * The effective prompt of a step: the prompt as stored, its slots with their fragments in the order the read gave
+     * them, its diagnostics, and its links: {@code self}, {@code effective-context} (the action context of the same
+     * action) and, while mission types are served, {@code effective-artifact} (the step under the activation). An
+     * absent {@code promptPackId} stays absent.
+     *
+     * @param read what the service read
+     * @return its wire form
+     */
+    public EffectiveStepPrompt toPrompt(PromptRead read) {
+        String id = read.stored().id().value();
+        String type = read.query().missionType();
+        String step = read.query().action();
+        EffectivePrompt prompt = read.prompt();
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put("self", new Link(activations.prompt(id, type, step)));
+        if (linkedKinds.get().contains(ArtifactKind.MISSION_TYPE)) {
+            links.put("effective-artifact", new Link(activations.effectiveMissionStep(id, type, step)));
+        }
+        links.put("effective-context", new Link(activations.effectiveContext(id, type, step)));
+        EffectiveStepPrompt wire = new EffectiveStepPrompt(
+                id,
+                read.stored().revision().token(),
+                read.governanceFingerprint(),
+                type,
+                step,
+                prompt.prompt(),
+                prompt.slots().stream().map(EffectiveReadMapper::slot).toList(),
+                prompt.diagnostics().stream()
+                        .map(diagnostic -> new Diagnostic(
+                                Diagnostic.CodeEnum.fromValue(diagnostic.code().token()), diagnostic.detail()))
+                        .toList(),
+                links);
+        prompt.promptPackId().ifPresent(wire::setPromptPackId);
+        return wire;
+    }
+
+    private static EffectivePromptSlot slot(EffectivePrompt.Slot slot) {
+        return new EffectivePromptSlot(
+                slot.slot(),
+                slot.fragments().stream()
+                        .map(fragment -> new EffectivePromptFragment(
+                                fragment.packId(),
+                                fragment.packName(),
+                                EffectivePromptFragment.LevelEnum.fromValue(
+                                        fragment.level().token()),
+                                fragment.enhancement(),
+                                fragment.text()))
+                        .toList());
     }
 
     /** The context's own request: its path, and the depth when the request named one. */
@@ -277,20 +343,54 @@ public class EffectiveReadMapper {
                 ai.speckitty.charter.api.model.EffectiveArtifact.ReasonEnum.fromValue(
                         artifact.reason().token()));
         artifact.satisfiedBy().map(ActivationChangeMapper::reference).ifPresent(wire::setSatisfiedBy);
-        artifact.suggestion().ifPresent(suggestion -> {
+        suggestion(artifact).ifPresent(wire::setSuggestion);
+        itemLinks(id, artifact, served).ifPresent(wire::setLinks);
+        return wire;
+    }
+
+    /**
+     * An item of the action context: the members of the effective list's item, copied (the contract's
+     * {@code EffectiveContextArtifact} copies {@code EffectiveArtifact}'s), and the part of the ownership rule that lists
+     * it.
+     */
+    private EffectiveContextArtifact contextItem(String id, EffectiveContext.Item item, List<ArtifactKind> served) {
+        EffectiveArtifact artifact = item.artifact();
+        EffectiveContextArtifact wire = new EffectiveContextArtifact(
+                EffectiveContextArtifact.KindEnum.fromValue(artifact.kind().token()),
+                artifact.artifactId(),
+                artifact.packId(),
+                EffectiveContextArtifact.LevelEnum.fromValue(artifact.level().token()),
+                EffectiveContextArtifact.StateEnum.fromValue(artifact.state().token()),
+                artifact.required(),
+                EffectiveContextArtifact.PolicyEnum.fromValue(artifact.policy().token()),
+                EffectiveContextArtifact.ReasonEnum.fromValue(artifact.reason().token()),
+                EffectiveContextArtifact.AppliesThroughEnum.fromValue(
+                        item.appliesThrough().token()));
+        artifact.satisfiedBy().map(ActivationChangeMapper::reference).ifPresent(wire::setSatisfiedBy);
+        suggestion(artifact).ifPresent(wire::setSuggestion);
+        itemLinks(id, artifact, served).ifPresent(wire::setLinks);
+        return wire;
+    }
+
+    private static Optional<EffectiveArtifactSuggestion> suggestion(EffectiveArtifact artifact) {
+        return artifact.suggestion().map(suggestion -> {
             EffectiveArtifactSuggestion carrier = new EffectiveArtifactSuggestion();
             suggestion.when().ifPresent(carrier::setWhen);
             suggestion.reason().ifPresent(carrier::setReason);
-            wire.setSuggestion(carrier);
+            return carrier;
         });
-        if (served.contains(artifact.kind())) {
-            String kind = artifact.kind().token();
-            Map<String, Link> links = new LinkedHashMap<>();
-            links.put("effective-artifact", new Link(activations.effectiveArtifact(id, kind, artifact.artifactId())));
-            links.put("artifact", new Link(activations.packArtifact(artifact.packId(), kind, artifact.artifactId())));
-            wire.setLinks(links);
+    }
+
+    /** The links of an item: its effective read and its pack-scoped read, for a kind the pack-scoped routes serve. */
+    private Optional<Map<String, Link>> itemLinks(String id, EffectiveArtifact artifact, List<ArtifactKind> served) {
+        if (!served.contains(artifact.kind())) {
+            return Optional.empty();
         }
-        return wire;
+        String kind = artifact.kind().token();
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put("effective-artifact", new Link(activations.effectiveArtifact(id, kind, artifact.artifactId())));
+        links.put("artifact", new Link(activations.packArtifact(artifact.packId(), kind, artifact.artifactId())));
+        return Optional.of(links);
     }
 
     private Map<String, Link> pageLinks(String id, PageQuery query, boolean pageSizeGiven, Optional<String> next) {

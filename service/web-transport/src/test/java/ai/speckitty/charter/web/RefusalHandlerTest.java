@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -42,6 +43,7 @@ class RefusalHandlerTest {
         "GOVERNANCE_POLICY_VIOLATION, 409",
         "ARTIFACT_REQUIRED, 409",
         "ARTIFACT_LOCKED, 409",
+        "MISSION_TYPE_NOT_IN_FORCE, 409",
         "PACK_UNREADABLE, 500",
         "DRG_SCHEMA_ERROR, 500",
         "UNRESOLVED_EDGE_ENDPOINT, 500",
@@ -89,6 +91,7 @@ class RefusalHandlerTest {
         "ARTIFACT_REQUIRED, Artifact required",
         "ARTIFACT_LOCKED, Artifact locked",
         "ACTIVATION_INVALID, Activation invalid",
+        "MISSION_TYPE_NOT_IN_FORCE, Mission type not in force",
     })
     @DisplayName("each code is answered with its title")
     void eachCodeHasItsTitle(RefusalCode code, String title) {
@@ -113,6 +116,19 @@ class RefusalHandlerTest {
         assertThat(RefusalCode.valueOf("KIND_NOT_FOUND").notFound())
                 .as("a not-found code")
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("mission_type_not_in_force is a 409 on the effective-prompt read, the one operation that raises it")
+    void aMissionTypeNotInForceIsAConflictOnThePromptRead() throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> response =
+                refusedIn("getEffectiveStepPrompt", RefusalCode.MISSION_TYPE_NOT_IN_FORCE);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        CharterRefusal body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getCode().getValue()).isEqualTo("mission_type_not_in_force");
+        assertThat(body.getStatus()).isEqualTo(409);
     }
 
     @Test
@@ -196,6 +212,44 @@ class RefusalHandlerTest {
         void putPackDirective() {}
 
         void getOffering() {}
+
+        void registerPackDirective() {}
+
+        void registerPackParadigm() {}
+
+        void putPackParadigm() {}
+
+        void registerPackStyleguide() {}
+
+        void putPackStyleguide() {}
+
+        void registerPackToolguide() {}
+
+        void putPackToolguide() {}
+
+        void deletePackArtifact() {}
+
+        void deletePackRelationship() {}
+
+        void createActivation() {}
+
+        void replaceActivation() {}
+
+        void selectActivationArtifact() {}
+
+        void unselectActivationArtifact() {}
+
+        void deactivateActivationArtifact() {}
+
+        void reactivateActivationArtifact() {}
+
+        void applyActivationPreset() {}
+
+        void listEffectiveArtifacts() {}
+
+        void getEffectiveGraph() {}
+
+        void getEffectiveStepPrompt() {}
     }
 
     private ResponseEntity<CharterRefusal> refusedIn(String operation, RefusalCode code) throws NoSuchMethodException {
@@ -243,6 +297,53 @@ class RefusalHandlerTest {
                 .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "registerPackDirective",
+                "putPackDirective",
+                "registerPackParadigm",
+                "putPackParadigm",
+                "registerPackStyleguide",
+                "putPackStyleguide",
+                "registerPackToolguide",
+                "putPackToolguide",
+                "putPackRelationship",
+                "deletePackArtifact",
+                "deletePackRelationship",
+                "createActivation",
+                "replaceActivation",
+                "selectActivationArtifact",
+                "unselectActivationArtifact",
+                "deactivateActivationArtifact",
+                "reactivateActivationArtifact",
+                "applyActivationPreset"
+            })
+    @DisplayName("prompt_slot_missing is a 422 on every write that judges an enhancement in force before it stores")
+    void promptSlotMissingIsA422OnTheImpactCheckedAndTheActivationWrites(String operation)
+            throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> refused = refusedIn(operation, RefusalCode.PROMPT_SLOT_MISSING);
+
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(refused.getBody().getCode()).isEqualTo(CharterRefusal.CodeEnum.PROMPT_SLOT_MISSING);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"getOffering", "listEffectiveArtifacts", "getEffectiveGraph"})
+    @DisplayName("the twin: prompt_slot_missing keeps its own status, 500, on a composing read")
+    void promptSlotMissingIsA500OnAComposingRead(String operation) throws NoSuchMethodException {
+        assertThat(refusedIn(operation, RefusalCode.PROMPT_SLOT_MISSING).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    @DisplayName("the twin: an activation write keeps the composition codes' own status, 500")
+    void anActivationWriteKeepsTheCompositionCodesAs500() throws NoSuchMethodException {
+        assertThat(refusedIn("selectActivationArtifact", RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({
         "PACK_DEPENDENCY_CYCLE, 422",
@@ -260,6 +361,7 @@ class RefusalHandlerTest {
         "REGISTRATION_CONFLICT, 409",
         "VALIDATION_FAILED, 422",
         "OVERRIDE_NOT_PERMITTED, 422",
+        "PROMPT_SLOT_MISSING, 422",
         "PACK_STORAGE_FULL, 503",
         "REGISTRATION_TIMED_OUT, 504",
         "PACK_UNREADABLE, 500",

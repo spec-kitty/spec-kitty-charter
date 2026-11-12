@@ -7,20 +7,25 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceResolution;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -122,6 +127,16 @@ public record ClosureView(
             return winners;
         }
 
+        /** The composed closure, in closure order. */
+        List<PackUnderResolution> packs() {
+            return packs;
+        }
+
+        /** The facts each pack was read with, by configured identifier. */
+        Map<String, PackCompositionFacts> facts() {
+            return facts;
+        }
+
         /**
          * The inputs of a view built without the closure's packs: it merges nothing.
          *
@@ -136,12 +151,33 @@ public record ClosureView(
             return built != null ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
         }
 
+        /**
+         * The layer merge, built once. Two closure-level refusals come out of it, both {@code 500 pack_unreadable}
+         * whatever the activation: a layer override the overridden artifact's level forbids (C21, from
+         * {@link LayerMerge}), and then an enhancement of a step whose mission type is locked along the closure without
+         * the enhancing pack's own policy (C22 and C25 as amended, OD-2 (A)), the read side of the
+         * {@code override_not_permitted} the registration impact check answers.
+         */
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             if (built == null) {
                 MergedClosure merged = LayerMerge.merge(packs, facts, policy);
+                refuseLockedStepEnhanced(policy);
                 built = new MergedView(merged, edges.merged(merged), bindingsOf(merged));
             }
             return built;
+        }
+
+        private void refuseLockedStepEnhanced(PerPackPolicy policy) {
+            EnhancementCompose.lockedTargets(
+                            packs,
+                            pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
+                                    .edges(),
+                            policy)
+                    .stream()
+                    .findFirst()
+                    .ifPresent(locked -> {
+                        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, locked.detail(), locked.packs());
+                    });
         }
 
         /**
@@ -177,6 +213,20 @@ public record ClosureView(
          * @return the entity; empty when the pack holds no readable artifact of that kind and id
          */
         Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id);
+
+        /**
+         * Reads the stored prompt companion of a step in one pack, as {@link PackCompanionFiles#stepFiles} gives it: the
+         * bytes as stored, never a re-rendering. A source that cannot read the stored step files answers a wiring fault
+         * ({@link IllegalStateException}).
+         *
+         * @param pack the configured pack at the merged winner's place of the step
+         * @param step the step, {@code action:M/s}
+         * @return the prompt's bytes; empty when that pack's mission type gives the step no prompt
+         */
+        default Optional<Payload> stepPrompt(PackIdentifier pack, Urn step) {
+            throw new IllegalStateException("this view was built without the stored step files and cannot read the"
+                    + " prompt of " + step + " in pack " + pack.value());
+        }
 
         /**
          * A source for a view built without the closure's packs: it has nothing to read from, so a read is a wiring fault
@@ -555,6 +605,84 @@ public record ClosureView(
     }
 
     /**
+     * Refuses a request whose step enhancements in force name a slot the prompt in force of their step does not declare
+     * (C38, FR-001; {@link SlotCompose}): an enhancement in force, its winning copy only, judged against the prompt at
+     * the merged winner's place of its step. {@link #inForce} stays a pure resolution: a caller that composes asks this
+     * explicitly, once the states are resolved (squad A3): the composing reads, the registration gate per stored
+     * activation and the activation writes before they store. It reads nothing more than this view (NFR-007).
+     *
+     * @param states what {@link #inForce} answered for the request
+     * @throws CharterRefusal with {@code PROMPT_SLOT_MISSING} for the first missing slot, by enhancement in the order the
+     *     closure first holds them and then by fill, naming the enhancing pack and then the pack of the prompt in force;
+     *     or as {@link #merged()} does
+     */
+    public void requireSlots(InForceStates states) {
+        Objects.requireNonNull(states, "states");
+        MergedView view = merged();
+        Optional<SlotCompose.SlotViolation> first =
+                SlotCompose.missing(view.closure(), mergeInputs.facts(), states).stream()
+                        .findFirst();
+        if (first.isEmpty()) {
+            return;
+        }
+        Map<PackIdentifier, PackUnderResolution> byId = new LinkedHashMap<>();
+        mergeInputs.packs().forEach(pack -> byId.putIfAbsent(pack.configured().id(), pack));
+        SlotCompose.SlotViolation missing = first.get();
+        throw new CharterRefusal(
+                RefusalCode.PROMPT_SLOT_MISSING,
+                missing.detail(pack -> Optional.ofNullable(byId.get(pack))
+                        .map(held -> held.descriptor().name())
+                        .orElse(pack.value())),
+                missing.packs().stream()
+                        .map(pack -> Optional.ofNullable(byId.get(pack))
+                                .map(held -> new RefusalPack(
+                                        held.descriptor().packId(),
+                                        pack.value(),
+                                        held.descriptor().name()))
+                                .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value())))
+                        .toList());
+    }
+
+    /**
+     * The effective prompt of a step over the merged closure (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9; research
+     * R8): the stored prompt companion at the merged winner's place of {@code action:<missionType>/<action>}, every slot
+     * it declares and, per slot, the fragments of the winning copies of the step enhancements in force
+     * ({@link EffectivePromptQuery}). It judges nothing itself: the caller has run {@link #requireAction}, the
+     * mission-type check and {@link #requireSlots} on the same states. The prompt is read from the place's pack against
+     * the closure digest this view was verified at; the slots and fragments come from the facts this view holds.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param states what {@link #inForce} answered for the request
+     * @return the effective prompt; no byte, no slot and no pack for a step with no prompt companion
+     * @throws CharterRefusal as {@link #merged()} does, with {@code PACK_UNREADABLE} when the place's pack cannot read
+     *     the companion, and with {@code STALE_INPUT} when the packs changed since this view was verified
+     */
+    public EffectivePromptQuery.EffectivePrompt effectivePrompt(
+            String missionType, String action, InForceStates states) {
+        Objects.requireNonNull(missionType, "missionType");
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(states, "states");
+        Urn step = Urn.action(missionType, action);
+        Map<PackIdentifier, String> names = new LinkedHashMap<>();
+        mergeInputs
+                .packs()
+                .forEach(pack -> names.putIfAbsent(
+                        pack.configured().id(), pack.descriptor().name()));
+        return EffectivePromptQuery.answer(
+                step,
+                merged().closure(),
+                mergeInputs.facts(),
+                urn -> states.stateOf(urn)
+                        .filter(InForceStates.ArtifactState::active)
+                        .isPresent(),
+                pack -> Optional.ofNullable(names.get(pack))
+                        .orElseThrow(() -> new IllegalStateException(
+                                "pack " + pack.value() + " wins in the merge but is not a pack of the closure")),
+                pack -> mergeInputs.winners().stepPrompt(pack, step));
+    }
+
+    /**
      * The effective graph over the merged closure (FR-018, rule E15): the artifacts in force plus each held step whose
      * mission type is in force, the merged edges among them, and the layer overrides of those nodes. The node predicate
      * is built here from the in-force states, never handed in (decision {@code 01M7037ZNKJ6JTRKGD7G695ZV1}); it reads
@@ -570,9 +698,11 @@ public record ClosureView(
     }
 
     /**
-     * The action context over the merged closure (FR-015, FR-019, rule E16): ADR-0018's five-step walk from the held step
+     * The action context over the merged closure (FR-015, FR-019, rule E16 as amended by FR-008): the effective form of
+     * ADR-0018's walk ({@link ActionContextWalk#walkEffective}) from the held step
      * {@code action:<missionType>/<action>} over the artifacts in force, with their enhancers, {@code depth} counting
-     * {@code suggests} hops.
+     * {@code suggests} hops. Beside what the action's five steps reach, it lists under the ownership rule what the
+     * mission type scopes and what no action and no mission type scopes, each entry naming its pass.
      *
      * @param missionType the mission type
      * @param action the action
@@ -583,7 +713,7 @@ public record ClosureView(
      *     {@code ACTION_NOT_FOUND}, judged on the merged closure, or as {@link #merged()} does
      */
     public ActionContextWalk.Context actionContext(String missionType, String action, int depth, InForceStates states) {
-        return new ActionContextWalk(merged().edges()).walk(missionType, action, depth, effective(states));
+        return new ActionContextWalk(merged().edges()).walkEffective(missionType, action, depth, effective(states));
     }
 
     /**

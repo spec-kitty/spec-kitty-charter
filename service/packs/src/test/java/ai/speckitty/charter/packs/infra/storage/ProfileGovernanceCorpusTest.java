@@ -41,7 +41,7 @@ class ProfileGovernanceCorpusTest {
         DomainRepositoryService store = new DomainRepositoryService(() -> packs, new YamlSerializationStrategy());
         ConsistentRead read = new ConsistentRead(() -> DIGEST);
         OfferingReadService offering = new OfferingReadService(store, store, store, read);
-        return new ClosureQueries(offering, store, read, store);
+        return new ClosureQueries(offering, store, read, store, store);
     }
 
     @Test

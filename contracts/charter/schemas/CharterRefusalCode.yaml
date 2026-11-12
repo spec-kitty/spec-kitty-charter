@@ -6,8 +6,8 @@ description: >-
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
   kind_not_found, activation_not_found, artifact_not_found, preset_not_found, mission_step_contract_not_found,
   skeleton_not_found and pack_document_not_found are 404; validation_failed and
-  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
-  artifact_locked are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
+  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required,
+  artifact_locked and mission_type_not_in_force are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
@@ -129,9 +129,11 @@ description: >-
   not reveal what exists. pack_source_unavailable (503): registration, or the source kind, is switched
   off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
   self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the
-  closure and the packs involved (IC-15): an overrides edge onto a target that is not open, an enhances cycle or an
-  enhancer with no route to a non-enhancer, an artifact that both enhances and overrides one target, an overrides edge
-  that resolves to its own source, and an overrides cycle. registration_timed_out (504): the registration job's end
+  closure and the packs involved (IC-15): an overrides edge onto a target that is not open, or an enhancement of a step
+  whose mission type is locked (a step takes its mission type's level, OD-2; a read of such a closure answers 500
+  pack_unreadable, as a forbidden layer override does), an enhances cycle or an enhancer with no route to a
+  non-enhancer, an artifact that both enhances and overrides one target, an overrides edge that resolves to its own
+  source, and an overrides cycle. registration_timed_out (504): the registration job's end
   state at the source deadline plus 30 seconds (NFR-008); the 504 is the planner's proposal, no earlier text gave the
   code a status, and this contract confirms it. pack_storage_full (503): less than the
   per-job peak (about three times the archive bound) is free on the staging or the pack volume (NFR-009), checked before
@@ -189,10 +191,24 @@ description: >-
   read answers 500 pack_unreadable naming the file.
   prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration) and prompt_slot_not_empty
   (non-whitespace between paired markers at descriptor schema_version "1.0") are raised the same way, at the prompt
-  file. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
-  enhancement names at compose, and the phase-2 mission (#438) raises it with the compose check. pack_reference_pack_missing and
+  file. prompt_slot_missing was reserved until the phase-2 mission (#438) built the compose check that raises it (C38):
+  the prompt in force declares no slot a step enhancement in force names. It was first worded for an active or inactive
+  enhancement; an enhancement that is not in force never refuses (OD-1 (B)). A composing read answers it 500; a
+  registration, the impact-checked pack writes and the activation writes answer it 422 (its operations map).
+  pack_reference_pack_missing and
   pack_reference_artifact_missing keep their existing meanings for references between packs; no ADR-0066 refusal
   is artifact_locked.
+
+  mission_type_not_in_force (409) is raised by the effective-prompt read (getEffectiveStepPrompt) alone (operator ruling
+  OD-5, 2026-11-12; ADR-0066 decision 9): the activation's merged closure holds the mission type of the path, and the
+  activation does not put it in force. It is judged after activation_not_found, mission_type_not_found and
+  action_not_found, and before the closure's 500 codes (prompt_slot_missing among them) and any 304. The two reads of an
+  action answer such a mission type differently on purpose. The action context (getEffectiveActionContext) describes
+  what governs the action, and for a mission type not in force the truthful description is nothing, with the reason in
+  its skipped report, so it answers 200 empty. The prompt read hands a renderer the text it places in a running step; a
+  mission type not in force has no step to run, and an empty prompt would be rendered as if it were one, so the
+  activation's state conflicts with the request, and the client changes the activation to resolve it. A mission type
+  the closure does not hold is mission_type_not_found, whatever the activation selects.
 type: string
 enum:
   - mission_type_not_found
@@ -257,6 +273,7 @@ enum:
   - fallback_profile_missing
   - fallback_profile_conflict
   - no_profile_matched
+  - mission_type_not_in_force
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -718,7 +735,7 @@ x-refusal:
     status: 422
     retryable: false
     raised: true
-    description: an overrides edge onto a target that is not open
+    description: an overrides edge onto a target that is not open, or an enhancement of a step whose mission type is locked
   enhances_cycle:
     status: 422
     retryable: false
@@ -780,8 +797,53 @@ x-refusal:
   prompt_slot_missing:
     status: 500
     retryable: false
-    raised: false
-    description: the prompt in force declares no slot an enhancement names (ADR-0066, reserved for the phase-2 mission, #438)
+    raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
+      putPackRelationship:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
+      createActivation:
+        status: 422
+      replaceActivation:
+        status: 422
+      selectActivationArtifact:
+        status: 422
+      unselectActivationArtifact:
+        status: 422
+      deactivateActivationArtifact:
+        status: 422
+      reactivateActivationArtifact:
+        status: 422
+      applyActivationPreset:
+        status: 422
+    description: >-
+      the prompt in force of a step declares no slot that a step enhancement in force names (ADR-0066 decision 8, C38):
+      the prompt at the merged winner's place of the step, judged for the winning copy of the enhancement; an
+      enhancement that is not in force never refuses. A composing read of an activation that puts it in force answers
+      500. A registration, each impact-checked pack write (judged for every stored activation whose closure the write
+      joins, the activation named in the detail) and each activation write (before the document is stored) answer 422.
+      The detail names the enhancement, its pack, the slot and the pack that holds the prompt in force
   mission_step_contract_not_found:
     status: 404
     retryable: false
@@ -824,6 +886,17 @@ x-refusal:
     retryable: false
     raised: false
     description: no profile fits the asked role and no fallback is in force (ADR-0068, ADR-0069, reserved for the selection read)
+  mission_type_not_in_force:
+    status: 409
+    retryable: false
+    raised: true
+    operations:
+      getEffectiveStepPrompt:
+        status: 409
+    description: >-
+      the activation's merged closure holds the mission type and the activation does not put it in force, so its steps
+      have no prompt to render (OD-5, research R5); raised by getEffectiveStepPrompt alone, the one operation its
+      operations map names, after the 404 codes and before any 304, where the action context answers 200 empty
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

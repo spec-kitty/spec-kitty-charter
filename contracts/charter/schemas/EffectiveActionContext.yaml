@@ -1,11 +1,21 @@
 title: EffectiveActionContext
 description: >-
-  What governs one action of one mission type under an activation (ADR-0020 D7, FR-019): ADR-0018's walk from the
-  action's step over the artifacts in force of the merged closure, each with the enhancers in force that enhance it, and
-  the skipped report. Never the offering's walk, which answers what the offering says. The walk follows the artifacts in
-  force only. An artifact that the listing gives a suggestion (not selected, and reached through no hard relation by any
-  artifact in force) and that an artifact listed here reaches through a suggests edge is listed as a suggestion
-  (state inactive, reason not_selected, with the edge's when and reason) and the walk goes no further through it. A mission type that the activation does not put in force answers no artifacts and no
+  What governs one action of one mission type under an activation (ADR-0020 D7, FR-019): the artifacts in force of the
+  merged closure that apply to the action under the ownership rule, each with the enhancers in force that enhance it, and
+  the skipped report. Never the offering's walk, which answers what the offering says (ADR-0018 D1). The ownership rule
+  (operator ruling of 2026-11-12, Decision Moment 01M774HQ8N5EVYDRTP16MBJCN3; ADR-0018 D5 and rule E16 as amended): an
+  artifact in force applies to the action mt/a when the action's walk (ADR-0018's five steps from the action's step)
+  reaches it; or when it is a directive, tactic or paradigm that mission_type:mt scopes; or when it is a directive,
+  tactic or paradigm that no action and no mission type scopes. What such a directive, tactic or paradigm reaches by
+  ADR-0018's steps 2 to 5 comes with it, of any kind. One scoped only by other actions or other mission types is not
+  listed. The owners are the authored scope edges of the merged closure from an action or a mission type, whether or not
+  the owner is held or in force, so turning a mission type off never makes its directives project-wide. The three parts
+  run in that order over one listing, and the first that reaches an artifact lists it; its appliesThrough says which
+  (action, mission_type or project). The walk follows the artifacts in force only. An artifact that the listing gives a
+  suggestion (not selected, and reached through no hard relation by any artifact in force) and that an artifact listed
+  here reaches through a suggests edge is listed as a suggestion (state inactive, reason not_selected, with the edge's
+  when and reason), with the appliesThrough of the part whose suggests edge reached it, and the walk goes no further
+  through it. A mission type that the activation does not put in force answers no artifacts and no
   enhancements, and the skipped report lists the mission type in missionTypeNotInForce. The skipped member is the
   activation's report with one exception to its carrier rule: missionTypeNotInForce holds the requested mission type
   (kind mission_type) when that is not in force and is empty when it is in force, so an artifact bound to another
@@ -14,7 +24,9 @@ description: >-
   _links holds self, the context; effective-artifact, the read of the action's step under the activation
   (getEffectiveMissionStep); and artifact, the read of the step in the pack that holds the version in force of the
   mission type (getPackMissionStep), the packId of the mission type's item of the effective list. Each answers the step
-  of that version of the mission type, or action_not_found when it declares no such step.
+  of that version of the mission type, or action_not_found when it declares no such step. prompt, the effective prompt
+  of the same action (getEffectiveStepPrompt), is present exactly when the activation puts the mission type in force:
+  for one it does not, that read answers 409 mission_type_not_in_force, so the context does not offer it.
 type: object
 additionalProperties: false
 required:
@@ -75,13 +87,16 @@ properties:
   artifacts:
     type: array
     items:
-      $ref: EffectiveArtifact.yaml
+      $ref: EffectiveContextArtifact.yaml
     description: >-
-      The artifacts the action's walk lists, sorted by URN: those in force, and the suggestions (state inactive, with a
-      suggestion). Empty for a mission type that is not in force. An artifact the action reaches through requires is never
-      a suggestion, even when it is also suggested.
+      The artifacts the ownership rule lists for the action, sorted by URN whatever part listed them: those in force, and
+      the suggestions (state inactive, with a suggestion), each with its appliesThrough. Empty for a mission type that is
+      not in force. An artifact the action reaches through requires is never a suggestion, even when it is also
+      suggested.
     x-derived:
-      rule: ADR-0018's walk from the action's step over the effective set, with the suggestions the walk reached.
+      rule: >-
+        The ownership rule over the effective set: ADR-0018's walk from the action's step, then from the mission type's
+        scoped roots, then from the project-wide roots, with the suggestions the walk reached.
       inputs:
       - schemas/ActivationConfig.yaml
   enhancements:

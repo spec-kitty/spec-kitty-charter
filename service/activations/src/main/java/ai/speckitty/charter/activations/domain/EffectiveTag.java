@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
 /**
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
- * {@code getActivation}, and the read of one artifact; the graph and the context each name their own read, and the
- * context its mission type, action and depth. The read of one artifact names its kind, id and depth, and an agent
+ * {@code getActivation}, the read of one artifact and the effective prompt; the graph, the context and the prompt each
+ * name their own read, the context its mission type, action and depth, and the prompt its mission type and action. The read of one artifact names its kind, id and depth, and an agent
  * profile's names a read of its own ({@link Read#PROFILE}), because what it answers is not what the generic read
  * answers. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
@@ -35,9 +35,11 @@ public record EffectiveTag(String token) {
      * The domain tag, with the tag's version: it is bumped in any change that alters what the reads answer for the same
      * inputs (a merge rule change, a new reason), so a strong tag never names two bodies across releases. {@code v2}:
      * PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer overrides, and the
-     * non-activatable entries the satisfaction no longer counts).
+     * non-activatable entries the satisfaction no longer counts). {@code v3} (rule E17 as amended, research R10, squad
+     * D1): the action context applies the ownership rule and its items carry {@code appliesThrough}, so it answers more
+     * under an unchanged revision and closure fingerprint; every effective read moves once.
      */
-    private static final String DOMAIN = "charter-effective-read\0v2\n";
+    private static final String DOMAIN = "charter-effective-read\0v3\n";
 
     private static final String NO_QUERY = "";
 
@@ -59,7 +61,13 @@ public record EffectiveTag(String token) {
          */
         ARTIFACT,
         /** {@code getEffectiveAgentProfile}: the winner of one agent profile, with its governance. */
-        PROFILE
+        PROFILE,
+        /**
+         * {@code getEffectiveStepPrompt}: the prompt in force of one step with the fragments in force of its slots
+         * (research R10). The closure fingerprint digests every loaded file, prompt companions and fragments included,
+         * so an edit of a fragment's bytes moves the tag.
+         */
+        PROMPT
     }
 
     /**
@@ -111,6 +119,30 @@ public record EffectiveTag(String token) {
 
         private String normalized() {
             return "missionType=" + missionType + "\naction=" + action + "\ndepth=" + depth;
+        }
+    }
+
+    /**
+     * The query of {@code getEffectiveStepPrompt}, as it selects a representation: the step, and no depth.
+     *
+     * @param missionType the mission type of the path
+     * @param action the action of the path
+     */
+    public record PromptQuery(String missionType, String action) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param action the action
+         */
+        public PromptQuery {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(action, "action");
+        }
+
+        private String normalized() {
+            return "missionType=" + missionType + "\naction=" + action;
         }
     }
 
@@ -216,6 +248,18 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag context(Revision revision, ClosureSnapshot closure, ContextQuery query) {
         return of(Read.CONTEXT, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of one effective prompt (research R10).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the mission type and the action
+     * @return the tag
+     */
+    public static EffectiveTag prompt(Revision revision, ClosureSnapshot closure, PromptQuery query) {
+        return of(Read.PROMPT, revision, closure, query.normalized());
     }
 
     /**

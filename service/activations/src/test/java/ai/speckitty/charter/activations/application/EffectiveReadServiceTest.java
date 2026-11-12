@@ -19,6 +19,7 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Bucket;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
@@ -455,8 +456,9 @@ class EffectiveReadServiceTest {
     private static ActionContext walked() {
         return new ActionContext(
                 true,
-                List.of(new ActionContext.Reached(A, List.of(T1))),
-                List.of(new ActionContext.SuggestionCandidate(B, Optional.of("when"), Optional.of("why"))),
+                List.of(new ActionContext.Reached(A, List.of(T1), ActionContext.AppliesThrough.ACTION)),
+                List.of(new ActionContext.SuggestionCandidate(
+                        B, Optional.of("when"), Optional.of("why"), ActionContext.AppliesThrough.ACTION)),
                 List.of(STEP_ENHANCER));
     }
 
@@ -539,10 +541,10 @@ class EffectiveReadServiceTest {
         ContextRead read = context(IMPLEMENT);
 
         assertThat(read.context().artifacts())
-                .extracting(EffectiveArtifact::ref)
+                .extracting(item -> item.artifact().ref())
                 .as("A is in force and walked, B is not selected and suggested; T1 is in force but not reached")
                 .containsExactly(A, B);
-        assertThat(read.context().artifacts().get(1).suggestion())
+        assertThat(read.context().artifacts().get(1).artifact().suggestion())
                 .contains(new EffectiveSet.Suggestion(Optional.of("when"), Optional.of("why")));
         assertThat(read.context().enhancements())
                 .containsExactly(
@@ -686,5 +688,146 @@ class EffectiveReadServiceTest {
         assertThat(service.actionContext(ID, IMPLEMENT, EntityTags.quote(known)))
                 .as("a known name keeps its 304")
                 .isEqualTo(new Read.NotModified<ContextRead>(known));
+    }
+
+    // ---- the effective prompt (WP07; FR-003, FR-004; research R10) ----
+
+    private static final EffectiveTag.PromptQuery PLAN = new EffectiveTag.PromptQuery("software-dev", "plan");
+    private static final ArtifactRef SOFTWARE_DEV = new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev");
+    private static final EffectivePrompt PROMPT = new EffectivePrompt(
+            "# Plan\n",
+            Optional.of("main"),
+            List.of(new EffectivePrompt.Slot(
+                    "spdd:reasons-block",
+                    List.of(new EffectivePrompt.Fragment("main", "main-pack", PackLevel.ORG, "spdd-plan", "Fill.\n")))),
+            List.of());
+
+    private static CharterRefusal refusal(RefusalCode code) {
+        return new CharterRefusal(code, code.token());
+    }
+
+    @Test
+    void thePromptIsTheSessionsPromptOfTheStepUnderItsOwnTagWithTheReadsFingerprints() {
+        packs.active((ref, query) -> ref.equals(SOFTWARE_DEV));
+        packs.prompts(ask -> PROMPT);
+
+        Read.Found<EffectiveReadService.PromptRead> read = found(service.prompt(ID, PLAN, null));
+
+        assertThat(read.value().prompt()).isEqualTo(PROMPT);
+        assertThat(read.value().query()).isEqualTo(PLAN);
+        assertThat(read.value().sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(read.value().governanceFingerprint()).isEqualTo(CLOSURE);
+        assertThat(read.etag())
+                .isEqualTo(EffectiveTag.prompt(stored.revision(), closure(CLOSURE), PLAN)
+                        .token());
+        assertThat(packs.promptAsks()).singleElement().satisfies(ask -> {
+            assertThat(ask.missionType()).isEqualTo("software-dev");
+            assertThat(ask.action()).isEqualTo("plan");
+            assertThat(ask.query().selected()).containsExactlyInAnyOrder(A, T1);
+        });
+        assertThat(packs.nameChecks()).containsExactly("software-dev/plan");
+        assertThat(packs.activeAsks()).containsExactly(SOFTWARE_DEV);
+        assertThat(packs.calls()).as("one session for the whole read").isEqualTo(1);
+    }
+
+    @Test
+    void aMatchingIfNoneMatchIs304AndReadsNoPromptWhileAnotherTagReadsIt() {
+        packs.active((ref, query) -> true);
+        packs.prompts(ask -> PROMPT);
+        String tag =
+                EffectiveTag.prompt(stored.revision(), closure(CLOSURE), PLAN).token();
+
+        assertThat(service.prompt(ID, PLAN, EntityTags.quote(tag)))
+                .isEqualTo(new Read.NotModified<EffectiveReadService.PromptRead>(tag));
+        assertThat(service.prompt(ID, PLAN, "*")).isEqualTo(new Read.NotModified<EffectiveReadService.PromptRead>(tag));
+        assertThat(packs.promptAsks()).as("a 304 reads no prompt").isEmpty();
+        String contextTag = EffectiveTag.context(stored.revision(), closure(CLOSURE), IMPLEMENT)
+                .token();
+        assertThat(service.prompt(ID, PLAN, EntityTags.quote(contextTag)))
+                .as("the tag of another read is no tag of the prompt")
+                .isInstanceOf(Read.Found.class);
+        packs.answer(closure("sha256:changed"));
+        assertThat(service.prompt(ID, PLAN, EntityTags.quote(tag)))
+                .as("a change of a pack of the closure moves the tag")
+                .isInstanceOf(Read.Found.class);
+    }
+
+    @Test
+    void eachNotFoundIsJudgedBeforeTheInForceCheckAndBeforeThe304() {
+        packs.active((ref, query) -> true);
+
+        assertThatThrownBy(() -> service.prompt(new ActivationId("unknown"), PLAN, "*"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+        for (RefusalCode code : List.of(RefusalCode.MISSION_TYPE_NOT_FOUND, RefusalCode.ACTION_NOT_FOUND)) {
+            packs.contexts(ask -> {
+                throw refusal(code);
+            });
+
+            assertThatThrownBy(() -> service.prompt(ID, PLAN, "*"))
+                    .as("a wildcard If-None-Match matches any tag, so only the name check can refuse first")
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refused -> assertThat(refused.code()).isEqualTo(code));
+        }
+        assertThat(packs.activeAsks())
+                .as("a name refused asks nothing of the in-force resolution")
+                .isEmpty();
+        assertThat(packs.promptAsks()).isEmpty();
+    }
+
+    @Test
+    void aMissionTypeTheClosureHoldsAndTheActivationDoesNotPutInForceIs409BeforeTheSlotCheckAndThe304() {
+        packs.active((ref, query) -> false);
+        packs.resolves(query -> {
+            throw refusal(RefusalCode.PROMPT_SLOT_MISSING);
+        });
+
+        assertThatThrownBy(() -> service.prompt(ID, PLAN, "*"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_IN_FORCE);
+                    assertThat(refused.getMessage()).contains("software-dev").contains("a-1");
+                });
+        assertThat(packs.queries()).as("the slot check is not reached").isEmpty();
+        assertThat(packs.promptAsks()).isEmpty();
+    }
+
+    @Test
+    void theTwinInForceMeetsTheSlotChecksRefusalBeforeThe304() {
+        packs.active((ref, query) -> true);
+        packs.resolves(query -> {
+            throw refusal(RefusalCode.PROMPT_SLOT_MISSING);
+        });
+
+        assertThatThrownBy(() -> service.prompt(ID, PLAN, "*"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING));
+        assertThat(packs.promptAsks()).isEmpty();
+    }
+
+    @Test
+    void theContextSaysWhetherItsMissionTypeIsInForce() {
+        packs.contexts(ask -> walked());
+        for (State state : State.values()) {
+            packs.resolves(query -> {
+                Map<ArtifactRef, ArtifactState> states = new LinkedHashMap<>(answer().states());
+                states.put(SOFTWARE_DEV, state(SOFTWARE_DEV, state, Reason.SELECTED, Optional.empty()));
+                return new InForceAnswer(states, List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
+            });
+            Map<ArtifactRef, MergedSnapshot.Winner> winners = new LinkedHashMap<>(merged().winners());
+            winners.put(SOFTWARE_DEV, new MergedSnapshot.Winner("main", PackLevel.ORG, Policy.OPEN));
+            packs.merged(new MergedSnapshot(winners, Map.of(), merged().edges(), List.of()));
+
+            assertThat(context(IMPLEMENT).missionTypeInForce())
+                    .as(state.token())
+                    .isEqualTo(state == State.ACTIVE);
+        }
+        packs.merged(merged());
+        packs.resolves(query -> answer());
+        assertThat(context(IMPLEMENT).missionTypeInForce())
+                .as("a mission type the set does not list is not in force")
+                .isFalse();
     }
 }

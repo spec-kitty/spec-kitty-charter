@@ -78,26 +78,52 @@ public class RefusalHandler {
             "deletePackRelationship");
 
     /**
+     * The activation writes, which store a document only once its closure composes with it (C38, squad A3): the create,
+     * the replace, the select, the unselect, the deactivate, the re-activate and the preset application.
+     */
+    private static final List<String> ACTIVATION_WRITES = List.of(
+            "createActivation",
+            "replaceActivation",
+            "selectActivationArtifact",
+            "unselectActivationArtifact",
+            "deactivateActivationArtifact",
+            "reactivateActivationArtifact",
+            "applyActivationPreset");
+
+    /**
      * The refusal codes an operation answers with a status other than the code's own, by the operation's
      * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
      * contract's {@code x-refusal}, which the contract scenarios hold this table to. A refused registration, and each
      * write that is judged over the closures its pack joins, answers the eleven composition codes as 422 where a read
-     * is refused by packs that do not compose (500): the request is what leaves them unable to.
+     * is refused by packs that do not compose (500): the request is what leaves them unable to. Each of them, and each
+     * activation write, answers {@code prompt_slot_missing} as 422 (OD-4 (i), squad R4): the request is what would leave
+     * a step enhancement in force without its slot, where a composing read is refused 500.
      */
     private static final Map<String, Map<RefusalCode, HttpStatus>> STATUS_BY_OPERATION = statusByOperation();
 
     private static Map<String, Map<RefusalCode, HttpStatus>> statusByOperation() {
         Map<String, Map<RefusalCode, HttpStatus>> byOperation = new java.util.HashMap<>();
-        byOperation.put(REGISTRATION_STATUS, registrationStatusCodes());
-        IMPACT_CHECKED_WRITES.forEach(operation -> byOperation.put(operation, registrationStatusCodes()));
+        byOperation.put(REGISTRATION_STATUS, impactCheckedStatusCodes());
+        IMPACT_CHECKED_WRITES.forEach(operation -> byOperation.put(operation, impactCheckedStatusCodes()));
         // The relationship write is the one operation that carries prompt_fragment_invalid as the problem's own code:
         // an edge that would break a held step enhancement's edge rules is the request's fault (R-REL). It gets a copy
         // of the map of the others, so every other operation's map stays as it was.
         Map<RefusalCode, HttpStatus> relationshipWrite = new java.util.EnumMap<>(RefusalCode.class);
-        relationshipWrite.putAll(registrationStatusCodes());
+        relationshipWrite.putAll(impactCheckedStatusCodes());
         relationshipWrite.put(RefusalCode.PROMPT_FRAGMENT_INVALID, HttpStatus.UNPROCESSABLE_CONTENT);
         byOperation.put("putPackRelationship", Map.copyOf(relationshipWrite));
+        // An activation write keeps the composition codes' own status (500): only the slot check judges the document.
+        ACTIVATION_WRITES.forEach(operation ->
+                byOperation.put(operation, Map.of(RefusalCode.PROMPT_SLOT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT)));
         return Map.copyOf(byOperation);
+    }
+
+    /** A registration's and each impact-checked write's: the eleven composition codes and the slot check, all 422. */
+    private static Map<RefusalCode, HttpStatus> impactCheckedStatusCodes() {
+        Map<RefusalCode, HttpStatus> codes = new java.util.EnumMap<>(RefusalCode.class);
+        codes.putAll(registrationStatusCodes());
+        codes.put(RefusalCode.PROMPT_SLOT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT);
+        return Map.copyOf(codes);
     }
 
     /**
@@ -360,7 +386,8 @@ public class RefusalHandler {
                     ARTIFACT_LOCKED,
                     PACK_VERSION_CONFLICT,
                     ARTIFACT_REFERENCED,
-                    RELATIONSHIP_NOT_REGISTERED -> HttpStatus.CONFLICT;
+                    RELATIONSHIP_NOT_REGISTERED,
+                    MISSION_TYPE_NOT_IN_FORCE -> HttpStatus.CONFLICT;
             case PACK_SOURCE_UNAVAILABLE, PACK_STORAGE_FULL -> HttpStatus.SERVICE_UNAVAILABLE;
             case REGISTRATION_TIMED_OUT -> HttpStatus.GATEWAY_TIMEOUT;
             case PACK_LEVEL_MISMATCH,

@@ -63,6 +63,7 @@ Feature: The worktree guard answers in front of every operation
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
+      | getEffectiveStepPrompt          | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
 
   Scenario Outline: <operation> with an Origin header is a 403 even with the right token
     When I <method> "<path>" with the header "Origin": "https://evil.example"
@@ -119,3 +120,4 @@ Feature: The worktree guard answers in front of every operation
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
+      | getEffectiveStepPrompt          | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
