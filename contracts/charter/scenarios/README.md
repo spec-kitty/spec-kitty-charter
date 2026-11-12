@@ -356,6 +356,10 @@ from ready to held, is a breaking change of the contract.
 - `step-enhancements.feature`: a held step enhancement (ADR-0066, #428): its file and Markdown companions register with
   the pack, it is selectable directly and through a preset, two packs of one level that define one id are refused
   `pack_sibling_conflict`, and two enhancers of one step with different ids compose.
+- `step-enhancement-compose.feature`: the two compose checks of a step enhancement (ADR-0066 decision 8, #438): its
+  step held by a pack of the enhancing pack's `depends_on` closure (C37, `pack_reference_pack_missing` or
+  `pack_reference_artifact_missing`), and the lock a step inherits from its mission type (`422 override_not_permitted`
+  at registration and on the impact-checked writes, `500 pack_unreadable` on the reads), each beside its passing twin.
 - `prompt-fragment-refusals.feature`: a malformed step enhancement or prompt fragment, refused `prompt_fragment_invalid`
   at its file (a violation of a `422 validation_failed` registration, `500 pack_unreadable` on a read, and the top-level
   code of `putPackRelationship`'s `422`), each refusal beside its passing twin.

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -357,6 +358,7 @@ public final class OfferingReadService {
             refuseTargetOnlyAnUnreadablePackCouldDeclare(reads, closure);
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(members, roots);
             checkReferences(composed, facts);
+            checkStepEnhancementTargets(composed, facts);
             PackCompositionResolver.refusePresetContests(
                     composed,
                     pack ->
@@ -499,6 +501,27 @@ public final class OfferingReadService {
                             .map(written -> PackCompositionResolver.resolveReference(
                                     composed, pack.configured().id(), PackQualifiedReference.parse(written)))
                             .toList());
+        }
+    }
+
+    /**
+     * C37 (ADR-0066 decision 8, FR-002): the step each member's step enhancements name is held by a pack of the
+     * member's {@code depends_on} closure, judged after the references so a reference refusal keeps its precedence. A
+     * registration and an impact-checked write compose through here over the staged packs, so they refuse with the same
+     * code, answered {@code 422} there.
+     */
+    private static void checkStepEnhancementTargets(
+            List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts) {
+        for (PackUnderResolution pack : composed) {
+            EnhancementCompose.targetHeld(
+                            composed,
+                            pack,
+                            Objects.requireNonNull(
+                                            facts.get(pack.configured().id().value()), "read above")
+                                    .edges())
+                    .ifPresent(violation -> {
+                        throw violation.toCharterRefusal();
+                    });
         }
     }
 
