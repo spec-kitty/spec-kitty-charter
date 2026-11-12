@@ -199,6 +199,9 @@
       "last_event_id": "01M78KPE4WWWSTP7ACGR3JBCAJ",
       "last_transition_at": "2026-11-12T19:28:01.692505+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "EffectivePromptQuery (pure) + ClosureView.effectivePrompt: stored prompt at the merged winner's place of action:M/s (R8) read via WinnerSource.stepPrompt/PackCompanionFiles under the closure fingerprint check; slots from that pack's PromptFacts in declaration order; fragments of in-force winning copies with sole target the step, ordered level/packName/id by code point (d5); prompt_slot_not_empty per text-holding slot (OD-7/8); NFR-002 visit counts at 1k/2k (one step and spread) <= 2.5. Out-of-map: ClosureView, ClosureQueries (5-arg @Autowired ctor with PackCompanionFiles), ClosureViewTest (example-pack SC-001 pin). Gates: :packs:test (4914, 0 fail), spotlessCheck, checkstyleMain/Test, HexagonalArchitectureTest green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2238,
