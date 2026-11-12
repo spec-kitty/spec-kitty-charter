@@ -11,13 +11,15 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
  * OWNER_ONLY_MODES_ARE_BUILT_IN_ONE_PLACE (#510): no class of the packs module but {@link OwnerOnly} builds a POSIX
- * permission attribute. Five call sites that each built their own failed on Windows, where the file system has no
+ * permission attribute or sets POSIX permissions on a path. Five call sites that each built their own failed on Windows, where the file system has no
  * POSIX permissions; the helper falls back to an ACL, and a sixth call site that skips it would fail the same way.
  *
  * <p>The known-bad control follows {@code NetworkCodeBoundaryTest}: a test-only class in a {@code badfixture} package,
@@ -31,6 +33,8 @@ class OwnerOnlyBoundaryTest {
             .that(not(equivalentTo(OwnerOnly.class)))
             .should()
             .callMethod(PosixFilePermissions.class, "asFileAttribute", Set.class)
+            .orShould()
+            .callMethod(Files.class, "setPosixFilePermissions", Path.class, Set.class)
             .because("a POSIX mode fails on a file system without POSIX permissions; OwnerOnly falls back to an ACL"
                     + " (#510)");
 
