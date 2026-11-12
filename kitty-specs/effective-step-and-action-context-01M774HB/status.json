@@ -79,6 +79,9 @@
       "last_event_id": "01M77DJJ4YAWW4TPFCPXRCYNNS",
       "last_transition_at": "2026-11-12T08:21:48.830308+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "C37 (target held, EnhancementCompose.targetHeld from OfferingReadService.composed) and the inherited lock (EnhancementCompose.lockedTargets from ImpactRelations at registration, 422 override_not_permitted, and MergeInputs.merged at read, 500 pack_unreadable). 13 scenarios in step-enhancement-compose.feature, unit twins; packs, activations, full contract suite (738) and HexagonalArchitectureTest green. Out-of-map: ClosureView, ClosureViewTest, CharterRefusalCode.yaml, a second fragment, scenarios README."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 30849,
