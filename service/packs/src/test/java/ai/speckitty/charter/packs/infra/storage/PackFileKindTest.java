@@ -238,6 +238,10 @@ class PackFileKindTest {
         assertThat(KINDS.classify("x/pack.md")).isInstanceOf(PackFileKind.Retired.class);
         assertThat(KINDS.classify("x/PROVENANCE.md")).isInstanceOf(PackFileKind.Retired.class);
         assertThat(KINDS.classify("x/README.md")).isInstanceOf(PackFileKind.Mapped.class);
+        // A file a rule takes in another letter case is unmodelled, not fallback: it is refused, never stripped.
+        assertThat(KINDS.classify("x/toolguides/x.guide.MD")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        assertThat(KINDS.classify("x/missions/m/enhancements/a.prompt-fragment.MD"))
+                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
         // Case variants are refused by name before the fallback is consulted (FR-022).
         assertThat(KINDS.classify("x/Readme.md")).isInstanceOf(PackFileKind.Retired.class);
         assertThat(KINDS.classify("x/Pack.md")).isInstanceOf(PackFileKind.Retired.class);
