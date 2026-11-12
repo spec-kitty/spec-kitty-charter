@@ -103,8 +103,10 @@ private fun Node.firstJob(): Node = sub("jobs").values.first() as Node
 @Suppress("UNCHECKED_CAST")
 private fun Node.steps(): MutableList<Node> = this["steps"] as MutableList<Node>
 
-/** The nightly's step named [name], in its first job. */
-private fun Node.step(name: String): Node = firstJob().steps().first { it["name"] == name }
+/** The nightly's step named [name], in whichever job holds it: the PIT shards and the summary are separate jobs. */
+@Suppress("UNCHECKED_CAST")
+private fun Node.step(name: String): Node =
+    sub("jobs").values.flatMap { (it as Node).steps() }.first { it["name"] == name }
 
 /** The workflow parsed, changed and written back, so a planted variant does not depend on the file's layout. */
 @Suppress("UNCHECKED_CAST")

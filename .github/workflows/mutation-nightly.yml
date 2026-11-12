@@ -12,7 +12,8 @@ name: Mutation testing (nightly)
 #   come from the build (`mutationModules`, #388), not from a list kept beside it.
 # - The rules of this paragraph are pinned by build-logic's MutationWorkflowGuardTest, and the root build fails any
 #   invocation in which verifyAll or a check depends on pitest (MutationIsolation, ADR-0060, #387).
-# - Every module's PIT report and floors.json go up as the `mutation-report` artifact, on a red run too, kept 14 days.
+# - PIT runs in two shards (:packs, and the other modules), each on its own runner; each shard's PIT reports,
+#   floors.json files and log go up as a `mutation-report-<shard>` artifact, on a red run too, kept 14 days.
 # - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
 #   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
 #   with force_issue takes the same path whatever the result, marked as a forced test run, so the open-or-comment path
@@ -40,16 +41,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # PIT runs in two shards, each on its own 4-core runner (#461): :packs alone, and every other module. A full
+  # :packs:pitest measured 1h06m34s alone on an idle 4-core machine (2026-11-12, 7129 mutants, 79 timed out); the six
+  # other modules add ~20 min. Together they no longer fit one runner's budget, and run side by side they starve each
+  # other's minions into timeouts. Each shard's mutation step has 90 minutes, >25 % headroom over :packs as measured
+  # (NFR-002), and the job 100, so the copy and the upload still run when PIT runs out of time. A timeout raises the
+  # mutation-nightly issue. The summary job merges both shards' reports into one table.
   pitest:
+    name: pitest (${{ matrix.shard }})
     runs-on: ubuntu-24.04
-    # A full :packs:pitest measured 45m54s on an idle 4-core machine, ~2 min more with infra.fetch, plus ~3 min for
-    # kernel, missions and profiles: ~51 min of mutation testing. That figure predates missions-edge and has not been
-    # re-measured with it; 90 gives >25 % headroom over the figure as measured (NFR-002).
-    # The mutation step has 80 of the 90 minutes, so the summary and the upload still run when PIT runs out of time.
-    # A timeout raises the mutation-nightly issue.
-    timeout-minutes: 90
-    outputs:
-      summary: ${{ steps.summary.outputs.summary }}
+    timeout-minutes: 100
+    strategy:
+      # Both shards always report: a red :packs does not cancel the others.
+      fail-fast: false
+      matrix:
+        include:
+          - shard: packs
+            tasks: ":packs:pitest"
+          # -x: :packs:pitest is skipped here, and with it its checkMutationFloors finalizer.
+          - shard: others
+            tasks: "pitest -x :packs:pitest"
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -96,25 +107,74 @@ jobs:
       # applied leaves its module without a report, and the job log that named it can be gone before anyone reads it
       # (#461). The summary quotes PIT's lines about such tests.
       - name: Mutation testing
-        timeout-minutes: 80
+        timeout-minutes: 90
         run: |
           set -o pipefail
           mkdir -p build/reports/mutation-floors
-          ./gradlew mutationModules pitest --continue -PrequireSymlinks=true 2>&1 \
+          ./gradlew mutationModules ${{ matrix.tasks }} --continue -PrequireSymlinks=true 2>&1 \
             | tee build/reports/mutation-floors/pitest.log
+
+      # Each shard's log under its own name, so the two do not overwrite each other when the summary job merges them.
+      - name: Name the log after the shard
+        if: always()
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          if [ -f build/reports/mutation-floors/pitest.log ]; then
+            cp build/reports/mutation-floors/pitest.log "build/reports/mutation-floors/pitest-$SHARD.log"
+          fi
+
+      # Each module's HTML and XML report and its floors.json, with the module list and the shard's log. A module that
+      # did not run simply adds nothing: the summary shows it as a "no report" row.
+      - name: Upload the mutation reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report-${{ matrix.shard }}
+          path: |
+            service/*/build/reports/pitest
+            service/*/build/reports/mutation-floors
+            build/reports/mutation-floors/modules.txt
+            build/reports/mutation-floors/pitest-${{ matrix.shard }}.log
+          # Stays an error though the log is present once PIT ran: if an earlier step failed, nothing is there to keep.
+          if-no-files-found: error
+          retention-days: 14
+
+  # Both shards' reports in one table, whatever their results.
+  summary:
+    needs: pitest
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      summary: ${{ steps.summary.outputs.summary }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
       # PIT, whatever its result, so they can never keep PIT from running.
       - name: Test the summary script
-        if: always()
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
 
-      # Report-only: it exits 0 whatever the verdicts; the step above is what makes the run red. The same table is
-      # passed to the alert job as the `summary` output.
+      # Both shards' artifacts merged at their repository paths; a shard that uploaded nothing leaves its modules as
+      # "no report" rows.
+      - name: Download the mutation reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: mutation-report-*
+          merge-multiple: true
+
+      # Report-only: it exits 0 whatever the verdicts; the shards' mutation steps are what make the run red. The same
+      # table is passed to the alert job as the `summary` output.
       - name: Summarise the mutation floors
         id: summary
         if: always()
         run: |
+          mkdir -p build/reports/mutation-floors
+          cat build/reports/mutation-floors/pitest-*.log > build/reports/mutation-floors/pitest.log 2>/dev/null || true
           python3 scripts/ci/mutation_summary.py --modules build/reports/mutation-floors/modules.txt \
             --log build/reports/mutation-floors/pitest.log > "$RUNNER_TEMP/mutation-summary.md"
           delimiter="mutation_summary_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
@@ -124,27 +184,12 @@ jobs:
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
 
-      # Each module's HTML and XML report and its floors.json, with the module list and pitest.log. A module that did
-      # not run simply adds nothing: the summary shows it as a "no report" row.
-      - name: Upload the mutation reports
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: mutation-report
-          path: |
-            service/*/build/reports/pitest
-            service/*/build/reports/mutation-floors
-            build/reports/mutation-floors
-          # Stays an error though pitest.log is present once PIT ran: if an earlier step failed, nothing is there to keep.
-          if-no-files-found: error
-          retention-days: 14
-
   # One open issue labelled `mutation-nightly` at a time: opened on the first red night, commented on after that.
   # Closing it is the maintainers' call once the nightly is green again. A scheduled run that is red, timed out or
   # cancelled alerts (cancel-in-progress is false, so a cancel is not a superseded run); a green one never runs this job;
   # a workflow_dispatch with force_issue runs it whatever the result, as a forced test run.
   alert:
-    needs: pitest
+    needs: [pitest, summary]
     if: >-
       always() && (
         (needs.pitest.result != 'success' && github.event_name == 'schedule')
@@ -162,7 +207,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT: ${{ github.event_name }}
           RESULT: ${{ needs.pitest.result }}
-          SUMMARY: ${{ needs.pitest.outputs.summary }}
+          SUMMARY: ${{ needs.summary.outputs.summary }}
         run: |
           set -euo pipefail
           label=mutation-nightly
@@ -183,7 +228,7 @@ jobs:
             if [ -n "$SUMMARY" ]; then
               printf '%s\n' "$SUMMARY"
             else
-              echo "The run wrote no summary; read the \`pitest\` job log and the \`mutation-report\` artifact."
+              echo "The run wrote no summary; read the \`pitest\` job logs and the \`mutation-report-<shard>\` artifacts."
             fi
           } > "$body"
 

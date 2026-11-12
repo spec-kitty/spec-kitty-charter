@@ -180,15 +180,17 @@ fail the check too.
 `-Dpit.classes` and `-Dpit.tests`, for one work package's classes; its header has the full command. A narrowed run is
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
-**The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
-90-minute timeout, 80 of them for the mutation step. It syncs the packs at the pin, then runs
-`./gradlew mutationModules pitest --continue`. `mutationModules` writes the list of modules that apply
-`charter.mutation-conventions` (#388). Whatever the result, it runs the summary script's unit tests,
+**The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only. PIT runs
+in two shards, each on its own runner with a 100-minute timeout, 90 of them for the mutation step: `:packs` alone
+(1h06m measured alone on a 4-core machine) and every other module (#461). Each shard syncs the packs at the pin, then
+runs `./gradlew mutationModules <its tasks> --continue`. `mutationModules` writes the list of modules that apply
+`charter.mutation-conventions` (#388). A summary job then runs, whatever the shards' results: it runs the summary
+script's unit tests, merges both shards' reports, and
 `scripts/ci/mutation_summary.py --modules` turns every listed module's `floors.json` into a job-summary table (score,
 strength, uncovered and timed-out mutants, floor, margin to the floor, verdict and the classes with the most surviving
 or uncovered mutants), shows "no report" for a listed module that wrote none, and quotes PIT's lines about any test
-that fails with no mutation applied (#461). The module list, the step's output (`pitest.log`) and every module's report go
-up as the `mutation-report` artifact, kept for 14 days. When a scheduled run does not
+that fails with no mutation applied (#461). The module list, each shard's output (`pitest-<shard>.log`) and every
+module's report go up as the `mutation-report-<shard>` artifacts, kept for 14 days. When a scheduled run does not
 succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
 `workflow_dispatch` with `force_issue` tests that path.
 
