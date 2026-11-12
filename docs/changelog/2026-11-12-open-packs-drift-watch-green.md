@@ -10,6 +10,7 @@ related:
   - adr/0070-charter-tests-own-example-packs-not-open-packs-content
   - adr/0073-real-packs-register-as-they-are
   - plans/next-slices-2026-11-12
+  - plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this if you touch the whole-pack round trip, the graph writers or the open-packs pin.
@@ -30,10 +31,11 @@ drift watch ([#509](https://github.com/spec-kitty/spec-kitty-charter/issues/509)
   `spdd` fragment carries one, but `writeFragment` refused it. It now writes it, and the edge key order the reader
   reports a finding by follows the schema. A fragment node still refuses provenance and tags, which the schema's node
   does not hold.
-- **The gate covers the org example pack.** `theOrgPackRoundTripsWholeWithItsFragment` round-trips `org-base`, which
-  carries the fragment the built-in pack has no file of. The fragment's one `impacts` edge is still red, because a
-  domain `Relationship` carries no strength:
-  [#477](https://github.com/spec-kitty/spec-kitty-charter/issues/477) owns that, and the test expects exactly that red.
-  No open-packs pack has an `impacts` edge.
+- **The gate covers the org example pack**, which carries the fragment `built-in` has none of. Its one `impacts` edge
+  stays red, since a `Relationship` carries no strength
+  ([#477](https://github.com/spec-kitty/spec-kitty-charter/issues/477)); no open-packs pack has one.
 - **The pin.** `openPacksRef` moves from `a2a9379` to open-packs `1692a3b`, the `main` commit that carries #248, and
   `packs/open-packs.lock.yaml` is re-synced, so `packs/internal` and `packs/qa` arrive without `org-charter.yaml`.
+- **The usability run follows open-packs' split `built-in`.** It configures the `depends_on` closure it needs and
+  reads the profile and mission type from the packs that hold them: 146 of 146 hops, and `internal` and `qa` register
+  as they are ([run record](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/)).
