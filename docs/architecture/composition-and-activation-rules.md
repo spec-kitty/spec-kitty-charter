@@ -1278,10 +1278,11 @@ and the scenario `Research R10 - the ETag changes with a fragment's bytes and no
 *Source:* spec FR-021. **Built (PR B).** `getActivation` answers the same `500`s. **Built (PR C)** for the graph and the context
 (the context adds the `404`s of E16).
 *Amended 2026-11-12 (slice C, OD-5, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`):* the effective step prompt (F8)
-answers, in this order and every one before a `304`: `404 activation_not_found`; `404 mission_type_not_found` and
-`404 action_not_found`, judged on the merged closure as E16 judges them; `409 mission_type_not_in_force` for a mission
-type the closure holds and the activation does not put in force; then the `500`s of the closure, the composition codes,
-`pack_unreadable` and `prompt_slot_missing` in F6's order. The action context answers `200` with an empty context for the
+answers, in this order and every one before a `304`: `404 activation_not_found`; then the closure's composition codes
+and the merge's `pack_unreadable` (the names are judged on the merged closure, so a closure that cannot compose or merge
+answers its `500` first); then `404 mission_type_not_found` and `404 action_not_found` as E16 judges them; then
+`409 mission_type_not_in_force` for a mission type the closure holds and the activation does not put in force; then
+`500 prompt_slot_missing` (F6). The action context answers `200` with an empty context for the
 same mission type (E16); the two reads differ on purpose, and ADR-0066's annotation of decision 9 records why. Every
 composing effective read also answers C37's codes, the inherited lock's `pack_unreadable` and C38's
 `500 prompt_slot_missing`. **Built (slice C).** *Pinned by:* `EffectiveReadServiceTest.thePromptIsTheSessionsPromptOfTheStepUnderItsOwnTagWithTheReadsFingerprints`,
@@ -1654,8 +1655,8 @@ FR-007; research R5, R8, R10. **Built (slice C).** *Pinned by:* `EffectivePrompt
 `theTwinTheStepPromptOfAClosureThatDidNotMoveIsServedAsStored`), `EffectivePromptTest`, `ClosureViewSessionArtifactTest`
 (`theEffectivePromptIsMappedAsTextWithItsPacksSlotsFragmentsAndDiagnostic`, `aDiagnosticThePromptQueryNeverListsIsAFault`),
 `EffectiveReadMapperTest` (`thePromptIsMappedWithItsSlotsInOrderItsDiagnosticsAndItsThreeLinks`,
-`aStepWithNoPromptLeavesThePromptPackOutAndNamesNoStepWhileMissionTypesAreNotServed`,
-`theEffectivePromptOfSoftwareDevPlanServesBothExampleFragmentsBuiltInFirst`,
+`aStepWithNoPromptLeavesThePromptPackOutAndNamesNoStepWhileMissionTypesAreNotServed`), `ClosureViewTest`
+(`theEffectivePromptOfSoftwareDevPlanServesBothExampleFragmentsBuiltInFirst`,
 `theTwinWithOnlyTheMissionTypeInForceTheSlotIsListedWithNoFragment`), `EffectivePromptDeterminismTest` and the scenarios
 of `effective-step-prompt.feature` (`SC-001 - on charter's example packs, plan's slot holds plan-risk-notes of built-in,
 then spdd-plan of org-base`; `SC-001, squad R1 - the fragments of a slot are ordered by level, then pack name, then
