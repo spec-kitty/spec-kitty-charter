@@ -4,8 +4,8 @@ description: >-
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
-  kind_not_found, activation_not_found, artifact_not_found, preset_not_found, mission_step_contract_not_found and
-  skeleton_not_found are 404; validation_failed and
+  kind_not_found, activation_not_found, artifact_not_found, preset_not_found, mission_step_contract_not_found,
+  skeleton_not_found and pack_document_not_found are 404; validation_failed and
   activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
   artifact_locked are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
@@ -205,6 +205,7 @@ enum:
   - governance_policy_violation
   - stale_input
   - pack_not_found
+  - pack_document_not_found
   - tactic_not_found
   - directive_not_found
   - styleguide_not_found
@@ -297,6 +298,11 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
+  pack_document_not_found:
+    status: 404
+    retryable: false
+    raised: true
+    description: the pack holds no document, no README.md (getPackDocument); an unknown pack is pack_not_found
   tactic_not_found:
     status: 404
     retryable: false

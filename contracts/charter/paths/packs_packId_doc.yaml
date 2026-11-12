@@ -1,0 +1,114 @@
+parameters:
+- $ref: ../parameters/PackId.yaml
+get:
+  operationId: getPackDocument
+  summary: Read the document of a Charter Pack, its README.md.
+  description: >-
+    The pack's document in the form the client accepts (#451). Accept: text/markdown answers the held README.md, byte
+    for byte, frontmatter included. Accept: application/json answers a PackDocumentRead: the document's title (its H1,
+    left out when it has none), its body (the Markdown below the H1 in canonical form, without the frontmatter) and
+    _links holding self and pack. The form is chosen by Spring's producible-type matching, which ranks by quality and
+    specificity, does not treat q=0 as a refusal, and settles a tie by the first type listed in Accept: text/* answers
+    Markdown, application/* answers JSON, and a request with no Accept, or */*, answers JSON. An Accept that matches neither
+    form is 406, a Problem without a code, which carries the shared headers and Vary: Accept. Both forms of one pack
+    revision share one strong ETag, the quoted pack revision as getPack answers it, and every 200, 304 and 406 carries
+    Vary: Accept. If-None-Match is compared weakly (RFC 9110, section 13.1.2): * or a listed tag that matches the
+    ETag answers 304 without a body, and a value that is not an entity-tag list matches nothing. A pack that holds no
+    README.md is 404 pack_document_not_found. The identifier is judged as getPack judges it: one that matches no
+    configured pack, by name or by declared pack_id, and a built-in pack, are 404 pack_not_found, and a configured
+    pack whose directory is missing or whose pack.yaml cannot be read is 500 pack_unreadable. A README.md the
+    store refuses (not UTF-8, a carriage return, a byte order mark, an ambiguous heading, a schema violation) is 500
+    pack_unreadable. The answer is verified against the source fingerprint and carries it on the 200. The pack
+    resource links doc exactly when the pack holds a README.md.
+  tags:
+  - Registration
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The pack document, in the form the Accept header chose.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision, quoted, the same for both forms.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+        Vary:
+          description: Accept, because the two forms share one URI and one ETag.
+          required: true
+          schema:
+            type: string
+            pattern: ^Accept$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackDocumentRead.yaml
+          examples:
+            document:
+              $ref: ../examples/PackDocumentRead.yaml
+        text/markdown:
+          schema:
+            type: string
+            description: The held README.md, byte for byte, frontmatter included.
+          examples:
+            document:
+              $ref: ../examples/PackDocumentRead.markdown.yaml
+    '304':
+      description: >-
+        The If-None-Match was * or matched the pack revision: the client already holds this answer, in either form.
+        There is no body. The answer carries the ETag again, Vary: Accept and the Charter headers.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The entity tag of the answer the client holds, in double quotes, as the 200 would carry it.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+        Vary:
+          description: Accept, as the 200 carries it.
+          required: true
+          schema:
+            type: string
+            pattern: ^Accept$
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackDocumentNotFound.yaml
+    '406':
+      description: >-
+        The Accept header names neither text/markdown nor application/json (nor a range that covers one): 406, a
+        Problem with no code. It carries the shared headers and Vary: Accept.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Vary:
+          description: Accept.
+          required: true
+          schema:
+            type: string
+            pattern: ^Accept$
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../_shared/schemas/Problem.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -10,6 +10,7 @@ files:
   - ArtifactPolicyRefused.yaml
   - NotModified.yaml
   - PackNotFound.yaml
+  - PackDocumentNotFound.yaml
   - PreconditionFailed.yaml
   - PreconditionRequired.yaml
   - UnknownActivation.yaml
