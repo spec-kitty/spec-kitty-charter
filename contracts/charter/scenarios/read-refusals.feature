@@ -40,6 +40,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
     Examples:
       | operation                   | refused                                                                                                   | judged                                                         | status |
       | getPack                     | /packs/Main                                                                                               | /packs/main                                                    | 200    |
+      | getPackDocument             | /packs/Main/doc                                                                                           | /packs/main/doc                                                | 404    |
       | listArtifactReferences      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/directive/D/references | /packs/main/artifacts/directive/D/references                   | 200    |
       | getPackMissionStep          | /packs/main/artifacts/mission_type/Main/steps/specify                                                     | /packs/main/artifacts/mission_type/main/steps/specify          | 404    |
       | getPackMissionSkeleton      | /packs/main/artifacts/mission_type/Main/skeletons/spec.md                                                 | /packs/main/artifacts/mission_type/main/skeletons/spec.md      | 404    |

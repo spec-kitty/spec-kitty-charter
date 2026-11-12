@@ -40,6 +40,7 @@ operations:
   getOffering: {switch: ready}
   getOpenApiDocument: {switch: ready}
   getPack: {switch: ready}
+  getPackDocument: {switch: ready}
   getPackAgentProfile: {switch: ready}
   getPackArtifact: {switch: ready}
   getPackMissionSkeleton: {switch: ready}
