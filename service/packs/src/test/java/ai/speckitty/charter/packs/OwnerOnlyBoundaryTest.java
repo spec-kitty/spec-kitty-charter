@@ -55,6 +55,7 @@ class OwnerOnlyBoundaryTest {
         assertThatThrownBy(() -> OWNER_ONLY_MODES_ARE_BUILT_IN_ONE_PLACE.check(fixtures))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("ArchiveBuildsPosixMode")
-                .hasMessageContaining("PosixFilePermissions.asFileAttribute");
+                .hasMessageContaining("PosixFilePermissions.asFileAttribute")
+                .hasMessageContaining("Files.setPosixFilePermissions");
     }
 }
