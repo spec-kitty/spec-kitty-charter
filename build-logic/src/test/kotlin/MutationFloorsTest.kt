@@ -39,6 +39,11 @@ class MutationFloorsTest {
             "ai.speckitty.charter.packs.application.config.*",
             "ai.speckitty.charter.packs.infra.fetch.config.*",
         )
+        // A package PIT mutates that no floor group holds would be dropped by every shard: refused, never silent.
+        assertThat(MutationFloors.unheldTargets(shard.targetClasses, packs)).isEmpty()
+        val mutated = shard.targetClasses + "ai.speckitty.charter.packs.infra.archive.*"
+        assertThatThrownBy { MutationFloors.requireTargetsHeld(":packs", mutated, packs) }
+            .hasMessageContaining(":packs: PIT mutates ai.speckitty.charter.packs.infra.archive.*, which no floor group holds")
     }
 
     @Test

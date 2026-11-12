@@ -243,6 +243,32 @@ object MutationFloors {
         return Shard(selected.joinToString("_") { it.name.replace(Regex("[^A-Za-z0-9.-]"), "-") }, selected)
     }
 
+    /**
+     * The module's [targetClasses] patterns (PIT's `targetClasses`) that no floor group holds: a package PIT mutates
+     * but no group scores, which a shard would silently drop (#461). A pattern is held when a group's package is it,
+     * inside it or above it.
+     */
+    fun unheldTargets(targetClasses: Set<String>, groups: List<Group>): List<String> = targetClasses.sorted().filter { target ->
+        val prefix = target.removeSuffix("*").removeSuffix(".")
+        groups.none { group ->
+            group.packages.any { pkg ->
+                val held = pkg.removeSuffix(".*").removeSuffix(".")
+                held == prefix || held.startsWith("$prefix.") || prefix.startsWith("$held.")
+            }
+        }
+    }
+
+    /** Fails naming every [targetClasses] pattern of the module that no floor group holds. */
+    fun requireTargetsHeld(projectPath: String, targetClasses: Set<String>, groups: List<Group>) {
+        val unheld = unheldTargets(targetClasses, groups)
+        if (unheld.isNotEmpty()) {
+            throw GradleException(
+                "$projectPath: PIT mutates ${unheld.joinToString()}, which no floor group holds" +
+                    " (${groups.joinToString { it.name }}): add it to a group, or leave it out of the mutated packages",
+            )
+        }
+    }
+
     /** Scores [mutants] per group, in the order of [groups]. */
     fun score(mutants: List<Mutant>, groups: List<Group>): List<GroupResult> = groups.map { group ->
         val mine = mutants.filter { group.contains(it.mutatedClass) }
@@ -395,6 +421,10 @@ abstract class CheckMutationFloors : DefaultTask() {
     @get:Input
     abstract val groups: ListProperty<MutationFloors.Group>
 
+    /** The module's own PIT `targetClasses`, before a shard narrows them: each must be held by a floor group. */
+    @get:Input
+    abstract val targetClasses: SetProperty<String>
+
     @get:OutputFile
     abstract val summary: RegularFileProperty
 
@@ -403,6 +433,7 @@ abstract class CheckMutationFloors : DefaultTask() {
         // A summary from an earlier run must never outlive a check that cannot write a new one.
         val summaryFile = summary.get().asFile
         summaryFile.delete()
+        MutationFloors.requireTargetsHeld(projectPath.get(), targetClasses.get(), groups.get())
         val reportFile = report.get().asFile
         val outcome = MutationFloors.evaluate(
             projectPath.get(),
