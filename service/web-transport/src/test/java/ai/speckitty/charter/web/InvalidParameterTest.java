@@ -178,7 +178,13 @@ class InvalidParameterTest {
                         .orElseThrow()
                         .detail())
                 .isEqualTo("The query parameter pageCursor is \"x\", which this parameter does not accept.");
+    }
+
+    @Test
+    void theAcceptedValuesAreListedWithOrBeforeTheLast() {
         assertThat(InvalidParameter.oneOf(List.of("active"))).isEqualTo("which is not active");
+        assertThat(InvalidParameter.oneOf(List.of("active", "inactive", "excluded")))
+                .isEqualTo("which is not one of active, inactive or excluded");
     }
 
     @Test
