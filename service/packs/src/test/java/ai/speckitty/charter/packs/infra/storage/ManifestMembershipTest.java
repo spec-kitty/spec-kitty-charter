@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -198,6 +199,28 @@ class ManifestMembershipTest {
                             .extracting(RefusalViolation::pointer, RefusalViolation::code)
                             .containsExactly(tuple(PackFileSet.MANIFEST, "unreadable"));
                 });
+    }
+
+    @Test
+    @DisplayName("the stamp refuses a pack-manifest.yaml that is a link, and leaves the link's target unchanged")
+    void theStampRefusesAManifestThatIsALink(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(PROJECT, host.resolve("pack"));
+        deleteManifest(pack);
+        Path outside = host.resolve("outside.yaml");
+        byte[] untouched = "outside: the pack\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(outside, untouched);
+        try {
+            Files.createSymbolicLink(pack.resolve(PackFileSet.MANIFEST), outside);
+        } catch (UnsupportedOperationException | IOException e) {
+            Assumptions.abort("symbolic links are not supported here: " + e);
+        }
+
+        assertThatThrownBy(() -> ManifestMembership.stamp(pack, store, strategy))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).contains("pack-manifest.yaml is not a regular file");
+                });
+        assertThat(Files.readAllBytes(outside)).isEqualTo(untouched);
     }
 
     @Test

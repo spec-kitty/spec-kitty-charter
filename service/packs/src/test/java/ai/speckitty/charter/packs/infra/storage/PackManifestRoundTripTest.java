@@ -164,10 +164,13 @@ class PackManifestRoundTripTest {
                 .extracting(t -> t.id().value())
                 .containsExactly("ripgrep");
         assertThat(Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST))).isNotEqualTo(before);
-        PackManifestDso restamped = store.load(pack).manifest().orElseThrow();
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        PackManifestDso restamped = loaded.manifest().orElseThrow();
         assertThat(restamped.constituents())
                 .extracting(PackManifestDso.Constituent::id)
                 .contains("ripgrep");
+        assertThat(ManifestMembership.mismatch(restamped, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+                .isEmpty();
         assertThat(PackManifests.stale(restamped, path -> bytesOf(pack.resolve(path))))
                 .isEmpty();
     }
