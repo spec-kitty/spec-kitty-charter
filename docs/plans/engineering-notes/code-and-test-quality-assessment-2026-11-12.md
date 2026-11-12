@@ -357,15 +357,28 @@ catch. `PackPolicy.handles` (`:428`), `RegistrationJobs.retained` (`:801`) and
 
 ## Questions for the operator
 
-1. **The unversioned pack descriptor** (`PackPolicy.java:331`, ADR-0066). Should `schema_version`
-   become required and the warning-only branch go, with open-packs following? Or does ADR-0066 get an
-   explicit exception from the 2026-11-10 ruling?
-2. **The activation store's version 1 reader** (ADR-0020, amendment 2026-11-07, item 6 (Storage)). Is it a sanctioned migration
-   of the service's own store, or does it go before the first release?
+1. **The unversioned pack descriptor** (`PackPolicy.java:331,347`, `PackDescriptor.java:23`,
+   ADR-0066). The charter default is to require `schema_version` and remove the warning-only branch.
+   Or record an exception.
+   - Requiring it fails every open-packs descriptor that lacks it: 31 of the 51 `pack.yaml` files in
+     `spec-kitty-open-packs` at `ab710df`, and open-packs follows the model.
+   - An exception needs a charter amendment.
+2. **The activation store's version 1 reader** (`ActivationFileCodec.java:32-38,102-126`; ADR-0020,
+   amendment 2026-11-07, item 6 (Storage)). The charter default is to remove the version 1 reader.
+   Or record an exception.
+   - Removing it means a version 1 store must be rewritten once or recreated. The store is
+     unreleased, so no field file is known to need the reader.
 3. **"Doctrine" in type names** (`DoctrineGraph`, `DrgNode`, `DrgEdge`). Should they be renamed to the
    CRG vocabulary as one bulk-edit mission, or kept with a recorded exception in `domain.md`?
+   - A rename touches about 65 references in main code, plus the tests.
+   - The names are not wire-visible: no file in `contracts/` names `DoctrineGraph`, `DrgNode` or
+     `DrgEdge`. Only two schema titles carry the retired acronym (`pack-descriptor.schema.json:149`,
+     `charter.schema.json:673`).
 4. **The null-check constructor tests** (about 40, mostly in the edge slices). Keep them as the guard
    for callers NullAway does not see, or retire them as a class?
+   - Retiring them loses the `IllegalArgumentException` contract for YAML, JSON and Spring callers
+     that NullAway does not see.
+   - Keeping them adds little unless something pins the field name in the refusal.
 
 ## Reproduce
 
