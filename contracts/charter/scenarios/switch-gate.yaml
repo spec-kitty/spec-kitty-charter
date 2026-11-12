@@ -7,7 +7,7 @@
 #
 # The contract suite checks this file after the last scenario (SwitchGate): it fails when an operation of the
 # contract has no entry or an entry names no operation, when a ready operation has an answer no scenario asserts,
-# when a held operation would pass as ready or its unasserted answers are not exactly the statuses it names, and when a
+# when a held operation would pass as ready or the answers no scenario asserts are not exactly the statuses it names, and when a
 # reserved one is ready. The suite also writes a per-operation report of the scenarios that cover each answer.
 #
 # Each entry is {switch: ready} or {switch: held, statuses: [<declared statuses>], reason: <why>}: statuses names the
