@@ -56,6 +56,13 @@ passing twin. Gradle runs in the foreground with `--max-workers=1`, one run at a
 | T040 | Red: the step read of a step only a replaced version keeps | WP09 | |
 | T041 | The step's place through the activations port | WP09 | |
 | T042 | `getEffectiveMissionStep` reads at the step's place | WP09 | |
+| T043 | Red: every overrider listed, level then URN | WP10 | |
+| T044 | Packs: the overrider list | WP10 | |
+| T045 | Activations and profiles carry lists | WP10 | |
+| T046 | Contract arrays and Breaking fragment | WP10 | |
+| T047 | Red: overrides from a non-activatable source refused | WP11 | |
+| T048 | The pure rule and the relationship write | WP11 | |
+| T049 | Load seam, contract violation code, fragment | WP11 | |
 
 ## Work packages
 
@@ -175,6 +182,29 @@ T041 The step's place (WP09)
 T042 The read uses it (WP09)
 
 Dependencies: WP07.
+
+### WP10 — Every overrider in force is named (#439)
+
+**Goal**: `satisfiedBy` and `overriddenBy` list every overrider in force, level then URN (operator ruling, option b).
+**Priority**: P2. **Prompt**: [tasks/WP10-every-overrider-named.md](tasks/WP10-every-overrider-named.md)
+
+T043 Red (WP10)
+T044 Packs (WP10)
+T045 Activations and profiles (WP10)
+T046 Contract (WP10)
+
+Dependencies: WP02.
+
+### WP11 — An override comes from an activatable artifact (#447)
+
+**Goal**: refuse an `overrides` edge from a template, asset, guard or lifecycle (operator ruling, option 1).
+**Priority**: P2. **Prompt**: [tasks/WP11-override-source-activatable.md](tasks/WP11-override-source-activatable.md)
+
+T047 Red (WP11)
+T048 Rule and write (WP11)
+T049 Load, contract, fragment (WP11)
+
+Dependencies: WP04.
 
 ## Twin matrix (squad R12)
 

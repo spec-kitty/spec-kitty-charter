@@ -131,6 +131,8 @@ Follow-ups' "effective-prompt read" line.
 - Changelog page `docs/changelog/2026-11-12-effective-step-and-action-context.md` (front matter as
   `2026-11-12-sharper-refusals.md`) and the `docs/changelog/README.md` index; link the 16-directive table in the
   scoping scenario.
+- #439 and #447: the rules page E9 (no "smallest URN"; every overrider, level then URN) and E14, C25/C27 (an
+  `overrides` edge's source is activatable), with "Built (slice C)" pins from WP10 and WP11.
 - `docs/plans/roadmap.md` (slice C row "match core" → "explain every directive in force", progress) and
   `next-slices-2026-11-11.md` (slice C status).
 - Run the docs checks: `python3 scripts/check_docs.py` (all eight), markdownlint-cli2, cspell, as CI runs them.

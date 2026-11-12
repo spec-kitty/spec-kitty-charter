@@ -260,3 +260,28 @@ None.
   - `docs/plans/roadmap.md` and `next-slices-2026-11-11.md`: reword "match core".
 - **Sequencing/depends-on**: IC-02, IC-04, IC-05.
 - **Risks**: `RelationTableParityTest` and the docs checks pin the text.
+
+### IC-07 — Every overrider in force is named (#439)
+
+- **Purpose**: `satisfiedBy` and `overriddenBy` become sorted lists (operator ruling, option (b)).
+- **Relevant requirements**: FR-013, SC-006.
+- **Affected surfaces**: `packs/domain/{InForceResolution, InForceStates}` (`overriderOf` → all, sorted by level then
+  URN); `activations/domain/{MergedSnapshot, EffectiveSet, EffectiveSkippedReport, DocumentRules}`,
+  `infra/packs/ClosureViewSession`, `infra/api/{EffectiveReadMapper, EffectiveArtifactMapper}`; `profiles-edge` effective
+  profile read and DTOs; contract `EffectiveArtifact`, `EffectiveContextArtifact`, `EffectiveArtifactRead`,
+  `EffectiveGovernanceEntry`, `EffectiveAgentProfileRead`, `OverriddenArtifact`; scenarios; a `### Breaking` fragment.
+- **Sequencing/depends-on**: IC-02 (the new context item schema).
+- **Risks**: many copies of the members; the "members are copied by" sentence lists them all.
+
+### IC-08 — An override comes from an activatable artifact (#447)
+
+- **Purpose**: refuse an `overrides` edge from a template, asset, guard or lifecycle (operator ruling, option 1).
+- **Relevant requirements**: FR-014, SC-006.
+- **Affected surfaces**: the load-violation seam phase 1 uses for R-OVR (`prompt_fragment_invalid` at the file; a per-file
+  violation of `422 validation_failed` at registration, `500 pack_unreadable` on reads), the relationship write
+  (`RelationshipRegistrationService`, beside `refuseStepEnhancementEdge`), the contract's violation-code list,
+  scenarios and a `### Breaking` fragment. If the seam is in `DomainRepositoryService`, that hunk follows the rebase onto
+  #501 (C-006).
+- **Sequencing/depends-on**: IC-04 (shared compose and registration files).
+- **Risks**: none in content: open-packs authors no `overrides` edge.
+
