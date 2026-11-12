@@ -4,7 +4,13 @@
 #
 # kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
 # empty_kinds: a modelled kind the pack has no file of; it goes stale when the pack gains one. The example packs carry
-# every kind (ADR-0070), so a missing kind is fixed in the example pack, never listed here.
+# every kind (ADR-0070), so a missing kind is fixed in the example pack, never listed here, except a kind that belongs
+# to another level's example pack, which its own test proves.
 kinds: []
 files: []
-empty_kinds: []
+empty_kinds:
+  - kind: org-fragment
+    reason: >-
+      drg/fragment.yaml is an org pack's DRG document; the built-in pack's graph is its *.graph.yaml shards. The org
+      example pack carries one, proved by WholePackRoundTripTest.theOrgPackRoundTripsWholeWithItsFragment.
+    issue: "#509"

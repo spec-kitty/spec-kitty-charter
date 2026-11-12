@@ -40,7 +40,8 @@ import org.jspecify.annotations.Nullable;
  * kind bound in {@link KindBindings}, with every read violation); a second one over the target directory saves the
  * descriptor and each artefact; loading the target is the read-back. Graph shards go through
  * {@link GraphDocumentReader} → {@link PackPolicy#graph} → {@link GraphShardWriter}, keeping the source's
- * {@code generated_by}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
+ * {@code generated_by}; an org fragment ({@code drg/fragment.yaml}, #509) takes the same path in the fragment's shape,
+ * through {@link GraphShardWriter#writeFragment}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
  * <p>A new artefact is written as {@code <id>.<fileToken>.yaml} at the pack root, wherever its source lived, so source
  * and written files are paired by kind and {@code id}. The exception is a kind whose place cannot be derived from its
@@ -77,6 +78,13 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     static final String DESCRIPTOR = "pack-descriptor";
     static final String GRAPH_SHARD = "graph-shard";
+
+    /**
+     * #509: the org fragment, {@code drg/fragment.yaml}, an org pack's DRG document: read and written in the fragment's
+     * shape (nodes by bare id and plural kind), paired by path like a shard. Its {@code enhances} edges are what a step
+     * enhancement's read-back needs, so it is written before the read-back with the shards.
+     */
+    static final String ORG_FRAGMENT = "org-fragment";
     /** The read-back key that stands for every written file when the written pack does not load at all. */
     private static final String READ_BACK_FAILED = "";
 
@@ -112,7 +120,15 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(),
                     Stream.of(
-                            DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST, PACK_DOCUMENT, POLICY))
+                            DESCRIPTOR,
+                            GRAPH_SHARD,
+                            ORG_FRAGMENT,
+                            ASSET_PAYLOAD,
+                            TEMPLATE,
+                            PRESET,
+                            MANIFEST,
+                            PACK_DOCUMENT,
+                            POLICY))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
@@ -182,7 +198,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         @Nullable String policyFailure = descriptorFailure == null ? writePolicy(from, to, id) : null;
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
-        // The shards are written before the read-back: the step enhancement rules read the pack's graph documents.
+        // The shards and the org fragment are written before the read-back: the step enhancement rules read the pack's
+        // graph documents.
         Map<String, Outcome> shards = shards(name, source, target, kindOf, companions.keySet());
         Loaded reloaded = descriptorFailure == null ? load(to, id) : new Loaded(null, "nothing was written");
         Map<String, List<String>> readBack = readBack(reloaded);
@@ -226,7 +243,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         Map<String, Outcome> shards = new HashMap<>();
         kindOf.forEach((path, kind) -> {
             if (GRAPH_SHARD.equals(kind) && !companionPaths.contains(path)) {
-                shards.put(path, shard(name, source, target, path));
+                shards.put(path, shard(name, source, target, path, Shape.SHARD));
+            } else if (ORG_FRAGMENT.equals(kind) && !companionPaths.contains(path)) {
+                shards.put(path, shard(name, source, target, path, Shape.FRAGMENT));
             }
         });
         return shards;
@@ -278,7 +297,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                     rewrite.kindOf(),
                     rewrite.sourceIds(),
                     rewrite.assemblyFailure());
-        } else if (GRAPH_SHARD.equals(kind)) {
+        } else if (GRAPH_SHARD.equals(kind) || ORG_FRAGMENT.equals(kind)) {
             return rewrite.shards().get(path);
         } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
             return payload(path, kind, rewrite.pack(), rewrite.assemblyFailure(), rewrite.reloaded());
@@ -773,9 +792,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     // ---- graph shards --------------------------------------------------------------------------
 
-    private static Outcome shard(String name, Path source, Path target, String path) {
+    private static Outcome shard(String name, Path source, Path target, String path, Shape shape) {
         String text = read(source.resolve(path));
-        if (!(GraphDocumentReader.read(text, Shape.SHARD, path) instanceof FileRead.Read<RawGraph> raw)) {
+        if (!(GraphDocumentReader.read(text, shape, path) instanceof FileRead.Read<RawGraph> raw)) {
             return new Refused("the shard does not read");
         }
         PackPolicy.GraphBuild build = PackPolicy.graph(name, raw.value());
@@ -785,9 +804,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         @Nullable String generatedBy = Yaml.load(text) instanceof Map<?, ?> document && document.get("generated_by") != null
                 ? String.valueOf(document.get("generated_by"))
                 : null;
-        String writtenText = GraphShardWriter.write(build.graph(), generatedBy);
+        String writtenText;
+        try {
+            writtenText = shape == Shape.FRAGMENT
+                    ? GraphShardWriter.writeFragment(build.graph())
+                    : GraphShardWriter.write(build.graph(), generatedBy);
+        } catch (IllegalArgumentException e) {
+            return new Refused("the shard cannot be written: " + e.getMessage());
+        }
         write(target.resolve(path), writtenText);
-        if (!(GraphDocumentReader.read(writtenText, Shape.SHARD, path) instanceof FileRead.Read<RawGraph> reread)) {
+        if (!(GraphDocumentReader.read(writtenText, shape, path) instanceof FileRead.Read<RawGraph> reread)) {
             return new Refused("read-back: the written shard does not read");
         }
         PackPolicy.GraphBuild rebuilt = PackPolicy.graph(name, reread.value());
