@@ -15,7 +15,9 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -672,12 +674,27 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** Renames a staged tree over the empty directory a write reserved. */
     static void moveOver(Path staging, Path reserved) throws IOException {
+        moveOver(staging, reserved, Files::move);
+    }
+
+    /**
+     * The atomic replace is not always possible: some file systems cannot do it at all, and Windows refuses it with an
+     * {@link AccessDeniedException} when the target is a directory. Either way the empty reserved directory is deleted
+     * and the tree moved into its place.
+     */
+    static void moveOver(Path staging, Path reserved, Mover mover) throws IOException {
         try {
-            Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException notAtomic) {
+            mover.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException | AccessDeniedException refused) {
             Files.delete(reserved);
-            Files.move(staging, reserved);
+            mover.move(staging, reserved);
         }
+    }
+
+    /** {@link Files#move} as a seam, so a test can make the atomic replace fail as Windows does. */
+    @FunctionalInterface
+    interface Mover {
+        void move(Path source, Path target, CopyOption... options) throws IOException;
     }
 
     /** Removes a reserved target if it is still the empty directory the write created. */

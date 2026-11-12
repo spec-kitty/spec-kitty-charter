@@ -24,13 +24,18 @@ import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -95,6 +100,27 @@ class PackCommitStoreTest {
                 .guide(guide)
                 .summary("How to search.")
                 .build();
+    }
+
+    @Test
+    @DisplayName("a staged tree is moved over the reserved directory when the atomic replace is refused")
+    void aStagedTreeLandsOverTheReservedDirectoryWhenTheAtomicReplaceIsRefused() throws IOException {
+        try (FileSystem windowsLike = Jimfs.newFileSystem(Configuration.windows())) {
+            Path root = Files.createDirectories(windowsLike.getPath("C:\\packs"));
+            Path staging = Files.createDirectory(root.resolve("staging"));
+            Files.writeString(staging.resolve("pack.yaml"), "name: p\n");
+            Path reserved = Files.createDirectory(root.resolve("reserved"));
+
+            PackCommitStore.moveOver(staging, reserved, (source, target, options) -> {
+                if (List.of(options).contains(StandardCopyOption.ATOMIC_MOVE)) {
+                    throw new AccessDeniedException(target.toString());
+                }
+                Files.move(source, target, options);
+            });
+
+            assertThat(reserved.resolve("pack.yaml")).hasContent("name: p\n");
+            assertThat(staging).doesNotExist();
+        }
     }
 
     @Test
