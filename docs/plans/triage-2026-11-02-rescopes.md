@@ -74,6 +74,9 @@ On 2026-11-04 the operator approved this cleanup, after each item was checked:
 - **#111** is decided: a contract operation with no separate shape. The reason differs from the proposal's; see the
   correction at [#111](#issue-111).
 
+On 2026-11-12 the re-scopes of #14 to #23, #42, #61, #69, #82, #152, #154, #157 to #159, #163, #164 and #205 were
+written into the issue bodies; see [Re-scopes applied, 2026-11-12](/plans/triage-2026-11-12-rescopes-applied/).
+
 ## Summary
 
 | # | Title | Group | Kind | Recommendation | Question |
