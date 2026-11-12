@@ -280,3 +280,6 @@ gson
 overrider
 unheld
 refspec
+# owner-only staging on Windows (#510)
+jimfs
+ntfs

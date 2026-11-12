@@ -32,7 +32,6 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -626,10 +625,7 @@ public final class GitSourceFetcher implements PackSourceFetcher {
 
     private static Path createWorkDirectory(Path directory) {
         try {
-            return Files.createTempDirectory(
-                    directory,
-                    "git-",
-                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+            return OwnerOnly.temporaryDirectory(directory, "git-");
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot create the work directory of a git source", failure);
         }
