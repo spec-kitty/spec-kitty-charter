@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -430,38 +431,21 @@ class StorageRootLocationsTest {
 
     /** A listing that never reads a pack's level whole is refused, never answered with the pack at org (STALE_INPUT). */
     @Test
-    void aLevelReadAPackKeepsMovingUnderRefusesStaleInputInsteadOfListingTheOrgLevel() throws Exception {
+    void aLevelReadAPackKeepsMovingUnderRefusesStaleInputInsteadOfListingTheOrgLevel() throws IOException {
         pack("qa", "project");
-        AtomicBoolean stop = new AtomicBoolean();
-        CountDownLatch swapping = new CountDownLatch(1);
-        CompletableFuture<Void> swaps = CompletableFuture.runAsync(() -> {
-            while (!stop.get()) {
-                PackWriteGeneration.shared().moved("qa");
-                swapping.countDown();
-            }
+        PackWriteGeneration generation = new PackWriteGeneration();
+        AtomicInteger reads = new AtomicInteger();
+        StorageRootLocations locations = new StorageRootLocations(packs, generation, directory -> {
+            reads.incrementAndGet();
+            generation.moved("qa"); // a swap moves the pack's directory during every read
+            return PackLevel.PROJECT;
         });
-        try {
-            assertThat(swapping.await(10, TimeUnit.SECONDS)).isTrue();
-            // The listing is repeated until the moving generation is met: a scheduler may hold the mover back for a few
-            // listings. A listing that answers is the pack at some level; it must never be one that read it under a
-            // swap.
-            Throwable refused = null;
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while (refused == null && System.nanoTime() < deadline) {
-                try {
-                    new StorageRootLocations(packs).all();
-                } catch (CharterRefusal thrown) {
-                    refused = thrown;
-                }
-            }
-            assertThat(refused)
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class,
-                            refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
-        } finally {
-            stop.set(true);
-            swaps.get(10, TimeUnit.SECONDS);
-        }
+
+        assertThatThrownBy(locations::all)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        assertThat(reads).hasValue(PackDirectories.MAX_PROGRESS);
     }
 
     @Test
