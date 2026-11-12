@@ -54,7 +54,12 @@ val checkMutationFloors = tasks.register<CheckMutationFloors>("checkMutationFloo
 
 // After the module's own pitest block, which sets its scope: a shard narrows that scope to its groups.
 afterEvaluate {
+    // The module's own scope, before a shard narrows it: every package PIT mutates must sit in a floor group, or a shard
+    // would drop it and no floor would score it.
+    val moduleTargets = pitest.targetClasses.get().toSet()
+    checkMutationFloors.configure { targetClasses.set(moduleTargets) }
     if (requestedGroups.isPresent) {
+        MutationFloors.requireTargetsHeld(project.path, moduleTargets, declaredGroups())
         pitest.targetClasses.set(shard.map { it.targetClasses })
         pitest.excludedClasses.addAll(shard.map { it.excludedClasses })
         pitest.reportDir.set(layout.buildDirectory.dir(shard.map { "reports/pitest-${it.name}" }))
