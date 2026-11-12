@@ -114,6 +114,10 @@ public final class OwnerOnly {
      * @throws IOException when it cannot be made, or its file system cannot make it owner-only
      */
     public static Path directories(Path directory) throws IOException {
+        return directories(directory, OwnerOnly::restrict);
+    }
+
+    static Path directories(Path directory, Restriction restriction) throws IOException {
         if (protection(directory) == Protection.POSIX) {
             return Files.createDirectories(directory, DIRECTORY_MODE);
         }
@@ -130,7 +134,7 @@ public final class OwnerOnly {
                 }
                 continue;
             }
-            restrict(next, true);
+            restrictOrRemove(next, restriction);
         }
         return directory;
     }
@@ -147,7 +151,7 @@ public final class OwnerOnly {
             return Files.createDirectory(directory, DIRECTORY_MODE);
         }
         Files.createDirectory(directory);
-        restrict(directory, true);
+        restrictOrRemove(directory, OwnerOnly::restrict);
         return directory;
     }
 
@@ -164,7 +168,7 @@ public final class OwnerOnly {
             return Files.createTempDirectory(parent, prefix, DIRECTORY_MODE);
         }
         Path made = Files.createTempDirectory(parent, prefix);
-        restrict(made, true);
+        restrictOrRemove(made, OwnerOnly::restrict);
         return made;
     }
 
@@ -202,6 +206,30 @@ public final class OwnerOnly {
             throw failure;
         }
         return Channels.newOutputStream(channel);
+    }
+
+    /** How a path is made the owner's alone where there are no POSIX permissions; a test substitutes a failure. */
+    @FunctionalInterface
+    interface Restriction {
+        void apply(Path path, boolean directory) throws IOException;
+    }
+
+    /**
+     * Restricts a directory just created. When that fails the directory is removed (if it is empty) before the failure
+     * is rethrown: left behind with the ACL it inherited, a later {@link #directories} call would find it and skip it
+     * as one that exists, and the retry would use an unrestricted directory.
+     */
+    private static void restrictOrRemove(Path created, Restriction restriction) throws IOException {
+        try {
+            restriction.apply(created, true);
+        } catch (IOException | RuntimeException failure) {
+            try {
+                Files.deleteIfExists(created);
+            } catch (IOException cleanup) {
+                failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     private static Protection protection(Path path) throws UnsupportedFileSystemException {

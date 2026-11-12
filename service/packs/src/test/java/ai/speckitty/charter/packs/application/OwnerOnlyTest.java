@@ -136,6 +136,21 @@ class OwnerOnlyTest {
         }
 
         @Test
+        void aDirectoryWhoseAclCannotBeSetIsRemovedSoARetryDoesNotFindItUnrestricted() throws IOException {
+            Path job = fileSystem.getPath("C:\\job-1");
+
+            assertThatThrownBy(() -> OwnerOnly.directories(job, (path, directory) -> {
+                        throw new IOException("the ACL cannot be set");
+                    }))
+                    .isInstanceOf(IOException.class);
+            assertThat(job).doesNotExist();
+
+            OwnerOnly.directories(job);
+
+            assertThat(acl(job)).containsExactly(ownerEntry(job, true));
+        }
+
+        @Test
         void theStartUpCheckAcceptsIt() {
             assertThatCode(() -> OwnerOnly.requireSupported(fileSystem.getPath("C:\\spool")))
                     .doesNotThrowAnyException();
