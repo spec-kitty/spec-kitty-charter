@@ -476,7 +476,7 @@ provenance cases where the operation has them. The mission makes both one rule t
   its keys, or an operation moved from ready to held, is a `### Breaking` change (ADR-0022).
 - **Ready is necessary, not sufficient.** The first switch still needs contract 1.0.0 (ADR-0022 D6).
 - **What is held, and why.** `deleteActivation` and `getPackRegistration` declare a `500` that only a failure of the
-  activation storage or of the registration job table raises, which the scenarios hold in memory and cannot fail. They
+  activation storage or of the registration job table raises; both are kept in memory and no seam lets a scenario fail them. They
   stay held until a seam can fail that storage; the other 44 operations are ready.
 - **Core's half.** Refusing a switch the register does not hold ready is core's proxy (ADR-0021 D5), built at
   incorporation; it is recorded in the [work breakdown](/plans/pack-ecosystem-work-breakdown/), not filed here

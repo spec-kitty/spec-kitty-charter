@@ -11,6 +11,7 @@ Feature: The worktree guard answers in front of every operation
   Scenario Outline: <operation> without the worktree token is a 401
     When I <method> "<path>" without the worktree token
     Then the response status is 401
+    And the problem has no code
     And the response header "WWW-Authenticate" is "Bearer"
 
     Examples:
@@ -65,6 +66,7 @@ Feature: The worktree guard answers in front of every operation
   Scenario Outline: <operation> with an Origin header is a 403 even with the right token
     When I <method> "<path>" with the header "Origin": "https://evil.example"
     Then the response status is 403
+    And the problem has no code
     And the response has no "WWW-Authenticate" header
 
     Examples:

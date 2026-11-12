@@ -85,6 +85,7 @@ Feature: The activation writes answer each refusal they declare
       {}
       """
     Then the response status is 412
+    And the problem has no code
     When I PUT "/activations/a-1/exclusions/directive/D" with the stored ETag and the body:
       """
       {}
@@ -94,6 +95,7 @@ Feature: The activation writes answer each refusal they declare
   Scenario: unselectActivationArtifact with a stale If-Match is 412, and with the stored ETag it is judged
     When I DELETE "/activations/a-1/selections/directive/D" with the header "If-Match": "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\""
     Then the response status is 412
+    And the problem has no code
     When I DELETE "/activations/a-1/selections/directive/D" with the stored ETag
     Then the response status is 200
 
@@ -132,10 +134,24 @@ Feature: The activation writes answer each refusal they declare
 
     Examples:
       | operation                    | method | path                                    | ifMatch | body              | judged |
-      | replaceActivation            | PUT    | /activations/a-2                        | *       | {"schemaVersion": 2} | 412    |
       | selectActivationArtifact     | PUT    | /activations/a-1/selections/directive/D | *       | {}                | 200    |
       | deactivateActivationArtifact | PUT    | /activations/a-1/exclusions/directive/D | *       | {}                | 200    |
       | applyActivationPreset        | PUT    | /activations/a-1/presets/team           | *       | {}                | 200    |
+
+  Scenario: replaceActivation with a body that is not JSON is 415, and as JSON it is registered
+    replaceActivation declares no 428, so the request without If-Match registers a new id: the control shows the same
+    body is accepted once it is sent as JSON.
+    When I send PUT "/activations/a-2" as "text/plain" with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 415
+    And the problem has no code
+    When I send PUT "/activations/a-2" as "application/json" with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 201
 
   Scenario: createActivation with a body that is not JSON is 415, and as JSON it is created
     When I send POST "/activations" as "text/plain" with the body:

@@ -9,6 +9,6 @@
   operation from ready to held, is a breaking change.
 - Scenarios that assert, on the operation itself, each declared answer no scenario asserted there before:
   `every-operation.feature` (the worktree guard's `401` and `403` on all 46 operations), `unexpected-failure.feature`
-  (`500 internal_error` on the 40 operations that read the packs), `activation-write-refusals.feature`,
+  (`500 internal_error` on the 40 operations whose declared 500 a pack read can raise), `activation-write-refusals.feature`,
   `pack-write-refusals.feature`, `read-refusals.feature` and `registration/pack-source-refusals.feature`. The service's
   answers are unchanged.

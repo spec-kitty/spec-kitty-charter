@@ -282,8 +282,8 @@ from ready to held, is a breaking change of the contract.
 - `every-operation.feature`, `unexpected-failure.feature`, `read-refusals.feature`, `activation-write-refusals.feature`,
   `pack-write-refusals.feature` and `registration/pack-source-refusals.feature`: the answers each operation declares,
   asserted on that operation for the switch gate, each refusal with its control. The worktree guard's 401 and 403 on
-  every operation; `500 internal_error` on every operation that reads the packs, the failure planted after the state
-  the operation needs; and the 304, 400, 404, 409, 412, 413, 415, 422, 428 and 503 answers the feature files above
+  every operation; `500 internal_error` on every operation whose declared 500 a pack read can raise, the failure planted
+  after any stored activation the operation names; and the 304, 400, 404, 409, 412, 413, 415, 422, 428 and 503 answers the feature files above
   leave out for one operation or another. A new operation gets a row in `every-operation.feature`.
 - `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
   register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
