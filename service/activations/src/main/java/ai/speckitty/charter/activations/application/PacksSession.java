@@ -173,16 +173,19 @@ public interface PacksSession {
     void requireAction(String missionType, String action);
 
     /**
-     * The place of one step on the merged closure (research R8, A7, DIV-243): the configured id of the pack that holds the
-     * merged winner of {@code action:<missionType>/<action>}, the version of the step the closure keeps, whether or not
-     * the winning mission type declares it. It judges no name: the caller has run {@link #requireAction}, so a held step
-     * has a place. It answers from this session's read alone, with no in-force resolution.
+     * The place of one step on the merged closure (research R8, A7, DIV-243): the configured id of the pack whose version
+     * of the mission type the step is read from. It is the winner of {@code mission_type:<missionType>} when that version
+     * declares the step, else, for a step the closure holds, the merged winner of {@code action:<missionType>/<action>}
+     * when its version declares the step. It judges no name and refuses nothing for an unknown one; it answers from this
+     * session's read, the versions read against the digest the session was verified at, with no in-force resolution.
      *
      * @param missionType the mission type of the step
      * @param action the step
-     * @return the configured id of the place's pack; empty when the merged closure holds no such step, and for a session
-     *     that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does
+     * @return the configured id of the place's pack; empty when no version declares the step at either place, and for a
+     *     session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does, with {@code pack_unreadable}
+     *     when the winner's pack cannot read the mission type, and with {@code stale_input} when the packs changed since
+     *     the session was verified
      */
     Optional<String> stepPlace(String missionType, String action);
 }

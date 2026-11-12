@@ -225,7 +225,7 @@ class EffectiveMissionTypeReadServiceTest {
     }
 
     @Test
-    void aStepContractWhoseActionTheWinningTypeDoesNotDeclareLinksNoStep() {
+    void aStepContractWhoseStepOnlyAReplacedVersionKeepsLinksTheStepTheStepReadAnswers() {
         stepContract = new EffectiveStepContract(
                 new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
 
@@ -233,7 +233,34 @@ class EffectiveMissionTypeReadServiceTest {
                 reads.stepContract("a-1", "review").read().value();
 
         assertThat(view.missionTypeHeld()).isTrue();
-        assertThat(view.stepHeld()).isFalse();
+        assertThat(view.stepHeld())
+                .as("the winning type drops review, and main's version at its place keeps it (A7, L1)")
+                .isTrue();
+        assertThat(asked).containsExactly("a-1 contract review", "a-1 place software-dev/review");
+    }
+
+    @Test
+    void theTwinAStepContractWhoseStepNoVersionHoldsLinksNoStep() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"), new Contract("deploy"), Optional.of(type()), Set.of(), FINGERPRINT);
+
+        EffectiveStepContractView view =
+                reads.stepContract("a-1", "deploy").read().value();
+
+        assertThat(view.missionTypeHeld()).isTrue();
+        assertThat(view.stepHeld()).as("the step read answers 404 for deploy").isFalse();
+    }
+
+    @Test
+    void aStepContractWhosePlaceIsReadAtAnotherFingerprintIsStaleInput() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
+        placeFingerprint = "sha256:" + "f".repeat(64);
+
+        assertThatThrownBy(() -> reads.stepContract("a-1", "review"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 
     @Test
@@ -413,6 +440,7 @@ class EffectiveMissionTypeReadServiceTest {
     private static StepContractView view(String id, String unused) {
         String action = switch (id) {
             case "review", "review-contract" -> "review";
+            case "deploy" -> "deploy";
             case "retro" -> "retrospect";
             default -> "specify";
         };

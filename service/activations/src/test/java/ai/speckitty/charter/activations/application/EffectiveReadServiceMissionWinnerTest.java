@@ -199,6 +199,21 @@ class EffectiveReadServiceMissionWinnerTest {
     }
 
     @Test
+    void aHeldStepNoVersionAtItsPlaceDeclaresIsActionNotFound() {
+        packs.places((type, step) -> Optional.empty());
+
+        assertThatThrownBy(() -> service.stepPlace(ID, "sd", "review"))
+                .as("the twin of the step main's version declares: the names pass, and no version declares it")
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND);
+                    assertThat(refusal.getMessage())
+                            .isEqualTo("No version of the mission type sd in the activation's closure declares the step"
+                                    + " review.");
+                });
+        assertThat(packs.nameChecks()).containsExactly("sd/review");
+    }
+
+    @Test
     void aStepTheClosureDoesNotHoldIsTheSessionsRefusalBeforeAnyPlaceIsAsked() {
         packs.places((type, step) -> {
             throw new AssertionError("no place is asked of a step the names check refused");

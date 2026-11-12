@@ -16,6 +16,9 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
+import ai.speckitty.charter.missions.domain.MissionStep;
+import ai.speckitty.charter.missions.domain.MissionType;
+import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
@@ -25,6 +28,7 @@ import ai.speckitty.charter.packs.domain.InForceStates.State;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -55,6 +59,7 @@ class ClosureViewTest {
     private final Map<String, PackDescriptor> descriptors = new HashMap<>();
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
     private final List<String> factsRead = new ArrayList<>();
+    private final Map<String, Pack> stored = new HashMap<>();
 
     private static Urn u(String urn) {
         return Urn.parse(urn).orElseThrow();
@@ -709,5 +714,115 @@ class ClosureViewTest {
         assertThat(prompt.slots())
                 .singleElement()
                 .satisfies(slot -> assertThat(slot.fragments()).isEmpty());
+    }
+
+    // ---- The step's place: one rule (research R8, A7; WP09 review cycle 1, H1) ------------------------------------
+
+    /** Stores a pack's version of the mission type md, declaring the steps. */
+    private void missionType(String pack, String... steps) {
+        MissionType.Builder type = MissionType.builder()
+                .id(new MissionTypeIdentifier("md"))
+                .packId(new PackIdentifier(pack))
+                .schemaVersion("1.0")
+                .title("md of " + pack)
+                .description("md");
+        for (String step : steps) {
+            type.step(new MissionStep(
+                    step,
+                    step,
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    List.of(),
+                    List.of()));
+        }
+        stored.put(
+                pack,
+                Pack.builder()
+                        .id(new PackIdentifier(pack))
+                        .descriptor(descriptors.get(pack))
+                        .artifact(type.build())
+                        .build());
+    }
+
+    /** The view over the fixture, whose winners are read from the stored packs. */
+    private ClosureView storedView() {
+        PackDescriptorRepository repository = new PackDescriptorRepository() {
+            @Override
+            public PackDescriptor get(PackIdentifier pack) {
+                return descriptors.get(pack.value());
+            }
+
+            @Override
+            public Optional<PackDescriptor> find(PackIdentifier pack) {
+                return Optional.ofNullable(descriptors.get(pack.value()));
+            }
+
+            @Override
+            public void save(PackIdentifier pack, PackDescriptor descriptor) {
+                throw new UnsupportedOperationException("the closure never writes");
+            }
+        };
+        ConsistentRead read = new ConsistentRead(() -> "sha256:" + "1".repeat(64));
+        PackCatalogRepository catalog = () -> List.copyOf(configured);
+        OfferingReadService offering =
+                new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
+        return new ClosureQueries(offering, catalog, read, pack -> stored.get(pack.value()), (pack, type) -> Map.of())
+                .allConfigured();
+    }
+
+    @Test
+    void aStepTheWinningVersionDeclaresIsPlacedAtTheWinnerWhicheverPacksGraphDeclaresTheAction() {
+        // probe 1: proj's winning md declares s; only base declares action:md/s.
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "s");
+
+        assertThat(storedView().stepPlace("md", "s")).contains(new PackIdentifier("proj"));
+    }
+
+    @Test
+    void aStepOnlyTheWinnerDeclaresIsPlacedAtTheWinnerAlthoughTheActionsWinnerIsAnotherPack() {
+        // probe 2: base declares action:md/s and its md lacks s; proj's winning md declares it.
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "t");
+        missionType("proj", "s");
+
+        assertThat(storedView().stepPlace("md", "s")).contains(new PackIdentifier("proj"));
+    }
+
+    @Test
+    void aStepOnlyAReplacedVersionKeepsIsPlacedAtTheActionsWinner() {
+        // A7: proj's winning md drops s, which base's md declares and base's graph holds.
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "t");
+
+        assertThat(storedView().stepPlace("md", "s")).contains(new PackIdentifier("base"));
+    }
+
+    @Test
+    void theTwinAHeldStepNoVersionAtEitherPlaceDeclaresHasNoPlace() {
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "t");
+        missionType("proj", "t");
+
+        assertThat(storedView().stepPlace("md", "s")).isEmpty();
+    }
+
+    @Test
+    void theTwinAStepADeclaringVersionKeepsWithoutTheClosureHoldingItHasNoPlace() {
+        // base's md declares s, but no graph declares action:md/s, so the closure holds no such step to place.
+        pack("base", List.of("mission_type:md"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "t");
+
+        assertThat(storedView().stepPlace("md", "s")).isEmpty();
     }
 }

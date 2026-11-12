@@ -23,9 +23,10 @@ description: >-
 
   _links holds self, the context; effective-artifact, the read of the action's step under the activation
   (getEffectiveMissionStep); and artifact, present when the effective list lists the mission type, the read of the step
-  in the pack of the step's place (getPackMissionStep): the pack that holds the merged winner of the action, whose
-  version of the mission type declares the step, also when only a version the winning mission type replaced keeps it
-  (A7). Both answer the step the context starts from. prompt, the effective prompt
+  in the pack of the step's place (getPackMissionStep): the pack that holds the mission type's version in force when
+  that version declares the step, else the pack that holds the merged winner of the action when its version declares
+  it, so a step only a version the winning mission type replaced keeps is placed there (A7). Both answer the same step,
+  the one the context starts from. prompt, the effective prompt
   of the same action (getEffectiveStepPrompt), is present exactly when the activation puts the mission type in force:
   for one it does not, that read answers 409 mission_type_not_in_force, so the context does not offer it.
 type: object

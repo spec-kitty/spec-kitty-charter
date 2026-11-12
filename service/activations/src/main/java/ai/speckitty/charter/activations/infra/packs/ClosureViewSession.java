@@ -210,13 +210,10 @@ final class ClosureViewSession implements PacksSession {
         view.requireAction(missionType, action);
     }
 
-    /** The pack of the merged winner of the step's action, the one place {@link StepHolding} gives a step (R8). */
+    /** The step's place by the packs slice's one rule ({@link ClosureView#stepPlace}). */
     @Override
     public Optional<String> stepPlace(String missionType, String action) {
-        return view.merged()
-                .closure()
-                .winnerOf(Urn.action(missionType, action))
-                .map(winner -> winner.packId().value());
+        return view.stepPlace(missionType, action).map(PackIdentifier::value);
     }
 
     /**

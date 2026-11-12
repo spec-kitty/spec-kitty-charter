@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.StepBearer;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -807,6 +808,69 @@ public record ClosureView(
                 ? Optional.of(governance(won.urn(), depth, states))
                 : Optional.empty();
         return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
+    }
+
+    /**
+     * The place of a step over the merged closure (research R8, A7, DIV-243, review cycle 1 of WP09): the pack whose
+     * version of the mission type the step is read from. It is the winner of {@code mission_type:<missionType>} when that
+     * version declares the step, among its steps or its on-demand steps; else, when the closure holds the step
+     * ({@link StepHolding}), the merged winner of {@code action:<missionType>/<action>} when its version of the mission
+     * type declares the step, which keeps a step that only a version the winner replaced declares. One rule places the
+     * step for the step read, the action context's links and a step contract's step link, so each names a step the step
+     * read answers. The versions are read against the closure digest this view was verified at.
+     *
+     * @param missionType the mission type
+     * @param action the step
+     * @return the place's pack; empty when no version of the mission type the closure holds declares the step at either
+     *     place
+     * @throws CharterRefusal as {@link #merged()} does, with {@code PACK_UNREADABLE} when a winner's pack holds the
+     *     mission type and cannot read it, and with {@code STALE_INPUT} when the packs changed since this view was
+     *     verified
+     */
+    public Optional<PackIdentifier> stepPlace(String missionType, String action) {
+        Objects.requireNonNull(missionType, "missionType");
+        Objects.requireNonNull(action, "action");
+        MergedView view = merged();
+        Optional<Urn> type = urnOf(ArtifactKind.MISSION_TYPE, missionType);
+        Optional<PackIdentifier> winner = type.flatMap(view.closure()::winnerOf).map(MergedClosure.Winner::packId);
+        if (winner.filter(pack -> versionOf(pack, missionType)
+                        .orElseThrow(() -> new CharterRefusal(
+                                RefusalCode.PACK_UNREADABLE,
+                                "pack `" + pack.value() + "` holds mission_type:" + missionType
+                                        + " and cannot read it"))
+                        .declaresStep(action))
+                .isPresent()) {
+            return winner;
+        }
+        Optional<Urn> step;
+        try {
+            step = Optional.of(Urn.action(missionType, action));
+        } catch (IllegalArgumentException invalid) {
+            step = Optional.empty();
+        }
+        return step.filter(view.edges()::holdsStep)
+                .flatMap(view.closure()::winnerOf)
+                .map(MergedClosure.Winner::packId)
+                .filter(pack -> versionOf(pack, missionType)
+                        .filter(version -> version.declaresStep(action))
+                        .isPresent());
+    }
+
+    /**
+     * A pack's version of the mission type, as a bearer of steps; empty when the pack holds no readable mission type of
+     * that id. An artifact of the kind that bears no step is a bug of the store, never a refusal.
+     */
+    private Optional<StepBearer> versionOf(PackIdentifier pack, String missionType) {
+        return mergeInputs
+                .winners()
+                .read(pack, ArtifactKind.MISSION_TYPE, missionType)
+                .map(type -> {
+                    if (type instanceof StepBearer bearer) {
+                        return bearer;
+                    }
+                    throw new IllegalStateException("pack " + pack.value() + " holds mission_type:" + missionType
+                            + " as a " + type.getClass().getName() + ", which declares no step");
+                });
     }
 
     /**

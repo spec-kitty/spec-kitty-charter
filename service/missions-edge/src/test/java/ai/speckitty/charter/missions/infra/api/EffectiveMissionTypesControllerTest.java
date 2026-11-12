@@ -99,13 +99,20 @@ class EffectiveMissionTypesControllerTest {
                                         @Override
                                         public EffectiveStepPlace stepPlace(
                                                 String activation, String type, String step) {
-                                            throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no step " + step);
+                                            // main keeps review, which proj's winning type drops (A7).
+                                            if (!step.equals("review")) {
+                                                throw new CharterRefusal(
+                                                        RefusalCode.ACTION_NOT_FOUND, "no step " + step);
+                                            }
+                                            return new EffectiveStepPlace(new PackIdentifier("main"), FINGERPRINT);
                                         }
                                     },
                                     new PackMissionTypes() {
                                         @Override
                                         public MissionTypeHolding holding(PackIdentifier pack, String type) {
-                                            return EffectiveMissionTypesControllerTest.holding();
+                                            return pack.value().equals("main")
+                                                    ? EffectiveMissionTypesControllerTest.replaced()
+                                                    : EffectiveMissionTypesControllerTest.holding();
                                         }
 
                                         @Override
@@ -217,6 +224,20 @@ class EffectiveMissionTypesControllerTest {
                         .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/divio~1x.md"));
     }
 
+    /** L4: a step read from its place links its skeleton in the place's pack, whose read serves that version's. */
+    @Test
+    void aStepOnlyAReplacedVersionKeepsLinksItsSkeletonInThePlacesPack() throws Exception {
+        mvc.perform(get("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Review at main"))
+                .andExpect(jsonPath("$._links.self.href")
+                        .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review"))
+                .andExpect(jsonPath("$._links.mission-type.href")
+                        .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev"))
+                .andExpect(jsonPath("$.expectedOutputArtifacts[0]._links.skeleton.href")
+                        .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1r.md"));
+    }
+
     @Test
     void aSkeletonLinksItsTypeUnderTheActivation() throws Exception {
         mvc.perform(get("/api/v1/activations/a-1/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
@@ -301,6 +322,37 @@ class EffectiveMissionTypesControllerTest {
                         new MissionTypeHolding.StoredSkeleton("x;y.md", utf8("# Semicolon\n"))),
                 List.of(),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
+                FINGERPRINT);
+    }
+
+    /** main's version, which proj's replaced: it keeps review, whose output starts from main's skeleton divio/r.md. */
+    private static MissionTypeHolding replaced() {
+        MissionType type = MissionType.builder()
+                .id(new MissionTypeIdentifier("software-dev"))
+                .packId(new PackIdentifier("main"))
+                .schemaVersion("1.0")
+                .title("Software Development at main")
+                .description("Build software")
+                .step(new MissionStep(
+                        "review",
+                        "Review at main",
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(new ExpectedArtifact(
+                                "input.review.notes",
+                                ArtifactClass.INPUT,
+                                "review.md",
+                                true,
+                                Optional.of("templates/divio/r.md")))))
+                .build();
+        return new MissionTypeHolding(
+                type,
+                List.of(new MissionTypeHolding.StoredSkeleton("divio/r.md", utf8("# R\n"))),
+                List.of(),
+                Map.of(),
                 FINGERPRINT);
     }
 

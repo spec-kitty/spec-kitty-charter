@@ -4,13 +4,11 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.missions.domain.MissionType;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -91,7 +89,7 @@ public final class EffectiveMissionTypeReadService {
      */
     public StepRead step(String activationId, String missionTypeId, String stepId) {
         EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
-        if (declares(winner.type(), stepId)) {
+        if (winner.type().declaresStep(stepId)) {
             return new StepRead(
                     MissionTypeReadService.stepOf(
                             holding(activationId, winner), scopeOf(activationId), missionTypeId, stepId),
@@ -127,13 +125,17 @@ public final class EffectiveMissionTypeReadService {
 
     /**
      * The step contract in force under an activation (D11), with the pack that holds it: the winner of the layer merge,
-     * whether the closure holds its mission type, whether the winning type declares its step, and which of its
-     * delegation candidates the closure holds. One read of the activations port answers all of it.
+     * whether the closure holds its mission type, whether the step read answers its step (the winning type declares it,
+     * or a version at the step's place does, A7), and which of its delegation candidates the closure holds. One read of
+     * the activations port answers all of it, and a second, of the step's place, when the winning type does not declare
+     * the step.
      *
      * @param activationId the activation's id
      * @param stepContractId the step contract's id
      * @return the view, the pack that holds the winner and the verified fingerprint
-     * @throws CharterRefusal as {@link ActivationMissionTypes#stepContract} refuses
+     * @throws CharterRefusal as {@link ActivationMissionTypes#stepContract} or {@link ActivationMissionTypes#stepPlace}
+     *     refuses, but {@code action_not_found}, which is no step; {@link RefusalCode#STALE_INPUT} when the two were read
+     *     at different fingerprints
      */
     public Held<EffectiveStepContractView> stepContract(String activationId, String stepContractId) {
         EffectiveStepContract winner = activations.stepContract(activationId, stepContractId);
@@ -141,7 +143,8 @@ public final class EffectiveMissionTypeReadService {
                 winner.contract(),
                 "The read of the step contract " + stepContractId + " under " + scopeOf(activationId));
         boolean stepHeld = winner.missionType()
-                .map(type -> declares(type, contract.action()))
+                .map(type -> type.declaresStep(contract.action())
+                        || placed(activationId, type.localId(), contract.action(), winner.fingerprint()))
                 .orElse(false);
         Set<HeldArtifact> candidates = contract.steps().stream()
                 .flatMap(step -> step.delegatesTo().stream())
@@ -243,10 +246,25 @@ public final class EffectiveMissionTypeReadService {
         }
     }
 
-    /** Whether a type declares a step, in its steps or its on-demand steps. */
-    private static boolean declares(MissionType type, String stepId) {
-        return Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
-                .anyMatch(step -> step.id().equals(stepId));
+    /**
+     * Whether the step has a place under the activation, so the step read answers it although the winning type does not
+     * declare it (A7): asked of the activations port at the step contract's fingerprint, else
+     * {@link RefusalCode#STALE_INPUT}. A step no version holds is no place, never a refusal of the step contract read.
+     */
+    private boolean placed(String activationId, String missionTypeId, String stepId, String fingerprint) {
+        EffectiveStepPlace place;
+        try {
+            place = activations.stepPlace(activationId, missionTypeId, stepId);
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() == RefusalCode.ACTION_NOT_FOUND) {
+                return false;
+            }
+            throw refusal;
+        }
+        if (!place.fingerprint().equals(fingerprint)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
+        return true;
     }
 
     private static String scopeOf(String activationId) {

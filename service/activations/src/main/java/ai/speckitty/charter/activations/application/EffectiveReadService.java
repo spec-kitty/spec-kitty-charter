@@ -160,9 +160,9 @@ public class EffectiveReadService {
      * @param governanceFingerprint the digest of the closure's own packs
      * @param query the mission type, the action and the depth
      * @param context what the action's step names
-     * @param stepPack the pack of the step's place, the merged winner of {@code action:<missionType>/<action>} (research
-     *     R8, A7), whose version of the mission type declares the step; empty when the effective set does not list the
-     *     mission type
+     * @param stepPack the pack of the step's place ({@link PacksSession#stepPlace}; research R8, A7): the winner of the
+     *     mission type when its version declares the step, else the merged winner of the action whose version does;
+     *     empty when the effective set does not list the mission type or no version at either place declares the step
      * @param missionTypeInForce whether the activation puts the mission type in force, so that the effective prompt of
      *     the action answers (FR-007: the context links it only then)
      */
@@ -566,11 +566,12 @@ public class EffectiveReadService {
 
     /**
      * The place of one step under an activation (research R8, A7, DIV-243), for the missions slice's read of a step that
-     * the winning mission type does not declare: the pack that holds the merged winner of
-     * {@code action:<missionType>/<stepId>}, which keeps the step when only a version the winner replaced declares it,
-     * and the source fingerprint, from one {@link PacksSession}. The names are judged as the action context judges them
-     * ({@link PacksSession#requireAction}), so the step, the context and the prompt reads refuse one unknown step alike.
-     * What the place's pack stores of the mission type is the packs slice's to read, against the fingerprint.
+     * the winning mission type does not declare, and of a step contract's step: the pack whose version of the mission
+     * type the step is read from ({@link PacksSession#stepPlace}), which keeps the step when only a version the winner
+     * replaced declares it, and the source fingerprint, from one {@link PacksSession}. The names are judged first as the
+     * action context judges them ({@link PacksSession#requireAction}), so the step, the context and the prompt reads
+     * refuse one unknown step alike. What the place's pack stores of the mission type is the packs slice's to read,
+     * against the fingerprint.
      *
      * @param id the activation's id
      * @param missionTypeId the mission type's id, exactly as declared
@@ -578,7 +579,9 @@ public class EffectiveReadService {
      * @return the place's pack and the source fingerprint of the read
      * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
      *     is no longer configured, or as the merge refuses; {@code mission_type_not_found} or {@code action_not_found}
-     *     when the merged closure holds no such mission type or step
+     *     when the merged closure holds no such mission type or step, and {@code action_not_found} when it holds the step
+     *     and no version of the mission type at its place declares it; {@code stale_input} when the packs changed since
+     *     the session was verified
      */
     public StepPlace stepPlace(ActivationId id, String missionTypeId, String stepId) {
         Objects.requireNonNull(missionTypeId, "missionTypeId");
@@ -587,9 +590,10 @@ public class EffectiveReadService {
         PacksSession session = open(stored);
         session.requireAction(missionTypeId, stepId);
         String place = session.stepPlace(missionTypeId, stepId)
-                .orElseThrow(() -> new IllegalStateException("The read of the step " + stepId + " of mission type "
-                        + missionTypeId + " under activation " + id.value()
-                        + ": the merged closure holds the step, and the session gave it no place."));
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ACTION_NOT_FOUND,
+                        "No version of the mission type " + missionTypeId
+                                + " in the activation's closure declares the step " + stepId + "."));
         return new StepPlace(place, session.snapshot().fingerprint());
     }
 
