@@ -1,5 +1,13 @@
 parameters:
-- $ref: ../parameters/PackId.yaml
+- name: packId
+  in: path
+  required: true
+  description: >-
+    The identity of the Charter Pack whose document is read: the configured identifier, a lower-case slug of at most
+    63 characters. A value outside the grammar breaks the parameter's schema and is a 400 Problem without a code.
+  schema:
+    type: string
+    pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
 get:
   operationId: getPackDocument
   summary: Read the document of a Charter Pack, its README.md.
