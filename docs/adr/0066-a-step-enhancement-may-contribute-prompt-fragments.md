@@ -305,7 +305,7 @@ Operator ruling OD-5, which stands (Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`
   (OD-7, OD-8). The action context links the read as `prompt`.
 - **The 409.** For a mission type the closure holds and the activation does not put in force, the read answers
   `409 mission_type_not_in_force`. It is judged after `activation_not_found`, `mission_type_not_found` and
-  `action_not_found`, and before the closure's `500` codes and any `304`. Its ground is decision 4: a step's prompt
+  `action_not_found` (which need a closure that composes and merges), and before `prompt_slot_missing` and any `304`. Its ground is decision 4: a step's prompt
   is rendered only for a mission of its type, so a fragment shows only where the step's mission type is in force.
 - **Why it differs from the action context.** The action context of the same action answers `200` with nothing in it.
   The context describes what governs an action: for a mission type that is not in force the true description is
