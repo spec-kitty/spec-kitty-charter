@@ -2,9 +2,11 @@ package ai.speckitty.charter.activations.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.ActionContext.Reached;
 import ai.speckitty.charter.activations.domain.ActionContext.SuggestionCandidate;
 import ai.speckitty.charter.activations.domain.EffectiveContext.Enhancement;
+import ai.speckitty.charter.activations.domain.EffectiveContext.Item;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Policy;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Reason;
@@ -24,8 +26,9 @@ import org.junit.jupiter.api.Test;
  * The effective context assembled from the effective set and what the walk reached (IC-11, FR-019, rule E16): the listed
  * artifacts are the entries as the list gives them, and each suggestion the walk reached through the effective set's
  * carrier, all in URN order whatever order the walk gave them in; the enhancements are read from the enhanced node's side;
- * and a mission type that is not in force answers nothing and names itself in the skipped report. Every absence is read
- * beside a positive control in the same answer.
+ * and a mission type that is not in force answers nothing and names itself in the skipped report. Each item carries the
+ * {@code appliesThrough} of the pass that listed it, a suggestion its candidate's (FR-009, research R4). Every absence is
+ * read beside a positive control in the same answer.
  */
 class EffectiveContextTest {
 
@@ -66,11 +69,24 @@ class EffectiveContextTest {
     }
 
     private static Reached reached(String urn, String... enhancers) {
+        return reached(urn, AppliesThrough.ACTION, enhancers);
+    }
+
+    private static Reached reached(String urn, AppliesThrough appliesThrough, String... enhancers) {
         return new Reached(
                 ref(urn),
                 java.util.Arrays.stream(enhancers)
                         .map(EffectiveContextTest::ref)
-                        .toList());
+                        .toList(),
+                appliesThrough);
+    }
+
+    private static SuggestionCandidate candidate(String urn, AppliesThrough appliesThrough) {
+        return new SuggestionCandidate(ref(urn), Optional.empty(), Optional.empty(), appliesThrough);
+    }
+
+    private static String urnOf(Item item) {
+        return item.artifact().ref().urn();
     }
 
     @Test
@@ -80,8 +96,8 @@ class EffectiveContextTest {
                 artifact("directive:D2", State.ACTIVE, Reason.SELECTED),
                 artifact("directive:D", State.ACTIVE, Reason.SELECTED),
                 artifact("tactic:S", State.INACTIVE, Reason.NOT_SELECTED));
-        SuggestionCandidate candidate =
-                new SuggestionCandidate(ref("tactic:S"), Optional.of("when"), Optional.of("why"));
+        SuggestionCandidate candidate = new SuggestionCandidate(
+                ref("tactic:S"), Optional.of("when"), Optional.of("why"), AppliesThrough.ACTION);
 
         EffectiveContext forward = EffectiveContext.of(
                 set,
@@ -95,13 +111,13 @@ class EffectiveContextTest {
                 STEP);
 
         assertThat(forward.artifacts())
-                .extracting(artifact -> artifact.ref().urn())
-                .as("D and D2 are entries, S a suggestion; O is in force but the action does not reach it")
+                .extracting(EffectiveContextTest::urnOf)
+                .as("D and D2 are entries, S a suggestion; O is in force but the walk does not list it")
                 .containsExactly("directive:D", "directive:D2", "tactic:S");
         assertThat(backward).isEqualTo(forward);
-        assertThat(forward.artifacts().get(2).suggestion())
+        assertThat(forward.artifacts().get(2).artifact().suggestion())
                 .contains(new Suggestion(Optional.of("when"), Optional.of("why")));
-        assertThat(forward.artifacts().get(0).suggestion()).isEmpty();
+        assertThat(forward.artifacts().get(0).artifact().suggestion()).isEmpty();
     }
 
     @Test
@@ -112,16 +128,82 @@ class EffectiveContextTest {
                 artifact("tactic:Hidden", State.INACTIVE, Reason.OVERRIDDEN),
                 artifact("tactic:S", State.INACTIVE, Reason.NOT_SELECTED));
         List<SuggestionCandidate> candidates = List.of(
-                new SuggestionCandidate(ref("tactic:Denied"), Optional.empty(), Optional.empty()),
-                new SuggestionCandidate(ref("tactic:Hidden"), Optional.empty(), Optional.empty()),
-                new SuggestionCandidate(ref("tactic:S"), Optional.empty(), Optional.empty()));
+                candidate("tactic:Denied", AppliesThrough.ACTION),
+                candidate("tactic:Hidden", AppliesThrough.ACTION),
+                candidate("tactic:S", AppliesThrough.ACTION));
 
         EffectiveContext context = EffectiveContext.of(
                 set, walked(List.of(reached("directive:D")), candidates, List.of()), MISSION_TYPE, STEP);
 
         assertThat(context.artifacts())
-                .extracting(artifact -> artifact.ref().urn())
+                .extracting(EffectiveContextTest::urnOf)
                 .containsExactly("directive:D", "tactic:S");
+    }
+
+    @Test
+    void eachItemCarriesTheAppliesThroughOfThePassThatListedIt() {
+        EffectiveSet set = set(
+                artifact("directive:A", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:T", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:P", State.ACTIVE, Reason.SELECTED));
+
+        EffectiveContext context = EffectiveContext.of(
+                set,
+                walked(
+                        List.of(
+                                reached("directive:P", AppliesThrough.PROJECT),
+                                reached("directive:T", AppliesThrough.MISSION_TYPE),
+                                reached("directive:A", AppliesThrough.ACTION)),
+                        List.of(),
+                        List.of()),
+                MISSION_TYPE,
+                STEP);
+
+        assertThat(context.artifacts())
+                .extracting(EffectiveContextTest::urnOf, Item::appliesThrough)
+                .as("each pass keeps its own value, whatever the URN order puts first")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("directive:A", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("directive:P", AppliesThrough.PROJECT),
+                        org.assertj.core.groups.Tuple.tuple("directive:T", AppliesThrough.MISSION_TYPE));
+    }
+
+    @Test
+    void aSuggestionTakesTheAppliesThroughOfItsCandidate() {
+        EffectiveSet set = set(
+                artifact("directive:A", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:P", State.ACTIVE, Reason.SELECTED),
+                artifact("tactic:S1", State.INACTIVE, Reason.NOT_SELECTED),
+                artifact("tactic:S2", State.INACTIVE, Reason.NOT_SELECTED));
+
+        EffectiveContext context = EffectiveContext.of(
+                set,
+                walked(
+                        List.of(reached("directive:A"), reached("directive:P", AppliesThrough.PROJECT)),
+                        List.of(
+                                candidate("tactic:S2", AppliesThrough.PROJECT),
+                                candidate("tactic:S1", AppliesThrough.ACTION)),
+                        List.of()),
+                MISSION_TYPE,
+                STEP);
+
+        assertThat(context.artifacts())
+                .extracting(EffectiveContextTest::urnOf, Item::appliesThrough)
+                .as("the suggestion of a project-wide entry is project, the one of an action entry is action")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("directive:A", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("directive:P", AppliesThrough.PROJECT),
+                        org.assertj.core.groups.Tuple.tuple("tactic:S1", AppliesThrough.ACTION),
+                        org.assertj.core.groups.Tuple.tuple("tactic:S2", AppliesThrough.PROJECT));
+        assertThat(context.artifacts().get(3).artifact().suggestion())
+                .as("the item is still the list's suggestion")
+                .isPresent();
+    }
+
+    @Test
+    void eachAppliesThroughHasTheTokenTheContractSpells() {
+        assertThat(java.util.Arrays.stream(AppliesThrough.values()).map(AppliesThrough::token))
+                .containsExactly("action", "mission_type", "project");
     }
 
     @Test
@@ -200,9 +282,7 @@ class EffectiveContextTest {
         EffectiveContext context = EffectiveContext.of(
                 set, walked(List.of(reached("directive:D")), List.of(), new ArrayList<>()), MISSION_TYPE, STEP);
 
-        assertThat(context.artifacts())
-                .extracting(artifact -> artifact.ref().urn())
-                .containsExactly("directive:D");
+        assertThat(context.artifacts()).extracting(EffectiveContextTest::urnOf).containsExactly("directive:D");
         assertThat(context.skipped().missionTypeNotInForce())
                 .as(
                         "the bucket is the requested mission type or nothing: the artifact bound to another mission type"

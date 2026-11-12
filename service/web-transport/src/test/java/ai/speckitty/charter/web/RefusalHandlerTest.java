@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -196,6 +197,42 @@ class RefusalHandlerTest {
         void putPackDirective() {}
 
         void getOffering() {}
+
+        void registerPackDirective() {}
+
+        void registerPackParadigm() {}
+
+        void putPackParadigm() {}
+
+        void registerPackStyleguide() {}
+
+        void putPackStyleguide() {}
+
+        void registerPackToolguide() {}
+
+        void putPackToolguide() {}
+
+        void deletePackArtifact() {}
+
+        void deletePackRelationship() {}
+
+        void createActivation() {}
+
+        void replaceActivation() {}
+
+        void selectActivationArtifact() {}
+
+        void unselectActivationArtifact() {}
+
+        void deactivateActivationArtifact() {}
+
+        void reactivateActivationArtifact() {}
+
+        void applyActivationPreset() {}
+
+        void listEffectiveArtifacts() {}
+
+        void getEffectiveGraph() {}
     }
 
     private ResponseEntity<CharterRefusal> refusedIn(String operation, RefusalCode code) throws NoSuchMethodException {
@@ -243,6 +280,53 @@ class RefusalHandlerTest {
                 .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "registerPackDirective",
+                "putPackDirective",
+                "registerPackParadigm",
+                "putPackParadigm",
+                "registerPackStyleguide",
+                "putPackStyleguide",
+                "registerPackToolguide",
+                "putPackToolguide",
+                "putPackRelationship",
+                "deletePackArtifact",
+                "deletePackRelationship",
+                "createActivation",
+                "replaceActivation",
+                "selectActivationArtifact",
+                "unselectActivationArtifact",
+                "deactivateActivationArtifact",
+                "reactivateActivationArtifact",
+                "applyActivationPreset"
+            })
+    @DisplayName("prompt_slot_missing is a 422 on every write that judges an enhancement in force before it stores")
+    void promptSlotMissingIsA422OnTheImpactCheckedAndTheActivationWrites(String operation)
+            throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> refused = refusedIn(operation, RefusalCode.PROMPT_SLOT_MISSING);
+
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(refused.getBody().getCode()).isEqualTo(CharterRefusal.CodeEnum.PROMPT_SLOT_MISSING);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"getOffering", "listEffectiveArtifacts", "getEffectiveGraph"})
+    @DisplayName("the twin: prompt_slot_missing keeps its own status, 500, on a composing read")
+    void promptSlotMissingIsA500OnAComposingRead(String operation) throws NoSuchMethodException {
+        assertThat(refusedIn(operation, RefusalCode.PROMPT_SLOT_MISSING).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    @DisplayName("the twin: an activation write keeps the composition codes' own status, 500")
+    void anActivationWriteKeepsTheCompositionCodesAs500() throws NoSuchMethodException {
+        assertThat(refusedIn("selectActivationArtifact", RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({
         "PACK_DEPENDENCY_CYCLE, 422",
@@ -260,6 +344,7 @@ class RefusalHandlerTest {
         "REGISTRATION_CONFLICT, 409",
         "VALIDATION_FAILED, 422",
         "OVERRIDE_NOT_PERMITTED, 422",
+        "PROMPT_SLOT_MISSING, 422",
         "PACK_STORAGE_FULL, 503",
         "REGISTRATION_TIMED_OUT, 504",
         "PACK_UNREADABLE, 500",

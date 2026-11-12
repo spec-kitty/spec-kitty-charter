@@ -125,9 +125,13 @@ Keep it small; add a step only when a scenario cannot be written without it.
   can spell out.
 - `Then the graph holds exactly the nodes:`, `... the edges:` and `... the layer overrides:` followed by a doc string, one
   line per member, in the answer's order: a URN; `<source> <relation> <target>`; `<artifact> won by <pack>@<level> over
-  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason>`, then
-  `suggested when "<when>" because "<reason>"` after a space for a suggestion) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
+  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason> <appliesThrough>`,
+  then `suggested when "<when>" because "<reason>"` after a space for a suggestion; an item without `appliesThrough` reads
+  `(no appliesThrough)`) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
   ...]`) read the action context the same way (`effective-graph-and-context.feature`, bound in `EffectiveGraphSteps`).
+  `Then the context lists "<kind>:<id>" as "<expected>"` reads one artifact of the context: `listed / <appliesThrough>`
+  when exactly one item is that artifact, with that `appliesThrough`, and `absent` when none is
+  (`effective-context-scoping.feature`, bound in `EffectiveGraphSteps`).
 - `Then the field at "<json-pointer>" is null` — the member is there and is JSON `null`, as a required nullable member is
   written; a member the answer leaves out is `is absent` (agent-profile-reads.feature, bound in `ProfileSteps`).
 - `Then the governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of the last
@@ -319,7 +323,12 @@ from ready to held, is a breaking change of the contract.
   context (PR C, IC-11, FR-018 to FR-021, US5 AS1 to AS5): an edge with an endpoint out of force is absent, a layer
   override is listed (a held step's, not a template's), an enhancer is read from the node's side, a suggestion only
   through `suggests`, a mission type not in force answers an empty context, an unknown mission type or action is `404`,
-  and each read has an `ETag` of its own. No operation is reserved any more, so no scenario pins a `501`
+  and each read has an `ETag` of its own. `effective-context-scoping.feature`: the ownership rule of the effective action
+  context (operator ruling of 2026-11-12; FR-008 to FR-010, SC-004): the 16 directives of the 2026-11-12 evidence as an
+  example table (the one home of that table), a type-scoped directive listed through the mission type, another mission
+  type's directive absent whether or not that type is in force, a required directive scoped only to another action
+  absent, an unscoped procedure absent and its twin reached from a project-wide directive listed, and the
+  `appliesThrough` of a suggestion. No operation is reserved any more, so no scenario pins a `501`
   (`ReservedOperationCoverageTest` keeps the machinery, with a planted contract as its control).
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
