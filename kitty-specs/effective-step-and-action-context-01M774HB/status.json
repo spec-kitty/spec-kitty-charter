@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ownership rule in the packs walk: ActionContextWalk.walkEffective (three passes, Pass/root on Entry, pass on SuggestionCandidate), EdgeIndex.scopeOwners/isProjectWide/isScopedBy/heldUrns (memoized; owners from every authored scope edge, held or not), ClosureView.actionContext calls walkEffective (out-of-map). Offering walk unchanged. :packs:test green (4708), style gates green, HexagonalArchitectureTest green; CharterContractSuite scenarios US5 AS3, US5 AS4 and #484 now fail as expected (meaning change, owned by WP02).",
-        "- 2026-11-12T07:08:27Z – unknown – Review cycle 1 feedback acknowledged: fixing cross-step seeding in passes 2 and 3, edge-visit counting for NFR-003, two LOW items."
+        "- 2026-11-12T07:08:27Z – unknown – Review cycle 1 feedback acknowledged: fixing cross-step seeding in passes 2 and 3, edge-visit counting for NFR-003, two LOW items.",
+        "Review cycle 1 addressed. HIGH: passes 2 and 3 seed each step from every node the previous step reached (Engine.expandReaching), and a per-pass root map carries the root through nodes an earlier pass listed; probes 1 and 2 are pinned with twins (red e03fc7e5, fix 4474253f); walk and pass 1 unchanged. MEDIUM: package-private EdgeIndex.Visits seam; the NFR-003 gate counts edge and node visits (Engine links, scope-owner and held-URN builds, enhancers) plus predicate tests; a planted per-root scan in isProjectWide fails it (ratio 3.98). LOW: the unheld-source test no longer holds action:qa/x; the two Javadoc phrases are reworded. :packs:test 4713 green, spotless and checkstyle green, HexagonalArchitectureTest green; the same 3 WP02-owned CharterContractSuite scenarios differ as before."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
