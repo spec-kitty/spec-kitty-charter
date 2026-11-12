@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.packs.application.ArchiveFormat;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
@@ -20,14 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -206,13 +201,8 @@ public final class HttpsArchiveFetcher implements PackSourceFetcher {
     private static Path spool(Fetched fetched, Path directory, @Nullable String sha256) {
         Path file = directory.resolve(SPOOL_FILE);
         MessageDigest digest = sha256Digest();
-        Set<OpenOption> options =
-                Set.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS);
         try (InputStream body = new DigestInputStream(fetched.body(), digest);
-                OutputStream out = Channels.newOutputStream(Files.newByteChannel(
-                        file,
-                        options,
-                        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))))) {
+                OutputStream out = OwnerOnly.newFile(file)) {
             body.transferTo(out);
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot spool the fetched archive", failure);

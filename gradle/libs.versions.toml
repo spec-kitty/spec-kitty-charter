@@ -18,6 +18,9 @@ json-schema-validator = "3.0.8"
 commons-compress = "1.28.0"
 # Google re2j: linear-time regular expressions for the patterns a pack writes into an embedded config_schema (ReDoS).
 re2j = "1.8"
+# Google Jimfs: an in-memory file system for tests, configured without POSIX views to run the owner-only ACL path of
+# OwnerOnly on Linux (#510). Test scope only (packs); Maven Central, Google-published, Apache-2.0; brings Guava only.
+jimfs = "1.3.1"
 # Quality gates (operator-vetted 2026-10-18; research.md section 10). jqwik is excluded (C-008).
 spotless = "8.10.3"
 palantir-java-format = "2.101.0"
@@ -59,6 +62,7 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 junit-platform-suite = { module = "org.junit.platform:junit-platform-suite" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+jimfs = { module = "com.google.jimfs:jimfs", version.ref = "jimfs" }
 cucumber-bom = { module = "io.cucumber:cucumber-bom", version.ref = "cucumber" }
 cucumber-java = { module = "io.cucumber:cucumber-java" }
 cucumber-spring = { module = "io.cucumber:cucumber-spring" }

@@ -49,6 +49,8 @@ dependencies {
     testImplementation(catalog.lib("spring-boot-starter-test"))
     // NetworkCodeBoundaryTest: the inner rings name no java.net type but URI (WP08; the version deployable pins).
     testImplementation(catalog.lib("archunit"))
+    // OwnerOnlyTest: a file system without POSIX views, to run the ACL path of the owner-only helper on Linux (#510).
+    testImplementation(catalog.lib("jimfs"))
 }
 
 // The contract version the service reports (ContractVersion): the info.version of contracts/charter/openapi.yaml,
