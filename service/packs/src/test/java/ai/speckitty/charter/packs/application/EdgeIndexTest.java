@@ -101,6 +101,11 @@ class EdgeIndexTest {
             return index().merged(mergedClosure());
         }
 
+        /** The merged index, counting each visit of an edge or a node to {@code visits}. */
+        EdgeIndex merged(EdgeIndex.Visits visits) {
+            return index().merged(mergedClosure(), visits);
+        }
+
         /** The layer merge of the closure, whose packs were added in merge order. */
         MergedClosure mergedClosure() {
             return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
@@ -566,6 +571,25 @@ class EdgeIndexTest {
                 .merged();
 
         assertThat(merged.isProjectWide(urn("directive:Old"))).isTrue();
+    }
+
+    @Test
+    void theScopeOwnerBuildVisitsEachEdgeOnceAndOnlyOnce() {
+        java.util.concurrent.atomic.AtomicLong visits = new java.util.concurrent.atomic.AtomicLong();
+        EdgeIndex merged = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("mission_type:M", "action:M/a", "directive:D", "tactic:T"),
+                        edge("action:M/a", RelationType.SCOPE, "directive:D"),
+                        edge("mission_type:M", RelationType.SCOPE, "tactic:T"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:T"))
+                .merged(visits::incrementAndGet);
+
+        merged.isProjectWide(urn("directive:D"));
+        merged.isScopedBy(urn("tactic:T"), urn("mission_type:M"));
+        merged.isProjectWide(urn("tactic:T"));
+
+        assertThat(visits.get()).as("one pass over the three edges, then the memo").isEqualTo(3);
     }
 
     @Test
