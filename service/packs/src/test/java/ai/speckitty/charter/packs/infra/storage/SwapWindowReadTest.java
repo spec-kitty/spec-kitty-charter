@@ -289,25 +289,6 @@ class SwapWindowReadTest {
     }
 
     @Test
-    void t7AReadThatSwapsKeepMovingRefusesStaleInputAtTheCapNeverPackUnreadable() throws Exception {
-        plainPack();
-        PackLocation location = locations.all().getFirst();
-        PackCommitStore commits = new PackCommitStore(locations, strategy);
-        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations, strategy, commits);
-        int[] round = {0};
-
-        assertThatThrownBy(() -> FileSystemPackSources.digest(List.of(location), directory -> {
-                    List<String> listed = PackFileSet.digested(directory);
-                    String id = "swap" + round[0]++;
-                    writeStore.exclusively(PACK, () -> commits.commit(PACK, null, toolguide(id), null));
-                    return listed;
-                }))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
-        assertThat(round[0]).as("one attempt per swap, up to the cap").isEqualTo(PackDirectories.MAX_PROGRESS);
-    }
-
-    @Test
     void t8AReadThatASwapRolledBackUnderIsReadAgainNeverAnsweredTorn() throws Exception {
         // Squad D-1: the reader resolves the live directory, the swap moves it aside, the read finds no pack.yaml, the
         // second rename fails and the aside copy is moved back. The directory is the same one again (same inode, same

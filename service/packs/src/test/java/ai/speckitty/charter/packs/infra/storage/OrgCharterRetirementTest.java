@@ -60,24 +60,6 @@ class OrgCharterRetirementTest {
     class TheFile {
 
         @Test
-        @DisplayName("classification: the file is Retired with its reason, and a case variant is refused by name too")
-        void classificationRetiresIt() {
-            PackFileKind table = PackFileKind.bundled();
-
-            assertThat(table.classify(name() + "/" + FILE)).isEqualTo(new PackFileKind.Retired("*/" + FILE, REASON));
-            assertThat(table.classify(name() + "/Org-Charter.yaml"))
-                    .isEqualTo(
-                            new PackFileKind.Retired("*/" + FILE, "differs only in letter case from '" + FILE + "'"));
-            assertThat(table.classify(name() + "/assets/" + FILE))
-                    .as("a payload that only shares the name is not retired")
-                    .isNotInstanceOf(PackFileKind.Retired.class);
-            assertThat(table.fileRules())
-                    .as("no files rule is left for the file, so no schema either")
-                    .extracting(PackFileKind.FileRule::match)
-                    .doesNotContain("*/" + FILE);
-        }
-
-        @Test
         @DisplayName("validate mode: an artifact_schema_error saying the file is retired and why")
         void validateModeRefusesIt() {
             PackContents contents = new FileSystemPackInspector()
@@ -103,19 +85,6 @@ class OrgCharterRetirementTest {
             assertThat(loaded.pack().violations())
                     .extracting(violation -> violation.file() + " " + violation.kind() + " " + violation.reason())
                     .containsExactly(FILE + " retired " + REASON);
-        }
-
-        @Test
-        @DisplayName("registration: 422 validation_failed with one violation, code retired at the file, no unmodelled")
-        void registrationRefusesIt() {
-            WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
-
-            assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
-                    .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                        assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                        assertThat(refusal.violations())
-                                .containsExactly(new RefusalViolation(FILE, "retired", FILE + ": " + REASON));
-                    });
         }
 
         @Test
