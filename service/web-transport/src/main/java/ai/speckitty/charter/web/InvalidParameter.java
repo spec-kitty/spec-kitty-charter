@@ -295,7 +295,9 @@ public final class InvalidParameter extends RuntimeException {
             if (c == '"' || c == '\\') {
                 quoted.append('\\').append((char) c);
             } else if (unprintable(c)) {
-                quoted.append(String.format("\\u%04x", c));
+                for (char unit : Character.toChars(c)) {
+                    quoted.append(String.format("\\u%04x", (int) unit));
+                }
             } else {
                 quoted.appendCodePoint(c);
             }
