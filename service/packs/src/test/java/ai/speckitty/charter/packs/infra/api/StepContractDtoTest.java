@@ -113,6 +113,19 @@ class StepContractDtoTest {
             assertThat(input.getSource()).isEqualTo("mission_slug");
             assertThat(input.getOptional()).isTrue();
         });
+        assertTheDelegations(member);
+        assertThat(member.getGates()).singleElement().satisfies(gate -> {
+            assertThat(gate.getOnTransition()).isEqualTo("in_progress->for_review");
+            assertThat(gate.getHandler()).isEqualTo("spec-kitty-pre-review");
+            assertThat(gate.getHandlerKind()).isEqualTo("mission_step_contract");
+            assertThat(gate.getSchemaVersion()).isEqualTo("1.0");
+            assertThat(gate.getFailOpen()).isTrue();
+            assertThat(gate.getProvenance()).isEqualTo("built-in");
+        });
+    }
+
+    /** The second step delegates to a held and an unheld directive, the third to an unheld procedure. */
+    private static void assertTheDelegations(MissionStepContract member) {
         MissionStepContractStep capture = member.getSteps().get(1);
         assertThat(capture.getInputs())
                 .as("a step without inputs answers an empty list")
@@ -136,14 +149,6 @@ class StepContractDtoTest {
                 .satisfies(procedure -> assertThat(procedure.getLinks())
                         .as("the procedure is listed but not held: no link")
                         .isEqualTo(Map.of()));
-        assertThat(member.getGates()).singleElement().satisfies(gate -> {
-            assertThat(gate.getOnTransition()).isEqualTo("in_progress->for_review");
-            assertThat(gate.getHandler()).isEqualTo("spec-kitty-pre-review");
-            assertThat(gate.getHandlerKind()).isEqualTo("mission_step_contract");
-            assertThat(gate.getSchemaVersion()).isEqualTo("1.0");
-            assertThat(gate.getFailOpen()).isTrue();
-            assertThat(gate.getProvenance()).isEqualTo("built-in");
-        });
     }
 
     @Test
