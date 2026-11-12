@@ -144,12 +144,14 @@ versions, the HTML and XML reports and PIT's default mutators:
 | profiles | `profiles` | the whole module | 90 % |
 | activations | `activations` | the whole module | 85 % |
 | profiles-edge | `profiles-edge` | `profiles.application` and `profiles.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| missions-edge | `missions-edge` | `missions.application` and `missions.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| artifacts-edge | `artifacts-edge` | `artifacts.application` and `artifacts.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
 
 Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs, activations and
-profiles-edge apply it directly (profiles-edge cannot take the domain convention: its rings carry external
+the three edge modules apply it directly (an edge cannot take the domain convention: its rings carry external
 dependencies).
 Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `whole-pack`, `git-host` or
