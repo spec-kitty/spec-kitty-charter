@@ -16,14 +16,13 @@ requirement_refs:
 - C-009
 planning_base_branch: slice-c/effective-step-context
 merge_target_branch: slice-c/effective-step-context
-branch_strategy: Planning artifacts were generated on the mission branch kitty/mission-effective-step-and-action-context-01M774HB; completed changes merge into slice-c/effective-step-context, then by pull request into main. Execution worktrees are allocated per computed lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on slice-c/effective-step-context. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-c/effective-step-context unless the human explicitly redirects the landing branch.
 subtasks:
 - T035
 - T036
 - T037
 - T038
 - T039
-agent: claude
 history:
 - timestamp: '2026-11-12T06:30:00Z'
   agent: system
@@ -49,6 +48,8 @@ owned_files:
 - docs/plans/roadmap.md
 - docs/plans/next-slices-2026-11-11.md
 role: documentarian
+tags: []
+tracker_refs: []
 ---
 
 ## ⚡ Do This First: Load Agent Profile
