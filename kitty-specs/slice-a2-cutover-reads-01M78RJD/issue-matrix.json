@@ -96,6 +96,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#20": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#409": {
       "evidence_ref": "<link or commit>",
       "fr": null,
