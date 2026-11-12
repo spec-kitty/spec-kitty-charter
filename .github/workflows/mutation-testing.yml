@@ -149,7 +149,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Both shards' reports in one table, whatever their results.
+  # The three shards' reports in one table, whatever their results.
   summary:
     needs: pitest
     if: always()
@@ -176,22 +176,26 @@ jobs:
           pattern: mutation-report-*
           merge-multiple: true
 
-      # Report-only: it exits 0 whatever the verdicts; the shards' mutation steps are what make the run red. The same
-      # table is passed to the alert job as the `summary` output.
+      # A group below its floor exits 0 here (the shards' mutation steps make the run red for that). A listed module or
+      # group with no readable report exits 1, so a group no shard names turns this job red and the alert fires. The
+      # same table is passed to the alert job as the `summary` output. The script's status is kept in `status`, so the
+      # output is written first, and is the step's exit status (never swallowed).
       - name: Summarise the mutation floors
         id: summary
         if: always()
         run: |
           mkdir -p build/reports/mutation-floors
           cat build/reports/mutation-floors/pitest-*.log > build/reports/mutation-floors/pitest.log 2>/dev/null || true
+          status=0
           python3 scripts/ci/mutation_summary.py --modules build/reports/mutation-floors/modules.txt \
-            --log build/reports/mutation-floors/pitest.log > "$RUNNER_TEMP/mutation-summary.md"
+            --log build/reports/mutation-floors/pitest.log > "$RUNNER_TEMP/mutation-summary.md" || status=$?
           delimiter="mutation_summary_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
           {
             echo "summary<<$delimiter"
             cat "$RUNNER_TEMP/mutation-summary.md"
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
+          exit "$status"
 
   # One open issue labelled `mutation-testing` at a time: opened on the first red run, commented on after that.
   # Closing it is the maintainers' call once the run is green again. A scheduled run that is red, timed out or
