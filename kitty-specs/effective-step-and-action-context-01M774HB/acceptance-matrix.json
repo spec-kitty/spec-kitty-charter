@@ -96,12 +96,12 @@
     },
     {
       "criterion_id": "FR-010",
-      "description": "Verify FR-010 is satisfied",
+      "description": "The ruling is recorded",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ADR-0018 D5 amendment, rules page E16, DIV-245 (divergence-register.md, divergences.yaml, DivergenceRegisterTest); docs commits 4c8d7a1f4..f3ab945df (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:18.496730+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
