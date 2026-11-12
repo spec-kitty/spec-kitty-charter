@@ -3,7 +3,7 @@ title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
 doc_status: active
 updated: 2026-11-12T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decisions 7 and 8 affirmed and extended by ADR-0074 (2026-11-12)'
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decision 7 amended, decision 8 extended by ADR-0074 (2026-11-12)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -52,7 +52,7 @@ note in its `decision_status`:
 - [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 2 (R12), where a glossary pack's terms are
   artifacts of kind `glossary`. Under this record the contexts are the artifacts and the terms are items inside
   them, and R12's `?kind=glossary` listing becomes a per-kind list read
-  (`GET /packs/{packId}/artifacts/glossary`, decision 7). The `artifacts` path segment of the same decision is re-affirmed (decision 9).
+  (`GET /packs/{packId}/artifacts/glossary`, decision 7). *(Amended 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 9): `?kind=glossary` is not replaced; it lists the contexts beside the per-kind list.)* The `artifacts` path segment of the same decision is re-affirmed (decision 9).
 
 ### Amendment 2026-11-02
 
@@ -130,8 +130,8 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
 ### Reads (ruled)
 
 7. `GET /packs/{packId}/artifacts/glossary` lists the pack's contexts: id, name, description, tags and term count.
-   *Affirmed 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 9 to 12): this list
-   stands, beside `?kind=glossary`, and assets and skills get the same per-kind list. The context item gets an
+   *Amended 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 9 to 12): `?kind=glossary`
+   is not replaced; it lists the contexts beside this list, and assets and skills get the same per-kind list. The context item gets an
    operation of its own, a term is read at `…/artifacts/glossary/{contextId}/terms/{termId}`, and each read has an
    activation twin.*
 8. `GET /packs/{packId}/artifacts/glossary/{contextId}` returns one context with its terms.

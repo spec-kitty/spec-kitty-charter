@@ -135,7 +135,7 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
    Glossary packs are packs: their terms are artifacts of kind `glossary`, read through
    `/packs/{packId}/artifacts?kind=glossary` (R12), not a resource of their own.
    *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: a glossary context is the artifact and its terms are items inside it; a per-kind list read, `GET /packs/{packId}/artifacts/glossary`, replaces the `?kind=glossary` listing.)*
-   *(Affirmed 2026-11-12 by [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 9: the per-kind list stands, `?kind=glossary` lists the contexts too, and assets and skills get the same per-kind list.)*
+   *(Amended 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 9): `?kind=glossary` is not replaced; it lists the contexts beside the per-kind list; assets and skills get the same per-kind list.)*
 3. **Hypermedia is one `Links` component with a closed link object (shape: default).** Every
    success schema carries a required `_links` property that references it; `Problem` and
    `CharterRefusal` keep their shape. `_links` maps a relation name to a link object
