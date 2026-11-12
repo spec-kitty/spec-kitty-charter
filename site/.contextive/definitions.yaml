@@ -495,7 +495,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Profile tie"
-        definition: "Two or more equally fitting profiles after profile selection. There is no hidden tie-break; whether the service returns all candidates for the client to choose, or picks one at random with a warning, is still open (ADR-0032)."
+        definition: "Two or more equally fitting profiles after profile selection. There is no hidden tie-break: when the pinned profile is among them, it is the answer; otherwise the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decisions 8 and 9)."
         meta:
           status: "proposed"
       - name: "Role"
@@ -503,7 +503,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Role pin"
-        definition: "A derived pack's setting that fixes the profile filling a role: every step asking for that role gets the pinned profile, whatever the mission type. Profiles that specialize the pinned one also fit. Role pins, role locks and other integrity settings live in a policy file at the pack root."
+        definition: "A derived pack's setting that narrows the profiles filling a role to the pinned profile and the profiles that specialize it, before the selection order runs; the pinned profile wins a tie it is part of. Every step asking for that role is served from that narrowed set, whatever the mission type. Role pins, role locks and other integrity settings live in a policy file at the pack root."
         meta:
           status: "canonical"
       - name: "Upgrade (pack version)"
