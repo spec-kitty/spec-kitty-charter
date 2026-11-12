@@ -672,8 +672,9 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The fragment nodes whose {@code body_path} leaves the pack root (#254), each a graph fault of the fragment in
-     * {@link PackPolicy#bodyPathEscape}'s words, so the document is refused as validate mode reports it.
+     * The first fragment node whose {@code body_path} leaves the pack root (#254), as one graph fault of the fragment in
+     * {@link PackPolicy#bodyPathEscape}'s words. The fragment is refused whole, so it carries one fault, as any graph
+     * document that cannot be read does, and validate mode reports the same one.
      */
     private static List<PackElementViolation> bodyPathEscapes(GraphDocument document) {
         if (!(document instanceof GraphDocument.Fragment fragment)) {
@@ -681,7 +682,9 @@ final class FilesystemPackStore {
         }
         return fragment.nodes().stream()
                 .flatMap(node -> PackPolicy.bodyPathEscape(node.id(), node.bodyPath()).stream())
+                .findFirst()
                 .map(reason -> new PackElementViolation(document.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), reason))
+                .stream()
                 .toList();
     }
 
