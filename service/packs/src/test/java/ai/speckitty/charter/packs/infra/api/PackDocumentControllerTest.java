@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackDocumentText;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.web.DeferredETag;
 import ai.speckitty.charter.web.ProblemHandler;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
@@ -72,7 +73,7 @@ class PackDocumentControllerTest {
                         mock(PackRemovalController.class),
                         new PackDocumentController(query, mapper)))
                 .setMessageConverters(HttpConverters.serverConverters().toArray(new HttpMessageConverter<?>[0]))
-                .setControllerAdvice(new RefusalHandler(), new ProblemHandler(), new PackDocumentETag())
+                .setControllerAdvice(new RefusalHandler(), new ProblemHandler(), new DeferredETag())
                 .addFilters(new CharterHeaders(info))
                 .addPlaceholderValue("charter.api.base-path", "/api/v1")
                 .build();

@@ -43,6 +43,8 @@ operations:
   getPackDocument: {switch: ready}
   getPackAgentProfile: {switch: ready}
   getPackArtifact: {switch: ready}
+  getPackAsset: {switch: ready}
+  getPackAssetPayload: {switch: ready}
   getPackMissionSkeleton: {switch: ready}
   getPackMissionStep: {switch: ready}
   getPackMissionType: {switch: ready}
@@ -56,6 +58,7 @@ operations:
   listArtifactReferences: {switch: ready}
   listEffectiveArtifacts: {switch: ready}
   listPackArtifacts: {switch: ready}
+  listPackAssets: {switch: ready}
   listPackPresets: {switch: ready}
   putPackDirective: {switch: ready}
   putPackParadigm: {switch: ready}

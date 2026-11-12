@@ -52,3 +52,5 @@ files:
   - MissionSkeleton.activation-spec-template.yaml
   - Preset.team.yaml
   - PresetList.two-presets.yaml
+  - Artifact.asset.yaml
+  - AssetList.built-in.yaml
