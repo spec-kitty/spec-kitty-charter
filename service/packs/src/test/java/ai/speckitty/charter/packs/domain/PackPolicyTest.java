@@ -339,6 +339,8 @@ class PackPolicyTest {
                 PackContents.ParseFailure.retired("missions/plan/mission.yaml", "folded into the mission-type file");
         PackContents.ParseFailure markdown =
                 PackContents.ParseFailure.retired("mission-steps/plan/specify/prompt.md", "folded into the steps");
+        PackContents.ParseFailure orgCharter =
+                PackContents.ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)");
         PackContents.ParseFailure broken = new PackContents.ParseFailure("tactics/x.tactic.yaml", "mapping expected");
 
         assertThat(retired.refusal()).contains("is retired: folded into the mission-type file");
@@ -349,6 +351,11 @@ class PackPolicyTest {
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(markdown.file(), markdown, List.of())))
                 .extracting(PackFinding::detail)
                 .containsExactly("qa/mission-steps/plan/specify/prompt.md is retired: folded into the steps");
+        assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(orgCharter.file(), orgCharter, List.of())))
+                .extracting(PackFinding::code, PackFinding::detail)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(
+                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
+                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)"));
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(broken.file(), broken, List.of())))
                 .extracting(PackFinding::detail)
                 .containsExactly("qa/tactics/x.tactic.yaml is not valid YAML: mapping expected");

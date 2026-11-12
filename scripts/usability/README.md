@@ -24,7 +24,7 @@ JAVA_HOME=<your JDK 25 home> scripts/usability/service-usability-run.sh \
 | `--packs <a,b>` | The open-packs directories to register through `POST /packs`. Default `internal,qa`. |
 | `--strict` | Treat selections no registered pack holds as a failure instead of a named workaround. |
 | `--attach <base-url>` | Walk a service that is already running and provisioned. The token comes from `CHARTER_WORKTREE_TOKEN`. |
-| `--self-check` | Run the pure parts of the client without a service (`expand`, href resolution, the removal guard, option parsing, the mission type walk's set checks, and `charter-to-activation.py --self-test`). Exit 0 or 1. |
+| `--self-check` | Run the pure parts of the client without a service (`expand`, href resolution, option parsing, the mission type walk's set checks, and `charter-to-activation.py --self-test`). Exit 0 or 1. |
 
 An option that takes a value (`--open-packs`, `--profile`, `--jar`, `--packs`, `--attach`) and gets none, or gets
 another option in its place, exits 2 with the usage text.
@@ -36,8 +36,16 @@ another option in its place, exits 2 with the usage text.
    `built-in` is never edited. The service starts with registration and the filesystem pack source on, a random
    token (passed in the environment, and to curl through an options file) and port 0.
 2. **Registration.** Each pack of `--packs` goes through `POST /packs` with a filesystem source, under the name its
-   `pack.yaml` declares (the registration requires `packId` to equal it: `internal` is `spec-kitty-internal`). The
+   `pack.yaml` declares (the registration requires `packId` to equal it: `internal` is `spec-kitty-internal`). A pack
+   is registered as it is: a refusal fails its hop, with the violations printed, and no staged copy is tried. The
    project pack (`.kittify/charter-packs`) is tried as it is.
+
+   Since slice B (#466) the service refuses `pack.md`, `PROVENANCE.md` and `org-charter.yaml` by name, as
+   `retired`, and excludes Markdown no rule models. A `pack.yaml` that still declares `active_charter` is refused as
+   unreadable (`pack_unreadable` at `pack`); the detail names the undeclared key, and the pack's other faults show
+   only once the key is removed. The registration hops pass once spec-kitty-open-packs applies
+   spec-kitty/spec-kitty-open-packs#241 (the README as the pack document) and spec-kitty/spec-kitty-open-packs#242 (the org
+   charter as a governing preset) and the pin moves past them; until then they fail, naming the retired files.
 3. **The activation document.** `charter-to-activation.py` turns `.kittify/charter/charter.yaml` into an activation
    document and adds the profile. It maps the directive slugs to the ids the service holds
    (`001-project-intent-directive` is `PROJECT_001`).
@@ -87,14 +95,13 @@ Nothing is silent. Every workaround prints as `[WORKAROUND]` when it is applied 
 
 | Name | When | What it does |
 |---|---|---|
-| `unmodelled-files (#451)` | A registration is refused only over `unmodelled` files (README, PROVENANCE, `org-charter.yaml`, ...). | Registers a staged copy without the files the refusal named. The checkout is untouched. |
 | `project-pack (#452)` | The project pack is refused. | Skips it. No edit is tried. |
 | `unlinked-graph-and-context` ([#469](https://github.com/spec-kitty/spec-kitty-charter/issues/469)) | The activation links neither `graph` nor an action context. | Takes `/graph` and `/mission-types/software-dev/actions/specify/context` from the contract, appended to the activation's `self` href. These are the only paths the walk builds after the bootstrap; every read beyond them is followed. If the activation links `graph`, the link is followed and no workaround is named for the graph; the action context path is always built (the activation offers no context template). |
 | `unheld-selections` | The activation is refused `activation_invalid` only with `unknown_artifact` violations. | Leaves out exactly the selections the service names, and lists them. `--strict` fails instead. |
 
 The script only removes what it made: the temporary directory is removed only if it is the directory `mktemp` returned
-for this run (it carries a marker file), and a staged-copy file is removed only if its path resolves strictly inside
-that directory. A path the service names that is absolute or contains `..` is refused and fails the registration hop.
+for this run (it carries a marker file). The `unmodelled-files (#451)` workaround, which registered a staged copy without
+the refused files, is gone: the charter's model has no tolerance for the old shapes.
 
 `charter-to-activation.py` fails (it exits 3 itself) on a top-level `activated_*` key it does not map, and on a mapped
 key whose list is inline or indented, because either would drop selections without a word. The run then fails hop A2

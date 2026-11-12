@@ -40,7 +40,6 @@ class PackFileSetTest {
             "x.tactic.config.yaml",
             "notes.yaml",
             "f.toolguide.yaml",
-            "org-charter.yaml",
             "sub/pack.yaml",
             "sub/y.graph.yaml",
             "sub/drg/fragment.yaml",
@@ -152,8 +151,8 @@ class PackFileSetTest {
     }
 
     /**
-     * ADR-0042 decision 9, #260: the pack-level tail is the presets in path order, then {@code pack.md}, then the
-     * manifest. A {@code pack.md} the load refuses (a carriage return) is still digested; one below the root is not the
+     * ADR-0042 decision 9, #260: the pack-level tail is the presets in path order, then {@code README.md}, then the
+     * manifest. A {@code README.md} the load refuses (a carriage return) is still digested; one below the root is not the
      * pack document and is not digested.
      */
     @Test
@@ -164,8 +163,8 @@ class PackFileSetTest {
                 "a.tactic.yaml",
                 "presets/b.yaml",
                 "presets/a.yaml",
-                "pack.md",
-                "docs/pack.md",
+                "README.md",
+                "docs/README.md",
                 "pack-manifest.yaml",
                 "templates/t.md")) {
             Files.createDirectories(documented.resolve(file).getParent());
@@ -179,9 +178,9 @@ class PackFileSetTest {
                         "templates/t.md",
                         "presets/a.yaml",
                         "presets/b.yaml",
-                        "pack.md",
+                        "README.md",
                         "pack-manifest.yaml");
-        Files.delete(documented.resolve("pack.md"));
+        Files.delete(documented.resolve("README.md"));
         assertThat(PackFileSet.digested(documented))
                 .containsExactly(
                         "pack.yaml",
@@ -343,18 +342,24 @@ class PackFileSetTest {
 
         Path stale = RetiredFileFixture.plant(
                 host.resolve("stale/qa"),
-                List.of("pack-manifest.yaml", "missions/plan/mission.yaml", "a.tactic.yaml", "mission_types/qa.yaml"));
+                List.of(
+                        "pack-manifest.yaml",
+                        "missions/plan/mission.yaml",
+                        "a.tactic.yaml",
+                        "mission_types/qa.yaml",
+                        "org-charter.yaml"));
 
         assertThat(PackFileSet.listing(stale, PackFileKind.bundled()).retired().keySet())
-                .containsExactly("mission_types/qa.yaml", "missions/plan/mission.yaml");
+                .containsExactly("mission_types/qa.yaml", "missions/plan/mission.yaml", "org-charter.yaml");
         assertThat(PackFileSet.digested(stale))
                 .containsExactly(
                         "pack.yaml",
                         "a.tactic.yaml",
                         "pack-manifest.yaml",
                         "mission_types/qa.yaml",
-                        "missions/plan/mission.yaml");
-        assertThat(PackFileSet.digested(stale, unretiring)).doesNotContain("mission_types/qa.yaml");
+                        "missions/plan/mission.yaml",
+                        "org-charter.yaml");
+        assertThat(PackFileSet.digested(stale, unretiring)).doesNotContain("mission_types/qa.yaml", "org-charter.yaml");
     }
 
     private static String bundledText() throws IOException {

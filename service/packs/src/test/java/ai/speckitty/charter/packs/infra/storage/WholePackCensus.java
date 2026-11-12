@@ -21,7 +21,9 @@ import org.jspecify.annotations.Nullable;
  * <p>A file that {@code contracts/packs/file-kinds.yaml} maps to a schema takes the schema's name ({@code directive},
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
  * {@code other:<top-level directory>}, or {@code other:<file name>} at the pack root, so files without a schema are
- * grouped where they live ({@code other:missions}, {@code other:README.md}).
+ * grouped where they live ({@code other:missions}, {@code other:notes.txt}). A file the table excludes (an
+ * {@code exclusions} rule, or the {@code ignored} fallback for Markdown nothing models) takes
+ * {@code excluded:<rule's glob>}: it is not pack content, so it is never {@code other:} and never red (#451).
  *
  * <p>A companion file (ADR-0039, #194) that no rule maps takes its owning artifact's gate kind, so it is modelled with
  * that artifact: the gate pairs it with the owner's written companion at the same relative path and compares it in the
@@ -40,6 +42,12 @@ final class WholePackCensus {
      * folded into {@code other:}, so a stale file is red.
      */
     static final String RETIRED = "retired:";
+
+    /**
+     * The prefix of an excluded file's gate kind, followed by the glob of the rule that excludes it: the gate checks that
+     * the store did not write it ({@link WholePackExpectation}), and it needs no entry in a baseline list.
+     */
+    static final String EXCLUDED = "excluded:";
 
     private WholePackCensus() {}
 
@@ -115,7 +123,8 @@ final class WholePackCensus {
 
     /**
      * The gate kind of one file under {@code table}: the schema name, {@link #RETIRED} and the rule's glob for a retired
-     * file, else {@code other:<first segment>}. The seam a test uses before the bundled table has a retired rule.
+     * file, {@link #EXCLUDED} and the rule's glob for an excluded one, else {@code other:<first segment>}. The seam a
+     * test uses before the bundled table has a retired rule.
      *
      * @param packName the pack directory's name
      * @param path the pack-relative path
@@ -129,6 +138,9 @@ final class WholePackCensus {
         }
         if (classification instanceof PackFileKind.Retired retired) {
             return RETIRED + retired.match();
+        }
+        if (classification instanceof PackFileKind.Excluded excluded) {
+            return EXCLUDED + excluded.exclusionClass();
         }
         int slash = path.indexOf('/');
         return OTHER + (slash < 0 ? path : path.substring(0, slash));

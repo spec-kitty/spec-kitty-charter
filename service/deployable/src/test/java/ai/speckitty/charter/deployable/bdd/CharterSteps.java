@@ -53,6 +53,7 @@ public class CharterSteps {
     private static final Pattern UNFINGERPRINTED =
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
+    private static final MediaType MARKDOWN = new MediaType("text", "markdown");
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
@@ -225,7 +226,7 @@ public class CharterSteps {
     }
 
     /**
-     * A {@code GET} answer of a verified read: 200, a JSON body, and any path but the root and the two activation reads
+     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read), and any path but the root and the two activation reads
      * that send no fingerprint ({@link #UNFINGERPRINTED}).
      */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
@@ -234,7 +235,8 @@ public class CharterSteps {
                 && !path.equals("/")
                 && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
-                && MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type));
+                && (MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type))
+                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type)));
     }
 
     @When("the file {string} of the pack {string} is deleted")
@@ -279,6 +281,14 @@ public class CharterSteps {
         http.perform("GET", path, Map.of(HttpHeaders.ACCEPT, accept), null);
     }
 
+    /** The same, with the {@code If-None-Match} a remembered header gave (the {@code ETag} of an earlier answer). */
+    @When("I GET {string} accepting {string} with If-None-Match the remembered header {string}")
+    public void getAcceptingIfNoneMatchRemembered(String path, String accept, String header) throws Exception {
+        String held = remembered.get(HEADER + header);
+        assertThat(held).as("the header %s was remembered", header).isNotNull();
+        http.perform("GET", path, Map.of(HttpHeaders.ACCEPT, accept, HttpHeaders.IF_NONE_MATCH, held), null);
+    }
+
     @Then("the response status is {int}")
     public void status(int status) throws Exception {
         assertThat(http.response().getStatus()).as(http.body()).isEqualTo(status);
@@ -289,6 +299,20 @@ public class CharterSteps {
     public void body(String expected) throws Exception {
         JsonNode actual = JSON.readTree(http.body());
         assertThat(actual).isEqualTo(JSON.readTree(expected));
+    }
+
+    /**
+     * The body as text, not as JSON: a {@code text/markdown} answer. The doc string leaves off the final newline that
+     * "the pack ... with the file" step writes after its own, so the body is the doc string and that newline.
+     */
+    @Then("the response body is the text:")
+    public void bodyIsText(String expected) throws Exception {
+        assertThat(http.body()).isEqualTo(expected + "\n");
+    }
+
+    @Then("the response body is empty")
+    public void bodyIsEmpty() throws Exception {
+        assertThat(http.body()).isEmpty();
     }
 
     @Then("the response body, apart from {string}, is:")

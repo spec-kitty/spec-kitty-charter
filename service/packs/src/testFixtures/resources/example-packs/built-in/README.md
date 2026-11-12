@@ -14,3 +14,8 @@ that is never regenerated. The pack's constituent inventory, content hashes,
 and self-integrity hash live in the **generated** `pack-manifest.yaml` next
 to this file; that file is machine-written only and must never be hand-edited
 (see `tests/architectural/test_pack_manifest_no_author_edit.py`).
+
+## Provenance
+
+Authored in this repository as the charter's own example pack (ADR-0070). It is a fixture of the
+whole-pack round trip, not a copy of the pack that ships with Spec Kitty.

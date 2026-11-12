@@ -62,9 +62,24 @@ public class CharterWiring {
         return storage::all;
     }
 
+    /**
+     * The fingerprint over the packs {@code locations} names, judged by the storage layer's write rule, so it reads a
+     * pack a replace is swapping as the store does (#490): through the aside copy, and never one beside a pack the
+     * service may not write.
+     */
     @Bean
-    FileSystemPackSources packSources(PackLocations locations) {
-        return new FileSystemPackSources(locations);
+    FileSystemPackSources packSources(PackLocations locations, Locations storage) {
+        return new FileSystemPackSources(new Locations() {
+            @Override
+            public List<PackLocation> all() {
+                return locations.get();
+            }
+
+            @Override
+            public Optional<String> whyReadOnly(Path realDirectory) {
+                return storage.whyReadOnly(realDirectory);
+            }
+        });
     }
 
     /** Validate mode (FR-010) over the file-based inspector: the seam the pack doctor (#115) composes. */

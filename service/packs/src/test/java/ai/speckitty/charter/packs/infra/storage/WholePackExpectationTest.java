@@ -837,11 +837,12 @@ class WholePackExpectationTest {
             Path pack = temp.resolve("built-in");
             for (String path : List.of(
                     "pack.yaml",
-                    "pack.md",
+                    "README.md",
                     "tactic.graph.yaml",
                     "tactics/x/a.tactic.yaml",
                     "missions/m/mission.yaml",
-                    "toolguides/GUIDE.md")) {
+                    "toolguides/GUIDE.md",
+                    "toolguides/notes.txt")) {
                 Files.createDirectories(pack.resolve(path).getParent());
                 Files.writeString(pack.resolve(path), "x");
             }
@@ -849,11 +850,12 @@ class WholePackExpectationTest {
             assertThat(WholePackCensus.of(pack))
                     .containsExactlyEntriesOf(new TreeMap<>(Map.of(
                             "missions/m/mission.yaml", "retired:*/missions/*/mission.yaml",
-                            "pack.md", "pack-document",
+                            "README.md", "pack-document",
                             "pack.yaml", "pack-descriptor",
                             "tactic.graph.yaml", "graph-shard",
                             "tactics/x/a.tactic.yaml", "tactic",
-                            "toolguides/GUIDE.md", "other:toolguides")));
+                            "toolguides/GUIDE.md", "excluded:**/*.md",
+                            "toolguides/notes.txt", "other:toolguides")));
         }
 
         @Test
@@ -866,6 +868,116 @@ class WholePackExpectationTest {
             assertThat(WholePackCensus.of(pack))
                     .containsEntry("link.tactic.yaml", WholePackCensus.SYMLINK)
                     .containsEntry("tactics/a.tactic.yaml", "tactic");
+        }
+    }
+
+    /**
+     * A file the table excludes is checked, not compared (#451): it is absent from the tree the store wrote, it is never
+     * red and it needs no entry in a baseline list; a file nothing models that is not Markdown stays red.
+     */
+    @Nested
+    class TheExcludedFiles {
+
+        private static final String NOTE_KIND = WholePackCensus.EXCLUDED + "**/*.md";
+
+        private final SortedMap<String, String> census = census(
+                "pack.yaml", "pack-descriptor",
+                "tactics/a.tactic.yaml", "tactic",
+                "docs/notes.md", NOTE_KIND,
+                "notes.txt", "other:notes.txt");
+
+        private Evaluation judged(Map<String, Optional<String>> observed) {
+            return WholePackExpectation.load("kinds: []\nfiles: []\n", NO_EXCLUSIONS)
+                    .evaluate(census, MODELLED, observed);
+        }
+
+        @Test
+        void theCensusTakesAnExcludedKindFromTheTable(@TempDir Path pack) throws IOException {
+            Files.createDirectories(pack.resolve("docs"));
+            Files.writeString(pack.resolve("docs/notes.md"), "# note\n");
+            Files.writeString(pack.resolve("notes.txt"), "stray");
+            Files.createDirectories(pack.resolve("missions/x/templates"));
+            Files.writeString(pack.resolve("missions/x/templates/README.md"), "# t\n");
+
+            assertThat(WholePackCensus.of(pack))
+                    .containsEntry("docs/notes.md", NOTE_KIND)
+                    .containsEntry(
+                            "missions/x/templates/README.md",
+                            WholePackCensus.EXCLUDED + "*/missions/*/templates/**/README.md")
+                    .containsEntry("notes.txt", "other:notes.txt");
+            assertThat(WholePackCensus.kindOf(pack.getFileName().toString(), "README.md"))
+                    .as("the pack document is a file of the pack, not an excluded one")
+                    .isEqualTo("pack-document");
+        }
+
+        @Test
+        void anExcludedFileTheStoreDidNotWriteIsExcludedAndNeedsNoBaselineEntry() {
+            Evaluation evaluation = judged(withNoteAbsent());
+
+            assertThat(statuses(evaluation)).containsEntry("docs/notes.md", Status.EXCLUDED);
+            assertThat(evaluation.files())
+                    .filteredOn(file -> file.path().equals("docs/notes.md"))
+                    .singleElement()
+                    .satisfies(file ->
+                            assertThat(file.detail()).contains("**/*.md").contains("not written"));
+            assertThat(evaluation.problems())
+                    .as("the note is judged apart; only the control is a problem")
+                    .containsExactly(
+                            "UNEXPECTED_RED notes.txt (other:notes.txt): no adapter models kind other:notes.txt");
+        }
+
+        @Test
+        void aTextFileNothingModelsStaysRedWhileTheNoteIsExcluded() {
+            Evaluation evaluation = judged(withNoteAbsent());
+
+            assertThat(statuses(evaluation)).containsEntry("notes.txt", Status.RED);
+        }
+
+        @Test
+        void anExcludedFileTheStoreWroteIsRed() {
+            Map<String, Optional<String>> observed = withNoteAbsent();
+            observed.put("docs/notes.md", Optional.of("the store wrote the excluded file docs/notes.md"));
+
+            Evaluation evaluation = judged(observed);
+
+            assertThat(statuses(evaluation)).containsEntry("docs/notes.md", Status.RED);
+            assertThat(evaluation.problems())
+                    .contains("EXCLUDED_WRITTEN docs/notes.md (" + NOTE_KIND
+                            + "): the store wrote the excluded file docs/notes.md");
+        }
+
+        @Test
+        void aRunThatNeverCheckedAnExcludedFileDoesNotPass() {
+            Map<String, Optional<String>> observed = withNoteAbsent();
+            observed.remove("docs/notes.md");
+
+            assertThat(judged(observed).problems())
+                    .anyMatch(problem ->
+                            problem.startsWith("EXCLUDED_WRITTEN docs/notes.md") && problem.contains("did not check"));
+        }
+
+        @Test
+        void aBaselineEntryOverAnExcludedFileIsStale() {
+            Evaluation evaluation =
+                    WholePackExpectation.load("""
+                            kinds: []
+                            files:
+                              - path: docs/notes.md
+                                at: refused
+                                reason: Should never be listed.
+                                issue: "#451"
+                            """, NO_EXCLUSIONS).evaluate(census, MODELLED, withNoteAbsent());
+
+            assertThat(evaluation.problems())
+                    .contains("STALE_BASELINE docs/notes.md: the file is excluded; remove it from "
+                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        private Map<String, Optional<String>> withNoteAbsent() {
+            Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
+            observed.remove("tactics/b.tactic.yaml");
+            observed.put("docs/notes.md", Optional.empty());
+            return observed;
         }
     }
 

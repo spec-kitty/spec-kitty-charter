@@ -13,6 +13,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,6 +66,7 @@ class StorageRootLocationsTest {
     @Test
     void aPackWithoutAReadableDeclarationIsAnOrgPack() throws IOException {
         Files.createDirectories(packs.resolve("bare"));
+        Files.writeString(packs.resolve("bare/notes.md"), "no declaration");
         Files.createDirectories(packs.resolve("garbled"));
         Files.writeString(packs.resolve("garbled/pack.yaml"), "pack_level: [unclosed\n");
         Files.createDirectories(packs.resolve("galaxy"));
@@ -363,8 +368,9 @@ class StorageRootLocationsTest {
             assertThat(locations.all()).isEmpty();
             assertThat(locations.all()).isEmpty();
             Files.createDirectories(elsewhere.resolve("gone/qa"));
+            Files.writeString(elsewhere.resolve("gone/qa/pack.yaml"), "pack_level: org\n");
             assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
-            Files.delete(elsewhere.resolve("gone/qa"));
+            PackCommitStore.deleteTree(elsewhere.resolve("gone/qa"));
             Files.delete(elsewhere.resolve("gone"));
             Files.writeString(elsewhere.resolve("gone"), "a file");
             assertThat(locations.all()).isEmpty();
@@ -402,6 +408,82 @@ class StorageRootLocationsTest {
         public void close() {
             logger.detachAppender(events);
         }
+    }
+
+    @Test
+    void anEmptyDirectoryIsACreatesReservationAndIsNotListed() throws IOException {
+        pack("qa", "org");
+        Files.createDirectories(packs.resolve("reserved"));
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(new StorageRootLocations(packs).all())
+                    .extracting(PackLocation::name)
+                    .as("an empty entry reads as no pack (#490, squad D7)")
+                    .containsExactly("qa");
+            assertThat(log.warnings()).isEmpty();
+        }
+    }
+
+    @Test
+    void aHalfSwappedPackWhoseLockIsHeldIsListedThroughItsAsideAtItsLevelWithoutWaiting() throws Exception {
+        pack("qa", "project");
+        Path live = packs.resolve("qa");
+        Path aside = packs.resolve("qa.pack-old-inflight");
+        ReentrantLock lock = PackWriteLocks.of(live);
+        CountDownLatch held = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        // Another thread holds the pack's write lock with the pack moved aside, as a swap between its renames does.
+        CompletableFuture<Void> swap = CompletableFuture.runAsync(() -> {
+            lock.lock();
+            try {
+                Files.move(live, aside);
+                held.countDown();
+                release.await(30, TimeUnit.SECONDS);
+                Files.move(aside, live);
+            } catch (IOException | InterruptedException e) {
+                throw new IllegalStateException(e);
+            } finally {
+                lock.unlock();
+            }
+        });
+        try (LogCapture log = new LogCapture()) {
+            assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
+            long started = System.nanoTime();
+
+            List<PackLocation> listed = new StorageRootLocations(packs).all();
+
+            assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started))
+                    .as("the listing did not wait for the lock")
+                    .isLessThan(1000);
+            assertThat(lock.hasQueuedThreads()).isFalse();
+            assertThat(listed)
+                    .as("listed under its own entry, at the level its aside copy declares")
+                    .containsExactly(new PackLocation("qa", PackLevel.PROJECT, live));
+            assertThat(aside).as("nothing was repaired under a held lock").isDirectory();
+            assertThat(log.warnings())
+                    .as("a swap in flight is not warned about")
+                    .isEmpty();
+        } finally {
+            release.countDown();
+        }
+        swap.get(30, TimeUnit.SECONDS);
+        assertThat(new StorageRootLocations(packs).all())
+                .extracting(PackLocation::name)
+                .containsExactly("qa");
+    }
+
+    @Test
+    void aHalfSwappedPackWhoseLockIsFreeIsRepairedAsBefore() throws IOException {
+        pack("qa", "org");
+        Files.move(packs.resolve("qa"), packs.resolve("qa.pack-old-crashed"));
+
+        assertThat(new StorageRootLocations(packs).all())
+                .extracting(PackLocation::name)
+                .containsExactly("qa");
+        assertThat(packs.resolve("qa/pack.yaml"))
+                .as("the aside copy was moved back")
+                .isRegularFile();
+        assertThat(packs.resolve("qa.pack-old-crashed")).doesNotExist();
     }
 
     @Test
