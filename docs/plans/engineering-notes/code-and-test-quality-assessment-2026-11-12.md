@@ -284,8 +284,8 @@ the new one. Four findings, each read against its source:
   rules this out. ADR-0066 added the branch on 2026-11-08, two days before the ruling, and nothing
   reconciles the two. It is a violation pending a ruling.
 - **The activation store's version 1 reader is a legacy reader beside the canonical one**
-  (`ActivationFileCodec.java:32-38,102-126`). The ruling rules this out too. The ADR-0020 decision 6
-  amendment of 2026-11-07 added it, and it predates the ruling. The store is unreleased, so no
+  (`ActivationFileCodec.java:32-38,102-126`). The ruling rules this out too. ADR-0020, amendment 2026-11-07,
+  item 6 (Storage) added it, and it predates the ruling. The store is unreleased, so no
   field file needs the reader. It is a violation pending a ruling.
 - **`kernel/domain/Relation`** is superseded by `RelationType` and has no caller in main code; only
   `VocabularyEqualityTest` uses it. It also shares its name with the hypermedia
@@ -360,7 +360,7 @@ catch. `PackPolicy.handles` (`:428`), `RegistrationJobs.retained` (`:801`) and
 1. **The unversioned pack descriptor** (`PackPolicy.java:331`, ADR-0066). Should `schema_version`
    become required and the warning-only branch go, with open-packs following? Or does ADR-0066 get an
    explicit exception from the 2026-11-10 ruling?
-2. **The activation store's version 1 reader** (ADR-0020 decision 6). Is it a sanctioned migration
+2. **The activation store's version 1 reader** (ADR-0020, amendment 2026-11-07, item 6 (Storage)). Is it a sanctioned migration
    of the service's own store, or does it go before the first release?
 3. **"Doctrine" in type names** (`DoctrineGraph`, `DrgNode`, `DrgEdge`). Should they be renamed to the
    CRG vocabulary as one bulk-edit mission, or kept with a recorded exception in `domain.md`?
