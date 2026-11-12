@@ -135,7 +135,7 @@ class CompanionDigestTest {
         Set<ArtifactKind> withoutSkills = withoutSkills();
 
         List<String> digested = PackFileSet.digested(builtIn);
-        int payloadStart = assertThePayloadsRunThenOnlyThePackLevelTail(builtIn, digested);
+        int payloadStart = assertPayloadsThenPackTailAndReturnPayloadStart(builtIn, digested);
 
         List<String> beforePayloads = digested.subList(0, payloadStart);
         List<String> markdown =
@@ -168,7 +168,7 @@ class CompanionDigestTest {
     }
 
     /** Asserts the payloads run in one, followed only by the pack-level tail, and answers where the run starts. */
-    private static int assertThePayloadsRunThenOnlyThePackLevelTail(Path builtIn, List<String> digested)
+    private static int assertPayloadsThenPackTailAndReturnPayloadStart(Path builtIn, List<String> digested)
             throws IOException {
         List<String> assetFiles = PackFileSet.assetFiles(builtIn);
         List<String> payloads = new ArrayList<>(assetFiles);
