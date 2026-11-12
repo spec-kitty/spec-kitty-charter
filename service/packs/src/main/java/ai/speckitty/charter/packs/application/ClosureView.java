@@ -643,9 +643,11 @@ public record ClosureView(
     }
 
     /**
-     * The action context over the merged closure (FR-015, FR-019, rule E16): ADR-0018's five-step walk from the held step
+     * The action context over the merged closure (FR-015, FR-019, rule E16 as amended by FR-008): the effective form of
+     * ADR-0018's walk ({@link ActionContextWalk#walkEffective}) from the held step
      * {@code action:<missionType>/<action>} over the artifacts in force, with their enhancers, {@code depth} counting
-     * {@code suggests} hops.
+     * {@code suggests} hops. Beside what the action's five steps reach, it lists under the ownership rule what the
+     * mission type scopes and what no action and no mission type scopes, each entry naming its pass.
      *
      * @param missionType the mission type
      * @param action the action
@@ -656,7 +658,7 @@ public record ClosureView(
      *     {@code ACTION_NOT_FOUND}, judged on the merged closure, or as {@link #merged()} does
      */
     public ActionContextWalk.Context actionContext(String missionType, String action, int depth, InForceStates states) {
-        return new ActionContextWalk(merged().edges()).walk(missionType, action, depth, effective(states));
+        return new ActionContextWalk(merged().edges()).walkEffective(missionType, action, depth, effective(states));
     }
 
     /**

@@ -455,8 +455,9 @@ class EffectiveReadServiceTest {
     private static ActionContext walked() {
         return new ActionContext(
                 true,
-                List.of(new ActionContext.Reached(A, List.of(T1))),
-                List.of(new ActionContext.SuggestionCandidate(B, Optional.of("when"), Optional.of("why"))),
+                List.of(new ActionContext.Reached(A, List.of(T1), ActionContext.AppliesThrough.ACTION)),
+                List.of(new ActionContext.SuggestionCandidate(
+                        B, Optional.of("when"), Optional.of("why"), ActionContext.AppliesThrough.ACTION)),
                 List.of(STEP_ENHANCER));
     }
 
@@ -539,10 +540,10 @@ class EffectiveReadServiceTest {
         ContextRead read = context(IMPLEMENT);
 
         assertThat(read.context().artifacts())
-                .extracting(EffectiveArtifact::ref)
+                .extracting(item -> item.artifact().ref())
                 .as("A is in force and walked, B is not selected and suggested; T1 is in force but not reached")
                 .containsExactly(A, B);
-        assertThat(read.context().artifacts().get(1).suggestion())
+        assertThat(read.context().artifacts().get(1).artifact().suggestion())
                 .contains(new EffectiveSet.Suggestion(Optional.of("when"), Optional.of("why")));
         assertThat(read.context().enhancements())
                 .containsExactly(
