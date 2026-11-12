@@ -121,8 +121,8 @@ class OverrideSourceRuleTest {
     void aRelationshipOverridingFromATemplateIsRefusedAndItsTwinFromADirectivePasses() {
         Urn directive = new Urn(NodeKind.DIRECTIVE, "D");
 
-        assertThat(OverrideSourceRule.refusal(Relationship.of(
-                        new Urn(NodeKind.TEMPLATE, "t.md"), directive, RelationType.OVERRIDES)))
+        assertThat(OverrideSourceRule.refusal(
+                        Relationship.of(new Urn(NodeKind.TEMPLATE, "t.md"), directive, RelationType.OVERRIDES)))
                 .hasValueSatisfying(reason -> assertThat(reason).contains("template:t.md"));
         assertThat(OverrideSourceRule.refusal(
                         Relationship.of(new Urn(NodeKind.DIRECTIVE, "E"), directive, RelationType.OVERRIDES)))

@@ -346,9 +346,15 @@ class RelationshipRegistrationServiceTest {
             throws IOException {
         RealPack real = RealPack.over(host, new PackMutabilityPolicy());
         real.directives.registerDirective(
-                PACK, directive("T"), false, real.writeStore.currentRevision(PACK).token());
+                PACK,
+                directive("T"),
+                false,
+                real.writeStore.currentRevision(PACK).token());
         real.directives.registerDirective(
-                PACK, directive("E"), false, real.writeStore.currentRevision(PACK).token());
+                PACK,
+                directive("E"),
+                false,
+                real.writeStore.currentRevision(PACK).token());
         Urn target = new Urn(NodeKind.DIRECTIVE, "T");
         PackRevision before = real.writeStore.currentRevision(PACK);
 
@@ -403,9 +409,9 @@ class RelationshipRegistrationServiceTest {
         });
 
         Files.writeString(shard, document.formatted("asset:logo"), StandardCharsets.UTF_8);
-        assertThat(real.repository.load(PACK).violations()).singleElement().satisfies(violation -> assertThat(
-                        violation.kind())
-                .isEqualTo("overrides_source_not_activatable"));
+        assertThat(real.repository.load(PACK).violations())
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable"));
 
         Files.writeString(shard, document.formatted("directive:E"), StandardCharsets.UTF_8);
         assertThat(real.repository.load(PACK).violations()).isEmpty();

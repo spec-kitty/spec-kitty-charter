@@ -15,9 +15,10 @@ Feature: An overrides edge comes from an activatable artifact
   of another relation from a template. Each refusal sits beside its passing twin, which differs only in the source
   of the edge.
 
-  Every fixture is two org packs: a base pack holds the directive D, and a second pack depends on it and holds the
-  directive E and the template t.md. The registrations use the archives obase and ovr; the relationship writes and the
-  reads plant pbase and povr below the service.
+  Every fixture is two org packs: a base pack holds a directive, and a second pack depends on it and holds another
+  directive and the template t.md. The registrations use the archives obase (directive D) and ovr (directive E); the
+  relationship writes and the reads plant pbase (directive P) and povr (directive F) below the service, with their own
+  ids, so that they never conflict with the packs the background registers.
 
   Background:
     Given registration is switched on
@@ -155,12 +156,12 @@ Feature: An overrides edge comes from an activatable artifact
       name: pbase
       pack_level: org
       """
-    And the org pack "pbase" with the file "directives/D.directive.yaml":
+    And the org pack "pbase" with the file "directives/P.directive.yaml":
       """
       schema_version: '1.0'
-      id: D
-      title: D
-      intent: D
+      id: P
+      title: P
+      intent: P
       enforcement: required
       """
     And the org pack "povr" with the file "pack.yaml":
@@ -174,25 +175,25 @@ Feature: An overrides edge comes from an activatable artifact
       - pack_id: 01M6ZRYK0000000000000000PB
         range: '>=1.0'
       """
-    And the org pack "povr" with the file "directives/E.directive.yaml":
+    And the org pack "povr" with the file "directives/F.directive.yaml":
       """
       schema_version: '1.0'
-      id: E
-      title: E
-      intent: E
+      id: F
+      title: F
+      intent: F
       enforcement: required
       """
     And the org pack "povr" with the file "templates/t.md":
       """
       # A template
       """
-    When I GET "/packs/povr/artifacts/directive/E"
+    When I GET "/packs/povr/artifacts/directive/F"
     Then the response status is 200
     When I remember the ETag
     And I remember the header "ETag"
     And I PUT "/packs/povr/relationships" with the remembered ETag and the body:
       """
-      {"from": "template:t.md", "to": "pbase::directive:D", "type": "overrides"}
+      {"from": "template:t.md", "to": "pbase::directive:P", "type": "overrides"}
       """
     Then the response status is 422
     And the field at "/code" is "validation_failed"
@@ -200,7 +201,7 @@ Feature: An overrides edge comes from an activatable artifact
     And the field at "/violations/0/code" is "overrides_source_not_activatable"
     And the field at "/violations/0/pointer" is "/from"
     And the field at "/violations/0/detail" contains "template:t.md"
-    When I GET "/packs/povr/artifacts/directive/E"
+    When I GET "/packs/povr/artifacts/directive/F"
     Then the response header "ETag" is the remembered header
 
   # The twin of the relationship refusal: the same edge from the directive is registered.
@@ -213,12 +214,12 @@ Feature: An overrides edge comes from an activatable artifact
       name: pbase
       pack_level: org
       """
-    And the org pack "pbase" with the file "directives/D.directive.yaml":
+    And the org pack "pbase" with the file "directives/P.directive.yaml":
       """
       schema_version: '1.0'
-      id: D
-      title: D
-      intent: D
+      id: P
+      title: P
+      intent: P
       enforcement: required
       """
     And the org pack "povr" with the file "pack.yaml":
@@ -232,28 +233,28 @@ Feature: An overrides edge comes from an activatable artifact
       - pack_id: 01M6ZRYK0000000000000000PB
         range: '>=1.0'
       """
-    And the org pack "povr" with the file "directives/E.directive.yaml":
+    And the org pack "povr" with the file "directives/F.directive.yaml":
       """
       schema_version: '1.0'
-      id: E
-      title: E
-      intent: E
+      id: F
+      title: F
+      intent: F
       enforcement: required
       """
     And the org pack "povr" with the file "templates/t.md":
       """
       # A template
       """
-    When I GET "/packs/povr/artifacts/directive/E"
+    When I GET "/packs/povr/artifacts/directive/F"
     Then the response status is 200
     When I remember the ETag
     And I remember the header "ETag"
     And I PUT "/packs/povr/relationships" with the remembered ETag and the body:
       """
-      {"from": "directive:E", "to": "pbase::directive:D", "type": "overrides"}
+      {"from": "directive:F", "to": "pbase::directive:P", "type": "overrides"}
       """
     Then the response status is 201
-    When I GET "/packs/povr/artifacts/directive/E"
+    When I GET "/packs/povr/artifacts/directive/F"
     Then the response header "ETag" differs from the remembered header
 
   # FR-014 on a composing read: a stored pack that holds the edge, planted below the service, is unreadable and the
@@ -267,12 +268,12 @@ Feature: An overrides edge comes from an activatable artifact
       name: pbase
       pack_level: org
       """
-    And the org pack "pbase" with the file "directives/D.directive.yaml":
+    And the org pack "pbase" with the file "directives/P.directive.yaml":
       """
       schema_version: '1.0'
-      id: D
-      title: D
-      intent: D
+      id: P
+      title: P
+      intent: P
       enforcement: required
       """
     And the org pack "povr" with the file "pack.yaml":
@@ -286,12 +287,12 @@ Feature: An overrides edge comes from an activatable artifact
       - pack_id: 01M6ZRYK0000000000000000PB
         range: '>=1.0'
       """
-    And the org pack "povr" with the file "directives/E.directive.yaml":
+    And the org pack "povr" with the file "directives/F.directive.yaml":
       """
       schema_version: '1.0'
-      id: E
-      title: E
-      intent: E
+      id: F
+      title: F
+      intent: F
       enforcement: required
       """
     And the org pack "povr" with the file "templates/t.md":
@@ -305,7 +306,7 @@ Feature: An overrides edge comes from an activatable artifact
       nodes: []
       edges:
       - source: template:t.md
-        target: pbase::directive:D
+        target: pbase::directive:P
         relation: overrides
       """
     When I GET "/offering"
@@ -323,12 +324,12 @@ Feature: An overrides edge comes from an activatable artifact
       name: pbase
       pack_level: org
       """
-    And the org pack "pbase" with the file "directives/D.directive.yaml":
+    And the org pack "pbase" with the file "directives/P.directive.yaml":
       """
       schema_version: '1.0'
-      id: D
-      title: D
-      intent: D
+      id: P
+      title: P
+      intent: P
       enforcement: required
       """
     And the org pack "povr" with the file "pack.yaml":
@@ -342,12 +343,12 @@ Feature: An overrides edge comes from an activatable artifact
       - pack_id: 01M6ZRYK0000000000000000PB
         range: '>=1.0'
       """
-    And the org pack "povr" with the file "directives/E.directive.yaml":
+    And the org pack "povr" with the file "directives/F.directive.yaml":
       """
       schema_version: '1.0'
-      id: E
-      title: E
-      intent: E
+      id: F
+      title: F
+      intent: F
       enforcement: required
       """
     And the org pack "povr" with the file "templates/t.md":
@@ -360,8 +361,8 @@ Feature: An overrides edge comes from an activatable artifact
       generated_at: STATIC
       nodes: []
       edges:
-      - source: directive:E
-        target: pbase::directive:D
+      - source: directive:F
+        target: pbase::directive:P
         relation: overrides
       """
     When I GET "/offering"
