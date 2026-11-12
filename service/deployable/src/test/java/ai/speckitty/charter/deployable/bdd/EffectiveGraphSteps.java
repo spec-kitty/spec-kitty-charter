@@ -97,6 +97,38 @@ public class EffectiveGraphSteps {
                 .isEqualTo(expectedLines(expected));
     }
 
+    /**
+     * The slots of an effective prompt (effective-step-prompt.feature, mission effective-step-and-action-context, WP07):
+     * one line per fragment, {@code <slot> <level> <packId> "<packName>" <enhancement>}, in the answer's order, and
+     * {@code <slot> (empty)} for a slot no fragment fills, so the order of the slots and of the fragments is pinned.
+     *
+     * @param expected the lines
+     * @throws Exception when the answer is no JSON
+     */
+    @Then("the prompt holds exactly the slots:")
+    public void slots(String expected) throws Exception {
+        List<String> found = new ArrayList<>();
+        String body = http.body();
+        JsonNode slots = JSON.readTree(body).at("/slots");
+        assertThat(slots.isArray()).as("/slots is an array: %s", body).isTrue();
+        slots.forEach(slot -> {
+            String id = slot.path("slot").asString();
+            JsonNode fragments = slot.path("fragments");
+            assertThat(fragments.isArray())
+                    .as("the fragments of %s are an array: %s", id, body)
+                    .isTrue();
+            if (fragments.isEmpty()) {
+                found.add(id + " (empty)");
+            }
+            fragments.forEach(fragment -> found.add(id + " "
+                    + fragment.path("level").asString() + " "
+                    + fragment.path("packId").asString() + " \""
+                    + fragment.path("packName").asString() + "\" "
+                    + fragment.path("enhancement").asString()));
+        });
+        assertThat(found).as("the slots of the prompt").isEqualTo(expectedLines(expected));
+    }
+
     private static String side(JsonNode side) {
         return side.path("packId").asString() + "@" + side.path("level").asString();
     }

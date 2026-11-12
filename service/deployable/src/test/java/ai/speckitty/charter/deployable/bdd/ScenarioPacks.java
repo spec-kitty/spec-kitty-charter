@@ -1,6 +1,7 @@
 package ai.speckitty.charter.deployable.bdd;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -119,6 +120,50 @@ public final class ScenarioPacks {
         try {
             Files.createDirectories(file.getParent());
             Files.writeString(file, content.endsWith("\n") ? content : content + "\n", StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Configures one of charter's example packs (ADR-0070) as it is held, every file byte for byte, under its own name
+     * and at its own level.
+     *
+     * @param name {@code built-in}, {@code org-base} or {@code project}
+     */
+    void addExamplePack(String name) {
+        if (root == null) {
+            throw new IllegalStateException("no scenario is running");
+        }
+        PackLevel level = ExamplePacks.level(name);
+        Path levelRoot = root.resolve(level.token());
+        Path packRoot = levelRoot.resolve(name);
+        if (locations.stream()
+                .anyMatch(l -> l.root().equals(packRoot) || l.name().equals(name))) {
+            throw new IllegalStateException("the pack " + name + " is configured already");
+        }
+        try {
+            Files.createDirectories(levelRoot);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        locations.add(new PackLocation(name, level, ExamplePacks.copyOf(name, levelRoot)));
+    }
+
+    /**
+     * The bytes of one file of a configured pack, as stored now; the file must exist.
+     *
+     * @param pack the configured name of the pack
+     * @param relativePath the file's path below the pack directory
+     * @return its bytes
+     */
+    byte[] fileOf(String pack, String relativePath) {
+        PackLocation location = locations.stream()
+                .filter(l -> l.name().equals(pack))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no pack " + pack + " is configured"));
+        try {
+            return Files.readAllBytes(location.root().resolve(relativePath));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

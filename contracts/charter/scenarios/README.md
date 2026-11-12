@@ -132,6 +132,13 @@ Keep it small; add a step only when a scenario cannot be written without it.
   `Then the context lists "<kind>:<id>" as "<expected>"` reads one artifact of the context: `listed / <appliesThrough>`
   when exactly one item is that artifact, with that `appliesThrough`, and `absent` when none is
   (`effective-context-scoping.feature`, bound in `EffectiveGraphSteps`).
+- `Given the example pack "<name>" of the charter` — configures one of charter's example packs (ADR-0070; `built-in`,
+  `org-base` or `project`, held in `service/packs/src/testFixtures/resources/example-packs`) under its own name and at
+  its own level, every file as it is held. `Then the field at "<json-pointer>" is the file "<path>" of the pack "<name>"`
+  — the string member is that file of the configured pack, byte for byte. `Then the prompt holds exactly the slots:`
+  followed by a doc string reads an effective prompt's `slots`, in the answer's order: one line per fragment, `<slot>
+  <level> <packId> "<packName>" <enhancement>`, and `<slot> (empty)` for a slot no fragment fills
+  (`effective-step-prompt.feature`, bound in `CharterSteps` and `EffectiveGraphSteps`).
 - `Then the field at "<json-pointer>" is null` — the member is there and is JSON `null`, as a required nullable member is
   written; a member the answer leaves out is `is absent` (agent-profile-reads.feature, bound in `ProfileSteps`).
 - `Then the governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of the last
@@ -328,7 +335,11 @@ from ready to held, is a breaking change of the contract.
   example table (the one home of that table), a type-scoped directive listed through the mission type, another mission
   type's directive absent whether or not that type is in force, a required directive scoped only to another action
   absent, an unscoped procedure absent and its twin reached from a project-wide directive listed, and the
-  `appliesThrough` of a suggestion. No operation is reserved any more, so no scenario pins a `501`
+  `appliesThrough` of a suggestion. `effective-step-prompt.feature`: the effective prompt of a step (FR-003 to FR-005,
+  FR-007, SC-001): the prompt in force as stored with the fragments in force of each slot in the order of ADR-0066
+  decision 5, on the example packs and on a three-level fixture, an empty slot listed, a legacy slot's diagnostic,
+  `409 mission_type_not_in_force` where the context answers empty, the refusals before the `304`, the `ETag` and the
+  context's `prompt` link. No operation is reserved any more, so no scenario pins a `501`
   (`ReservedOperationCoverageTest` keeps the machinery, with a planted contract as its control).
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
