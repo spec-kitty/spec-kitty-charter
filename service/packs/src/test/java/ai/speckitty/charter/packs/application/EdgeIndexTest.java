@@ -589,7 +589,9 @@ class EdgeIndexTest {
         merged.isScopedBy(urn("tactic:T"), urn("mission_type:M"));
         merged.isProjectWide(urn("tactic:T"));
 
-        assertThat(visits.get()).as("one pass over the three edges, then the memo").isEqualTo(3);
+        assertThat(visits.get())
+                .as("one pass over the three edges, then the memo")
+                .isEqualTo(3);
     }
 
     @Test

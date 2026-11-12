@@ -292,7 +292,13 @@ class ActionContextWalkOwnershipTest {
         assertThat(context.entries())
                 .extracting(Entry::urn, Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
                 .containsExactly(
-                        tuple(urn("directive:W"), Step.SCOPE, Pass.PROJECT, Optional.of(urn("directive:W")), urn(START), 1),
+                        tuple(
+                                urn("directive:W"),
+                                Step.SCOPE,
+                                Pass.PROJECT,
+                                Optional.of(urn("directive:W")),
+                                urn(START),
+                                1),
                         tuple(
                                 urn("glossary_pack:G"),
                                 Step.VOCABULARY,
@@ -300,7 +306,13 @@ class ActionContextWalkOwnershipTest {
                                 Optional.of(urn("directive:W")),
                                 urn("glossary_pack:V"),
                                 3),
-                        tuple(urn("glossary_pack:V"), Step.VOCABULARY, Pass.ACTION, Optional.empty(), urn("tactic:T"), 2),
+                        tuple(
+                                urn("glossary_pack:V"),
+                                Step.VOCABULARY,
+                                Pass.ACTION,
+                                Optional.empty(),
+                                urn("tactic:T"),
+                                2),
                         tuple(urn("tactic:T"), Step.SCOPE, Pass.ACTION, Optional.empty(), urn(START), 1));
     }
 
@@ -319,7 +331,8 @@ class ActionContextWalkOwnershipTest {
                 .containsExactly(Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")));
         assertThat(entry(context, "glossary_pack:G"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via)
-                .containsExactly(Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_pack:V"));
+                .containsExactly(
+                        Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_pack:V"));
     }
 
     /**
@@ -343,7 +356,11 @@ class ActionContextWalkOwnershipTest {
         assertThat(entry(context, "procedure:R"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
                 .containsExactly(
-                        Step.REQUIRES_OF_SUGGESTED, Pass.PROJECT, Optional.of(urn("directive:W")), urn("procedure:S"), 3);
+                        Step.REQUIRES_OF_SUGGESTED,
+                        Pass.PROJECT,
+                        Optional.of(urn("directive:W")),
+                        urn("procedure:S"),
+                        3);
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -107,7 +108,22 @@ public final class EdgeIndex implements ComposeResolver {
         }
     }
 
+    /**
+     * A count of the work the index and the walks over it do (NFR-003): one call per visit of an edge or a node. The
+     * reads never use one; an operation-count test hands one in through {@link #merged(MergedClosure, Visits)}.
+     */
+    @FunctionalInterface
+    interface Visits {
+
+        /** Counts nothing. */
+        Visits NONE = () -> {};
+
+        /** Counts one visit of an edge or a node. */
+        void visit();
+    }
+
     private final List<PackUnderResolution> closure;
+    private final Visits visits;
     private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
@@ -124,7 +140,8 @@ public final class EdgeIndex implements ComposeResolver {
     /** The place of the version in force per URN under a layer merge; empty for an index that is not merged. */
     private final Map<Urn, Place> winners;
 
-    private EdgeIndex(List<PackUnderResolution> closure, Map<Urn, Place> winners) {
+    private EdgeIndex(List<PackUnderResolution> closure, Map<Urn, Place> winners, Visits visits) {
+        this.visits = visits;
         this.winners = Map.copyOf(winners);
         this.closure = List.copyOf(closure);
         this.closure.forEach(pack -> byPack.put(idOf(pack), pack));
@@ -144,7 +161,7 @@ public final class EdgeIndex implements ComposeResolver {
     public static EdgeIndex of(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
-        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of());
+        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of(), Visits.NONE);
         for (PackUnderResolution pack : index.closure) {
             List<Relationship> edges = factsByConfiguredId
                     .getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
@@ -174,12 +191,26 @@ public final class EdgeIndex implements ComposeResolver {
      *     at its own source
      */
     public EdgeIndex merged(MergedClosure merged) {
+        return merged(merged, visits);
+    }
+
+    /**
+     * The index as the layer merge sees it ({@link #merged(MergedClosure)}), counting to {@code visits} each edge its
+     * edge lists, its scope-owner build and the walks over it visit, and each node its held-URN build visits.
+     *
+     * @param merged the layer merge of this index's closure
+     * @param visits the count
+     * @return the merged index
+     * @throws CharterRefusal as {@link #merged(MergedClosure)} does
+     */
+    EdgeIndex merged(MergedClosure merged, Visits visits) {
         Objects.requireNonNull(merged, "merged");
+        Objects.requireNonNull(visits, "visits");
         Map<Urn, Place> placesInForce = new LinkedHashMap<>();
         merged.winners()
                 .forEach((urn, winner) ->
                         placesInForce.put(urn, new Place(new PackIdentifier(winner.descriptorPackId()), urn)));
-        EdgeIndex view = new EdgeIndex(closure, placesInForce);
+        EdgeIndex view = new EdgeIndex(closure, placesInForce, visits);
         outgoing.forEach((place, edges) -> {
             if (view.wins(place)) {
                 edges.forEach(edge -> view.put(place, repointed(edge, view)));
@@ -304,14 +335,14 @@ public final class EdgeIndex implements ComposeResolver {
         Map<Urn, Set<Urn>> owners = scopeOwners;
         if (owners == null) {
             Map<Urn, Set<Urn>> collected = new HashMap<>();
-            outgoing.values()
-                    .forEach(edges -> edges.stream()
-                            .filter(edge -> edge.type() == RelationType.SCOPE)
-                            .filter(edge -> edge.from().kind() == NodeKind.ACTION
-                                    || edge.from().kind() == NodeKind.MISSION_TYPE)
-                            .forEach(edge -> collected
-                                    .computeIfAbsent(edge.to(), ignored -> new TreeSet<>())
-                                    .add(edge.from())));
+            forEachEdge((place, edge) -> {
+                if (edge.type() == RelationType.SCOPE
+                        && (edge.from().kind() == NodeKind.ACTION || edge.from().kind() == NodeKind.MISSION_TYPE)) {
+                    collected
+                            .computeIfAbsent(edge.to(), ignored -> new TreeSet<>())
+                            .add(edge.from());
+                }
+            });
             Map<Urn, Set<Urn>> frozen = new HashMap<>();
             collected.forEach((target, sources) -> frozen.put(target, Collections.unmodifiableSet(sources)));
             owners = Collections.unmodifiableMap(frozen);
@@ -353,6 +384,7 @@ public final class EdgeIndex implements ComposeResolver {
         if (urns == null) {
             Set<Urn> held = new TreeSet<>();
             closure.forEach(pack -> pack.definedArtifacts().stream()
+                    .map(this::visited)
                     .flatMap(defined -> Urn.parse(defined).stream())
                     .filter(urn -> wins(new Place(idOf(pack), urn)))
                     .forEach(held::add));
@@ -399,12 +431,12 @@ public final class EdgeIndex implements ComposeResolver {
      */
     List<Link> links() {
         List<Link> links = new ArrayList<>();
-        outgoing.forEach((place, edges) -> {
+        forEachEdge((place, edge) -> {
             if (holds(place)) {
-                edges.forEach(edge -> neighbour(edge)
+                neighbour(edge)
                         .filter(this::holds)
                         .ifPresent(target -> links.add(
-                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale()))));
+                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale())));
             }
         });
         return links;
@@ -421,21 +453,41 @@ public final class EdgeIndex implements ComposeResolver {
      */
     List<Link> writtenLinks() {
         List<Link> links = new ArrayList<>();
-        outgoing.forEach((place, edges) -> {
+        forEachEdge((place, edge) -> {
             if (holds(place)) {
-                edges.forEach(edge -> {
-                    Optional<Place> target = neighbour(edge);
-                    links.add(new Link(
-                            place.urn(),
-                            edge.type(),
-                            edge.to(),
-                            edge.when(),
-                            edge.rationale(),
-                            target.filter(this::holds).isPresent()));
-                });
+                Optional<Place> target = neighbour(edge);
+                links.add(new Link(
+                        place.urn(),
+                        edge.type(),
+                        edge.to(),
+                        edge.when(),
+                        edge.rationale(),
+                        target.filter(this::holds).isPresent()));
             }
         });
         return links;
+    }
+
+    /** Hands every edge of the index, with the place of its source, to the action, counting each one visited. */
+    private void forEachEdge(BiConsumer<Place, Relationship> action) {
+        outgoing.forEach((place, edges) -> edges.forEach(edge -> {
+            visits.visit();
+            action.accept(place, edge);
+        }));
+    }
+
+    /** Counts one visit of a node and hands it back. */
+    private <T> T visited(T node) {
+        visits.visit();
+        return node;
+    }
+
+    /**
+     * Counts one visit of an edge for a walk over this index ({@link ActionContextWalk}); counts nothing unless an
+     * operation-count test handed in a {@link Visits}.
+     */
+    void visitEdge() {
+        visits.visit();
     }
 
     /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */

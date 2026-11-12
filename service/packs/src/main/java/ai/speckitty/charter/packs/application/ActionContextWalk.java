@@ -104,7 +104,7 @@ public final class ActionContextWalk {
     }
 
     /**
-     * The rule of the ownership rule that brings an entry into the effective action context (research R1 and R3): the
+     * Which part of the ownership rule brings an entry into the effective action context (research R1 and R3): the
      * pass of {@link #walkEffective} that listed it. The passes run in this order over one listing, and the first pass
      * that reaches an artifact lists it.
      */
@@ -421,7 +421,7 @@ public final class ActionContextWalk {
      * included (ADR-0018 D3 within the walk): the first reach wins, vocabulary included, so a root the action's
      * vocabulary step listed is listed through the action and still seeds its own pass. A pass root's hops are seeded
      * explicitly (1, from the pass's own origin), never asked of a node the walk has not reached (squad A7). An
-     * artifact one scoped only by other actions or other mission types is not a root. A suggestion candidate carries the
+     * artifact scoped only by other actions or other mission types is not a root. A suggestion candidate carries the
      * pass whose {@code suggests} step first reached it. Entries are sorted by full URN string, and each brings its
      * enhancers in force (E12), whatever pass listed it.
      *
@@ -443,7 +443,7 @@ public final class ActionContextWalk {
         if (!inForce.test(type)) {
             return new Context(start, false, List.of(), List.of(), List.of(), List.of());
         }
-        Engine<Step> run = new Engine<>(start, inForce, outgoing);
+        Engine<Step> run = new Engine<>(start, inForce, outgoing, merged::visitEdge);
         List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
         run.expand(scoped, Step.REQUIRES, Integer.MAX_VALUE);
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
@@ -486,14 +486,16 @@ public final class ActionContextWalk {
 
     /**
      * One pass of the effective form after the first: lists the roots no earlier step listed, at one hop from the
-     * pass's origin, then runs steps 2 to 5 from every root, listed now or earlier. The vocabulary step takes one hop
-     * from the roots and from what this pass's steps 2 to 4 listed.
+     * pass's origin, then runs steps 2 to 5 from every root, listed now or earlier. Each later step is seeded with every
+     * node the step before it reached, whether this pass listed it or an earlier one did (ADR-0018 D3: a listed node
+     * still seeds the later steps): step 4 from what step 3 reached, and the vocabulary step one hop from the roots and
+     * from what steps 2 to 4 reached.
      */
     private static void runPass(Engine<Step> run, Pass pass, List<Urn> roots, Urn origin, int depth) {
         run.beginPass(pass, roots, Step.SCOPE, origin);
-        List<Urn> required = run.expand(roots, Step.REQUIRES, Integer.MAX_VALUE);
-        List<Urn> suggested = run.expand(roots, Step.SUGGESTS, depth);
-        List<Urn> requiredOfSuggested = run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
+        List<Urn> required = run.expandReaching(roots, Step.REQUIRES, Integer.MAX_VALUE);
+        List<Urn> suggested = run.expandReaching(roots, Step.SUGGESTS, depth);
+        List<Urn> requiredOfSuggested = run.expandReaching(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         Set<Urn> worded = new TreeSet<>(roots);
         worded.addAll(required);
         worded.addAll(suggested);
@@ -546,6 +548,7 @@ public final class ActionContextWalk {
     private List<Urn> enhancersOf(Urn target, Predicate<Urn> inForce) {
         Set<Urn> enhancers = new TreeSet<>();
         enhancing.getOrDefault(target, List.of()).stream()
+                .peek(ignored -> merged.visitEdge())
                 .map(Link::source)
                 .filter(inForce)
                 .forEach(enhancers::add);
@@ -555,6 +558,7 @@ public final class ActionContextWalk {
     private List<Urn> enhancedTargetsOf(Urn enhancer, Predicate<Urn> inForce) {
         Set<Urn> targets = new TreeSet<>();
         outgoing.getOrDefault(enhancer, List.of()).stream()
+                .peek(ignored -> merged.visitEdge())
                 .filter(link -> link.relation() == RelationType.ENHANCES)
                 .map(Link::target)
                 .filter(inForce)
@@ -582,8 +586,9 @@ public final class ActionContextWalk {
         private final Map<Urn, Pass> passes = new HashMap<>();
         private final Map<Urn, Urn> rootOf = new HashMap<>();
         private final Map<Urn, Pass> refusedPasses = new HashMap<>();
+        private final Map<Urn, Urn> passReach = new HashMap<>();
+        private final EdgeIndex.Visits visits;
         private Pass pass = Pass.ACTION;
-        private Set<Urn> roots = Set.of();
 
         /**
          * A walk from the start node.
@@ -593,10 +598,30 @@ public final class ActionContextWalk {
          * @param outgoing the links by source
          */
         Engine(Urn start, Predicate<Urn> inForce, Map<Urn, List<Link>> outgoing) {
+            this(start, inForce, outgoing, EdgeIndex.Visits.NONE);
+        }
+
+        /**
+         * A walk from the start node that counts each link it visits (NFR-003).
+         *
+         * @param start the start node; the walk never lists it, whatever the predicate says of it
+         * @param inForce the predicate: a node it refuses is neither listed nor walked through
+         * @param outgoing the links by source
+         * @param visits the count of the links it visits
+         */
+        Engine(Urn start, Predicate<Urn> inForce, Map<Urn, List<Link>> outgoing, EdgeIndex.Visits visits) {
             this.start = start;
             this.inForce = inForce;
             this.outgoing = outgoing;
+            this.visits = visits;
             hops.put(start, 0);
+        }
+
+        /** The links from a node, each counted as visited when it is handed out. */
+        private List<Link> linksFrom(Urn source) {
+            List<Link> links = outgoing.getOrDefault(source, List.of());
+            links.forEach(ignored -> visits.visit());
+            return links;
         }
 
         private int hopsOf(Urn urn) {
@@ -620,7 +645,8 @@ public final class ActionContextWalk {
          */
         void beginPass(Pass next, Collection<Urn> passRoots, S step, Urn origin) {
             pass = next;
-            roots = Set.copyOf(passRoots);
+            passReach.clear();
+            passRoots.forEach(root -> passReach.put(root, root));
             for (Urn root : new TreeSet<>(passRoots)) {
                 if (!listed.containsKey(root)) {
                     hops.put(root, 1);
@@ -642,14 +668,13 @@ public final class ActionContextWalk {
         }
 
         /**
-         * The root of the current pass the node belongs to: itself for a root, the root it was listed under for a node
-         * the current pass listed; {@code null} for any other node, and for every node of {@link Pass#ACTION}.
+         * The root of the current pass under which a step of the pass reached the node: itself for a root, the root it
+         * was listed under for a node the pass listed, the root that walked through it for a node an earlier pass listed
+         * (the first one stands); {@code null} for a node the pass has not reached, and for every node of
+         * {@link Pass#ACTION}.
          */
         private @Nullable Urn ownRoot(Urn urn) {
-            if (roots.contains(urn)) {
-                return urn;
-            }
-            return passes.get(urn) == pass ? rootOf.get(urn) : null;
+            return passReach.get(urn);
         }
 
         /** What the steps listed, in URN order (ADR-0018 D3). */
@@ -674,10 +699,29 @@ public final class ActionContextWalk {
          * @return the nodes this step listed
          */
         List<Urn> expand(Collection<Urn> seeds, S step, int layers) {
+            return run(seeds, step, layers).fresh();
+        }
+
+        /**
+         * One step as {@link #expand} runs it, answering every node the step reached but its seeds: the ones it listed
+         * and the ones an earlier step or pass listed that it walked through or reached again. A later step of a pass
+         * seeds from them (ADR-0018 D3: a listed node still seeds the later steps).
+         *
+         * @return the nodes this step reached, in URN order
+         */
+        List<Urn> expandReaching(Collection<Urn> seeds, S step, int layers) {
+            return run(seeds, step, layers).reached();
+        }
+
+        /** What one step listed, and every node it reached but its seeds, in URN order. */
+        private record Reached(List<Urn> fresh, List<Urn> reached) {}
+
+        private Reached run(Collection<Urn> seeds, S step, int layers) {
             Set<Urn> blocked = new HashSet<>(seeds);
             blocked.add(start);
             Map<Urn, Urn> origins = new HashMap<>();
             Map<Urn, Integer> reach = reachOf(seeds, step.relation(), layers, blocked, origins);
+            origins.forEach(passReach::putIfAbsent);
             TreeMap<Integer, Set<Urn>> byHops = new TreeMap<>();
             reach.keySet().stream()
                     .filter(listed::containsKey)
@@ -698,7 +742,7 @@ public final class ActionContextWalk {
                     Urn node = next.getKey();
                     reached.add(node);
                     if (!listed.containsKey(node)) {
-                        list(node, step, next.getValue(), origins);
+                        list(node, step, next.getValue());
                         fresh.add(node);
                         if (next.getValue().held() && reach.containsKey(node)) {
                             byHops.computeIfAbsent(hopsOf(node), ignored -> new TreeSet<>())
@@ -707,7 +751,9 @@ public final class ActionContextWalk {
                     }
                 }
             }
-            return fresh;
+            Set<Urn> touched = new TreeSet<>(fresh);
+            reach.keySet().stream().filter(node -> !seeds.contains(node)).forEach(touched::add);
+            return new Reached(List.copyOf(fresh), List.copyOf(touched));
         }
 
         /**
@@ -731,7 +777,7 @@ public final class ActionContextWalk {
             for (int layer = 0; layer < layers && !frontier.isEmpty(); layer++) {
                 Set<Urn> next = new TreeSet<>();
                 for (Urn parent : frontier) {
-                    for (Link link : outgoing.getOrDefault(parent, List.of())) {
+                    for (Link link : linksFrom(parent)) {
                         Urn target = link.target();
                         if (link.relation() == relation
                                 && link.held()
@@ -770,7 +816,7 @@ public final class ActionContextWalk {
                     .thenComparing(EDGE_TIE_ORDER);
             Map<Urn, Link> parents = new TreeMap<>();
             for (Urn parent : frontier) {
-                for (Link link : outgoing.getOrDefault(parent, List.of())) {
+                for (Link link : linksFrom(parent)) {
                     recordRefusedSuggestion(link, relation, visited, byParent);
                     if (link.relation() == relation
                             && !visited.contains(link.target())
@@ -814,7 +860,7 @@ public final class ActionContextWalk {
             Set<Urn> reaching = new HashSet<>(listed.keySet());
             reaching.add(start);
             for (Urn source : reaching) {
-                outgoing.getOrDefault(source, List.of()).stream()
+                linksFrom(source).stream()
                         .filter(link -> HARD_RELATIONS.contains(link.relation()))
                         .forEach(link -> hard.add(link.target()));
             }
@@ -835,14 +881,14 @@ public final class ActionContextWalk {
             return !unheld.contains(urn);
         }
 
-        private void list(Urn urn, S step, Link parent, Map<Urn, Urn> origins) {
+        private void list(Urn urn, S step, Link parent) {
             int reached = hopsOf(parent.source()) + 1;
             hops.put(urn, reached);
             passes.put(urn, pass);
-            Urn own = ownRoot(parent.source());
-            Urn root = own != null ? own : origins.get(parent.source());
+            Urn root = ownRoot(parent.source());
             if (root != null) {
                 rootOf.put(urn, root);
+                passReach.put(urn, root);
             }
             if (!parent.held()) {
                 unheld.add(urn);
