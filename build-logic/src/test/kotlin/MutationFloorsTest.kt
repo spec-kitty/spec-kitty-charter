@@ -8,6 +8,61 @@ class MutationFloorsTest {
 
     private val kernel = MutationFloors.Group("kernel", listOf("ai.speckitty.charter.kernel"), emptyList(), 65)
 
+    private val packs = listOf(
+        MutationFloors.Group(
+            "domain+application",
+            listOf("ai.speckitty.charter.packs.application", "ai.speckitty.charter.packs.domain"),
+            listOf("ai.speckitty.charter.packs.application.config"),
+            85,
+        ),
+        MutationFloors.Group("infra.storage", listOf("ai.speckitty.charter.packs.infra.storage"), emptyList(), 85),
+        MutationFloors.Group(
+            "infra.fetch",
+            listOf("ai.speckitty.charter.packs.infra.fetch"),
+            listOf("ai.speckitty.charter.packs.infra.fetch.config"),
+            70,
+        ),
+    )
+
+    @Test
+    fun aShardMutatesAndScoresOnlyItsGroupsInTheModulesOrder() {
+        val shard = MutationFloors.shard(":packs", " infra.fetch , domain+application", packs)
+
+        assertThat(shard.groups.map { it.name }).containsExactly("domain+application", "infra.fetch")
+        assertThat(shard.name).isEqualTo("domain-application_infra.fetch")
+        assertThat(shard.targetClasses).containsExactlyInAnyOrder(
+            "ai.speckitty.charter.packs.application.*",
+            "ai.speckitty.charter.packs.domain.*",
+            "ai.speckitty.charter.packs.infra.fetch.*",
+        )
+        assertThat(shard.excludedClasses).containsExactlyInAnyOrder(
+            "ai.speckitty.charter.packs.application.config.*",
+            "ai.speckitty.charter.packs.infra.fetch.config.*",
+        )
+    }
+
+    @Test
+    fun aShardsGroupScoresAreTheWholeModulesScoresForThoseGroups() {
+        val xml = mutations(
+            mutation("ai.speckitty.charter.packs.domain.A", "KILLED"),
+            mutation("ai.speckitty.charter.packs.domain.A", "SURVIVED"),
+            mutation("ai.speckitty.charter.packs.infra.fetch.B", "KILLED"),
+        )
+        val mutants = MutationFloors.parse(xml).mutants
+        val shard = MutationFloors.shard(":packs", "domain+application,infra.fetch", packs)
+
+        assertThat(MutationFloors.score(mutants, shard.groups))
+            .isEqualTo(MutationFloors.score(mutants, packs).filter { it.group in shard.groups })
+    }
+
+    @Test
+    fun aMisspeltOrEmptyShardFailsInsteadOfWideningOrNarrowing() {
+        assertThatThrownBy { MutationFloors.shard(":packs", "infra.storage,infra.fecth", packs) }
+            .hasMessageContaining(":packs: -PmutationGroups names infra.fecth, which are not among its floor groups")
+        assertThatThrownBy { MutationFloors.shard(":packs", " , ", packs) }
+            .hasMessageContaining(":packs: -PmutationGroups names no floor group")
+    }
+
     @Test
     fun aRawLessThanInADescriptionDoesNotStopTheReading() {
         val parsed = MutationFloors.parse(report(killed = 2, survived = 1, noCoverage = 1))

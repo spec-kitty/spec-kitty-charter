@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -55,11 +56,17 @@ class RegistrationJobsTest {
     private static final Origin ORIGIN =
             new Origin("worktree-1", Credential.WORKTREE_TOKEN, "registerPackFromArchive", "archive", "");
 
-    private final List<RegistrationJobs> opened = new ArrayList<>();
+    private final List<Harness> opened = new ArrayList<>();
 
+    /**
+     * Lets every held worker go before closing: a test that failed while a worker waited on a gate, the audit or the
+     * clock would otherwise keep {@code close()} waiting out its 30 s grace, and under PIT turn a killed mutant into a
+     * timed-out one (#461). A mutant that breaks the shutdown itself still hangs {@code close()}.
+     */
     @AfterEach
     void closeTheJobs() {
-        opened.forEach(RegistrationJobs::close);
+        opened.forEach(Harness::releaseEveryHold);
+        opened.forEach(harness -> harness.jobs.close());
     }
 
     // ---- the limits --------------------------------------------------------------------------------------------
@@ -797,6 +804,10 @@ class RegistrationJobsTest {
             now = now.plus(by);
         }
 
+        void releasePause() {
+            pausedRelease.countDown();
+        }
+
         @Override
         public ZoneOffset getZone() {
             return ZoneOffset.UTC;
@@ -839,6 +850,11 @@ class RegistrationJobsTest {
             running.countDown();
         }
 
+        void releaseAll() {
+            releaseBeforeRun();
+            releaseWhileRunning();
+        }
+
         @Override
         public void beforeRun(String id) {
             await(before);
@@ -879,6 +895,10 @@ class RegistrationJobsTest {
             hold = release;
         }
 
+        void releaseWrites() {
+            hold.countDown();
+        }
+
         List<Entry> entries() {
             return List.copyOf(entries);
         }
@@ -914,7 +934,13 @@ class RegistrationJobsTest {
                     gate,
                     () -> room.require(),
                     new FileStagingArea(staging)));
-            opened.add(jobs);
+            opened.add(this);
+        }
+
+        void releaseEveryHold() {
+            gate.releaseAll();
+            audit.releaseWrites();
+            clock.releasePause();
         }
 
         Packs pack(String name, String version) {
@@ -950,17 +976,20 @@ class RegistrationJobsTest {
             return status(reservation);
         }
 
+        /**
+         * Polls every 100 µs: a test that waits for a thousand short jobs one after another spent most of its time in
+         * a coarser poll's sleeps (#461).
+         */
         void await(BooleanSupplier condition) {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
             while (!condition.getAsBoolean()) {
                 if (System.nanoTime() > deadline) {
                     throw new AssertionError("the condition did not hold within 20 s");
                 }
-                try {
-                    Thread.sleep(2);
-                } catch (InterruptedException interrupted) {
+                LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
+                if (Thread.interrupted()) {
                     Thread.currentThread().interrupt();
-                    throw new AssertionError("interrupted while waiting", interrupted);
+                    throw new AssertionError("interrupted while waiting");
                 }
             }
         }

@@ -2,12 +2,14 @@
 """The nightly mutation summary (#239): one Markdown table of every module's mutation floors.
 
 Reads each ``<module>/build/reports/mutation-floors/floors.json`` that the floor check
-(``checkMutationFloors``, build-logic ``MutationFloors.kt``) writes, and renders one row per floor group:
+(``checkMutationFloors``, build-logic ``MutationFloors.kt``) writes, or the ``floors-<shard>.json`` files of a module
+whose groups ran as shards on several runners (``-PmutationGroups``, #461), and renders one row per floor group:
 mutants, score, test strength, uncovered and timed-out mutants, floor, margin to the floor, verdict and the classes
 with the most surviving or uncovered mutants. The modules come from the build (#388): ``./gradlew mutationModules``
-writes ``build/reports/mutation-floors/modules.txt``, one module directory per line, for every project that applies
-``charter.mutation-conventions``. A listed module without a ``floors.json`` shows as "no report": PIT did not run
-there, or its report could not be scored (the check deletes a stale summary before it writes a new one). Without
+writes ``build/reports/mutation-floors/modules.txt``, one line per project that applies ``charter.mutation-conventions``:
+its directory, then its floor group names, separated by tabs. A listed module without a summary shows as "no report":
+PIT did not run there, or its report could not be scored (the check deletes a stale summary before it writes a new
+one). A listed group that no summary of its module holds shows as "no report" too: its shard did not finish. Without
 the list the summary says so and is never green.
 
 The table goes to standard output and, when ``$GITHUB_STEP_SUMMARY`` is set, is appended to the job summary.
@@ -27,6 +29,8 @@ import sys
 from pathlib import Path
 
 SUMMARY_PATH = Path("build", "reports", "mutation-floors", "floors.json")
+# A whole-module run writes floors.json; a shard writes floors-<shard>.json beside it (#461).
+SUMMARY_GLOB = "floors*.json"
 
 HEADER = (
     "| Module / group | Mutants | Score | Strength | No coverage | Timed out | Floor | Margin | Verdict"
@@ -68,14 +72,24 @@ NO_LIST = (
 )
 
 
-def read_modules(path: Path) -> list[str] | None:
-    """The module directories ``mutationModules`` wrote, one per line; None when the file is missing or empty."""
+def read_listing(path: Path) -> dict[str, list[str]] | None:
+    """Each module directory ``mutationModules`` wrote, with its floor groups; None when the file is missing or empty."""
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError):
         return None
-    modules = [line.strip() for line in lines if line.strip()]
-    return modules or None
+    listing: dict[str, list[str]] = {}
+    for line in lines:
+        fields = [field.strip() for field in line.split("\t") if field.strip()]
+        if fields:
+            listing[fields[0]] = fields[1:]
+    return listing or None
+
+
+def read_modules(path: Path) -> list[str] | None:
+    """The module directories ``mutationModules`` wrote, in its order; None when the file is missing or empty."""
+    listing = read_listing(path)
+    return list(listing) if listing else None
 
 
 UNMUTATED = "did not pass without mutation"
@@ -92,7 +106,8 @@ def unmutated_failures(path: Path) -> list[str]:
 
 def find_modules(root: Path, listed: list[str]) -> list[str]:
     """The listed module directories, then any other one under ``service/`` that has a summary, sorted."""
-    found = sorted(p.parents[3].relative_to(root).as_posix() for p in root.glob("service/*/" + SUMMARY_PATH.as_posix()))
+    pattern = "service/*/" + SUMMARY_PATH.parent.as_posix() + "/" + SUMMARY_GLOB
+    found = sorted({p.parents[3].relative_to(root).as_posix() for p in root.glob(pattern)})
     return list(listed) + [m for m in found if m not in listed]
 
 
@@ -151,15 +166,22 @@ def group_row(module: str, group: dict) -> tuple[str, bool]:
     return row, passed
 
 
-def missing_row(module: str, verdict: str) -> str:
-    return f"| `:{cell(module)}` | — | — | — | — | — | — | — | {verdict} | — |"
+def missing_row(module: str, verdict: str, group: str | None = None) -> str:
+    label = f"`:{cell(module)}`" + (f" {cell(group)}" if group else "")
+    return f"| {label} | — | — | — | — | — | — | — | {verdict} | — |"
 
 
-def render(root: Path, listed: list[str] | None, unmutated: list[str] | None = None) -> str:
+def render(
+    root: Path,
+    listed: list[str] | None,
+    unmutated: list[str] | None = None,
+    expected: dict[str, list[str]] | None = None,
+) -> str:
     """The whole summary: a heading, a one-line verdict, the table and any test that failed unmutated.
 
     ``listed`` is None when there is no module list; ``unmutated`` holds PIT's lines about tests that fail with no
-    mutation applied, which leave their module without a report.
+    mutation applied, which leave their module without a report; ``expected`` maps a module directory to the floor
+    groups the build lists for it, so a group whose shard wrote nothing gets a "no report" row.
     """
     rows: list[str] = []
     failing: list[str] = []
@@ -167,25 +189,31 @@ def render(root: Path, listed: list[str] | None, unmutated: list[str] | None = N
         # The label is the Gradle project name (``:kernel``), which is the directory's name for every module under
         # service/; the report is read from the full relative directory.
         module = Path(directory).name
-        path = root / directory / SUMMARY_PATH
-        if not path.is_file():
+        paths = sorted((root / directory / SUMMARY_PATH.parent).glob(SUMMARY_GLOB))
+        if not paths:
             rows.append(missing_row(module, NO_REPORT))
             failing.append(f"`:{module}` (no report)")
             continue
-        data = load(path)
-        if data is None:
+        summaries = [load(path) for path in paths]
+        if any(data is None for data in summaries):
             rows.append(missing_row(module, UNREADABLE))
             failing.append(f"`:{module}` (unreadable report)")
             continue
-        if not data["groups"]:
+        groups = [group for data in summaries for group in data["groups"]]
+        if not groups:
             rows.append(missing_row(module, NO_REPORT))
             failing.append(f"`:{module}` (no group)")
             continue
-        for group in data["groups"]:
+        for group in groups:
             row, passed = group_row(module, group)
             rows.append(row)
             if not passed:
                 failing.append(f"`:{module}` {group.get('group', '?')}")
+        reported = {group.get("group") for group in groups}
+        for name in (expected or {}).get(directory, []):
+            if name not in reported:
+                rows.append(missing_row(module, NO_REPORT, name))
+                failing.append(f"`:{module}` {name} (no report)")
 
     lines = ["## Mutation floors", ""]
     if listed is None:
@@ -237,7 +265,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     unmutated = unmutated_failures(args.log) if args.log else []
-    summary = render(args.root, read_modules(args.modules), unmutated)
+    listing = read_listing(args.modules)
+    summary = render(args.root, list(listing) if listing else None, unmutated, listing)
     sys.stdout.write(summary)
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if step_summary:

@@ -12,12 +12,15 @@ tasks.register("verifyAll") {
     dependsOn(gradle.includedBuild("build-logic").task(":check"))
 }
 
-// The modules under the nightly mutation floor, as the build sees them (#388): every project that applies
-// charter.mutation-conventions. mutation-nightly.yml runs this beside pitest and gives the file to the summary script.
+// The modules under the mutation floor, as the build sees them (#388): every project that applies
+// charter.mutation-conventions, each with its floor groups (#461), so the summary can name a group whose shard wrote no
+// report. mutation-nightly.yml runs this beside pitest and gives the file to the summary script.
 val mutationModuleDirs = objects.listProperty<String>()
 subprojects {
     pluginManager.withPlugin("charter.mutation-conventions") {
-        mutationModuleDirs.add(projectDir.relativeTo(rootDir).invariantSeparatorsPath)
+        val dir = projectDir.relativeTo(rootDir).invariantSeparatorsPath
+        val floors = extensions.getByType<MutationFloorsExtension>()
+        mutationModuleDirs.add(provider { (listOf(dir) + floors.groups.names).joinToString("\t") })
     }
 }
 tasks.register<WriteMutationModules>("mutationModules") {

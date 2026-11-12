@@ -30,16 +30,35 @@ pitest {
 }
 
 val mutationFloors = extensions.create<MutationFloorsExtension>("mutationFloors")
+fun declaredGroups() = mutationFloors.groups.map { it.toGroup() }
+
+// A shard of the module's PIT run (#461): -PmutationGroups=g1,g2 mutates and scores only those floor groups, and
+// writes build/reports/pitest-<shard> and build/reports/mutation-floors/floors-<shard>.json, so the nightly can run one
+// module's groups on several runners. Each group's score is the one a whole-module run gives. Unknown names fail the
+// run (MutationFloors.shard). Without the property, the module runs whole.
+val requestedGroups = providers.gradleProperty("mutationGroups")
+val shard = requestedGroups.map { MutationFloors.shard(project.path, it, declaredGroups()) }
 
 val checkMutationFloors = tasks.register<CheckMutationFloors>("checkMutationFloors") {
     group = "verification"
     description = "Fails when a mutationFloors group's PIT mutation score is below its floor (#239)."
     report = pitest.reportDir.file("mutations.xml")
-    summary = layout.buildDirectory.file("reports/mutation-floors/floors.json")
+    summary = layout.buildDirectory.file(
+        shard.map { "reports/mutation-floors/floors-${it.name}.json" }.orElse("reports/mutation-floors/floors.json"),
+    )
     projectPath = project.path
-    groups = provider { mutationFloors.groups.map { it.toGroup() } }
+    groups = shard.map { it.groups }.orElse(provider { declaredGroups() })
     // The report must come from this run's pitest when both are requested, never from an older one.
     mustRunAfter(tasks.named("pitest"))
+}
+
+// After the module's own pitest block, which sets its scope: a shard narrows that scope to its groups.
+afterEvaluate {
+    if (requestedGroups.isPresent) {
+        pitest.targetClasses.set(shard.map { it.targetClasses })
+        pitest.excludedClasses.addAll(shard.map { it.excludedClasses })
+        pitest.reportDir.set(layout.buildDirectory.dir(shard.map { "reports/pitest-${it.name}" }))
+    }
 }
 
 tasks.named("pitest") {

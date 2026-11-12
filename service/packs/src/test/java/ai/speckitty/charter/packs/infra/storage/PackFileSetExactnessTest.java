@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -69,18 +68,12 @@ class PackFileSetExactnessTest {
     /** Only a hang cap: the time budget is {@link PackFileSetBudgetTest}'s. */
     private static final int HANG_CAP_SECONDS = 60;
 
+    /**
+     * The trees written so far, each on first use ({@link #tree}). Not written up front: PIT runs each test method in a
+     * run of its own, and most of them use only the exhaustive tree 0, so writing all {@value #TREES} first cost every
+     * such run about 3 s of writing (#461).
+     */
     private static final Map<Integer, GeneratedPackTree> TREES_BY_INDEX = new HashMap<>();
-
-    /** Writes the trees once, before any check, as {@link PackFileSetBudgetTest} does. */
-    @BeforeAll
-    static void generateTheTrees() throws IOException {
-        if (!SymbolicLinks.supported(home)) {
-            return;
-        }
-        for (int i = 0; i < TREES; i++) {
-            tree(i);
-        }
-    }
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
