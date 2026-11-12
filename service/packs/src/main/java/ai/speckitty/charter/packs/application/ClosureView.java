@@ -676,7 +676,9 @@ public record ClosureView(
                 urn -> states.stateOf(urn)
                         .filter(InForceStates.ArtifactState::active)
                         .isPresent(),
-                pack -> names.getOrDefault(pack, pack.value()),
+                pack -> Optional.ofNullable(names.get(pack))
+                        .orElseThrow(() -> new IllegalStateException(
+                                "pack " + pack.value() + " wins in the merge but is not a pack of the closure")),
                 pack -> mergeInputs.winners().stepPrompt(pack, step));
     }
 

@@ -52,8 +52,10 @@ public final class ClosureQueries {
     private final OfferingReadService offering;
     private final PackCatalogRepository catalog;
     private final ConsistentRead read;
-    private final Optional<PackRepository> packs;
-    private final Optional<PackCompanionFiles> companions;
+    private final Optional<Stores> stores;
+
+    /** The ports a view reads a winner's entity and a step's stored prompt through. */
+    private record Stores(PackRepository packs, PackCompanionFiles companions) {}
 
     /**
      * Queries over the offering's compose, whose views read no winner entity.
@@ -63,20 +65,7 @@ public final class ClosureQueries {
      * @param read the verifier that digests the inputs before and after the read
      */
     public ClosureQueries(OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read) {
-        this(offering, catalog, read, Optional.empty(), Optional.empty());
-    }
-
-    /**
-     * Queries over the offering's compose.
-     *
-     * @param offering the service that composes a closure and maps it to the offering's shape
-     * @param catalog the configured packs, the roots are checked against before the compose
-     * @param read the verifier that digests the inputs before and after the read
-     * @param packs the port a view reads the entity of a winning artifact through ({@link ClosureView#effectiveArtifact})
-     */
-    public ClosureQueries(
-            OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read, PackRepository packs) {
-        this(offering, catalog, read, Optional.of(packs), Optional.empty());
+        this(offering, catalog, read, Optional.empty());
     }
 
     /**
@@ -96,20 +85,20 @@ public final class ClosureQueries {
             ConsistentRead read,
             PackRepository packs,
             PackCompanionFiles companions) {
-        this(offering, catalog, read, Optional.of(packs), Optional.of(companions));
+        this(
+                offering,
+                catalog,
+                read,
+                Optional.of(new Stores(
+                        Objects.requireNonNull(packs, "packs"), Objects.requireNonNull(companions, "companions"))));
     }
 
     private ClosureQueries(
-            OfferingReadService offering,
-            PackCatalogRepository catalog,
-            ConsistentRead read,
-            Optional<PackRepository> packs,
-            Optional<PackCompanionFiles> companions) {
+            OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read, Optional<Stores> stores) {
         this.offering = Objects.requireNonNull(offering, "offering");
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.read = Objects.requireNonNull(read, "read");
-        this.packs = Objects.requireNonNull(packs, "packs");
-        this.companions = Objects.requireNonNull(companions, "companions");
+        this.stores = Objects.requireNonNull(stores, "stores");
     }
 
     /**
@@ -240,10 +229,11 @@ public final class ClosureQueries {
      * {@code stale_input} and never part of a mixed answer.
      */
     private ClosureView.WinnerSource winnerSource(List<PackUnderResolution> closure, String closureFingerprint) {
-        if (packs.isEmpty()) {
+        if (stores.isEmpty()) {
             return ClosureView.WinnerSource.none();
         }
-        PackRepository repository = packs.get();
+        PackRepository repository = stores.get().packs();
+        PackCompanionFiles companions = stores.get().companions();
         return new ClosureView.WinnerSource() {
             @Override
             public Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id) {
@@ -254,12 +244,9 @@ public final class ClosureQueries {
 
             @Override
             public Optional<Payload> stepPrompt(PackIdentifier pack, Urn step) {
-                if (companions.isEmpty()) {
-                    return ClosureView.WinnerSource.super.stepPrompt(pack, step);
-                }
                 Optional<Payload> prompt = StepHolding.missionTypeOf(step)
                         .flatMap(missionType -> artifact(repository, pack, ArtifactKind.MISSION_TYPE, missionType.id())
-                                .map(type -> companions.get().stepFiles(pack, type))
+                                .map(type -> companions.stepFiles(pack, type))
                                 .map(files -> files.get(
                                         step.id().substring(missionType.id().length() + 1)))
                                 .flatMap(PackCompanionFiles.StepFiles::prompt));
