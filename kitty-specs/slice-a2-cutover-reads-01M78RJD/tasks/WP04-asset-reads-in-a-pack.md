@@ -13,7 +13,7 @@ requirement_refs:
 - C-002
 planning_base_branch: slice-a2-536-cutover-reads
 merge_target_branch: slice-a2-536-cutover-reads
-branch_strategy: Planning artifacts for this mission were generated on kitty/mission-slice-a2-cutover-reads-01M78RJD, landing on slice-a2-536-cutover-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-a2-536-cutover-reads unless the human explicitly redirects the landing branch.
+branch_strategy: Planning artifacts for this mission were generated on slice-a2-536-cutover-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-a2-536-cutover-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T016
 - T017
@@ -22,7 +22,6 @@ subtasks:
 - T020
 - T021
 phase: ''
-agent: claude
 history:
 - at: '2026-11-12T22:30:00Z'
   actor: system
