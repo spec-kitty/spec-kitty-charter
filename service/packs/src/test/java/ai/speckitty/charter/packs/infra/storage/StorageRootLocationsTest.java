@@ -2,8 +2,11 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -421,6 +425,42 @@ class StorageRootLocationsTest {
                     .as("an empty entry reads as no pack (#490, squad D7)")
                     .containsExactly("qa");
             assertThat(log.warnings()).isEmpty();
+        }
+    }
+
+    /** A listing that never reads a pack's level whole is refused, never answered with the pack at org (STALE_INPUT). */
+    @Test
+    void aLevelReadAPackKeepsMovingUnderRefusesStaleInputInsteadOfListingTheOrgLevel() throws Exception {
+        pack("qa", "project");
+        AtomicBoolean stop = new AtomicBoolean();
+        CountDownLatch swapping = new CountDownLatch(1);
+        CompletableFuture<Void> swaps = CompletableFuture.runAsync(() -> {
+            while (!stop.get()) {
+                PackWriteGeneration.shared().moved("qa");
+                swapping.countDown();
+            }
+        });
+        try {
+            assertThat(swapping.await(10, TimeUnit.SECONDS)).isTrue();
+            // The listing is repeated until the moving generation is met: a scheduler may hold the mover back for a few
+            // listings. A listing that answers is the pack at some level; it must never be one that read it under a
+            // swap.
+            Throwable refused = null;
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            while (refused == null && System.nanoTime() < deadline) {
+                try {
+                    new StorageRootLocations(packs).all();
+                } catch (CharterRefusal thrown) {
+                    refused = thrown;
+                }
+            }
+            assertThat(refused)
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        } finally {
+            stop.set(true);
+            swaps.get(10, TimeUnit.SECONDS);
         }
     }
 
