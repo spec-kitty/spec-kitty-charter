@@ -164,7 +164,7 @@
     },
     "WP10": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -174,7 +174,8 @@
       "last_transition_at": "2026-11-12T10:48:53.893466+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: #439 option (b). satisfiedBy and overriddenBy list every overrider in force, sorted by winning-pack level then URN by code point (packs InForceResolution/InForceStates; activations and profiles-edge carry lists; contract arrays minItems 1; Breaking fragment 2026-11-12-every-overrider-named.md). Red commit 2a3b40aa, green f5a88cc9. overrideNotApplied is grouped one entry per locked target (OverriddenArtifact is shared). URN-only and UTF-16 mutations fail InForceResolutionOverridersTest. packs, activations, profiles-edge tests, CharterContractSuite, HexagonalArchitectureTest, contract checks, spotless and checkstyle all green."
+        "Ready for review: #439 option (b). satisfiedBy and overriddenBy list every overrider in force, sorted by winning-pack level then URN by code point (packs InForceResolution/InForceStates; activations and profiles-edge carry lists; contract arrays minItems 1; Breaking fragment 2026-11-12-every-overrider-named.md). Red commit 2a3b40aa, green f5a88cc9. overrideNotApplied is grouped one entry per locked target (OverriddenArtifact is shared). URN-only and UTF-16 mutations fail InForceResolutionOverridersTest. packs, activations, profiles-edge tests, CharterContractSuite, HexagonalArchitectureTest, contract checks, spotless and checkstyle all green.",
+        "Review passed (reviewer-renata): FR-013/SC-006 applied in every carrier (EffectiveArtifact + 4 copies, OverriddenArtifact for overridden and overrideNotApplied; parity test unchanged and green). Order level-then-code-point verified; URN-only mutation re-run fails 4/8 InForceResolutionOverridersTest; reverted. State/reason/bucket unchanged; D16 drop keeps order and drops emptied overrideNotApplied targets. Fragment ### Breaking complete. No assertion weakened (contains->containsExactly, property test strengthened). Commits signed, no trailer, out-of-map recorded. Green: :packs:test, :activations:test, :profiles-edge:test, CharterContractSuite 747/747, contracts bundle/lint/closed/refusal/changelog/test, spotless/checkstyle/javadoc (checkContractCompatibility not runnable: shallow clone). Anti-pattern checklist 1-8 PASS. OPERATOR DECISION: overrideNotApplied regrouped to one entry per locked target (ActivationSummary.skipped counts it once) - not named by the #439 ruling; reviewer recommends keeping it (matches 'each artifact counted once' and the shared OverriddenArtifact 'every overrider' meaning) but the operator should confirm; WP08 must then update E14 and the divergence-register #439 note. Coordination: touches WP02-owned ClosureViewSession, EffectiveReadMapper, EffectiveTag, EffectiveContextArtifact.yaml (recorded out-of-map)."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
