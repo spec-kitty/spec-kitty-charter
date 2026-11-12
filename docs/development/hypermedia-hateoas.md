@@ -130,13 +130,13 @@ used.
 | `service-desc` | The contract document, `/api/v1/openapi.yaml` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) | `GET` | Root; the service info | In the contract |
 | `packs` | `/api/v1/packs` | `GET` | Root | Proposed |
 | `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root; proposed elsewhere ([ADR-0020](/adr/0020-offering-and-activations/)) |
-| `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored; a pack document read: the pack it belongs to | In the contract |
+| `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored; a pack document read, a preset list and a preset: the pack they belong to | In the contract |
 | `doc` | `/api/v1/packs/{packId}/doc` | `GET` | A pack that holds a document (`README.md`), and a registration's stored answer for such a pack; absent otherwise | In the contract |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
 | `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`/api/v1/activations/{activationId}/artifacts{?kind,state}`, templated) | In the contract on the root, an offering pack, a registered relationship and an activation; proposed elsewhere |
 | `graph` | `…/graph` | `GET` | A pack; the offering; an activation | Proposed |
-| `presets` | `…/presets` | `GET` | A pack; the offering | Proposed |
+| `presets` | `/api/v1/packs/{packId}/presets` | `GET` | A pack, and a registration's stored answer: the pack's preset list (`listPackPresets`), on every pack; the offering | In the contract on a pack; proposed on the offering |
 | `assets` | `/api/v1/packs/{packId}/assets` | `GET` | A pack | Proposed |
 | `resolution` | `/api/v1/packs/{packId}/resolution` | `GET` | A pack | Proposed ([ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 7) |
 | `distribute` | `/api/v1/packs/{packId}/distributions` | `POST` | A pack that can be distributed | Proposed |
