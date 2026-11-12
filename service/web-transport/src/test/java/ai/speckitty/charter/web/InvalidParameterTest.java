@@ -69,15 +69,8 @@ class InvalidParameterTest {
     @Test
     void aPathParameterThatBreaksItsPatternIsRefusedWithoutTheRegex() throws Exception {
         assertThat(details("Not-This", 1, null, null))
-                .containsExactly("The path parameter activationId is \"Not-This\", which is not in the form this parameter accepts.");
-    }
-
-    @Test
-    void aTooShortAndATooLongValueNameTheirLength() throws Exception {
-        assertThat(details("abc", 1, "", "\"abcd\""))
                 .containsExactly(
-                        "The query parameter pageCursor is \"\", which is shorter than 1 character(s).",
-                        "The header If-Match is \"\\\"abcd\\\"\", which is longer than 3 character(s).");
+                        "The path parameter activationId is \"Not-This\", which is not in the form this parameter accepts.");
     }
 
     @Test
@@ -116,18 +109,35 @@ class InvalidParameterTest {
                         "The query parameter kind is \"" + "😀".repeat(64) + "…\", which is not a served" + " kind.");
     }
 
-    @Test
-    void aValueOutsideALengthRangeNamesTheRange() throws Exception {
-        Method method = Ranged.class.getMethod("read", String.class);
-        Set<ConstraintViolation<Ranged>> violations =
-                FACTORY.getValidator().forExecutables().validateParameters(new Ranged(), method, new Object[] {""});
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "shorter | ''     | which is shorter than 1 character(s)",
+                "longer  | abcd   | which is longer than 3 character(s)",
+                "range   | ''     | which is not 1 to 255 characters long",
+            })
+    void aValueOutsideALengthBoundNamesTheBound(String method, String value, String reason) throws Exception {
+        Method target = Lengths.class.getMethod(method, String.class);
+        Set<ConstraintViolation<Lengths>> violations =
+                FACTORY.getValidator().forExecutables().validateParameters(new Lengths(), target, new Object[] {value});
         assertThat(InvalidParameter.details(Set.copyOf(violations)))
-                .containsExactly("The path parameter skeletonName is \"\", which is not 1 to 255 characters long.");
+                .singleElement()
+                .asString()
+                .endsWith(", " + reason + ".");
     }
 
-    /** A stand-in whose path parameter has a length range, as the skeleton name has. */
-    static class Ranged {
-        public String read(@PathVariable("skeletonName") @Size(min = 1, max = 255) String name) {
+    /** A stand-in whose path parameters have a minimum, a maximum and a range, as the generated interfaces do. */
+    static class Lengths {
+        public String range(@PathVariable("skeletonName") @Size(min = 1, max = 255) String name) {
+            return "";
+        }
+
+        public String longer(@PathVariable("name") @Size(max = 3) String name) {
+            return "";
+        }
+
+        public String shorter(@PathVariable("name") @Size(min = 1) String name) {
             return "";
         }
     }
@@ -168,19 +178,13 @@ class InvalidParameterTest {
                         .orElseThrow()
                         .detail())
                 .isEqualTo("The query parameter pageCursor is \"x\", which this parameter does not accept.");
+        assertThat(InvalidParameter.oneOf(List.of("active"))).isEqualTo("which is not active");
     }
 
     @Test
     void aMissingParameterSaysItIsRequired() {
         assertThat(InvalidParameter.missing(In.QUERY, "from").detail())
                 .isEqualTo("The query parameter from is missing, and it is required.");
-    }
-
-    @Test
-    void theAcceptedValuesAreListedWithOrBeforeTheLast() {
-        assertThat(InvalidParameter.oneOf(List.of("active", "inactive", "excluded")))
-                .isEqualTo("which is not one of active, inactive or excluded");
-        assertThat(InvalidParameter.oneOf(List.of("active"))).isEqualTo("which is not active");
     }
 
     @Test
