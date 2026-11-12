@@ -873,4 +873,4 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Examples:
       | case                 | id   | shown | reason                                    |
       | longer than 64       | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… | is longer than 64 character(s)            |
-      | an upper-case letter | Main | Main | does not match ^[a-z0-9][a-z0-9_-]*$     |
+      | an upper-case letter | Main | Main | is not in the form this parameter accepts |

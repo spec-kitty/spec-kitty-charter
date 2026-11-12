@@ -115,7 +115,7 @@ Feature: The guards of the activation register
       """
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The header If-Match is \"sha256:not-quoted\", which does not match ^(\*|\"sha256:[0-9a-f]{64}\")$."
+    And the field at "/detail" is "The header If-Match is \"sha256:not-quoted\", which is not in the form this parameter accepts."
     When I DELETE "/activations/a-1" with the header "If-Match": "sha256:not-quoted"
     Then the response status is 400
     And the problem has no code
@@ -128,7 +128,7 @@ Feature: The guards of the activation register
     When I GET "/activations/-leading-hyphen"
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The path parameter activationId is \"-leading-hyphen\", which does not match ^[A-Za-z0-9][A-Za-z0-9-]{0,63}$."
+    And the field at "/detail" is "The path parameter activationId is \"-leading-hyphen\", which is not in the form this parameter accepts."
     When I GET "/activations/-leading-hyphen/packs"
     Then the response status is 400
     And the problem has no code

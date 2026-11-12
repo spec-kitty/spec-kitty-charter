@@ -67,9 +67,9 @@ class InvalidParameterTest {
     }
 
     @Test
-    void aPathParameterThatBreaksItsPatternNamesThePattern() throws Exception {
+    void aPathParameterThatBreaksItsPatternIsRefusedWithoutTheRegex() throws Exception {
         assertThat(details("Not-This", 1, null, null))
-                .containsExactly("The path parameter activationId is \"Not-This\", which does not match [a-z]+.");
+                .containsExactly("The path parameter activationId is \"Not-This\", which is not in the form this parameter accepts.");
     }
 
     @Test
@@ -84,7 +84,7 @@ class InvalidParameterTest {
     void theDetailsAreInTheOrderOfTheParameters() throws Exception {
         assertThat(details("NO", 0, null, null))
                 .containsExactly(
-                        "The path parameter activationId is \"NO\", which does not match [a-z]+.",
+                        "The path parameter activationId is \"NO\", which is not in the form this parameter accepts.",
                         "The query parameter pageSize is \"0\", which is less than 1.");
     }
 

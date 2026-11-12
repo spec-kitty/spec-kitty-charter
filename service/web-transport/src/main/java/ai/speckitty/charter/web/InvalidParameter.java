@@ -269,7 +269,7 @@ public final class InvalidParameter extends RuntimeException {
         return switch (constraint) {
             case Min min -> "which is less than " + min.value();
             case Max max -> "which is greater than " + max.value();
-            case Pattern pattern -> "which does not match " + pattern.regexp();
+            case Pattern ignored -> "which is not in the form this parameter accepts";
             case Size size
             when size.max() == Integer.MAX_VALUE -> "which is shorter than " + size.min() + " character(s)";
             case Size size when size.min() == 0 -> "which is longer than " + size.max() + " character(s)";

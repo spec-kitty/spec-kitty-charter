@@ -79,7 +79,8 @@ class ActivationProblemsTest {
         assertThat(body(answer).path("title").asString()).isEqualTo("Bad Request");
         assertThat(body(answer).has("code")).isFalse();
         assertThat(body(answer).path("detail").asString())
-                .startsWith("The header If-Match is \"\\\"not a revision\\\"\", which does not match ")
+                .startsWith(
+                        "The header If-Match is \"\\\"not a revision\\\"\", which is not in the form this parameter accepts.")
                 .doesNotContain("must");
     }
 
@@ -172,8 +173,9 @@ class ActivationProblemsTest {
 
         assertThat(answer.getStatusCode().value()).isEqualTo(400);
         assertThat(((ai.speckitty.charter.api.model.Problem) answer.getBody()).getDetail())
-                .isEqualTo("The header If-Match is \"UP\", which does not match [a-z]+. The path parameter"
-                        + " activationId is \"abc\", which is longer than 2 character(s).");
+                .isEqualTo(
+                        "The header If-Match is \"UP\", which is not in the form this parameter accepts. The path parameter"
+                                + " activationId is \"abc\", which is longer than 2 character(s).");
     }
 
     @Test

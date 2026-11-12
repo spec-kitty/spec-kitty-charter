@@ -619,7 +619,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I PUT "/packs/<packId>" with the archive "v1"
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The path parameter packId is \"<shown>\", which does not match ^[a-z0-9][a-z0-9-]{0,62}$."
+    And the field at "/detail" is "The path parameter packId is \"<shown>\", which is not in the form this parameter accepts."
     And the response has no "Location" header
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
