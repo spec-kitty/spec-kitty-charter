@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01M78VN8W12HZTMBBQNYYERS6Y",
-  "materialized_at": "2026-11-12T21:47:12.129521+00:00",
+  "event_count": 9,
+  "last_event_id": "01M78VNAF1Q1D60TX8CW9S5WFY",
+  "materialized_at": "2026-11-12T21:47:13.761495+00:00",
   "mission_number": "",
   "mission_slug": "slice-a2-cutover-reads-01M78RJD",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 8
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
@@ -73,6 +73,13 @@
       "lane": "planned",
       "last_event_id": "01M78VN8W12HZTMBBQNYYERS6Y",
       "last_transition_at": "2026-11-12T21:47:12.129521+00:00"
+    },
+    "WP09": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M78VNAF1Q1D60TX8CW9S5WFY",
+      "last_transition_at": "2026-11-12T21:47:13.761495+00:00"
     }
   }
 }
