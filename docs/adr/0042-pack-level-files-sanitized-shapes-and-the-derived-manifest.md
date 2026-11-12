@@ -187,6 +187,12 @@ The calls the Op made beyond the rulings, open to review:
   No reader of the older state is kept (charter: the model is canonical).
 - **Not done: validate mode.** Validate mode inspects each file on its own and does not assemble the pack, so it has no
   derived lists and does not report a membership difference. A registration does.
+- **Not new: the aggregate build.** A `PUT` and a `DELETE` already loaded and built the aggregate before the edit
+  (`packs.load` in the registration services and in `ArtifactRemovalService`), so a pack that breaks an aggregate
+  invariant could not be repaired by `DELETE` before this rule either. What is new is one more build, of the edited
+  copy: an edit that leaves a pack that no longer builds is refused before the swap, and a violation a read tolerates
+  (an unreadable artifact file) still lets the write go ahead.
+
 
 ## Context
 
