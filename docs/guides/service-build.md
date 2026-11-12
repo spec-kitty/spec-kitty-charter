@@ -191,7 +191,8 @@ it runs the summary script's unit tests, merges the shards' reports, and
 `scripts/ci/mutation_summary.py --modules` turns every module's floors files into a job-summary table (score,
 strength, uncovered and timed-out mutants, floor, margin to the floor, verdict and the classes with the most surviving
 or uncovered mutants), shows "no report" for a listed module or group that wrote none, and quotes PIT's lines about
-any test that fails with no mutation applied (#461). The module list, each shard's output (`pitest-<shard>.log`) and
+any test that fails with no mutation applied (#461). The script exits 1 when a listed module or group has no
+readable report, so the summary job is red and the alert fires. The module list, each shard's output (`pitest-<shard>.log`) and
 every module's report go up as the `mutation-report-<shard>` artifacts, kept for 14 days. When a scheduled run does
 not succeed, a timeout or a red summary included, the workflow opens one issue labelled `mutation-testing`, or
 comments on the open one; a `workflow_dispatch` with `force_issue` tests that path.

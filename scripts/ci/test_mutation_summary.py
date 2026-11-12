@@ -19,7 +19,7 @@ import os
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -395,16 +395,28 @@ class RenderTest(unittest.TestCase):
         text = ms.render(self.root, MODULES, ["x `y` did not pass without mutation"])
         self.assertIn("- `x 'y' did not pass without mutation`", text)
 
-    def test_main_appends_to_the_step_summary_and_exits_zero_even_when_red(self) -> None:
+    def test_main_appends_to_the_step_summary_and_exits_non_zero_only_for_a_group_no_one_reported(self) -> None:
         step_summary = self.root / "step-summary.md"
         step_summary.write_text("earlier step\n", encoding="utf-8")
+        self.write("kernel", summary(":kernel", group("kernel", score="40.0", floor=65, passed=False)))
+        listed = self.root / "modules.txt"
+        listed.write_text("service/kernel\tkernel\n", encoding="utf-8")
+        args = ["--root", str(self.root), "--modules", str(listed)]
         with mock.patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(step_summary)}), redirect_stdout(io.StringIO()) as out:
-            status = ms.main(["--root", str(self.root), "--modules", str(self.root / "absent.txt")])
+            status = ms.main(args)
+        # A group below its floor is the pitest step's failure: the summary only reports it.
         self.assertEqual(status, 0)
         written = step_summary.read_text(encoding="utf-8")
         self.assertTrue(written.startswith("earlier step\n## Mutation floors\n"))
         self.assertEqual(written.removeprefix("earlier step\n"), out.getvalue())
-
+        # A group the build lists that no shard reported may have gone unmutated with every job green: the job fails.
+        listed.write_text("service/kernel\tkernel\tkernel.extra\n", encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.assertEqual(ms.main(args), 1)
+        # So does a listed module whose report is unreadable.
+        (self.root / "service/kernel/build/reports/mutation-floors/floors.json").write_text("{", encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.assertEqual(ms.main(args), 1)
 
     def test_main_holds_each_module_to_the_groups_the_build_lists(self) -> None:
         self.write("kernel", summary(":kernel", group("kernel", score="72.4", floor=65, passed=True)))

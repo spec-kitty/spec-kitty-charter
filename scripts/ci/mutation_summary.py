@@ -13,7 +13,9 @@ one). A listed group that no summary of its module holds shows as "no report" to
 the list the summary says so and is never green.
 
 The table goes to standard output and, when ``$GITHUB_STEP_SUMMARY`` is set, is appended to the job summary.
-It reports only: the exit status is 0 whatever the verdicts, since the ``pitest`` step is what fails the run.
+The exit status is 1 when an expected module or group has no report or an unreadable one: no shard may have mutated
+it, yet every job could be green, so the summary job itself goes red and the alert fires. A group below its floor
+exits 0: the ``pitest`` step is what fails the run for that.
 
 Standard library only. Run locally from the repository root after ``./gradlew mutationModules pitest --continue``::
 
@@ -177,7 +179,17 @@ def render(
     unmutated: list[str] | None = None,
     expected: dict[str, list[str]] | None = None,
 ) -> str:
-    """The whole summary: a heading, a one-line verdict, the table and any test that failed unmutated.
+    """The summary text; see ``render_with_gaps``."""
+    return render_with_gaps(root, listed, unmutated, expected)[0]
+
+
+def render_with_gaps(
+    root: Path,
+    listed: list[str] | None,
+    unmutated: list[str] | None = None,
+    expected: dict[str, list[str]] | None = None,
+) -> tuple[str, list[str]]:
+    """The whole summary, and the expected modules or groups that have no readable report: a heading, a one-line verdict, the table and any test that failed unmutated.
 
     ``listed`` is None when there is no module list; ``unmutated`` holds PIT's lines about tests that fail with no
     mutation applied, which leave their module without a report; ``expected`` maps a module directory to the floor
@@ -185,6 +197,7 @@ def render(
     """
     rows: list[str] = []
     failing: list[str] = []
+    gaps: list[str] = []
     for directory in find_modules(root, listed or []):
         # The label is the Gradle project name (``:kernel``), which is the directory's name for every module under
         # service/; the report is read from the full relative directory.
@@ -193,16 +206,19 @@ def render(
         if not paths:
             rows.append(missing_row(module, NO_REPORT))
             failing.append(f"`:{module}` (no report)")
+            gaps.append(f"`:{module}` (no report)")
             continue
         summaries = [load(path) for path in paths]
         if any(data is None for data in summaries):
             rows.append(missing_row(module, UNREADABLE))
             failing.append(f"`:{module}` (unreadable report)")
+            gaps.append(f"`:{module}` (unreadable report)")
             continue
         groups = [group for data in summaries for group in data["groups"]]
         if not groups:
             rows.append(missing_row(module, NO_REPORT))
             failing.append(f"`:{module}` (no group)")
+            gaps.append(f"`:{module}` (no group)")
             continue
         for group in groups:
             row, passed = group_row(module, group)
@@ -214,6 +230,7 @@ def render(
             if name not in reported:
                 rows.append(missing_row(module, NO_REPORT, name))
                 failing.append(f"`:{module}` {name} (no report)")
+                gaps.append(f"`:{module}` {name} (no report)")
 
     lines = ["## Mutation floors", ""]
     if listed is None:
@@ -245,7 +262,7 @@ def render(
             *(f"- `{line.replace('`', chr(39))}`" for line in unmutated),
             "",
         ]
-    return "\n".join(lines)
+    return "\n".join(lines), gaps
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -266,12 +283,15 @@ def main(argv: list[str] | None = None) -> int:
 
     unmutated = unmutated_failures(args.log) if args.log else []
     listing = read_listing(args.modules)
-    summary = render(args.root, list(listing) if listing else None, unmutated, listing)
+    summary, gaps = render_with_gaps(args.root, list(listing) if listing else None, unmutated, listing)
     sys.stdout.write(summary)
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if step_summary:
         with open(step_summary, "a", encoding="utf-8") as out:
             out.write(summary)
+    if gaps:
+        print("no readable report for: " + ", ".join(gaps), file=sys.stderr)
+        return 1
     return 0
 
 

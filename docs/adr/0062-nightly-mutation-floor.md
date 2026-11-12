@@ -317,7 +317,10 @@ The operator ruled these changes after the nightly ran out of its 80-minute step
   and infra.storage with infra.archive, about half of its test runs each) and every other module. A module's shard
   is `-PmutationGroups=<groups>` (`charter.mutation-conventions`): it mutates and scores exactly those groups, so each
   group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Unknown names fail the run.
-  The module list names each module's groups, and the summary shows "no report" for a group no shard reported.
+  The module list names each module's groups, and the summary shows "no report" for a group no shard reported. A
+  listed module or group with no readable report also makes the summary script exit 1, so the summary job is red and the
+  alert fires: a group no shard names would otherwise go unmutated with every job green. A group below its floor still
+  exits 0, as the `pitest` step is what fails the run for it.
 - **120 minutes a shard**, 110 of them for the mutation step, replacing the 90 and 80 of section 8.
 
 Why: a full `:packs:pitest` measured 1h06m34s alone on an idle 4-core machine (7129 mutants), and a GitHub runner is
