@@ -40,6 +40,10 @@ import java.util.Set;
  * has none but has ACLs (NTFS, on Windows), it is created without the attribute and, before it is used, given an ACL
  * with one entry that allows its owner everything; a directory's entry is inherited by what is created in it. Where
  * the file system has neither, nothing is created and {@link UnsupportedFileSystemException} says why.
+ *
+ * <p>Limits of the ACL path, acceptable for short-lived staging: the ACL replaces the inherited one but is not marked
+ * protected, so a later inheritance propagation from a parent can add entries back; and its one entry goes to the
+ * path's owner, which under an elevated Windows token is {@code BUILTIN\Administrators} rather than the user.
  */
 public final class OwnerOnly {
 
@@ -243,7 +247,9 @@ public final class OwnerOnly {
     /**
      * Replaces the path's ACL with one entry that allows its owner everything. A directory is created before its ACL is
      * set, so in a parent other users can write to (a shared temporary directory) one of them could plant a file in it
-     * first, which the new ACL would not remove: a directory that is not empty once restricted is refused.
+     * first, which the new ACL would not remove: a directory that is not empty once restricted is refused. That closes
+     * only the planted-entry part of the window: a handle another user opened on the path before the ACL was set stays
+     * valid, and this check cannot see it.
      */
     static void restrict(Path path, boolean directory) throws IOException {
         AclFileAttributeView view =
