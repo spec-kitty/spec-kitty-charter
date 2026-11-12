@@ -205,6 +205,9 @@
       "last_event_id": "01M77QFDAXJSJK0CC1ZNBR6GQT",
       "last_transition_at": "2026-11-12T11:14:51.357174+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "FR-014 (#447 option 1): OverrideSourceRule refuses an overrides edge from template/asset/guard/lifecycle. putPackRelationship: 422 validation_failed, violation overrides_source_not_activatable at /from, nothing written. Load: FilesystemPackStore.read records a violation at the graph document, so registration lists it (422) and composing reads answer 500 pack_unreadable naming the document; DomainRepositoryService untouched. Contract: violation code in CharterRefusalCode description and validation_failed entry, putPackRelationship 422 description, two examples, ### Breaking fragment. override-source-kind.feature (7 scenarios), :packs:test, CharterContractSuite, contract checks, HexagonalArchitectureTest, spotless/checkstyle green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 32650,
