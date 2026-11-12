@@ -1,7 +1,7 @@
 {
-  "event_count": 92,
-  "last_event_id": "01M7905ZS88649XZPW2QAX2TMH",
-  "materialized_at": "2026-11-12T23:06:14.057612+00:00",
+  "event_count": 97,
+  "last_event_id": "01M791G18GDYJEY3E9ZXR30XKH",
+  "materialized_at": "2026-11-12T23:29:11.952800+00:00",
   "mission_number": "",
   "mission_slug": "effective-step-and-action-context-01M774HB",
   "mission_type": "software-dev",
@@ -259,43 +259,51 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "reviewer-renata",
+      "agent": null,
+      "agent_profile": "scribe-sally",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M78ZTN6Q7XCWKD4A9DWE7RWY",
-      "last_transition_at": "2026-11-12T23:00:02.903738+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M790EQC1CWCJZC8CB8X0GYV7",
+      "last_transition_at": "2026-11-12T23:11:00.361471+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Records and docs: ADR-0018 D5 amendment (ownership rule) with D2/D3 annotations; ADR-0066 annotations on d4, d7, d8, d9, now-built and Follow-ups marker; rules page Built (slice C) label, E16 rewritten, E5/E6/E9/E12/E14/E17/E18, C22/C25/C27, new C37/C38/F8, F6, G8, G21, A7, section 7 rows; DIV-245 + DIV-244 note (page and yaml); service contract R3/R9/operation lists; status codes, REST conventions; glossary terms; conceptual-model note; changelog page; roadmap and next-slices. check_docs all, markdownlint-cli2 and cspell clean."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "reviewer",
-      "shell_pid": 21956,
-      "shell_pid_created_at": "1794524398.42",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP08-records-and-docs/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP08-records-and-docs/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done"
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned"
       }
     },
     "WP09": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M7905ZS88649XZPW2QAX2TMH",
-      "last_transition_at": "2026-11-12T23:06:14.057612+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M791G18GDYJEY3E9ZXR30XKH",
+      "last_transition_at": "2026-11-12T23:29:11.952800+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green."
+        "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green.",
+        "Cycle 1 fixes: one place rule in ClosureView.stepPlace (mission type winner if it declares s, else held action winner whose version declares s), used by stepPlace, the step read and the context artifact link; probes 1 and 2 as scenarios (red first, e80394a33); L1 step-contract step link by the place; M1, L3 contract wording; L4 controller test. Prompt read unchanged. activations, missions-edge, packs ClosureViewTest, feature, contracts:check and full deployable:test (1781/0) green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -305,13 +313,13 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 16947,
+      "shell_pid_created_at": "1794526137.16",
       "subtasks": {
-        "T040": "planned",
-        "T041": "planned",
-        "T042": "planned"
+        "T040": "done",
+        "T041": "done",
+        "T042": "done"
       }
     },
     "WP10": {
