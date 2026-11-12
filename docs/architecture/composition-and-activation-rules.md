@@ -1238,17 +1238,38 @@ context of an action of a mission type in force links its prompt, and one not in
 `effective-step-prompt.feature`.
 *Resolved 2026-11-12:* the ⚠ note this rule carried ("FR-019 says the context is what the step contract names") is
 settled by the ownership rule above.
-*Amended 2026-11-12 (slice C, A7, OD-9; operator ruling of 2026-11-12, research R8): one place for a step.* The
-effective step read `getEffectiveMissionStep` follows the step's place as the context and the prompt read do: the pack
-that holds `win(action:mt/a)`, with that pack's prompt and guidelines. A step only a version the winning mission type
-replaced keeps answers `200` on the step read, the context and the prompt read; a step no version of the closure holds
-is `404 action_not_found` on all three. The context's `artifact` link names the pack of the step's place.
-**Built (slice C).** *Pinned by:* the scenario `WP09, A7 - a step only the replaced version keeps is read from its
-place, as the context and the prompt read it` of `effective-mission-types.feature`, `EffectiveMissionTypeReadServiceTest`
+*Amended 2026-11-12 (slice C, A7, OD-9; operator ruling of 2026-11-12, research R8; WP09 review cycle 1): one place
+rule for a step.* `place(mt, a)` (`ClosureView.stepPlace`) is the pack of the first that holds:
+
+1. `win(mission_type:mt)`, when that version declares `a` among its steps or its on-demand steps;
+2. otherwise, when `held(C, mt, a)`, `win(action:mt/a)`, when that pack's version of `mission_type:mt` declares `a`
+   (this keeps a step that only a version the winner replaced declares);
+3. otherwise there is no place, and the step read answers `404 action_not_found`.
+
+Whether a version declares a step is the kernel's `StepBearer.declaresStep`. The rule places the step for the step
+read `getEffectiveMissionStep` (read from the place's pack, with its prompt and guidelines; a place step's skeleton
+links name that pack's `getPackMissionSkeleton`), for the action context's `artifact` link (so it and
+`effective-artifact` answer the same step), and for a step contract's `step` link under an activation (offered whenever
+the step has a place). A step only a version the winning mission type replaced keeps answers `200` on the step read and
+on the context. The effective step prompt (F8) is not changed by this rule: it still places the prompt at
+`win(action:mt/a)`; whether it follows the one place rule waits on an operator ruling (Q3).
+**Built (slice C).** *Pinned by:* the scenarios of `effective-mission-types.feature`
+`WP09, A7 - a step only the replaced version keeps is read from its place, as the context and the prompt read it`,
+`WP09 review H1 - a step the winning type declares is placed at the winner, whichever pack's graph declares it`,
+`WP09 review H1 - the context's artifact link answers a step only the winning type declares, whose action another pack's graph declares`
+and `D11 - a step contract links its mission type when the closure holds it, and its step when the step read answers it`;
+`ClosureViewTest` (`aStepTheWinningVersionDeclaresIsPlacedAtTheWinnerWhicheverPacksGraphDeclaresTheAction`,
+`aStepOnlyTheWinnerDeclaresIsPlacedAtTheWinnerAlthoughTheActionsWinnerIsAnotherPack`,
+`aStepOnlyAReplacedVersionKeepsIsPlacedAtTheActionsWinner`, `theTwinAHeldStepNoVersionAtEitherPlaceDeclaresHasNoPlace`,
+`theTwinAStepADeclaringVersionKeepsWithoutTheClosureHoldingItHasNoPlace`); `EffectiveReadServiceMissionWinnerTest`
+(`aStepsPlaceIsThePackOfTheMergedWinnerOfItsActionWithTheSourceFingerprint`, `aHeldStepNoVersionAtItsPlaceDeclaresIsActionNotFound`,
+`aStepTheClosureDoesNotHoldIsTheSessionsRefusalBeforeAnyPlaceIsAsked`); `EffectiveMissionTypeReadServiceTest`
 (`aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFilesAndTheMergedStepContract`,
 `aStepNoVersionDeclaresIsTheRefusalOfThePlaceAsTheContextGivesItAndNoPackIsRead`,
-`aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`) and `EffectiveReadServiceMissionWinnerTest`
-(`aStepsPlaceIsThePackOfTheMergedWinnerOfItsActionWithTheSourceFingerprint`).
+`aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`,
+`aStepContractWhoseStepOnlyAReplacedVersionKeepsLinksTheStepTheStepReadAnswers`,
+`theTwinAStepContractWhoseStepNoVersionHoldsLinksNoStep`); `EffectiveMissionTypesControllerTest.aStepOnlyAReplacedVersionKeepsLinksItsSkeletonInThePlacesPack`;
+and `EffectiveReadServiceTest.theContextNamesThePackOfTheStepsPlaceAndNoneWhenTheSetDoesNotListTheMissionType`.
 
 **E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
@@ -1636,7 +1657,8 @@ and `held(C, mt, a)`, answers:
 - `diagnostics`: `prompt_slot_not_empty` for a slot that still holds legacy text under an unversioned descriptor; the
   slot is listed with its fragments and no flag (OD-7, OD-8);
 - `_links`: `self`, `effective-context` (the action context of the same action) and `effective-artifact` (the step
-  under the activation, which answers for a step only a replaced version keeps, A7).
+  under the activation, read at the step's place by E16's one place rule, A7, so it answers whenever the step has a
+  place; the prompt itself is still placed at `win(action:mt/a)`, pending operator ruling Q3).
 
 Its refusals and their order are E18's (the `409 mission_type_not_in_force` among them), its tag is E17's read
 `PROMPT`, and it is one verified read (E19). The answer is byte-identical across repeated reads and every order in
