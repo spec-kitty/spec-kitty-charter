@@ -27,6 +27,9 @@ scenario exercises today.
 
 ## Design
 
+> The `shared` section and its `provenBy` check below were dropped at the plan-point squad (see the last
+> section): no status is shared, and the register holds only `operations`.
+
 ### The register (`contracts/charter/scenarios/switch-gate.yaml`)
 
 ```yaml

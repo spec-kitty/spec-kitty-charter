@@ -126,25 +126,37 @@ public class CharterSteps {
     }
 
     /**
-     * Every success answer with a JSON body is linked as {@link LinkChecks} requires: its {@code self}, every link
-     * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20). Every success
-     * answer is linked; every answer, success or not, JSON or not, is recorded with its scenario for the switch gate
-     * that runs after the last scenario ({@link SwitchGate}, ADR-0059 D1).
+     * Every exchange of the scenario, success or not, is recorded with the scenario for the switch gate that runs after
+     * the last scenario ({@link SwitchGate}, ADR-0059 D1), with whether a step asserted its status. It runs apart from
+     * the checks of the exchanges, so a failing check never leaves an exchange unrecorded.
      *
      * @param scenario the scenario that made the exchanges
      */
     @After
-    public void everySuccessAnswerIsLinked(Scenario scenario) throws Exception {
+    public void everyExchangeIsRecordedForTheSwitchGate(Scenario scenario) {
         List<ScenarioHttp.Exchange> exchanges = http.exchanges();
         for (int index = 0; index < exchanges.size(); index++) {
             ScenarioHttp.Exchange exchange = exchanges.get(index);
-            MockHttpServletResponse response = exchange.result().getResponse();
             SwitchGate.record(
                     CONTRACT,
-                    new SwitchGate.Exchange(exchange.method(), exchange.path(), response.getStatus()),
+                    new SwitchGate.Exchange(
+                            exchange.method(),
+                            exchange.path(),
+                            exchange.result().getResponse().getStatus()),
                     http.statusAsserted(index),
                     scenario.getUri().toString(),
                     scenario.getLine());
+        }
+    }
+
+    /**
+     * Every success answer with a JSON body is linked as {@link LinkChecks} requires: its {@code self}, every link
+     * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20).
+     */
+    @After
+    public void everySuccessAnswerIsLinked() throws Exception {
+        for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+            MockHttpServletResponse response = exchange.result().getResponse();
             JsonNode body = json(response.getContentAsString());
             if (!isSuccess(response) || body == null || !isJson(response.getContentType())) {
                 continue;
