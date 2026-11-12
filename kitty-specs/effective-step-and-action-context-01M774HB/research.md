@@ -104,8 +104,9 @@ relayed by the orchestrator); the rest are this mission's planning decisions, pu
 - **Revised after the plan-point squad (A2, A3).** The gate is not the notices path. The `ActivationImpact` port gains
   a gate method, called on every check path of `RegistrationImpact` (full registration, per-artifact registration,
   relationship writes, deletes), which resolves in-force per stored activation the change joins and raises the first
-  `prompt_slot_missing`, never swallowed. An activation that already failed before the change (G21) is not blamed on
-  it. Activation writes call an explicit `ClosureView.requireSlots(states)` before storing; `inForce` stays pure.
+  `prompt_slot_missing`, never swallowed. Per G21, a write that leaves a stored activation's closure broken is refused,
+  even when that closure was already broken before the change (corrected at WP05 review, cycle 1: an earlier draft
+  said such an activation "is not blamed on it", which contradicts G21). Activation writes call an explicit `ClosureView.requireSlots(states)` before storing; `inForce` stays pure.
 - **Alternatives.** Refuse at registration when any enhancement, active or not, names a missing slot: that is the
   "whatever the activation" reading OD-1 overruled. Judge only at read: drops OD-4.
 

@@ -54,9 +54,9 @@ class ValueObjectsTest {
     @Test
     @DisplayName("pack paths are equal by both components")
     void packPathsHaveValueEquality() {
-        var paths = new PackPaths(Optional.of("charter.yaml"), Optional.empty());
+        var paths = new PackPaths(Optional.of("drg/fragment.yaml"), Optional.empty());
 
-        assertThat(paths).isEqualTo(new PackPaths(Optional.of("charter.yaml"), Optional.empty()));
+        assertThat(paths).isEqualTo(new PackPaths(Optional.of("drg/fragment.yaml"), Optional.empty()));
         assertThat(paths).isNotEqualTo(PackPaths.none());
     }
 }

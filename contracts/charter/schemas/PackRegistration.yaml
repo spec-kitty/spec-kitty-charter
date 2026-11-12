@@ -4,7 +4,8 @@ description: >-
   result of a succeeded registration it carries the outcome of the write, its notices (FR-027) and its load
   diagnostics; getPack answers the stored pack without them. It is a response schema only: the request body of a registration is the archive itself
   (PUT /packs/{packId}) or a PackSource (POST /packs). The ETag of getPack is the quoted revision. Registering a pack
-  replaces the whole pack (ADR-0065 D1): after a replace the pack holds exactly the staged tree.
+  replaces the whole pack (ADR-0065 D1): after a replace the pack holds the staged tree less the files it reports as not
+  held (diagnostics, file_not_held).
 type: object
 additionalProperties: false
 required:
@@ -97,8 +98,11 @@ properties:
       $ref: Diagnostic.yaml
     description: >-
       Only in the result of a succeeded registration: the load warnings of the staged pack, each naming a pack-relative
-      path. Today the only one is prompt_slot_not_empty, for a step prompt whose slot holds text in a pack whose
-      descriptor declares no schema_version. Empty when the load found nothing to warn about. A warning never refuses
+      path. Two are raised: prompt_slot_not_empty, for a step prompt whose slot holds text in a pack whose descriptor
+      declares no schema_version, and file_not_held, one per file of the registered tree that is not pack content (a
+      file-kinds exclusion names it, or it is Markdown that no rule models): the detail is the file, then
+      "not held" and the rule's reason in parentheses, and the stored pack is the registered tree less those files.
+      Empty when the load found nothing to warn about. A warning never refuses
       the registration; a blocking fault is a violation of 422 validation_failed instead. getPack carries no
       diagnostics.
     x-derived:

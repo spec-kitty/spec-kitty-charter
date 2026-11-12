@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -78,10 +78,6 @@ classDiagram
     activated_kinds
     activated_mission_types
   }
-  class OrgCharterPolicy {
-    required_~kind~ lists
-    skill_namespace
-  }
   class Artifact {
     id
     kind : ArtifactKind
@@ -107,11 +103,10 @@ classDiagram
   CharterOffering "1" o-- "1..*" CharterPack
   CharterPack "1" *-- "0..*" Artifact : constituents
   CharterPack "1" *-- "0..*" ActivationPreset : presets
-  CharterPack "1" *-- "0..1" OrgCharterPolicy : org level only
   Artifact "1" -- "1" DRGNode : represented by
   DRGNode "1" -- "0..*" DRGEdge : source / target
   ActivationPreset ..> ActiveCharter : applied into
-  OrgCharterPolicy ..> ActiveCharter : requirements union in
+  ActivationPreset ..> ActiveCharter : must-have items are the required floor
   CharterOffering ..> ActiveGraph : layer merge
   ActiveCharter ..> ActiveGraph : filters
 ```
@@ -119,12 +114,13 @@ classDiagram
 Read it left to right: a project draws on a **charter offering** made of Charter Packs. Each
 pack contributes **artifacts**, which appear as **nodes** of the Charter Reference Graph
 (CRG) and are linked by typed **edges**. The pack layers merge into one graph; the project's
-**active charter** (plus any org requirements) decides which artifacts are in force. The
+**active charter** (plus the required floor of the governing presets) decides which artifacts are in force. The
 result is the **active graph** that every read answers from. The diagram shows the target
 placement of `impacts` on the artifact ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/));
 core today carries a signed `impacts` strength on an edge (see [Relations](#relations)). The
-org policy's `required_<kind>` lists are likewise the current-state authoring form; the target
-authors a requirement as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)).
+org policy's `required_<kind>` lists are core's authoring form; the service authors a requirement as the must-have
+items of a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)), and `org-charter.yaml`, which held
+those lists, is retired (#431, [Enforce presets on an organization's projects](/guides/enforce-org-presets/)).
 The preset fields shown are the sanitized shape this service holds
 ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)); core's
 preset files still write `name`, bare strings and `mission_type_activations`.
@@ -158,8 +154,8 @@ A **Charter Pack** is a distributable bundle of artifacts and their CRG edges, o
 `2026-10-11-2`):
 
 The three levels are `built-in` (ships with Spec Kitty; ships the `default` and `minimal`
-presets), `org` (each path under `charter_packs.org.packs`; may enforce activations through
-`required_<kind>` lists) and `project` (the project's own layer; ships no presets). Where each
+presets), `org` (each path under `charter_packs.org.packs`; may enforce activations through a governing
+preset's must-have items and lock artifacts through `policy.yaml`) and `project` (the project's own layer; ships no presets). Where each
 level is configured, the shape of its files and its directory layout are tabulated in
 [Descriptors](/architecture/descriptors/#where-descriptors-live).
 
@@ -225,7 +221,7 @@ pinned file in another shape is refused, never tolerated, and fixed in the pack.
 | `pack.yaml` | `pack-descriptor`, closed | The pack's descriptor. An unknown key, a retired one included, makes the pack unreadable (`pack_unreadable`). |
 | `presets/<id>.yaml` | `preset`, closed | A `Preset` value in the pack's `presets()` slot, sorted by id. Not an artifact: it has no URN. Its `id` is its file stem. |
 | `pack-manifest.yaml` | `pack-manifest`, closed | Beside the aggregate, on the whole-pack load (`LoadedPack.manifest`), because it holds paths and hashes. |
-| `pack.md` | `pack-document` (a Markdown structure schema) | A `PackDocument` in the pack's `document()` slot (#260): optional frontmatter, an optional title, a preamble and the H2 sections, read and written through the `markdown` content form. A carriage return, a byte order mark or an ambiguous heading is refused, never normalized. |
+| `README.md` | `pack-document` (a Markdown structure schema) | A `PackDocument` in the pack's `document()` slot (#260, #451), served at `GET /packs/{packId}/doc` as Markdown or JSON: optional frontmatter, an optional title, a preamble and the H2 sections, read and written through the `markdown` content form. A carriage return, a byte order mark or an ambiguous heading is refused, never normalized. |
 
 - **Presets.** A preset holds a description, an optional kind gate (`activated_kinds`) and up to
   ten `activated_<plural>` lists of preset items, `activated_mission_types` included. An item is
@@ -237,8 +233,12 @@ pinned file in another shape is refused, never tolerated, and fixed in the pack.
   fields: a whole-pack write recomputes them from the bytes it writes, the reader takes them as
   written, and the round-trip gate verifies them. Membership is kept as read; which files belong in
   it is [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110)'s to decide.
-- **The fingerprint** covers them after every other file: the presets in path order, then the
-  manifest. A pack without them keeps its fingerprint.
+- **The fingerprint** covers them after every other file: the presets in path order, then `README.md`, then the
+  manifest, then `policy.yaml`, then any retired file. A pack without them keeps its fingerprint.
+- **Retired and excluded files.** `pack.md`, `PROVENANCE.md` and `org-charter.yaml` at the pack root are retired:
+  refused by name, never read (#451, #431). A file an exclusion names, and Markdown that no rule models (the
+  `ignored` fallback of `file-kinds.yaml`), is excluded: not held and not refused; a registration reports it as
+  `file_not_held` ([ADR-0073](/adr/0073-real-packs-register-as-they-are/)).
 
 ### Mutability levels (integrity)
 
@@ -302,8 +302,9 @@ facts; it does not restate them.
 
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
-- **Org-requirable**: an org pack may declare `required_<plural>` for the kind.
-- **Selection-overlayable**: an org `required_<plural>` list also unions into the charter's
+- **Org-requirable**: core's column: an org pack may declare `required_<plural>` for the kind in core's
+  `org-charter.yaml`. The service retired that file (#431); a must-have item of a governing preset is required instead.
+- **Selection-overlayable**: core's column: an org `required_<plural>` list also unions into the charter's
   `selected_<plural>` field.
 - **In force when key absent**: core's column. With no activation key, `all` means every
   available artifact of the kind is in force; `required` (only `skill`) means only the org packs'
@@ -326,7 +327,7 @@ facts; it does not restate them.
   (ADR-0053 decision 22), with guards, emits and prompt fragments for slots the step declares
   ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). A preset lists it
   in `activated_step_enhancements`; `none` means the service activates none when the key is absent.
-  It is not org-requirable: `org-charter.yaml` has no `required_step_enhancements`. The schema holds
+  Core's org charter has no `required_step_enhancements`; in the service a governing preset may mark one must-have. The schema holds
   only prompt fragments so far, and the service does not store the kind yet; the guard and emit
   additions and the store binding are [#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428).
 
@@ -457,16 +458,16 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   [ADR-0013](/adr/0013-persistent-deactivation/)); this is core's activation state.
 - **`activated_kinds`** gates whole kinds.
 - **`mission_type_activations`** lists the mission types the project uses.
-- **Org requirements.** Current state: `required_<plural>` lists in an org pack's
-  `org-charter.yaml` are in force for every project that registers the pack. Target
+- **Org requirements.** In core: `required_<plural>` lists in an org pack's
+  `org-charter.yaml` are in force for every project that registers the pack. In the service
   ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)): requirement is authored as a
   preset whose must-have items are the required set, and the service derives the required set
-  from it. Either way, required means always active: deactivating a required artifact is refused,
+  from it; `org-charter.yaml` is retired and refused by name (#431). Either way, required means always active: deactivating a required artifact is refused,
   naming the requiring pack. Its content stays as open as its mutability level allows.
-  Target ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
-  proposed): a preset item is marked `must_have: true`; a preset with any must-have item is a
-  governing preset; a preset carries no `required_*` key, and migrating `org-charter.yaml`'s lists
-  is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). The service's activation
+  In the service ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)): a preset item
+  is marked `must_have: true`; a preset with any must-have item is a governing preset; a preset carries no
+  `required_*` key, and nothing migrates `org-charter.yaml`'s lists (#206 is superseded by its retirement; the
+  conversion is in [Enforce presets on an organization's projects](/guides/enforce-org-presets/)). The service's activation
   writes enforce the required set (below); core's activation does not yet.
 - **The service's activation document** (built: the register and the per-artifact and preset
   writes, #291, and the closure read, #360; [Offering and activation](/architecture/offering-and-activation/)). One stored
@@ -663,7 +664,8 @@ these are resources, used rather than followed.
 
 - A **pack skill** is a thin, parameterized entry point a team shares through a pack
   (`skill:<id>`). It renders as `<skill_namespace>-<id>/SKILL.md` into each configured
-  tool's project skill root. A non-built-in skill needs a `skill_namespace`.
+  tool's project skill root. In core, a non-built-in skill needs a `skill_namespace`; the service has no
+  `skill_namespace`, which lived in the retired `org-charter.yaml` (#431, #381).
 - A **glossary pack** contributes terms to the project's vocabulary. Accepted, not built yet
   ([ADR-0049](/adr/0049-glossary-contexts-and-terms/)): the kind becomes `glossary`, whose artifact is a
   **glossary context** (a ubiquitous-language bounded context, close to Contextive's) holding terms addressed as

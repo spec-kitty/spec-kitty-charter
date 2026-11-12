@@ -30,6 +30,10 @@ import org.junit.jupiter.api.Test;
  * {@code PackFileSet.digested(fixture, "digest-fixture")} and
  * {@code FileSystemPackSources.digestOfPack(fixture, "digest-fixture")}, and replace both constants below in one
  * commit. The values were captured from the digest code as shipped when the fixture covered every bound kind.
+ *
+ * <p>Recaptures: pack document moved to README.md (#451, 2026-11-11). The fixture's {@code pack.md} became
+ * {@code README.md} and the digested list changed only by that swap, in the same tail position; the fingerprint moved
+ * because the file's name is part of what the digest hashes.
  */
 @DisplayName("A fixed pack keeps its fingerprint and its digested file order (NFR-001)")
 class PackDigestFixtureTest {
@@ -64,11 +68,11 @@ class PackDigestFixtureTest {
             "missions/m/templates/note-template.md",
             "templates/writing/meeting.md",
             "presets/default.yaml",
-            "pack.md",
+            "README.md",
             "pack-manifest.yaml",
             "policy.yaml");
 
-    private static final String FINGERPRINT = "sha256:c533b50ea4e0d21e198158e6cf009c8330c97882ea54ebac41936284faeb7832";
+    private static final String FINGERPRINT = "sha256:0003f96f19264157a362365a2db69bede7693cab2720f8040477299421bde1fd";
 
     @Test
     void theFixedPackKeepsItsDigestedFilesAndItsFingerprint() throws URISyntaxException {

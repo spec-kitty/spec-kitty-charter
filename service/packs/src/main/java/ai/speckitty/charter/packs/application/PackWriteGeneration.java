@@ -5,18 +5,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
  * The write generation of the pack domain, a seqlock (research R-lock, NFR-006): it is <em>odd</em> while a directory
  * swap runs and <em>even</em> when none does, and it only ever grows. A pack write brackets its swap with
- * {@link #bracket}; {@link ConsistentRead} records the generation before it reads and refuses the read when it was odd
- * or has moved since. That closes the A &rarr; B &rarr; A hole in which the content digests of a read agree although a
- * swap ran in between, and it turns a read that hit the instant the live directory is missing into a stale one.
+ * {@link #bracket}; {@link ConsistentRead} records the generation before it reads and refuses the read when it has
+ * moved since, and a read that started while it was odd unless its digests agree (FR-023). That closes the A &rarr; B
+ * &rarr; A hole in which the content digests of a read agree although a swap ran in between.
  *
  * <p>There is one generation for the registry and one for each pack (a pack's is what the facts cache of the effective
  * reads keys on). Swaps are normally serialized by {@link RegistryWriteLock}; the counters nevertheless stay correct
  * when two swaps overlap: a generation is odd while at least one swap runs.
+ *
+ * <p>Each pack also counts the moves of its live directory ({@link #moved}, {@link #movesOf}): a swap that moves the
+ * directory aside counts one, whether its second rename then succeeds or fails and the aside copy is moved back. A
+ * rolled-back swap leaves the very same directory in place, so a lock-free reader that compares only the directory's
+ * identity cannot tell it from no swap at all; the count can ({@code PackDirectories}, squad D-1). The generation's
+ * parity cannot serve there: a reader may take it after the swap began and compare it again before the swap ends.
  *
  * <p>The generation lives in this JVM only, as the locks do (ADR-0061): a second replica, or another process writing
  * the pack domain, is not seen by it. {@link #shared()} is the one the deployment uses.
@@ -27,6 +34,7 @@ public final class PackWriteGeneration {
 
     private final Counter registry = new Counter();
     private final Map<String, Counter> packs = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> moves = new ConcurrentHashMap<>();
 
     /** A generation at zero, with no swap running; a test builds its own, the deployment uses {@link #shared()}. */
     public PackWriteGeneration() {}
@@ -90,6 +98,29 @@ public final class PackWriteGeneration {
         Objects.requireNonNull(pack, "pack");
         packs.computeIfAbsent(pack, key -> new Counter()).end();
         registry.end();
+    }
+
+    /**
+     * Records that a swap moved the pack's live directory out of its place. Call it after the first rename and before
+     * anything moves the directory back, so that a reader that resolved the directory before that rename and resolves
+     * it again after a rollback sees the count move between the two.
+     *
+     * @param pack the pack's configured name, as {@link #begin} takes it
+     */
+    public void moved(String pack) {
+        moves.computeIfAbsent(Objects.requireNonNull(pack, "pack"), key -> new AtomicLong())
+                .incrementAndGet();
+    }
+
+    /**
+     * How many times a swap has moved the pack's live directory out of its place.
+     *
+     * @param pack the pack's configured name
+     * @return the count; zero for a pack never swapped
+     */
+    public long movesOf(String pack) {
+        AtomicLong count = moves.get(Objects.requireNonNull(pack, "pack"));
+        return count == null ? 0L : count.get();
     }
 
     /**

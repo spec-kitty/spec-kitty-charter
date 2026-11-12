@@ -198,25 +198,30 @@ class EffectiveProfileDtosTest {
         assertThat(entry.getLinks()).isEmpty();
     }
 
+    /** An org directive the profile P suggests, not selected, with the words of the edge. */
+    private static EffectiveProfileRead.Entry suggestedOfP(String directive, EdgeWords words) {
+        return new EffectiveProfileRead.Entry(
+                facts(
+                        directive,
+                        "main",
+                        PackLevel.ORG,
+                        "inactive",
+                        false,
+                        "open",
+                        "not_selected",
+                        Optional.empty(),
+                        Optional.empty()),
+                GovernanceEntry.Step.SUGGESTS,
+                urn("agent_profile:P"),
+                1,
+                words);
+    }
+
     @Test
     void theWordsOfTheEdgeAndASatisfiedByAreCarriedWhereTheyAreStated() {
         EffectiveAgentProfileRead wire = dtos.read(
                 effectiveRead(
-                        new EffectiveProfileRead.Entry(
-                                facts(
-                                        "directive:D",
-                                        "main",
-                                        PackLevel.ORG,
-                                        "inactive",
-                                        false,
-                                        "open",
-                                        "not_selected",
-                                        Optional.empty(),
-                                        Optional.empty()),
-                                GovernanceEntry.Step.SUGGESTS,
-                                urn("agent_profile:P"),
-                                1,
-                                new EdgeWords(Optional.of("w"), Optional.of("r"))),
+                        suggestedOfP("directive:D", new EdgeWords(Optional.of("w"), Optional.of("r"))),
                         new EffectiveProfileRead.Entry(
                                 facts(
                                         "directive:E",
@@ -232,21 +237,7 @@ class EffectiveProfileDtosTest {
                                 urn("agent_profile:P"),
                                 1,
                                 EdgeWords.NONE),
-                        new EffectiveProfileRead.Entry(
-                                facts(
-                                        "directive:G",
-                                        "main",
-                                        PackLevel.ORG,
-                                        "inactive",
-                                        false,
-                                        "open",
-                                        "not_selected",
-                                        Optional.empty(),
-                                        Optional.empty()),
-                                GovernanceEntry.Step.SUGGESTS,
-                                urn("agent_profile:P"),
-                                1,
-                                new EdgeWords(Optional.empty(), Optional.of("only why")))),
+                        suggestedOfP("directive:G", new EdgeWords(Optional.empty(), Optional.of("only why")))),
                 OptionalInt.empty());
 
         EffectiveGovernanceEntry suggested = wire.getGovernance().get(0);

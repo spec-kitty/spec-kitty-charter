@@ -79,7 +79,8 @@ class RetiredFilesTest {
             assertThat(TABLE.classify("built-in/missions/mission-steps/plan/specify/README.md"))
                     .isInstanceOf(PackFileKind.Retired.class);
             // The one overlap: a README directly in the old built-in missions/mission-steps/ is read as one beside a
-            // mission type named mission-steps. Exclusions come first, so it is excluded, never read either way.
+            // mission type named mission-steps. Exclusions come first, so it is excluded: not held and, since #451, not
+            // refused either (it is an orientation note, not a stale mission-step file).
             assertThat(TABLE.matchingRules("built-in/missions/mission-steps/README.md"))
                     .containsExactly("*/missions/*/README.md", "*/missions/mission-steps/**/*");
             assertThat(TABLE.classify("built-in/missions/mission-steps/README.md"))
@@ -93,6 +94,53 @@ class RetiredFilesTest {
                 assertThat(TABLE.classify("qa/" + path)).as(path).isInstanceOf(PackFileKind.Mapped.class);
                 assertThat(TABLE.matchingRules("qa/" + path)).as(path).isEmpty();
             }
+        }
+
+        @Test
+        @DisplayName("a pack.md or PROVENANCE.md that is not at the pack root is not retired")
+        void aPackLevelNamesakeBelowTheRootIsNotRetired() {
+            for (String path : RetiredFileFixture.NOT_AT_THE_ROOT) {
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+                assertThat(TABLE.matchingRules("qa/" + path)).as(path).isEmpty();
+            }
+        }
+
+        @Test
+        @DisplayName(
+                "the pack root's own files keep their exact results: README.md is the document, pack.md is retired")
+        void theRootFilesKeepTheirExactResults() {
+            assertThat(TABLE.classify("qa/README.md"))
+                    .isEqualTo(new PackFileKind.Mapped(
+                            "pack-document",
+                            Optional.of("packs/schemas/pack-document.schema.json"),
+                            ContentForm.MARKDOWN));
+            assertThat(TABLE.classify("qa/pack.md"))
+                    .isEqualTo(new PackFileKind.Retired("*/pack.md", RetiredFileFixture.RULES.get("*/pack.md")));
+        }
+
+        @Test
+        @DisplayName(
+                "a root file that differs only in letter case from a rule's file is refused naming that rule (FR-022)")
+        void aCaseVariantIsRefusedByName() {
+            RetiredFileFixture.CASE_VARIANTS.forEach((file, match) -> assertThat(TABLE.classify("qa/" + file))
+                    .as(file)
+                    .isEqualTo(new PackFileKind.Retired(
+                            match,
+                            "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'")));
+        }
+
+        @Test
+        @DisplayName("a case variant below the pack root is not refused: only the root files are rule files")
+        void aCaseVariantBelowTheRootIsNotRefused() {
+            for (String path : List.of("docs/readme.md", "docs/Readme.md", "sub/PACK.md")) {
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+            }
+        }
+
+        @Test
+        @DisplayName("a case variant of an asset or template payload is not a rule file and is not refused")
+        void aPayloadCaseVariantIsNotRefused() {
+            assertThat(TABLE.classify("qa/Assets/x.bin")).isNotInstanceOf(PackFileKind.Retired.class);
         }
 
         @Test
@@ -150,9 +198,11 @@ class RetiredFilesTest {
         void anUnknownTopLevelKeyRefusesTheTable() {
             assertThatThrownBy(() -> new PackFileKind(TABLE_HEAD + "exclusions: []\nretire: []\n"))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("packs/file-kinds.yaml: the unknown top-level key 'retire'; the table takes only"
-                            + " [artifact_kinds, exclusions, files, fragment_kinds, node_kinds, payloads, retired]");
-            assertThat(new PackFileKind(TABLE_HEAD + "artifact_kinds: []\nexclusions: []\npayloads: []\nretired: []\n")
+                    .hasMessage(
+                            "packs/file-kinds.yaml: the unknown top-level key 'retire'; the table takes only"
+                                    + " [artifact_kinds, exclusions, files, fragment_kinds, ignored, node_kinds, payloads, retired]");
+            assertThat(new PackFileKind(TABLE_HEAD
+                                    + "artifact_kinds: []\nexclusions: []\npayloads: []\nretired: []\nignored: []\n")
                             .retiredRules())
                     .isEmpty();
         }
@@ -181,8 +231,82 @@ class RetiredFilesTest {
     }
 
     @Nested
+    @DisplayName("the store's load of the pack-level retired files and case variants")
+    class ThePackLevelFiles {
+
+        @Test
+        @DisplayName("a pack.md, a PROVENANCE.md and every case variant is a retired violation naming its reason")
+        void theStoreRefusesThemByName(@TempDir Path host) {
+            FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
+            Path exact = RetiredFileFixture.plant(host.resolve("qa"), List.of());
+            write(exact, "pack.md");
+            write(exact, "PROVENANCE.md");
+
+            assertThat(store.read(new PackIdentifier("qa")).violations())
+                    .containsExactlyInAnyOrder(
+                            new PackElementViolation("pack.md", "retired", RetiredFileFixture.RULES.get("*/pack.md")),
+                            new PackElementViolation(
+                                    "PROVENANCE.md", "retired", RetiredFileFixture.RULES.get("*/PROVENANCE.md")));
+            // Spellings that differ only in case are one file on a case-insensitive file system, so each variant is
+            // planted alone in a pack of its own. The pack.yaml, policy.yaml and pack-manifest.yaml variants still
+            // collide there with the files every planted pack holds, so this test assumes a case-sensitive file system.
+            int n = 0;
+            for (Map.Entry<String, String> variant : RetiredFileFixture.CASE_VARIANTS.entrySet()) {
+                String name = "variant" + n++;
+                write(RetiredFileFixture.plant(host.resolve(name), List.of()), variant.getKey());
+
+                assertThat(store.read(new PackIdentifier(name)).violations())
+                        .as(variant.getKey())
+                        .containsExactly(new PackElementViolation(
+                                variant.getKey(),
+                                "retired",
+                                "differs only in letter case from '"
+                                        + variant.getValue()
+                                                .substring(variant.getValue().indexOf('/') + 1) + "'"));
+            }
+        }
+
+        private void write(Path pack, String file) {
+            try {
+                java.nio.file.Files.writeString(pack.resolve(file), "# T\n");
+            } catch (java.io.IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("validate mode")
     class ValidateMode {
+
+        @Test
+        @DisplayName("reports a pack.md and a case variant as a retired file naming the reason")
+        void thePackLevelRetiredFilesAreFindings(@TempDir Path host) {
+            Path pack = RetiredFileFixture.plant(host.resolve("qa"), List.of());
+            for (String file : List.of("pack.md", "Readme.md", "PROVENANCE.md")) {
+                try {
+                    java.nio.file.Files.writeString(pack.resolve(file), "# T\n");
+                } catch (java.io.IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            }
+            PackRoot root = new PackRoot("qa", Optional.of(PackLevel.BUILT_IN), pack.toString());
+
+            PackContents contents = new FileSystemPackInspector().inspect(root, Scope.FULL);
+
+            assertThat(contents.unreadableFiles())
+                    .extracting(FileRead.Unreadable::file)
+                    .containsExactlyInAnyOrder("pack.md", "Readme.md", "PROVENANCE.md");
+            assertThat(contents.unreadableFiles().stream()
+                            .flatMap(bad -> PackPolicy.unreadable("qa", bad).stream())
+                            .map(PackFinding::detail))
+                    .anySatisfy(d -> assertThat(d)
+                            .contains("qa/pack.md is retired: the pack document is README.md at the pack root"))
+                    .anySatisfy(d -> assertThat(d)
+                            .contains("qa/PROVENANCE.md is retired: folded into README.md as its provenance section"))
+                    .anySatisfy(d -> assertThat(d)
+                            .contains("qa/Readme.md is retired: differs only in letter case from 'README.md'"));
+        }
 
         @Test
         @DisplayName(

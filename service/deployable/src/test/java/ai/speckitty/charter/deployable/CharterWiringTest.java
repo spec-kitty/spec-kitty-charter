@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -95,7 +96,7 @@ class CharterWiringTest {
                             .hasFailed()
                             .getFailure()
                             .rootCause()
-                            .isInstanceOf(IllegalStateException.class)
+                            .isInstanceOf(StartupRefusal.class)
                             .hasMessageContaining("charter.config-root")
                             .hasMessageNotContaining(file.toString()));
         }
@@ -116,7 +117,7 @@ class CharterWiringTest {
                             .hasFailed()
                             .getFailure()
                             .rootCause()
-                            .isInstanceOf(IllegalStateException.class)
+                            .isInstanceOf(StartupRefusal.class)
                             .hasMessageContaining("no longer read")
                             .hasMessageContaining("--configRootLocation"));
         }
@@ -170,7 +171,7 @@ class CharterWiringTest {
                             .hasFailed()
                             .getFailure()
                             .rootCause()
-                            .isInstanceOf(IllegalStateException.class)
+                            .isInstanceOf(StartupRefusal.class)
                             .hasMessageContaining("charter.project-config-dir")
                             .hasMessageNotContaining(configured.toString()));
         }

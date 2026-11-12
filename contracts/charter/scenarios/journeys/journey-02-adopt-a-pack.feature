@@ -14,7 +14,6 @@ Feature: Journey 02 — an individual developer adopts a pack and deactivates on
       name: qa
       pack_level: org
       requires_core: '>=1.0'
-      active_charter: org-charter.yaml
       pack_drg: drg/fragment.yaml
       """
 

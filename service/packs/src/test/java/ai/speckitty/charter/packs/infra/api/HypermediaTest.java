@@ -133,6 +133,7 @@ class HypermediaTest {
                         "first",
                         "next",
                         "artifact",
-                        "pack");
+                        "pack",
+                        "doc");
     }
 }

@@ -1,6 +1,6 @@
 @startuml pack-write-model
 ' Sources:
-'   contracts/packs/schemas/{pack-descriptor,graph-shard,org-fragment,org-charter,asset}.schema.json
+'   contracts/packs/schemas/{pack-descriptor,graph-shard,org-fragment,asset}.schema.json
 '   contracts/packs/file-kinds.yaml (node kinds, fragment kind vocabulary)
 '   service/kernel (kernel.domain): PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
 '   Decided design: ADR-0048 (composition), ADR-0049 (glossary), ADR-0050 (mission types, lifecycles, gates),
@@ -24,7 +24,6 @@ class PackDescriptor <<pack.yaml>> {
   - depends_on : DependsOn[]
   - pack_level : PackLevel <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string [PEP 440]
-  - active_charter : path
   - pack_drg : path
   unknown keys : refused (additionalProperties: false)
 }
@@ -116,11 +115,6 @@ class AssetManifest <<*.asset.yaml>> {
   + mime : string
   - title : string
 }
-class OrgCharter <<org-charter.yaml>> {
-  - org_name : string
-  - skill_namespace : string
-  - required_<plural> : string[]
-}
 enum FragmentKind {
   directives, tactics, styleguides, toolguides
   paradigms, procedures, agent_profiles
@@ -145,7 +139,6 @@ Pack "1" *-- "0..*" EventRegistryFile
 Pack "1" *-- "0..*" MissionTypeBundle
 MissionTypeBundle "1" *-- "0..*" StepEnhancementFile
 Pack "1" *-- "0..*" AssetManifest
-Pack "1" *-- "0..1" OrgCharter
 PackDescriptor "1" *-- "0..*" DependsOn
 PackDescriptor ..> PackLevel
 GraphShard "1" *-- "0..*" ShardNode

@@ -278,6 +278,7 @@ rules:
               - service-desc
               - packs
               - pack
+              - doc
               - offering
               - register
               - refresh

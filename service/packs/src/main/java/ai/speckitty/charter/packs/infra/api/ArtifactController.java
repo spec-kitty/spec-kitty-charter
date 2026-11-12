@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.GuideFormat;
+import ai.speckitty.charter.web.InvalidParameter;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -19,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -155,13 +154,19 @@ public class ArtifactController implements ArtifactsApi {
         return wire;
     }
 
-    /** The kind filter: a listed kind, or a 400 problem without a code. */
+    /** The kind filter: a listed kind, or a 400 problem without a code whose detail lists the listed kinds (#411). */
     private static Optional<ArtifactKind> filter(@Nullable String kind) {
         if (kind == null) {
             return Optional.empty();
         }
         return Optional.of(ArtifactReadService.listedKind(kind)
-                .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST)));
+                .orElseThrow(() -> new InvalidParameter(
+                        InvalidParameter.In.QUERY,
+                        "kind",
+                        kind,
+                        InvalidParameter.oneOf(ArtifactReadService.LISTED.stream()
+                                .map(ArtifactKind::token)
+                                .toList()))));
     }
 
     /**

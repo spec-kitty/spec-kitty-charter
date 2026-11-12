@@ -73,6 +73,13 @@ class LifecycleTest {
     @Test
     @DisplayName("each malformed machine is refused with the rule it breaks")
     void malformedMachinesAreRefused() {
+        assertMalformedStatesAreRefused();
+        assertMalformedTransitionsAreRefused();
+        assertMalformedGraphsAreRefused();
+    }
+
+    /** The states, the initial state and the title. */
+    private static void assertMalformedStatesAreRefused() {
         assertRefused(
                 "A lifecycle declares each state once.",
                 () -> lifecycle(
@@ -85,6 +92,22 @@ class LifecycleTest {
         assertRefused(
                 "A lifecycle's initial state is one of its states, and not a terminal one.",
                 () -> lifecycle("done", LANES, edge("planned", "done")));
+        assertRefused("A lifecycle declares at least one state.", () -> lifecycle("planned", List.of()));
+        assertRefused(
+                "A lifecycle needs a title that is not blank.",
+                () -> new Lifecycle(
+                        new LifecycleIdentifier("wp"),
+                        PACK,
+                        "1.0",
+                        " ",
+                        Optional.empty(),
+                        "planned",
+                        LANES,
+                        List.of(edge("planned", "done"))));
+    }
+
+    /** The transitions, one by one. */
+    private static void assertMalformedTransitionsAreRefused() {
         assertRefused("A lifecycle declares at least one transition.", () -> lifecycle("planned", LANES));
         assertRefused(
                 "A lifecycle transition names only states the lifecycle declares.",
@@ -107,6 +130,14 @@ class LifecycleTest {
                 "No lifecycle transition leaves a terminal state.",
                 () -> lifecycle(
                         "planned", LANES, edge(new TransitionSource.Many(List.of("planned", "done")), "doing")));
+        GuardEntry ready = new GuardEntry(GuardReference.parse("ready"), Optional.empty(), Optional.empty());
+        assertRefused(
+                "A lifecycle transition names each guard once.",
+                () -> lifecycle("planned", LANES, edge(new TransitionSource.One("planned"), "done", ready, ready)));
+    }
+
+    /** The machine as a whole: what it reaches, where it ends, and whether it is deterministic. */
+    private static void assertMalformedGraphsAreRefused() {
         assertRefused(
                 "A lifecycle transition leaves at least one state",
                 () -> lifecycle(
@@ -138,22 +169,6 @@ class LifecycleTest {
                         fork,
                         edge(new TransitionSource.EveryNonTerminal(), "doing"),
                         edge("planned", "done")));
-        assertRefused("A lifecycle declares at least one state.", () -> lifecycle("planned", List.of()));
-        assertRefused(
-                "A lifecycle needs a title that is not blank.",
-                () -> new Lifecycle(
-                        new LifecycleIdentifier("wp"),
-                        PACK,
-                        "1.0",
-                        " ",
-                        Optional.empty(),
-                        "planned",
-                        LANES,
-                        List.of(edge("planned", "done"))));
-        GuardEntry ready = new GuardEntry(GuardReference.parse("ready"), Optional.empty(), Optional.empty());
-        assertRefused(
-                "A lifecycle transition names each guard once.",
-                () -> lifecycle("planned", LANES, edge(new TransitionSource.One("planned"), "done", ready, ready)));
     }
 
     @Test

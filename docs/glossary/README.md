@@ -5,7 +5,7 @@ description: "Bounded-context vocabulary for this documentation."
 kind: Hub
 doc_status: active
 generated:
-  by: "doc-kitty-glossary/0.5.0"
+  by: "doc-kitty-glossary/0.7.0"
   at: "2026-10-27T09:25:39Z"
   content_hash: "sha256:3d6bc619e535"
 ---

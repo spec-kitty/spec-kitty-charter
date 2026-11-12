@@ -37,8 +37,11 @@ public enum Relation {
     /** The pack-scoped read of the artifact a resolved reference names. */
     ARTIFACT("artifact"),
 
-    /** The stored pack a succeeded registration status points at. */
-    PACK("pack");
+    /** The stored pack a succeeded registration status points at, and the pack a document read belongs to. */
+    PACK("pack"),
+
+    /** A pack's document ({@code README.md}), present exactly when the pack holds one. */
+    DOC("doc");
 
     private final String wireKey;
 

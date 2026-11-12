@@ -24,16 +24,26 @@
 #                    tail. Optional; consulted after `exclusions` and before `payloads`, and
 #                    no file may match a `retired` rule and a `files` or `exclusions` rule, but
 #                    for one known overlap, pinned by RetiredFilesTest: a README directly in the
-#                    old built-in `missions/mission-steps/` is excluded, never read either way.
+#                    old built-in `missions/mission-steps/` is excluded (not held, not refused), never read.
+#   ignored          The last-resort rules (`match`, `reason`, both required; any other key fails the table;
+#                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that no
+#                    kind claims as a companion is excluded by the first `ignored` rule that matches it, with
+#                    that rule's reason: not held, not served, not refused, not digested. The rule matches
+#                    case-insensitively (`NOTES.MD` is Markdown too). It is a fallback and not an exclusion:
+#                    an exclusion glob over `**/*.md` would come before `retired` and `payloads`, and would
+#                    take the Markdown that rules and companions model. An `ignored` rule is never among the
+#                    rules the overlap check compares, and a root file that differs only in letter case from a
+#                    `files` or `retired` rule's file is refused by name before the fallback is consulted.
 #   Any other top-level key fails when the table loads.
 #
 # Content form
 #   `content_form` says how a file is read, held, written and compared: `yaml` (the default, so
 #   the existing `files` rules do not write it), `markdown`, `text` or `bytes`. A file's
-#   extension and an asset's `mime` never choose it. `yaml`, `markdown` and `bytes` are built;
-#   `text` is declared but not built yet (no mission has built it: #192 shipped text companions
-#   under ADR-0039, not a form). A rule naming it fails when the table loads, until the mission
-#   that first needs it builds and admits it.
+#   extension and an asset's `mime` never choose it. `yaml`, `markdown` and `bytes` are built as
+#   rule forms. `text` exists as a companion form: a skill body is held as a `text` companion of
+#   its skill (#192, ADR-0039), read and written through the skill's binding, and no standalone
+#   `text` kind exists and no `files` rule names it. A rule naming `text` still fails when the table loads,
+#   until a mission that needs a standalone text kind builds and admits it (#432).
 #   The form decides how the store holds a file: a `bytes` file is held by its rule's kind
 #   (`asset-payload` as an asset file, `template` as a template), and a `bytes` rule of any other
 #   kind fails when the table loads. A `files` rule has a schema and is `yaml` or `markdown`; one
@@ -47,7 +57,7 @@
 #   when the table loads; one that does not load fails the table). It validates the model as the
 #   JSON tree {frontmatter?, title?, preamble, sections: [{title, content}]}, with `frontmatter`
 #   and `title` left out, not null, when the document has none. The toolguide guide rule (#194),
-#   the pack document rule `*/pack.md` (#260) and the two mission step rules (#194, ADR-0044)
+#   the pack document rule `*/README.md` (#260, #451) and the two mission step rules (#194, ADR-0044)
 #   declare it.
 #
 # Matching
@@ -124,8 +134,6 @@ files:
     schema: graph-shard
   - match: "*/drg/fragment.yaml"
     schema: org-fragment
-  - match: "*/org-charter.yaml"
-    schema: org-charter
   - match: "**/*.directive.yaml"
     schema: directive
   - match: "**/*.tactic.yaml"
@@ -167,9 +175,10 @@ files:
   - match: "**/toolguides/*.guide.md"
     schema: toolguide-guide
     content_form: markdown
-  # A pack's description (#260, ADR-0042 decision 8): pack.md at the pack root, held in the Pack as its document
-  # through the markdown content form. Only the root file is the document; a pack.md deeper in the pack is not.
-  - match: "*/pack.md"
+  # A pack's description (#260, #451, ADR-0042 decision 8 as amended 2026-11-11): README.md at the pack root, held in the
+  # Pack as its document through the markdown content form. Only the root file is the document; a README deeper in the
+  # pack keeps the exclusions and payload rules that already cover it (`*/missions/*/README.md`, `*/assets/**/README.md`).
+  - match: "*/README.md"
     schema: pack-document
     content_form: markdown
   # Mission types (#194, ADR-0044): one file per type, missions/<id>/<id>.mission-type.yaml; a file anywhere else is
@@ -214,7 +223,7 @@ exclusions:
   # Orientation notes beside a mission type and its templates (#194, ADR-0044), as for assets (R4). Named per place,
   # never by a missions/** glob, so a README under a retired directory is refused with it, not excluded. One place
   # still overlaps: a README directly in the old built-in missions/mission-steps/ reads as one beside a mission type
-  # named mission-steps, and is excluded, since exclusions come before retired rules; it is never read either way
+  # named mission-steps, and is excluded, since exclusions come before retired rules; it is neither held nor refused
   # (RetiredFilesTest pins this).
   - match: "*/missions/README.md"
     reason: >-
@@ -253,8 +262,10 @@ exclusions:
       Hidden files under templates/ (a file manager's .DS_Store, a .gitkeep, the store's own
       .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
 
-# The retired mission tier (#194, ADR-0044 decision 6): files of these families are refused by name, in the load and in
-# validate mode, so a stale one cannot hide. Each rule is anchored to a layout the pinned packs held (the mission tier at
+# Retired families: the mission tier (#194, ADR-0044 decision 6) and, after it, the pack-level files #451 retires
+# (pack.md, PROVENANCE.md) and the org charter #431 retires (org-charter.yaml). Files of these families are refused by
+# name, in the load and in validate mode, so a stale one cannot hide. A root file that differs only in letter case from a root-anchored `files`
+# or `retired` rule's file (Readme.md, Pack.md, PROVENANCE.MD) is refused by name under that rule as well (FR-022). Each rule is anchored to a layout the pinned packs held (the mission tier at
 # the pack root, as qa and cave-kitty had it, or under missions/, as the built-in pack had it), so a payload elsewhere
 # that merely shares a name (an asset called governance-profile.yaml, a template under templates/mission-steps/) is
 # never retired. Removed when the service is incorporated into core and no supported pack holds the old layout.
@@ -283,6 +294,17 @@ retired:
     reason: folded into the mission-type steps and their companions (ADR-0044)
   - match: "*/missions/*/command-templates/*"
     reason: folded into the mission-type steps' prompts (ADR-0044)
+  # The pack document is README.md at the pack root (#451, ADR-0042 decision 8 as amended 2026-11-11). Anchored to the
+  # root: a pack.md or PROVENANCE.md deeper in the pack is not a pack-level file.
+  - match: "*/pack.md"
+    reason: the pack document is README.md at the pack root (#451, ADR-0042 as amended 2026-11-11)
+  - match: "*/PROVENANCE.md"
+    reason: folded into README.md as its provenance section (#451)
+  # The org charter (#431, operator ruling): org enforcement is a governing activation preset with must-have items
+  # plus policy.yaml levels, so the file and the descriptor's active_charter key that named it are gone. Anchored to
+  # the root like the pack-level files above; an asset called org-charter.yaml is a payload, not retired.
+  - match: "*/org-charter.yaml"
+    reason: org enforcement is an activation preset with must-have items plus policy.yaml levels (#431)
 
 # Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
 payloads:
@@ -296,3 +318,9 @@ payloads:
   - match: "*/missions/*/templates/**/*"
     kind: template
     content_form: bytes
+
+# The fallback (#451): consulted last, after payloads, and a companion claim wins over it (a skill body, a guide).
+ignored:
+  - match: "**/*.md"
+    reason: >-
+      Author aid: Markdown that no files rule models (#451). Not pack content: not held, not served, not refused.

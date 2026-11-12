@@ -284,6 +284,7 @@ class ReservedRefusalCodesTest {
                 RefusalCode.MISSION_TYPE_NOT_FOUND,
                 RefusalCode.ACTION_NOT_FOUND,
                 RefusalCode.PACK_NOT_FOUND,
+                RefusalCode.PACK_DOCUMENT_NOT_FOUND,
                 RefusalCode.PACK_LEVEL_MISMATCH,
                 RefusalCode.PACK_UNREADABLE,
                 RefusalCode.DRG_SCHEMA_ERROR,

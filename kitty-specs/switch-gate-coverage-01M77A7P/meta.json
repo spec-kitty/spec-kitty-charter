@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-11-12T07:23:28.811963+00:00",
+  "flattened": false,
+  "friendly_name": "Switch-gate scenario coverage (ADR-0059 D1)",
+  "mid8": "01M77A7P",
+  "mission_id": "01M77A7PSKHW7R97RBWW6N718P",
+  "mission_number": null,
+  "mission_slug": "switch-gate-coverage-01M77A7P",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "ADR-0059 D1 makes an operation's design-derived @contract scenarios and contract tests the gate for core's switch. #9 holds the scenario coverage and #72 the blocking gate; PR #507 re-scoped both. The suite already fails when a 2xx answer is exercised by no scenario (OperationCoverage, R-20), but nothing names, per operation, which scenarios cover it, which refusals they pin, or whether it is switchable. Core's half of #72 (its proxy refusing a switch) is core work at incorporation.",
+  "purpose_tldr": "Make 'this operation is switchable' an explicit, checked per-operation register: every operation core will switch to has behavioral @contract scenarios and contract tests, and the build fails when one lacks them.",
+  "slug": "switch-gate-coverage-01M77A7P",
+  "target_branch": "mission/switch-gate-coverage-9-72",
+  "topology": "single_branch",
+  "topology_source": "explicit"
+}

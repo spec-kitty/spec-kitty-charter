@@ -1,0 +1,31 @@
+# Sketch of the operation as it lands in contracts/charter (paths/packs_packId_doc.yaml). Illustrative; the contract
+# files are the source of record.
+/packs/{packId}/doc:
+  parameters:
+    - $ref: ./packs_packId.yaml#/parameters/0   # the packId parameter, as getPack
+  get:
+    operationId: getPackDocument
+    tags: [Registration]
+    summary: Read a pack's document (its README.md)
+    responses:
+      '200':
+        headers:
+          ETag: { description: The pack revision, required: true }
+          Charter-Source-Fingerprint: { required: true }
+          Charter-Contract-Version: { required: true }
+        content:
+          text/markdown:
+            schema: { type: string }
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [body, _links]
+              properties:
+                title: { type: string, description: The document's H1, omitted when it has none. }
+                body: { type: string, description: The Markdown below the H1, in canonical form, without frontmatter. }
+                _links: { $ref: ../schemas/Links.yaml }   # self, pack
+      '404':
+        description: pack_not_found, or pack_document_not_found when the pack holds no README.md
+      '406':
+        description: The Accept header names no media type this read produces (Problem, no code)

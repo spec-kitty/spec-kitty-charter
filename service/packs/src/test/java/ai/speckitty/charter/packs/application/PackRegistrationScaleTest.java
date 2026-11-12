@@ -134,7 +134,7 @@ class PackRegistrationScaleTest {
             return rig.locations.all();
         };
         DomainRepositoryService repository = new DomainRepositoryService(counting, strategy);
-        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
         WritePolicyGate gate = new PackMutabilityPolicy(
                 new OfferingReadService(repository, repository, repository, read), repository, repository, read);
         RegistrationImpact impact =

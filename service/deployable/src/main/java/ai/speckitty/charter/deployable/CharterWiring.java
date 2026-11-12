@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
@@ -38,14 +39,14 @@ public class CharterWiring {
      * The configured project configuration directory. The check is on the property, not on the supplier, so a test
      * that overrides the supplier is not held to it.
      *
-     * @throws IllegalStateException when {@code charter.project-config-dir} is set and is not an existing directory;
+     * @throws StartupRefusal when {@code charter.project-config-dir} is set and is not an existing directory;
      *     the message names the property, not the path
      */
     @Bean
     ProjectConfigLocation projectConfigLocation(CharterProperties properties) {
         Path directory = properties.projectConfigDir();
         if (directory != null && !Files.isDirectory(directory)) {
-            throw new IllegalStateException(
+            throw new StartupRefusal(
                     "charter.project-config-dir must name an existing directory; it is configured but is not one");
         }
         Optional<Path> configured = Optional.ofNullable(directory);
@@ -61,9 +62,24 @@ public class CharterWiring {
         return storage::all;
     }
 
+    /**
+     * The fingerprint over the packs {@code locations} names, judged by the storage layer's write rule, so it reads a
+     * pack a replace is swapping as the store does (#490): through the aside copy, and never one beside a pack the
+     * service may not write.
+     */
     @Bean
-    FileSystemPackSources packSources(PackLocations locations) {
-        return new FileSystemPackSources(locations);
+    FileSystemPackSources packSources(PackLocations locations, Locations storage) {
+        return new FileSystemPackSources(new Locations() {
+            @Override
+            public List<PackLocation> all() {
+                return locations.get();
+            }
+
+            @Override
+            public Optional<String> whyReadOnly(Path realDirectory) {
+                return storage.whyReadOnly(realDirectory);
+            }
+        });
     }
 
     /** Validate mode (FR-010) over the file-based inspector: the seam the pack doctor (#115) composes. */

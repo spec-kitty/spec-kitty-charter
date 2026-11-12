@@ -2,7 +2,7 @@
 title: Charter service overview
 description: Containers and main flows of the charter service — the Python seam in core, the Java service, its adapters and the pack inputs.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -54,7 +54,7 @@ flowchart TB
     storage --> domain
   end
 
-  packs[("Charter Packs and project config<br/>pack.yaml, *.graph.yaml, drg/fragment.yaml,<br/>org-charter.yaml, .kittify/config.yaml, charter.yaml")]
+  packs[("Charter Packs and project config<br/>pack.yaml, *.graph.yaml, drg/fragment.yaml,<br/>presets, README.md, .kittify/config.yaml, charter.yaml")]
 
   seam -->|loopback REST| ep
   life -->|start / stop per worktree| svc

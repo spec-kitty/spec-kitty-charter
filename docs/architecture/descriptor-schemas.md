@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -52,7 +52,7 @@ for the divergences below. The graph shard and org fragment follow DIV-007 (URN 
 DIV-008 (no fragment header fields), DIV-009 (`generated_by` optional) and DIV-019 (no edge
 provenance); the procedure follows `procedure.schema.json`.
 
-Known core-derived details: the field lists of the org charter, the project charter configuration and
+Known core-derived details: the field lists of the project charter configuration and
 the node and relation enums on the governance diagram, and of the directive, tactic, paradigm,
 styleguide and toolguide on the charter kinds diagram, are read from core's models and are not
 cross-checked field by field against the service schemas. Check the schema before relying on one.
@@ -63,7 +63,7 @@ Whether `pack_level` becomes required is still open (ADR-0048 open question 7).
 ![Pack write model](diagrams/pack-write-model.svg)
 
 The authored pack files at C4 code level: the pack descriptor, graph shards, the org fragment, nodes, edges,
-artifact files, the asset manifest and the org charter, with their multiplicities. It draws the decided
+artifact files and the asset manifest, with their multiplicities. The org charter is not drawn: it is retired (#431). It draws the decided
 design ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to
 [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)), not the files the
 service reads today. Source: `diagrams/pack-write-model.puml`. A node of a fragment names its kind with one
@@ -81,10 +81,11 @@ are not drawn either: `toolguide-guide` is described in [Descriptors](/architect
 
 ![Charter descriptor kinds](diagrams/descriptor-kinds-overview.svg)
 
-A Charter Pack (`pack.yaml`) ships descriptor files, an optional CRG fragment and an
-optional org charter. CRG nodes refer to descriptors by URN `<kind>:<id>`. An org
-charter's `required_<plural>` lists overlay the project charter's `selected_<plural>`
-lists; which kinds do is in the [Artifact kinds table](/architecture/logical-model/#artifact-kinds).
+A Charter Pack (`pack.yaml`) ships descriptor files, an optional CRG fragment and optional
+presets. CRG nodes refer to descriptors by URN `<kind>:<id>`. A preset's must-have items are
+the required floor of the projects whose closure holds the pack; core's org charter, whose
+`required_<plural>` lists overlaid the project charter's `selected_<plural>` lists, is retired in
+the service (#431, [Enforce presets on an organization's projects](/guides/enforce-org-presets/)).
 
 > **Decided design:** this diagram draws the kinds as decided in ADR-0048 to ADR-0052: `glossary` for
 > `glossary_pack`, an `AntiPattern` kind, `lifecycle`, an ordinary `MissionType` and an event registry
@@ -175,8 +176,8 @@ preamble and H2 sections `{title, content}`. A prompt may have frontmatter holdi
 > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` to the pack descriptor
 > and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. The pack descriptor schema
 > in this repository already has that shape; the diagram is the decided design for the other pack-level files. Its
-> sources in core are `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
-> `src/charter/activation/org_charter.py` and `src/charter/activation/schemas.py`.
+> sources in core are `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`
+> and `src/charter/activation/schemas.py`.
 
 ## Pack-level schemas
 
