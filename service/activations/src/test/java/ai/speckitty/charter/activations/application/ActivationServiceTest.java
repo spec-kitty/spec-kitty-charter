@@ -642,7 +642,8 @@ class ActivationServiceTest {
         assertThat(packs.lastRoots()).isEqualTo(Optional.of(List.of("beta", "alpha")));
     }
 
-    // ---- C38: an activation write that would put an enhancement in force without its slot (squad A3) ------------------
+    // ---- C38: an activation write that would put an enhancement in force without its slot (squad A3)
+    // ------------------
 
     private static final CharterRefusal SLOT_MISSING = new CharterRefusal(
             RefusalCode.PROMPT_SLOT_MISSING, "step_enhancement:x fills a slot the prompt in force does not declare");
@@ -663,7 +664,8 @@ class ActivationServiceTest {
         assertThat(repository.list()).isEmpty();
         assertThat(packs.composabilityChecks())
                 .singleElement()
-                .satisfies(query -> assertThat(query.selected()).contains(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2")));
+                .satisfies(
+                        query -> assertThat(query.selected()).contains(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2")));
         assertThat(packs.queries())
                 .as("the slot check is asked for itself, never reached through the floor's resolution")
                 .isEmpty();

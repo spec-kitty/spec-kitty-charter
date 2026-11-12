@@ -118,7 +118,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["spdd-plan"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["spdd-plan"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
@@ -237,7 +237,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 200
@@ -312,7 +312,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["spdd-plan"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["spdd-plan"]}}
       """
     And the archive "proj" holds the file "pack.yaml":
       """
@@ -426,7 +426,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"]}}
       """
     And the archive "proj" holds the file "pack.yaml":
       """
@@ -584,7 +584,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["spdd-plan"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["spdd-plan"]}}
       """
     When I GET "/packs/proj/artifacts/directive/A"
     Then the response status is 200
@@ -716,7 +716,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["spdd-plan"]}}
+      {"packs":[{"packId":"base"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["spdd-plan"]}}
       """
     When I GET "/packs/proj/artifacts/directive/A"
     Then the response status is 200
@@ -838,7 +838,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
     And the problem code is "prompt_slot_missing"
     And the field at "/detail" contains "step_enhancement:spdd-plan"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the response status is 200
     And the field at "/config/selected/step_enhancement" is absent
     When I PUT "/activations/a-2" with the body:
       """

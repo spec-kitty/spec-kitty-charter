@@ -140,7 +140,8 @@ class ActivationImpactAdapterTest {
         });
     }
 
-    // ---- C38: the registration gate (squad A2) -----------------------------------------------------------------------
+    // ---- C38: the registration gate (squad A2)
+    // -----------------------------------------------------------------------
 
     private static Urn u(String urn) {
         return Urn.parse(urn).orElseThrow();
@@ -187,9 +188,11 @@ class ActivationImpactAdapterTest {
                     PackLevel.PROJECT,
                     List.of(),
                     new PromptFacts(
-                            Map.of(u("action:M/s"), java.util.Arrays.stream(projSlots)
-                                    .map(ActivationImpactAdapterTest::slot)
-                                    .toList()),
+                            Map.of(
+                                    u("action:M/s"),
+                                    java.util.Arrays.stream(projSlots)
+                                            .map(ActivationImpactAdapterTest::slot)
+                                            .toList()),
                             Map.of()),
                     "mission_type:M",
                     "action:M/s");
@@ -261,8 +264,8 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("a-1"), selecting("x"));
         ActivationImpactAdapter adapter = new ActivationImpactAdapter(repository);
 
-        assertThatThrownBy(() -> adapter.requireComposable(
-                        every(new ClosureChange(Optional.of(closure(false)), closure(true)))))
+        assertThatThrownBy(() ->
+                        adapter.requireComposable(every(new ClosureChange(Optional.of(closure(false)), closure(true)))))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
                     assertThat(refused.getMessage())
@@ -288,8 +291,8 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("a-1"), selecting("x"));
 
         new ActivationImpactAdapter(repository)
-                .requireComposable(every(
-                        new ClosureChange(Optional.of(closure(false)), closure(true, "spdd:reasons-block"))));
+                .requireComposable(
+                        every(new ClosureChange(Optional.of(closure(false)), closure(true, "spdd:reasons-block"))));
     }
 
     @Test

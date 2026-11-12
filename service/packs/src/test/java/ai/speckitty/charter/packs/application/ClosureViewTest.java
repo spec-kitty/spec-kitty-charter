@@ -612,20 +612,19 @@ class ClosureViewTest {
         InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "step_enhancement:x")));
 
         expect(states, "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
-        assertThatThrownBy(() -> view.requireSlots(states))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
-                    assertThat(refused.getMessage())
-                            .contains("step_enhancement:x")
-                            .contains("`base`")
-                            .contains("spdd:reasons-block")
-                            .contains("`proj`");
-                    assertThat(refused.packs())
-                            .extracting(RefusalPack::packId, RefusalPack::name, RefusalPack::descriptorPackId)
-                            .containsExactly(
-                                    org.assertj.core.groups.Tuple.tuple("base", "base", "id-base"),
-                                    org.assertj.core.groups.Tuple.tuple("proj", "proj", "id-proj"));
-                });
+        assertThatThrownBy(() -> view.requireSlots(states)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
+            assertThat(refused.getMessage())
+                    .contains("step_enhancement:x")
+                    .contains("`base`")
+                    .contains("spdd:reasons-block")
+                    .contains("`proj`");
+            assertThat(refused.packs())
+                    .extracting(RefusalPack::packId, RefusalPack::name, RefusalPack::descriptorPackId)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple("base", "base", "id-base"),
+                            org.assertj.core.groups.Tuple.tuple("proj", "proj", "id-proj"));
+        });
     }
 
     @Test

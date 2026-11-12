@@ -201,7 +201,11 @@ class ReservedRefusalCodesTest {
         // the composing reads, at registration, on the impact-checked writes and on the activation writes, so none of
         // ADR-0066's four codes is reserved any more.
         assertThat(raisedCodes())
-                .contains("PROMPT_SLOT_MISSING", "PROMPT_SLOT_MALFORMED", "PROMPT_SLOT_NOT_EMPTY", "PROMPT_FRAGMENT_INVALID");
+                .contains(
+                        "PROMPT_SLOT_MISSING",
+                        "PROMPT_SLOT_MALFORMED",
+                        "PROMPT_SLOT_NOT_EMPTY",
+                        "PROMPT_FRAGMENT_INVALID");
         assertThat(unraisedCodes()).doesNotContain("PROMPT_SLOT_MISSING");
     }
 

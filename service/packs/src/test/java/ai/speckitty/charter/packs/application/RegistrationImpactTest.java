@@ -1001,7 +1001,7 @@ class RegistrationImpactTest {
     private static RegistrationImpact gated(Rig rig, Gate gate) {
         return new RegistrationImpact(
                 new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
-                        rig.repository, rig.repository, rig.repository::compositionFacts),
+                        rig.repository, rig.repository, rig.repository),
                 gate);
     }
 
@@ -1020,14 +1020,11 @@ class RegistrationImpactTest {
         rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
         Gate gate = new Gate(Optional.of(SLOT_MISSING));
 
-        assertThat(refusal(() -> gated(rig, gate).check(storedAs(rig, "base"))))
-                .isSameAs(SLOT_MISSING);
-        assertThat(gate.judged)
-                .singleElement()
-                .satisfies(change -> {
-                    assertThat(change.before()).isPresent();
-                    assertThat(change.after().closurePackIds()).containsExactly(BASE_ID);
-                });
+        assertThat(refusal(() -> gated(rig, gate).check(storedAs(rig, "base")))).isSameAs(SLOT_MISSING);
+        assertThat(gate.judged).singleElement().satisfies(change -> {
+            assertThat(change.before()).isPresent();
+            assertThat(change.after().closurePackIds()).containsExactly(BASE_ID);
+        });
     }
 
     @Test

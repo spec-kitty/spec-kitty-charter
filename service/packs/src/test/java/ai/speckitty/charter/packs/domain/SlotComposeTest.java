@@ -46,8 +46,7 @@ class SlotComposeTest {
         }
 
         MergedClosure merged() {
-            return LayerMerge.merge(
-                    packs.stream().map(Held::pack).toList(), facts(), new PerPackPolicy(Map.of()));
+            return LayerMerge.merge(packs.stream().map(Held::pack).toList(), facts(), new PerPackPolicy(Map.of()));
         }
 
         Map<String, PackCompositionFacts> facts() {
@@ -168,8 +167,7 @@ class SlotComposeTest {
                     assertThat(found.slot()).isEqualTo(new SlotId(REASONS));
                     assertThat(found.promptPack()).isEqualTo(new PackIdentifier("proj"));
                     assertThat(found.promptHeld()).isTrue();
-                    assertThat(found.packs())
-                            .containsExactly(new PackIdentifier("base"), new PackIdentifier("proj"));
+                    assertThat(found.packs()).containsExactly(new PackIdentifier("base"), new PackIdentifier("proj"));
                     assertThat(found.detail(PackIdentifier::value))
                             .contains("step_enhancement:x")
                             .contains("`base`")
@@ -207,16 +205,8 @@ class SlotComposeTest {
     @Test
     void ofTwoEnhancementsOnlyTheOneWhoseSlotIsMissingRefuses() {
         Held base = new Held(
-                pack(
-                        "base",
-                        PackLevel.ORG,
-                        "mission_type:M",
-                        "action:M/s",
-                        "step_enhancement:x",
-                        "step_enhancement:y"),
-                List.of(
-                        enhances("step_enhancement:x", "action:M/s"),
-                        enhances("step_enhancement:y", "action:M/s")),
+                pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x", "step_enhancement:y"),
+                List.of(enhances("step_enhancement:x", "action:M/s"), enhances("step_enhancement:y", "action:M/s")),
                 new PromptFacts(
                         Map.of(u("action:M/s"), slots(REASONS)),
                         Map.of(u("step_enhancement:x"), fills(REASONS), u("step_enhancement:y"), fills(NOTES))));
@@ -283,11 +273,10 @@ class SlotComposeTest {
         // proj replaces M but does not declare s: the step's place is base's version, which keeps it (R8, A7), so the
         // prompt in force is base's, which declares the slot.
         Held replacingType = new Held(
-                pack("proj", PackLevel.PROJECT, "mission_type:M"),
-                List.of(),
-                new PromptFacts(Map.of(), Map.of()));
+                pack("proj", PackLevel.PROJECT, "mission_type:M"), List.of(), new PromptFacts(Map.of(), Map.of()));
 
-        Fixture fixture = new Fixture().with(base(slots(REASONS), fills(REASONS))).with(replacingType);
+        Fixture fixture =
+                new Fixture().with(base(slots(REASONS), fills(REASONS))).with(replacingType);
 
         assertThat(fixture.missing(active("mission_type:M", "step_enhancement:x")))
                 .isEmpty();
@@ -298,7 +287,8 @@ class SlotComposeTest {
         Held base = new Held(
                 pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x"),
                 List.of(enhances("step_enhancement:x", "action:M/s")),
-                new PromptFacts(Map.of(u("action:M/s"), slots()), Map.of(u("step_enhancement:x"), fills(REASONS, NOTES))));
+                new PromptFacts(
+                        Map.of(u("action:M/s"), slots()), Map.of(u("step_enhancement:x"), fills(REASONS, NOTES))));
 
         assertThat(new Fixture().with(base).missing(active("mission_type:M", "step_enhancement:x")))
                 .extracting(found -> found.slot().value())

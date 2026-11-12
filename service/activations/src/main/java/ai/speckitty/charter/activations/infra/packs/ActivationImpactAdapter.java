@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.domain.InForceRequest;
+import ai.speckitty.charter.packs.domain.InForceStates;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +31,8 @@ import org.springframework.stereotype.Component;
  * {@link #activationsAffected} is the affected-activations notice (FR-027, B4): given the closures a registration
  * composed, before and after, it asks the in-force resolution of each activation whose closure holds the pack, over both
  * closures, and names the activations whose effective set differs: the artifacts in force, or the version in force of one
- * of them (its pack, level or policy). It composes nothing and reads no pack: the
+ * of them (its pack, level or policy). {@link #requireComposable} is the registration gate of C38 over the same
+ * closures; unlike the notices it refuses. It composes nothing and reads no pack: the
  * closures are the impact check's own, and an activation whose closure does not hold the pack is not asked. A closure that
  * cannot be merged has no set in force, which differs from one that can be and equals another that cannot, so a
  * registration that makes an activation unreadable names it and one that leaves it unreadable does not.
@@ -67,6 +69,49 @@ public class ActivationImpactAdapter implements ActivationImpact {
                 .distinct()
                 .sorted()
                 .toList();
+    }
+
+    /**
+     * The registration gate of C38 (squad A2): for each stored activation whose closure the write joins, in id order,
+     * the in-force resolution of its document over the closure as the write leaves it, and the slot check over it
+     * ({@link ClosureView#requireSlots}). The first {@code prompt_slot_missing} refuses the write, the activation named in
+     * the detail; it is never swallowed. An activation whose closure had no view before the write, because it could not
+     * be composed or held none of its packs, is not judged: a failure it already had is not blamed on the write (G21).
+     * A closure whose merge refuses after the write is judged at read, as the impact check judges a layer override (G8),
+     * so the gate leaves it to the reads.
+     *
+     * @param closures the closures the write joins
+     * @throws CharterRefusal with {@code PROMPT_SLOT_MISSING} for the first activation the write leaves without a slot
+     */
+    @Override
+    public void requireComposable(ClosureChanges closures) {
+        stored().stream()
+                .sorted(java.util.Comparator.comparing(
+                        activation -> activation.id().value()))
+                .forEach(activation ->
+                        closures.of(rootsOf(activation)).ifPresent(change -> requireComposable(change, activation)));
+    }
+
+    private static void requireComposable(ClosureChange change, StoredActivation activation) {
+        if (change.before().isEmpty()) {
+            return;
+        }
+        InForceRequest request = ClosureViewSession.requestOf(EffectiveSet.queryOf(activation.document()));
+        ClosureView after = change.after();
+        InForceStates states;
+        try {
+            states = after.inForce(request);
+        } catch (CharterRefusal unmergeable) {
+            return;
+        }
+        try {
+            after.requireSlots(states);
+        } catch (CharterRefusal missing) {
+            throw new CharterRefusal(
+                    missing.code(),
+                    "Under the activation `" + activation.id().value() + "`: " + String.valueOf(missing.getMessage()),
+                    missing.packs());
+        }
     }
 
     /**
