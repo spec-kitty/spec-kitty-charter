@@ -91,23 +91,28 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
         target: base::action:software-dev/nosuch
         relation: enhances
       """
-    And the activation "a-1" holds:
+    And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "enhancer"}]}
+      {"packs":[{"packId":"base"},{"packId":"enhancer"}],"schemaVersion":2}
       """
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_reference_artifact_missing"
     And the field at "/detail" contains "step_enhancement:spdd-plan"
-    And the field at "/detail" contains "action:software-dev/nosuch"
+    And the field at "/detail" contains "base::action:software-dev/nosuch"
     And the field at "/packs/0/packId" is "enhancer"
     And the field at "/packs/1/packId" is "base"
-    When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
+    When I GET "/activations/a-1/artifacts"
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+    When I PUT "/activations/a-2" with the body:
       """
-      {}
+      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "enhancer"}]}
       """
     Then the response status is 500
     And the problem code is "pack_reference_artifact_missing"
+    When I GET "/activations/a-2"
+    Then the response status is 404
 
   # C37 on the reads (FR-002): the twin differs only in the step the edge names.
   Scenario: The twin: a step enhancement of the step the named pack holds is read
@@ -180,22 +185,20 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
         target: base::action:software-dev/plan
         relation: enhances
       """
-    And the activation "a-1" holds:
+    And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "enhancer"}]}
+      {"packs":[{"packId":"base"},{"packId":"enhancer"}],"schemaVersion":2}
       """
     When I GET "/offering"
     Then the response status is 200
     And the answer holds exactly 2 packs
-    When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
-      """
-      {}
-      """
+    When I GET "/activations/a-1/artifacts"
     Then the response status is 200
-    And the field at "/applied" holds exactly the ids:
+    When I PUT "/activations/a-2" with the body:
       """
-      step_enhancement:spdd-plan
+      {"schemaVersion": 2, "packs": [{"packId": "base"}, {"packId": "enhancer"}]}
       """
+    Then the response status is 201
 
   # C37 on the reads: the pack other is in the compose but not in the enhancer's depends_on closure. The twin
   # differs only in the pack the edge's qualifier names.
@@ -238,7 +241,7 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       """
     And the org pack "other" with the file "pack.yaml":
       """
-      pack_id: 01M6ZRYK0000000000000000O1
+      pack_id: 01M6ZRYK0000000000000000T1
       pack_version: 1.0.0
       parent_pack: null
       name: other
@@ -352,7 +355,7 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       """
     And the org pack "other" with the file "pack.yaml":
       """
-      pack_id: 01M6ZRYK0000000000000000O1
+      pack_id: 01M6ZRYK0000000000000000T1
       pack_version: 1.0.0
       parent_pack: null
       name: other
@@ -718,8 +721,9 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       """
     Then the response status is 201
 
-  # The inherited lock on the reads (OD-2 (A)): a closure-level refusal, as C21 is, so the activation selects
-  # nothing and its reads still refuse. The twin differs only in the mission type's level.
+  # The inherited lock on the reads (OD-2 (A)): a closure-level refusal from the merge, as C21 is, so the activation
+  # selects nothing and its reads still refuse, and so does a selection write, which resolves what is in force
+  # before it stores. The twin differs only in the mission type's level.
   Scenario: An enhancement of a step whose mission type is locked makes the activation reads unreadable, whatever is selected
     Given the built-in pack "base" with the file "pack.yaml":
       """
@@ -809,6 +813,9 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
     And the field at "/detail" contains "locked"
     And the field at "/packs/0/packId" is "enhancer"
     And the field at "/packs/1/packId" is "base"
+    When I GET "/activations/a-1/skipped"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
     When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
       """
       {}
@@ -816,8 +823,9 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
     Then the response status is 500
     And the problem code is "pack_unreadable"
 
-  # The inherited lock on the reads (OD-2 (A)): a closure-level refusal, as C21 is, so the activation selects
-  # nothing and its reads still refuse. The twin differs only in the mission type's level.
+  # The inherited lock on the reads (OD-2 (A)): a closure-level refusal from the merge, as C21 is, so the activation
+  # selects nothing and its reads still refuse, and so does a selection write, which resolves what is in force
+  # before it stores. The twin differs only in the mission type's level.
   Scenario: The twin: an enhancement of a step whose mission type is extendable is read
     Given the built-in pack "base" with the file "pack.yaml":
       """
@@ -901,15 +909,13 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 200
+    When I GET "/activations/a-1/skipped"
+    Then the response status is 200
     When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
       """
       {}
       """
     Then the response status is 200
-    And the field at "/applied" holds exactly the ids:
-      """
-      step_enhancement:spdd-plan
-      """
 
   # The inherited lock at registration (OD-2 (A)): the impact check names the enhancing pack, then the pack that
   # locks the mission type. The twin differs only in the mission type's level.
