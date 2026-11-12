@@ -272,160 +272,225 @@ final class WholePackExpectation {
      */
     Evaluation evaluate(
             SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
-        Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
-        files.forEach(entry -> fileEntries.put(entry.path(), entry));
-        Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
-        kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
-        Map<String, KnownFailure> knownEntries = new LinkedHashMap<>();
-        knownFailures.forEach(entry -> knownEntries.put(entry.path(), entry));
-        Set<String> ambiguous = new HashSet<>(fileEntries.keySet());
-        ambiguous.retainAll(knownEntries.keySet());
-        List<Pattern> patterns = exclusions.stream().map(e -> glob(e.match())).toList();
+        Judgement judgement = new Judgement(census, modelledKinds, observed);
+        census.forEach(judgement::judge);
+        judgement.checkFileEntries();
+        judgement.checkKnownFailures();
+        judgement.checkKindEntries();
+        judgement.checkExclusions();
+        judgement.checkEmptyKinds();
+        return judgement.evaluation();
+    }
 
-        List<FileResult> results = new ArrayList<>();
-        List<String> problems = new ArrayList<>();
-        Set<Integer> usedExclusions = new HashSet<>();
-        Set<String> redKinds = new HashSet<>();
-        Set<String> excludedPaths = new HashSet<>();
-        census.forEach((path, kind) -> {
-            boolean modelled = modelledKinds.contains(kind);
+    /**
+     * One gate run being judged: the expectation's lists indexed, and the verdicts and problems so far. Each file is
+     * judged in census order, then each list is checked against the whole census, so the problems keep that order.
+     */
+    private final class Judgement {
+        private final SortedMap<String, String> census;
+        private final Set<String> modelledKinds;
+        private final Map<String, Optional<String>> observed;
+        private final Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
+        private final Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
+        private final Map<String, KnownFailure> knownEntries = new LinkedHashMap<>();
+        private final Set<String> ambiguous;
+        private final List<Pattern> patterns;
+        private final List<FileResult> results = new ArrayList<>();
+        private final List<String> problems = new ArrayList<>();
+        private final Set<Integer> usedExclusions = new HashSet<>();
+        private final Set<String> redKinds = new HashSet<>();
+        private final Set<String> excludedPaths = new HashSet<>();
+
+        Judgement(
+                SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
+            this.census = census;
+            this.modelledKinds = modelledKinds;
+            this.observed = observed;
+            files.forEach(entry -> fileEntries.put(entry.path(), entry));
+            kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
+            knownFailures.forEach(entry -> knownEntries.put(entry.path(), entry));
+            ambiguous = new HashSet<>(fileEntries.keySet());
+            ambiguous.retainAll(knownEntries.keySet());
+            patterns = exclusions.stream().map(e -> glob(e.match())).toList();
+        }
+
+        /** Judges one file of the census. */
+        void judge(String path, String kind) {
             if (kind.startsWith(WholePackCensus.EXCLUDED)) {
-                // An excluded file is not pack content: checked, not compared. The store must not have written it.
-                excludedPaths.add(path);
-                Optional<String> written = observed.getOrDefault(
-                        path, Optional.of("the gate did not check whether the store wrote this excluded file"));
-                if (written.isEmpty()) {
-                    results.add(new FileResult(
-                            path,
-                            kind,
-                            Status.EXCLUDED,
-                            "excluded by " + kind.substring(WholePackCensus.EXCLUDED.length()) + ": not written"));
-                } else {
-                    results.add(new FileResult(path, kind, Status.RED, written.get()));
-                    problems.add("EXCLUDED_WRITTEN " + path + " (" + kind + "): " + written.get());
-                }
+                judgeExcludedFile(path, kind);
                 return;
             }
+            boolean modelled = modelledKinds.contains(kind);
             Optional<String> red = modelled
                     ? observed.getOrDefault(path, Optional.of("the round trip gave no outcome for this file"))
                     : Optional.of("no adapter models kind " + kind);
             int exclusion = firstMatch(patterns, path);
             if (exclusion >= 0) {
-                usedExclusions.add(exclusion);
-                excludedPaths.add(path);
-                if (modelled) {
-                    problems.add("EXCLUDED_MODELLED " + path + " (" + kind + "): a modelled file must not be excluded");
-                }
-                results.add(new FileResult(
-                        path, kind, Status.EXCLUDED, exclusions.get(exclusion).reason()));
+                judgeExclusion(path, kind, modelled, exclusion);
                 return;
             }
             if (red.isEmpty()) {
-                results.add(new FileResult(path, kind, Status.GREEN, ""));
-                if (fileEntries.containsKey(path)) {
-                    problems.add("UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from "
-                            + EXPECTED_RED_RESOURCE);
-                }
-                if (knownEntries.containsKey(path) && !ambiguous.contains(path)) {
-                    problems.add("UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from "
-                            + KNOWN_FAILURES_RESOURCE);
-                }
+                judgeGreen(path, kind);
                 return;
             }
+            judgeRed(path, kind, modelled, red.get());
+        }
+
+        /** An excluded file is not pack content: checked, not compared. The store must not have written it. */
+        private void judgeExcludedFile(String path, String kind) {
+            excludedPaths.add(path);
+            Optional<String> written = observed.getOrDefault(
+                    path, Optional.of("the gate did not check whether the store wrote this excluded file"));
+            if (written.isEmpty()) {
+                results.add(new FileResult(
+                        path,
+                        kind,
+                        Status.EXCLUDED,
+                        "excluded by " + kind.substring(WholePackCensus.EXCLUDED.length()) + ": not written"));
+            } else {
+                results.add(new FileResult(path, kind, Status.RED, written.get()));
+                problems.add("EXCLUDED_WRITTEN " + path + " (" + kind + "): " + written.get());
+            }
+        }
+
+        private void judgeExclusion(String path, String kind, boolean modelled, int exclusion) {
+            usedExclusions.add(exclusion);
+            excludedPaths.add(path);
+            if (modelled) {
+                problems.add("EXCLUDED_MODELLED " + path + " (" + kind + "): a modelled file must not be excluded");
+            }
+            results.add(new FileResult(path, kind, Status.EXCLUDED, exclusions.get(exclusion).reason()));
+        }
+
+        private void judgeGreen(String path, String kind) {
+            results.add(new FileResult(path, kind, Status.GREEN, ""));
+            if (fileEntries.containsKey(path)) {
+                problems.add(
+                        "UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from " + EXPECTED_RED_RESOURCE);
+            }
+            if (knownEntries.containsKey(path) && !ambiguous.contains(path)) {
+                problems.add("UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from "
+                        + KNOWN_FAILURES_RESOURCE);
+            }
+        }
+
+        private void judgeRed(String path, String kind, boolean modelled, String red) {
             redKinds.add(kind);
             if (ambiguous.contains(path)) {
                 // Judged by neither list, so it cannot pass by accident; the whole-list check names the conflict.
-                results.add(new FileResult(path, kind, Status.RED, red.get()));
+                results.add(new FileResult(path, kind, Status.RED, red));
                 return;
             }
             @Nullable KnownFailure knownEntry = modelled ? knownEntries.get(path) : null;
             if (knownEntry != null) {
-                results.add(knownFailure(path, kind, red.get(), knownEntry, problems));
+                results.add(knownFailure(path, kind, red, knownEntry, problems));
                 return;
             }
             @Nullable FileEntry fileEntry = fileEntries.get(path);
             // A kind entry only ever covers a kind no adapter models; for a modelled kind each file is listed alone.
             @Nullable KindEntry kindEntry = modelled ? null : kindEntries.get(kind);
-            if (fileEntry != null && !atOf(red.get()).equals(fileEntry.at())) {
-                results.add(new FileResult(path, kind, Status.RED, red.get()));
-                problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '"
-                        + fileEntry.at() + "', now: " + red.get());
-            } else if (fileEntry != null) {
-                results.add(new FileResult(
-                        path, kind, Status.EXPECTED_RED, expected(red.get(), fileEntry.reason(), fileEntry.issue())));
-            } else if (kindEntry != null) {
-                results.add(new FileResult(
-                        path, kind, Status.EXPECTED_RED, expected(red.get(), kindEntry.reason(), kindEntry.issue())));
-            } else {
-                results.add(new FileResult(path, kind, Status.RED, red.get()));
-                problems.add("UNEXPECTED_RED " + path + " (" + kind + "): " + red.get());
-            }
-        });
+            results.add(expectedRed(path, kind, red, fileEntry, kindEntry));
+        }
 
-        for (FileEntry entry : files) {
-            if (!census.containsKey(entry.path())) {
-                problems.add(
-                        "STALE_BASELINE " + entry.path() + ": no such file; remove it from " + EXPECTED_RED_RESOURCE);
-            } else if (excludedPaths.contains(entry.path())) {
-                problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
-                        + EXPECTED_RED_RESOURCE);
+        /** Judges a red file against the expected-red list: by its file entry, else its kind entry. */
+        private FileResult expectedRed(
+                String path, String kind, String red, @Nullable FileEntry fileEntry, @Nullable KindEntry kindEntry) {
+            if (fileEntry != null && !atOf(red).equals(fileEntry.at())) {
+                problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '"
+                        + fileEntry.at() + "', now: " + red);
+                return new FileResult(path, kind, Status.RED, red);
+            } else if (fileEntry != null) {
+                return new FileResult(
+                        path, kind, Status.EXPECTED_RED, expected(red, fileEntry.reason(), fileEntry.issue()));
+            } else if (kindEntry != null) {
+                return new FileResult(
+                        path, kind, Status.EXPECTED_RED, expected(red, kindEntry.reason(), kindEntry.issue()));
+            }
+            problems.add("UNEXPECTED_RED " + path + " (" + kind + "): " + red);
+            return new FileResult(path, kind, Status.RED, red);
+        }
+
+        void checkFileEntries() {
+            for (FileEntry entry : files) {
+                if (!census.containsKey(entry.path())) {
+                    problems.add("STALE_BASELINE " + entry.path() + ": no such file; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                } else if (excludedPaths.contains(entry.path())) {
+                    problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                }
             }
         }
-        for (KnownFailure entry : knownFailures) {
-            @Nullable String kind = census.get(entry.path());
-            if (kind == null) {
-                problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": no such file; remove it from "
-                        + KNOWN_FAILURES_RESOURCE);
-            } else if (excludedPaths.contains(entry.path())) {
-                problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is excluded; remove it from "
-                        + KNOWN_FAILURES_RESOURCE);
-            } else if (!modelledKinds.contains(kind)) {
-                problems.add("KNOWN_FAILURE_UNMODELLED " + entry.path() + " (" + kind
-                        + "): no adapter models this kind, so the entry can never expire");
-            }
-            if (ambiguous.contains(entry.path())) {
-                problems.add("AMBIGUOUS_ENTRY " + entry.path() + ": listed in both " + EXPECTED_RED_RESOURCE + " and "
-                        + KNOWN_FAILURES_RESOURCE);
-            }
-        }
-        for (KindEntry entry : kinds) {
-            if (modelledKinds.contains(entry.kind())) {
-                problems.add("BASELINED_MODELLED_KIND " + entry.kind()
-                        + ": a modelled kind is never expected red as a whole; remove it from "
-                        + EXPECTED_RED_RESOURCE + " and list any red file of it one by one");
-            } else if (!census.containsValue(entry.kind())) {
-                problems.add("STALE_BASELINE kind " + entry.kind() + ": no file has this kind; remove it from "
-                        + EXPECTED_RED_RESOURCE);
-            } else if (!redKinds.contains(entry.kind())) {
-                problems.add("UNEXPECTEDLY_GREEN kind " + entry.kind() + ": no file of it is red now; remove it from "
-                        + EXPECTED_RED_RESOURCE);
+
+        void checkKnownFailures() {
+            for (KnownFailure entry : knownFailures) {
+                @Nullable String kind = census.get(entry.path());
+                if (kind == null) {
+                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": no such file; remove it from "
+                            + KNOWN_FAILURES_RESOURCE);
+                } else if (excludedPaths.contains(entry.path())) {
+                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is excluded; remove it from "
+                            + KNOWN_FAILURES_RESOURCE);
+                } else if (!modelledKinds.contains(kind)) {
+                    problems.add("KNOWN_FAILURE_UNMODELLED " + entry.path() + " (" + kind
+                            + "): no adapter models this kind, so the entry can never expire");
+                }
+                if (ambiguous.contains(entry.path())) {
+                    problems.add("AMBIGUOUS_ENTRY " + entry.path() + ": listed in both " + EXPECTED_RED_RESOURCE
+                            + " and " + KNOWN_FAILURES_RESOURCE);
+                }
             }
         }
-        for (int i = 0; i < exclusions.size(); i++) {
-            if (!usedExclusions.contains(i)) {
-                problems.add("STALE_EXCLUSION " + exclusions.get(i).match() + ": matches no file");
+
+        void checkKindEntries() {
+            for (KindEntry entry : kinds) {
+                if (modelledKinds.contains(entry.kind())) {
+                    problems.add("BASELINED_MODELLED_KIND " + entry.kind()
+                            + ": a modelled kind is never expected red as a whole; remove it from "
+                            + EXPECTED_RED_RESOURCE + " and list any red file of it one by one");
+                } else if (!census.containsValue(entry.kind())) {
+                    problems.add("STALE_BASELINE kind " + entry.kind() + ": no file has this kind; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                } else if (!redKinds.contains(entry.kind())) {
+                    problems.add("UNEXPECTEDLY_GREEN kind " + entry.kind()
+                            + ": no file of it is red now; remove it from " + EXPECTED_RED_RESOURCE);
+                }
             }
         }
-        Set<String> listedEmpty = new HashSet<>();
-        for (EmptyKindEntry entry : emptyKinds) {
-            listedEmpty.add(entry.kind());
-            if (!modelledKinds.contains(entry.kind())) {
-                problems.add("STALE_BASELINE empty kind " + entry.kind() + ": not a modelled kind; remove it from "
-                        + EXPECTED_RED_RESOURCE);
-            } else if (census.containsValue(entry.kind())) {
-                problems.add("STALE_BASELINE empty kind " + entry.kind() + ": the pack has a file of it now; remove it"
-                        + " from " + EXPECTED_RED_RESOURCE);
+
+        void checkExclusions() {
+            for (int i = 0; i < exclusions.size(); i++) {
+                if (!usedExclusions.contains(i)) {
+                    problems.add("STALE_EXCLUSION " + exclusions.get(i).match() + ": matches no file");
+                }
             }
         }
-        for (String kind : new java.util.TreeSet<>(modelledKinds)) {
-            if (!census.containsValue(kind) && !listedEmpty.contains(kind)) {
-                problems.add("EMPTY_MODELLED_KIND " + kind + ": the pack has no file of this modelled kind");
+
+        void checkEmptyKinds() {
+            Set<String> listedEmpty = new HashSet<>();
+            for (EmptyKindEntry entry : emptyKinds) {
+                listedEmpty.add(entry.kind());
+                if (!modelledKinds.contains(entry.kind())) {
+                    problems.add("STALE_BASELINE empty kind " + entry.kind() + ": not a modelled kind; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                } else if (census.containsValue(entry.kind())) {
+                    problems.add("STALE_BASELINE empty kind " + entry.kind()
+                            + ": the pack has a file of it now; remove it from " + EXPECTED_RED_RESOURCE);
+                }
+            }
+            for (String kind : new java.util.TreeSet<>(modelledKinds)) {
+                if (!census.containsValue(kind) && !listedEmpty.contains(kind)) {
+                    problems.add("EMPTY_MODELLED_KIND " + kind + ": the pack has no file of this modelled kind");
+                }
             }
         }
-        List<EmptyKindEntry> unproved = emptyKinds.stream()
-                .filter(entry -> modelledKinds.contains(entry.kind()) && !census.containsValue(entry.kind()))
-                .toList();
-        return new Evaluation(List.copyOf(results), List.copyOf(problems), unproved);
+
+        Evaluation evaluation() {
+            List<EmptyKindEntry> unproved = emptyKinds.stream()
+                    .filter(entry -> modelledKinds.contains(entry.kind()) && !census.containsValue(entry.kind()))
+                    .toList();
+            return new Evaluation(List.copyOf(results), List.copyOf(problems), unproved);
+        }
     }
 
     /** Where a red detail says the file first differs: the text before its first {@code ": "}. */

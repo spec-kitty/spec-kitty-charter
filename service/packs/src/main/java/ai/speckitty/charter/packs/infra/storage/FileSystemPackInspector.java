@@ -340,6 +340,18 @@ public final class FileSystemPackInspector implements PackInspector {
             // The classification globs are relative to the directory that holds the pack directories.
             Path last = directory.toAbsolutePath().normalize().getFileName();
             String prefix = (last == null ? "pack" : last.toString()) + "/";
+            readYamlFiles(prefix);
+            readMarkdownFiles(prefix);
+            PackFileSet.Listing listing = PackFileSet.listing(directory, table);
+            listPayloads(listing, prefix);
+            refuseSidecarsWithoutPayload(listing);
+            listing.retired()
+                    .forEach((file, reason) -> unreadable.add(
+                            new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
+        }
+
+        /** Classifies every YAML file of the pack, and reads each mapped one the load path has not read. */
+        private void readYamlFiles(String prefix) {
             for (Path path : yamlFiles(directory, name)) {
                 String file = slashed(directory.relativize(path));
                 switch (table.classify(prefix + file)) {
@@ -356,6 +368,10 @@ public final class FileSystemPackInspector implements PackInspector {
                     case PackFileKind.Unclassified unclassified -> {}
                 }
             }
+        }
+
+        /** Lists the excluded Markdown files, and reads the companions and documents. */
+        private void readMarkdownFiles(String prefix) {
             @Nullable Set<String> held = null;
             for (Path path : packFiles(directory, name, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
@@ -387,12 +403,6 @@ public final class FileSystemPackInspector implements PackInspector {
                     throw PackFileSet.notStored(file, mapped.contentForm());
                 }
             }
-            PackFileSet.Listing listing = PackFileSet.listing(directory, table);
-            listPayloads(listing, prefix);
-            refuseSidecarsWithoutPayload(listing);
-            listing.retired()
-                    .forEach((file, reason) -> unreadable.add(
-                            new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
         }
 
         /**
