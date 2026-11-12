@@ -120,6 +120,12 @@ class WireTokenParityTest {
             .toList();
 
     private static List<Pair> pairs() {
+        return Stream.concat(activatableKindCopies().stream(), otherPairs().stream())
+                .toList();
+    }
+
+    /** Every copy of ActivatableKind the generator inlines, each a pair of its own against the activatable kinds. */
+    private static List<Pair> activatableKindCopies() {
         return List.of(
                 // The generator inlines the contract's ActivatableKind into every schema that names it, so each copy
                 // is a pair of its own against the kernel's activatable kinds.
@@ -163,7 +169,11 @@ class WireTokenParityTest {
                         "OverriddenArtifact.kind (ActivatableKind)",
                         ACTIVATABLE,
                         values(OverriddenArtifact.KindEnum.values(), OverriddenArtifact.KindEnum::getValue),
-                        OverriddenArtifact.KindEnum::fromValue),
+                        OverriddenArtifact.KindEnum::fromValue));
+    }
+
+    private static List<Pair> otherPairs() {
+        return List.of(
                 // NodeReference.kind is a copy of NodeKind the generator inlines; the targets of an enhancer without a
                 // target in force are the one place it reaches the wire before the graph is served.
                 new Pair(
