@@ -220,7 +220,19 @@ contexts:
         meta:
           status: "canonical"
       - name: "Effective action context"
-        definition: "What ADR-0018's walk reaches from a held step over the artifacts in force of an activation (`getEffectiveActionContext`), with the suggestions, the `enhancements` of the nodes it names and the skipped report. Compare Effective graph."
+        definition: "What applies to one action under an activation (`getEffectiveActionContext`): what ADR-0018's walk reaches from a held step over the artifacts in force, and, by the ownership rule, the directives, tactics and paradigms in force that the action's mission type scopes and the project-wide artifacts, each with what it requires and suggests; each item says which in `appliesThrough` (`action`, `mission_type` or `project`). It carries the suggestions, the `enhancements` of the nodes it names and the skipped report, and links the effective step prompt of the same action. Compare Effective graph."
+        meta:
+          status: "canonical"
+      - name: "Effective step prompt"
+        definition: "The prompt one step of a mission type gets under an activation (`getEffectiveStepPrompt`): the prompt in force of the step, as it is stored, and, for every slot it declares, the fragments of the step enhancements in force that fill it, ordered by pack level, then pack name, then enhancement id, each with its pack and enhancement (ADR-0066 decision 9). The charter serves it and does not render it. A mission type the activation does not put in force has none (`409 mission_type_not_in_force`). Not the rendered prompt."
+        meta:
+          status: "canonical"
+      - name: "Project-wide artifact"
+        definition: "A directive, tactic or paradigm in force that no action and no mission type scopes: it has no scope owner. The effective action context lists it, with what it requires and suggests, on every action of a mission type in force, with `appliesThrough: project` (the ownership rule, ADR-0018 D5 as amended 2026-11-12). Compare Scope owner."
+        meta:
+          status: "canonical"
+      - name: "Scope owner"
+        definition: "A node with an authored `scope` edge to an artifact: an action or a mission type, held or not. Under the ownership rule an artifact in force applies to an action that owns it, to every action of a mission type that owns it, and, when it has no owner at all, to every action (a project-wide artifact). Ownership is judged on the authored edges of the merged closure, whatever is in force."
         meta:
           status: "canonical"
       - name: "Overrides edge"

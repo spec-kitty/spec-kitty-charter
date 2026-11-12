@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: REST resource conventions
 description: How the charter API names resources and paths, uses methods and parameters, negotiates media types and versions the contract.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -54,7 +54,11 @@ A path names a resource, never an action. Every resource is one of four archetyp
 
 - **Hierarchy with `/`.** A child resource sits under its parent:
   `/offering/mission-types/{missionType}/actions/{action}/context` (proposed; built today at
-  `/mission-types/…`).
+  `/mission-types/…`). Built under an activation: the action's context
+  `/activations/{activationId}/mission-types/{missionType}/actions/{action}/context` and, beside it since slice C
+  (2026-11-12), the step's effective prompt `/activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt`
+  (`getEffectiveStepPrompt`). The two are sibling sub-resources of one action, each a noun; the context links the
+  prompt as `prompt`, and the prompt links back as `effective-context`.
 - **No trailing slash.** `/packs`, not `/packs/`.
 - **Lowercase, with hyphens.** `mission-types`, not `missionTypes` or `mission_types`.
 - **No file extensions.** The media type is negotiated (see below), never `/packs.json`.
@@ -134,7 +138,9 @@ A path names a resource, never an action. Every resource is one of four archetyp
 `getOpenApiDocument` (`GET /openapi.yaml`) is a conditional read built into the contract: its
 answer carries a strong `ETag`, the SHA-256 digest of the bundled contract, and an `If-None-Match`
 that is `*` or matches it is a 304 without a body. So are `getActivation`, `listActivationPacks`,
-`listEffectiveArtifacts` and `getActivationSkippedReport`.
+`listEffectiveArtifacts` and `getActivationSkippedReport`, and the effective reads built since: the graph, the action
+context and, since slice C (2026-11-12), the effective step prompt. Each of those judges its refusals before it compares
+the tag, so a refusal (the prompt read's `409 mission_type_not_in_force` among them) is never a 304.
 
 Built: the activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
 changes:
