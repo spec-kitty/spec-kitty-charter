@@ -100,8 +100,12 @@
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
-      "shell_pid": 17257,
-      "shell_pid_created_at": "1794484413.6"
+      "shell_pid": 450,
+      "shell_pid_created_at": "1794502982.18",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done"
+      }
     },
     "WP04": {
       "actor": "claude",
