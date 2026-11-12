@@ -1,7 +1,7 @@
 {
-  "event_count": 78,
-  "last_event_id": "01M78WFK5DC6H56JG40VT0Z884",
-  "materialized_at": "2026-11-12T22:01:34.514148+00:00",
+  "event_count": 80,
+  "last_event_id": "01M78WTY3S55S4F9V0BRPEEJ70",
+  "materialized_at": "2026-11-12T22:07:46.297450+00:00",
   "mission_number": "",
   "mission_slug": "effective-step-and-action-context-01M774HB",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 2
   },
   "work_packages": {
@@ -224,17 +224,18 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M78WFK5DC6H56JG40VT0Z884",
-      "last_transition_at": "2026-11-12T22:01:34.514148+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M78WTY3S55S4F9V0BRPEEJ70",
+      "last_transition_at": "2026-11-12T22:07:46.297450+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order)."
+        "getEffectiveStepPrompt served (contract + controller), 409 mission_type_not_in_force (new enum value, Breaking fragment), context _links.prompt when in force, prompt relation in ruleset and hypermedia table; effective-step-prompt.feature (SC-001 on example packs, three-levels order, 409 vs context 200, 404s/409/500 before 304, ETag, legacy diagnostic) green; NFR-001 test found the closure digest depended on configured order, fixed in ClosureQueries (per-pack digest in closure order).",
+        "Cycle 1 fix 1bd7396c5: R10 scenario pins 409 before 500 prompt_slot_missing (M8 now caught); out-of-map: ClosureQueriesTest import nit"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -244,15 +245,15 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 29781,
+      "shell_pid_created_at": "1794521261.7",
       "subtasks": {
-        "T030": "planned",
-        "T031": "planned",
-        "T032": "planned",
-        "T033": "planned",
-        "T034": "planned"
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
       }
     },
     "WP08": {
