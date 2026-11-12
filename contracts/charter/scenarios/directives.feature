@@ -196,3 +196,33 @@ Feature: Directives are read and registered functionally
       {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
       """
     Then the response status is 201
+
+  Scenario: A write that would leave a preset naming the id only in another case is refused before the commit (#412)
+    IC-15, operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW: a per-artifact write is judged over the closures its pack
+    joins as the pack will be after it. The preset names directive guard, so holding GUARD would leave an id matched
+    only by case, which the compose refuses. The write is refused with the compose's code, nothing is stored and the
+    offering still composes; an id the preset does not name is written.
+    Given the org pack "qa" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: A preset of the team
+      activated_directives:
+        - id: guard
+      """
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
+      """
+    Then the response status is 422
+    And the problem code is "pack_reference_artifact_missing"
+    And the field at "/packs/0/packId" is "qa"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
+    Then the response status is 404
+    When I GET "/offering"
+    Then the response status is 200
+    When I PUT "/packs/qa/artifacts/directive/SHIELD" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Shield the gate", "intent": "Shield it", "enforcement": "required"}
+      """
+    Then the response status is 201
