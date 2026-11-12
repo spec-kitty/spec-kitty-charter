@@ -1,7 +1,7 @@
 {
   "rows": {
     "#105": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by WP02/WP04/WP05/WP06",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,11 +9,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": null
     },
     "#106": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Out of scope (spec C-005): split to its own mission or slice",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,11 +21,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#107": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by WP02/WP04/WP05/WP06",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,11 +33,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": null
     },
     "#108": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Out of scope (spec C-005): split to its own mission or slice",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,11 +45,71 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#11": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#13": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#16": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#17": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#20": {
+      "evidence_ref": "Squad finding number in research/squad-post-plan.md, not an issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#409": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP08",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,11 +117,23 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
+      "wp": "WP08"
+    },
+    "#467": {
+      "evidence_ref": "Slice C coordination reference; no work owed here",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#532": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP07",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,11 +141,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP07"
     },
     "#533": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Out of scope (spec C-005): split to its own mission or slice",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,11 +153,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#536": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Parent slice; ticked at closeout",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,8 +165,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#94": {
       "evidence_ref": "<auto-classified: no action required>",
@@ -109,7 +181,7 @@
       "wp": null
     },
     "#98": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP01 commit f7dfef7; contracts/charter/scenarios/pack-presets.feature",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -117,8 +189,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "fixed",
+      "wp": "WP01"
     }
   },
   "schema_version": 1
