@@ -8,7 +8,7 @@
 # directories and line endings are not part of it (the bytes are taken as stored). A symbolic link or other
 # non-regular entry in a tree is refused.
 algorithm: tree-sha256-v1
-commit: a2a93794f2d8c9f3f549e94ad024ea0e386d5df4
+commit: 1692a3b1dde022c871f09dab34637d2f9d6723f3
 trees:
-  packs/internal: f95efffe14c202c71f6db9a2c55b5ba272d3908625066e9ad7adae5c7ac49282
-  packs/qa: 33b3367654a91b101e375cd9b4c3077fc25922339a1fba2c26d84950b6db4233
+  packs/internal: bf8956d23a329cdd2c6a12603e55364233e14009bb1b413832025a2c1fb7cf68
+  packs/qa: 67bc6100a1a5cbfe949fc876384e4d11851b94de7bbdb5b9bf78df29a7f03710
