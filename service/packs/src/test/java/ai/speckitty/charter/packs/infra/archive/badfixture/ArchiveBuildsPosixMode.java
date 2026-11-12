@@ -24,4 +24,15 @@ public final class ArchiveBuildsPosixMode {
         return Files.createDirectory(
                 directory, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
     }
+
+    /**
+     * Sets mode {@code 0700} on a path after the fact; never called.
+     *
+     * @param path the path
+     * @return the path
+     * @throws IOException never, the method is not called
+     */
+    public static Path restrict(Path path) throws IOException {
+        return Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwx------"));
+    }
 }
