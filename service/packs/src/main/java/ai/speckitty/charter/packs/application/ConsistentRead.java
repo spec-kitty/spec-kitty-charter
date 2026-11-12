@@ -112,8 +112,12 @@ public final class ConsistentRead {
         boolean insideSwap = PackWriteGeneration.isSwapping(written);
         String first = firstDigest(written, insideSwap, staleDetail);
         T value = loaded(first, written, insideSwap, staleDetail, load);
+        if (moved(written)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail); // settled: no second digest is needed
+        }
+        String second = digestOrNull();
         // Inside a swap the generation is checked again after the second digest, so both digests fall in that one swap.
-        if (moved(written) || !first.equals(digestOrNull()) || (insideSwap && moved(written))) {
+        if (!first.equals(second) || (insideSwap && moved(written))) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
         }
         return new Verified<>(value, first);
