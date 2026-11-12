@@ -686,8 +686,13 @@ public final class PackCommitStore implements WholePackWriteStore {
         try {
             mover.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException | AccessDeniedException refused) {
-            Files.delete(reserved);
-            mover.move(staging, reserved);
+            try {
+                Files.delete(reserved);
+                mover.move(staging, reserved);
+            } catch (IOException | RuntimeException fallback) {
+                fallback.addSuppressed(refused);
+                throw fallback;
+            }
         }
     }
 
