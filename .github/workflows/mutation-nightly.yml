@@ -133,15 +133,16 @@ jobs:
             cp build/reports/mutation-floors/pitest.log "build/reports/mutation-floors/pitest-$SHARD.log"
           fi
 
-      # Each module's HTML and XML report and its floors.json, with the module list and the shard's log. A module that
-      # did not run simply adds nothing: the summary shows it as a "no report" row.
+      # Each module's HTML and XML report (build/reports/pitest, or pitest-<shard> for a shard of its groups) and its
+      # floors files, with the module list and the shard's log. A module that did not run simply adds nothing: the
+      # summary shows it as a "no report" row.
       - name: Upload the mutation reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mutation-report-${{ matrix.shard }}
           path: |
-            service/*/build/reports/pitest
+            service/*/build/reports/pitest*
             service/*/build/reports/mutation-floors
             build/reports/mutation-floors/modules.txt
             build/reports/mutation-floors/pitest-${{ matrix.shard }}.log
