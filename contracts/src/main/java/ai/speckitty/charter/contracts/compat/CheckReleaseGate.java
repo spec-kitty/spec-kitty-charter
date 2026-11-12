@@ -76,6 +76,11 @@ public final class CheckReleaseGate {
             out.println(USAGE);
             return 2;
         }
+        return compare(args, tags, out);
+    }
+
+    /** The default mode: which tag to compare against, from the files and, with {@code --git}, the tag lists. */
+    private static int compare(List<String> args, boolean tags, PrintStream out) {
         String infoVersion;
         String changelog;
         Set<String> merged = Set.of();
@@ -91,9 +96,13 @@ public final class CheckReleaseGate {
             out.println("Cannot read the release gate's inputs: " + e.getMessage());
             return 2;
         }
-        Decision decision = noGit
-                ? ReleaseGate.decideWithoutGit(infoVersion, changelog)
-                : ReleaseGate.decide(infoVersion, changelog, merged, atHead);
+        Decision decision = tags
+                ? ReleaseGate.decide(infoVersion, changelog, merged, atHead)
+                : ReleaseGate.decideWithoutGit(infoVersion, changelog);
+        return report(decision, out);
+    }
+
+    private static int report(Decision decision, PrintStream out) {
         switch (decision) {
             case Decision.Compare compare -> out.println("COMPARE " + compare.tag());
             case Decision.NoBaseline none -> out.println("NONE");
