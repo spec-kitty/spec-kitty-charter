@@ -89,7 +89,15 @@ class PackPolicyGraphTest {
     /** #254: a fragment node's body_path is relative to the pack root, and one that leaves it is a graph fault. */
     @ParameterizedTest
     @ValueSource(
-            strings = {"/etc/passwd", "../outside.md", "directives/../../outside.md", "C:\\x.md", "\\\\host\\x.md"})
+            strings = {
+                "/etc/passwd",
+                "../outside.md",
+                "directives/../../outside.md",
+                "C:\\x.md",
+                "C:/x.md",
+                "a\\..\\..\\x.md",
+                "\\\\host\\x.md"
+            })
     void aBodyPathThatLeavesThePackRootIsAnEscapeNamingTheNodeAndThePath(String bodyPath) {
         assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath)))
                 .contains("node b body_path '" + bodyPath + "' escapes the pack root");
@@ -99,6 +107,10 @@ class PackPolicyGraphTest {
     @ValueSource(strings = {"directives/b.directive.yaml", "directives/b..md", "./b.md"})
     void aBodyPathThatStaysInsideThePackRootOrNoneIsNoEscape(String bodyPath) {
         assertThat(PackPolicy.bodyPathEscape("b", Optional.of(bodyPath))).isEmpty();
+    }
+
+    @Test
+    void aNodeWithNoBodyPathIsNoEscape() {
         assertThat(PackPolicy.bodyPathEscape("b", Optional.empty())).isEmpty();
     }
 
