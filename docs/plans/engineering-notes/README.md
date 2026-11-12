@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -23,6 +23,9 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/) —
   how good the test suite is against the packs' testing rubric, and the five weaknesses ranked by
   risk. It also gives the SonarCloud recommendation (nightly, report-only) and the operator's rulings.
+- [Code and test suite quality assessment, 2026-11-12](/plans/engineering-notes/code-and-test-quality-assessment-2026-11-12/) —
+  the 2026-11-03 assessment re-run nine days on, plus a production-code lens: six test gaps proved by
+  planted breaks, the slow and timing-sensitive tests, the code hotspots, and four questions for the operator.
 - [Service usability run, 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/) — how
   ready the service is for core. It registers the open-packs, activates this repository's charter, and reads a profile, its
   guidance and a mission. It gives the gaps with their issues and the recommended order of the next work.
