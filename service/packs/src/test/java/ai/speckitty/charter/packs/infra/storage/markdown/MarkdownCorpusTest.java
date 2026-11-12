@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Every Markdown file of the example packs that the {@code markdown} form covers reads and writes back
- * byte for byte (SC-006): the toolguide guides ({@code packs/*}{@code /toolguides/**}), each pack's {@code pack.md},
+ * byte for byte (SC-006): the toolguide guides ({@code packs/*}{@code /toolguides/**}), each pack's {@code README.md},
  * and the mission step prompts and guidelines ({@code packs/*}{@code /missions/*}{@code /steps/*.md}, #194).
  *
  * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 class MarkdownCorpusTest {
 
     private static final List<PathMatcher> COVERED = Stream.of(
-                    "glob:*/toolguides/**.md", "glob:*/pack.md", "glob:*/missions/*/steps/*.md")
+                    "glob:*/toolguides/**.md", "glob:*/README.md", "glob:*/missions/*/steps/*.md")
             .map(FileSystems.getDefault()::getPathMatcher)
             .toList();
 
@@ -72,11 +72,18 @@ class MarkdownCorpusTest {
         assertThat(documents.stream().filter(d -> d.frontmatter().isPresent()).count())
                 .as("documents with frontmatter")
                 .isPositive();
-        assertThat(documents.stream()
-                        .filter(d -> d.title().isPresent() && d.sections().isEmpty())
-                        .count())
-                .as("documents with a title and no sections (pack.md)")
+        // The example READMEs each carry a provenance section (#451), so no example is a title with no sections; the
+        // codec's byte-for-byte path for that shape is held by this literal.
+        assertThat(documents.stream().filter(d -> d.title().isPresent()).count())
+                .as("documents with a title (README.md)")
                 .isPositive();
+        String titleOnly = "# A title only\n";
+        assertThat(MarkdownCodec.parse(titleOnly))
+                .isInstanceOfSatisfying(
+                        Parsed.class,
+                        parsed -> assertThat(MarkdownCodec.write(parsed.document()))
+                                .as("a document with a title and no sections writes back byte for byte")
+                                .isEqualTo(titleOnly));
         assertThat(documents.stream()
                         .filter(MarkdownCorpusTest::hidesHeadingInFence)
                         .count())

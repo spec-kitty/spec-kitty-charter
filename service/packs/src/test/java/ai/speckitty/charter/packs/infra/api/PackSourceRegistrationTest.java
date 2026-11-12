@@ -105,7 +105,8 @@ class PackSourceRegistrationTest {
                 mock(PackArchiveReader.class),
                 new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
                 intake,
-                mock(PackRemovalController.class));
+                mock(PackRemovalController.class),
+                mock(PackDocumentController.class));
         return MockMvcBuilders.standaloneSetup(controller)
                 .addInterceptors(new RegistrationAdmission(registration, jobs, info))
                 .setControllerAdvice(new PackSourceBodyAdvice(), new RefusalHandler())

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.PackDocumentRead;
 import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationNotices;
 import ai.speckitty.charter.api.model.PackRegistrationProblem;
@@ -11,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.PackDocumentQuery;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
@@ -45,6 +47,7 @@ final class PackRegistrationMapper {
     private static final String PACKS = "packs";
     private static final String REGISTRATIONS = "pack-registrations";
     private static final String ARTIFACTS = "artifacts";
+    private static final String DOC = "doc";
 
     private final Hypermedia links;
     private final RefusalHandler refusals;
@@ -94,8 +97,12 @@ final class PackRegistrationMapper {
     }
 
     PackRegistration result(RegistrationOutcome outcome, Map<String, String> source) {
-        PackRegistration body =
-                stored(outcome.pack().value(), outcome.descriptor(), outcome.level(), outcome.revision());
+        PackRegistration body = stored(
+                outcome.pack().value(),
+                outcome.descriptor(),
+                outcome.level(),
+                outcome.revision(),
+                outcome.hasDocument());
         if (!source.isEmpty()) {
             body.setSource(sourceRecord(source));
         }
@@ -127,13 +134,35 @@ final class PackRegistrationMapper {
     }
 
     PackRegistration summary(PackSummaryQuery.Summary summary) {
-        return stored(summary.pack().value(), summary.descriptor(), summary.level(), summary.revision());
+        return stored(
+                summary.pack().value(),
+                summary.descriptor(),
+                summary.level(),
+                summary.revision(),
+                summary.hasDocument());
     }
 
-    private PackRegistration stored(String packId, PackDescriptor descriptor, PackLevel level, PackRevision revision) {
+    /**
+     * The pack's document as the {@code application/json} form of the document read: its title and body, and the links
+     * {@code self} (the document) and {@code pack} (the pack it belongs to).
+     */
+    PackDocumentRead document(PackDocumentQuery.Read read) {
+        Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
+        own.put(Relation.SELF, links.link(PACKS, read.pack().value(), DOC));
+        own.put(Relation.PACK, links.link(PACKS, read.pack().value()));
+        PackDocumentRead body = new PackDocumentRead(read.document().body(), Hypermedia.wire(own));
+        read.document().title().ifPresent(body::setTitle);
+        return body;
+    }
+
+    private PackRegistration stored(
+            String packId, PackDescriptor descriptor, PackLevel level, PackRevision revision, boolean hasDocument) {
         Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
         own.put(Relation.SELF, links.link(PACKS, packId));
         own.put(Relation.ARTIFACTS, links.templated("{?kind}", PACKS, packId, ARTIFACTS));
+        if (hasDocument) {
+            own.put(Relation.DOC, links.link(PACKS, packId, DOC));
+        }
         return new PackRegistration(
                 packId,
                 descriptor.packId(),

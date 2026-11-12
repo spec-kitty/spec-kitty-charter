@@ -39,7 +39,6 @@ class PackRoundTripTest {
             "roundtrip-a",
             Optional.of("org"),
             Optional.of(">=1.0"),
-            Optional.of("org-charter.yaml"),
             Optional.of("drg/fragment.yaml"),
             Optional.empty(),
             List.of(),
@@ -155,8 +154,7 @@ class PackRoundTripTest {
 
         assertThat(tactics(refetched)).isEqualTo(tactics(original));
         assertThat(refetched.descriptor()).isEqualTo(original.descriptor());
-        // active_charter and pack_drg would be deleted by a from-scratch writer that did not model them.
-        assertThat(refetched.descriptor().activeCharter()).contains("org-charter.yaml");
+        // pack_drg would be deleted by a from-scratch writer that did not model it.
         assertThat(refetched.descriptor().packDrg()).contains("drg/fragment.yaml");
         // The order of a step's examples.
         assertThat(tactic(refetched, ALPHA_ID).steps().get(0).examples())
@@ -210,7 +208,6 @@ class PackRoundTripTest {
                 d.name(),
                 Optional.of("project"),
                 d.requiresCore(),
-                d.activeCharter(),
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
@@ -238,7 +235,6 @@ class PackRoundTripTest {
                 d.name(),
                 d.packLevel(),
                 d.requiresCore(),
-                d.activeCharter(),
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
@@ -268,7 +264,9 @@ class PackRoundTripTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack.yaml of " + id.value() + " cannot be read");
+                .hasMessage("pack.yaml of " + id.value()
+                        + " cannot be read: additionalProperties violated at the document: undeclared key"
+                        + " 'experimental_note'");
     }
 
     /** Partial tolerance: the broken file is reported, and the valid elements are still returned (the control). */

@@ -37,7 +37,8 @@ class CompanionCaseFoldTest {
     @CsvSource(
             delimiter = '|',
             value = {
-                "../pack.md | is a pack file of kind pack-document",
+                "../Readme.md | is a pack file of kind pack-document",
+                "../pack.md | is retired by file-kinds rule",
                 "../missions/research/README.md | is excluded by file-kinds rule",
                 "../missions/research/command-templates/spec.md | is retired by file-kinds rule",
                 "../assets/logo.md | is a pack file of kind asset",
@@ -60,7 +61,7 @@ class CompanionCaseFoldTest {
     @DisplayName("positive control: a name no rule owns in any case is the companion's, in any case")
     void aFreeNameIsTheCompanionsInAnyCase() throws IOException {
         assertThat(resolve("Notes.MD")).isInstanceOf(Companions.Inside.class);
-        assertThat(resolve("../PACKS.md")).as("a near neighbour of pack.md").isInstanceOf(Companions.Inside.class);
+        assertThat(resolve("../READMES.md")).as("a near neighbour of README.md").isInstanceOf(Companions.Inside.class);
     }
 
     /** {@code ../missions/Research/Readme.md}: each segment's first letter upper-cased. */

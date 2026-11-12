@@ -2,9 +2,9 @@ package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.MalformedPreconditionException;
 import ai.speckitty.charter.api.model.CharterRefusal;
-import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.web.InvalidParameter;
 import ai.speckitty.charter.web.Problems;
 import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.validation.ConstraintViolation;
@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -24,7 +25,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.Errors;
@@ -49,9 +49,11 @@ import tools.jackson.core.JacksonException;
  *   <li>a body that breaks a constraint of its schema (bean validation: {@link MethodArgumentNotValidException}, or
  *       the body's part of a {@link HandlerMethodValidationException}) is {@code 422 activation_invalid}, one violation
  *       per broken constraint, code {@code invalid_value};
- *   <li>a header or path parameter that breaks its pattern (an {@code If-None-Match} other than {@code *} on a write,
- *       an {@code If-Match} that is neither {@code *} nor one quoted revision) and a {@link MalformedPreconditionException} are a plain
- *       {@code 400 Problem}, without a code (J10).
+ *   <li>a header, path or query parameter that breaks its constraint (an {@code If-None-Match} other than {@code *} on
+ *       a write, an {@code If-Match} that is neither {@code *} nor one quoted revision, a {@code depth} outside 0 to 1)
+ *       is a {@code 400 Problem} without a code whose detail names it in the service's own words, as every route
+ *       answers it ({@link InvalidParameter}, #411); a {@link MalformedPreconditionException} is the same {@code 400},
+ *       worded as the pack writes word it (J10).
  * </ul>
  *
  * <p>Each refusal is rendered by {@link RefusalHandler#refused(ai.speckitty.charter.kernel.domain.CharterRefusal)}, so
@@ -122,12 +124,23 @@ public class ActivationProblems {
      */
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<?> invalidParameters(HandlerMethodValidationException invalid) {
+        List<ParameterValidationResult> parameters = invalid.getParameterValidationResults().stream()
+                .filter(result -> !result.getMethodParameter().hasParameterAnnotation(RequestBody.class))
+                .toList();
+        if (!parameters.isEmpty()) {
+            List<String> details = parameters.stream()
+                    .flatMap(result -> result.getResolvableErrors().stream()
+                            .map(error -> InvalidParameter.of(
+                                    result.getMethodParameter(), result.unwrap(error, ConstraintViolation.class))))
+                    .flatMap(Optional::stream)
+                    .map(InvalidParameter::detail)
+                    .toList();
+            return details.isEmpty()
+                    ? Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY)
+                    : Problems.badRequest(String.join(" ", details));
+        }
         List<RefusalViolation> violations = new ArrayList<>();
         for (ParameterValidationResult result : invalid.getParameterValidationResults()) {
-            if (!result.getMethodParameter().hasParameterAnnotation(RequestBody.class)) {
-                return badRequest(
-                        "The request's " + result.getMethodParameter().getParameterName() + " breaks its pattern.");
-            }
             if (result instanceof ParameterErrors errors) {
                 violations.addAll(violationsOf(errors));
             }
@@ -151,11 +164,17 @@ public class ActivationProblems {
             LOG.error("An activation answer breaks the contract's constraints", invalid);
             return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
         }
+        List<String> parameters = InvalidParameter.details(invalid.getConstraintViolations().stream()
+                .filter(violation -> nodes(violation.getPropertyPath()).size() <= 2)
+                .toList());
+        if (!parameters.isEmpty()) {
+            return Problems.badRequest(String.join(" ", parameters));
+        }
         List<RefusalViolation> violations = new ArrayList<>();
         for (ConstraintViolation<?> violation : invalid.getConstraintViolations()) {
             List<String> path = nodes(violation.getPropertyPath());
             if (path.size() <= 2) {
-                return badRequest("The request's " + path.getLast() + " " + violation.getMessage() + ".");
+                return Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY);
             }
             String pointer = pointerOfProperty(String.join(".", path.subList(2, path.size())));
             violations.add(new RefusalViolation(
@@ -189,14 +208,20 @@ public class ActivationProblems {
     }
 
     /**
-     * Answers a write whose preconditions cannot be evaluated.
+     * Answers a write whose preconditions cannot be evaluated, worded as the pack writes word the same refusal.
      *
      * @param malformed the failure
-     * @return {@code 400} without a code
+     * @return {@code 400} without a code, whose detail names the header (#411)
      */
     @ExceptionHandler(MalformedPreconditionException.class)
-    public ResponseEntity<Problem> malformed(MalformedPreconditionException malformed) {
-        return badRequest(Objects.requireNonNullElse(malformed.getMessage(), "The preconditions are malformed."));
+    public ResponseEntity<Object> malformed(MalformedPreconditionException malformed) {
+        String ifNoneMatch = malformed.ifNoneMatch();
+        InvalidParameter refused = ifNoneMatch == null
+                ? InvalidParameter.excluding(
+                        InvalidParameter.In.HEADER, HttpHeaders.IF_MATCH, HttpHeaders.IF_NONE_MATCH)
+                : new InvalidParameter(
+                        InvalidParameter.In.HEADER, HttpHeaders.IF_NONE_MATCH, ifNoneMatch, "which is not *");
+        return Problems.badRequest(refused.detail());
     }
 
     /**
@@ -266,13 +291,5 @@ public class ActivationProblems {
                 RefusalCode.ACTIVATION_INVALID,
                 "The activation request body breaks its schema in " + named.size() + " place(s).",
                 named));
-    }
-
-    private static ResponseEntity<Problem> badRequest(String detail) {
-        Problem problem = new Problem(HttpStatus.BAD_REQUEST.getReasonPhrase(), HttpStatus.BAD_REQUEST.value());
-        problem.setDetail(detail);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
     }
 }

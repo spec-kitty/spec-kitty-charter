@@ -22,8 +22,6 @@ public enum PackFindingCode {
     DRG_SCHEMA_ERROR(Severity.BLOCKING),
     /** An artifact file breaks its schema; validate mode only. */
     ARTIFACT_SCHEMA_ERROR(Severity.BLOCKING),
-    /** The org charter breaks its schema; validate mode only. */
-    ORG_CHARTER_SCHEMA_ERROR(Severity.BLOCKING),
     /** A step contract declares a step id twice; validate mode only. */
     DUPLICATE_STEP_ID(Severity.BLOCKING),
     /** Two artifacts share an id; validate mode only. */
@@ -56,6 +54,11 @@ public enum PackFindingCode {
      * codes for one condition because a severity is fixed per code.
      */
     PROMPT_SLOT_NOT_EMPTY_UNVERSIONED(Severity.WARNING),
+    /**
+     * A file of a registered tree that is not pack content (an exclusion names it, or the {@code ignored} fallback takes
+     * it), so the registration does not hold it (#451). A warning on the registration's answer, never a violation.
+     */
+    FILE_NOT_HELD(Severity.WARNING),
     /**
      * An {@code overrides} edge of a graph document whose source is not of an activatable kind (FR-014,
      * {@link OverrideSourceRule}). It is the violation code {@value OverrideSourceRule#CODE} of the graph document at
@@ -118,6 +121,7 @@ public enum PackFindingCode {
         return switch (this) {
             case PACK_LEVEL_MISSING -> Diagnostic.Code.PACK_LEVEL_MISSING;
             case PROMPT_SLOT_NOT_EMPTY_UNVERSIONED -> Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY;
+            case FILE_NOT_HELD -> Diagnostic.Code.FILE_NOT_HELD;
             default -> throw new IllegalStateException(name() + " has no diagnostic on the load path");
         };
     }

@@ -65,10 +65,7 @@ final class PackDescriptorReader {
                         required(root, "name"),
                         level,
                         optional(root, "requires_core"),
-                        new PackPaths(
-                                optional(root, "active_charter"),
-                                optional(root, "pack_drg"),
-                                optional(root, "mutability_policy")),
+                        new PackPaths(optional(root, "pack_drg"), optional(root, "mutability_policy")),
                         dependencies(root),
                         overrides,
                         optional(root, "schema_version"),

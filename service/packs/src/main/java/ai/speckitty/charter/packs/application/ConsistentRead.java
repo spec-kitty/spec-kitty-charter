@@ -22,6 +22,19 @@ import org.jspecify.annotations.Nullable;
  * other throwable that is not a {@code RuntimeException}, propagates at once, without the stale comparison. When the
  * load failed and the second digest then breaks with something that is not a {@link CharterRefusal}, that break
  * propagates with the load failure added as suppressed.
+ *
+ * <p>A read that starts while a pack swap runs (the {@link PackWriteGeneration} is odd) is answered when it ends in
+ * that same odd generation and its two digests agree (FR-023, #490, the operator's call on squad finding D3); before,
+ * any read that started in an odd generation refused {@code STALE_INPUT}, so every verified read answered 500 in the
+ * swap window. It is sound because pack writes are serialized by {@link RegistryWriteLock} and each brackets one
+ * directory swap with the generation, so one odd generation moves the readable state from the old pack to the new
+ * once, and never back: digests taken at its start and at its end that agree prove nothing moved between them, so the
+ * load in between saw that one state. A swap whose second rename fails moves the aside copy back, so the state goes
+ * from the old pack to the old pack; a lock-free read of the pack that ran between its renames is read again over the
+ * restored directory ({@link PackWriteGeneration#movesOf}, squad D-1), so no load or digest answers that window. The generation is therefore checked again <em>after</em> the second digest, so
+ * the second digest was taken inside that same swap. A load or first digest that fails inside a swap stays
+ * {@code STALE_INPUT}, as before: a failure there may be the swap's own. A read that started in an even generation is
+ * judged as before.
  */
 public final class ConsistentRead {
 
@@ -88,18 +101,23 @@ public final class ConsistentRead {
      * @return the loaded value and the digest both reads agree on
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the first digest cannot be taken (the load is not run),
      *     or with {@code STALE_INPUT} when the second digest differs or cannot be taken, even when the load itself
-     *     refused (the load's refusal is then the cause); otherwise the load's own refusal
+     *     refused (the load's refusal is then the cause), when the write generation moved during the read, or when
+     *     the read started inside a swap and its first digest or its load failed (the failure is then the cause);
+     *     otherwise the load's own refusal
      */
     public <T> Verified<T> read(String staleDetail, Supplier<T> load) {
         Objects.requireNonNull(staleDetail, "staleDetail");
         Objects.requireNonNull(load, "load");
         long written = generation.registry();
-        if (PackWriteGeneration.isSwapping(written)) {
-            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
+        boolean insideSwap = PackWriteGeneration.isSwapping(written);
+        String first = firstDigest(written, insideSwap, staleDetail);
+        T value = loaded(first, written, insideSwap, staleDetail, load);
+        if (moved(written)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail); // settled: no second digest is needed
         }
-        String first = firstDigest(written, staleDetail);
-        T value = loaded(first, written, staleDetail, load);
-        if (moved(written) || !first.equals(digestOrNull())) {
+        String second = digestOrNull();
+        // Inside a swap the generation is checked again after the second digest, so both digests fall in that one swap.
+        if (!first.equals(second) || (insideSwap && moved(written))) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
         }
         return new Verified<>(value, first);
@@ -110,24 +128,30 @@ public final class ConsistentRead {
         return generation.registry() != written;
     }
 
-    /** The first digest; a refusal while the generation moves (a directory renamed mid-listing) is stale, not unreadable. */
-    private String firstDigest(long written, String staleDetail) {
+    /**
+     * The first digest; a refusal inside a swap or while the generation moves (a directory renamed mid-listing) is
+     * stale, not unreadable.
+     */
+    private String firstDigest(long written, boolean insideSwap, String staleDetail) {
         try {
             return sources.fingerprint();
         } catch (CharterRefusal unreadable) {
-            if (moved(written)) {
+            if (insideSwap || moved(written)) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail, unreadable);
             }
             throw unreadable;
         }
     }
 
-    /** The load's value; its failure is the answer only when neither the digest nor the generation moved. */
-    private <T> T loaded(String first, long written, String staleDetail, Supplier<T> load) {
+    /**
+     * The load's value; its failure is the answer only when the read started outside a swap and neither the digest nor
+     * the generation moved.
+     */
+    private <T> T loaded(String first, long written, boolean insideSwap, String staleDetail, Supplier<T> load) {
         try {
             return load.get();
         } catch (RuntimeException failed) {
-            if (moved(written) || !first.equals(digestAfterFailure(failed))) {
+            if (insideSwap || moved(written) || !first.equals(digestAfterFailure(failed))) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail, failed);
             }
             throw failed;

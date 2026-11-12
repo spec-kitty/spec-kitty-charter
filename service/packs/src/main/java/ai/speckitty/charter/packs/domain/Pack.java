@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
  *       path, and no two assets name the same one;
  *   <li>the pack's {@linkplain #presets() activation presets} (#195, ADR-0042): core gives a preset no URN, so it is a
  *       pack-level value, not an artifact. No two share an id;
- *   <li>the pack's {@linkplain #document() document}, its {@code pack.md} (#260, ADR-0042 decision 8), in the shape of
+ *   <li>the pack's {@linkplain #document() document}, its {@code README.md} (#260, ADR-0042 decision 8), in the shape of
  *       #194's {@code markdown} content form. A pack holds at most one.
  * </ul>
  *
@@ -326,7 +326,7 @@ public final class Pack {
     }
 
     /**
-     * The pack's document, its {@code pack.md}.
+     * The pack's document, its {@code README.md}.
      *
      * @return the document; empty when the pack has none, or its file could not be read (then a violation)
      */

@@ -116,8 +116,8 @@ class ExamplePackCoverageTest {
     }
 
     /**
-     * Whether the whole-pack store leaves a file of this rule unmodelled (a project's {@code charter.yaml}, an org's
-     * {@code org-charter.yaml}, a generated {@code pack-manifest.yaml}): such a file is no pack content, so an example
+     * Whether the whole-pack store leaves a file of this rule unmodelled (a project's {@code charter.yaml}, a
+     * generated {@code pack-manifest.yaml}): such a file is no pack content, so an example
      * pack cannot hold one without failing {@code everyPackLoadsWholeWithNoViolation}. The answer is read from the
      * store, never listed: a placeholder file at the rule's path in a copy of each example pack must come back
      * unmodelled from every pack. Once the store models the kind, this is false and the kind needs an example.

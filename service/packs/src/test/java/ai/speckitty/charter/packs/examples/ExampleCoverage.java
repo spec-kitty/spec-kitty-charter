@@ -120,15 +120,28 @@ final class ExampleCoverage {
         if (!node.isObject()) {
             return;
         }
+        walkRef(root, node, at, out, refs);
+        walkProperties(root, node, at, out, refs);
+        walkElements(root, node, at, out, refs);
+        walkBranches(root, node, at, out, refs);
+    }
+
+    /** A local {@code $ref}, walked once per path. */
+    private static void walkRef(JsonNode root, JsonNode node, String at, Set<String> out, Deque<String> refs) {
         JsonNode ref = node.get("$ref");
-        if (ref != null && ref.asString().startsWith("#/")) {
-            String target = ref.asString();
-            if (!refs.contains(target)) {
-                refs.push(target);
-                walk(root, root.at(target.substring(1)), at, out, refs);
-                refs.pop();
-            }
+        if (ref == null || !ref.asString().startsWith("#/")) {
+            return;
         }
+        String target = ref.asString();
+        if (!refs.contains(target)) {
+            refs.push(target);
+            walk(root, root.at(target.substring(1)), at, out, refs);
+            refs.pop();
+        }
+    }
+
+    /** Named properties, each a pointer of its own, and pattern properties, written as {@code *}. */
+    private static void walkProperties(JsonNode root, JsonNode node, String at, Set<String> out, Deque<String> refs) {
         JsonNode properties = node.get("properties");
         if (properties != null) {
             for (String name : properties.propertyNames()) {
@@ -143,6 +156,10 @@ final class ExampleCoverage {
                 walk(root, patterns.get(name), at + "/" + ANY, out, refs);
             }
         }
+    }
+
+    /** Map values and array items, written as {@code *}. */
+    private static void walkElements(JsonNode root, JsonNode node, String at, Set<String> out, Deque<String> refs) {
         for (String key : List.of("additionalProperties", "items", "contains")) {
             JsonNode child = node.get(key);
             if (child != null && child.isObject()) {
@@ -155,6 +172,10 @@ final class ExampleCoverage {
                 walk(root, item, at + "/" + ANY, out, refs);
             }
         }
+    }
+
+    /** The combinator branches and the conditional subschemas, at the same pointer. */
+    private static void walkBranches(JsonNode root, JsonNode node, String at, Set<String> out, Deque<String> refs) {
         for (String key : COMBINATORS) {
             JsonNode branches = node.get(key);
             if (branches instanceof ArrayNode items) {

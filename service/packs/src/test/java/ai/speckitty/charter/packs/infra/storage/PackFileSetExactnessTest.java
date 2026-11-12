@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -180,6 +181,19 @@ class PackFileSetExactnessTest {
                         .toList());
 
         assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.path().equals(PackDocumentMarkdown.FILE)));
+    }
+
+    @Test
+    @Timeout(HANG_CAP_SECONDS)
+    void aDigestThatDropsTheRetiredFilesFailsTheOracleNamingOne() throws IOException {
+        GeneratedPackTree tree = tree(0);
+        Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(
+                locations,
+                dir -> PackFileSet.digested(dir).stream()
+                        .filter(file -> !file.equals("pack.md"))
+                        .toList());
+
+        assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.verdict() == Verdict.RETIRED));
     }
 
     @Test
@@ -349,13 +363,16 @@ class PackFileSetExactnessTest {
             Set<String> expected = new LinkedHashSet<>();
             expected.add(PACK_YAML);
             expected.addAll(pack.paths(Verdict.LOADED));
+            // A retired file (#451) is refused by name: it reaches the load as a violation, not as a held file.
+            expected.addAll(pack.paths(Verdict.RETIRED));
             assertThat(observed).as("%s the files the store read", where).isEqualTo(expected);
 
             assertThat(read.violations().stream()
                             .map(PackElementViolation::file)
                             .collect(Collectors.toSet()))
                     .as("%s the files the store reported as unreadable", where)
-                    .isEqualTo(malformed(pack));
+                    .isEqualTo(Stream.concat(malformed(pack).stream(), pack.paths(Verdict.RETIRED).stream())
+                            .collect(Collectors.toSet()));
             assertThat(service.tacticsOf(new PackIdentifier(pack.name())).stream()
                             .map(Tactic::id)
                             .map(id -> id.value())

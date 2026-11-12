@@ -31,6 +31,8 @@ value:
       artifacts:
         href: /api/v1/packs/acme-review-pack/artifacts{?kind}
         templated: true
+      doc:
+        href: /api/v1/packs/acme-review-pack/doc
   _links:
     self:
       href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF

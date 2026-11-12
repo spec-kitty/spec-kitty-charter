@@ -28,14 +28,4 @@ final class PackWriteLocks {
     static ReentrantLock of(Path entry) {
         return LOCKS.computeIfAbsent(entry.toAbsolutePath().normalize(), key -> new ReentrantLock());
     }
-
-    /**
-     * Whether the current thread holds any pack's write lock. Such a thread must only try another pack's lock, never
-     * wait for it, or two threads could each wait on the other's; trying a lock it already holds succeeds.
-     *
-     * @return true when the thread holds a pack's write lock
-     */
-    static boolean heldByCurrentThread() {
-        return LOCKS.values().stream().anyMatch(ReentrantLock::isHeldByCurrentThread);
-    }
 }

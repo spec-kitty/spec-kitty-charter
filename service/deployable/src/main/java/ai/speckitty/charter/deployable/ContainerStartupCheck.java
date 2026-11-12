@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -56,7 +57,7 @@ public class ContainerStartupCheck implements InitializingBean {
     /**
      * Checks the environment the container starts with.
      *
-     * @throws IllegalStateException when a rule is broken, naming the property
+     * @throws StartupRefusal when a rule is broken, naming the property
      */
     @Override
     public void afterPropertiesSet() {
@@ -88,7 +89,7 @@ public class ContainerStartupCheck implements InitializingBean {
         String dir = environment.getProperty(
                 ContainerProperties.SECRETS_DIR_PROPERTY, ContainerProperties.DEFAULT_SECRETS_DIR);
         if (absoluteNonRoot(dir).isEmpty()) {
-            throw new IllegalStateException(ContainerProperties.SECRETS_DIR_PROPERTY
+            throw new StartupRefusal(ContainerProperties.SECRETS_DIR_PROPERTY
                     + " must name an absolute directory other than the root under the container profile");
         }
     }
@@ -111,7 +112,7 @@ public class ContainerStartupCheck implements InitializingBean {
                         .sorted()
                         .toList();
                 if (!foreign.isEmpty()) {
-                    throw new IllegalStateException("the config tree " + tree.getSource()
+                    throw new StartupRefusal("the config tree " + tree.getSource()
                             + " may set only " + GuardWiring.TOKEN_PROPERTY + " and " + CONTAINER_PREFIX
                             + "* under the container profile: remove " + String.join(", ", foreign));
                 }
@@ -129,7 +130,7 @@ public class ContainerStartupCheck implements InitializingBean {
 
     private static void requireFixedPort(Environment environment) {
         if (environment.getProperty(PORT_PROPERTY, Integer.class, DEFAULT_PORT) == 0) {
-            throw new IllegalStateException(PORT_PROPERTY
+            throw new StartupRefusal(PORT_PROPERTY
                     + " must be a fixed port under the container profile, not 0: a random port cannot be published");
         }
     }
@@ -137,11 +138,11 @@ public class ContainerStartupCheck implements InitializingBean {
     private static void requireExistingConfigRoot(Environment environment) {
         String root = environment.getProperty(CONFIG_ROOT_PROPERTY, "");
         if (root.isBlank()) {
-            throw new IllegalStateException(
+            throw new StartupRefusal(
                     CONFIG_ROOT_PROPERTY + " is required under the container profile: name the mounted directory");
         }
         if (!isExistingAbsoluteDirectory(root)) {
-            throw new IllegalStateException(CONFIG_ROOT_PROPERTY
+            throw new StartupRefusal(CONFIG_ROOT_PROPERTY
                     + " must name an existing absolute directory under the container profile: is the volume mounted?");
         }
     }
@@ -157,7 +158,7 @@ public class ContainerStartupCheck implements InitializingBean {
 
     private static void refuse(Environment environment, String property, String reason) {
         if (environment.containsProperty(property)) {
-            throw new IllegalStateException(property + " must not be set under the container profile: " + reason);
+            throw new StartupRefusal(property + " must not be set under the container profile: " + reason);
         }
     }
 }

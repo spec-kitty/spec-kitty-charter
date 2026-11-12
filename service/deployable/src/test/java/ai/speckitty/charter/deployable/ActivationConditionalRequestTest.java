@@ -214,7 +214,7 @@ class ActivationConditionalRequestTest {
         assertThat(answer.getStatus()).isEqualTo(400);
         assertThat(JSON.readTree(answer.getContentAsString()).has("code")).isFalse();
         assertThat(JSON.readTree(answer.getContentAsString()).path("detail").asString())
-                .isEqualTo("A write carries If-Match or If-None-Match, not both.");
+                .isEqualTo("The headers If-Match and If-None-Match exclude each other, and the request sends both.");
         assertThat(packs.reads()).isEqualTo(reads);
         assertThat(storedRevision()).isEqualTo(revision);
     }

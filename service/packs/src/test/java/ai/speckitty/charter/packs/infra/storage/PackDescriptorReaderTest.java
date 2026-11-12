@@ -67,11 +67,11 @@ class PackDescriptorReaderTest {
     @Test
     void aNamedMutabilityPolicyRoundTripsThroughTheDescriptorWrite() {
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
-        PackDescriptor named = read(VALID + "active_charter: org-charter.yaml\nmutability_policy: policy.yaml\n");
+        PackDescriptor named = read(VALID + "pack_drg: drg/fragment.yaml\nmutability_policy: policy.yaml\n");
 
         String written = strategy.writeDescriptor(PackDescriptorDso.of(named));
 
-        assertThat(written).endsWith("active_charter: org-charter.yaml\nmutability_policy: policy.yaml\n");
+        assertThat(written).endsWith("pack_drg: drg/fragment.yaml\nmutability_policy: policy.yaml\n");
         assertThat(read(written)).isEqualTo(named);
     }
 
@@ -189,7 +189,6 @@ class PackDescriptorReaderTest {
                 name: spec-kitty-internal
                 pack_level: org
                 requires_core: '>=4.0,<5'
-                active_charter: org-charter.yaml
                 pack_drg: drg/fragment.yaml
                 """);
 
@@ -199,18 +198,15 @@ class PackDescriptorReaderTest {
         assertThat(descriptor.name()).isEqualTo("spec-kitty-internal");
         assertThat(descriptor.declaredLevel()).contains(PackLevel.ORG);
         assertThat(descriptor.requiresCore()).contains(">=4.0,<5");
-        assertThat(descriptor.paths().activeCharter()).contains("org-charter.yaml");
         assertThat(descriptor.paths().packDrg()).contains("drg/fragment.yaml");
     }
 
     @Test
-    void anAbsentOrNullActiveCharterAndPackDrgAreEmpty() {
+    void anAbsentOrNullPackDrgIsEmpty() {
         PackDescriptor absent = read(VALID);
-        PackDescriptor nulls = read(VALID + "active_charter: null\npack_drg: ~\n");
+        PackDescriptor nulls = read(VALID + "pack_drg: ~\n");
 
-        assertThat(absent.paths().activeCharter()).isEmpty();
         assertThat(absent.paths().packDrg()).isEmpty();
-        assertThat(nulls.paths().activeCharter()).isEmpty();
         assertThat(nulls.paths().packDrg()).isEmpty();
     }
 
@@ -229,7 +225,7 @@ class PackDescriptorReaderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"surprise", "accompanies_doctrine_pack"})
+    @ValueSource(strings = {"surprise", "accompanies_doctrine_pack", "active_charter"})
     void aKeyTheSchemaDoesNotDeclareMakesTheDescriptorUnreadableNamingTheKey(String key) {
         read(VALID);
 
@@ -257,7 +253,6 @@ class PackDescriptorReaderTest {
                         "depends_on",
                         "overrides",
                         "requires_core",
-                        "active_charter",
                         "pack_drg",
                         "mutability_policy",
                         "fallback_profile");

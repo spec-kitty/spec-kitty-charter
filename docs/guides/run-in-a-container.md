@@ -113,6 +113,9 @@ Among other checks, the service refuses to start, naming the property, file or d
 - the configuration root is unset or does not exist, or the port is 0.
 - `charter.insecure-no-token` or `charter.project-config-dir` is set.
 
+The refusal is the `Description` of Spring Boot's `APPLICATION FAILED TO START` block in the log: one line that names
+the setting and the fix, with no stack trace (#454). The process exits with status 1.
+
 ## Registering packs
 
 Registration is off by default. These settings switch it on and name where packs may come from. Set them as env vars or

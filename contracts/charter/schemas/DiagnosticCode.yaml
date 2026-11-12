@@ -11,12 +11,15 @@ description: >-
   reads it. prompt_slot_not_empty: an unversioned pack descriptor keeps legacy text between paired prompt-slot
   markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is listed in the
   diagnostics of the result of a succeeded registration; the effective-prompt read's diagnostics arrive with the
-  phase-2 mission (#438).
+  phase-2 mission (#438). file_not_held: a file of the registered tree that is not pack content (a file-kinds
+  exclusion names it, or it is Markdown that no rule models), so the service does not hold it; the diagnostic's detail
+  names the file and the rule's reason, and the stored pack is the registered tree less these files (#451).
 type: string
 enum:
   - pack_level_missing
   - pack_unknown_key
   - prompt_slot_not_empty
+  - file_not_held
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Diagnostic.java
   symbol: Diagnostic.Code

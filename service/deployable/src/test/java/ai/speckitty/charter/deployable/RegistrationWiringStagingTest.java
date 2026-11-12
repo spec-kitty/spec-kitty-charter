@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.infra.api.RegistrationProperties;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
@@ -33,7 +34,7 @@ class RegistrationWiringStagingTest {
     @Test
     void registrationSwitchedOnWithoutAConfigRootDoesNotStart() {
         assertThatThrownBy(() -> wiring.registrationStagingRoot(new RegistrationProperties(true, null), noRoot))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(StartupRefusal.class)
                 .hasMessageContaining("charter.config-root")
                 .hasMessageContaining("charter.registration.enabled");
     }
@@ -66,7 +67,7 @@ class RegistrationWiringStagingTest {
             assertThatThrownBy(() ->
                             wiring.registrationStagingRoot(new RegistrationProperties(true, directory), rootAt(root)))
                     .as("charter.registration.staging-dir=%s", directory)
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(StartupRefusal.class)
                     .hasMessageContaining("charter.registration.staging-dir");
         }
     }
@@ -79,7 +80,7 @@ class RegistrationWiringStagingTest {
             assertThatThrownBy(() -> wiring.registrationStagingRoot(
                             new RegistrationProperties(true, Path.of(directory)), rootAt(root)))
                     .as("charter.registration.staging-dir=%s", directory)
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(StartupRefusal.class)
                     .hasMessageContaining("/proc, /sys or /dev");
         }
     }

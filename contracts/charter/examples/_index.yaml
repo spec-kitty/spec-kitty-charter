@@ -30,6 +30,9 @@ files:
   - EffectiveArtifactRead.directive.yaml
   - EffectiveArtifactList.first-page.yaml
   - EffectiveGraph.one-edge.yaml
+  - PackDocumentRead.yaml
+  - PackDocumentRead.markdown.yaml
+  - CharterRefusal.pack_document_not_found.yaml
   - PackRegistration.stored.yaml
   - PackRegistrationStatus.accepted.yaml
   - PackRegistrationStatus.succeeded.yaml

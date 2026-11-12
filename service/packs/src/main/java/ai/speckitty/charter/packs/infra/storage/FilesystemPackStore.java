@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -142,7 +143,7 @@ final class FilesystemPackStore {
      * @param assetFiles the asset files, in path order
      * @param templates the templates, in path order
      * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
-     * @param document the pack document ({@code pack.md}) when the pack has a readable one (#260)
+     * @param document the pack document ({@code README.md}) when the pack has a readable one (#260)
      */
     record PackRead(
             PackDescriptorDso descriptor,
@@ -417,7 +418,7 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The pack document, when it reads (#260): a {@code pack.md} that is not UTF-8, that the Markdown codec refuses or
+     * The pack document, when it reads (#260): a {@code README.md} that is not UTF-8, that the Markdown codec refuses or
      * that breaks the {@code pack-document} structure schema is a violation on its file, and the read holds no
      * document.
      */
@@ -719,8 +720,15 @@ final class FilesystemPackStore {
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
+            // The refusal names why, in the store's wording: the parse failure, or each schema violation (an
+            // undeclared key such as the retired active_charter named), so the author sees what to fix (FR-010).
             case FileRead.Unreadable<PackDescriptorDso> bad ->
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + id.value() + " cannot be read");
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "pack.yaml of " + id.value() + " cannot be read: "
+                                + violationsOf(bad).stream()
+                                        .map(PackElementViolation::reason)
+                                        .collect(Collectors.joining("; ")));
             case FileRead.Absent<PackDescriptorDso> absent ->
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
         };
@@ -912,7 +920,7 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Writes the pack document in place at {@code pack.md}, replacing the file when it is there (#260).
+     * Writes the pack document in place at {@code README.md}, replacing the file when it is there (#260).
      *
      * @param id the pack
      * @param text the document's canonical Markdown text ({@link PackDocumentMarkdown#toWritableText})
