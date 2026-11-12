@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01M77655Q0ER8WFTZS82S8898S",
-  "materialized_at": "2026-11-12T06:12:10.080244+00:00",
+  "event_count": 9,
+  "last_event_id": "01M776992DYA4CWVFX29JAPS6C",
+  "materialized_at": "2026-11-12T06:14:24.589664+00:00",
   "mission_number": "",
   "mission_slug": "effective-step-and-action-context-01M774HB",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 8
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
@@ -73,6 +73,13 @@
       "lane": "planned",
       "last_event_id": "01M77655Q0ER8WFTZS82S8898S",
       "last_transition_at": "2026-11-12T06:12:10.080244+00:00"
+    },
+    "WP09": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M776992DYA4CWVFX29JAPS6C",
+      "last_transition_at": "2026-11-12T06:14:24.589664+00:00"
     }
   }
 }
