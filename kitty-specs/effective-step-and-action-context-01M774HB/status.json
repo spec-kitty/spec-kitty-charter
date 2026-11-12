@@ -190,7 +190,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -201,7 +201,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "EffectivePromptQuery (pure) + ClosureView.effectivePrompt: stored prompt at the merged winner's place of action:M/s (R8) read via WinnerSource.stepPrompt/PackCompanionFiles under the closure fingerprint check; slots from that pack's PromptFacts in declaration order; fragments of in-force winning copies with sole target the step, ordered level/packName/id by code point (d5); prompt_slot_not_empty per text-holding slot (OD-7/8); NFR-002 visit counts at 1k/2k (one step and spread) <= 2.5. Out-of-map: ClosureView, ClosureQueries (5-arg @Autowired ctor with PackCompanionFiles), ClosureViewTest (example-pack SC-001 pin). Gates: :packs:test (4914, 0 fail), spotlessCheck, checkstyleMain/Test, HexagonalArchitectureTest green.",
-        "Cycle 2: NFR-002 count now visits each edge enhancersOf reads (gate test e4f1217eb red first; reviewer's unmemoized mutation fails both ratios ~4.0 and the gate, real ~2.0); STALE_INPUT fixture + twin on effectivePrompt (07b2ed924, red under local removal of checkUnchanged); 4-arg ClosureQueries ctor removed, callers moved; missing pack name throws IllegalStateException. :packs:test 4917/0 fail, :profiles-edge:test 111/0, spotless+checkstyle green, full :deployable:test 1740/0."
+        "Cycle 2: NFR-002 count now visits each edge enhancersOf reads (gate test e4f1217eb red first; reviewer's unmemoized mutation fails both ratios ~4.0 and the gate, real ~2.0); STALE_INPUT fixture + twin on effectivePrompt (07b2ed924, red under local removal of checkUnchanged); 4-arg ClosureQueries ctor removed, callers moved; missing pack name throws IllegalStateException. :packs:test 4917/0 fail, :profiles-edge:test 111/0, spotless+checkstyle green, full :deployable:test 1740/0.",
+        "Review cycle 2 passed. Issue 1 (NFR-002 count): enhancersOf counts each edge once per pack; the planted un-memoized rescan fails 3 tests (ratio ~4.0). Issue 2 (STALE_INPUT): ClosureViewGovernanceTest pins it with a twin; dropping checkUnchanged from stepPrompt fails it. 4-arg ClosureQueries constructor removed; missing pack name throws. Green: :packs 4917 (4 pre-existing symlink skips), :activations 889, :profiles-edge 111, :deployable 1740 (Spring boots on the @Autowired 5-arg constructor); spotless/checkstyle/javadoc green. Commits signed, no trailer or model name. Shared-file note: ClosureView (WP05-owned), ClosureQueries, ClosureViewTest, ClosureViewGovernanceTest, ForeignArtifactReadTest, ProfileGovernanceCorpusTest and PacksProfileSourceTest are edited out-of-map and recorded in the commits; WP07 should rebase onto lane-f."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
