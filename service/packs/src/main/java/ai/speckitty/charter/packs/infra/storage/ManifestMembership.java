@@ -74,7 +74,8 @@ final class ManifestMembership {
      * The derived manifest of the pack stored in a directory, as {@code store} loads it: the one assembly the store's
      * whole-pack load, its registration check and its write share, with its own bindings and companion rules, so the
      * lists name exactly the artifacts that load holds. A file the load does not hold (a read violation, a step
-     * enhancement withheld for a repeated stem) is not listed.
+     * enhancement withheld for a repeated stem) is not listed. The strict load ({@link WholePackStore#load}) and this
+     * tolerant one must hold the same artifacts, so the registration check and the stamp never derive different lists.
      *
      * @param directory the pack's directory
      * @param store the whole-pack store that reads it
@@ -89,7 +90,9 @@ final class ManifestMembership {
 
     /**
      * Derives the manifest of the pack stored in a directory, stamps its derived fields from the files there, and
-     * writes it to {@code pack-manifest.yaml}, replacing the manifest the directory held or creating it.
+     * writes it to {@code pack-manifest.yaml}, replacing the manifest the directory held or creating it. The lists
+     * come from the tolerant load of {@link #derivedAt}, which must hold the same artifacts as the strict load the
+     * registration check runs, so the two derivations never split.
      *
      * @param directory the pack's directory, a staged copy the caller owns
      * @param store the whole-pack store that reads it ({@link #derivedAt})
