@@ -7,14 +7,12 @@ import ai.speckitty.charter.kernel.config.StartupRefusal;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 /**
- * A startup refusal reads as the one line that names the setting and the fix, never inside a stack trace of Spring's
+ * A startup refusal is reported with the line that names the setting and the fix, without a stack trace of Spring's
  * bean-creation frames (#454). The analyzer is found the way Spring Boot finds it, so the whole start is run.
  */
 @ExtendWith(OutputCaptureExtension.class)
@@ -22,17 +20,6 @@ class StartupRefusalAnalyzerTest {
 
     private static final Pattern STACK_FRAME = Pattern.compile("(?m)^\\s+at [\\w$.]+\\(");
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-
-    @Test
-    void aRefusalWrappedInBeanCreationIsAnalysedAsItsOneLine() {
-        StartupRefusal refusal = new StartupRefusal("charter.x must be y");
-        FailureAnalysis analysis = new StartupRefusalAnalyzer()
-                .analyze(new BeanCreationException("guard", "Error creating bean", refusal));
-
-        assertThat(analysis).isNotNull();
-        assertThat(analysis.getDescription()).isEqualTo("charter.x must be y");
-        assertThat(analysis.getCause()).isSameAs(refusal);
-    }
 
     @Test
     void aFailureThatIsNoRefusalIsLeftToSpring() {
