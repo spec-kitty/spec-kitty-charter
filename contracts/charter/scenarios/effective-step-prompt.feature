@@ -548,7 +548,8 @@ Feature: The effective prompt of a step is the prompt in force with the fragment
   Scenario: Research R10 - a closure whose enhancement in force names a slot the prompt in force does not declare is 500 before the 304
     C38 on the prompt read: proj replaces software-dev and its plan prompt with one that declares no slot, and a-3 puts
     spdd-plan in force, so the read is refused 500 prompt_slot_missing, also against If-None-Match: *. The twin, a-4,
-    differs only in not selecting spdd-plan, and answers proj's prompt, with no slot.
+    differs only in not selecting spdd-plan, and answers proj's prompt, with no slot. The broken slot does not mask the
+    409: research is held by a-3 but not in force, so its prompt read is 409 mission_type_not_in_force, never the 500.
     Given the project pack "proj" with the file "pack.yaml":
       """
       pack_id: 01M774HB00000000000000PR0J
@@ -597,6 +598,9 @@ Feature: The effective prompt of a step is the prompt in force with the fragment
     Then the response status is 500
     And the problem code is "prompt_slot_missing"
     And the field at "/detail" contains "spdd:reasons-block"
+    When I GET "/activations/a-3/mission-types/research/actions/gather/prompt" with the header "If-None-Match": "*"
+    Then the response status is 409
+    And the problem code is "mission_type_not_in_force"
     When I GET "/activations/a-4/mission-types/software-dev/actions/plan/prompt"
     Then the response status is 200
     And the field at "/prompt" is the file "missions/software-dev/steps/plan.prompt.md" of the pack "proj"

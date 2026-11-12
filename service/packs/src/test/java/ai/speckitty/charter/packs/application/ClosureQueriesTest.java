@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,7 @@ class ClosureQueriesTest {
             }
 
             @Override
-            public String fingerprintOf(java.util.Collection<String> packNames) {
+            public String fingerprintOf(Collection<String> packNames) {
                 return "scoped:" + packNames;
             }
         });
@@ -139,7 +140,7 @@ class ClosureQueriesTest {
             }
 
             @Override
-            public String fingerprintOf(java.util.Collection<String> packNames) {
+            public String fingerprintOf(Collection<String> packNames) {
                 return "scoped:"
                         + new java.util.TreeMap<>(contents)
                                 .entrySet().stream()
@@ -252,7 +253,7 @@ class ClosureQueriesTest {
             }
 
             @Override
-            public String fingerprintOf(java.util.Collection<String> packNames) {
+            public String fingerprintOf(Collection<String> packNames) {
                 return "scoped:"
                         + configured.stream()
                                 .map(pack -> pack.id().value())
