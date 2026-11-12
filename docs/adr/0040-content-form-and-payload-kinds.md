@@ -3,11 +3,12 @@ title: "ADR-0040: A file-kind rule declares its content form, and asset payloads
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
 updated: 2026-11-12T00:00:00Z
-decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates); file-kinds.yaml gains an ignored section and the text form is reworded (2026-11-11, #451, #432)
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01) and 2026-11-11 (accepted 2026-11-11, #382); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates); file-kinds.yaml gains an ignored section and the text form is reworded (2026-11-11, #451, #432); decision 1 amended by ADR-0074 (2026-11-12, the payload's Content-Type)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:
+  - adr/0074-the-remaining-cutover-reads-and-their-paths
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
   - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
   - adr/0039-a-kind-binding-can-carry-companion-files
@@ -299,6 +300,10 @@ Four facts force a decision:
    `files` rule naming `bytes` still fails.)*
    *(Amended 2026-11-11, #432: `text` exists as a companion form, a skill body's; no rule may name it. See the
    amendment under Status.)*
+   *(Amended 2026-11-12, [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decision 11: the payload read of an asset,
+   `…/artifacts/asset/{assetId}/payload`, answers the asset's `mime` as its `Content-Type` when it is a well-formed
+   `type/subtype`, and `application/octet-stream` when it is not. The store still never chooses a content form by
+   `mime`.)*
 2. **Files with no schema have their own section, `payloads`.** A payload rule names `match`,
    `kind` and `content_form`, all required. It is consulted only when no `files` and no
    `exclusions` rule matches, so it overlaps them by design and the first match counts; no two

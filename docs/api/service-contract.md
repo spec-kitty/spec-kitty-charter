@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -11,6 +11,7 @@ related:
   - changelog/2026-11-07-a-pack-registration
   - adr/0002-contract-source-of-record
   - adr/0018-action-context-read-and-seam-access-surface
+  - adr/0074-the-remaining-cutover-reads-and-their-paths
   - conformance/divergence-register
   - api/compatibility
 audience:
@@ -257,7 +258,11 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Step contracts and their gate bindings | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100) | `specify_cli` step-contract repositories | Answered per pack by `getPackArtifact` (`mission_step_contract`): the steps, delegations and gates as stored, linked to the mission type and the step they bind. Under an activation by the literal `getEffectiveMissionStepContract` |
 | Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Partly built: the profile and its governance are read (`getPackAgentProfile`, `getEffectiveAgentProfile`). The governance is lineage-walked: `specializes_from` ancestors come first as entries a client follows, then what the profile and its ancestors `require`, `suggest` and cite in the vocabulary. The field-merge resolution (`resolve_profile`, root to leaf) is not done: the body answered is the stored leaf body, and the question stays with [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) |
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | The effective activation sets are built (PR B and PR C): `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph` and `getEffectiveActionContext`. The status commands' own output is not part of the service |
-| The other reads (expected-artifact manifests, assets, glossary packs, pack skills, model routing, override policy, pack pins, the kind taxonomy) | [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) to [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
+| The other reads (expected-artifact manifests, the kind taxonomy) | [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
+| Assets (R11), glossary contexts and terms (R12), pack skills (R13) | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105), [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106), [#107](https://github.com/spec-kitty/spec-kitty-charter/issues/107) | `?kind=` and a per-kind list (`…/artifacts/asset`, `…/skill`, `…/glossary`); a literal item read per kind; `…/artifacts/asset/{assetId}/payload`; `…/artifacts/glossary/{contextId}/terms/{termId}`; each with its activation twin | **Decided 2026-11-12, slice A** ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 2 to 4). The glossary takes ADR-0049's shape, replacing `glossary-pack`; skill bodies are held as a `text` companion since [#432](https://github.com/spec-kitty/spec-kitty-charter/issues/432). Projecting skills into a harness's commands is core-side, not a read. The paths are decisions 9 to 14 |
+| Model-task routing (R14) | [#108](https://github.com/spec-kitty/spec-kitty-charter/issues/108) | the routing catalog, as pack content | **Decided 2026-11-12: a contract operation, in the cutover** (ADR-0074 decision 5). The catalog moves into a pack. How it is built (its shape, and whether the service also evaluates a task against it) is decision 8 |
+| Override and pack policy (R15) | [#109](https://github.com/spec-kitty/spec-kitty-charter/issues/109) | `listEffectiveArtifacts` (`policy`), `getActivationSkippedReport` (`overridden`, `overrideNotApplied`) | **Served** (PRs #427, #448; the policy file of [ADR-0063](/adr/0063-pack-mutability-policy-file/) in PR #398; ADR-0074 decision 6) |
+| Built-in pin, manifest freshness, snapshot fingerprint (R16) | [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110) | none: a write concern | **Re-scoped 2026-11-12** (ADR-0074 decision 7): the pin and the fingerprint are core's vendoring code. #110 is now manifest membership and restamping after every write, in slice B, recorded as an ADR-0042 amendment when built |
 | SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. *Amended 2026-11-08: the blocks move into the opt-in `spdd` pack as prompt fragments of step enhancements, filling slots the built-in prompts declare ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The prompt read then returns the base text and the active fragments per slot; the contract change is made with R5 and R9, not here.* |
 
 The merged `/offering/mission-types` read of R5, and R18, are deferred to the minor that brings merge, activation and cascade
@@ -284,9 +289,8 @@ the conventions in [Development conventions](/development/).
 | `GET` | `/packs/{packId}` | `getPack` | One pack: its identity, version, level and revision, with the revision as the `ETag`. **Built** | — |
 | `GET` | `/packs/{packId}/doc` | `getPackDocument` | The pack's document, its `README.md`: `Accept: text/markdown` answers the held file, `application/json` a `PackDocumentRead` (title, body, links); one `ETag`, the pack revision, and `Vary: Accept`; `304` on `If-None-Match`; `406` for an `Accept` that names neither; `404 pack_document_not_found` when the pack holds none. **Built** | [#451](https://github.com/spec-kitty/spec-kitty-charter/issues/451) |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
-| `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
-| `GET` | `/packs/{packId}/assets` | `listPackAssets` | The pack's asset paths | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
-| `GET` | `/packs/{packId}/assets/{path}` | `getPackAsset` | One asset file | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
+| `GET` | `/packs/{packId}/presets`, `/packs/{packId}/presets/{presetId}` | `listPackPresets`, `getPackPreset` | The pack's activation presets, and one preset in the ADR-0042 shape with `mustHave` per item. **Decided 2026-11-12, slice A, P1** (ADR-0074 decision 1) | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}/artifacts/asset`, `…/asset/{assetId}`, `…/asset/{assetId}/payload` | `listPackAssets`, `getPackAsset`, `getPackAssetPayload` | The pack's assets, one asset's descriptor, and its bytes with the asset's `mime` as `Content-Type` (`application/octet-stream` when it is malformed). **Decided 2026-11-12, slice A** (ADR-0074 decisions 2, 9 to 11 and 13); replaces ADR-0019's `/assets` and `/assets/{path}` | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
 | `POST` | `/packs` | `registerPackFromSource` | Register a pack from an https archive, a git repository or a local path, replacing the pack held under the target `packId`. **Built**: `202` with a status and a `Location` | — |
 | `PUT` | `/packs/{packId}` | `registerPackFromArchive` | Register a whole pack from an archive, replacing the pack held. **Built**: `202` with a status and a `Location` | — |
 | `GET` | `/pack-registrations/{registrationId}` | `getPackRegistration` | The status of a registration: `pending`, `running`, `succeeded` or `refused`. **Built** | — |
@@ -295,9 +299,10 @@ the conventions in [Development conventions](/development/).
 | `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
 
 The API root and the artifact reads of ADR-0019 D2 are built (see [Built surface](#built-surface)); other
-artifact kinds, such as the glossary terms of a glossary pack
-([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)), join the served kinds of
-`listPackArtifacts` and `getPackArtifact` when their reads are decided. ADR-0019 names `{packId}` as the pack's
+artifact kinds join the served kinds of `listPackArtifacts` and `getPackArtifact` as they are built: `asset`,
+`skill` and the glossary contexts of
+[#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106) are decided for slice A
+([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/)). ADR-0019 names `{packId}` as the pack's
 `pack_id` ULID; the built reads accept the identifier a pack is configured under or its declared `pack_id`. The
 merged offering of the packs in force is the `/offering` resource below.
 
