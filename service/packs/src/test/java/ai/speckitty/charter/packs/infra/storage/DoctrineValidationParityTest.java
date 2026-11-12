@@ -104,6 +104,11 @@ class DoctrineValidationParityTest {
 
     static Stream<Arguments> rulesetCases() {
         List<String> allowance = List.of("spikes may skip it");
+        return Stream.of(directiveCases(allowance), styleguideCases(), paradigmCases(), tacticCases())
+                .flatMap(rows -> rows);
+    }
+
+    private static Stream<Arguments> directiveCases(List<String> allowance) {
         return Stream.of(
                 // directive: schema_version, title, intent, enforcement conditional
                 row(
@@ -125,7 +130,11 @@ class DoctrineValidationParityTest {
                         "directive: lenient-adherence without an explicit allowance",
                         () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, List.of()),
                         () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, allowance),
-                        "A lenient-adherence directive needs at least one explicit allowance."),
+                        "A lenient-adherence directive needs at least one explicit allowance."));
+    }
+
+    private static Stream<Arguments> styleguideCases() {
+        return Stream.of(
                 // styleguide: schema_version, title, principles cardinality, patterns / anti_patterns non-empty when
                 // present
                 row(
@@ -152,7 +161,11 @@ class DoctrineValidationParityTest {
                         "styleguide: present but empty anti-patterns",
                         () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of())),
                         () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of(ANTI))),
-                        "A styleguide's anti-patterns, when present, must not be empty."),
+                        "A styleguide's anti-patterns, when present, must not be empty."));
+    }
+
+    private static Stream<Arguments> paradigmCases() {
+        return Stream.of(
                 // paradigm: schema_version, name, summary
                 row(
                         "paradigm: schema version other than 1.0",
@@ -168,7 +181,11 @@ class DoctrineValidationParityTest {
                         "paradigm: blank summary",
                         () -> paradigm("1.0", "N", ""),
                         () -> paradigm("1.0", "N", "S"),
-                        "A paradigm needs a summary that is not blank."),
+                        "A paradigm needs a summary that is not blank."));
+    }
+
+    private static Stream<Arguments> tacticCases() {
+        return Stream.of(
                 // tactic (retrofit): steps cardinality, name
                 row(
                         "tactic: no step",
