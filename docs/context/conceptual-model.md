@@ -2,7 +2,7 @@
 title: Conceptual model
 description: What packs, the charter, its two levers, artifacts, mission types, profiles, values and the active charter mean, before any field, file or endpoint.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -289,9 +289,10 @@ A derived pack may **[pin](/glossary/governance/#role-pin)** the profile that fi
 step that names that role gets the pinned profile, whatever the mission type. Profiles that
 specialize the pinned one also fit, so an org can refine it further, for example into reviewers for
 different parts of its structure. A pin restricts the candidates to the pinned profile and its
-specializations, and it is applied before the selection order runs. Journey 08 reads it this way;
-ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) does not say, and records this
-reading as an open question. Example: an org that wants every review done by a human pins the
+specializations, and it is applied before the selection order runs; when candidates are still tied,
+the pinned profile wins. With no pin, a tie returns every equal candidate and the client picks
+(ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decisions 8 and 9, ruled
+2026-11-12). Example: an org that wants every review done by a human pins the
 reviewer role to a locked human-reviewer profile; no step changes.
 
 ### The operator

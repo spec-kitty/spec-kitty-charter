@@ -26,6 +26,23 @@ On 2026-11-12 a planning Op (planner profile, `01M78GFNS4DY0J1E5XMPAVJNQC`) revi
 [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) (PR #529) decided the remaining cutover
 reads. The operator approved the slices below and their order on 2026-11-12.
 
+## Rulings of 2026-11-12
+
+Taken after the review, so that slices F and G can be planned:
+
+- **#515 is re-scoped to edge endpoints.** Charter has no `<kind>_reference.type` field since ADR-0064, so
+  the question becomes which source and target kinds each relation may connect. In the domain, a
+  relationship is built through constructors typed by its endpoint kinds (generics), so an invalid
+  combination does not compile; a graph document that authors one is refused when read or written. Recorded
+  as [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 13.
+- **Ties** (ADR-0032 decision 8): the profile selection read returns every equal candidate, and the client
+  picks.
+- **Role pin** (ADR-0032 decision 9): a pin narrows the candidates to the pinned profile and its
+  specializations before the selection order runs, and settles a tie when the pinned profile is among the
+  tied.
+- **Launched:** #110 (B close-out), the slice B half of #367 (D) and slice A2 run now, ahead of the order
+  below, beside slice C.
+
 ## Where the slices stand
 
 | Slice | State | What is left |
@@ -95,7 +112,7 @@ Slice C and slice D run first. After them, in this order:
 | #112 | R18: kind taxonomy facts, decide and shape |
 | #514 | Retire the `mission_step_contract` kind (moved from core #3422) |
 | #520 | The mission-type schema: steps are the single authoring surface (moved from core #2721) |
-| #515 | Rule on the reference-enum vocabulary (moved from core #2976) |
+| #515 | Each relation names the source and target kinds it may connect, typed in the domain (ruled 2026-11-12, ADR-0064 decision 13) |
 | #533 | The step-contract read under an activation: moot once #514 lands, or reshaped by it |
 
 - **Why now:** R18 is one of the last undecided reads in epic #94, and core's scope migration moved these
@@ -103,7 +120,8 @@ Slice C and slice D run first. After them, in this order:
   together.
 - **Depends on:** A2, so the taxonomy includes `asset`, `skill` and `glossary`. Open-packs follows the
   schema; the drift watch shows when it has.
-- **Size:** M to L. **Risks:** #515 needs an operator ruling first. Retiring a kind removes contract
+- **Size:** M to L. **Risks:** #515 sets each relation's endpoint kinds, and open-packs edges that break them
+  are refused, which the drift watch will show. Retiring a kind removes contract
   operations, which is a `### Breaking` CHANGELOG entry in a 0.x minor.
 
 ### 4. G: agent profile resolution (#538), medium
@@ -119,8 +137,8 @@ Slice C and slice D run first. After them, in this order:
   fallback profile and the roles.
 - **Depends on:** F (steps and their roles come from the mission-type schema). Open-packs retires
   `human-in-charge` (open-packs #139) once #512 lands.
-- **Size:** M. **Risk:** ADR-0032's two open questions (ties, and how a role pin combines with the order)
-  need operator rulings before #42 is planned.
+- **Size:** M. **Risk:** low on the rules: ADR-0032's open questions were ruled on 2026-11-12 (decisions 8
+  and 9: a tie returns every equal candidate; a role pin filters first and settles a tie it is part of).
 
 ### After G
 

@@ -2,7 +2,7 @@
 title: "ADR-0069: A profile has one primary role and optional alt-roles"
 description: "role and alt-roles replace the positional roles list outright, and role fit is the first, strict key of profile selection: a primary-role match outranks every alt-role match."
 doc_status: active
-updated: 2026-11-10T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-10'
 type: ADR
@@ -56,14 +56,15 @@ canonical: the new shape replaces the old one with no deprecation window.
 3. **The rules a schema cannot state** (an alt-role repeating `role`) run in one validator that the reader reports as
    a schema violation at the item (`/alt-roles/<n>`), so the author gets a pointer, and that also guards the entity.
 4. **Selection order** (ADR-0032 decision 3, made explicit). For the role a step asks for:
-   1. A role pin, when a derived pack declares one, narrows the candidates first (ADR-0032 decision 4; how a pin and
-      the order combine stays ADR-0032's open question).
+   1. A role pin, when a derived pack declares one, narrows the candidates first to the pinned profile and its
+      specializations (ADR-0032 decisions 4 and 9).
    2. **Role fit is the outer key, and strict.** A profile whose `role` is the asked role (*primary fit*) outranks
       every profile that lists it in `alt-roles` (*alt fit*), whatever their specialization or specificity. A profile
       that fits neither, and a profile whose role is `generic`, is not a candidate.
    3. **Within one fit tier, specialization**: the most specialized profile that fits the context, by
       `specializes_from` lineage, then by specificity (`routing-priority`, higher first).
-   4. **Ties** are ADR-0032's open question, unchanged.
+   4. **Ties**: the pinned profile wins a tie it is part of; otherwise every equal candidate is returned and the
+      client picks (ADR-0032 decisions 8 and 9, ruled 2026-11-12).
    5. **No candidate**: the fallback in force (ADR-0068), marked `fallback`; none: `no_profile_matched`.
 
    This replaces the weighted score: role is no longer a weight beside the others but decides first. A profile id is

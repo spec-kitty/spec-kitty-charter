@@ -185,7 +185,7 @@ An agent profile: a named specialist who fills one primary role and optionally a
 
 ## Profile selection
 
-How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin overrides the choice for its role.
+How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin narrows the candidates to the pinned profile and its specializations, and settles a tie it is part of; any other tie returns every equal candidate.
 
 **Meta:**
 
