@@ -72,7 +72,7 @@ class ActionContextWalkOwnershipTest {
         return context.entries().stream().map(entry -> entry.urn().toString()).toList();
     }
 
-    // ---- pass 3, project-wide ----------------------------------------------------------------------------------------
+    // ---- pass 3, project-wide ---------------------------------------------------------------------------------------
 
     @Test
     void anUnscopedDirectiveInForceIsListedProjectWideOnEveryActionOfAMissionTypeInForce() {
@@ -108,7 +108,7 @@ class ActionContextWalkOwnershipTest {
                 .containsExactly("directive:X");
     }
 
-    // ---- pass 2, the mission type ------------------------------------------------------------------------------------
+    // ---- pass 2, the mission type -----------------------------------------------------------------------------------
 
     @Test
     void aDirectiveScopedByTheMissionTypeIsListedThroughTheMissionType() {
@@ -153,12 +153,12 @@ class ActionContextWalkOwnershipTest {
                 .containsExactly(tuple(urn("directive:O"), Pass.MISSION_TYPE));
     }
 
-    // ---- owners, held or not (squad A6) ------------------------------------------------------------------------------
+    // ---- owners, held or not (squad A6) -----------------------------------------------------------------------------
 
     @Test
     void aScopeEdgeFromAnUnheldSourceStillOwnsItsTarget() {
-        Closure owned = closure(
-                List.of("action:qa/x", "directive:Q"), edge("action:qa/x", RelationType.SCOPE, "directive:Q"));
+        Closure owned =
+                closure(List.of("action:qa/x", "directive:Q"), edge("action:qa/x", RelationType.SCOPE, "directive:Q"));
 
         assertThat(listed(effective(owned, 0, ActionContextWalkOwnershipTest::everything)))
                 .as("the closure holds no mission_type:qa, so action:qa/x is no held step; it still owns Q")
@@ -174,7 +174,7 @@ class ActionContextWalkOwnershipTest {
                 .isEqualTo(Pass.PROJECT);
     }
 
-    // ---- the roots ---------------------------------------------------------------------------------------------------
+    // ---- the roots --------------------------------------------------------------------------------------------------
 
     @Test
     void onlyDirectivesTacticsAndParadigmsAreRoots() {
@@ -197,8 +197,7 @@ class ActionContextWalkOwnershipTest {
                 .containsExactly("directive:W", "paradigm:Pa", "procedure:P2", "tactic:Ta");
         assertThat(entry(context, "procedure:P2"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
-                .containsExactly(
-                        Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")), urn("directive:W"), 2);
+                .containsExactly(Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")), urn("directive:W"), 2);
     }
 
     @Test
@@ -225,7 +224,8 @@ class ActionContextWalkOwnershipTest {
                 edge(START, RelationType.SCOPE, "directive:D"),
                 edge("mission_type:M", RelationType.SCOPE, "directive:D"));
 
-        assertThat(effective(closure, 0, ActionContextWalkOwnershipTest::everything).entries())
+        assertThat(effective(closure, 0, ActionContextWalkOwnershipTest::everything)
+                        .entries())
                 .extracting(Entry::urn, Entry::pass, Entry::via)
                 .containsExactly(tuple(urn("directive:D"), Pass.ACTION, urn(START)));
     }
@@ -297,7 +297,7 @@ class ActionContextWalkOwnershipTest {
         assertThat(effective(closure, 0, inForce("mission_type:M")).entries()).isEmpty();
     }
 
-    // ---- suggestions -------------------------------------------------------------------------------------------------
+    // ---- suggestions ------------------------------------------------------------------------------------------------
 
     @Test
     void aSuggestionCandidateCarriesThePassThatListsIt() {
@@ -332,7 +332,7 @@ class ActionContextWalkOwnershipTest {
                 .containsExactly(Step.SUGGESTS, Pass.PROJECT, Optional.of(urn("directive:W")), 2);
     }
 
-    // ---- a mission type not in force ---------------------------------------------------------------------------------
+    // ---- a mission type not in force --------------------------------------------------------------------------------
 
     @Test
     void aMissionTypeNotInForceAnswersNoEntryInEveryPass() {
@@ -348,7 +348,7 @@ class ActionContextWalkOwnershipTest {
         assertThat(context.suggestionCandidates()).isEmpty();
     }
 
-    // ---- the offering form -------------------------------------------------------------------------------------------
+    // ---- the offering form ------------------------------------------------------------------------------------------
 
     @Test
     void theOfferingWalkIsUnchanged() {
@@ -390,7 +390,7 @@ class ActionContextWalkOwnershipTest {
         assertThat(walk.walkEffective("M", "a", 2, predicate)).isEqualTo(walk.walk("M", "a", 2, predicate));
     }
 
-    // ---- the evidence of 2026-11-12 (spec, section "Evidence") -------------------------------------------------------
+    // ---- the evidence of 2026-11-12 (spec, section "Evidence") ------------------------------------------------------
 
     private static final List<String> IMPLEMENT_SCOPED = List.of(
             "DIRECTIVE_001",
@@ -524,7 +524,8 @@ class ActionContextWalkOwnershipTest {
                 List.of("beta", "gamma", "alpha"),
                 List.of("gamma", "alpha", "beta"),
                 List.of("gamma", "beta", "alpha"));
-        Context first = new ActionContextWalk(threePacks(orders.getFirst(), false).merged())
+        Context first = new ActionContextWalk(
+                        threePacks(orders.getFirst(), false).merged())
                 .walkEffective("M", "a", 1, predicate);
 
         assertThat(listed(first))
@@ -542,7 +543,8 @@ class ActionContextWalkOwnershipTest {
         assertThat(first.suggestionCandidates())
                 .extracting(SuggestionCandidate::urn, SuggestionCandidate::pass)
                 .containsExactly(tuple(urn("tactic:BOut"), Pass.PROJECT));
-        ActionContextWalk walk = new ActionContextWalk(threePacks(orders.getFirst(), false).merged());
+        ActionContextWalk walk =
+                new ActionContextWalk(threePacks(orders.getFirst(), false).merged());
         for (int read = 0; read < 100; read++) {
             assertThat(walk.walkEffective("M", "a", 1, predicate)).isEqualTo(first);
         }
@@ -556,7 +558,7 @@ class ActionContextWalkOwnershipTest {
         }
     }
 
-    // ---- NFR-003: bounded cost ---------------------------------------------------------------------------------------
+    // ---- NFR-003: bounded cost --------------------------------------------------------------------------------------
 
     /**
      * An index of {@code size} in-force directives, a quarter each scoped by the action, by the mission type, by another

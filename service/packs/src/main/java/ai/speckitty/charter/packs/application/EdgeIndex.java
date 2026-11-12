@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -20,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReferen
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -111,6 +114,12 @@ public final class EdgeIndex implements ComposeResolver {
 
     /** The steps the closure holds, worked out once on first use: the index never changes, so neither does the set. */
     private volatile @Nullable Set<Urn> heldSteps;
+
+    /** The scope owners per target, worked out once on first use: the index never changes, so neither do they. */
+    private volatile @Nullable Map<Urn, Set<Urn>> scopeOwners;
+
+    /** The URNs the closure holds, worked out once on first use, in URN order. */
+    private volatile @Nullable List<Urn> heldUrns;
 
     /** The place of the version in force per URN under a layer merge; empty for an index that is not merged. */
     private final Map<Urn, Place> winners;
@@ -278,6 +287,79 @@ public final class EdgeIndex implements ComposeResolver {
             heldSteps = steps;
         }
         return steps;
+    }
+
+    /**
+     * The scope owners of each artifact (research R2, squad A6; C-003): for each target URN, the sources of the
+     * authored {@code scope} edges of this index whose source is an {@code action} or a {@code mission_type} node,
+     * held or not. An edge counts whether or not its source is a held step, whether or not any pack holds its source,
+     * and whether or not its target resolves to a held place, because ownership is where the author placed the
+     * artifact and turning a mission type off must not make what it scopes project-wide. In a merged index the edges
+     * of a version a later level replaced are gone (C19), so they own nothing. Worked out once, in one pass over the
+     * edges, on first use.
+     *
+     * @return the owners by target, each set in URN order; a target no action and no mission type scopes is absent
+     */
+    Map<Urn, Set<Urn>> scopeOwners() {
+        Map<Urn, Set<Urn>> owners = scopeOwners;
+        if (owners == null) {
+            Map<Urn, Set<Urn>> collected = new HashMap<>();
+            outgoing.values()
+                    .forEach(edges -> edges.stream()
+                            .filter(edge -> edge.type() == RelationType.SCOPE)
+                            .filter(edge -> edge.from().kind() == NodeKind.ACTION
+                                    || edge.from().kind() == NodeKind.MISSION_TYPE)
+                            .forEach(edge -> collected
+                                    .computeIfAbsent(edge.to(), ignored -> new TreeSet<>())
+                                    .add(edge.from())));
+            Map<Urn, Set<Urn>> frozen = new HashMap<>();
+            collected.forEach((target, sources) -> frozen.put(target, Collections.unmodifiableSet(sources)));
+            owners = Collections.unmodifiableMap(frozen);
+            scopeOwners = owners;
+        }
+        return owners;
+    }
+
+    /**
+     * Whether no action and no mission type scopes the artifact ({@link #scopeOwners()}): a project-wide artifact
+     * when it is in force.
+     *
+     * @param artifact the artifact
+     * @return whether it has no scope owner
+     */
+    boolean isProjectWide(Urn artifact) {
+        return !scopeOwners().containsKey(artifact);
+    }
+
+    /**
+     * Whether the mission type is one of the artifact's scope owners ({@link #scopeOwners()}).
+     *
+     * @param artifact the artifact
+     * @param missionType the mission type, {@code mission_type:<id>}
+     * @return whether an authored {@code scope} edge runs from the mission type to the artifact
+     */
+    boolean isScopedBy(Urn artifact, Urn missionType) {
+        return scopeOwners().getOrDefault(artifact, Set.of()).contains(missionType);
+    }
+
+    /**
+     * Every URN a place of the closure holds, in URN order, each once: in a merged index, the URNs whose version in
+     * force a pack holds. Worked out once on first use.
+     *
+     * @return the held URNs
+     */
+    List<Urn> heldUrns() {
+        List<Urn> urns = heldUrns;
+        if (urns == null) {
+            Set<Urn> held = new TreeSet<>();
+            closure.forEach(pack -> pack.definedArtifacts().stream()
+                    .flatMap(defined -> Urn.parse(defined).stream())
+                    .filter(urn -> wins(new Place(idOf(pack), urn)))
+                    .forEach(held::add));
+            urns = List.copyOf(held);
+            heldUrns = urns;
+        }
+        return urns;
     }
 
     /** Whether the closure holds the step ({@link StepHolding#heldByClosure}). */

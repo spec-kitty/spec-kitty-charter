@@ -579,7 +579,6 @@ class EdgeIndexTest {
 
         assertThat(merged.scopeOwners()).isSameAs(merged.scopeOwners());
         assertThat(merged.heldUrns()).isSameAs(merged.heldUrns());
-        assertThat(merged.heldUrns())
-                .containsExactly(urn("directive:D"), urn("mission_type:M"), urn("tactic:T"));
+        assertThat(merged.heldUrns()).containsExactly(urn("directive:D"), urn("mission_type:M"), urn("tactic:T"));
     }
 }

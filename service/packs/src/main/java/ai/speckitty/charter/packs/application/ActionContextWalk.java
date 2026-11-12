@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -20,6 +21,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The action-context walk (ADR-0018 D2 and D3, rule E16): from {@code action:<missionType>/<action>} over the merged
@@ -50,6 +52,10 @@ import java.util.function.Supplier;
  * <p>The walk reads the merged index it was built over and nothing else (NFR-007). Entries are sorted by full URN
  * string (ADR-0018 D3), whatever step listed them, and no answer depends on the order of the closure, the iteration or
  * the writing of an edge.
+ *
+ * <p>{@link #walk} is the offering form (ADR-0018 D1): the five steps alone. {@link #walkEffective} is the effective
+ * form, which applies the ownership rule (research R1, Decision Moment {@code 01M774HQ8N5EVYDRTP16MBJCN3}) in three
+ * {@link Pass passes} over one listing.
  */
 public final class ActionContextWalk {
 
@@ -98,6 +104,20 @@ public final class ActionContextWalk {
     }
 
     /**
+     * The rule of the ownership rule that brings an entry into the effective action context (research R1 and R3): the
+     * pass of {@link #walkEffective} that listed it. The passes run in this order over one listing, and the first pass
+     * that reaches an artifact lists it.
+     */
+    public enum Pass {
+        /** The action's own five steps (ADR-0018 D2, as built); the offering form lists nothing else. */
+        ACTION,
+        /** The five steps seeded by the in-force directives, tactics and paradigms the action's mission type scopes. */
+        MISSION_TYPE,
+        /** The five steps seeded by the in-force directives, tactics and paradigms no action and no mission type scopes. */
+        PROJECT
+    }
+
+    /**
      * One artifact the walk lists, and how it was reached.
      *
      * @param urn the artifact
@@ -109,6 +129,9 @@ public final class ActionContextWalk {
      * @param reason the {@code reason} of that edge; empty likewise
      * @param enhancedBy the enhancers in force that enhance it, in URN order
      * @param enhances the artifacts in force it enhances, in URN order
+     * @param pass the pass that listed it; {@link Pass#ACTION} for every entry of the offering form
+     * @param root the root of its pass whose steps listed it, the entry itself for a root; empty for
+     *     {@link Pass#ACTION}, present for the other passes
      */
     public record Entry(
             Urn urn,
@@ -118,7 +141,9 @@ public final class ActionContextWalk {
             Optional<String> when,
             Optional<String> reason,
             List<Urn> enhancedBy,
-            List<Urn> enhances) {
+            List<Urn> enhances,
+            Pass pass,
+            Optional<Urn> root) {
 
         /**
          * Checks and copies the fields.
@@ -131,6 +156,9 @@ public final class ActionContextWalk {
          * @param reason the suggests edge's reason
          * @param enhancedBy the enhancers in force
          * @param enhances the artifacts it enhances
+         * @param pass the pass that listed it
+         * @param root the root of its pass
+         * @throws IllegalArgumentException when the root is present for {@link Pass#ACTION} or absent for another pass
          */
         public Entry {
             Objects.requireNonNull(urn, "urn");
@@ -140,6 +168,36 @@ public final class ActionContextWalk {
             Objects.requireNonNull(reason, "reason");
             enhancedBy = List.copyOf(Objects.requireNonNull(enhancedBy, "enhancedBy"));
             enhances = List.copyOf(Objects.requireNonNull(enhances, "enhances"));
+            Objects.requireNonNull(pass, "pass");
+            Objects.requireNonNull(root, "root");
+            if (root.isPresent() == (pass == Pass.ACTION)) {
+                throw new IllegalArgumentException(
+                        "an entry of pass " + pass + " has a root exactly when its pass is" + " not ACTION: " + urn);
+            }
+        }
+
+        /**
+         * An entry the action's own steps list ({@link Pass#ACTION}, no root): the offering form's every entry.
+         *
+         * @param urn the artifact
+         * @param step the step
+         * @param via the parent
+         * @param hops the path length
+         * @param when the suggests edge's condition
+         * @param reason the suggests edge's reason
+         * @param enhancedBy the enhancers in force
+         * @param enhances the artifacts it enhances
+         */
+        public Entry(
+                Urn urn,
+                Step step,
+                Urn via,
+                int hops,
+                Optional<String> when,
+                Optional<String> reason,
+                List<Urn> enhancedBy,
+                List<Urn> enhances) {
+            this(urn, step, via, hops, when, reason, enhancedBy, enhances, Pass.ACTION, Optional.empty());
         }
 
         /**
@@ -163,8 +221,11 @@ public final class ActionContextWalk {
      * @param hops {@code hops(via) + 1}
      * @param when the {@code when} of that edge; empty when it states none
      * @param reason the {@code reason} of that edge; empty when it states none
+     * @param pass the pass whose {@code suggests} step first reached it (research R3); {@link Pass#ACTION} for the
+     *     offering form and for the profile walk, which run one pass
      */
-    public record SuggestionCandidate(Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason) {
+    public record SuggestionCandidate(
+            Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason, Pass pass) {
 
         /**
          * Checks the fields.
@@ -174,12 +235,27 @@ public final class ActionContextWalk {
          * @param hops the path length
          * @param when the edge's condition
          * @param reason the edge's reason
+         * @param pass the pass that reached it
          */
         public SuggestionCandidate {
             Objects.requireNonNull(urn, "urn");
             Objects.requireNonNull(via, "via");
             Objects.requireNonNull(when, "when");
             Objects.requireNonNull(reason, "reason");
+            Objects.requireNonNull(pass, "pass");
+        }
+
+        /**
+         * A candidate the action's own steps reach ({@link Pass#ACTION}).
+         *
+         * @param urn the suggested artifact
+         * @param via the suggesting artifact
+         * @param hops the path length
+         * @param when the edge's condition
+         * @param reason the edge's reason
+         */
+        public SuggestionCandidate(Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason) {
+            this(urn, via, hops, when, reason, Pass.ACTION);
         }
     }
 
@@ -238,6 +314,9 @@ public final class ActionContextWalk {
     private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing((Link link) -> !link.held())
             .thenComparing(link -> link.when().orElse(""))
             .thenComparing(link -> link.reason().orElse(""));
+
+    /** The kinds a root of the mission-type and project passes may have (research R3). */
+    private static final Set<NodeKind> ROOT_KINDS = Set.of(NodeKind.DIRECTIVE, NodeKind.TACTIC, NodeKind.PARADIGM);
 
     /** The relations that reach an artifact for certain: the cascade's, but {@code suggests} and {@code enhances}. */
     private static final Set<RelationType> HARD_RELATIONS =
@@ -323,6 +402,106 @@ public final class ActionContextWalk {
     }
 
     /**
+     * Walks the action's effective context (FR-008, rule E16 as amended): the ownership rule (research R1, Decision
+     * Moment {@code 01M774HQ8N5EVYDRTP16MBJCN3}) in three passes over one listing (research R3).
+     *
+     * <ol>
+     *   <li>{@link Pass#ACTION}: the five steps from {@code action:<missionType>/<action>}, exactly as {@link #walk}
+     *       runs them;
+     *   <li>{@link Pass#MISSION_TYPE}: the roots are the in-force directives, tactics and paradigms that
+     *       {@code mission_type:<missionType>} scopes; each root no earlier step listed is listed by the scope step,
+     *       its {@code via} the mission type and its {@code hops} 1, and steps 2 to 5 run from the roots;
+     *   <li>{@link Pass#PROJECT}: the roots are the in-force directives, tactics and paradigms that no action and no
+     *       mission type scopes ({@link EdgeIndex#isProjectWide}, research R2: every authored {@code scope} edge from
+     *       an action or a mission type owns its target, held or not); each is listed as in pass 2, its {@code via} the
+     *       action node, and steps 2 to 5 run from the roots.
+     * </ol>
+     *
+     * <p>An artifact an earlier step or pass listed is never listed again and still seeds the later steps, a root
+     * included (ADR-0018 D3 within the walk): the first reach wins, vocabulary included, so a root the action's
+     * vocabulary step listed is listed through the action and still seeds its own pass. A pass root's hops are seeded
+     * explicitly (1, from the pass's own origin), never asked of a node the walk has not reached (squad A7). An
+     * artifact one scoped only by other actions or other mission types is not a root. A suggestion candidate carries the
+     * pass whose {@code suggests} step first reached it. Entries are sorted by full URN string, and each brings its
+     * enhancers in force (E12), whatever pass listed it.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param depth the number of {@code suggests} hops, at least 0
+     * @param inForce whether an artifact is in force: the effective set, which holds no step
+     * @return what applies to the action; no entry and no candidate when the mission type is not in force
+     * @throws CharterRefusal as {@link #walk} refuses the names
+     * @throws IllegalArgumentException when {@code depth} is negative
+     */
+    public Context walkEffective(String missionType, String action, int depth, Predicate<Urn> inForce) {
+        Objects.requireNonNull(inForce, "inForce");
+        if (depth < 0) {
+            throw new IllegalArgumentException("depth counts suggests hops and is at least 0: " + depth);
+        }
+        Urn type = requireKnown(missionType, action);
+        Urn start = Urn.action(missionType, action);
+        if (!inForce.test(type)) {
+            return new Context(start, false, List.of(), List.of(), List.of(), List.of());
+        }
+        Engine<Step> run = new Engine<>(start, inForce, outgoing);
+        List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
+        run.expand(scoped, Step.REQUIRES, Integer.MAX_VALUE);
+        List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
+        run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
+        run.expand(run.listedUrns(), Step.VOCABULARY, 1);
+        List<Urn> typeRoots = new ArrayList<>();
+        List<Urn> projectRoots = new ArrayList<>();
+        for (Urn held : merged.heldUrns()) {
+            if (ROOT_KINDS.contains(held.kind()) && inForce.test(held)) {
+                if (merged.isScopedBy(held, type)) {
+                    typeRoots.add(held);
+                } else if (merged.isProjectWide(held)) {
+                    projectRoots.add(held);
+                }
+            }
+        }
+        runPass(run, Pass.MISSION_TYPE, typeRoots, type, depth);
+        runPass(run, Pass.PROJECT, projectRoots, start, depth);
+        List<Entry> entries = run.listed().stream()
+                .map(item -> new Entry(
+                        item.urn(),
+                        item.step(),
+                        item.via(),
+                        item.hops(),
+                        suggestsOnly(item, item.when()),
+                        suggestsOnly(item, item.reason()),
+                        enhancersOf(item.urn(), inForce),
+                        enhancedTargetsOf(item.urn(), inForce),
+                        run.passOf(item.urn()),
+                        run.rootOf(item.urn())))
+                .toList();
+        return new Context(
+                start,
+                true,
+                entries,
+                run.suggestions(),
+                enhancersOf(start, inForce),
+                enhancedTargetsOf(start, inForce));
+    }
+
+    /**
+     * One pass of the effective form after the first: lists the roots no earlier step listed, at one hop from the
+     * pass's origin, then runs steps 2 to 5 from every root, listed now or earlier. The vocabulary step takes one hop
+     * from the roots and from what this pass's steps 2 to 4 listed.
+     */
+    private static void runPass(Engine<Step> run, Pass pass, List<Urn> roots, Urn origin, int depth) {
+        run.beginPass(pass, roots, Step.SCOPE, origin);
+        List<Urn> required = run.expand(roots, Step.REQUIRES, Integer.MAX_VALUE);
+        List<Urn> suggested = run.expand(roots, Step.SUGGESTS, depth);
+        List<Urn> requiredOfSuggested = run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
+        Set<Urn> worded = new TreeSet<>(roots);
+        worded.addAll(required);
+        worded.addAll(suggested);
+        worded.addAll(requiredOfSuggested);
+        run.expand(worded, Step.VOCABULARY, 1);
+    }
+
+    /**
      * The action context lists the words of a {@code suggests} edge only (E12); the engine carries the words of every
      * edge, for the profile walk.
      */
@@ -400,6 +579,11 @@ public final class ActionContextWalk {
         private final Map<Urn, Integer> hops = new HashMap<>();
         private final Map<Urn, Link> refused = new TreeMap<>();
         private final Set<Urn> unheld = new HashSet<>();
+        private final Map<Urn, Pass> passes = new HashMap<>();
+        private final Map<Urn, Urn> rootOf = new HashMap<>();
+        private final Map<Urn, Pass> refusedPasses = new HashMap<>();
+        private Pass pass = Pass.ACTION;
+        private Set<Urn> roots = Set.of();
 
         /**
          * A walk from the start node.
@@ -421,6 +605,51 @@ public final class ActionContextWalk {
 
         List<Urn> listedUrns() {
             return List.copyOf(listed.keySet());
+        }
+
+        /**
+         * Starts a pass of the effective form ({@link ActionContextWalk#walkEffective}): what the steps list from now on
+         * belongs to {@code next}, and each root no earlier step listed is listed by {@code step} from {@code origin}
+         * at one hop. The hops are seeded explicitly: the origin is never asked its own, which the walk may not have
+         * reached (squad A7). A root an earlier step listed keeps its entry and still seeds the pass.
+         *
+         * @param next the pass
+         * @param passRoots the pass's roots
+         * @param step the step that lists a root
+         * @param origin the root's parent: the node the pass starts from
+         */
+        void beginPass(Pass next, Collection<Urn> passRoots, S step, Urn origin) {
+            pass = next;
+            roots = Set.copyOf(passRoots);
+            for (Urn root : new TreeSet<>(passRoots)) {
+                if (!listed.containsKey(root)) {
+                    hops.put(root, 1);
+                    passes.put(root, next);
+                    rootOf.put(root, root);
+                    listed.put(root, new Listed<>(root, step, origin, 1, Optional.empty(), Optional.empty(), true));
+                }
+            }
+        }
+
+        /** The pass that listed the node; {@link Pass#ACTION} for a walk that never began another. */
+        Pass passOf(Urn urn) {
+            return passes.getOrDefault(urn, Pass.ACTION);
+        }
+
+        /** The root of the pass that listed the node; empty for {@link Pass#ACTION}. */
+        Optional<Urn> rootOf(Urn urn) {
+            return Optional.ofNullable(rootOf.get(urn));
+        }
+
+        /**
+         * The root of the current pass the node belongs to: itself for a root, the root it was listed under for a node
+         * the current pass listed; {@code null} for any other node, and for every node of {@link Pass#ACTION}.
+         */
+        private @Nullable Urn ownRoot(Urn urn) {
+            if (roots.contains(urn)) {
+                return urn;
+            }
+            return passes.get(urn) == pass ? rootOf.get(urn) : null;
         }
 
         /** What the steps listed, in URN order (ADR-0018 D3). */
@@ -447,7 +676,8 @@ public final class ActionContextWalk {
         List<Urn> expand(Collection<Urn> seeds, S step, int layers) {
             Set<Urn> blocked = new HashSet<>(seeds);
             blocked.add(start);
-            Map<Urn, Integer> reach = reachOf(seeds, step.relation(), layers, blocked);
+            Map<Urn, Urn> origins = new HashMap<>();
+            Map<Urn, Integer> reach = reachOf(seeds, step.relation(), layers, blocked, origins);
             TreeMap<Integer, Set<Urn>> byHops = new TreeMap<>();
             reach.keySet().stream()
                     .filter(listed::containsKey)
@@ -468,7 +698,7 @@ public final class ActionContextWalk {
                     Urn node = next.getKey();
                     reached.add(node);
                     if (!listed.containsKey(node)) {
-                        list(node, step, next.getValue());
+                        list(node, step, next.getValue(), origins);
                         fresh.add(node);
                         if (next.getValue().held() && reach.containsKey(node)) {
                             byHops.computeIfAbsent(hopsOf(node), ignored -> new TreeSet<>())
@@ -484,12 +714,20 @@ public final class ActionContextWalk {
          * The nodes the step may walk from, each with its distance from the nearest seed: breadth-first from the seeds
          * through held edges to nodes in force, for at most {@code layers} layers. A seed is at 0; a node listed with
          * {@code held} false is not among them, and neither is a target only a dangling edge reaches.
+         *
+         * <p>In a pass with roots, {@code origins} receives the root each reached node is walked under: its own
+         * ({@link #ownRoot}) when it has one, else the one of the first node, in URN order, of the layer before that
+         * reaches it. A node an earlier pass listed is walked through under the root that reaches it now.
          */
-        private Map<Urn, Integer> reachOf(Collection<Urn> seeds, RelationType relation, int layers, Set<Urn> blocked) {
+        private Map<Urn, Integer> reachOf(
+                Collection<Urn> seeds, RelationType relation, int layers, Set<Urn> blocked, Map<Urn, Urn> origins) {
             Map<Urn, Integer> reach = new HashMap<>();
             List<Urn> frontier =
                     new TreeSet<>(seeds).stream().filter(this::expandable).toList();
-            frontier.forEach(seed -> reach.put(seed, 0));
+            frontier.forEach(seed -> {
+                reach.put(seed, 0);
+                inherit(origins, seed, null);
+            });
             for (int layer = 0; layer < layers && !frontier.isEmpty(); layer++) {
                 Set<Urn> next = new TreeSet<>();
                 for (Urn parent : frontier) {
@@ -502,6 +740,7 @@ public final class ActionContextWalk {
                                 && expandable(target)
                                 && inForce.test(target)) {
                             next.add(target);
+                            inherit(origins, target, origins.get(parent));
                         }
                     }
                 }
@@ -510,6 +749,15 @@ public final class ActionContextWalk {
                 frontier = List.copyOf(next);
             }
             return reach;
+        }
+
+        /** Records the node's root: its own when it has one, else the one handed down; the first record stands. */
+        private void inherit(Map<Urn, Urn> origins, Urn node, @Nullable Urn handedDown) {
+            Urn own = ownRoot(node);
+            Urn root = own != null ? own : handedDown;
+            if (root != null) {
+                origins.putIfAbsent(node, root);
+            }
         }
 
         /**
@@ -540,7 +788,8 @@ public final class ActionContextWalk {
         /**
          * Records, for the report of refused suggestions, a {@code suggests} edge of a suggests layer whose target is
          * out of force: the one with the fewest hops, then the smallest parent and edge, is kept per target. It is
-         * recorded while the layer is walked, whether or not the target is reached by another edge later.
+         * recorded while the layer is walked, whether or not the target is reached by another edge later. A target an
+         * earlier pass recorded keeps that pass's record: the first pass that reaches it wins.
          */
         private void recordRefusedSuggestion(
                 Link link, RelationType relation, Set<Urn> visited, Comparator<Link> byParent) {
@@ -548,9 +797,11 @@ public final class ActionContextWalk {
                     && link.relation() == RelationType.SUGGESTS
                     && !link.target().equals(start)
                     && !visited.contains(link.target())
-                    && !inForce.test(link.target())) {
+                    && !inForce.test(link.target())
+                    && refusedPasses.getOrDefault(link.target(), pass) == pass) {
                 refused.merge(
                         link.target(), link, (first, second) -> byParent.compare(first, second) <= 0 ? first : second);
+                refusedPasses.put(link.target(), pass);
             }
         }
 
@@ -574,7 +825,8 @@ public final class ActionContextWalk {
                             candidate.getValue().source(),
                             hopsOf(candidate.getValue().source()) + 1,
                             candidate.getValue().when(),
-                            candidate.getValue().reason()))
+                            candidate.getValue().reason(),
+                            refusedPasses.getOrDefault(candidate.getKey(), Pass.ACTION)))
                     .toList();
         }
 
@@ -583,9 +835,15 @@ public final class ActionContextWalk {
             return !unheld.contains(urn);
         }
 
-        private void list(Urn urn, S step, Link parent) {
+        private void list(Urn urn, S step, Link parent, Map<Urn, Urn> origins) {
             int reached = hopsOf(parent.source()) + 1;
             hops.put(urn, reached);
+            passes.put(urn, pass);
+            Urn own = ownRoot(parent.source());
+            Urn root = own != null ? own : origins.get(parent.source());
+            if (root != null) {
+                rootOf.put(urn, root);
+            }
             if (!parent.held()) {
                 unheld.add(urn);
             }
