@@ -68,6 +68,7 @@ roles are extensible by packs, and an explicit selection order.
    pinned profile, whatever the mission type. Profiles that specialize the pinned one
    (`specializes_from`) still fit, so an org can refine a pinned profile further. Pins live in the
    pack-root policy file ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
+   How a pin combines with the selection order is decision 9.
 5. **`operator` is a role like any other.** A profile can be marked as performed by a human; a
    step that asks for `operator` (or a pinned role) can be served by a human.
 6. **Mission types and profiles are their own concepts**, each with its own domain model, loosely
@@ -91,6 +92,7 @@ selection order of decision 3 runs, so a more specialized refinement of the pinn
 win. When candidates are still tied after the order, and the pinned profile is among them, the pinned
 profile is the answer. With no pin, a tie is answered by decision 8. This is the reading the
 [conceptual model](/context/conceptual-model/#role-pin) and journey 08 recorded, plus the tie-break.
+This ruling does not cover the case where no pinned candidate fits the context.
 
 ## Consequences
 
