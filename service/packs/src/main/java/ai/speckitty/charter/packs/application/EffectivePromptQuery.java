@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.Diagnostic;
@@ -247,7 +249,7 @@ public final class EffectivePromptQuery {
             }
             PackCompositionFacts held = factsOf(facts, winner.packId());
             if (!enhancersByPack
-                    .computeIfAbsent(winner.packId(), pack -> enhancersOf(held, step))
+                    .computeIfAbsent(winner.packId(), pack -> enhancersOf(held, step, visits))
                     .contains(urn)) {
                 return;
             }
@@ -261,10 +263,20 @@ public final class EffectivePromptQuery {
         });
     }
 
-    /** The step enhancements a pack writes whose sole {@code enhances} target is the step, read once from its edges. */
-    private static Set<Urn> enhancersOf(PackCompositionFacts held, Urn step) {
+    /**
+     * The step enhancements a pack writes whose sole {@code enhances} target is the step, read once per pack from its
+     * edges; each edge read is a visit, so a rescan per winner shows in the count (NFR-002).
+     */
+    private static Set<Urn> enhancersOf(PackCompositionFacts held, Urn step, Visits visits) {
+        List<Relationship> enhances = new ArrayList<>();
+        for (Relationship edge : held.edges()) {
+            visits.visit();
+            if (edge.type() == RelationType.ENHANCES) {
+                enhances.add(edge);
+            }
+        }
         Set<Urn> enhancers = new HashSet<>();
-        EnhancementCompose.stepEnhancementsOf(held.edges()).stream()
+        EnhancementCompose.stepEnhancementsOf(enhances).stream()
                 .filter(enhancement -> enhancement.target().equals(step))
                 .forEach(enhancement -> enhancers.add(enhancement.enhancement()));
         return enhancers;
