@@ -171,7 +171,8 @@ class OverrideSourceRuleTest {
 
     @Test
     void validateModeReportsTheEdgeAsOneBlockingFindingAtItsGraphDocumentAndTheTwinPasses() {
-        List<PackFinding> findings = PackPolicy.judge(validated("template:t.md")).findings();
+        List<PackFinding> findings =
+                PackPolicy.judge(validated("template:t.md")).findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE);

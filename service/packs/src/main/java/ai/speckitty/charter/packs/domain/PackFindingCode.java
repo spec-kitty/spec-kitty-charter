@@ -55,7 +55,13 @@ public enum PackFindingCode {
      * condition as {@link #PROMPT_SLOT_NOT_EMPTY}, a warning for the legacy descriptor (ADR-0066 version gate). Two
      * codes for one condition because a severity is fixed per code.
      */
-    PROMPT_SLOT_NOT_EMPTY_UNVERSIONED(Severity.WARNING);
+    PROMPT_SLOT_NOT_EMPTY_UNVERSIONED(Severity.WARNING),
+    /**
+     * An {@code overrides} edge of a graph document whose source is not of an activatable kind (FR-014,
+     * {@link OverrideSourceRule}). It is the violation code {@value OverrideSourceRule#CODE} of the graph document at
+     * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {

@@ -107,10 +107,10 @@ put:
         enhances edge (prompt_fragment_invalid), is refused as well: an enhancement only adds and has exactly one
         enhances edge, and the detail names the enhancement. This is the one operation that answers the code as the
         problem's own, 422 in place of the 500 of a read; nothing is written.
-        An overrides edge whose from is not of an activatable kind (a template or an asset; FR-014) is refused
-        validation_failed with one violation at /from whose code is overrides_source_not_activatable: such an artifact
-        has no activation state and cannot stand in for another. Nothing is written. The same edge from an activatable
-        kind is unchanged.
+        An overrides edge whose from is not of an activatable kind (a template, an asset, a guard or a lifecycle;
+        FR-014) is refused validation_failed with one violation at /from whose code is overrides_source_not_activatable:
+        such an artifact has no activation state and cannot stand in for another. Nothing is written. The same edge
+        from an activatable kind is unchanged.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

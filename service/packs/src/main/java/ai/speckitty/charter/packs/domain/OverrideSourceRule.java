@@ -24,11 +24,15 @@ import java.util.Optional;
  *
  * <p>The load records each fault as a violation of the pack at its graph document, so a registration lists one
  * violation per edge inside {@code 422 validation_failed} and a composing read answers {@code 500 pack_unreadable}
- * naming the document. The relationship write refuses the edge before anything is written. It is pure.
+ * naming the document. Validate mode reports the same fault as a blocking finding at the document. The relationship
+ * write refuses the edge before anything is written. It is pure.
  */
 public final class OverrideSourceRule {
 
-    /** The violation code of a refused edge, at registration, on the relationship write and at load. */
+    /**
+     * The violation code of a refused edge, at registration, on the relationship write and at load: the one spelling,
+     * which {@link PackPolicy#violationKind} answers for {@link PackFindingCode#OVERRIDES_SOURCE_NOT_ACTIVATABLE}.
+     */
     public static final String CODE = "overrides_source_not_activatable";
 
     private OverrideSourceRule() {}
