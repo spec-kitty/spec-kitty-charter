@@ -29,6 +29,9 @@
       "last_event_id": "01M78Y6H9KE1H3JMZDHM90D55X",
       "last_transition_at": "2026-11-12T22:31:34.963140+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: listPackPresets/getPackPreset, presets link, scenarios and registry rows; contracts:check, packs:test, deployable:test green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 10173,
