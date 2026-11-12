@@ -110,7 +110,7 @@ Starting from the root, a client creates an activation and selects an artifact b
 | FR-008 | A client can read a skill by its literal item path. A prompt skill's answer carries its body exactly as held; a wrapper skill carries none. | Approved | [build] | no |
 | FR-009 | Every asset and skill read of FR-003 to FR-008 has an activation twin at the same suffix, answering the version in force. For an asset, that is the closure's holder after layer override. For a skill, it is the activation's in-force resolution. | Approved | [build] | no |
 | FR-010 | An asset or skill that no pack (in a pack read) or no pack of the closure (under an activation) holds is refused `404 artifact_not_found`; an effective read answers a held artifact whatever its state, as `getEffectiveArtifact` does. A missing pack is `pack_not_found`, and a missing activation is `activation_not_found`. | Approved | [build] | no |
-| FR-011 | The templated item read does not render `asset` or `skill`; it refuses with `kind_not_found` and names the literal path. `?kind=asset` and `?kind=skill` list them in both trees. | Approved | [build] | no |
+| FR-011 | In a pack, `?kind=asset` and `?kind=skill` list them, and the templated item read does not render them: it refuses with `kind_not_found` and names the literal path. Under an activation, `?kind=skill` lists skills; assets are not resolved, so the effective list does not take `asset`, and the held assets are listed at the asset collection path (ADR-0074 decision 9, amended 2026-11-12). The templated effective item read refuses `asset` with `kind_not_found`. | Approved | [build] | no |
 | FR-012 | A client can read an in-force artifact's references under an activation, at the same suffix as the pack read (#532). | Approved | [build] | no |
 | FR-013 | An activation's answer links `self`, `offering`, the write relations `edit`, `delete`, `select`, `exclude` and `apply-preset` (templated by kind and id where the path needs them), and each built effective read (#409). | Approved | [build] | no |
 | FR-014 | No answer links an operation the contract reserves. Every relation an answer carries is in the relation table, marked "In the contract". | Approved | [ratchet] | no |
@@ -138,7 +138,7 @@ Starting from the root, a client creates an activation and selects an artifact b
 ## Success Criteria *(mandatory)*
 
 - SC-001: A client reads every preset, asset (with its bytes) and skill of a registered pack through the contract alone, with no pack-file access. All 15 functional requirements are proven by passing contract scenarios. — [build] · no-op passable: no
-- SC-002: A guard runner holding `asset:<id>` gets the in-force bytes under an activation in one read. — [build] · no-op passable: no
+- SC-002: A guard runner holding `asset:<id>` gets that asset's own in-force payload under an activation in one read. — [build] · no-op passable: no
 - SC-003: From the root, a client creates an activation and selects an artifact by following links only, with zero hand-built URLs. — [build] · no-op passable: no
 - SC-004: #98, #105, #107, #532 and #409 are closed by the pull request, and #536 is ticked. — [build] · no-op passable: no
 
@@ -156,6 +156,7 @@ Starting from the root, a client creates an activation and selects an artifact b
 
 ## Assumptions
 
+- Amended after the post-plan squad (2026-11-12): FR-011 states the activation-tree rule for assets (research.md R3 and the ADR-0074 decision 9 amendment), and SC-002 is narrowed to the asset's own payload (an `executable.entry` that names another payload file is out of scope; see the PR's "Not done").
 - Amended at plan (2026-11-12): the effective skill and references twins answer a held artifact whatever its state, following the existing effective item reads (`getEffectiveArtifact`, `getEffectiveAgentProfile`); the spec first said "not in force is 404", which would have made these two reads the only ones to judge state. Recorded in research.md R1.
 
 - The existing effective-read machinery resolves a skill's in-force version (skill is an activatable kind).

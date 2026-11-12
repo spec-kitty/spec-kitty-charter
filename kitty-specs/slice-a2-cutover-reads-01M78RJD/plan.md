@@ -79,76 +79,117 @@ service/activations/…/application/EffectiveReadService.java, PacksSession.java
 docs/api/service-contract.md, docs/development/hypermedia-hateoas.md, docs/adr/0074-… (status note)
 ```
 
-**Structure Decision**: follow the module boundaries the existing reads use. Pack-tree reads live in `:packs` (as directive and toolguide do). Activation-tree reads live in `:activations`, behind `PacksSession`. ArchUnit's onion rules (ADR-0006) stay unchanged.
+**Structure Decision**: presets live in `:packs`; they are pack-only, as `getPackDocument` is. The asset, skill and references reads live in a new edge module, `:artifacts-edge` (R13), because a ring that renders `packs.domain` types under an activation must be able to name both slices, as `:missions-edge` and `:profiles-edge` do. ArchUnit gains the new module's ring rules; the existing rules do not change.
 
 ## Implementation Concern Map
 
+The post-plan brownfield squad (`research/squad-post-plan.md`) changed this map. The main change is that the asset, skill and references reads move to a new edge module (IC-00), and they reuse the existing read seams instead of adding new services.
+
+### IC-00: The `:artifacts-edge` module (R13)
+
+- **Intent**: a new Gradle module, `service/artifacts-edge`, modelled on `:missions-edge`:
+  - packages `ai.speckitty.charter.artifacts.{application,infra.api,infra.packs,infra.activations}`;
+  - registered in `settings.gradle.kts` and `:deployable`;
+  - its rings registered in `HexagonalArchitectureTest`, alongside the missions-edge rules: it names packs only from `infra.packs` and activations only from `infra.activations`, and it is not named back;
+  - a mutation floor group, as missions-edge has.
+- **Proof**: `HexagonalArchitectureTest` and its known-bad fixtures bite on the new rings.
+- **Sequencing/depends-on**: none. It must land before IC-03 to IC-06.
+
 ### IC-01: Presets in a pack (#98, P1)
 
-- **Intent**: `listPackPresets` and `getPackPreset` answer `Pack.presets()` in a `Preset` schema with camel-case `activated<Plural>` lists of `{id, mustHave}`. A pack links `presets`. The description of `preset_not_found` widens to a pack.
-- **Touches**: contract paths, schemas and examples; a new `PresetReadService` plus `PresetsController` in `:packs`; the pack mapper link; `CharterRefusalCode.yaml` text; scenarios.
-- **Proof**: `pack-presets.feature` covers 200 list, 200 item, 404 `preset_not_found`, 404 `pack_not_found` and 500; switch-gate entries are added.
+- **Intent**: `listPackPresets` and `getPackPreset` answer `Pack.presets()` in `Preset` / `PresetList` (R7).
+  - A thin `PresetReadService` in `:packs`, on `ConsistentRead`, with the existing pack check.
+  - A `PresetsController` in `packs.infra.api`.
+  - A pack answer links `presets`.
+  - The `preset_not_found` description widens to a pack.
+- **Touches**: contract paths, schemas and examples; `CharterRefusalCode.yaml` text; the relation table row `presets` (a pack; the offering stays proposed).
+- **Proof**: `pack-presets.feature` covers the 200 list, the 200 item with `mustHave` true and false, `404 preset_not_found`, `404 pack_not_found` and 500. Switch-gate entries are added.
 - **Sequencing/depends-on**: none (first).
 
 ### IC-02: Kind gates and the asset id pattern
 
-- **Intent**: `ASSET` and `SKILL` join `SERVED` and `LISTED` (and so `?kind=` in the pack list), and the `ArtifactKindToken` enum. They stay out of `ITEM_KINDS`: the templated item read refuses them with `kind_not_found` and names the literal path. The asset id gets the kebab pattern in `asset.schema.json` and `AssetIdentifier`, so a pack with a bad id is refused as invalid content.
-- **Touches**: `ArtifactReadService` sets plus `ABSENT` codes (`ARTIFACT_NOT_FOUND`), `ArtifactKindToken.yaml`, `Artifact.yaml` (members `asset` and `skill`, and the kind description), `asset.schema.json`, `AssetIdentifier`, the pinned-set tests (`ArtifactReadServiceTest`, `WireTokenParityTest`, `EffectiveReadServiceArtifactTest`), and a planted fixture for the bad id.
-- **Proof**: unit tests for the sets and the id; a scenario that refuses the bad id at registration; `?kind=asset` and `?kind=skill` list scenarios.
+- **Intent**:
+  - In `ArtifactReadService`, ASSET and SKILL join `SERVED` and `LISTED`.
+  - One `LITERAL_ITEM_KINDS` set (agent_profile, asset, skill), with `ITEM_KINDS` derived as the listed kinds less the literal ones and less `mission_type`. The derivation changes, not only the set, and agent_profile stays last in `SERVED`.
+  - `ABSENT` maps both new kinds to `ARTIFACT_NOT_FOUND`.
+  - `ArtifactRemovalService` gates on an explicit `REMOVABLE` set, today's kinds (R14).
+  - On the activation side, the templated effective item read gates on activatable ∩ listed, so `asset` is `kind_not_found` and named.
+  - `ArtifactKindToken.yaml`, `parameters/ArtifactKind.yaml` and `Artifact.yaml` (members `asset` and `skill`, the kind description) are updated.
+  - Asset id: `asset.schema.json` gets the exact skill pattern, and `AssetIdentifier` is backed by `IdentifierGrammar.isLetterFirstSlug` (R11).
+- **Touches**: the pinned-set tests (`ArtifactReadServiceTest:547-615,778`, `WireTokenParityTest`, `EffectiveReadServiceArtifactTest:57`, `ClosureViewSessionArtifactTest:248`, `ForeignArtifactReadTest:237`), the text of `artifacts.feature:290`, and a planted fixture for a bad asset id.
+- **Proof**:
+  - unit tests for the sets and the id;
+  - the bad id is refused at registration;
+  - `?kind=asset` and `?kind=skill` list in a pack;
+  - a DELETE of an asset or skill answers as today (`kind_not_found`), pinned in `pack-removal.feature`;
+  - the templated effective read of `asset` gives `kind_not_found`.
 - **Sequencing/depends-on**: none. It must land before IC-03 and IC-04.
 
 ### IC-03: Asset reads in a pack (#105)
 
-- **Intent**: `listPackAssets` (`GET …/artifacts/asset`: id, mime, executable), `getPackAsset` (descriptor, with a `payload` link) and `getPackAssetPayload` (bytes).
-  - The payload's `Content-Type` is the mime when it is well-formed `type/subtype` and Spring can parse it, and `application/octet-stream` otherwise.
-  - It carries `X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox`, because the mime is pack-authored.
-  - The ETag is the pack revision.
-- **Touches**: contract, `AssetReadService`, `AssetsController`, `Payload` streaming, and a shared `MediaTypes.wellFormed` (domain) that `PackPolicy.mimeProblem` also uses, so there is one rule, not two.
-- **Proof**: `assets.feature` covers the list, the item, the payload byte equality on a binary fixture (NFR-003), the malformed-mime fallback, the 404s and the headers.
-- **Sequencing/depends-on**: IC-02.
+- **Intent**:
+  - `listPackAssets` gives id, mime and executable.
+  - `getPackAsset` gives the `Artifact` envelope with member `asset` and links `payload` and `collection`.
+  - `getPackAssetPayload` gives the bytes.
+  - The items ride `ForeignArtifactRead.read`. Beside it, `held(pack, kind)` (lists) and `payload(pack, assetId)` (`Pack.assetFiles()` by `asset.path()`, in the same `ConsistentRead`).
+  - The payload is modelled on `getPackDocument` and `PackDocumentETag`: ETag is the pack revision, `If-None-Match` including `*`, 304.
+  - `Content-Type` follows R6's single rule; `nosniff` and the sandbox CSP are declared headers.
+- **Touches**: contract, the `:artifacts-edge` controllers and body mapper, `ForeignArtifactRead`, and the extraction of one domain media-type rule from `PackPolicy.mimeProblem`, with a test that validate findings are unchanged.
+- **Proof**: `assets.feature`:
+  - the list and the item;
+  - the payload equal byte for byte on a binary (PNG) fixture (NFR-003);
+  - the malformed-mime fallback;
+  - 304;
+  - the headers;
+  - the 404s;
+  - a request with `Accept: application/json` on the payload.
+- **Sequencing/depends-on**: IC-00, IC-02.
 
 ### IC-04: Skill reads in a pack (#107)
 
-- **Intent**: `listPackSkills` (id, title, description, form) and `getPackSkill` (the skill's fields, plus `body` for a prompt skill).
-- **Touches**: contract, `SkillReadService`, `SkillsController`, `Skill` schema (`SkillParameter`, `SkillInvocation`, `SkillExpansion` mapped camel case).
-- **Proof**: `skills.feature` covers the list, a prompt skill with its body verbatim, a wrapper skill without one, and the 404s.
-- **Sequencing/depends-on**: IC-02.
+- **Intent**: `listPackSkills` and `getPackSkill` (the `Artifact` envelope with member `skill`: R8's fields, plus `body` for a prompt skill), riding `ForeignArtifactRead`.
+- **Proof**: `skills.feature` covers the list, a prompt skill with its body verbatim, a wrapper skill without a body, and the 404s.
+- **Sequencing/depends-on**: IC-00, IC-02.
 
 ### IC-05: Activation twins of the asset and skill reads
 
-- **Intent**:
-  - **Skill:** the effective list and item, through `EffectiveReadService.artifact(…, SKILL, …)`, with the body as the winner's pack stores it, and state and reason as every effective read gives them.
-  - **Asset:** a new `PacksSession.heldWinner(kind, id)` answers the winner of a non-activatable kind from the packs-side merge (`ClosureView` already merges every kind). `EffectiveAssetRead` carries the activation facts without state and reason, because an asset is not resolved (R2).
-  - **Asset list:** the effective asset list is the closure's held assets after the layer merge.
-  - **Asset payload:** the winner's bytes.
-  - **Conditional reads:** each effective read has an `EffectiveTag` and answers `304`.
-- **Touches**: `PacksSession`, `ClosureViewSession`, `EffectiveReadService`, `EffectiveTag`, new controllers under `:activations` infra api, contract and scenarios.
+- **Skill**:
+  - `listEffectiveSkills`: the closure's skill winners with state and reason, via the existing effective list query filtered to `skill`.
+  - `getEffectiveSkill`: `EffectiveSkillRead`, via `EffectiveReadService.artifact(…, SKILL, …)`. The edge renders the body through the shared mapper, and the pack is read through `infra.packs`.
+- **Asset**:
+  - `listEffectiveAssets`: the closure's held asset winners, from a new held-winners listing for a non-activatable kind on the packs-side merge.
+  - `getEffectiveAsset`: `EffectiveAssetRead` (R2), with the winner from `winnerPackOf` / `effectiveArtifact`.
+  - `getEffectiveAssetPayload`: R15. The winner and fingerprint come from activations; packs reads the bytes against that fingerprint, and a mismatch is `stale_input`.
+- **Shared**: each read gets a new `EffectiveTag.Read` value, so no two URLs share a tag, and answers 304, following the agent-profile precedent.
 - **Proof**: `effective-assets-and-skills.feature`:
-  - a layer override (project over built-in) wins for an asset and its payload;
-  - a skill is answered in force, and also not in force;
-  - `304`;
-  - the 404s: `activation_not_found` and `artifact_not_found`.
+  - a project copy wins over a built-in for an asset and its payload;
+  - a skill is answered both in force and not in force;
+  - 304;
+  - `activation_not_found` and `artifact_not_found`;
+  - a unit test for `stale_input`.
 - **Sequencing/depends-on**: IC-03, IC-04.
 
 ### IC-06: References twin (#532)
 
-- **Intent**: `listEffectiveArtifactReferences` at `/activations/{a}/artifacts/{kind}/{id}/references` answers the winning version's outgoing references, from the merged closure's edge index (all kinds, so a profile's `requires asset:x` is listed). Each reference links `effective-artifact` when its target is a listed kind the closure holds, and links `artifact` to the holder's pack read.
-- **Touches**: `ClosureView` (a references query over `MergedView.edges`), `PacksSession`, `EffectiveReadService`, a controller, contract and scenarios.
-- **Proof**: `effective-references.feature` covers a requires edge, an overridden source (the edges of the winner are answered), and the 404s.
-- **Sequencing/depends-on**: none (it runs beside IC-03 to IC-05).
+- **Intent**: `listEffectiveArtifactReferences` (R10) answers the pack read of the winner's pack, verified against the session fingerprint, with `effective-artifact` links where the closure holds the target. It lives in `:artifacts-edge`.
+- **Proof**: `effective-references.feature`:
+  - a `requires` edge;
+  - an overridden source (the winner's references);
+  - a parity scenario: the same referrer answers the same items in both trees, including an agent profile's field-derived references;
+  - the 404s.
+- **Sequencing/depends-on**: IC-00.
 
 ### IC-07: Activation links (#409)
 
-- **Intent**: `ActivationMapper` adds these links:
+- **Intent**: `ActivationMapper` adds:
   - `offering`;
-  - `edit` (PUT self) and `delete` (DELETE self);
-  - `select`, `unselect`, `exclude` and `include` (templated `{kind}`/`{artifactId}`);
-  - `apply-preset` (templated `{presetId}`, PUT);
+  - `edit` (PUT) and `delete` (DELETE);
+  - `select` and `exclude` (templated, PUT);
+  - `apply-preset` (templated, PUT);
   - `packs`, `graph`, `skipped` and `effective-context` (templated).
 
-  The relation table marks each "In the contract" and drops the `assets` row (ADR-0074 decision 13). Slice C adds `prompt`; it is not touched here.
-- **Touches**: `ActivationMapper`, `Activation.yaml` `_links` description, `hypermedia-hateoas.md`, `root.feature` / a new `activation-links.feature`.
-- **Proof**: a scenario that from the root creates an activation and selects an artifact by links only; `LinkChecks` keeps checking that every link resolves to a built operation.
+  The relation table rewrites the `packs`, `select`, `exclude`, `edit`, `delete`, `skipped`, `effective-context`, `apply-preset` and `offering` rows, adds `payload`, and drops `assets` (ADR-0074 decision 13). The lint ruleset enum follows. Slice C adds `prompt`; this concern does not touch it.
+- **Proof**: `activation-links.feature`, which from the root creates an activation and selects an artifact by links only. `LinkChecks` and `RelationTableParityTest` stay green.
 - **Sequencing/depends-on**: none.
 
 ### IC-08: Contract bookkeeping and docs
@@ -156,12 +197,12 @@ docs/api/service-contract.md, docs/development/hypermedia-hateoas.md, docs/adr/0
 - **Intent**:
   - `switch-gate.yaml` entries for the 13 operations;
   - `every-operation.feature`, `unexpected-failure.feature` and `read-refusals.feature` rows;
-  - change fragments;
+  - change fragments (`### Added`, `### Changed`);
   - `docs/api/service-contract.md` rows;
-  - an ADR-0074 status note (built in this mission, and the R3 reading of decision 9 for assets under an activation);
-  - the `ProfileRoutingTest`-style routing pins for the literal versus templated paths.
-- **Proof**: `SwitchGate`, `ReservedOperationCoverageTest`, `ExampleCoverageTest`, docs checks, `verifyAll`.
-- **Sequencing/depends-on**: rides with each IC. A final WP sweeps.
+  - the ADR-0074 amendment of decision 9 (R3) and the "built" status, and the ADR-0019 annotation;
+  - routing pins in `ActivationRoutingTest` and a pack-tree twin for the literal-versus-templated paths, including `…/asset/{id}/payload` versus `{kind}/{id}/references`.
+- **Proof**: `SwitchGate`, `ReservedOperationCoverageTest`, `ExampleCoverageTest`, the docs checks, `verifyAll`.
+- **Sequencing/depends-on**: rides with each concern. A final WP sweeps.
 
 ## Risks
 

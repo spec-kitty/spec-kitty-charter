@@ -4,19 +4,19 @@ These are wire shapes; `contracts/charter/schemas` is the source of record. All 
 
 | Schema | Members | Source in the domain |
 | --- | --- | --- |
-| `Preset` | `id`; `description`?; `activated<Plural>`? (an array of `PresetItem`) for each activatable kind the file lists; `_links` (`self`, `pack`) | `packs.domain.Preset` |
+| `Preset` | `id`; `description` (required); `activated<Plural>`? (an array of `PresetItem`) for each activatable kind the file lists; `_links` (`self`, `pack`) | `packs.domain.Preset` |
 | `PresetItem` | `id`, `mustHave` | `PresetItem` |
 | `PresetList` | `items`: [`Preset`], `_links` (`self`, `pack`) | `Pack.presets()` |
 | `Asset` | `id`, `mime` (as written), `path`, `title`?, `executable`? | `Asset`, `Executable` |
 | `AssetExecutable` | `runtime`, `minVersion`?, `entry`, `args` | `Executable` |
-| `AssetSummary` | `id`, `mime`, `executable` (boolean), `_links` (`self`, `payload`) | `Asset` |
+| `AssetSummary` | `id`, `mime`, `executable` (boolean), `_links` (`self`) | `Asset` |
 | `AssetList` | `items`: [`AssetSummary`], `_links` | `Pack.assets()` / the closure's held assets |
-| `Skill` | `id`, `title`, `description`, `form`, `triggers`, `parameters`, `invocation`?, `expandsTo`?, `tools`, `body`? | `Skill` and its parts |
+| `Skill` | `schemaVersion`, `id`, `title`, `description`, `form`, `triggers`, `parameters`, `invocation`?, `expandsTo`?, `tools`, `version`?, `maintainers`?, `body`? | `Skill` and its parts |
 | `SkillSummary` | `id`, `title`, `description`, `form`, `_links` | `Skill` |
 | `SkillList` | `items`: [`SkillSummary`], `_links` | `Pack` skills / the closure's winners |
-| `Artifact` (extended) | new members `asset` and `skill` in the one-of | — |
-| `EffectiveAssetRead` | `activationId`, `revision`, `governanceFingerprint`, `kind`, `artifactId`, `packId`, `level`, `asset`, `_links` (`self`, `artifact`, `payload`, `up`) | R2 |
-| `EffectiveSkillRead` | the members of `EffectiveArtifactRead`, plus `skill` | `EffectiveArtifactRead` |
+| `Artifact` (extended) | new members `asset` and `skill` in the one-of; an asset's envelope `_links` adds `payload` and `collection` (the asset list) | — |
+| `EffectiveAssetRead` | `activationId`, `revision`, `governanceFingerprint`, `kind` (const `asset`), `artifactId`, `packId`, `level`, `policy`, `asset`, `_links` (`self`, `artifact`, `payload`, `collection`, `up`) | R2 |
+| `EffectiveSkillRead` | the members of `EffectiveArtifactRead` (a flat, closed copy, as `EffectiveAgentProfileRead` is), plus `skill` | `EffectiveArtifactRead` |
 
 ## Invariants
 
