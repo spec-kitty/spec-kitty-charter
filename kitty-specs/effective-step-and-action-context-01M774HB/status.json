@@ -292,9 +292,9 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -302,7 +302,8 @@
       "last_transition_at": "2026-11-12T23:28:25.239368+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green."
+        "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green.",
+        "Cycle 1 fixes: one place rule in ClosureView.stepPlace (mission type winner if it declares s, else held action winner whose version declares s), used by stepPlace, the step read and the context artifact link; probes 1 and 2 as scenarios (red first, e80394a33); L1 step-contract step link by the place; M1, L3 contract wording; L4 controller test. Prompt read unchanged. activations, missions-edge, packs ClosureViewTest, feature, contracts:check and full deployable:test (1781/0) green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
