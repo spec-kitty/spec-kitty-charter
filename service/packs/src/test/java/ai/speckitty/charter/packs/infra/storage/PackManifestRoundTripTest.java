@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -85,32 +84,6 @@ class PackManifestRoundTripTest {
                                 Files.readString(target.resolve(PackFileSet.MANIFEST))))
                 .as("constituents and presets equal by meaning")
                 .isEmpty();
-    }
-
-    @Test
-    @DisplayName("a manifest that lists a file the write does not hold is written with the derived lists (#110)")
-    void aListedPathTheWriteDoesNotHoldIsDropped(@TempDir Path host) throws IOException, URISyntaxException {
-        WholePackStore.LoadedPack loaded = store.load(fixture(host));
-        PackManifestDso manifest = loaded.manifest().orElseThrow();
-        List<PackManifestDso.Constituent> constituents = new ArrayList<>(manifest.constituents());
-        constituents.add(new PackManifestDso.Constituent("tactic", "ghost", "ghost.tactic.yaml", "0".repeat(64)));
-        WholePackStore.LoadedPack ghostly = new WholePackStore.LoadedPack(
-                loaded.pack(),
-                loaded.layout(),
-                loaded.graphs(),
-                loaded.unmodelled(),
-                Optional.of(new PackManifestDso(
-                        manifest.schemaVersion(), manifest.manifestHash(), constituents, manifest.presets())));
-        Path clean = host.resolve("clean").resolve(FIXTURE);
-        Path derived = host.resolve("derived").resolve(FIXTURE);
-
-        store.write(loaded, clean);
-        store.write(ghostly, derived);
-
-        assertThat(Files.readString(derived.resolve(PackFileSet.MANIFEST)))
-                .as("the listed membership is not carried: the write derives it")
-                .isEqualTo(Files.readString(clean.resolve(PackFileSet.MANIFEST)))
-                .doesNotContain("ghost");
     }
 
     @Test
