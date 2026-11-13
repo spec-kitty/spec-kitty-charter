@@ -179,7 +179,8 @@ public class EffectiveBodies {
                 skills.skill(read.skill()),
                 links);
         if (!facts.satisfiedBy().isEmpty()) {
-            wire.setSatisfiedBy(facts.satisfiedBy().stream().map(EffectiveBodies::reference).toList());
+            wire.setSatisfiedBy(
+                    facts.satisfiedBy().stream().map(EffectiveBodies::reference).toList());
         }
         facts.suggestion().map(EffectiveBodies::suggestion).ifPresent(wire::setSuggestion);
         return wire;
