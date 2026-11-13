@@ -1,0 +1,42 @@
+summary: >-
+  The prompt skill review-checklist of the built-in example pack of the charter (ADR-0070), as getPackSkill answers it:
+  the skill as its file declares it, in camel case, with its body, the text of the file its body_path names, verbatim.
+value:
+  kind: skill
+  id: review-checklist
+  packId: built-in
+  _links:
+    self:
+      href: /api/v1/packs/built-in/artifacts/skill/review-checklist
+    collection:
+      href: /api/v1/packs/built-in/artifacts/skill
+  skill:
+    schemaVersion: '1.0'
+    id: review-checklist
+    title: Review a work package against its checklist
+    description: >-
+      Use to review one work package against its acceptance checklist and record a verdict with the evidence for each
+      item.
+    form: prompt
+    triggers:
+      - review against the checklist
+      - checklist review
+    parameters:
+      - name: work_package
+        required: true
+        description: The work package to review, by id.
+    invocation:
+      userInvocable: true
+      sideEffects: []
+    tools: []
+    version: 1.0.0
+    maintainers:
+      - '@spec-kitty/core'
+    body: |
+      Goal: review the work package named by `work_package` against its acceptance checklist.
+
+      ## Steps
+
+      1. Read the work package and its checklist.
+      2. For each item, record whether the change meets it and the evidence (a file, a test or a command output).
+      3. Record the verdict: approve when every item is met, otherwise reject with the unmet items.

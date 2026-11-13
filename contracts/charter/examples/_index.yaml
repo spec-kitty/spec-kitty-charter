@@ -54,3 +54,6 @@ files:
   - PresetList.two-presets.yaml
   - Artifact.asset.yaml
   - AssetList.built-in.yaml
+  - Artifact.skill.yaml
+  - Artifact.skill-wrapper.yaml
+  - SkillList.org-base.yaml
