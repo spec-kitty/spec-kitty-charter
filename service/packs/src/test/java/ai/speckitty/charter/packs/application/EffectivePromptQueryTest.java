@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@link EffectivePromptQuery} over hand-built merged closures and prompt facts (FR-003, FR-005, NFR-002; ADR-0066
- * decisions 4, 5 and 9): the prompt in force at the merged winner's place of the step, served as stored, its declared
+ * decisions 4, 5 and 9): the prompt in force at the step's place (StepHolding.placeOf), served as stored, its declared
  * slots in order, and per slot the fragments of the winning copies of the enhancements in force, ordered by level, then
  * pack name, then enhancement id.
  */
