@@ -73,7 +73,7 @@
       "wp": null
     },
     "#438": {
-      "evidence_ref": "ADR-0066 phase 2: WP03-WP07",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,11 +81,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP07"
     },
     "#439": {
-      "evidence_ref": "Operator ruling 2026-11-12, option (b): WP10",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,11 +93,11 @@
       "scope": null,
       "source_file": null,
       "title": null,
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP10"
     },
     "#447": {
-      "evidence_ref": "Operator ruling 2026-11-12, option 1: WP11",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,11 +105,11 @@
       "scope": null,
       "source_file": null,
       "title": null,
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP11"
     },
     "#450": {
-      "evidence_ref": "Scoping half: WP01, WP02, WP08; body links shipped in PR #486",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -117,7 +117,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP02"
     },
     "#466": {
@@ -133,7 +133,7 @@
       "wp": null
     },
     "#467": {
-      "evidence_ref": "Slice C tracking issue; ticked at closeout",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -141,7 +141,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP08"
     },
     "#484": {
@@ -181,7 +181,7 @@
       "wp": null
     },
     "#97": {
-      "evidence_ref": "R3 decided in WP08 (research R6)",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/566",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -189,7 +189,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP08"
     }
   },
