@@ -36,7 +36,7 @@ Slice C ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) ch
 - **An `overrides` edge comes from an activatable artifact**
   ([#447](https://github.com/spec-kitty/spec-kitty-charter/issues/447)): one from a template, an asset, a guard or a
   lifecycle is refused.
-- **One place rule for a step** (A7): a step only a replaced version keeps is read, and linked, at its place.
+- **One place rule for a step** (A7, Q3): the step read, its links, the prompt and the slot check use it.
 - **Every effective `ETag` changes once** (recipe `v3`). The closure fingerprint digests each pack in closure order,
   so it no longer depends on the configured order of the packs.
 - **R3 is decided** ([#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97)): the effective graph, the
