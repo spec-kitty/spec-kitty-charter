@@ -1,0 +1,21 @@
+{
+  "create_return_branch": "slice-f-537-kind-taxonomy",
+  "created_at": "2026-11-13T18:04:11.986548+00:00",
+  "flattened": false,
+  "friendly_name": "Slice F: the kind taxonomy and the mission-type schema",
+  "mid8": "01M7B19K",
+  "mission_base_sha": "848170ec8d8d66b3794c8a76711b5b0a38e4a8f2",
+  "mission_branch": "kitty/mission-slice-f-kind-taxonomy-01M7B19K",
+  "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
+  "mission_number": null,
+  "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "R18 is one of the last undecided cutover reads in epic #94, and core's scope migration moved the kind-taxonomy and mission-type schema rulings here. They change one model: which kinds exist and how a mission type's steps are authored. The charter's model is canonical, so old shapes are replaced outright and open-packs follows.",
+  "purpose_tldr": "Serve the kind table as data (R18), retire mission_step_contract, make steps the single mission-type authoring surface, and type each relation's endpoint kinds.",
+  "slug": "slice-f-kind-taxonomy-01M7B19K",
+  "target_branch": "slice-f-537-kind-taxonomy",
+  "topology": "single_branch",
+  "topology_settled": false,
+  "topology_source": "default"
+}
