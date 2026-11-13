@@ -38,7 +38,7 @@ audience:
   the operator ruled on 2026-11-13: "everything strict", meaning every identifier, including the pack id, roles and
   slot ids.
 
-The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices #550 to #557 with #547 and #478.
+The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
 ## Context
 
@@ -64,7 +64,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
   - The pack-id grammar appears in both `PackRegistrationService` and `RegistrationAdmission`, while `PackIdentifier`
     checks only that the id is not blank.
   - Four identifier types write their own `^[a-z][a-z0-9-]*$`, which accepts `a--b`, beside the shared
-    `IdentifierGrammar`.
+    `IdentifierGrammar`. The agent and mission roles and the slot ids do the same.
   - The kernel's `Constraints.isNotBlank()` has no callers; five sites write the same
     `text != null && !text.isBlank()` check inline.
   - spec-kitty-open-packs re-implements the classification, the schema checks and the manifest rules in Python
@@ -172,7 +172,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
     - Charter cannot depend on the library today. It is an unreleased Java 21 `1.1.1-SNAPSHOT`, and it brings in
       commons-lang3, slf4j and first-party commons, which the kernel's purity rule refuses.
     - The design of decision 1 is offered to `modular-validators` as an issue:
-      [sddevelopment-be/modular-validators#13](https://github.com/sddevelopment-be/modular-validators/issues/13).
+      [`sddevelopment-be/modular-validators#13`](https://github.com/sddevelopment-be/modular-validators/issues/13).
     - Once upstream releases a core with no dependencies and this vocabulary, charter swaps the port for it in one
       change and deletes the port. The two never sit side by side.
 
@@ -214,7 +214,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 ### Risks
 
 - **Changed codes or order.** A refusal code or the order of findings can change and break open-packs' expected-code
-  fixtures. Mitigation: a parity test of codes against the open-packs expectations before slice 7 ships.
+  fixtures. Mitigation: a parity test of codes against the open-packs expectations before slice 7 (#556) ships.
 - **A second derivation creeping back.** A rule could re-parse a file. Mitigation: rules take `PackContents` and the
   census only, and review checks it.
 - **Version skew between the CLI and the service.** Mitigation: one version and one release.
@@ -252,7 +252,7 @@ Not chosen *(operator)*: see decision 10.
 
 ## Appendix: the upstream issue
 
-Filed as [sddevelopment-be/modular-validators#13](https://github.com/sddevelopment-be/modular-validators/issues/13)
+Filed as [`sddevelopment-be/modular-validators#13`](https://github.com/sddevelopment-be/modular-validators/issues/13)
 on 2026-11-13. Its text, as proposed:
 
 > **Title:** A dependency-free core with rules that return many reasons, each with a code, location and severity
