@@ -114,3 +114,19 @@ A read-only sweep of `service/` found nothing HIGH. No correctness gate passes v
 | `WholePackExamplesRoundTripTest.meaning()` leaves out the policy, and its round trip compares neither the reloaded violations nor `unmodelled()`. | MEDIUM, mitigated | Not done here. `PolicyRoundTripTest` and `ExamplePacksTest` cover the store write and unmodelled files. #555 rebuilds this round trip in `pack-validation`. Recorded in the PR body. |
 
 No issue is filed: none of these is an uncovered correctness, data or security risk (`docs/development/issue-tracker.md`, rule 1).
+
+## Adversarial squad (pre-merge)
+
+One reviewer read the diff without my conclusions.
+
+| Finding | Severity | Disposition |
+| --- | --- | --- |
+| A `kinds:` entry excused every census file of its kind as expected red, and with the per-census kind ratchets removed nothing made it stale. A stray `charter.yaml`, or a companion whose owner stopped naming it, would have passed. | MAJOR | Folded. A kind entry now answers `schemaProblems` alone and excuses no file. A file of an unmodelled kind is red in every run, and a file entry for such a file fails as `FILE_ENTRY_UNMODELLED`. Unit tests cover both. |
+| `service-build.md` still promised a kind-level `UNEXPECTEDLY_GREEN`. | MINOR | Folded: the wording now matches the ratchets. |
+| `ExamplePacks.names()` is hard-coded, so a fourth example-pack directory would not be gated. | MINOR | Folded: the union test asserts the directories equal the gated packs. |
+| The `charter` entry cites #547, which this PR closes. | MINOR | Kept. The entry records why the schema is unmodelled and excuses no file, so it needs no owner to turn it green. |
+| A stale report from an earlier local build can survive in the report directory. | MINOR | Dropped: CI checks out fresh. |
+
+After the fold, the planted break makes the `org-base` run fail as `UNEXPECTED_RED drg/fragment.yaml (org-fragment):
+no adapter models kind org-fragment` and `FILE_ENTRY_UNMODELLED drg/fragment.yaml`, not as `CHANGED_RED`. The
+committed control is unchanged.
