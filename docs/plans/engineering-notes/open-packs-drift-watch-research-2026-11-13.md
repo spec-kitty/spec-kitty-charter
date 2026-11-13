@@ -1,6 +1,6 @@
 ---
 title: "Open-packs drift watch research, 2026-11-13"
-description: Why the open-packs drift watch (#509) is still red on main, where its design leaks, and what keeps charter and open-packs aligned, with the operator rulings.
+description: Why the open-packs drift watch (#509) stays red on main after #545, where its design leaks, and what keeps charter and open-packs aligned, with the operator rulings.
 doc_status: draft
 updated: 2026-11-13T00:00:00Z
 type: Plan
@@ -22,20 +22,24 @@ audience:
 watch (`open-packs-drift.yml`, ADR-0070) keeps open. It had three lenses: an architect, a debugger
 and a researcher, each with its profile loaded and reading the code itself. This note changes no code.
 
+**As of landing (2026-11-13):** #545 merged 2026-11-13 and closed #509; `openPacksRef` is `1692a3b`. No nightly has run on `main` since; the next is expected red on the three manifests alone until spec-kitty-open-packs#250, and opens a fresh `open-packs-drift` issue.
+
+The sections below are the squad's snapshot, taken before #545 merged.
+
 **Revisions:**
 
 - charter `main` at `d73d813`, which includes #542 (manifest membership, merged 2026-11-13);
-- #545's head at `928de5e` (open);
+- #545's head at `928de5e` (open when the squad ran);
 - spec-kitty-open-packs `main` at `736e613`.
 
-## 1. Is #509 resolved? No: main is red
+## 1. Is #509 resolved? Closed by #545; the watch stays red on the manifests
 
 The squad ran `:packs:driftTest -PopenPacksDir=<open-packs @ 736e613>` locally on charter `d73d813`.
 One test failed, with **23 problems**:
 
 | Problems | Pack | Cause | Class | Fixed by |
 | --- | --- | --- | --- | --- |
-| 20 | `spdd` | `drg/fragment.yaml` (gate kind `org-fragment`) is not modelled, so the round trip never writes it. The five step enhancements then read back with `0 enhances edges`, and their prompt fragments and the written copies go unpaired. | harness (charter) | #545 |
+| 20 | `spdd` | `drg/fragment.yaml` (gate kind `org-fragment`) is not modeled, so the round trip never writes it. The five step enhancements then read back with `0 enhances edges`, and their prompt fragments and the written copies go unpaired. | harness (charter) | #545 |
 | 1 | `built-in` | `pack-manifest.yaml` refused: it leaves out presets `default` and `minimal` | pack content | spec-kitty-open-packs#250 |
 | 1 | `foundation` | `pack-manifest.yaml` refused: it leaves out 31 constituents under `missions/` and `toolguides/` | pack content | spec-kitty-open-packs#250 |
 | 1 | `writing` | `pack-manifest.yaml` refused: it leaves out 21 constituents | pack content | spec-kitty-open-packs#250 |
@@ -57,9 +61,9 @@ regenerates or drops those manifests.
   ([43315366150](https://github.com/spec-kitty/spec-kitty-charter/actions/runs/43315366150)) holds
   for today's pack content too, as far as `spdd` goes.
 
-**Expected after #545 merges:** red on the three manifests alone, until open-packs #250 lands.
+**Expected after #545 merged:** red on the three manifests alone, until open-packs #250 lands.
 
-**Operator ruling:** #545 keeps `Closes #509`. When #545 merges, #509 closes. The next red nightly
+**Operator ruling:** #545 kept `Closes #509`, so #509 closed when #545 merged. The next red nightly
 run on `main` then opens a fresh `open-packs-drift` issue for the manifests, and that issue points
 at open-packs #250.
 
@@ -69,7 +73,7 @@ The core is sound. Charter's own loader puts every open-packs pack through the g
 round trip (ADR-0036), nightly, and blocks nothing. It earned its keep: its last red was a charter
 defect that the example packs did not reach, which is the risk ADR-0070 names. The leaks are below.
 
-1. **An unmodelled kind passes silently.** `OpenPacksDriftTest` runs the gate's `observe`, which
+1. **A kind the round trip does not model passes silently.** `OpenPacksDriftTest` runs the gate's `observe`, which
    iterates only the round trip's outcomes.
    - A census file whose kind `DomainRoundTrip` does not model gets no outcome and no message.
      That is how `org-fragment` surfaced only as a side effect on `spdd`.
@@ -91,8 +95,8 @@ defect that the example packs did not reach, which is the risk ADR-0070 names. T
 5. **The pin policy contradicts itself.**
    - ADR-0070 says `openPacksRef` "may lag".
    - The charter's `.kittify` AGENTS.md says a stale pin is a defect.
-   - The pin has moved 6 times in 20 days, with gaps of 1 to 9 days (median 2.5). It is now 4 days
-     and 181 open-packs commits behind.
+   - The pin moved 6 times in 20 days, with gaps of 1 to 9 days (median 2.5). Before #545 it was 4 days
+     and 181 commits behind; #545 moved it to `1692a3b`, which differs from open-packs `main` only outside `packs/`.
 
 ## 3. What gates what today
 
@@ -100,7 +104,7 @@ defect that the example packs did not reach, which is the risk ADR-0070 names. T
 | --- | --- | --- | --- |
 | charter `whole-pack.yml` | yes | round trip over charter's own example packs | none |
 | charter `service.yml` | yes | `syncPacks` digests against `open-packs.lock.yaml`, then `verifyAll` | `openPacksRef` (governance only) |
-| charter `open-packs-drift.yml` | no, nightly | round trip of every open-packs pack, unmodelled files, load warnings | open-packs `main` HEAD, SHA not recorded |
+| charter `open-packs-drift.yml` | no, nightly | round trip of every open-packs pack, files with no modeled kind, load warnings | open-packs `main` HEAD, SHA not recorded |
 | open-packs `validate` | yes | JSON schemas plus a Python port of charter's file classification | charter schemas at `charter.lock.yaml` |
 | open-packs `charter-service` | yes | the real service composes every pack and registers org and project packs | charter `17ce3f9`, built from source |
 
@@ -119,7 +123,7 @@ The drift has three structural roots:
 
 | # | Recommendation | Owner | Size | Order | Ruling |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Merge #545: models `org-fragment`, raises the pin | charter | S | 1 | in flight; keeps `Closes #509` |
+| 1 | Merge #545: models `org-fragment`, raises the pin | charter | S | 1 | merged 2026-11-13; closed #509 |
 | 2 | Regenerate or drop the hand-written manifests of `built-in`, `foundation` and `writing` | open-packs | S | 2 | already tracked: spec-kitty-open-packs#250 |
 | 3 | The drift test fails on any census file with no round-trip outcome. The gate ties its kind check to `file-kinds.yaml` and round-trips every example pack. | charter | S/M | 3 | **filed: #547** |
 | 4 | `service-v*` releases, then a `pack-check` jar on the service's code path that also exposes the whole-pack round trip and file classification, so open-packs drops its Python mirror and gates on meaning | charter, then open-packs | M, then L | 4 | **commented on #478**, no new issue |
@@ -127,7 +131,7 @@ The drift has three structural roots:
 | 6 | Pin policy: settle "may lag" against "stale is a defect", and let a green nightly run open a bot PR that raises `openPacksRef` | charter | M | — | not taken now; `openPacksRef` feeds governance only |
 | 7 | Nightly open-packs watch of charter `main`: files on red, proposes the `charter.lock.yaml` bump on green. It replaces charter's watch. | open-packs | M | after 8 | **taken** (ADR-0070 amendment); filed as spec-kitty-open-packs#253 |
 | 8 | The round trip over open-packs content is a required gate in open-packs' `charter-service` job, at its pin: charter's `:packs:driftTest` now, `pack-check` (4) later | open-packs | S now, M with 4 | after 1 and 2 | **taken** (ADR-0070 amendment); filed as spec-kitty-open-packs#252 |
-| 9 | Remove `open-packs-drift.yml` once 8 is required | charter | S | after 8 | follows from the ruling |
+| 9 | Remove `open-packs-drift.yml` once 8 is required (not yet removed) | charter | S | after 8 | follows from the ruling |
 
 ### Operator ruling 2026-11-13: the content test runs in open-packs
 
@@ -143,7 +147,7 @@ of responsibility: open-packs owns its content and the proof of it. It is record
 - **The first gate pin.** It must hold #545, or `spdd` stays red. Moving past #542 means regenerating or dropping
   the three manifests (open-packs #250) in the same pull request as the lock bump.
 - **What this changes above.** Most of section 2's lifecycle and reporting leaks go away with charter's watch. They
-  apply to open-packs' new nightly instead. Leak 1, the silent unmodelled kind, matters more now, since a gate
+  apply to open-packs' new nightly instead. Leak 1, the silent gap over a kind the round trip does not model, matters more now, since a gate
   inherits it: #547 should land before the gate's first pin.
 
 **Shared fixtures: not recommended.** ADR-0070 makes charter's example packs the only test input for
@@ -169,7 +173,7 @@ This session could not attach spec-kitty-open-packs with write access, so these 
 >   included, against charter `main`. It replaces charter's `open-packs-drift.yml` (ADR-0070 amendment of
 >   2026-11-13).
 > - Act on the issue only from a run on `main`: charter's watch closed its issue from a branch run (#509).
-> - On red, it opens or comments on one labelled issue naming the charter SHA and the failing packs.
+> - On red, it opens or comments on one labeled issue naming the charter SHA and the failing packs.
 > - On green on `main`, it opens or updates one PR that bumps `charter.lock.yaml` to the tested SHA.
 >
 > **Refs:** charter #509, #542, #547; ADR-0070.
