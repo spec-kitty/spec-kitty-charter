@@ -181,7 +181,7 @@
       "wp": null
     },
     "#97": {
-      "evidence_ref": "R3 decided in WP08 (research R6)",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/563",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -189,7 +189,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP08"
     }
   },
