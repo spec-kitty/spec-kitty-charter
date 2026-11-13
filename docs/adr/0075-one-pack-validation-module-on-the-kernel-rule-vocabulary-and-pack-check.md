@@ -1,9 +1,9 @@
 ---
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
-doc_status: draft
+doc_status: active
 updated: 2026-11-13T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -26,7 +26,7 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-13. Decider: Stijn Dejongh (operator).
+**Accepted**, 2026-11-13. Decider: Stijn Dejongh (operator).
 
 - **The steers.** The operator gave them on 2026-11-13, after the open-packs drift watch research. The kernel's
   validator is used throughout pack validation. The pack validator is a module the service itself uses. It is then
