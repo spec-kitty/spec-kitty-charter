@@ -5,7 +5,9 @@ description: >-
   getEffectiveAsset and getEffectiveAssetPayload, and getActivation): an opaque digest that changes when the activation's revision or a pack of its closure changes, and,
   for the effective reads, with the query (the artifact list's kind, state, cursor and page size; the context's mission
   type, action and depth; the artifact read's kind, id and depth; the agent profile read's id and depth; the skill, asset and payload reads' id); a pack outside the closure leaves it unchanged. In
-  double quotes. Opaque to consumers, who compare it and never parse it.
+  double quotes. Opaque to consumers, who compare it and never parse it. The recipe carries a version, bumped whenever
+  a read answers another body for the same inputs (today v3: getActivation's links, and the links of a skill item), so
+  a tag from an earlier version never matches and the read answers 200.
 required: true
 schema:
   type: string

@@ -33,11 +33,14 @@ public record EffectiveTag(String token) {
 
     /**
      * The domain tag, with the tag's version: it is bumped in any change that alters what the reads answer for the same
-     * inputs (a merge rule change, a new reason), so a strong tag never names two bodies across releases. {@code v2}:
-     * PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer overrides, and the
-     * non-activatable entries the satisfaction no longer counts).
+     * inputs (a merge rule change, a new reason, a new link), so a strong tag never names two bodies across releases.
+     * {@code v2}: PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer
+     * overrides, and the non-activatable entries the satisfaction no longer counts). {@code v3}: slice A2 (#536)
+     * changed the bodies of existing reads for the same inputs: {@code getActivation} links its writes and effective
+     * reads, and a skill item of {@code listEffectiveArtifacts}, {@code getEffectiveGraph}, the action context and an
+     * agent profile's governance links {@code artifact} and {@code effective-artifact}.
      */
-    private static final String DOMAIN = "charter-effective-read\0v2\n";
+    private static final String DOMAIN = "charter-effective-read\0v3\n";
 
     private static final String NO_QUERY = "";
 

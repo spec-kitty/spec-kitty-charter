@@ -204,7 +204,7 @@ class EffectiveTagTest {
     @Test
     void theGraphTagOfAFixedInputIsAFixedLiteral() {
         assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
-                .as("graph, domain v2")
-                .isEqualTo("sha256:a01f7179ac5e8f92de38adcaa3b6af17adbd68e4ac36e4f9c509da95de2654e9");
+                .as("graph, domain v3")
+                .isEqualTo("sha256:2fbffbb0d62e9a547dc75f1adfa62a4aa6dbf5af7a6cef81a54179685ee8412b");
     }
 }
