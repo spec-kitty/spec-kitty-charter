@@ -44,6 +44,8 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<String> nameChecks = new ArrayList<>();
     private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
     private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
+    private Function<ArtifactKind, List<EffectiveHeldWinner>> heldAnswer = kind -> List.of();
+    private final List<ArtifactKind> heldAsks = new ArrayList<>();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -163,6 +165,25 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public List<EffectiveAsk> effectiveAsks() {
         return List.copyOf(effectiveAsks);
+    }
+
+    /**
+     * Answers every held-winner read of a session with this function from now on; a function that throws a refusal
+     * answers as the packs slice does for a merge it refuses.
+     *
+     * @param next the answers of {@link PacksSession#heldWinners}, by kind; {@link PacksSession#heldWinner} filters them
+     */
+    public void heldWinners(Function<ArtifactKind, List<EffectiveHeldWinner>> next) {
+        this.heldAnswer = next;
+    }
+
+    /**
+     * The kinds the sessions were asked the held winners of, in order, an item read included.
+     *
+     * @return the kinds
+     */
+    public List<ArtifactKind> heldAsks() {
+        return List.copyOf(heldAsks);
     }
 
     /**
@@ -311,6 +332,20 @@ public final class FakeAvailablePacks implements AvailablePacks {
             EffectiveAsk ask = new EffectiveAsk(kind, id, depth, query);
             effectiveAsks.add(ask);
             return winnerAnswer.apply(ask);
+        }
+
+        @Override
+        public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
+            heldAsks.add(kind);
+            return heldAnswer.apply(kind);
+        }
+
+        @Override
+        public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
+            heldAsks.add(kind);
+            return heldAnswer.apply(kind).stream()
+                    .filter(winner -> winner.ref().id().equals(id))
+                    .findFirst();
         }
 
         @Override

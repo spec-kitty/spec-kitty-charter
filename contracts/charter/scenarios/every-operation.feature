@@ -62,6 +62,11 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
@@ -125,6 +130,11 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |

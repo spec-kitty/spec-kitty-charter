@@ -3,6 +3,7 @@ package ai.speckitty.charter.artifacts.infra.packs;
 import ai.speckitty.charter.artifacts.application.SkillReads;
 import ai.speckitty.charter.artifacts.application.SkillView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
@@ -58,6 +59,22 @@ public final class PacksSkills implements SkillReads {
                 viewOf(Skill.class.cast(verified.value().artifact())),
                 verified.value().revision().token(),
                 verified.fingerprint());
+    }
+
+    @Override
+    public Listed list(PackIdentifier pack, String expectedFingerprint) {
+        Listed listed = list(pack);
+        Fingerprints.require(listed.sourceFingerprint(), expectedFingerprint);
+        return listed;
+    }
+
+    @Override
+    public SkillView view(CharterArtifact skill, String read) {
+        if (!(skill instanceof Skill held)) {
+            throw new IllegalStateException(read + " holds " + skill.kind().token() + " " + skill.localId()
+                    + ", which is no skill of the packs slice.");
+        }
+        return viewOf(held);
     }
 
     /**

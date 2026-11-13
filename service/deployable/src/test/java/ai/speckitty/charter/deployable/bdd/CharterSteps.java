@@ -54,8 +54,11 @@ public class CharterSteps {
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown");
-    /** An asset's payload read, a verified read whatever its media type. */
-    private static final Pattern PAYLOAD = Pattern.compile("/packs/[^/]+/artifacts/asset/[^/]+/payload");
+    /**
+     * An asset's payload read, in a pack or under an activation: a verified read whatever its media type, which carries
+     * the source fingerprint as the pack's payload does.
+     */
+    private static final Pattern PAYLOAD = Pattern.compile("/(packs|activations)/[^/]+/artifacts/asset/[^/]+/payload");
 
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";

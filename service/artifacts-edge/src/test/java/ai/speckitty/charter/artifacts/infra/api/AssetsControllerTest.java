@@ -68,6 +68,21 @@ class AssetsControllerTest {
     private AssetReads reads(AssetView payloadAsset) {
         return new AssetReads() {
             @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public Read asset(PackIdentifier pack, String assetId, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public PayloadRead payload(PackIdentifier pack, String assetId, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
             public Listed list(PackIdentifier pack) {
                 asked.add("list " + pack.value());
                 return new Listed(List.of(LOGO, RUN), REVISION, FINGERPRINT);
@@ -227,6 +242,21 @@ class AssetsControllerTest {
     @Test
     void aRefusalOfTheReadIsAnsweredByTheSharedHandler() throws Exception {
         AssetReads refusing = new AssetReads() {
+            @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public Read asset(PackIdentifier pack, String assetId, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public PayloadRead payload(PackIdentifier pack, String assetId, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
             @Override
             public Listed list(PackIdentifier pack) {
                 throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack nope was not found.");

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.packs;
 
+import ai.speckitty.charter.activations.application.EffectiveHeldWinner;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -116,6 +117,35 @@ final class ClosureViewSession implements PacksSession {
                         winner.holder().packId().value(),
                         winner.holder().level(),
                         winner.governance().map(ClosureViewSession::governanceOf)));
+    }
+
+    @Override
+    public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
+        // The merge alone: the version each id keeps across the levels, whatever the kind, so an asset, which the
+        // activation-domain merge leaves out, is answered too. No state is resolved.
+        return view.heldWinners(kind).stream().map(ClosureViewSession::heldOf).toList();
+    }
+
+    @Override
+    public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
+        Objects.requireNonNull(kind, "kind");
+        Objects.requireNonNull(id, "id");
+        return view.heldWinners(kind).stream()
+                .filter(winner -> winner.urn().id().equals(id))
+                .findFirst()
+                .map(ClosureViewSession::heldOf);
+    }
+
+    /** The activation domain's value of a winner of the packs slice's merge, of any kind. */
+    private static EffectiveHeldWinner heldOf(MergedClosure.Winner winner) {
+        ArtifactRef ref = ArtifactRef.of(winner.urn())
+                .orElseThrow(() -> new IllegalStateException(
+                        "The merge listed " + winner.urn() + " as a winner of an artifact kind."));
+        return new EffectiveHeldWinner(
+                ref,
+                winner.packId().value(),
+                winner.level(),
+                EffectiveSet.Policy.valueOf(winner.policy().level().name()));
     }
 
     @Override

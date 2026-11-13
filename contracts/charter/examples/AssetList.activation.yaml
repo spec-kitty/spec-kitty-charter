@@ -1,0 +1,27 @@
+summary: >-
+  The assets in force under an activation whose closure holds the built-in example pack and a project pack that holds
+  its own copy of carrier-lint: in id order, each the copy the layer merge keeps, linked to its read under the
+  activation and to the pack-scoped read of the winning copy.
+value:
+  items:
+    - id: carrier-lint
+      mime: text/x-python
+      executable: true
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/asset/carrier-lint
+        artifact:
+          href: /api/v1/packs/project/artifacts/asset/carrier-lint
+    - id: logo
+      mime: image/png
+      executable: false
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/asset/logo
+        artifact:
+          href: /api/v1/packs/built-in/artifacts/asset/logo
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/asset
+    up:
+      href: /api/v1/activations/a-1

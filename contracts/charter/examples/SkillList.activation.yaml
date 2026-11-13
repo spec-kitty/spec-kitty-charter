@@ -1,0 +1,33 @@
+summary: >-
+  The skills of an activation's closure, in id order, each the copy the layer merge keeps, whatever its state, linked to
+  its read under the activation and to the pack-scoped read of the winning copy.
+value:
+  items:
+    - id: issue-triage
+      title: Triage GitHub issues
+      description: >-
+        Use to triage a batch of open GitHub issues on spec-kitty/spec-kitty (default, those opened in the last 7
+        days). Sets type, priority, domain, parent and milestone, and reports stale, duplicate or clustered issues for
+        an operator decision.
+      form: prompt
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/skill/issue-triage
+        artifact:
+          href: /api/v1/packs/org-base/artifacts/skill/issue-triage
+    - id: review-checklist
+      title: Review a work package against its checklist
+      description: >-
+        Use to review one work package against its acceptance checklist and record a verdict with the evidence for
+        each item.
+      form: prompt
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/skill/review-checklist
+        artifact:
+          href: /api/v1/packs/built-in/artifacts/skill/review-checklist
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/skill
+    up:
+      href: /api/v1/activations/a-1
