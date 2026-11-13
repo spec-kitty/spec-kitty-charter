@@ -7,11 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,9 +15,12 @@ import org.junit.jupiter.api.io.TempDir;
  * The nightly open-packs drift watch (ADR-0070): every pack of a spec-kitty-open-packs checkout ({@code
  * charter.openPacksDir}, usually {@code main}) goes through the same whole-pack round trip as the gate
  * ({@link WholePackRoundTripTest#observe}): it loads through the production store, is written to a fresh directory, and
- * every modelled file is compared with its source by meaning (ADR-0036), with no written file left unpaired. It also
- * reports the files the store does not model ({@code unmodelled()}) and the load warnings ({@code warnings()}). It has
- * no expected-red baseline, so any of these is red. It is a signal, not a gate: no required check runs it.
+ * every modelled file is compared with its source by meaning (ADR-0036), with no written file left unpaired. Every
+ * census file that is not excluded needs an outcome: one of a kind the round trip does not model is red, naming its kind
+ * and path (#547). It also reports the files the store does not model ({@code unmodelled()}) and the load warnings
+ * ({@code warnings()}). It has no expected-red baseline, so any of these is red ({@link WholePackDrift}). Charter's
+ * nightly watch runs it as a signal; spec-kitty-open-packs runs it as a required gate from its pinned charter checkout
+ * (ADR-0070 decision 4).
  */
 class OpenPacksDriftTest {
 
@@ -45,31 +43,12 @@ class OpenPacksDriftTest {
         for (Path pack : dirs) {
             String name = String.valueOf(pack.getFileName());
             try {
-                problems.addAll(drift(pack, host.resolve(name)));
+                problems.addAll(WholePackDrift.problems(store, new DomainRoundTrip(yaml), pack, host.resolve(name)));
             } catch (RuntimeException e) {
                 problems.add(name + ": the round trip threw " + e);
             }
         }
         problems.forEach(System.out::println);
         assertThat(problems).as("open-packs drift").isEmpty();
-    }
-
-    private List<String> drift(Path pack, Path written) {
-        String name = String.valueOf(pack.getFileName());
-        List<String> problems = new ArrayList<>();
-        WholePackStore.LoadedPack loaded = store.load(pack);
-        loaded.pack().violations().forEach(v -> problems.add(name + ": violation " + v));
-        loaded.unmodelled().forEach(file -> problems.add(name + ": unmodelled " + file));
-        loaded.warnings().forEach(w -> problems.add(name + ": warning " + w));
-
-        SortedMap<String, String> census = WholePackCensus.of(pack);
-        Map<String, List<String>> information = new TreeMap<>();
-        TreeSet<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
-                new DomainRoundTrip(yaml), pack, written, census, information, paired, WholePackCensus.formsOf(pack));
-        observed.forEach((path, red) -> red.ifPresent(r -> problems.add(name + ": " + path + ": " + r)));
-        WholePackRoundTripTest.unpaired(written, paired)
-                .forEach(file -> problems.add(name + ": written but unpaired " + file));
-        return problems;
     }
 }

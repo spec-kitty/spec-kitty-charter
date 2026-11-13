@@ -46,12 +46,19 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The whole-pack round-trip gate (#187): every file of the built-in example pack (ADR-0070) is read into the domain, written to a
- * fresh directory through the storage service, read back, and compared with its source by meaning. The observed result
- * must equal the checked-in expectation exactly, both ways (see {@link WholePackExpectation}). The report lands in
- * {@code build/reports/whole-pack/report.md}.
+ * The whole-pack round-trip gate (#187): every file of every charter example pack (ADR-0070: {@code built-in},
+ * {@code org-base}, {@code project}) is read into the domain, written to a fresh directory through the storage service,
+ * read back, and compared with its source by meaning. Each pack's observed result must equal the checked-in expectation
+ * scoped to it exactly, both ways (see {@link WholePackExpectation}). The reports land in
+ * {@code build/reports/whole-pack/<pack>.md}.
+ *
+ * <p>The gate cannot pass over a file kind it does not model (#547): every census file needs an outcome or an
+ * expectation, every {@code file-kinds.yaml} schema is modelled or listed with a reason, and every modelled kind has a
+ * file in some example pack.
  *
  * <p>Runs under {@code :packs:wholePackRoundTrip} (tag {@code whole-pack}), outside {@code check}. CI requires it: the
  * {@code CI gate / gate} check calls {@code whole-pack.yml} for the {@code wholepack} group (epic #186).
@@ -59,126 +66,164 @@ import org.junit.jupiter.api.io.TempDir;
 @Tag("whole-pack")
 class WholePackRoundTripTest {
 
-    private static final String BUILT_IN = "built-in";
+    private static final String BUILT_IN = ExamplePacks.BUILT_IN;
+
+    /** Every charter example pack, one gate run each. */
+    static List<String> examplePacks() {
+        return ExamplePacks.names();
+    }
 
     /**
-     * The gate kinds the round trip must model at least; an adapter that models fewer cannot pass by omission. The
-     * adapter models every bound kind besides (checked against the registry below).
+     * One example pack round-trips as its scoped expectation says: every file is green, excluded, or red where an entry
+     * pins it, and no written file is left unpaired but the written copy of a file the expectation lists as refused (the
+     * {@code impacts} refusals of #477).
      */
-    private static final Set<String> REQUIRED_KINDS = Set.of(
-            "directive",
-            "tactic",
-            "styleguide",
-            "toolguide",
-            "paradigm",
-            "pack-descriptor",
-            "graph-shard",
-            "org-fragment", // #509
-            "agent-profile",
-            "mission-step-contract",
-            "asset",
-            "asset-payload",
-            "template", // #193
-            "preset", // #195
-            "pack-manifest", // #195
-            "pack-document", // #260
-            "mission-type", // #194
-            "policy"); // #476
-
-    @Test
-    void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
-        Path pack = ExamplePacks.pack(BUILT_IN);
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("examplePacks")
+    void everyExamplePackRoundTripsAsExpected(String name, @TempDir Path temp) throws IOException {
+        Path pack = ExamplePacks.pack(name);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         WholePackRoundTrip roundTrip = new DomainRoundTrip(new YamlSerializationStrategy());
         Map<String, List<String>> information = new TreeMap<>();
-
         Set<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed =
-                observe(roundTrip, pack, temp.resolve(BUILT_IN), census, information, paired);
-        Evaluation evaluation =
-                WholePackExpectation.fromClasspath().evaluate(census, roundTrip.modelledKinds(), observed);
 
-        Path report = Path.of(System.getProperty("charter.wholePackReport", "build/reports/whole-pack/report.md"));
+        Map<String, Optional<String>> observed =
+                observe(roundTrip, pack, temp.resolve(name), census, information, paired);
+        Evaluation evaluation = WholePackExpectation.fromClasspath()
+                .forPack(name)
+                .evaluate(census, roundTrip.modelledKinds(), observed);
+
+        Path report = Path.of(System.getProperty("charter.wholePackReportDir", "build/reports/whole-pack"))
+                .resolve(name + ".md");
         Files.createDirectories(report.toAbsolutePath().getParent());
         Files.writeString(
                 report,
                 WholePackReport.render(
                         evaluation,
-                        "charter example pack built-in",
-                        "service/packs/src/testFixtures/resources/example-packs",
+                        "charter example pack " + name,
+                        "service/packs/src/testFixtures/resources/example-packs/" + name,
                         information),
                 StandardCharsets.UTF_8);
-        System.out.println(WholePackReport.kindTable(evaluation));
+        System.out.println(name + "\n" + WholePackReport.kindTable(evaluation));
 
-        assertThat(unpaired(temp.resolve(BUILT_IN), paired))
-                .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
-                .isEmpty();
-        // The descriptor, the shards and the org fragment (#509), #193's two payload kinds (bytes, no binding), #195's
-        // presets and manifest, #260's pack document, #476's mutability policy and every bound kind.
-        Set<String> bound = new TreeSet<>(Set.of(
-                DomainRoundTrip.DESCRIPTOR,
-                DomainRoundTrip.GRAPH_SHARD,
-                DomainRoundTrip.ORG_FRAGMENT,
-                DomainRoundTrip.ASSET_PAYLOAD,
-                DomainRoundTrip.TEMPLATE,
-                DomainRoundTrip.PRESET,
-                DomainRoundTrip.MANIFEST,
-                DomainRoundTrip.PACK_DOCUMENT,
-                DomainRoundTrip.POLICY));
-        KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
-        assertThat(roundTrip.modelledKinds())
-                .as("the kinds the round trip models")
-                .containsAll(REQUIRED_KINDS)
-                .isEqualTo(bound);
         assertThat(evaluation.problems())
-                .as("whole-pack round trip against %s; report: %s", WholePackExpectation.EXPECTED_RED_RESOURCE, report)
+                .as("%s against %s; report: %s", name, WholePackExpectation.EXPECTED_RED_RESOURCE, report)
                 .isEmpty();
-        assertAssetsAndTemplates(pack, census, evaluation, observed);
+        List<String> refusedAsExpected = evaluation.files().stream()
+                .filter(file -> file.status() == Status.EXPECTED_RED)
+                .filter(file -> WholePackExpectation.atOf(file.detail()).equals("refused"))
+                .map(WholePackExpectation.FileResult::path)
+                .toList();
+        assertThat(unpaired(temp.resolve(name), paired))
+                .as("%s: written files no source file pairs with (ADR-0036: an extra file is a difference)", name)
+                .isSubsetOf(refusedAsExpected);
     }
 
     /**
-     * The org example pack round-trips whole (#509): its {@code drg/fragment.yaml}, the org-level DRG document the
-     * built-in pack has no file of, is written and read back with its {@code enhances} edges, so its step enhancements
-     * survive the read-back. Every file of a modelled kind is green but the fragment, whose one {@code impacts} edge
-     * loses its strength in the domain (#477 owns it; this expectation goes stale when #477 lands), and no written file
-     * is left unpaired but the refused fragment's written copy.
+     * The gate's kinds are tied to the file-kind table, not to the registry (#547): every {@code file-kinds.yaml}
+     * schema is modelled by the round trip or listed in the expectation's {@code kinds} with a reason, and every listed
+     * kind is a schema the round trip does not model.
      */
     @Test
-    void theOrgPackRoundTripsWholeWithItsFragment(@TempDir Path temp) {
-        Path pack = ExamplePacks.pack(ExamplePacks.ORG);
+    void everyFileKindsSchemaIsModelledOrListedWithAReason() {
+        Set<String> schemas = fileKindsSchemas();
+
+        assertThat(schemas).as("the file-kinds.yaml schemas").contains(DomainRoundTrip.ORG_FRAGMENT);
+        assertThat(WholePackExpectation.fromClasspath()
+                        .schemaProblems(schemas, new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds()))
+                .isEmpty();
+    }
+
+    /**
+     * What only the example packs together prove: every modelled kind has a file in one of them, and every file entry,
+     * known failure and exclusion names one of them, so no pack's run leaves it unjudged.
+     */
+    @Test
+    void theExamplePacksTogetherHoldEveryModelledKindAndEveryEntry() {
+        Map<String, SortedMap<String, String>> censusByPack = new TreeMap<>();
+        examplePacks().forEach(name -> censusByPack.put(name, WholePackCensus.of(ExamplePacks.pack(name))));
+        WholePackExpectation expectation = WholePackExpectation.fromClasspath();
+
+        assertThat(censusByPack.keySet()).containsExactly(BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+        assertThat(WholePackExpectation.emptyKindProblems(
+                        censusByPack, new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds()))
+                .isEmpty();
+        assertThat(expectation.unscopedEntries(censusByPack.keySet())).isEmpty();
+    }
+
+    /**
+     * The planted break of #547: a round trip that no longer models {@code org-fragment} gives the {@code org-base}
+     * fragment no outcome. The drift judgement fails naming the kind and the path, and the schema check fails naming
+     * the schema; the faithful round trip fails neither way.
+     */
+    @Test
+    void anUnmodelledOrgFragmentFailsTheDriftAndTheSchemaChecks(@TempDir Path temp) {
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+        WholePackRoundTrip faithful = new DomainRoundTrip(new YamlSerializationStrategy());
+        WholePackRoundTrip planted = withoutKind(faithful, DomainRoundTrip.ORG_FRAGMENT);
+        Path org = ExamplePacks.pack(ExamplePacks.ORG);
+        WholePackExpectation expectation = WholePackExpectation.fromClasspath();
+
+        List<String> faithfulDrift = WholePackDrift.problems(store, faithful, org, temp.resolve("faithful/org-base"));
+        List<String> plantedDrift = WholePackDrift.problems(store, planted, org, temp.resolve("planted/org-base"));
+
+        assertThat(faithfulDrift).noneSatisfy(problem -> assertThat(problem).contains("no adapter models kind"));
+        assertThat(plantedDrift)
+                .contains("org-base: UNEXPECTED_RED " + PackFileSet.FRAGMENT
+                        + " (org-fragment): no adapter models kind org-fragment");
+        assertThat(expectation.schemaProblems(fileKindsSchemas(), faithful.modelledKinds()))
+                .isEmpty();
+        assertThat(expectation.schemaProblems(fileKindsSchemas(), planted.modelledKinds()))
+                .containsExactly("UNMODELLED_SCHEMA org-fragment: the round trip does not model this file-kinds.yaml"
+                        + " schema, and " + WholePackExpectation.EXPECTED_RED_RESOURCE
+                        + " does not list it in kinds with a reason");
+    }
+
+    /** The schema names of the bundled file-kind table's {@code files} rules. */
+    private static Set<String> fileKindsSchemas() {
+        return PackFileKind.bundled().fileRules().stream()
+                .map(PackFileKind.FileRule::schema)
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    /**
+     * {@code roundTrip} as if it did not model {@code kind}: the kind leaves its modelled kinds and its files get no
+     * outcome, as {@code org-fragment}'s had none before #509.
+     */
+    private static WholePackRoundTrip withoutKind(WholePackRoundTrip roundTrip, String kind) {
+        return new WholePackRoundTrip() {
+            @Override
+            public Set<String> modelledKinds() {
+                Set<String> kinds = new TreeSet<>(roundTrip.modelledKinds());
+                kinds.remove(kind);
+                return kinds;
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
+                Map<String, Outcome> outcomes = new TreeMap<>(roundTrip.roundTrip(from, to, kindOf));
+                outcomes.keySet().removeIf(path -> kind.equals(kindOf.get(path)));
+                return outcomes;
+            }
+        };
+    }
+
+    /**
+     * #193, #260: the built-in pack's asset sidecars, asset files, templates and pack document all round-trip, each
+     * sidecar naming a payload the census holds.
+     */
+    @Test
+    void theBuiltInPacksAssetsTemplatesAndDocumentRoundTrip(@TempDir Path temp) {
+        Path pack = ExamplePacks.pack(BUILT_IN);
         SortedMap<String, String> census = WholePackCensus.of(pack);
         WholePackRoundTrip roundTrip = new DomainRoundTrip(new YamlSerializationStrategy());
-        Set<String> paired = new TreeSet<>();
-
         Map<String, Optional<String>> observed =
-                observe(roundTrip, pack, temp.resolve(ExamplePacks.ORG), census, new TreeMap<>(), paired);
+                observe(roundTrip, pack, temp.resolve(BUILT_IN), census, new TreeMap<>(), new TreeSet<>());
+        Evaluation evaluation = WholePackExpectation.fromClasspath()
+                .forPack(BUILT_IN)
+                .evaluate(census, roundTrip.modelledKinds(), observed);
 
-        assertThat(census).containsEntry(PackFileSet.FRAGMENT, DomainRoundTrip.ORG_FRAGMENT);
-        assertThat(census).containsValue("step-enhancement");
-        assertThat(observed).containsKey(PackFileSet.FRAGMENT);
-        census.forEach((path, kind) -> {
-            if (roundTrip.modelledKinds().contains(kind)) {
-                assertThat(observed).as("%s (%s) is observed", path, kind).containsKey(path);
-            }
-        });
-        census.forEach((path, kind) -> {
-            if (kind.equals("step-enhancement")) {
-                assertThat(observed.get(path))
-                        .as("%s keeps its enhances edge", path)
-                        .isEmpty();
-            }
-        });
-        Map<String, String> red = new TreeMap<>();
-        observed.forEach((path, detail) -> detail.ifPresent(text -> red.put(path, text)));
-        assertThat(red)
-                .as("red files of the org example pack: only the fragment's impacts strength (#477)")
-                .containsOnlyKeys(PackFileSet.FRAGMENT);
-        assertThat(red.get(PackFileSet.FRAGMENT))
-                .startsWith("refused: read-back: the written fragment does not build")
-                .contains("place=[edges, 2]", "an impacts edge is missing 'impacts'");
-        assertThat(unpaired(temp.resolve(ExamplePacks.ORG), paired))
-                .as("written files no source file pairs with: only the refused fragment's written copy (#477)")
-                .containsExactly(PackFileSet.FRAGMENT);
+        assertAssetsAndTemplates(pack, census, evaluation, observed);
     }
 
     /**

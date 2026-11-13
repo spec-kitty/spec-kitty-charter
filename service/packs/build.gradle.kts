@@ -112,23 +112,24 @@ tasks.processResources {
 val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
 val testSourceSet = sourceSets.test.get()
 
-// The whole-pack round-trip gate (#187): every file of the pinned built-in pack is read into the domain, written back,
-// read again and compared with its source by meaning, against the checked-in expected-red baseline
-// (src/test/resources/whole-pack). It is not part of check; CI requires it through `CI gate / gate`, which calls
-// .github/workflows/whole-pack.yml for the `wholepack` group (epic #186, operator ruling of 2026-11-05).
-val wholePackReport = layout.buildDirectory.file("reports/whole-pack/report.md")
+// The whole-pack round-trip gate (#187): every file of every charter example pack (ADR-0070, #547) is read into the
+// domain, written back, read again and compared with its source by meaning, against the checked-in expected-red
+// baseline (src/test/resources/whole-pack). It writes one report per pack, reports/whole-pack/<pack>.md. It is not part
+// of check; CI requires it through `CI gate / gate`, which calls .github/workflows/whole-pack.yml for the `wholepack`
+// group (epic #186, operator ruling of 2026-11-05).
+val wholePackReports = layout.buildDirectory.dir("reports/whole-pack")
 tasks.register<Test>("wholePackRoundTrip") {
     group = "verification"
-    description = "The whole-pack round-trip gate over the pinned built-in pack (#187); not part of check."
+    description = "The whole-pack round-trip gate over every charter example pack (#187, #547); not part of check."
     testClassesDirs = testSourceSet.output.classesDirs
     classpath = testSourceSet.runtimeClasspath
     useJUnitPlatform {
         includeTags("whole-pack")
         excludeTags("timing")
     }
-    val report = wholePackReport
-    outputs.file(report).withPropertyName("wholePackReport")
-    systemProperty("charter.wholePackReport", report.get().asFile.absolutePath)
+    val reports = wholePackReports
+    outputs.dir(reports).withPropertyName("wholePackReports")
+    systemProperty("charter.wholePackReportDir", reports.get().asFile.absolutePath)
 }
 
 // The real-git tests of the git source (WP18, T093, T152): bare repositories served over https by `git http-backend`
