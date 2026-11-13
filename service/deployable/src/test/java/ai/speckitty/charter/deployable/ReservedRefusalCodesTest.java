@@ -286,6 +286,7 @@ class ReservedRefusalCodesTest {
 
     /** Names every refusal code the way a raising class would, for the rule to find. */
     static final class NamesEveryCode {
+        /** The first half of the codes; {@link #moreCodes()} names the rest. */
         RefusalCode[] codes() {
             return new RefusalCode[] {
                 RefusalCode.MISSION_TYPE_NOT_FOUND,
@@ -319,7 +320,13 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PACK_PARENT_UNRESOLVED,
                 RefusalCode.PACK_LEVEL_VIOLATION,
                 RefusalCode.PACK_NAME_CONFLICT,
-                RefusalCode.PACK_DUPLICATE_ID,
+                RefusalCode.PACK_DUPLICATE_ID
+            };
+        }
+
+        /** The rest of the codes, so each method stays within the method-length limit. */
+        RefusalCode[] moreCodes() {
+            return new RefusalCode[] {
                 RefusalCode.PACK_SIBLING_CONFLICT,
                 RefusalCode.PACK_REFERENCE_UNQUALIFIED,
                 RefusalCode.PACK_REFERENCE_PACK_MISSING,
