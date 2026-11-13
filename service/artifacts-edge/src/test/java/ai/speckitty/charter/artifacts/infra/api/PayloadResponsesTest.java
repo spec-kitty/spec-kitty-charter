@@ -3,6 +3,7 @@ package ai.speckitty.charter.artifacts.infra.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.ByteArrayInputStream;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,8 +51,8 @@ class PayloadResponsesTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         try {
-            ResponseEntity<Resource> answer =
-                    PayloadResponses.answer(new byte[] {1, 2, 3}, "image/png", true, TOKEN, FINGERPRINT, null);
+            ResponseEntity<Resource> answer = PayloadResponses.answer(
+                    3, new ByteArrayInputStream(new byte[] {1, 2, 3}), "image/png", true, TOKEN, FINGERPRINT, null);
 
             assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(answer.getHeaders().getFirst("Content-Type")).isEqualTo("image/png");
@@ -77,8 +78,8 @@ class PayloadResponsesTest {
     @ParameterizedTest
     @ValueSource(strings = {"\"" + TOKEN + "\"", "*", "W/\"" + TOKEN + "\"", "\"other\", \"" + TOKEN + "\""})
     void aMatchingIfNoneMatchIsA304WithTheTagAloneAndOffersNothing(String ifNoneMatch) {
-        ResponseEntity<Resource> answer =
-                PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, ifNoneMatch);
+        ResponseEntity<Resource> answer = PayloadResponses.answer(
+                1, new ByteArrayInputStream(new byte[] {1}), "image/png", true, TOKEN, FINGERPRINT, ifNoneMatch);
 
         assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
         assertThat(answer.getHeaders().getETag()).isEqualTo("\"" + TOKEN + "\"");
@@ -92,7 +93,14 @@ class PayloadResponsesTest {
     void anIfNoneMatchThatMatchesNothingIsA200EvenWhenItHoldsTheTagInsideAValueThatIsNotATagList(String ifNoneMatch) {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
         try {
-            assertThat(PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, ifNoneMatch)
+            assertThat(PayloadResponses.answer(
+                                    1,
+                                    new ByteArrayInputStream(new byte[] {1}),
+                                    "image/png",
+                                    true,
+                                    TOKEN,
+                                    FINGERPRINT,
+                                    ifNoneMatch)
                             .getStatusCode())
                     .isEqualTo(HttpStatus.OK);
         } finally {
@@ -103,7 +111,8 @@ class PayloadResponsesTest {
     @Test
     void a200OutsideARequestHasNoRequestToOfferItsTagTo() {
         RequestContextHolder.resetRequestAttributes();
-        assertThatThrownBy(() -> PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, null))
+        assertThatThrownBy(() -> PayloadResponses.answer(
+                        1, new ByteArrayInputStream(new byte[] {1}), "image/png", true, TOKEN, FINGERPRINT, null))
                 .isInstanceOf(IllegalStateException.class);
     }
 }

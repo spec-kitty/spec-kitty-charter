@@ -68,7 +68,8 @@ public class AssetsController implements AssetsApi {
             String packId, String artifactId, @Nullable String ifNoneMatch) {
         AssetReads.PayloadRead read = assets.payload(new PackIdentifier(packId), artifactId);
         return PayloadResponses.answer(
-                read.bytes(),
+                read.length(),
+                read.stream(),
                 read.asset().mime(),
                 read.asset().wellFormedMime(),
                 read.revision(),

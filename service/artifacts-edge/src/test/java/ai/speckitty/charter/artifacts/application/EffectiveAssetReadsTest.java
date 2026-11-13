@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,12 +153,13 @@ class EffectiveAssetReadsTest {
     }
 
     @Test
-    void thePayloadIsTheWinningCopysBytesReadAtTheActivationsFingerprint() {
+    void thePayloadIsTheWinningCopysBytesReadAtTheActivationsFingerprint() throws IOException {
         EffectiveAssetReads reads = new EffectiveAssetReads(activation(false), packs(FINGERPRINT, null));
 
         Outcome<AssetReads.PayloadRead> outcome = reads.payload("a-1", "run", null);
 
-        assertThat(new String(found(outcome).bytes(), StandardCharsets.UTF_8)).isEqualTo("print('proj')");
+        assertThat(new String(found(outcome).stream().readAllBytes(), StandardCharsets.UTF_8))
+                .isEqualTo("print('proj')");
         assertThat(((Outcome.Found<AssetReads.PayloadRead>) outcome).etag())
                 .as("the tag is the activation's, not the pack revision")
                 .isEqualTo(ETAG);

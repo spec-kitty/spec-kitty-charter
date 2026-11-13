@@ -2,6 +2,8 @@ package ai.speckitty.charter.artifacts.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -133,7 +135,8 @@ public interface AssetReads {
 
     /**
      * What the payload read answers: the asset, the exact bytes of the payload file it names, the pack revision and
-     * the fingerprint, all of one verified read. The bytes never leave it except as a copy.
+     * the fingerprint, all of one verified read. The bytes are copied once, when the read is made, and never leave it:
+     * a caller reads them through a stream of their own, which cannot write back.
      */
     final class PayloadRead {
 
@@ -143,7 +146,7 @@ public interface AssetReads {
         private final String sourceFingerprint;
 
         /**
-         * Checks the fields and copies the bytes.
+         * Checks the fields and copies the bytes, once.
          *
          * @param asset the asset
          * @param bytes the payload's bytes
@@ -167,12 +170,21 @@ public interface AssetReads {
         }
 
         /**
-         * The payload's bytes.
+         * The payload's length.
          *
-         * @return a fresh copy of the bytes
+         * @return the number of bytes
          */
-        public byte[] bytes() {
-            return bytes.clone();
+        public int length() {
+            return bytes.length;
+        }
+
+        /**
+         * The payload's bytes, as a stream over them: it copies nothing and cannot write them.
+         *
+         * @return a new stream positioned at the first byte
+         */
+        public InputStream stream() {
+            return new ByteArrayInputStream(bytes);
         }
 
         /**

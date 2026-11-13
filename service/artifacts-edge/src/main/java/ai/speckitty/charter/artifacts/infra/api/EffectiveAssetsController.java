@@ -73,7 +73,8 @@ public class EffectiveAssetsController implements EffectiveAssetsApi {
                 AssetReads.PayloadRead read = found.value();
                 // If-None-Match was judged against this tag already: the payload answer is not asked to judge it again.
                 yield PayloadResponses.answer(
-                        read.bytes(),
+                        read.length(),
+                        read.stream(),
                         read.asset().mime(),
                         read.asset().wellFormedMime(),
                         found.etag(),
