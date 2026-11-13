@@ -96,10 +96,17 @@ standalone CLI over it. Neither has onion rings; each is one package root
 (`ai.speckitty.charter.packvalidation`, `ai.speckitty.charter.packcheck`). The ArchUnit gate gains
 `PACK_VALIDATION_IS_FRAMEWORK_FREE`: neither module depends on Spring, HTTP, a commit store or a lock,
 nor on the packs or activations slices, any `application` or `infra` ring, or the composition root.
-A committed known-bad control proves the rule bites. The rule fails on an empty selection, so
-`:deployable`'s tests carry both modules. The module builds pin their dependencies too
-(`ModuleDependencyAllowlist`), since the domain conventions refuse the parsing libraries
-`pack-validation` needs.
+It also refuses `java.net` beyond `URI`, and the JDK's HTTP client and server. A committed known-bad
+control proves the rule bites. The rule runs once per module's package and fails on an empty
+selection, so `:deployable`'s tests carry both modules. The module builds pin their dependencies too
+(`ModuleDependencyAllowlist`, on every configuration of the main classpath), since the domain
+conventions refuse the parsing libraries `pack-validation` needs.
+
+In the onion, `pack-validation` is an inner library ring beside the `kernel`: `packs.domain` and
+`packs.application` will name its types once `PackPolicy`, `PackContents` and the load move into it.
+Today `DOMAIN_IS_PURE`, `APPLICATION_IS_EDGE` and `SLICES_DO_NOT_CROSS` refuse that, so slice #553
+widens them to allow `ai.speckitty.charter.packvalidation` with its first move, with a known-good
+control.
 
 ## Context
 

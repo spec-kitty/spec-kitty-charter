@@ -13,7 +13,8 @@ plugins {
 ModuleDependencyAllowlist(
     projects = setOf(":kernel", ":profiles", ":missions"),
     modules = setOf(
-        // The parsing libraries the codecs and the schema validation use (ADR-0017), as :packs declares them today.
+        // The parsing libraries the codecs and the schema validation use (ADR-0017). :packs also declares slf4j-api
+        // and Jackson and slf4j excludes on networknt; #553 adds what the moved code needs, and nothing Spring.
         "org.snakeyaml:snakeyaml-engine",
         "com.networknt:json-schema-validator",
         "tools.jackson.core:jackson-databind",
@@ -27,4 +28,12 @@ dependencies {
     api(project(":kernel"))
     api(project(":profiles"))
     api(project(":missions"))
+}
+
+// The javadoc tool refuses a source set of package-info files alone ("No public or protected classes found to
+// document"). This skeleton has no type yet, so its javadoc is skipped until it has one, and then runs with every gate.
+// Remove this block with the first type (#553).
+tasks.javadoc {
+    val sources = source
+    onlyIf("the module holds a type, not only package-info") { sources.any { it.name != "package-info.java" } }
 }

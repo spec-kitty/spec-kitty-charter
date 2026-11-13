@@ -21,3 +21,11 @@ ModuleDependencyAllowlist(
 dependencies {
     implementation(project(":pack-validation"))
 }
+
+// The javadoc tool refuses a source set of package-info files alone ("No public or protected classes found to
+// document"). This skeleton has no type yet, so its javadoc is skipped until it has one, and then runs with every gate.
+// Remove this block with the first type (#478).
+tasks.javadoc {
+    val sources = source
+    onlyIf("the module holds a type, not only package-info") { sources.any { it.name != "package-info.java" } }
+}
