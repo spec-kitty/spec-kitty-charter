@@ -34,7 +34,8 @@ public record GuideSection(String title, String content) {
         Objects.requireNonNull(title, "title");
         Objects.requireNonNull(content, "content");
         MarkdownDocument.headingProblem(title).ifPresent(problem -> {
-            throw new ConstraintBreachException(Reason.failed("A guide section's title " + problem));
+            throw new ConstraintBreachException(
+                    Reason.failed("A guide section's title is a free heading.", "A guide section's title " + problem));
         });
         TITLE_RULES.guard(title);
         Guide.guardContent(content);

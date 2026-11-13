@@ -14,14 +14,14 @@ import org.jspecify.annotations.Nullable;
  * Without a location function a breach is at {@link Location#NOWHERE}, and without a detail function its detail is the
  * description. Both are left out, not defaulted to a shared function, so that equality stays that of the parts given.
  *
- * <p>Equality is that of a record: every part must be equal, and a predicate or function is compared by reference.
+ * <p>Equality is that of a record: every part must be equal, and a predicate or function is compared by reference, so
+ * two calls of a factory that builds a lambda, such as {@code IdentifierGrammar.slug(63)}, give unequal rules.
  * Upstream ({@code modular-validators}) compared on the description alone, so two different rules with the same
  * wording were "equal"; that defect is deliberately not reproduced.
  *
  * @param description the rule's description, the same for every subject
  * @param predicate the rule; true means the subject is acceptable
- * @param severity how much a breach weighs
- * @param code the code of a breach
+ * @param code the code of a breach, which owns its severity
  * @param location where a breach points, from the subject; {@code null} for {@link Location#NOWHERE}
  * @param detail what a breach says, from the subject; {@code null} for the description
  * @param <T> the type of subject the rule applies to
@@ -29,7 +29,6 @@ import org.jspecify.annotations.Nullable;
 public record Constraint<T>(
         String description,
         Predicate<? super T> predicate,
-        Severity severity,
         ReasonCode code,
         @Nullable Function<? super T, Location> location,
         @Nullable Function<? super T, String> detail)
@@ -39,19 +38,18 @@ public record Constraint<T>(
     public Constraint {
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(predicate, "predicate");
-        Objects.requireNonNull(severity, "severity");
         Objects.requireNonNull(code, "code");
     }
 
     /**
-     * A value object's invariant: a {@link Severity#VIOLATION} with code {@link ReasonCode#INVARIANT}, at no location,
+     * A value object's invariant: code {@link ReasonCode#INVARIANT}, a {@link Severity#VIOLATION}, at no location,
      * whose detail is its description.
      *
      * @param description the rule's description
      * @param predicate the rule; true means the subject is acceptable
      */
     Constraint(String description, Predicate<? super T> predicate) {
-        this(description, predicate, Severity.VIOLATION, ReasonCode.INVARIANT, null, null);
+        this(description, predicate, ReasonCode.INVARIANT, null, null);
     }
 
     /**
@@ -62,11 +60,11 @@ public record Constraint<T>(
      */
     public Reason applyTo(T subject) {
         if (predicate.test(subject)) {
-            return new Reason(description, Evaluation.PASS, severity, code, Location.NOWHERE, description);
+            return new Reason(description, Evaluation.PASS, code, Location.NOWHERE, description);
         }
         String said = detail == null ? description : detail.apply(subject);
         Location where = location == null ? Location.NOWHERE : location.apply(subject);
-        return new Reason(description, Evaluation.FAIL, severity, code, where, said);
+        return new Reason(description, Evaluation.FAIL, code, where, said);
     }
 
     @Override
@@ -75,23 +73,13 @@ public record Constraint<T>(
     }
 
     /**
-     * This rule with another code.
+     * This rule with another code, and so the code's severity.
      *
      * @param newCode the code of a breach
      * @return the recoded rule; this one is unchanged
      */
     public Constraint<T> coded(ReasonCode newCode) {
-        return new Constraint<>(description, predicate, severity, newCode, location, detail);
-    }
-
-    /**
-     * This rule at another severity.
-     *
-     * @param weight how much a breach weighs
-     * @return the reweighed rule; this one is unchanged
-     */
-    public Constraint<T> as(Severity weight) {
-        return new Constraint<>(description, predicate, weight, code, location, detail);
+        return new Constraint<>(description, predicate, newCode, location, detail);
     }
 
     /**
@@ -101,7 +89,7 @@ public record Constraint<T>(
      * @return the located rule; this one is unchanged
      */
     public Constraint<T> locatedBy(Function<? super T, Location> where) {
-        return new Constraint<>(description, predicate, severity, code, where, detail);
+        return new Constraint<>(description, predicate, code, where, detail);
     }
 
     /**
@@ -111,6 +99,6 @@ public record Constraint<T>(
      * @return the described rule; this one is unchanged
      */
     public Constraint<T> detailedBy(Function<? super T, String> what) {
-        return new Constraint<>(description, predicate, severity, code, location, what);
+        return new Constraint<>(description, predicate, code, location, what);
     }
 }

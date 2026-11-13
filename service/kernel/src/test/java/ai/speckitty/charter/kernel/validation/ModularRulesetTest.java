@@ -130,6 +130,7 @@ class ModularRulesetTest {
         // a different code or severity makes a different constraint
         assertThat(Constraints.of("same words", p1).coded(ReasonCode.of("other")))
                 .isNotEqualTo(Constraints.of("same words", p1));
-        assertThat(Constraints.of("same words", p1).as(Severity.NOTICE)).isNotEqualTo(Constraints.of("same words", p1));
+        assertThat(Constraints.of("same words", p1).coded(new ReasonCode("invariant", Severity.NOTICE)))
+                .isNotEqualTo(Constraints.of("same words", p1));
     }
 }

@@ -11,9 +11,9 @@ public final class Constraints {
     private Constraints() {}
 
     /**
-     * A value object's invariant: a {@link Severity#VIOLATION} with code {@link ReasonCode#INVARIANT}, whose detail is
-     * its description. {@link Constraint#coded}, {@link Constraint#as}, {@link Constraint#locatedBy} and
-     * {@link Constraint#detailedBy} refine it.
+     * A value object's invariant: code {@link ReasonCode#INVARIANT}, a {@link Severity#VIOLATION}, whose detail is its
+     * description. {@link Constraint#coded}, {@link Constraint#locatedBy} and {@link Constraint#detailedBy} refine
+     * it.
      *
      * @param description the human description
      * @param predicate the rule; true means the value is acceptable
