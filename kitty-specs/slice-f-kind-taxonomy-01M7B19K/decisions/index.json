@@ -195,6 +195,78 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-13T18:46:35.009388Z",
+      "decision_id": "01M7B3Q8R1C6J89MM3YWSMF8XZ",
+      "final_answer": "One new ADR (kind taxonomy and step authority) holding every slice F decision; touched ADRs get short notes pointing at it; number chosen against main and the open PRs when written.",
+      "input_key": "adr_shape",
+      "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
+      "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+      "opened_by": "cli",
+      "options": [
+        "Amendments only",
+        "One new ADR plus amendment notes",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Where are slice F's decisions recorded: amendments to ADR-0074, ADR-0044 and ADR-0064, or one new ADR?",
+      "rationale": null,
+      "resolved_at": "2026-11-13T19:48:58.722142Z",
+      "resolved_by": null,
+      "slot_key": "plan.records.adr-shape",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-13T18:46:37.728733Z",
+      "decision_id": "01M7B3QBD0W0KTBHPHX55RB33K",
+      "final_answer": "Kind marker types (sealed kind groups), NodeRef<K>, per-relation static factories on Relationship; one checked bridge at the boundary applies RelationType's table.",
+      "input_key": "typed_constructors",
+      "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
+      "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+      "opened_by": "cli",
+      "options": [
+        "Kind marker types plus per-relation factories",
+        "Per-relation record types",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How are relationship constructors typed by endpoint kind in Java?",
+      "rationale": null,
+      "resolved_at": "2026-11-13T19:49:01.531676Z",
+      "resolved_by": null,
+      "slot_key": "plan.domain.typed-constructors",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-13T18:46:40.487615Z",
+      "decision_id": "01M7B3QE377FQXN0R02WNC829W",
+      "final_answer": "One PR from slice-f-537-kind-taxonomy into main with ordered WPs and one Breaking fragment.",
+      "input_key": "pr_shape",
+      "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
+      "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+      "opened_by": "cli",
+      "options": [
+        "One PR, ordered WPs",
+        "Two PRs",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How does slice F land: one PR or several?",
+      "rationale": null,
+      "resolved_at": "2026-11-13T19:49:04.680676Z",
+      "resolved_by": null,
+      "slot_key": "plan.delivery.pr-shape",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
