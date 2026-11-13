@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,6 +72,8 @@ public class CharterSteps {
     private final ScenarioHttp http;
     private final ScenarioPacks packs;
     private final Map<String, String> remembered = new HashMap<>();
+    private @Nullable String expandedHref;
+    private String expandedMethod = "GET";
 
     public CharterSteps(ScenarioHttp http, ScenarioPacks packs) {
         this.http = http;
@@ -552,6 +555,57 @@ public class CharterSteps {
                 .as("the link %s is templated: %s", relation, link)
                 .isTrue();
         http.get(belowBase(expand(linkOf(JSON.readTree(http.body()), relation), values.asMap())));
+    }
+
+    /**
+     * Follows a link of the last answer with the method the link declares ({@code GET} when it declares none), sending
+     * the JSON doc string: a create a client reaches from the root, such as {@code activations}.
+     */
+    @When("I follow the link {string} with its method and the body:")
+    public void followWithMethod(String relation, String body) throws Exception {
+        JsonNode answer = JSON.readTree(http.body());
+        http.perform(
+                methodOf(answer, relation),
+                belowBase(linkOf(answer, relation)),
+                Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE),
+                body);
+    }
+
+    /**
+     * Expands the RFC 6570 template of a link of the last answer with the table's values, as {@code I follow the
+     * templated link} does, and keeps the expansion and the link's method for {@code I follow the expanded link}, so a
+     * write with a body is reached by a link too.
+     */
+    @When("I expand the templated link {string} with:")
+    public void expandTemplated(String relation, DataTable values) throws Exception {
+        JsonNode answer = JSON.readTree(http.body());
+        assertThat(answer.path(LINKS).path(relation).path("templated").asBoolean(false))
+                .as("the link %s is templated: %s", relation, answer)
+                .isTrue();
+        expandedHref = expand(linkOf(answer, relation), values.asMap());
+        expandedMethod = methodOf(answer, relation);
+    }
+
+    /** Follows the link {@code I expand the templated link} expanded, with its method, an If-Match and the body. */
+    @When("I follow the expanded link with If-Match the remembered header {string} and the body:")
+    public void followExpanded(String header, String body) throws Exception {
+        assertThat(expandedHref).as("a link was expanded with: I expand the templated link").isNotNull();
+        String ifMatch = rememberedHeader(header);
+        assertThat(ifMatch).as("the header %s was remembered", header).isNotNull();
+        http.perform(
+                expandedMethod,
+                belowBase(Objects.requireNonNull(expandedHref)),
+                Map.of(
+                        HttpHeaders.CONTENT_TYPE,
+                        MediaType.APPLICATION_JSON_VALUE,
+                        HttpHeaders.IF_MATCH,
+                        Objects.requireNonNull(ifMatch)),
+                body);
+    }
+
+    /** The method a link of {@code answer} declares; {@code GET} when it declares none. */
+    private static String methodOf(JsonNode answer, String relation) {
+        return answer.path(LINKS).path(relation).path("method").asString("GET");
     }
 
     /** Follows the link {@code relation} of every element of the array {@code member} of the last answer. */

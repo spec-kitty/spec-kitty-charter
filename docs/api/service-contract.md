@@ -146,7 +146,9 @@ step contract's delegation candidates link it under an activation. A graph node 
 `effective-artifact` only; a step node `action:<type>/<step>` links `getEffectiveMissionStep`, and so does the action
 context's own `_links`, beside `artifact` (the step's pack read). Every effective read of one artifact, the
 generic one and the profile's, links `up` to its activation (the mission reads, deliberately, do not), and the `Activation` answer links `artifacts`, the
-template `/api/v1/activations/{activationId}/artifacts{?kind,state}` of its effective list. The relation table is in
+template `/api/v1/activations/{activationId}/artifacts{?kind,state}` of its effective list, beside its other reads
+(`packs`, `graph`, `skipped`, the templated `effective-context`), the `offering`, and its writes with their methods
+(`edit` and `delete` on itself; `select`, `exclude` and `apply-preset`, templated; #409). The relation table is in
 [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/).
 
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
