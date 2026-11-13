@@ -2,8 +2,8 @@
 title: "ADR-0074: The remaining cutover reads, and the paths a client reads them by"
 description: How the seven open cutover reads (R4, R11 to R16) are decided, and the paths assets, skills, glossary contexts and presets are read by.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-13T00:00:00Z
+decision_status: Accepted; decision 9 amended for assets under an activation (2026-11-12, an agent call awaiting operator review)
 decision_date: '2026-11-12'
 type: ADR
 kind: ADR
@@ -36,6 +36,12 @@ audience:
   accessor consistency, reviewed by a two-lens squad, and then ruled one by one by the operator in an interview on
   2026-11-12. The operator kept ADR-0049's per-kind glossary list and extended it to assets and skills, gave the
   three new kinds literal item paths, and made an asset's `mime` the payload's `Content-Type`.
+
+**Built (slice A2, [#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)):** decisions 1, 2 and 4, and
+the paths of decisions 9 to 14 for presets, assets and skills, the activation twins and the references twin of
+decision 12 included. The glossary (decision 3, [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106))
+is pending its own mission. Decision 9 is amended for assets under an activation: see
+[Amendment 2026-11-12](#amendment-2026-11-12).
 
 It **amends** two Accepted records, and each is annotated where it stands:
 
@@ -154,6 +160,11 @@ both to the operator, who ruled on each (decisions 9 to 14).
      stands).
 
    The kinds served before this record keep `?kind=` only; their collection paths stay write targets.
+
+   *Amended 2026-11-12 (an agent call awaiting operator review; see [Amendment 2026-11-12](#amendment-2026-11-12)):
+   under an activation, the effective list does not take `?kind=asset`, which it answers 400 as before; an
+   activation's assets are listed at `/activations/{activationId}/artifacts/asset` only. `?kind=skill` lists skills
+   in both trees.*
 10. **Items.** `asset`, `skill` and `glossary` each get a literal item path and an operation of their own, in both
     trees, as `agent_profile` and `mission_type` have: `…/artifacts/asset/{artifactId}`, `…/artifacts/skill/{artifactId}`
     and `…/artifacts/glossary/{contextId}`. Each answers its kind's own schema. As for an agent profile, the templated
@@ -176,6 +187,11 @@ both to the operator, who ruled on each (decisions 9 to 14).
     literal path under an activation but by the generic read in a pack
     ([#533](https://github.com/spec-kitty/spec-kitty-charter/issues/533)). A pack-level file that is not an artifact, a preset, is
     read only in its pack; at `/activations/{activationId}/presets/{presetId}` the noun stays the apply write.
+
+    *Built 2026-11-13 (slice A2, #536): the asset and skill lists, items and payload have their twins, and
+    `listArtifactReferences` has its twin, `listEffectiveArtifactReferences`, the pack read of the winner's pack
+    (#532). The step-contract gap (#533) stays open. The twin of an asset answers no state (see
+    [Amendment 2026-11-12](#amendment-2026-11-12)).*
 13. **An artifact is addressed by its identity, never by its file path.** An asset is read by its id, which is the
     reference a guard writes (`asset:<id>`). ADR-0019's `/packs/{packId}/assets` and `/packs/{packId}/assets/{path}`
     are dropped. An id that is one path segment is a precondition: the asset and glossary schemas pin no `id`
@@ -226,6 +242,40 @@ both to the operator, who ruled on each (decisions 9 to 14).
   payload falls back to `application/octet-stream` instead.
 - **Take model routing out of the cutover with an ADR-0010 amendment.** Proposed in the Op, not chosen by the
   operator (2026-11-12).
+
+## Amendment 2026-11-12
+
+**Status: an agent call, awaiting operator review.** The operator asked for slice A2 (#536) to run end to end and
+for reversible calls to be made and reported at the check-in. This amendment is one of those calls, made in planning
+(research R3 of the mission `slice-a2-cutover-reads-01M78RJD`) and logged as an open review item; the operator can
+reverse it. It reads decision 9 for assets under an activation.
+
+- **The effective list does not take `asset`.** `GET /activations/{activationId}/artifacts?kind=asset` stays a
+  `400` Problem without a code, as before (`ActivationController.kindFilter` refuses a kind that is not
+  activatable). Decision 9's "`?kind=` lists every kind … under an activation" holds for the activatable kinds:
+  `?kind=skill` lists skills in both trees.
+- **An activation's assets are listed at their own path**, `GET /activations/{activationId}/artifacts/asset`
+  (`listEffectiveAssets`): the layer-merge winner of each asset id the closure holds.
+- **The templated effective item read refuses `asset`** with `404 kind_not_found` and names the literal path
+  `…/artifacts/asset/{artifactId}` (`getEffectiveAsset`), which the routing prefers over it.
+- **`EffectiveAssetRead` has no `state`, `reason` or `required`, and keeps `policy`.** An asset is in force when a
+  pack of the closure holds it: it is never selected, denied or cascaded to, so those fields would state a
+  resolution that never ran (operator ruling `DM-01M78S3RNPZ5ZFV5AR6H1X6HV1`). `policy` is a fact of the winning copy.
+
+**Why.** The effective list's items carry state, reason, policy and required, which an asset does not have. The
+packs-side merge already rules that assets are never listed by the effective reads (packs decision
+`01M702A71YF7WNDTG2AA89K8ZA`). Listing them there would invent a state, such as a `held` reason, and widen an enum.
+
+Two more agent calls of the same mission bear on decisions 11 and 13, and are recorded here for the same review:
+
+- **One media-type rule** (research R6). "Well-formed" for the payload's `Content-Type` is the rule validate already
+  applies (a slash with text on both sides), extracted to one domain function that both call; the payload is
+  `application/octet-stream` otherwise. The transport also falls back to `application/octet-stream` when the HTTP
+  stack cannot write a well-formed mime as a header value; that is a limit of the transport, documented on the
+  payload paths, not a second rule.
+- **Removal keeps its own kind set** (research R14). Listing assets and skills does not make them removable: a
+  `DELETE …/artifacts/{asset|skill}/{artifactId}` answers `404 kind_not_found`, as before. Removing an asset needs a
+  rule for its payload file, which is out of scope.
 
 ## References
 
