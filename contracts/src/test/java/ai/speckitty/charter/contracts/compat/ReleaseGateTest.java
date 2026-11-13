@@ -591,7 +591,8 @@ class ReleaseGateTest {
 
         @Test
         void aTagThatNamesTheReleasedTopHeadingPasses() {
-            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", RELEASED)).isEmpty();
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", RELEASED))
+                    .isEmpty();
         }
 
         @Test
@@ -617,7 +618,8 @@ class ReleaseGateTest {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-charter-v0.1.0", RELEASED))
                     .hasValueSatisfying(r -> assertThat(r.message()).contains("not a packs contract release tag"));
             assertThat(ReleaseGate.packsReleaseRefusal("0.1.0", RELEASED)).isPresent();
-            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-vnext", RELEASED)).isPresent();
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-vnext", RELEASED))
+                    .isPresent();
         }
 
         @Test

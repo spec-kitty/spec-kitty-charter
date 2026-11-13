@@ -59,9 +59,9 @@ class ClassifierConformanceTest {
         for (Object item : (List<?>) list) {
             assertThat(item).as("a case").isInstanceOf(Map.class);
             Map<?, ?> entry = (Map<?, ?>) item;
-            assertThat(KEYS).as("the keys of %s", entry).containsAll(entry.keySet().stream()
-                    .map(String::valueOf)
-                    .toList());
+            assertThat(KEYS)
+                    .as("the keys of %s", entry)
+                    .containsAll(entry.keySet().stream().map(String::valueOf).toList());
             cases.add(new Case(
                     text(entry, "path"),
                     text(entry, "expect"),
@@ -85,22 +85,30 @@ class ClassifierConformanceTest {
                 assertThat(mapped.schema())
                         .as("schema of %s", c.path())
                         .isEqualTo(Optional.ofNullable(c.schema()).map(s -> SCHEMA_PREFIX + s));
-                assertThat(mapped.contentForm().token()).as("content form of %s", c.path()).isEqualTo(c.contentForm());
+                assertThat(mapped.contentForm().token())
+                        .as("content form of %s", c.path())
+                        .isEqualTo(c.contentForm());
                 assertThat(decidingRule(c.path())).as("rule of %s", c.path()).isEqualTo(c.rule());
             }
             case "excluded" -> {
                 assertThat(actual).as(c.path()).isInstanceOf(Excluded.class);
-                assertThat(((Excluded) actual).exclusionClass()).as("rule of %s", c.path()).isEqualTo(c.rule());
+                assertThat(((Excluded) actual).exclusionClass())
+                        .as("rule of %s", c.path())
+                        .isEqualTo(c.rule());
                 assertNoMappedFields(c);
             }
             case "retired" -> {
                 assertThat(actual).as(c.path()).isInstanceOf(Retired.class);
-                assertThat(((Retired) actual).match()).as("rule of %s", c.path()).isEqualTo(c.rule());
+                assertThat(((Retired) actual).match())
+                        .as("rule of %s", c.path())
+                        .isEqualTo(c.rule());
                 assertNoMappedFields(c);
             }
             case "unmodelled" -> {
                 assertThat(actual).as(c.path()).isEqualTo(Unclassified.INSTANCE);
-                assertThat(c.rule()).as("rule of an unmodelled case %s", c.path()).isNull();
+                assertThat(c.rule())
+                        .as("rule of an unmodelled case %s", c.path())
+                        .isNull();
                 assertNoMappedFields(c);
             }
             default -> throw new AssertionError("unknown expect '" + c.expect() + "' for " + c.path());

@@ -424,8 +424,7 @@ public final class ReleaseGate {
      * @param sections    the line's CHANGELOG headings
      * @param line        the line, for its CHANGELOG's name and its version mismatch
      */
-    private static Optional<Decision.Refused> changelogRefusal(
-            String infoVersion, List<Section> sections, Line line) {
+    private static Optional<Decision.Refused> changelogRefusal(String infoVersion, List<Section> sections, Line line) {
         String file = line.changelog();
         Optional<Version> info = Version.parse(infoVersion);
         if (info.isEmpty()) {
@@ -438,8 +437,8 @@ public final class ReleaseGate {
         for (Section section : sections) {
             Optional<String> malformed = Version.malformation(section.token());
             if (malformed.isPresent()) {
-                return refuse("The heading '" + section.text() + "' of " + file + " names a version"
-                        + " that " + malformed.get() + ".");
+                return refuse("The heading '" + section.text() + "' of " + file + " names a version" + " that "
+                        + malformed.get() + ".");
             }
         }
         Section top = sections.getFirst();
@@ -480,8 +479,7 @@ public final class ReleaseGate {
         Set<String> seen = new TreeSet<>();
         for (Version version : versions) {
             if (!seen.add(version.text())) {
-                return refuse(file + " lists " + version.text() + " twice; each version has one"
-                        + " section.");
+                return refuse(file + " lists " + version.text() + " twice; each version has one" + " section.");
             }
         }
         Version top = versions.getFirst();

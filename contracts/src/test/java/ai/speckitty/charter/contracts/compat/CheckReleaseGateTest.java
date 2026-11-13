@@ -76,7 +76,8 @@ class CheckReleaseGateTest {
         assertThat(CheckReleaseGate.run(args, out)).isZero();
         assertThat(printed()).startsWith("RELEASE 0.1.0\n");
         output.reset();
-        List<String> missing = List.of("--packs-release", dir.resolve("absent.md").toString(), "contract-packs-v0.1.0");
+        List<String> missing =
+                List.of("--packs-release", dir.resolve("absent.md").toString(), "contract-packs-v0.1.0");
         assertThat(CheckReleaseGate.run(missing, out)).isEqualTo(2);
     }
 
