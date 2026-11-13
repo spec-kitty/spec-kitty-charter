@@ -22,7 +22,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  */
 class PayloadResponsesTest {
 
-    private static final String TOKEN = "sha256:" + "a".repeat(64);
+    private static final String TOKEN = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private static final String FINGERPRINT = "sha256:" + "b".repeat(64);
 
     @ParameterizedTest
@@ -74,16 +74,30 @@ class PayloadResponsesTest {
         }
     }
 
-    @Test
-    void aMatchingIfNoneMatchIsA304WithTheTagAloneAndOffersNothing() {
+    @ParameterizedTest
+    @ValueSource(strings = {"\"" + TOKEN + "\"", "*", "W/\"" + TOKEN + "\"", "\"other\", \"" + TOKEN + "\""})
+    void aMatchingIfNoneMatchIsA304WithTheTagAloneAndOffersNothing(String ifNoneMatch) {
         ResponseEntity<Resource> answer =
-                PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, "*");
+                PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, ifNoneMatch);
 
         assertThat(answer.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
         assertThat(answer.getHeaders().getETag()).isEqualTo("\"" + TOKEN + "\"");
         assertThat(answer.getHeaders().containsHeader("Charter-Source-Fingerprint"))
                 .isFalse();
         assertThat(answer.getBody()).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"other\"", "\"unclosed, \"" + TOKEN + "\""})
+    void anIfNoneMatchThatMatchesNothingIsA200EvenWhenItHoldsTheTagInsideAValueThatIsNotATagList(String ifNoneMatch) {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        try {
+            assertThat(PayloadResponses.answer(new byte[] {1}, "image/png", true, TOKEN, FINGERPRINT, ifNoneMatch)
+                            .getStatusCode())
+                    .isEqualTo(HttpStatus.OK);
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     @Test

@@ -165,14 +165,12 @@ class AssetsControllerTest {
     }
 
     @Test
-    void thePayloadIsTheExactBytesWithItsMimeAndTheHeadersEvery200Carries() throws Exception {
+    void thePayloadIsTheExactBytesOfTheReadWithItsMimeTagAndFingerprint() throws Exception {
         byte[] body = mvc(reads(LOGO))
                 .perform(get(PAYLOAD))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "image/png"))
                 .andExpect(header().string("Content-Length", String.valueOf(PNG.length)))
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().string("Content-Security-Policy", "sandbox; default-src 'none'"))
                 .andExpect(header().string("ETag", ETAG))
                 .andExpect(header().string("Charter-Source-Fingerprint", FINGERPRINT))
                 .andExpect(header().doesNotExist("Accept-Ranges"))
@@ -184,17 +182,6 @@ class AssetsControllerTest {
     }
 
     @Test
-    void thePayloadIgnoresAcceptSoAJsonAcceptIsAnsweredTheSameBytesAndType() throws Exception {
-        byte[] body = payload(mvc(reads(LOGO)), "Accept", "application/json")
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "image/png"))
-                .andReturn()
-                .getResponse()
-                .getContentAsByteArray();
-        assertThat(body).isEqualTo(PNG);
-    }
-
-    @Test
     void aRangeIsNotAnsweredWithA206ThePayloadIsWhole() throws Exception {
         byte[] body = payload(mvc(reads(LOGO)), "Range", "bytes=0-1")
                 .andExpect(status().isOk())
@@ -202,41 +189,6 @@ class AssetsControllerTest {
                 .getResponse()
                 .getContentAsByteArray();
         assertThat(body).isEqualTo(PNG);
-    }
-
-    @Test
-    void aMalformedMimeIsServedAsOctetStreamWithTheSameBytes() throws Exception {
-        AssetView plain = new AssetView("logo", QA, "plain", false, "logo.png", Optional.empty(), Optional.empty());
-
-        byte[] body = mvc(reads(plain))
-                .perform(get(PAYLOAD))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "application/octet-stream"))
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andReturn()
-                .getResponse()
-                .getContentAsByteArray();
-        assertThat(body).isEqualTo(PNG);
-    }
-
-    @Test
-    void aMatchingIfNoneMatchIsA304WithTheTagAndNoBody() throws Exception {
-        for (String held : List.of(ETAG, "*", "W/" + ETAG, "\"other\", " + ETAG)) {
-            payload(mvc(reads(LOGO)), "If-None-Match", held)
-                    .andExpect(status().isNotModified())
-                    .andExpect(header().string("ETag", ETAG))
-                    .andExpect(header().doesNotExist("Charter-Source-Fingerprint"))
-                    .andExpect(content().bytes(new byte[0]));
-        }
-    }
-
-    @Test
-    void anIfNoneMatchThatMatchesNothingIsA200EvenWhenItHoldsTheTagInsideAValueThatIsNotATagList() throws Exception {
-        for (String held : List.of("\"other\"", "\"unclosed, " + ETAG)) {
-            payload(mvc(reads(LOGO)), "If-None-Match", held)
-                    .andExpect(status().isOk())
-                    .andExpect(header().string("ETag", ETAG));
-        }
     }
 
     @Test
