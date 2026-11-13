@@ -2,6 +2,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.FileCollectionDependency
 import org.gradle.api.artifacts.ProjectDependency
 
 /**
@@ -19,7 +20,7 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
 
     /**
      * Every declared dependency the list does not allow, in the order given: projects first, as `project <path>`, then
-     * external modules, as `group:name`, then any other kind of dependency (a file collection), as given.
+     * external modules, as `group:name`, then any other kind of dependency (a file collection, as `files [name.jar]`), by its kind and name.
      */
     fun refused(declaredProjects: List<String>, declaredModules: List<String>, other: List<String> = emptyList()): List<String> =
         declaredProjects.filterNot { it in projects }.map { "project $it" } +
@@ -33,8 +34,13 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
     fun refusedAmong(dependencies: Collection<Dependency>): List<String> = refused(
         dependencies.filterIsInstance<ProjectDependency>().map { it.path },
         dependencies.filterIsInstance<ExternalModuleDependency>().map { "${it.group}:${it.name}" },
-        dependencies.filterNot { it is ProjectDependency || it is ExternalModuleDependency }.map { "$it" },
+        dependencies.filterNot { it is ProjectDependency || it is ExternalModuleDependency }.map { describe(it) },
     )
+
+    private fun describe(dependency: Dependency): String = when (dependency) {
+        is FileCollectionDependency -> "files ${dependency.files.files.map { it.name }}"
+        else -> "${dependency.javaClass.simpleName} ${dependency.name}"
+    }
 
     /**
      * Fails the build when a dependency the list does not allow reaches a configuration in [CLASSPATHS] of [project],

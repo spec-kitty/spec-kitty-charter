@@ -92,7 +92,7 @@ class ModuleDependencyAllowlistEnforcementTest {
         module.dependencies.add("compileOnly", module.files("spring.jar"))
         assertThatThrownBy { resolve(module, "compileClasspath") }
             .hasStackTraceContaining("org.springframework:spring-context")
-            .hasStackTraceContaining("FileCollectionDependency")
+            .hasStackTraceContaining("files [spring.jar]")
             .hasStackTraceContaining("in compileOnly (ADR-0075)")
     }
 
