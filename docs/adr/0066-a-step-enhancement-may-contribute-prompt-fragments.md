@@ -2,7 +2,7 @@
 title: "ADR-0066: A step enhancement may contribute prompt fragments"
 description: "Operator ruling of 2026-11-08 on open-packs#73: an enhancement pack may insert text into named slots of a base mission's step prompts, so the SPDD blocks can leave built-in."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-08'
 type: ADR
@@ -203,6 +203,9 @@ Nothing below is applied in this record. The order is the operator's: core suppo
   schema (the schema of the prompt companion in `contracts/packs/file-kinds.yaml`, which is a schema and not a kind)
   or as a check beside it; a structure schema for the fragment companion, which is new; the three validations of decision 8, and the
   effective-prompt read of decision 9.
+  *(Built: the schema, the slot rules and the load checks in phase 1 (#428); the compose checks of decision 8 and the
+  effective-prompt read of decision 9 in slice C, 2026-11-12 (#438). See the
+  [annotation of 2026-11-12](#annotation-2026-11-12-the-compose-checks-and-the-effective-prompt-read-are-built).)*
 - **The switch for the empty-slot check is a version gate**, on the pack-descriptor version, as ADR-0053 decision 8
   gated `pack_level` on the descriptor version that adds `depends_on`. A pack at an older descriptor version keeps text
   between the markers and gets a warning, not `prompt_slot_not_empty`; a pack at the new version must hold empty slots.
@@ -248,6 +251,71 @@ Two rulings of the same mission, as built in the pull request that landed it:
   file. A source written with the pack's own name, `<pack>::step_enhancement:<id>`, is judged like a bare one.
 - R-REL: the relationship write refuses, with `422 prompt_fragment_invalid` and nothing written, an edge that would
   break a held step enhancement: an `overrides` edge from it, or a second `enhances` edge from it.
+
+### Annotation 2026-11-12: the compose checks and the effective prompt read are built
+
+Slice C ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467), mission
+`effective-step-and-action-context-01M774HB`) builds what the annotation of 2026-11-09 left to phase 2
+([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)): the three compose checks of decision 8 and the
+read of decision 9. The four codes of decision 8 are now all raised; none is reserved. The rules are on the
+[rules page](/architecture/composition-and-activation-rules/): C37 (the target held), C22 and C25 as amended (the
+inherited lock), C38 (the slot declared) and F8 (the effective step prompt). The annotations below record the operator
+rulings the build applies, each where its decision stands.
+
+### Annotation 2026-11-12: decision 8, only an enhancement in force refuses a missing slot (OD-1, OD-4)
+
+Operator rulings OD-1 (B) and OD-4 (i) of the phase-2 mission, carried into slice C.
+
+- **Active only (OD-1).** Decision 8 says a compose is checked "whatever the activation". For the target and the
+  integrity checks that stands: they are closure-level and refuse whatever is selected. For `prompt_slot_missing` it
+  is narrowed: only an enhancement in force refuses. A held enhancement that is not in force never refuses, because it
+  never renders (decision 4). The contract's description of the code says the same (`### Changed`).
+- **The moments (OD-4).** The checks run on every composing read (`500`), at registration (`getPackRegistration`,
+  `422`), on the impact-checked pack writes (the per-artifact registrations, `putPackRelationship`, `deletePackArtifact`
+  and `deletePackRelationship`, `422`) and on the activation writes (create, replace, select, unselect, deactivate,
+  reactivate and apply a preset, `422`, before anything is stored).
+- **What "in force" means without an activation.** A pack has no activation of its own. At registration and on the
+  impact-checked writes, the slot check runs once for each stored activation whose closure the change joins, on that
+  closure as the write leaves it, and names the activation in the detail. A change that joins no stored activation's
+  closure passes (research R7 of the mission).
+
+### Annotation 2026-11-12: decision 7, a step takes its mission type's integrity (OD-2)
+
+Operator ruling OD-2 (A). The bullet "a locked target takes no fragment" is read through the mission type: a step has
+no mutability level of its own, so it inherits the level of its mission type. The level is judged along the closure
+without the enhancing pack's own policy, as every write gate judges (B8).
+
+- An enhancement of a step whose mission type is `locked` is refused `422 override_not_permitted` at registration and
+  on the impact-checked writes. It is refused `500 pack_unreadable` on the reads and the activation writes, whatever
+  the activation selects, as a forbidden layer override is.
+- An `extendable` mission type takes the enhancement.
+- No enum value is added. The description of `override_not_permitted` is broadened to cover the enhancement
+  (`### Changed`).
+
+### Annotation 2026-11-12: decision 9, the read is built, and a mission type not in force is a 409 (OD-5)
+
+Operator ruling OD-5, which stands (Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`, 2026-11-12).
+
+- **The read.** `getEffectiveStepPrompt`,
+  `GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt`, answers the prompt in force
+  at the merged winner's place of the step and, per slot it declares, the fragments of the enhancements in force, in
+  the order of decision 5, each with its pack and enhancement. The prompt is served as it is stored. That is what
+  "the base prompt text unchanged" means here: the service neither renders nor rewrites it. A slot that still holds
+  legacy text under an unversioned descriptor is listed with its fragments and a `prompt_slot_not_empty` diagnostic
+  (OD-7, OD-8). The action context links the read as `prompt`.
+- **The 409.** For a mission type the closure holds and the activation does not put in force, the read answers
+  `409 mission_type_not_in_force`. It is judged after `activation_not_found`, `mission_type_not_found` and
+  `action_not_found` (which need a closure that composes and merges), and before `prompt_slot_missing` and any `304`. Its ground is decision 4: a step's prompt
+  is rendered only for a mission of its type, so a fragment shows only where the step's mission type is in force.
+- **Why it differs from the action context.** The action context of the same action answers `200` with nothing in it.
+  The context describes what governs an action: for a mission type that is not in force the true description is
+  "nothing", and its skipped report says why. The prompt read hands a renderer the text it places in a running step.
+  A mission type that is not in force has no step to run, and an empty prompt would be rendered as if it were one. A
+  conflict with the activation's state is the honest answer, and the client resolves it by changing the activation.
+- **Not additive.** Decision 9 calls the contract change additive. The read and its schemas are `### Added`. The new
+  value of the closed `CharterRefusalCode` enum is `### Breaking` on the 0.x line
+  ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): a client that validates a refusal's code against the
+  earlier enum refuses it.
 
 ## Alternatives considered
 

@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -100,7 +100,7 @@ tracking issue. Re-run the usability run after slices B and C; its checklist is 
 |---|---|---|---|
 | **A. Every kind is readable** | ~~#407, #99, #100, #148~~ done; #96 open for procedure and template bodies (tracker milestone: 4.x cutover; #469: the activation links its graph and context) | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | Profiles (PR #470) and mission types, steps, step contracts and skeletons (PR #472) are served; procedures and templates are not |
 | **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
-| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | A; B for the spdd (structured-prompt-driven development) pack |
+| **C. The effective step and action context explain every directive in force** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it); #97 (R3, decided), #439 and #447 (added 2026-11-12) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body. *Progress 2026-11-12: built by mission `effective-step-and-action-context-01M774HB` (the ownership rule, the effective step prompt and its compose checks, every overrider named, an activatable `overrides` source); the spdd pack case waits on slice B and open-packs* | A; B for the spdd (structured-prompt-driven development) pack |
 | **D. A contract release core can vendor** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
 | **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
 
@@ -113,7 +113,8 @@ The action-context walk is decided in
 `GET /offering/mission-types/{missionType}/actions/{action}/context`
 ([ADR-0020](/adr/0020-offering-and-activations/) D1). What applies in one activation is the effective context under
 `/activations/{activationId}` (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built in PR #448;
-its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450).
+its follow-up is [#450](https://github.com/spec-kitty/spec-kitty-charter/issues/450), whose scoping half slice C builds as the
+ownership rule (ADR-0018 D5 as amended 2026-11-12).
 
 ## Before step 6
 
