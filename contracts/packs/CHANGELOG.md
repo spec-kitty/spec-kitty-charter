@@ -26,3 +26,9 @@ The first packs contract version, not yet released (#559).
   outcome an implementation of `file-kinds.yaml` must give it (`mapped` with its kind, schema and
   content form, `excluded`, `retired` or `unmodelled`), one case for every rule at least. The
   charter service runs them against its own classifier in CI.
+- `packs-contract/RELEASE.json` in the release archive: the version, the tag and the charter commit.
+
+### Changed
+
+- The "Matching" header of `file-kinds.yaml` states the order the sections are consulted in, and
+  that a file no rule takes is refused as `unmodelled`; it said such a file was left unclassified.

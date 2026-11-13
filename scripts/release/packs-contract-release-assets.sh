@@ -3,7 +3,8 @@
 # commit:
 #
 #   packs-contract.tar.gz          the tracked files of contracts/packs/ under packs-contract/: file-kinds.yaml, the
-#                                  schemas, the classifier conformance cases, the CHANGELOG and the README
+#                                  schemas, the classifier conformance cases, the CHANGELOG and the README; and
+#                                  packs-contract/RELEASE.json, which names the version, the tag and the commit
 #   packs-contract.sha256          one sha256sum line per file of the archive, by its path in the archive
 #   packs-contract.tar.gz.sha256   the archive's checksum, in sha256sum format
 #
@@ -11,7 +12,7 @@
 #
 # It refuses unless the tag and the top heading of contracts/packs/CHANGELOG.md name one released version
 # (:contracts:checkPacksReleaseTag) and the packs contract checks pass: the classifier runs the conformance cases, and
-# the table and the schemas load (:packs:test, the three test classes below). The assets are built in a scratch
+# the table, the schemas and the service's vocabulary agree (:packs:test, the four test classes below). The assets are built in a scratch
 # directory and moved into <out-dir> only once all of them exist and check, so a refusal or a failure leaves <out-dir>
 # without assets. .github/workflows/packs-contract-release.yml runs it, and rehearse-packs-contract-release.sh runs it
 # on a synthetic release in CI.
@@ -31,10 +32,19 @@ if [[ -e "$out" ]] && [[ -n "$(ls -A "$out")" ]]; then
   exit 2
 fi
 
+# The assets are those of the tagged commit: when the tag exists, a run on another commit refuses rather than mislabel
+# them. A workflow_dispatch rehearsal names a tag that does not exist yet and builds from the chosen ref.
+tagged="$(git rev-parse --verify --quiet "$tag^{commit}" || true)"
+if [[ -n "$tagged" ]] && [[ "$tagged" != "$(git rev-parse HEAD)" ]]; then
+  echo "error: the tag $tag does not name HEAD ($(git rev-parse --short HEAD)): check out the tag first" >&2
+  exit 2
+fi
+
 # The publishing gate first: nothing is built for a tag the packs contract does not carry.
 ./gradlew --no-build-cache :contracts:checkPacksReleaseTag -PreleaseTag="$tag"
 ./gradlew --no-build-cache :packs:test \
-  --tests '*.ClassifierConformanceTest' --tests '*.PackFileKindTest' --tests '*.PackSchemasTest'
+  --tests '*.ClassifierConformanceTest' --tests '*.PackFileKindTest' --tests '*.PackSchemasTest' \
+  --tests '*.VocabularyEqualityTest'
 
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
@@ -45,6 +55,9 @@ if [[ -n "$(git status --porcelain -- contracts/packs)" ]]; then
 fi
 mkdir "$stage/packs-contract"
 git archive --format=tar HEAD contracts/packs | tar -x -C "$stage/packs-contract" --strip-components=2
+# The release record a consumer's lock copies (doc-kitty's contract.lock.json names the charter commit).
+printf '{\n  "contract": "packs",\n  "version": "%s",\n  "tag": "%s",\n  "commit": "%s"\n}\n' \
+  "${tag#contract-packs-v}" "$tag" "$(git rev-parse HEAD)" > "$stage/packs-contract/RELEASE.json"
 (cd "$stage" && find packs-contract -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > packs-contract.sha256)
 
 # A reproducible archive: sorted names, fixed owner and modes, and the commit's time as every member's time.
@@ -61,7 +74,7 @@ check="$(mktemp -d)"
 trap 'rm -rf "$stage" "$check"' EXIT
 tar -xzf "$stage/packs-contract.tar.gz" -C "$check"
 (cd "$check" && sha256sum --check --strict --quiet "$stage/packs-contract.sha256")
-for required in file-kinds.yaml CHANGELOG.md conformance/classifier-cases.yaml schemas/pack-document.schema.json; do
+for required in RELEASE.json file-kinds.yaml CHANGELOG.md conformance/classifier-cases.yaml schemas/pack-document.schema.json; do
   if [[ ! -s "$check/packs-contract/$required" ]]; then
     echo "error: the archive has no packs-contract/$required" >&2
     exit 1

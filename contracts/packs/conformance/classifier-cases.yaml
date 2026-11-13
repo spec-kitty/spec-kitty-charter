@@ -6,8 +6,9 @@
 # classifier in CI (ClassifierConformanceTest), and that test also fails when a rule of file-kinds.yaml has no case.
 #
 # A case:
-#   path          the file's path relative to the directory that holds the pack directories, with forward slashes:
-#                 the first segment is the pack's directory name.
+#   path          the file's path relative to the directory that holds the pack directories, with forward slashes. A
+#                 path of two or more segments starts with the pack's directory name; a path of one segment is a file
+#                 beside the pack directories (`built-in.source.yaml`).
 #   expect        one of
 #                   mapped      the file is pack content of a known kind;
 #                   excluded    the file is not pack content (an `exclusions` rule, or the `ignored` fallback): it is
@@ -15,17 +16,25 @@
 #                   retired     the file belongs to a layout the service no longer reads: it is refused by name;
 #                   unmodelled  no rule takes it: it is refused as `unmodelled`.
 #   rule          the `match` glob of the rule that decides the case, as file-kinds.yaml writes it; absent for
-#                 `unmodelled`. Rules are consulted in the order `files`, `exclusions`, `retired`, then a root file that
-#                 differs from a `files` or `retired` root rule's file only in letter case (refused as retired under
-#                 that rule), then `payloads`, and last `ignored`, which never takes a path that a `files`, `retired`
-#                 or `payloads` rule takes in another letter case.
+#                 `unmodelled`. For a root case variant (below) it is the root rule's glob, which may be a `files` rule.
 #   kind          for `mapped`: the file's kind, the schema name of a `files` rule or the `kind` of a `payloads` rule.
 #   schema        for `mapped` by a `files` rule: the schema that validates it, relative to contracts/packs/; absent for
 #                 a payload, which has no schema.
 #   content_form  for `mapped`: yaml, markdown or bytes.
 #
-# The cases cover classification of a path alone. A kind's companion claims (a skill's body, a toolguide's guide)
-# are made by the store after classification and are not part of these cases.
+# How a path is classified. Globs are matched case-sensitively, except where step 6 says otherwise; `*` matches within
+# one segment, `**/` matches zero or more whole segments, every other character is literal.
+#   1. `files`, then `exclusions`, then `retired`: the first rule that matches, in table order, decides. Within
+#      `files` table order matters: `core/presets/a.tactic.yaml` is a tactic, because `**/*.tactic.yaml` comes before
+#      `*/presets/*.yaml`.
+#   2. `payloads`: the first that matches decides (a `mapped` payload, with no schema).
+#   3. A root case variant: a root rule is a `files` or `retired` rule whose glob is `*/<name>` with no `*` or `/` in
+#      `<name>`. A path `<pack>/<other>` where `<other>` equals `<name>` ignoring letter case is `retired` under that
+#      rule (`core/Readme.md` under `*/README.md`). The refusal's reason text is not part of the contract.
+#   4. `ignored`, matched ignoring letter case (`core/docs/NOTES.MD` is excluded), except for a path that a `files`,
+#      `retired` or `payloads` rule would take with path and glob both in lower case: that path is `unmodelled`.
+#   5. Anything else is `unmodelled`.
+#
 cases:
   # files: one case per rule.
   - {path: core/pack.yaml, expect: mapped, rule: "*/pack.yaml", kind: pack-descriptor, schema: schemas/pack-descriptor.schema.json, content_form: yaml}
@@ -61,6 +70,8 @@ cases:
   - {path: core/x/y/z/a.tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
   - {path: core/sub/presets/minimal.yaml, expect: unmodelled}
   - {path: core/sub/pack.yaml, expect: unmodelled}
+  # Within files, the first rule in table order wins.
+  - {path: core/presets/a.tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
   # A files rule takes precedence over a payload rule: a directive under templates/ is a directive.
   - {path: core/templates/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
 
@@ -107,8 +118,11 @@ cases:
   # ignored: Markdown that no other rule takes is excluded, not refused.
   - {path: core/docs/notes.md, expect: excluded, rule: "**/*.md"}
   - {path: CHANGELOG.md, expect: excluded, rule: "**/*.md"}
-  # ...but never a path that a files rule takes in another letter case: that is refused as unmodelled.
+  - {path: core/docs/NOTES.MD, expect: excluded, rule: "**/*.md"}
+  # ...but never a path that a files, retired or payloads rule takes in another letter case: that is unmodelled.
   - {path: core/toolguides/a.guide.MD, expect: unmodelled}
+  - {path: core/Mission-Steps/plan/specify.md, expect: unmodelled}
+  - {path: core/Templates/spec-template.md, expect: unmodelled}
 
   # unmodelled: no rule takes the file.
   - {path: core/notes.txt, expect: unmodelled}
