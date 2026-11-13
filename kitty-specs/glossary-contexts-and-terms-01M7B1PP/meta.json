@@ -1,0 +1,21 @@
+{
+  "create_return_branch": "feat/106-glossary-contexts",
+  "created_at": "2026-11-13T18:11:20.239452+00:00",
+  "flattened": false,
+  "friendly_name": "R12: glossary contexts and terms",
+  "mid8": "01M7B1PP",
+  "mission_base_sha": "406e936b026a13d60207f8bbb0a2f4733ac4e794",
+  "mission_branch": "kitty/mission-glossary-contexts-and-terms-01M7B1PP",
+  "mission_id": "01M7B1PPNHGRAM8VH9ARMK3TVD",
+  "mission_number": null,
+  "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core reads a pack's vocabulary today, and the charter does not serve it. ADR-0049 ruled a new shape: a glossary context of terms, each term addressable as term:<context>/<term>. ADR-0074 ruled the reads. This mission replaces the old glossary_pack shape outright, as the charter's model rule requires, and serves the contexts and terms so slice A2 (#536) closes.",
+  "purpose_tldr": "Replace the glossary_pack kind with ADR-0049's glossary contexts and terms, and serve them by ADR-0074's paths in a pack and under an activation.",
+  "slug": "glossary-contexts-and-terms-01M7B1PP",
+  "target_branch": "feat/106-glossary-contexts",
+  "topology": "single_branch",
+  "topology_settled": false,
+  "topology_source": "default"
+}
