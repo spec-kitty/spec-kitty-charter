@@ -48,7 +48,7 @@ jobs:
   # idle 4-core machine (2026-11-12, 7129 mutants, 69 timed out), and a GitHub runner is ~1.4x slower through the
   # whole mutation phase (run 43176780670 ran out of its 80-minute step), so :packs runs as two shards of its floor
   # groups, about half of its test runs each (`-PmutationGroups`, charter.mutation-conventions): ~47 min each on a
-  # runner. Every group is scored on all of its mutants, as in a whole-module run. The six other modules take ~15 min.
+  # runner. Every group is scored on all of its mutants, as in a whole-module run. The other modules take ~15 min.
   # Budget (operator ruling, 2026-11-12, raising ADR-0062's 90): 120 minutes a shard, 110 of them for the mutation
   # step, so the copy and the upload still run when PIT runs out of time. A timeout raises the mutation-testing issue.
   # The summary job merges the shards' reports into one table.

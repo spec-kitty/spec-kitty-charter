@@ -13,6 +13,8 @@
 // pitest stays cacheable) and fails when a group's mutation score is below its floor (MutationFloors.kt has the
 // score's definition).
 // The finalizer runs even when another module fails, so `./gradlew pitest --continue` reports every module.
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
+
 plugins {
     java
     id("info.solidsoft.pitest")
@@ -65,6 +67,18 @@ afterEvaluate {
     // The module's own scope, before a shard narrows it: every package PIT mutates must sit in a floor group, or a shard
     // would drop it and no floor would score it (checkMutationFloors refuses a mutant no group holds on any run).
     moduleTargets = pitest.targetClasses.get().toSet()
+    // PIT runs the module's unit tests in its own minion JVMs, so they get what `test` gives them: its system
+    // properties and the JUnit tags it leaves out. A module never copies them by hand, so it cannot forget one; a test
+    // that `test` passes and PIT fails unmutated leaves the module with no report (#461). A module may still add tags
+    // PIT alone leaves out (`stress` in :packs). After the module's own pitest block, so an assignment there cannot
+    // replace them. Read through `provider {}`, never `unitTests.map {}`: a mapped task provider carries `test` as its
+    // producer, so `pitest` would depend on `test` and run the whole unit suite first, and a red `test` would leave the
+    // module with no report again.
+    val unitTests = tasks.named<Test>("test")
+    pitest.jvmArgs.addAll(provider { MutationFloors.minionSystemProperties(project.path, unitTests.get().systemProperties) })
+    pitest.excludedGroups.addAll(
+        provider { (unitTests.get().options as? JUnitPlatformOptions)?.excludeTags.orEmpty() },
+    )
     if (requestedGroups.isPresent) {
         pitest.targetClasses.set(shard.map { it.targetClasses })
         pitest.excludedClasses.addAll(shard.map { it.excludedClasses })

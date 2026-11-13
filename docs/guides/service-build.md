@@ -154,12 +154,14 @@ versions, the HTML and XML reports and PIT's default mutators:
 Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs, activations and
 the three edge modules apply it directly (an edge cannot take the domain convention: its rings carry external
 dependencies).
+PIT runs a module's unit tests as `test` does. The convention passes the `test` task's system properties and the JUnit
+tags it leaves out to PIT's minion JVMs, so no module copies them by hand (#461). A module may leave out more tags for
+PIT alone, such as `stress` in packs.
 Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `whole-pack`, `git-host` or
-`timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
-before `infra.fetch` joined it and about 2 minutes more with it; kernel, missions and profiles together take about
-3 minutes, so the whole run takes about 51 minutes. That figure is approximate and does not count `profiles-edge`
-(121 mutants), whose run time has not been measured.
+`timing`. A whole `:packs:pitest` took 1h06m34s on an idle 4-core machine (2026-11-12, 7129 mutants), so the mutation
+run splits the packs groups across two shards (below). In the first sharded run (43209733136, 2026-11-12) the packs
+shards took 41 and 47 minutes, and every other module together took 13.
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
 floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to

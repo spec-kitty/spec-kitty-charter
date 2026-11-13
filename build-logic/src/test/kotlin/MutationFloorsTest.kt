@@ -408,6 +408,29 @@ class MutationFloorsTest {
         const val EMPTY_REPORT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<mutations partial=\"true\">\n</mutations>\n"
     }
 
+    // The 2026-11-10 run lost :activations because a property `test` set never reached PIT's minion (#461).
+    @Test
+    fun theMinionGetsEveryPropertyOfTheUnitTestsInNameOrder() {
+        val args = MutationFloors.minionSystemProperties(
+            ":activations",
+            mapOf("charter.requireSymlinks" to true, "charter.contractSchemas" to "/repo/contracts dir"),
+        )
+
+        assertThat(args).containsExactly(
+            "-Dcharter.contractSchemas=/repo/contracts dir",
+            "-Dcharter.requireSymlinks=true",
+        )
+    }
+
+    // The plugin joins PIT's jvmArgs with commas: a comma in a value would split it into bogus arguments, silently.
+    @Test
+    fun aPropertyTheMinionCannotReceiveIntactFailsNamingIt() {
+        assertThatThrownBy { MutationFloors.minionSystemProperties(":packs", mapOf("charter.dirs" to "/a,/b")) }
+            .hasMessageContaining(":packs").hasMessageContaining("charter.dirs").hasMessageContaining("/a,/b")
+        assertThatThrownBy { MutationFloors.minionSystemProperties(":packs", mapOf("charter.unset" to null)) }
+            .hasMessageContaining("charter.unset")
+    }
+
     private fun scoreKernel(killed: Int, survived: Int, noCoverage: Int): MutationFloors.GroupResult =
         MutationFloors.score(MutationFloors.parse(report(killed, survived, noCoverage)).mutants, listOf(kernel)).single()
 

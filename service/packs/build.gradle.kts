@@ -276,10 +276,10 @@ pitest {
     )
     targetTests = mutatedPackages
     excludedTestClasses = setOf("*WiredTest")
-    // The same tags, system properties and inputs as `test` (above): PIT runs those tests in its own JVMs.
-    // plus `stress`: the 100-run concurrency tests run in `test` but are too slow to repeat per mutant.
-    excludedGroups = (unitTestExcludedTags + "stress").toSet()
-    jvmArgs.addAll(unitTestSystemProperties.map { (key, value) -> "-D$key=$value" })
+    // charter.mutation-conventions gives PIT's minion the tags `test` leaves out and its system properties (#461);
+    // the inputs are declared below. PIT alone also leaves out `stress`: the 100-run concurrency tests run in `test`
+    // but are too slow to repeat per mutant.
+    excludedGroups = setOf("stress")
 }
 tasks.named("pitest") { readsTheUnitTestInputs() }
 
