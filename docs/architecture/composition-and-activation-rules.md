@@ -1002,7 +1002,7 @@ listing's scope), `01M70C42KC78KB9H6KB7TK9224` (`enhancements`), `01M6Y6VE6VZQ4M
 > ⚠ **Unclear:** FR-019 says the context is what "the step contract names"; the plan reads it as the ADR-0018 walk.
 > The data model allows `depth` 0 or 1, while ADR-0018 D4 allows 0 to 2.
 
-**E17 Validators.** `ETag = sha256("charter-effective-read\0v2\n", read, rev(D), closureFingerprint(C), query)`; a weak match
+**E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
 An effective answer changes with the document or the packs of its closure, and nothing else. `query` is the normalized
 `kind`, `state`, cursor and page size, so each representation has its own tag; the graph's `read` has no query, and the context's is
