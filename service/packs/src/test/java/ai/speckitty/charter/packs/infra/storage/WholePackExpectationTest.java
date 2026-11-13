@@ -45,8 +45,16 @@ class WholePackExpectationTest {
             "pack.yaml", "pack-descriptor",
             "tactics/a.tactic.yaml", "tactic",
             "tactics/b.tactic.yaml", "tactic",
-            "procedures/p.procedure.yaml", "procedure",
             "README.md", "other:README.md");
+
+    /** {@link #PACK} with a file of {@code procedure}, a kind the round trip does not model. */
+    private static final SortedMap<String, String> WITH_PROCEDURE_FILE = withProcedureFile();
+
+    private static SortedMap<String, String> withProcedureFile() {
+        SortedMap<String, String> pack = new TreeMap<>(PACK);
+        pack.put("procedures/p.procedure.yaml", "procedure");
+        return pack;
+    }
 
     private static final Map<String, Optional<String>> ALL_GREEN = Map.of(
             "pack.yaml", Optional.empty(),
@@ -112,7 +120,6 @@ class WholePackExpectationTest {
                             "pack.yaml", Status.GREEN,
                             "tactics/a.tactic.yaml", Status.GREEN,
                             "tactics/b.tactic.yaml", Status.GREEN,
-                            "procedures/p.procedure.yaml", Status.EXPECTED_RED,
                             "README.md", Status.EXCLUDED));
         }
 
@@ -202,12 +209,38 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void anUnmodelledKindWithoutAnEntryIsAnUnexpectedRed() {
-            Evaluation evaluation = evaluate("kinds: []\nfiles: []\n", MATCHING_EXCLUSIONS, ALL_GREEN);
+        void aFileOfAnUnmodelledKindIsRedWhetherOrNotItsKindIsListed() {
+            for (String red : List.of("kinds: []\nfiles: []\n", MATCHING_RED)) {
+                Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
+                        .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+
+                assertThat(evaluation.problems())
+                        .as(red)
+                        .containsExactly("UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models"
+                                + " kind procedure");
+                assertThat(statuses(evaluation)).containsEntry("procedures/p.procedure.yaml", Status.RED);
+            }
+        }
+
+        @Test
+        void aFileEntryCannotExcuseAFileOfAnUnmodelledKind() {
+            String red = MATCHING_RED.replace("files: []", """
+                    files:
+                      - path: procedures/p.procedure.yaml
+                        at: no adapter models kind procedure
+                        reason: Trying to excuse an unmodelled file.
+                        issue: "#547"
+                    """);
+
+            Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
+                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
-                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure");
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure",
+                            "FILE_ENTRY_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models this"
+                                    + " kind, and an entry never excuses such a file; remove it from "
+                                    + WholePackExpectation.EXPECTED_RED_RESOURCE);
         }
 
         @Test
@@ -435,17 +468,18 @@ class WholePackExpectationTest {
         void anEntryForAnUnmodelledKindCanNeverExpire() {
             String path = "procedures/p.procedure.yaml";
 
-            Evaluation evaluation = evaluate(
-                    MATCHING_RED,
-                    MATCHING_EXCLUSIONS,
-                    known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE),
-                    ALL_GREEN);
+            Evaluation evaluation = WholePackExpectation.load(
+                            MATCHING_RED,
+                            MATCHING_EXCLUSIONS,
+                            known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE))
+                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure",
                             "KNOWN_FAILURE_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models "
                                     + "this kind, so the entry can never expire");
-            assertThat(statuses(evaluation)).containsEntry(path, Status.EXPECTED_RED);
+            assertThat(statuses(evaluation)).containsEntry(path, Status.RED);
         }
 
         @Test
@@ -512,7 +546,7 @@ class WholePackExpectationTest {
             String report = WholePackReport.render(evaluation, "built-in", "abc", Map.of());
 
             assertThat(report)
-                    .contains("- Files: 5, green 2, expected red 1, excluded 1, red 0, known failure 1\n")
+                    .contains("- Files: 4, green 2, expected red 0, excluded 1, red 0, known failure 1\n")
                     .contains("| kind | files | green | expected red | excluded | red | known failure |")
                     .contains("| tactics/a.tactic.yaml | tactic | known failure | steps[2].title: x, <absent> — known "
                             + "failure: The pack file holds two YAML documents. (" + OPEN_PACKS_ISSUE + ") |\n");
@@ -695,7 +729,7 @@ class WholePackExpectationTest {
         void aListedKindTheRoundTripModelsNowIsBaselinedModelled() {
             Evaluation evaluation = WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS)
                     .evaluate(
-                            PACK,
+                            WITH_PROCEDURE_FILE,
                             WITH_PROCEDURE,
                             Map.of(
                                     "pack.yaml", Optional.empty(),
@@ -723,7 +757,7 @@ class WholePackExpectationTest {
 
         @Test
         void withNoExpectationAFileOfAnUnmodelledKindFailsByKindAndPath() {
-            Evaluation evaluation = WholePackExpectation.none().evaluate(PACK, MODELLED, ALL_GREEN);
+            Evaluation evaluation = WholePackExpectation.none().evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(

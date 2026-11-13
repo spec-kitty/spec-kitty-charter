@@ -22,8 +22,8 @@ import org.jspecify.annotations.Nullable;
  * What the whole-pack gate expects to see, and the two-way ratchet that holds the observed result to it.
  *
  * <p>Three checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
- * {@code file-kinds.yaml} schema with no adapter ({@code kinds}), or a single file of a modelled kind ({@code files}),
- * each with a reason and the issue that owns it. {@code whole-pack/exclusions.yaml} is the gate's own append-only list
+ * single file of a modelled kind ({@code files}), with a reason and the issue that owns it; it also names each
+ * {@code file-kinds.yaml} schema the round trip does not model ({@code kinds}), with the reason, which excuses no file. {@code whole-pack/exclusions.yaml} is the gate's own append-only list
  * of files it does not compare, each with a reason. {@code whole-pack/known-failures.yaml} names files of a modelled
  * kind that fail because the pack's own data is inconsistent, each pinned to where it differs and to the
  * spec-kitty-open-packs issue that owns the fix (ADR-0036 decision 5).
@@ -69,8 +69,10 @@ final class WholePackExpectation {
     }
 
     /**
-     * A {@code file-kinds.yaml} schema no adapter models: a file classed under it is expected red. It goes stale when the
-     * round trip models the schema or the table drops it ({@link #schemaProblems}).
+     * A {@code file-kinds.yaml} schema no adapter models, with the reason. It answers {@link #schemaProblems} alone and
+     * never excuses a file: a census file classed under it is red in every run, so a stray file of the kind, or a
+     * companion whose owner stopped naming it, fails the gate (#547). It goes stale when the round trip models the
+     * schema ({@code BASELINED_MODELLED_KIND}) or the table drops it ({@link #schemaProblems}).
      *
      * @param kind the schema name, as the census names a file of it
      * @param reason why the round trip does not model it
@@ -406,7 +408,6 @@ final class WholePackExpectation {
         private final Set<String> modelledKinds;
         private final Map<String, Optional<String>> observed;
         private final Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
-        private final Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
         private final Map<String, KnownFailure> knownEntries = new LinkedHashMap<>();
         private final Set<String> ambiguous;
         private final List<Pattern> patterns;
@@ -420,7 +421,6 @@ final class WholePackExpectation {
             this.modelledKinds = modelledKinds;
             this.observed = observed;
             files.forEach(entry -> fileEntries.put(entry.path(), entry));
-            kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
             knownFailures.forEach(entry -> knownEntries.put(entry.path(), entry));
             ambiguous = new HashSet<>(fileEntries.keySet());
             ambiguous.retainAll(knownEntries.keySet());
@@ -499,15 +499,14 @@ final class WholePackExpectation {
                 results.add(knownFailure(path, kind, red, knownEntry, problems));
                 return;
             }
-            @Nullable FileEntry fileEntry = fileEntries.get(path);
-            // A kind entry only ever covers a kind no adapter models; for a modelled kind each file is listed alone.
-            @Nullable KindEntry kindEntry = modelled ? null : kindEntries.get(kind);
-            results.add(expectedRed(path, kind, red, fileEntry, kindEntry));
+            // A kind entry never excuses a file (#547): a file of an unmodelled kind has no entry to match, so it is
+            // red.
+            @Nullable FileEntry fileEntry = modelled ? fileEntries.get(path) : null;
+            results.add(expectedRed(path, kind, red, fileEntry));
         }
 
-        /** Judges a red file against the expected-red list: by its file entry, else its kind entry. */
-        private FileResult expectedRed(
-                String path, String kind, String red, @Nullable FileEntry fileEntry, @Nullable KindEntry kindEntry) {
+        /** Judges a red file of a modelled kind against its file entry, if it has one. */
+        private FileResult expectedRed(String path, String kind, String red, @Nullable FileEntry fileEntry) {
             if (fileEntry != null && !matches(red, fileEntry.at())) {
                 problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '"
                         + fileEntry.at() + "', now: " + red);
@@ -515,9 +514,6 @@ final class WholePackExpectation {
             } else if (fileEntry != null) {
                 return new FileResult(
                         path, kind, Status.EXPECTED_RED, expected(red, fileEntry.reason(), fileEntry.issue()));
-            } else if (kindEntry != null) {
-                return new FileResult(
-                        path, kind, Status.EXPECTED_RED, expected(red, kindEntry.reason(), kindEntry.issue()));
             }
             problems.add("UNEXPECTED_RED " + path + " (" + kind + "): " + red);
             return new FileResult(path, kind, Status.RED, red);
@@ -530,6 +526,10 @@ final class WholePackExpectation {
                             + EXPECTED_RED_RESOURCE);
                 } else if (excludedPaths.contains(entry.path())) {
                     problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                } else if (!modelledKinds.contains(census.get(entry.path()))) {
+                    problems.add("FILE_ENTRY_UNMODELLED " + entry.path() + " (" + census.get(entry.path())
+                            + "): no adapter models this kind, and an entry never excuses such a file; remove it from "
                             + EXPECTED_RED_RESOURCE);
                 }
             }
