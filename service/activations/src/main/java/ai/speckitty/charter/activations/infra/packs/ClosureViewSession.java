@@ -5,6 +5,7 @@ import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
@@ -16,22 +17,26 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActionContextWalk;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.EffectivePromptQuery;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.GraphProjection;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.StepHolding;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -64,6 +69,9 @@ final class ClosureViewSession implements PacksSession {
 
     private @Nullable InForceStates resolved;
 
+    /** Whether the slot check passed for {@link #resolved}. */
+    private boolean slotsChecked;
+
     /**
      * A session over a verified view.
      *
@@ -95,6 +103,23 @@ final class ClosureViewSession implements PacksSession {
         return inForceOf(statesOf(query));
     }
 
+    /**
+     * The slot check of an activation write (C38, squad A3), asked of the document it is about to store. A closure whose
+     * merge refuses has nothing to judge here: the write keeps the answer its own rules give it, as before this check,
+     * and every composing read of the activation refuses with the merge's code (F6). The slot check's own refusal is
+     * never caught.
+     */
+    @Override
+    public void requireComposable(InForceQuery query) {
+        InForceStates states;
+        try {
+            states = resolvedFor(query);
+        } catch (CharterRefusal unmergeable) {
+            return;
+        }
+        requireSlotsOnce(states);
+    }
+
     @Override
     public GraphSnapshot graph(InForceQuery query) {
         return graphOf(view.mergedGraph(statesOf(query)));
@@ -118,6 +143,66 @@ final class ClosureViewSession implements PacksSession {
                         winner.governance().map(ClosureViewSession::governanceOf)));
     }
 
+    /**
+     * Whether the pure resolution of the query, kept for the request, puts the artifact in force: no slot check, so a
+     * read can refuse an artifact out of force before the closure's slot check refuses (research R10).
+     */
+    @Override
+    public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+        return resolvedFor(query)
+                .stateOf(new Urn(NodeKind.of(artifact.kind()), artifact.id()))
+                .filter(InForceStates.ArtifactState::active)
+                .isPresent();
+    }
+
+    @Override
+    public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+        return promptOf(view.effectivePrompt(missionType, action, statesOf(query)));
+    }
+
+    /**
+     * The activation domain's effective prompt for the packs slice's: the stored bytes as UTF-8 text (the load checks
+     * read every prompt as UTF-8), the configured id of each pack, and each diagnostic by an exhaustive switch.
+     *
+     * @param answer the packs slice's answer
+     * @return the effective prompt, as values
+     */
+    static EffectivePrompt promptOf(EffectivePromptQuery.EffectivePrompt answer) {
+        List<EffectivePrompt.Slot> slots = new ArrayList<>();
+        for (EffectivePromptQuery.Slot slot : answer.slots()) {
+            slots.add(new EffectivePrompt.Slot(
+                    slot.slot().value(),
+                    slot.fragments().stream()
+                            .map(fragment -> new EffectivePrompt.Fragment(
+                                    fragment.packId().value(),
+                                    fragment.packName(),
+                                    fragment.level(),
+                                    fragment.enhancement(),
+                                    fragment.text()))
+                            .toList()));
+        }
+        return new EffectivePrompt(
+                new String(answer.prompt().bytes(), StandardCharsets.UTF_8),
+                answer.promptPackId().map(pack -> pack.value()),
+                slots,
+                answer.diagnostics().stream()
+                        .map(ClosureViewSession::diagnosticOf)
+                        .toList());
+    }
+
+    /**
+     * A finding of the prompt read. The prompt query lists only a slot that holds text, the one code it carries; any
+     * other is a fault (only the pack policy names the level diagnostic, {@code HexagonalArchitectureTest}).
+     */
+    private static EffectivePrompt.Diagnostic diagnosticOf(Diagnostic diagnostic) {
+        if (diagnostic.code() != Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY) {
+            throw new IllegalStateException(
+                    "The prompt read lists no " + diagnostic.code().token() + " diagnostic: " + diagnostic.detail());
+        }
+        return new EffectivePrompt.Diagnostic(
+                EffectivePrompt.Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY, diagnostic.detail());
+    }
+
     @Override
     public void requireAction(String missionType, String action) {
         // The packs slice judges the names, whether or not the mission type is in force, so no in-force resolution and
@@ -125,20 +210,44 @@ final class ClosureViewSession implements PacksSession {
         view.requireAction(missionType, action);
     }
 
+    /** The step's place by the packs slice's one rule ({@link ClosureView#stepPlace}). */
+    @Override
+    public Optional<String> stepPlace(String missionType, String action) {
+        return view.stepPlace(missionType, action).map(PackIdentifier::value);
+    }
+
     /**
      * What is in force under the query: resolved on the first ask and kept for a read request that asks again. The cache
      * holds one query: a write that asks for another document (a deactivate judges the early floor, then the committed
-     * document) resolves again.
+     * document) resolves again. Every states this session answers compose: the slot check (C38,
+     * {@link ClosureView#requireSlots}) runs once per resolution, after the merge's own refusals (F6), so every composing
+     * read of the request refuses {@code prompt_slot_missing} alike, and a states that refused is never answered.
      */
     InForceStates statesOf(InForceQuery query) {
+        InForceStates states = resolvedFor(query);
+        requireSlotsOnce(states);
+        return states;
+    }
+
+    /** The pure resolution of the query, kept for the request ({@link ClosureView#inForce}). */
+    private InForceStates resolvedFor(InForceQuery query) {
         InForceRequest request = requestOf(query);
         InForceStates states = resolved;
         if (states == null || !request.equals(resolvedFor)) {
             states = view.inForce(request);
             resolved = states;
             resolvedFor = request;
+            slotsChecked = false;
         }
         return states;
+    }
+
+    /** The slot check of the kept resolution, once: a states that refused is judged, and refuses, again. */
+    private void requireSlotsOnce(InForceStates states) {
+        if (!slotsChecked) {
+            view.requireSlots(states);
+            slotsChecked = true;
+        }
     }
 
     /**
@@ -166,8 +275,9 @@ final class ClosureViewSession implements PacksSession {
 
     /**
      * The activation domain's context for the packs slice's walk: the artifacts in force the walk lists with their
-     * enhancers, the candidates for a suggestion, and the enhancers in force of the step. The walk's step, via and hops are
-     * its own: the context names artifacts, and the effective set decides their states.
+     * enhancers, the candidates for a suggestion, and the enhancers in force of the step. Each entry and each candidate
+     * keeps the pass that listed it, as its {@link ActionContext.AppliesThrough} (FR-009). The walk's step, via, hops and
+     * pass root are its own: the context names artifacts, and the effective set decides their states.
      *
      * @param walked what the walk reached
      * @return the context, as values
@@ -179,15 +289,31 @@ final class ClosureViewSession implements PacksSession {
         List<ActionContext.Reached> entries = new ArrayList<>();
         for (ActionContextWalk.Entry entry : walked.entries()) {
             activatable(entry.urn())
-                    .ifPresent(ref -> entries.add(new ActionContext.Reached(ref, listOf(entry.enhancedBy()))));
+                    .ifPresent(ref -> entries.add(new ActionContext.Reached(
+                            ref, listOf(entry.enhancedBy()), appliesThroughOf(entry.pass()))));
         }
         List<ActionContext.SuggestionCandidate> candidates = new ArrayList<>();
         for (ActionContextWalk.SuggestionCandidate candidate : walked.suggestionCandidates()) {
             activatable(candidate.urn())
-                    .ifPresent(ref -> candidates.add(
-                            new ActionContext.SuggestionCandidate(ref, candidate.when(), candidate.reason())));
+                    .ifPresent(ref -> candidates.add(new ActionContext.SuggestionCandidate(
+                            ref, candidate.when(), candidate.reason(), appliesThroughOf(candidate.pass()))));
         }
         return new ActionContext(true, entries, candidates, listOf(walked.actionEnhancedBy()));
+    }
+
+    /**
+     * The activation domain's name for a pass of the effective walk: the same three parts of the ownership rule, in the
+     * same order (research R3).
+     *
+     * @param pass the pass that listed an entry or reached a candidate
+     * @return its appliesThrough
+     */
+    static ActionContext.AppliesThrough appliesThroughOf(ActionContextWalk.Pass pass) {
+        return switch (pass) {
+            case ACTION -> ActionContext.AppliesThrough.ACTION;
+            case MISSION_TYPE -> ActionContext.AppliesThrough.MISSION_TYPE;
+            case PROJECT -> ActionContext.AppliesThrough.PROJECT;
+        };
     }
 
     /**
@@ -372,8 +498,8 @@ final class ClosureViewSession implements PacksSession {
                 EffectiveSet.State.valueOf(state.state().name()),
                 EffectiveSet.Reason.valueOf(state.reason().name()),
                 state.required(),
-                state.satisfiedBy().flatMap(ClosureViewSession::activatable),
-                state.overriddenBy().flatMap(ClosureViewSession::activatable),
+                activatableOf(state.satisfiedBy()),
+                activatableOf(state.overriddenBy()),
                 state.bucket().map(bucket -> EffectiveSet.Bucket.valueOf(bucket.name())));
     }
 
@@ -392,11 +518,20 @@ final class ClosureViewSession implements PacksSession {
     private static List<EffectiveSkippedReport.OverrideNotApplied> overrideNotApplied(InForceStates states) {
         List<EffectiveSkippedReport.OverrideNotApplied> kept = new ArrayList<>();
         for (InForceStates.OverrideNotApplied entry : states.overrideNotApplied()) {
+            List<ArtifactRef> by = activatableOf(entry.overriddenBy());
             activatable(entry.target())
-                    .ifPresent(target -> activatable(entry.overriddenBy())
-                            .ifPresent(by -> kept.add(new EffectiveSkippedReport.OverrideNotApplied(target, by))));
+                    .filter(target -> !by.isEmpty())
+                    .ifPresent(target -> kept.add(new EffectiveSkippedReport.OverrideNotApplied(target, by)));
         }
         return kept;
+    }
+
+    /**
+     * The overriders the resolution names, in its order (the level of the winning pack, then the URN; #439), less any
+     * that is no artifact of an activatable kind (decision D16).
+     */
+    private static List<ArtifactRef> activatableOf(List<Urn> overriders) {
+        return overriders.stream().flatMap(urn -> activatable(urn).stream()).toList();
     }
 
     /**

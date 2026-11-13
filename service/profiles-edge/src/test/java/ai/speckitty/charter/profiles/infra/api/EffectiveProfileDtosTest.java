@@ -42,7 +42,7 @@ class EffectiveProfileDtosTest {
             boolean required,
             String policy,
             String reason,
-            Optional<String> satisfiedBy,
+            List<String> satisfiedBy,
             Optional<EdgeWords> suggestion) {
         return new EffectiveProfileRead.Facts(
                 urn(urn),
@@ -52,7 +52,7 @@ class EffectiveProfileDtosTest {
                 required,
                 policy,
                 reason,
-                satisfiedBy.map(ProfileFixtures::urn),
+                satisfiedBy.stream().map(ProfileFixtures::urn).toList(),
                 suggestion);
     }
 
@@ -73,7 +73,7 @@ class EffectiveProfileDtosTest {
                                 true,
                                 "extendable",
                                 "not_selected",
-                                Optional.empty(),
+                                List.of(),
                                 Optional.empty()),
                         List.of(),
                         List.of()),
@@ -154,7 +154,7 @@ class EffectiveProfileDtosTest {
                                 true,
                                 "locked",
                                 "required",
-                                Optional.empty(),
+                                List.of(),
                                 Optional.empty()),
                         GovernanceEntry.Step.REQUIRES_OF_SUGGESTED,
                         urn("directive:S"),
@@ -209,7 +209,7 @@ class EffectiveProfileDtosTest {
                         false,
                         "open",
                         "not_selected",
-                        Optional.empty(),
+                        List.of(),
                         Optional.empty()),
                 GovernanceEntry.Step.SUGGESTS,
                 urn("agent_profile:P"),
@@ -231,7 +231,7 @@ class EffectiveProfileDtosTest {
                                         true,
                                         "open",
                                         "overridden",
-                                        Optional.of("directive:F"),
+                                        List.of("directive:F", "directive:A"),
                                         Optional.empty()),
                                 GovernanceEntry.Step.REQUIRES,
                                 urn("agent_profile:P"),
@@ -246,8 +246,10 @@ class EffectiveProfileDtosTest {
         assertThat(suggested.getEdge().getReason()).isEqualTo("r");
         assertThat(suggested.getRelation()).isEqualTo(EffectiveGovernanceEntry.RelationEnum.SUGGESTS);
         EffectiveGovernanceEntry satisfied = wire.getGovernance().get(1);
-        assertThat(satisfied.getSatisfiedBy().getKind().getValue()).isEqualTo("directive");
-        assertThat(satisfied.getSatisfiedBy().getArtifactId()).isEqualTo("F");
+        assertThat(satisfied.getSatisfiedBy())
+                .as("every overrider, in the read's order (#439), never sorted again")
+                .extracting(reference -> reference.getKind().getValue() + ":" + reference.getArtifactId())
+                .containsExactly("directive:F", "directive:A");
         EffectiveGovernanceEntry partial = wire.getGovernance().get(2);
         assertThat(partial.getEdge().getWhen()).isNull();
         assertThat(partial.getEdge().getReason()).isEqualTo("only why");
@@ -270,14 +272,15 @@ class EffectiveProfileDtosTest {
                                 true,
                                 "open",
                                 "overridden",
-                                Optional.of("agent_profile:Q"),
+                                List.of("agent_profile:Q"),
                                 Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r")))),
                         List.of(),
                         List.of()),
                 OptionalInt.empty());
 
-        assertThat(wire.getSatisfiedBy().getKind().getValue()).isEqualTo("agent_profile");
-        assertThat(wire.getSatisfiedBy().getArtifactId()).isEqualTo("Q");
+        assertThat(wire.getSatisfiedBy())
+                .extracting(reference -> reference.getKind().getValue() + ":" + reference.getArtifactId())
+                .containsExactly("agent_profile:Q");
         assertThat(wire.getSuggestion().getWhen()).isEqualTo("w");
         assertThat(wire.getSuggestion().getReason()).isEqualTo("r");
     }
@@ -321,7 +324,7 @@ class EffectiveProfileDtosTest {
                                         false,
                                         "open",
                                         "selected",
-                                        Optional.empty(),
+                                        List.of(),
                                         Optional.empty()),
                                 GovernanceEntry.Step.REQUIRES,
                                 urn("agent_profile:P"),
@@ -336,7 +339,7 @@ class EffectiveProfileDtosTest {
                                         false,
                                         "open",
                                         "not_selected",
-                                        Optional.empty(),
+                                        List.of(),
                                         Optional.empty()),
                                 GovernanceEntry.Step.SUGGESTS,
                                 urn("agent_profile:P"),

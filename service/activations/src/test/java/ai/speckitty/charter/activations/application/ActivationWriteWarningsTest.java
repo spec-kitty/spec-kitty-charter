@@ -76,7 +76,7 @@ class ActivationWriteWarningsTest {
 
     private static ArtifactState inactive(ArtifactRef ref, Reason reason) {
         return new ArtifactState(
-                ref, State.INACTIVE, reason, false, Optional.empty(), Optional.empty(), Optional.of(Bucket.OVERRIDDEN));
+                ref, State.INACTIVE, reason, false, List.of(), List.of(), Optional.of(Bucket.OVERRIDDEN));
     }
 
     private static String quoted(StoredActivation activation) {
@@ -114,9 +114,7 @@ class ActivationWriteWarningsTest {
     @Test
     void anAppliedArtifactInForceIsNoWarning() {
         states.put(
-                T,
-                new ArtifactState(
-                        T, State.ACTIVE, Reason.SELECTED, false, Optional.empty(), Optional.empty(), Optional.empty()));
+                T, new ArtifactState(T, State.ACTIVE, Reason.SELECTED, false, List.of(), List.of(), Optional.empty()));
 
         assertThat(select(T).change().warnings()).isEmpty();
     }

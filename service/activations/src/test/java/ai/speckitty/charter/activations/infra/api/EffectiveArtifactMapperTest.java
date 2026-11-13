@@ -18,6 +18,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class EffectiveArtifactMapperTest {
     }
 
     private static EffectiveArtifact winner(
-            ArtifactKind kind, String id, String pack, Optional<ArtifactRef> satisfiedBy, Optional<Suggestion> hint) {
+            ArtifactKind kind, String id, String pack, List<ArtifactRef> satisfiedBy, Optional<Suggestion> hint) {
         return new EffectiveArtifact(
                 new ArtifactRef(kind, id),
                 pack,
@@ -85,8 +86,7 @@ class EffectiveArtifactMapperTest {
     @Test
     void everyFactOfTheWinnerIsCopiedAndTheFingerprintsAreTheAnswers() {
         EffectiveArtifactRead wire = mapper.toRead(
-                answer(winner(ArtifactKind.TACTIC, "t", "proj", Optional.empty(), Optional.empty())),
-                OptionalInt.empty());
+                answer(winner(ArtifactKind.TACTIC, "t", "proj", List.of(), Optional.empty())), OptionalInt.empty());
 
         assertThat(wire.getActivationId()).isEqualTo("a-1");
         assertThat(wire.getRevision()).isEqualTo(stored.revision().token());
@@ -110,11 +110,16 @@ class EffectiveArtifactMapperTest {
                         ArtifactKind.DIRECTIVE,
                         "D",
                         "main",
-                        Optional.of(new ArtifactRef(ArtifactKind.DIRECTIVE, "E")),
+                        List.of(
+                                new ArtifactRef(ArtifactKind.TACTIC, "F"),
+                                new ArtifactRef(ArtifactKind.DIRECTIVE, "E")),
                         Optional.of(new Suggestion(Optional.of("when"), Optional.empty())))),
                 OptionalInt.empty());
 
-        assertThat(wire.getSatisfiedBy().getArtifactId()).isEqualTo("E");
+        assertThat(wire.getSatisfiedBy())
+                .as("every overrider, in the resolution's order (#439)")
+                .extracting(reference -> reference.getKind().getValue() + ":" + reference.getArtifactId())
+                .containsExactly("tactic:F", "directive:E");
         assertThat(wire.getSuggestion().getWhen()).isEqualTo("when");
         assertThat(wire.getSuggestion().getReason()).isNull();
 
@@ -123,7 +128,7 @@ class EffectiveArtifactMapperTest {
                         ArtifactKind.DIRECTIVE,
                         "D",
                         "main",
-                        Optional.empty(),
+                        List.of(),
                         Optional.of(new Suggestion(Optional.empty(), Optional.of("why"))))),
                 OptionalInt.empty());
         assertThat(both.getSuggestion().getWhen()).isNull();
@@ -133,7 +138,7 @@ class EffectiveArtifactMapperTest {
     @Test
     void theLinksAreTheRequestThePackScopedReadOfTheWinnersPackAndTheActivation() {
         EffectiveArtifactRead wire = mapper.toRead(
-                answer(winner(ArtifactKind.AGENT_PROFILE, "java jenny", "my pack", Optional.empty(), Optional.empty())),
+                answer(winner(ArtifactKind.AGENT_PROFILE, "java jenny", "my pack", List.of(), Optional.empty())),
                 OptionalInt.empty());
 
         assertThat(wire.getLinks().keySet()).containsExactly("self", "artifact", "up");
@@ -147,7 +152,7 @@ class EffectiveArtifactMapperTest {
 
     @Test
     void theSelfLinkRepeatsTheDepthTheRequestSent() {
-        EffectiveArtifact winner = winner(ArtifactKind.DIRECTIVE, "D", "main", Optional.empty(), Optional.empty());
+        EffectiveArtifact winner = winner(ArtifactKind.DIRECTIVE, "D", "main", List.of(), Optional.empty());
 
         assertThat(mapper.toRead(answer(winner), OptionalInt.of(1))
                         .getLinks()

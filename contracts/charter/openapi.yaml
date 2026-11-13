@@ -152,6 +152,8 @@ paths:
     $ref: paths/activations_activationId_graph.yaml
   /activations/{activationId}/mission-types/{missionType}/actions/{action}/context:
     $ref: paths/activations_activationId_missionTypes_missionType_actions_action_context.yaml
+  /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt:
+    $ref: paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

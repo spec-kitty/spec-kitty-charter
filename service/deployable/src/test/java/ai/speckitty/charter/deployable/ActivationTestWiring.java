@@ -3,8 +3,10 @@ package ai.speckitty.charter.deployable;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
@@ -118,8 +120,23 @@ public class ActivationTestWiring {
                 }
 
                 @Override
+                public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+                    return false;
+                }
+
+                @Override
+                public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+                    return EffectivePrompt.NONE;
+                }
+
+                @Override
                 public void requireAction(String missionType, String action) {
                     // the fixture holds no mission type
+                }
+
+                @Override
+                public Optional<String> stepPlace(String missionType, String action) {
+                    return Optional.empty();
                 }
             };
         }

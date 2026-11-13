@@ -99,7 +99,7 @@ properties:
     description: >-
       True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
       none of whose targets is in force or is bound to a mission type not in force (E9). A required one
-      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names every such override), or it
       cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
       mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
     x-derived:
@@ -107,7 +107,21 @@ properties:
       inputs:
       - schemas/ActivationConfig.yaml
   satisfiedBy:
-    $ref: ArtifactReference.yaml
+    type: array
+    minItems: 1
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      Present only for a required artifact that is out of force: every active artifact that overrides it, directly or
+      through a chain, and so satisfies the requirement, never an enhancer. Sorted by the level of the pack that holds
+      the version in force of each (built-in, then org, then project), then by full URN in Unicode code point order
+      (operator ruling of 2026-11-12 on #439); absent, never empty, when none does.
+    x-derived:
+      rule: >-
+        The artifacts of the effective set whose overrides edges reach the artifact, directly or through a chain (rules
+        E5, E9), sorted by the level of their winning pack, then by URN.
+      inputs:
+      - schemas/ActivationConfig.yaml
   suggestion:
     $ref: EffectiveArtifactSuggestion.yaml
   policy:

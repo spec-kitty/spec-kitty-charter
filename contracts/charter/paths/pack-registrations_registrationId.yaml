@@ -47,6 +47,8 @@ get:
               $ref: ../examples/PackRegistrationStatus.asset-path-escape.yaml
             fragment-body-path-escape:
               $ref: ../examples/PackRegistrationStatus.fragment-body-path-escape.yaml
+            overrides-source-not-activatable:
+              $ref: ../examples/PackRegistrationStatus.overrides-source-not-activatable.yaml
     '400':
       $ref: ../../_shared/responses/Problem.yaml
     '401':

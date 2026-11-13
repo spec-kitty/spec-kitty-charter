@@ -135,7 +135,7 @@ class InForceResolutionTest {
     private static void expectSatisfiedBy(InForceStates states, String urn, String by) {
         assertThat(states.stateOf(u(urn)).orElseThrow().satisfiedBy())
                 .as(urn + " satisfiedBy")
-                .contains(u(by));
+                .containsExactly(u(by));
     }
 
     // ---- the scale of NFR-003 ----
@@ -273,12 +273,12 @@ class InForceResolutionTest {
                 .overrides("tactic:E", "tactic:T")
                 .select("tactic:E", "tactic:T");
 
-        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:E"));
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).containsExactly(u("tactic:E"));
         assertThat(states.stateOf(u("tactic:E")).orElseThrow().overriddenBy()).isEmpty();
     }
 
     @Test
-    void anOverriddenArtifactNamesTheTopOfTheChainAndTheSmallestOfSeveral() {
+    void anOverriddenArtifactNamesTheTopOfTheChainAndEveryOneOfSeveral() {
         InForceStates chain = new Closure()
                 .open("tactic:F", "tactic:E", "tactic:T")
                 .overrides("tactic:F", "tactic:E")
@@ -290,9 +290,10 @@ class InForceResolutionTest {
                 .overrides("tactic:E1", "tactic:T")
                 .select("tactic:E1", "tactic:E2", "tactic:T");
 
-        assertThat(chain.stateOf(u("tactic:E")).orElseThrow().overriddenBy()).contains(u("tactic:F"));
-        assertThat(chain.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:F"));
-        assertThat(two.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:E1"));
+        assertThat(chain.stateOf(u("tactic:E")).orElseThrow().overriddenBy()).containsExactly(u("tactic:F"));
+        assertThat(chain.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).containsExactly(u("tactic:F"));
+        assertThat(two.stateOf(u("tactic:T")).orElseThrow().overriddenBy())
+                .containsExactly(u("tactic:E1"), u("tactic:E2"));
     }
 
     @Test
@@ -349,7 +350,8 @@ class InForceResolutionTest {
                 .select("tactic:E");
 
         expect(states, "tactic:L", State.ACTIVE, Reason.LOCKED);
-        assertThat(states.overrideNotApplied()).containsExactly(new OverrideNotApplied(u("tactic:L"), u("tactic:E")));
+        assertThat(states.overrideNotApplied())
+                .containsExactly(new OverrideNotApplied(u("tactic:L"), List.of(u("tactic:E"))));
     }
 
     @Test
@@ -361,7 +363,8 @@ class InForceResolutionTest {
                 .select("tactic:E", "tactic:X");
 
         expect(states, "tactic:X", State.ACTIVE, Reason.SELECTED);
-        assertThat(states.overrideNotApplied()).containsExactly(new OverrideNotApplied(u("tactic:X"), u("tactic:E")));
+        assertThat(states.overrideNotApplied())
+                .containsExactly(new OverrideNotApplied(u("tactic:X"), List.of(u("tactic:E"))));
     }
 
     @Test
@@ -528,7 +531,7 @@ class InForceResolutionTest {
     }
 
     @Test
-    void aSatisfiedRequirementNamesTheSmallestOverriderInForce() {
+    void aSatisfiedRequirementNamesEveryOverriderInForceOfOneLevelByUrn() {
         InForceStates states = new Closure()
                 .open("tactic:E2", "tactic:E1", "tactic:T")
                 .requires("tactic:T")
@@ -536,7 +539,8 @@ class InForceResolutionTest {
                 .overrides("tactic:E1", "tactic:T")
                 .select("tactic:E1", "tactic:E2", "tactic:T");
 
-        expectSatisfiedBy(states, "tactic:T", "tactic:E1");
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().satisfiedBy())
+                .containsExactly(u("tactic:E1"), u("tactic:E2"));
     }
 
     @Test
@@ -923,10 +927,10 @@ class InForceResolutionTest {
         expect(states, "tactic:L", State.ACTIVE, Reason.LOCKED);
         expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
         expectSatisfiedBy(states, "tactic:T", "tactic:L");
-        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:L"));
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).containsExactly(u("tactic:L"));
         assertThat(states.overrideNotApplied())
                 .as("F's override of the locked L is not applied, so F reaches nothing below L")
-                .containsExactly(new OverrideNotApplied(u("tactic:L"), u("tactic:F")));
+                .containsExactly(new OverrideNotApplied(u("tactic:L"), List.of(u("tactic:F"))));
     }
 
     @Test
@@ -942,7 +946,7 @@ class InForceResolutionTest {
         expect(states, "tactic:A", State.ACTIVE, Reason.SELECTED);
         expect(states, "tactic:B", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         expect(states, "tactic:C", State.INACTIVE, Reason.OVERRIDDEN);
-        assertThat(states.stateOf(u("tactic:C")).orElseThrow().overriddenBy()).contains(u("tactic:A"));
+        assertThat(states.stateOf(u("tactic:C")).orElseThrow().overriddenBy()).containsExactly(u("tactic:A"));
     }
 
     @Test

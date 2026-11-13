@@ -39,6 +39,8 @@ files:
   - PackRegistrationStatus.version-conflict.yaml
   - PackRegistrationStatus.asset-path-escape.yaml
   - PackRegistrationStatus.fragment-body-path-escape.yaml
+  - PackRegistrationStatus.overrides-source-not-activatable.yaml
+  - CharterRefusal.overrides-source-not-activatable.yaml
   - Artifact.mission-type.yaml
   - Artifact.mission-step-contract.yaml
   - MissionStep.specify.yaml
@@ -50,3 +52,7 @@ files:
   - Artifact.activation-mission-step-contract.yaml
   - MissionStep.activation-implement.yaml
   - MissionSkeleton.activation-spec-template.yaml
+  - EffectiveStepPrompt.three-levels.yaml
+  - EffectiveStepPrompt.empty-slot.yaml
+  - EffectiveStepPrompt.legacy-slot.yaml
+  - CharterRefusal.mission-type-not-in-force.yaml

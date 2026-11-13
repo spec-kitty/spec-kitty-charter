@@ -23,13 +23,17 @@ import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,6 +61,7 @@ class ClosureViewGovernanceTest {
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
     private final Map<String, Pack> stored = new HashMap<>();
     private final AtomicInteger whole = new AtomicInteger();
+    private final Map<String, Map<String, PackCompanionFiles.StepFiles>> stepFiles = new HashMap<>();
     private String digest = "1";
 
     private static Urn urn(String text) {
@@ -161,8 +166,11 @@ class ClosureViewGovernanceTest {
         OfferingReadService offering =
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
         PackRepository packs = pack -> stored.get(pack.value());
+        PackCompanionFiles companions = (pack, type) -> type.kind() == ArtifactKind.MISSION_TYPE
+                ? stepFiles.getOrDefault(pack.value() + " " + type.localId(), Map.of())
+                : Map.of();
         return withPackStore
-                ? new ClosureQueries(offering, catalog, read, packs)
+                ? new ClosureQueries(offering, catalog, read, packs, companions)
                 : new ClosureQueries(offering, catalog, read);
     }
 
@@ -320,6 +328,68 @@ class ClosureViewGovernanceTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 
+    private static final String STORED_PROMPT = "# Step s\r\n\n<!-- spdd:notes:start --><!-- spdd:notes:end -->\n";
+
+    /**
+     * builtin holds mission type M, whose version declares its step s (the step's place), and s's prompt companion is
+     * stored as {@link #STORED_PROMPT}.
+     */
+    private void aStepWithAStoredPrompt() {
+        pack("builtin", PackLevel.BUILT_IN, List.of(), List.of(), List.of("mission_type:M", "action:M/s"));
+        PackCompositionFacts held = facts.get("builtin");
+        facts.put(
+                "builtin",
+                new PackCompositionFacts(
+                        held.changed(),
+                        held.defined(),
+                        held.references(),
+                        held.policy(),
+                        held.presets(),
+                        held.edges(),
+                        held.languages(),
+                        held.bindings(),
+                        new PromptFacts(Map.of(), Map.of(), Map.of(Urn.missionType("M"), List.of("s")))));
+        stored.put(
+                "builtin",
+                Pack.builder()
+                        .id(new PackIdentifier("builtin"))
+                        .descriptor(descriptors.get("builtin"))
+                        .artifact(new MissionTypeStub(new PackIdentifier("builtin"), "M"))
+                        .build());
+        stepFiles.put(
+                "builtin M",
+                Map.of(
+                        "s",
+                        new PackCompanionFiles.StepFiles(
+                                Optional.of(Payload.of(STORED_PROMPT.getBytes(StandardCharsets.UTF_8))),
+                                Optional.empty())));
+    }
+
+    @Test
+    void theStepPromptIsReadAgainstTheDigestOfTheClosureTheViewWasVerifiedAt() {
+        aStepWithAStoredPrompt();
+        ClosureView view = queries().allConfigured();
+        InForceStates states = selecting(view, urn("mission_type:M"));
+        digest = "2";
+
+        assertThatThrownBy(() -> view.effectivePrompt("M", "s", states))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void theTwinTheStepPromptOfAClosureThatDidNotMoveIsServedAsStored() {
+        aStepWithAStoredPrompt();
+        ClosureView view = queries().allConfigured();
+
+        EffectivePromptQuery.EffectivePrompt prompt =
+                view.effectivePrompt("M", "s", selecting(view, urn("mission_type:M")));
+
+        assertThat(prompt.prompt()).isEqualTo(Payload.of(STORED_PROMPT.getBytes(StandardCharsets.UTF_8)));
+        assertThat(prompt.promptPackId()).contains(new PackIdentifier("builtin"));
+    }
+
     @Test
     void aWinnerThePackStoreCannotProduceIsPackUnreadableWhileTheClosureDigestIsUnchanged() {
         pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of());
@@ -465,5 +535,29 @@ class ClosureViewGovernanceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN));
+    }
+
+    /** A mission type as the packs rings hold it: an artifact of kind {@code mission_type}. */
+    private record MissionTypeStub(PackIdentifier packId, String localId) implements CharterArtifact {
+
+        @Override
+        public ArtifactKind kind() {
+            return ArtifactKind.MISSION_TYPE;
+        }
+
+        @Override
+        public Optional<String> schemaVersion() {
+            return Optional.of("1.0");
+        }
+
+        @Override
+        public String label() {
+            return localId;
+        }
+
+        @Override
+        public Optional<String> description() {
+            return Optional.empty();
+        }
     }
 }

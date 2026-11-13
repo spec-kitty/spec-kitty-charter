@@ -102,19 +102,11 @@ class EffectiveReadHttpTest {
     private static InForceAnswer answer() {
         Map<ArtifactRef, ArtifactState> states = new LinkedHashMap<>();
         states.put(
-                A,
-                new ArtifactState(
-                        A, State.ACTIVE, Reason.SELECTED, true, Optional.empty(), Optional.empty(), Optional.empty()));
+                A, new ArtifactState(A, State.ACTIVE, Reason.SELECTED, true, List.of(), List.of(), Optional.empty()));
         states.put(
                 B,
                 new ArtifactState(
-                        B,
-                        State.INACTIVE,
-                        Reason.NOT_SELECTED,
-                        false,
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()));
+                        B, State.INACTIVE, Reason.NOT_SELECTED, false, List.of(), List.of(), Optional.empty()));
         states.put(
                 C,
                 new ArtifactState(
@@ -122,8 +114,8 @@ class EffectiveReadHttpTest {
                         State.EXCLUDED,
                         Reason.DEACTIVATED,
                         false,
-                        Optional.empty(),
-                        Optional.empty(),
+                        List.of(),
+                        List.of(),
                         Optional.of(Bucket.DEACTIVATED)));
         return new InForceAnswer(
                 states,
@@ -231,8 +223,8 @@ class EffectiveReadHttpTest {
                                 State.INACTIVE,
                                 Reason.OVERRIDDEN,
                                 false,
-                                Optional.empty(),
-                                Optional.of(A),
+                                List.of(),
+                                List.of(A),
                                 Optional.of(Bucket.OVERRIDDEN))),
                 List.of(),
                 List.of(),
@@ -419,8 +411,9 @@ class EffectiveReadHttpTest {
     void theContextAnswersItsEntriesItsSuggestionItsFingerprintAndASelfThatKeepsTheDepth() throws Exception {
         packs.contexts(ask -> new ActionContext(
                 true,
-                List.of(new ActionContext.Reached(A, List.of())),
-                List.of(new ActionContext.SuggestionCandidate(B, Optional.of("when"), Optional.of("why"))),
+                List.of(new ActionContext.Reached(A, List.of(), ActionContext.AppliesThrough.PROJECT)),
+                List.of(new ActionContext.SuggestionCandidate(
+                        B, Optional.of("when"), Optional.of("why"), ActionContext.AppliesThrough.PROJECT)),
                 List.of()));
 
         MockHttpServletResponse answer = read(BASE + CONTEXT + "?depth=1");
@@ -436,6 +429,10 @@ class EffectiveReadHttpTest {
                 .containsExactly("a-1", "b-2");
         assertThat(body.path("artifacts").get(1).path("suggestion").path("when").asString())
                 .isEqualTo("when");
+        assertThat(body.path("artifacts"))
+                .extracting(item -> item.path("appliesThrough").asString())
+                .as("the entry and its suggestion carry the pass that listed them")
+                .containsExactly("project", "project");
         assertThat(body.path("enhancements")).isEmpty();
         assertThat(body.path("_links").path("self").path("href").asString()).isEqualTo(BASE + CONTEXT + "?depth=1");
         assertThat(body(read(BASE + CONTEXT))

@@ -205,9 +205,9 @@ Each artifact then gets one state and one reason, the first row of the precedenc
 `language_filtered`, `deactivated` (the only reason with the state `excluded`), `overridden` for a selected artifact an
 override hides, and `not_selected`. A denied artifact that the enhancer or binding row prunes is `inactive`, not
 `excluded`. An artifact that is not selected stays `not_selected` even when an override hides it (research R11 step 3), and a required one
-then carries `satisfiedBy`. When several artifacts in force satisfy or hide one artifact, `satisfiedBy` and `overriddenBy`
-name the smallest URN: no ruling settles that choice, it is PR B's behavior as found, and an operator ruling is tracked
-in #439. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
+then carries `satisfiedBy`. `satisfiedBy` and `overriddenBy` list every artifact in force that satisfies or hides the
+artifact, sorted by the level of each one's winning pack (built-in, org, project), then by URN in code point order
+(operator ruling of 2026-11-12 on #439, option (b)). There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
 (DIV-227).
 
 Two reads serve it, and both answer from one verified read of the closure (E19), retried up to three times on

@@ -20,7 +20,8 @@ import java.util.Objects;
  * @param staleIds the ids the document selects or denies that the merged closure does not hold
  * @param denyNotApplied the deny entries not applied: on a locked artifact, or on a required one nothing else satisfies
  * @param enhancedTargetNotInForce the selected enhancers none of whose targets is in force, with their targets
- * @param overrideNotApplied the overrides not applied because the target is locked; both ends are in force
+ * @param overrideNotApplied the overrides not applied because the target is locked, once per target; both ends are in
+ *     force
  * @param requiredNotHeld the must-have items of a governing preset that no pack of the closure holds
  * @param requiredNotInForce the required artifacts that cannot stand in force
  * @param pinNotHeld the version pins of the document that no pack of the closure satisfies
@@ -105,22 +106,24 @@ public record EffectiveSkippedReport(
     }
 
     /**
-     * An override that was not applied because its target is locked.
+     * The overrides of one locked target that were not applied.
      *
      * @param ref the artifact that stays
-     * @param overriddenBy the artifact in force whose override names it
+     * @param overriddenBy every artifact in force whose override names it, in the order the resolution gives (the level
+     *     of its winning pack, then its URN; #439); never empty
      */
-    public record OverrideNotApplied(ArtifactRef ref, ArtifactRef overriddenBy) {
+    public record OverrideNotApplied(ArtifactRef ref, List<ArtifactRef> overriddenBy) {
 
         /**
-         * Checks the fields.
+         * Checks and copies the fields.
          *
          * @param ref the artifact that stays
-         * @param overriddenBy the overrider
+         * @param overriddenBy the overriders
+         * @throws IllegalArgumentException when no overrider is named
          */
         public OverrideNotApplied {
             Objects.requireNonNull(ref, "ref");
-            Objects.requireNonNull(overriddenBy, "overriddenBy");
+            overriddenBy = overriders(ref, overriddenBy);
         }
     }
 
@@ -188,23 +191,34 @@ public record EffectiveSkippedReport(
     }
 
     /**
-     * An artifact an artifact in force hides.
+     * An artifact that artifacts in force hide.
      *
      * @param ref the hidden artifact
-     * @param overriddenBy the artifact in force that overrides it, directly or through a chain
+     * @param overriddenBy every artifact in force that overrides it, directly or through a chain, in the order the
+     *     resolution gives (the level of its winning pack, then its URN; #439); never empty
      */
-    public record Overridden(ArtifactRef ref, ArtifactRef overriddenBy) {
+    public record Overridden(ArtifactRef ref, List<ArtifactRef> overriddenBy) {
 
         /**
-         * Checks the fields.
+         * Checks and copies the fields.
          *
          * @param ref the hidden artifact
-         * @param overriddenBy its overrider
+         * @param overriddenBy its overriders
+         * @throws IllegalArgumentException when no overrider is named
          */
         public Overridden {
             Objects.requireNonNull(ref, "ref");
-            Objects.requireNonNull(overriddenBy, "overriddenBy");
+            overriddenBy = overriders(ref, overriddenBy);
         }
+    }
+
+    /** The overriders of an entry as given, which keep the resolution's order: at least one. */
+    private static List<ArtifactRef> overriders(ArtifactRef ref, List<ArtifactRef> overriddenBy) {
+        List<ArtifactRef> copy = List.copyOf(Objects.requireNonNull(overriddenBy, "overriddenBy"));
+        if (copy.isEmpty()) {
+            throw new IllegalArgumentException(ref + " is overridden by an artifact in force");
+        }
+        return copy;
     }
 
     /**
@@ -227,9 +241,7 @@ public record EffectiveSkippedReport(
         denyNotApplied =
                 sorted(denyNotApplied, Comparator.comparing(DenyNotApplied::ref).thenComparing(DenyNotApplied::reason));
         enhancedTargetNotInForce = sorted(enhancedTargetNotInForce, Comparator.comparing(EnhancerWithoutTarget::ref));
-        overrideNotApplied = sorted(
-                overrideNotApplied,
-                Comparator.comparing(OverrideNotApplied::ref).thenComparing(OverrideNotApplied::overriddenBy));
+        overrideNotApplied = sorted(overrideNotApplied, Comparator.comparing(OverrideNotApplied::ref));
         requiredNotHeld = sorted(requiredNotHeld, Comparator.naturalOrder());
         requiredNotInForce = sorted(requiredNotInForce, Comparator.comparing(RequiredNotInForce::ref));
         pinNotHeld = sorted(

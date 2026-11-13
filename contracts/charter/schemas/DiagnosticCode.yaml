@@ -10,8 +10,8 @@ description: >-
   pack_unreadable. The value stays in the enum so a client built against an earlier draft still
   reads it. prompt_slot_not_empty: an unversioned pack descriptor keeps legacy text between paired prompt-slot
   markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is listed in the
-  diagnostics of the result of a succeeded registration; the effective-prompt read's diagnostics arrive with the
-  phase-2 mission (#438). file_not_held: a file of the registered tree that is not pack content (a file-kinds
+  diagnostics of the result of a succeeded registration, and in the diagnostics of the effective-prompt read
+  (getEffectiveStepPrompt), once per declared slot of the prompt in force that holds such text. file_not_held: a file of the registered tree that is not pack content (a file-kinds
   exclusion names it, or it is Markdown that no rule models), so the service does not hold it; the diagnostic's detail
   names the file and the rule's reason, and the stored pack is the registered tree less these files (#451).
 type: string
