@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
 import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
@@ -43,8 +44,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The reads of what an activation puts in force: {@code getActivation} with its deny notice, the effective artifact
- * list, the skipped report, the effective graph and the effective action context (IC-09, IC-11, FR-013, FR-017 to
- * FR-021, FR-027).
+ * list, the skipped report, the effective graph, the effective action context (IC-09, IC-11, FR-013, FR-017 to FR-021,
+ * FR-027) and the effective prompt of a step (mission effective-step-and-action-context, FR-003 to FR-005).
  *
  * <p>Each read opens one {@link PacksSession}, one verified read of the closure the stored document names (E19), and
  * answers everything from it: the tag, then, only when the {@code If-None-Match} does not match it, the merge and the
@@ -159,8 +160,11 @@ public class EffectiveReadService {
      * @param governanceFingerprint the digest of the closure's own packs
      * @param query the mission type, the action and the depth
      * @param context what the action's step names
-     * @param missionTypePack the pack that holds the version in force of the mission type, as the effective set names
-     *     it; empty when the set does not list the mission type
+     * @param stepPack the pack of the step's place ({@link PacksSession#stepPlace}; research R8, A7): the winner of the
+     *     mission type when its version declares the step, else the merged winner of the action whose version does;
+     *     empty when the effective set does not list the mission type or no version at either place declares the step
+     * @param missionTypeInForce whether the activation puts the mission type in force, so that the effective prompt of
+     *     the action answers (FR-007: the context links it only then)
      */
     public record ContextRead(
             StoredActivation stored,
@@ -168,7 +172,8 @@ public class EffectiveReadService {
             String governanceFingerprint,
             EffectiveTag.ContextQuery query,
             EffectiveContext context,
-            Optional<String> missionTypePack) {
+            Optional<String> stepPack,
+            boolean missionTypeInForce) {
 
         /**
          * Checks the fields.
@@ -178,14 +183,15 @@ public class EffectiveReadService {
          * @param governanceFingerprint the digest of the closure's own packs
          * @param query the mission type, the action and the depth
          * @param context what the action's step names
-         * @param missionTypePack the pack that holds the mission type's version in force
+         * @param stepPack the pack of the step's place
+         * @param missionTypeInForce whether the activation puts the mission type in force
          */
         public ContextRead {
-            Objects.requireNonNull(missionTypePack, "missionTypePack");
+            Objects.requireNonNull(stepPack, "stepPack");
         }
 
         /**
-         * A context whose mission type's holding pack is not named.
+         * A context whose mission type's holding pack is not named, of a mission type not in force.
          *
          * @param stored the stored activation
          * @param sourceFingerprint the source fingerprint of the read
@@ -199,7 +205,61 @@ public class EffectiveReadService {
                 String governanceFingerprint,
                 EffectiveTag.ContextQuery query,
                 EffectiveContext context) {
-            this(stored, sourceFingerprint, governanceFingerprint, query, context, Optional.empty());
+            this(stored, sourceFingerprint, governanceFingerprint, query, context, Optional.empty(), false);
+        }
+    }
+
+    /**
+     * The effective prompt of one step of an activation.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param query the mission type and the action
+     * @param prompt the prompt in force, its slots and their fragments in force
+     */
+    public record PromptRead(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveTag.PromptQuery query,
+            EffectivePrompt prompt) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint of the read
+         * @param governanceFingerprint the digest of the closure's own packs
+         * @param query the mission type and the action
+         * @param prompt the effective prompt
+         */
+        public PromptRead {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(query, "query");
+            Objects.requireNonNull(prompt, "prompt");
+        }
+    }
+
+    /**
+     * The place of a step under an activation.
+     *
+     * @param packId the configured id of the pack that holds the merged winner of the step's action
+     * @param sourceFingerprint the source fingerprint of the read
+     */
+    public record StepPlace(String packId, String sourceFingerprint) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param packId the place's pack
+         * @param sourceFingerprint the source fingerprint
+         */
+        public StepPlace {
+            Objects.requireNonNull(packId, "packId");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
         }
     }
 
@@ -442,13 +502,63 @@ public class EffectiveReadService {
                 walked,
                 missionType,
                 NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow());
-        Optional<String> holder = set.artifacts().stream()
+        Optional<EffectiveSet.EffectiveArtifact> listed = set.artifacts().stream()
                 .filter(artifact -> artifact.ref().equals(missionType))
-                .map(EffectiveSet.EffectiveArtifact::packId)
                 .findFirst();
         return new Read.Found<>(
-                new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context, holder),
+                new ContextRead(
+                        stored,
+                        closure.fingerprint(),
+                        closure.closureFingerprint(),
+                        query,
+                        context,
+                        listed.flatMap(artifact -> session.stepPlace(query.missionType(), query.action())),
+                        listed.filter(artifact -> artifact.state() == State.ACTIVE)
+                                .isPresent()),
                 etag);
+    }
+
+    /**
+     * {@code getEffectiveStepPrompt}: the prompt in force of one step, with the fragments in force of each slot it
+     * declares (FR-003 to FR-005; ADR-0066 decisions 4, 5 and 9).
+     *
+     * <p>The order is the contract's (research R10): the activation, then the names of the mission type and the action on
+     * the merged closure, then whether the activation puts the mission type in force, then the closure's own refusals
+     * (the in-force resolution and the slot check), and only then the tag and the {@code If-None-Match}. A conditional
+     * read therefore pays for the merge and the in-force resolution before it can answer {@code 304}; the session keeps
+     * both for the request, so the read that does not match pays for nothing twice (squad A10, recorded in R10).
+     *
+     * @param id the activation's id
+     * @param query the mission type and the action
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the prompt, or {@code NotModified} when the header matches its tag
+     * @throws CharterRefusal with {@code activation_not_found}; {@code mission_type_not_found} or
+     *     {@code action_not_found} when the merged closure holds no such mission type or action, whether or not the
+     *     mission type is in force; {@code mission_type_not_in_force} when the closure holds it and the activation does
+     *     not put it in force; then as {@link #activation} does, {@code prompt_slot_missing} included, each before
+     *     {@code If-None-Match} is compared
+     */
+    public Read<PromptRead> prompt(ActivationId id, EffectiveTag.PromptQuery query, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        session.requireAction(query.missionType(), query.action());
+        InForceQuery asked = EffectiveSet.queryOf(stored.document());
+        if (!session.isInForce(new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType()), asked)) {
+            throw new CharterRefusal(
+                    RefusalCode.MISSION_TYPE_NOT_IN_FORCE,
+                    "The activation " + id.value() + " does not put the mission type " + query.missionType()
+                            + " in force, so its step " + query.action() + " has no prompt to render; select it.");
+        }
+        // The composing read's refusals (the in-force resolution's and the slot check's) come before the tag.
+        session.inForce(asked);
+        String etag = EffectiveTag.prompt(stored.revision(), closure, query).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        EffectivePrompt prompt = session.prompt(query.missionType(), query.action(), asked);
+        return new Read.Found<>(
+                new PromptRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, prompt), etag);
     }
 
     /**
@@ -708,6 +818,39 @@ public class EffectiveReadService {
                 winner.artifact(),
                 contracts,
                 session.snapshot().fingerprint());
+    }
+
+    /**
+     * The place of one step under an activation (research R8, A7, DIV-243), for the missions slice's read of a step that
+     * the winning mission type does not declare, and of a step contract's step: the pack whose version of the mission
+     * type the step is read from ({@link PacksSession#stepPlace}), which keeps the step when only a version the winner
+     * replaced declares it, and the source fingerprint, from one {@link PacksSession}. The names are judged first as the
+     * action context judges them ({@link PacksSession#requireAction}), so the step, the context and the prompt reads
+     * refuse one unknown step alike. What the place's pack stores of the mission type is the packs slice's to read,
+     * against the fingerprint.
+     *
+     * @param id the activation's id
+     * @param missionTypeId the mission type's id, exactly as declared
+     * @param stepId the step's id, exactly as declared
+     * @return the place's pack and the source fingerprint of the read
+     * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
+     *     is no longer configured, or as the merge refuses; {@code mission_type_not_found} or {@code action_not_found}
+     *     when the merged closure holds no such mission type or step, and {@code action_not_found} when it holds the step
+     *     and no version of the mission type at its place declares it; {@code stale_input} when the packs changed since
+     *     the session was verified
+     */
+    public StepPlace stepPlace(ActivationId id, String missionTypeId, String stepId) {
+        Objects.requireNonNull(missionTypeId, "missionTypeId");
+        Objects.requireNonNull(stepId, "stepId");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        session.requireAction(missionTypeId, stepId);
+        String place = session.stepPlace(missionTypeId, stepId)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ACTION_NOT_FOUND,
+                        "No version of the mission type " + missionTypeId
+                                + " in the activation's closure declares the step " + stepId + "."));
+        return new StepPlace(place, session.snapshot().fingerprint());
     }
 
     /**

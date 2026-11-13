@@ -1,0 +1,10 @@
+title: SlotId
+description: >-
+  A prompt slot's id, <namespace>:<name> (ADR-0066 decision 2): the id of a pair of slot markers in a step prompt,
+  <!-- <namespace>:<name>:start --> and <!-- <namespace>:<name>:end -->. The namespace names a concern, not a pack. Stable
+  like a pack name.
+type: string
+pattern: ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/markdown/SlotId.java
+  symbol: SlotId

@@ -415,7 +415,7 @@ class ClosureViewMergedTest {
         InForceStates states = snapshot().inForce(selecting(new Urn(NodeKind.DIRECTIVE, "E")));
 
         assertThat(states.overrideNotApplied())
-                .containsExactly(new InForceStates.OverrideNotApplied(X, new Urn(NodeKind.DIRECTIVE, "E")));
+                .containsExactly(new InForceStates.OverrideNotApplied(X, List.of(new Urn(NodeKind.DIRECTIVE, "E"))));
     }
 
     @Test

@@ -57,7 +57,7 @@ class ActivationsEffectiveProfilesTest {
     private static EffectiveArtifact fact(
             ArtifactRef ref, State state, Reason reason, Optional<Suggestion> suggestion) {
         return new EffectiveArtifact(
-                ref, "main", PackLevel.ORG, state, false, Optional.empty(), Policy.OPEN, reason, suggestion);
+                ref, "main", PackLevel.ORG, state, false, List.of(), Policy.OPEN, reason, suggestion);
     }
 
     private static EffectiveArtifact active(ArtifactRef ref) {
@@ -230,14 +230,14 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
-    void aSatisfiedByIsTheUrnOfTheOverride() {
+    void aSatisfiedByIsTheUrnsOfEveryOverrideInTheOrderGiven() {
         EffectiveArtifact required = new EffectiveArtifact(
                 D1,
                 "main",
                 PackLevel.ORG,
                 State.INACTIVE,
                 true,
-                Optional.of(D2),
+                List.of(D2, S),
                 Policy.LOCKED,
                 Reason.OVERRIDDEN,
                 Optional.empty());
@@ -254,7 +254,7 @@ class ActivationsEffectiveProfilesTest {
 
         assertThat(facts.required()).isTrue();
         assertThat(facts.policy()).isEqualTo("locked");
-        assertThat(facts.satisfiedBy().orElseThrow().toString()).isEqualTo("directive:D2");
+        assertThat(facts.satisfiedBy()).extracting(Object::toString).containsExactly("directive:D2", "styleguide:S");
     }
 
     @Test

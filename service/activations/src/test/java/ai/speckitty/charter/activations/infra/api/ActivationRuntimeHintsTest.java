@@ -7,7 +7,11 @@ import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
+import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptFragment;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
@@ -41,7 +45,12 @@ class ActivationRuntimeHintsTest {
             SelectionRequest.class,
             ExclusionRequest.class,
             PresetApplication.class,
-            EffectiveGraphNode.class);
+            EffectiveGraphNode.class,
+            EffectiveStepPrompt.class);
+
+    /** The effective prompt's answer and every type it reaches (WP07), which the native executable writes. */
+    static final List<Class<?>> PROMPT = List.of(
+            EffectiveStepPrompt.class, EffectivePromptSlot.class, EffectivePromptFragment.class, Diagnostic.class);
 
     /** The per-artifact and preset writes' answer, and every type it reaches, which the native executable writes. */
     static final List<Class<?>> ANSWERED = List.of(
@@ -77,6 +86,12 @@ class ActivationRuntimeHintsTest {
     @ParameterizedTest
     @FieldSource("MIXED_IN")
     void eachMixedInDtoBindsWithItsAccessors(Class<?> dto) {
+        assertThat(RuntimeHintsPredicates.reflection().onType(dto)).accepts(hints);
+    }
+
+    @ParameterizedTest
+    @FieldSource("PROMPT")
+    void eachTypeOfThePromptsAnswerBindsWithItsAccessors(Class<?> dto) {
         assertThat(RuntimeHintsPredicates.reflection().onType(dto)).accepts(hints);
     }
 

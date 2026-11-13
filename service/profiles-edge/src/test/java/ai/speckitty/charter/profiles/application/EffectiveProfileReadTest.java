@@ -41,7 +41,7 @@ class EffectiveProfileReadTest {
                 false,
                 "open",
                 "not_selected",
-                Optional.empty(),
+                List.of(),
                 Optional.empty());
 
         assertThat(effectiveRead()
@@ -125,7 +125,7 @@ class EffectiveProfileReadTest {
 
     @Test
     void theFactsOfAnArtifactAreRequired() {
-        Optional<ai.speckitty.charter.kernel.domain.Urn> none = Optional.empty();
+        List<ai.speckitty.charter.kernel.domain.Urn> none = List.of();
         PackIdentifier pack = new PackIdentifier("main");
         assertThatThrownBy(() -> new EffectiveProfileRead.Facts(
                         null, pack, PackLevel.ORG, "active", false, "open", "selected", none, Optional.empty()))

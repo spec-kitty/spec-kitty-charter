@@ -41,6 +41,7 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,9 +83,7 @@ class EffectiveSetTest {
         Scene artifact(String urn, State state, Reason reason) {
             ArtifactRef ref = ref(urn);
             winners.put(ref, new Winner("alpha", PackLevel.ORG, Policy.OPEN));
-            states.put(
-                    ref,
-                    new ArtifactState(ref, state, reason, false, Optional.empty(), Optional.empty(), Optional.empty()));
+            states.put(ref, new ArtifactState(ref, state, reason, false, List.of(), List.of(), Optional.empty()));
             return this;
         }
 
@@ -108,30 +107,22 @@ class EffectiveSetTest {
                             s.ref(), s.state(), s.reason(), true, s.satisfiedBy(), s.overriddenBy(), s.bucket()));
         }
 
-        Scene satisfiedBy(String urn, String by) {
+        Scene satisfiedBy(String urn, String... by) {
             return with(
                     urn,
                     s -> new ArtifactState(
-                            s.ref(),
-                            s.state(),
-                            s.reason(),
-                            s.required(),
-                            Optional.of(ref(by)),
-                            s.overriddenBy(),
-                            s.bucket()));
+                            s.ref(), s.state(), s.reason(), s.required(), refs(by), s.overriddenBy(), s.bucket()));
         }
 
-        Scene overriddenBy(String urn, String by) {
+        Scene overriddenBy(String urn, String... by) {
             return with(
                     urn,
                     s -> new ArtifactState(
-                            s.ref(),
-                            s.state(),
-                            s.reason(),
-                            s.required(),
-                            s.satisfiedBy(),
-                            Optional.of(ref(by)),
-                            s.bucket()));
+                            s.ref(), s.state(), s.reason(), s.required(), s.satisfiedBy(), refs(by), s.bucket()));
+        }
+
+        private static List<ArtifactRef> refs(String... urns) {
+            return Arrays.stream(urns).map(EffectiveSetTest::ref).toList();
         }
 
         Scene held(String urn, String packId, PackLevel level, Policy policy) {
@@ -199,7 +190,7 @@ class EffectiveSetTest {
                         PackLevel.BUILT_IN,
                         State.ACTIVE,
                         true,
-                        Optional.empty(),
+                        List.of(),
                         Policy.LOCKED,
                         Reason.LOCKED,
                         Optional.empty()));
@@ -280,7 +271,28 @@ class EffectiveSetTest {
                 .of();
 
         assertThat(only(set, "tactic:T").reason()).isEqualTo(Reason.OVERRIDDEN);
-        assertThat(set.skipped().overridden()).containsExactly(new Overridden(ref("tactic:T"), ref("tactic:E")));
+        assertThat(set.skipped().overridden())
+                .containsExactly(new Overridden(ref("tactic:T"), List.of(ref("tactic:E"))));
+    }
+
+    @Test
+    void everyOverriderTheResolutionNamesIsCarriedInItsOrderAndNeverSortedAgain() {
+        // The resolution orders by the level of the winning pack, then the URN (#439): Z before A is that order, and
+        // the domain keeps it rather than sorting by URN.
+        EffectiveSet set = new Scene()
+                .artifact("tactic:T", State.INACTIVE, Reason.OVERRIDDEN)
+                .required("tactic:T")
+                .satisfiedBy("tactic:T", "tactic:Z", "tactic:A")
+                .overriddenBy("tactic:T", "tactic:Z", "tactic:A")
+                .bucket("tactic:T", Bucket.OVERRIDDEN)
+                .artifact("tactic:Z", State.ACTIVE, Reason.SELECTED)
+                .artifact("tactic:A", State.ACTIVE, Reason.SELECTED)
+                .of();
+
+        assertThat(only(set, "tactic:T").satisfiedBy()).containsExactly(ref("tactic:Z"), ref("tactic:A"));
+        assertThat(set.skipped().overridden())
+                .containsExactly(new Overridden(ref("tactic:T"), List.of(ref("tactic:Z"), ref("tactic:A"))));
+        assertThat(set.summary().required()).as("satisfied, so counted").isEqualTo(1);
     }
 
     @Test
@@ -324,7 +336,7 @@ class EffectiveSetTest {
 
         assertThat(only(set, "tactic:T").state()).isEqualTo(State.INACTIVE);
         assertThat(only(set, "tactic:T").required()).isTrue();
-        assertThat(only(set, "tactic:T").satisfiedBy()).contains(ref("tactic:E"));
+        assertThat(only(set, "tactic:T").satisfiedBy()).containsExactly(ref("tactic:E"));
     }
 
     @Test
@@ -349,7 +361,7 @@ class EffectiveSetTest {
         Scene scene = new Scene();
         scene.denies.add(new DenyNotApplied(ref("tactic:L"), DenyReason.LOCKED));
         scene.denies.add(new DenyNotApplied(ref("tactic:R"), DenyReason.REQUIRED));
-        scene.overrides.add(new OverrideNotApplied(ref("tactic:L"), ref("tactic:E")));
+        scene.overrides.add(new OverrideNotApplied(ref("tactic:L"), List.of(ref("tactic:E"))));
 
         EffectiveSkippedReport skipped = scene.of().skipped();
 
@@ -358,7 +370,7 @@ class EffectiveSetTest {
                         new DenyNotApplied(ref("tactic:L"), DenyReason.LOCKED),
                         new DenyNotApplied(ref("tactic:R"), DenyReason.REQUIRED));
         assertThat(skipped.overrideNotApplied())
-                .containsExactly(new OverrideNotApplied(ref("tactic:L"), ref("tactic:E")));
+                .containsExactly(new OverrideNotApplied(ref("tactic:L"), List.of(ref("tactic:E"))));
     }
 
     @Test

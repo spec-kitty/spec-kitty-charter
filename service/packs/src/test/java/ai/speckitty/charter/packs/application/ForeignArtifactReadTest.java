@@ -179,7 +179,7 @@ class ForeignArtifactReadTest {
             revisionReads.incrementAndGet();
             return PackRevision.compute(List.of(pack.value(), digest));
         };
-        ClosureQueries queries = new ClosureQueries(offering, catalog, read, packs);
+        ClosureQueries queries = new ClosureQueries(offering, catalog, read, packs, (pack, type) -> Map.of());
         return new ForeignArtifactRead(packs, repository, catalog, read, revisions, new ProfileGovernance(queries));
     }
 
@@ -350,7 +350,7 @@ class ForeignArtifactReadTest {
             digest = "2";
             return found;
         };
-        ClosureQueries queries = new ClosureQueries(composing, catalog, read, packs);
+        ClosureQueries queries = new ClosureQueries(composing, catalog, read, packs, (pack, type) -> Map.of());
         return new ForeignArtifactRead(
                 packs,
                 repository,

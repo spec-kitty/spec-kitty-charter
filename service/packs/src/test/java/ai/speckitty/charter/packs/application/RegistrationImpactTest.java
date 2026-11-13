@@ -966,4 +966,94 @@ class RegistrationImpactTest {
                 .as("each listing parses every pack.yaml, so one per pack read is a square; the session lists once")
                 .isLessThanOrEqualTo(2);
     }
+
+    // ---- C38: the activation gate, on every check path, never swallowed (squad A2) ---------------------------------
+
+    /**
+     * A port with one stored activation, rooted at every configured pack, whose gate records the closure it was asked
+     * to judge and refuses as it is told to.
+     */
+    private static final class Gate implements ActivationImpact {
+        private final List<ActivationImpact.ClosureChange> judged = new java.util.ArrayList<>();
+        private final Optional<CharterRefusal> refusal;
+
+        Gate(Optional<CharterRefusal> refusal) {
+            this.refusal = refusal;
+        }
+
+        @Override
+        public List<Optional<List<String>>> activationRoots() {
+            return List.of(Optional.empty());
+        }
+
+        @Override
+        public void requireComposable(ClosureChanges closures) {
+            closures.of(Optional.empty()).ifPresent(judged::add);
+            refusal.ifPresent(refused -> {
+                throw refused;
+            });
+        }
+    }
+
+    private static final CharterRefusal SLOT_MISSING =
+            new CharterRefusal(RefusalCode.PROMPT_SLOT_MISSING, "Under the activation `a-1`: the slot is missing");
+
+    private static RegistrationImpact gated(Rig rig, Gate gate) {
+        return new RegistrationImpact(
+                new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
+                        rig.repository, rig.repository, rig.repository),
+                gate);
+    }
+
+    private static RegistrationImpact.Replacement storedAs(Rig rig, String name) {
+        ai.speckitty.charter.packs.domain.ConfiguredPack configured = rig.repository.configured().stream()
+                .filter(pack -> pack.id().value().equals(name))
+                .findFirst()
+                .orElseThrow();
+        return new RegistrationImpact.Replacement(
+                configured, rig.repository.get(configured.id()), rig.repository.compositionFacts(configured.id()));
+    }
+
+    @Test
+    void theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        Gate gate = new Gate(Optional.of(SLOT_MISSING));
+
+        assertThat(refusal(() -> gated(rig, gate).check(storedAs(rig, "base")))).isSameAs(SLOT_MISSING);
+        assertThat(gate.judged).singleElement().satisfies(change -> {
+            assertThat(change.before()).isPresent();
+            assertThat(change.after().closurePackIds()).containsExactly(BASE_ID);
+        });
+    }
+
+    @Test
+    void thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed(@TempDir Path host) {
+        // The per-artifact registrations, the relationship write and both DELETEs judge through this path.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        Gate gate = new Gate(Optional.of(SLOT_MISSING));
+        RegistrationImpact impact = gated(rig, gate);
+        ai.speckitty.charter.kernel.domain.PackIdentifier base =
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("base");
+
+        assertThat(refusal(() -> impact.check(base, facts -> facts))).isSameAs(SLOT_MISSING);
+        assertThat(refusal(() -> impact.check(base, facts -> facts, Optional.empty())))
+                .isSameAs(SLOT_MISSING);
+        assertThat(gate.judged).hasSize(2);
+    }
+
+    @Test
+    void theTwinAGateThatFindsNothingLetsEveryPathThrough(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        Gate gate = new Gate(Optional.empty());
+        RegistrationImpact impact = gated(rig, gate);
+        ai.speckitty.charter.kernel.domain.PackIdentifier base =
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("base");
+
+        assertThat(impact.check(storedAs(rig, "base"))).isEqualTo(RegistrationImpact.Notices.NONE);
+        assertThat(impact.check(base, facts -> facts)).isEqualTo(RegistrationImpact.Notices.NONE);
+        assertThat(gate.judged).hasSize(2);
+    }
 }

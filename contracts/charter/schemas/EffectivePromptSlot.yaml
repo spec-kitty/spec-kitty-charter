@@ -1,0 +1,34 @@
+title: EffectivePromptSlot
+description: >-
+  One slot the prompt in force declares, and the fragments of the step enhancements in force that fill it, in order.
+  A slot nothing fills is listed with no fragments. A slot that holds legacy text is listed the same way, with no
+  flag: the prompt read's diagnostics name it.
+type: object
+additionalProperties: false
+required:
+- slot
+- fragments
+properties:
+  slot:
+    allOf:
+    - $ref: SlotId.yaml
+    description: The slot's id, as the prompt in force declares it.
+    x-derived:
+      rule: The id of one slot marker pair of the prompt in force, in declaration order.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  fragments:
+    type: array
+    items:
+      $ref: EffectivePromptFragment.yaml
+    description: >-
+      The fragments of the step enhancements in force for this step that name the slot, ordered by the level of the
+      enhancing pack (built-in, then org, then project), then its packName, then the enhancement id, each compared by
+      code point (ADR-0066 decision 5); [] when none does. Nothing is merged or de-duplicated (decision 6). An
+      enhancement that is not in force contributes nothing, and none is pulled into force (decision 4).
+    x-derived:
+      rule: >-
+        The winning copies of the step enhancements in force whose enhances edge targets the step, one item per
+        prompt_fragments entry that names the slot.
+      inputs:
+      - schemas/ActivationConfig.yaml

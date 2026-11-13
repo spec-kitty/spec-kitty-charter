@@ -1,0 +1,82 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/MissionTypePath.yaml
+- $ref: ../parameters/ActionPath.yaml
+get:
+  operationId: getEffectiveStepPrompt
+  summary: Read the prompt one step gets under an activation.
+  description: >-
+    The effective prompt of the step (ADR-0066 decision 9; FR-003 to FR-005): the prompt in force for action {action}
+    of mission type {missionType} under the activation's merged closure, as it is stored (decision 9: unchanged), read
+    at the step's place (research R8 as amended by operator ruling Q3, 2026-11-13): the pack of the mission type's
+    version in force when that version declares the step, else the pack that holds the merged winner of
+    action:{missionType}/{action} when its version declares it, the place getEffectiveMissionStep and the action
+    context's links name, and, for every slot that prompt
+    declares, in declaration order, the fragments of the step enhancements in force that fill it. A slot nothing fills
+    is listed with no fragments. Fragments of one slot are ordered by the level of the enhancing pack (built-in, then
+    org, then project), then the pack's descriptor name (packName), then the enhancement's id, each compared by code
+    point (decision 5); each names its pack and enhancement. Only the winning copy of an enhancement after the layer
+    merge contributes. A fragment is listed only while its enhancement is itself in force: nothing is pulled into force
+    because its target is, or the other way round (decision 4, E12). A slot that still holds legacy text under an
+    unversioned pack descriptor is listed with its fragments and no flag, and diagnostics lists prompt_slot_not_empty
+    for it (OD-7, OD-8). A step with no prompt at its place, or with no place, answers an empty prompt, no promptPackId
+    and no slots.
+
+    The refusals come in this order (research R10). An activationId, missionType or action outside its declared pattern
+    is a 400 Problem without a code. An unknown activation is 404 activation_not_found. A closure that cannot compose
+    or merge then answers its 500 before any name is judged: its composition code, or pack_unreadable (a pack whose
+    files break a load rule answers it naming the file). Then a mission type the merged closure does not hold is 404
+    mission_type_not_found, and an action the closure does not hold for it is 404 action_not_found, judged on the
+    closure whether or not the mission type is in force. Then a mission type the closure holds and the activation does
+    not put in force is 409 mission_type_not_in_force: it has no step to run, where the action context of the same
+    action answers 200 with nothing in it (OD-5, research R5). Then a closure whose in-force resolution does not
+    compose is 500 with its code, prompt_slot_missing when the prompt in force does not declare a slot that a step
+    enhancement in force names. Every refusal comes before the ETag is compared, so none is a 304, and the answer is
+    never partial.
+
+    The ETag follows the rule of the effective reads (E17 as amended): it changes with the activation's revision and
+    with any file of a pack of the activation's closure, the step prompts and prompt fragments included, and not with a
+    pack outside it; a matching If-None-Match is a 304 without a body.
+  tags:
+  - Activation
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The effective prompt.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveStepPrompt.yaml
+          examples:
+            three-levels:
+              $ref: ../examples/EffectiveStepPrompt.three-levels.yaml
+            empty-slot:
+              $ref: ../examples/EffectiveStepPrompt.empty-slot.yaml
+            legacy-slot:
+              $ref: ../examples/EffectiveStepPrompt.legacy-slot.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '409':
+      $ref: ../responses/MissionTypeNotInForce.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

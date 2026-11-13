@@ -26,3 +26,4 @@ files:
   - ActivationMissionStepContractNotFound.yaml
   - AssetNotFound.yaml
   - EffectiveAssetNotFound.yaml
+  - MissionTypeNotInForce.yaml

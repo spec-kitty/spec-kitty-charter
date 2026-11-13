@@ -615,8 +615,8 @@ class PacksAvailabilityTest {
                         EffectiveSet.State.ACTIVE,
                         EffectiveSet.Reason.SELECTED,
                         false,
-                        Optional.empty(),
-                        Optional.empty(),
+                        List.of(),
+                        List.of(),
                         Optional.empty()));
         assertThat(answered.states().get(ref("tactic:T")))
                 .as("denied, and T declares java")
@@ -625,8 +625,8 @@ class PacksAvailabilityTest {
                         EffectiveSet.State.EXCLUDED,
                         EffectiveSet.Reason.DEACTIVATED,
                         false,
-                        Optional.empty(),
-                        Optional.empty(),
+                        List.of(),
+                        List.of(),
                         Optional.of(EffectiveSet.Bucket.DEACTIVATED)));
         assertThat(answered.states().get(ref("tactic:L")).reason())
                 .as("a lock holds against the deny entry")
@@ -663,7 +663,7 @@ class PacksAvailabilityTest {
 
         InForceAnswer answered = adapter.session(Optional.empty()).inForce(query);
 
-        assertThat(answered.states().get(ref("tactic:U")).overriddenBy()).contains(ref("tactic:E"));
+        assertThat(answered.states().get(ref("tactic:U")).overriddenBy()).containsExactly(ref("tactic:E"));
         assertThat(answered.states().get(ref("tactic:U")).bucket()).contains(EffectiveSet.Bucket.OVERRIDDEN);
         assertThat(answered.states().get(ref("tactic:T")))
                 .as("required, so in force although the document does not select it")

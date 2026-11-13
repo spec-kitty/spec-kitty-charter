@@ -5,10 +5,15 @@ import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
+import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptFragment;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
@@ -28,7 +33,8 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  * decision 5): the mix-in is read only by reflection, and the DTOs it reaches bind through their accessors. Without
  * these hints the native executable writes the {@code null} members of an activation answer, or an empty body. The
  * answer of the per-artifact and preset writes ({@code ActivationChange} and the skipped report, references and links
- * it reaches) is registered too, so the native executable writes it as the JVM does.
+ * it reaches) is registered too, so the native executable writes it as the JVM does, and so is the effective prompt
+ * (its slots, fragments and diagnostics), whose absent {@code promptPackId} the mix-in leaves out.
  * Imported by {@link ActivationJson}, which owns the mix-in.
  */
 public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
@@ -53,7 +59,12 @@ public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
                         EffectiveArtifact.class,
                         EffectiveArtifactRead.class,
                         EffectiveArtifactSuggestion.class,
+                        EffectiveContextArtifact.class,
                         EffectiveGraphNode.class,
+                        EffectiveStepPrompt.class,
+                        EffectivePromptSlot.class,
+                        EffectivePromptFragment.class,
+                        Diagnostic.class,
                         SkippedReport.class,
                         SkippedDeactivated.class,
                         SharedSkip.class,

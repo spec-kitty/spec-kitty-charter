@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectivePromptSlot;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.Link;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -53,5 +57,45 @@ class ActivationJsonTest {
                         .at("/_links/effective-artifact/href")
                         .asString())
                 .isEqualTo("/api/v1/activations/a-1/artifacts/directive/D");
+    }
+
+    @Test
+    void anEffectivePromptWithoutAPromptPackWritesNoMemberForItAndOneWithAPackWritesIt() {
+        EffectiveStepPrompt none = new EffectiveStepPrompt(
+                "a-1",
+                "sha256:r",
+                "sha256:g",
+                "software-dev",
+                "review",
+                "",
+                List.of(),
+                List.of(),
+                Map.of("self", new Link("/api/v1/activations/a-1/mission-types/software-dev/actions/review/prompt")));
+        EffectiveStepPrompt held = new EffectiveStepPrompt(
+                "a-1",
+                "sha256:r",
+                "sha256:g",
+                "software-dev",
+                "plan",
+                "# Plan\n",
+                List.of(new EffectivePromptSlot("team:checklist", List.of())),
+                List.of(),
+                Map.of("self", new Link("/api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt")));
+        held.setPromptPackId("base");
+
+        JsonNode written = mapper.readTree(mapper.writeValueAsString(none));
+        assertThat(written.has("promptPackId"))
+                .as("an absent promptPackId is left out, not written as null")
+                .isFalse();
+        assertThat(written.at("/slots").isArray()).as("an empty list stays []").isTrue();
+        assertThat(written.at("/diagnostics").isArray()).isTrue();
+        assertThat(mapper.readTree(mapper.writeValueAsString(held))
+                        .at("/promptPackId")
+                        .asString())
+                .isEqualTo("base");
+        assertThat(mapper.readTree(mapper.writeValueAsString(held))
+                        .at("/slots/0/fragments")
+                        .isArray())
+                .isTrue();
     }
 }

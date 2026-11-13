@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.ActivationMissionTypes;
 import ai.speckitty.charter.missions.application.EffectiveMissionType;
 import ai.speckitty.charter.missions.application.EffectiveStepContract;
+import ai.speckitty.charter.missions.application.EffectiveStepPlace;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
 import java.util.Objects;
@@ -17,8 +18,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * The one bean of {@link ActivationMissionTypes}: it asks the activations slice's application ring
- * ({@link EffectiveReadService#missionTypeWinner}, {@link EffectiveReadService#stepContractWinner}) and turns its
- * answers into the missions slice's own. A winning type is narrowed to the missions domain's
+ * ({@link EffectiveReadService#missionTypeWinner}, {@link EffectiveReadService#stepContractWinner},
+ * {@link EffectiveReadService#stepPlace}) and turns its answers into the missions slice's own. A winning type is narrowed to the missions domain's
  * {@link ai.speckitty.charter.missions.domain.MissionType}; a step contract stays a kernel artifact, which only the
  * packs adapter may narrow. It decides nothing: the refusals and their order are the activations slice's, unchanged.
  */
@@ -65,5 +66,12 @@ public final class ActivationsMissionTypes implements ActivationMissionTypes {
                         .map(ref -> new HeldArtifact(ref.kind(), ref.id()))
                         .collect(Collectors.toUnmodifiableSet()),
                 winner.sourceFingerprint());
+    }
+
+    @Override
+    public EffectiveStepPlace stepPlace(String activationId, String missionTypeId, String stepId) {
+        EffectiveReadService.StepPlace place =
+                effective.stepPlace(new ActivationId(activationId), missionTypeId, stepId);
+        return new EffectiveStepPlace(new PackIdentifier(place.packId()), place.sourceFingerprint());
     }
 }

@@ -108,6 +108,19 @@ final class MissionBodies {
      * @return the step
      */
     static MissionStep step(StepView view, MissionLinks.Scope scope) {
+        return step(view, scope, scope);
+    }
+
+    /**
+     * A step, linked to its mission type and its step contract in the scope of the read, and to the skeleton of each
+     * output that names one in the scope that serves the skeletons of the step's version of the type.
+     *
+     * @param view the step's view
+     * @param scope the scope of the read
+     * @param skeletons the scope whose skeleton read serves the step's skeletons
+     * @return the step
+     */
+    static MissionStep step(StepView view, MissionLinks.Scope scope, MissionLinks.Scope skeletons) {
         ai.speckitty.charter.missions.domain.MissionStep step = view.step();
         String missionTypeId = view.missionTypeId();
         EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
@@ -127,7 +140,7 @@ final class MissionBodies {
                                 .map(output -> {
                                     MissionExpectedArtifact artifact = output(output.artifact());
                                     output.skeletonName()
-                                            .flatMap(name -> scope.servedSkeleton(missionTypeId, name))
+                                            .flatMap(name -> skeletons.servedSkeleton(missionTypeId, name))
                                             .ifPresent(link ->
                                                     artifact.putLinksItem(MissionRelation.SKELETON.wireKey(), link));
                                     return artifact;

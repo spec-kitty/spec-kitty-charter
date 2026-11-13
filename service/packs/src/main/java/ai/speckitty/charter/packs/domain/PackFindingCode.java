@@ -58,7 +58,13 @@ public enum PackFindingCode {
      * A file of a registered tree that is not pack content (an exclusion names it, or the {@code ignored} fallback takes
      * it), so the registration does not hold it (#451). A warning on the registration's answer, never a violation.
      */
-    FILE_NOT_HELD(Severity.WARNING);
+    FILE_NOT_HELD(Severity.WARNING),
+    /**
+     * An {@code overrides} edge of a graph document whose source is not of an activatable kind (FR-014,
+     * {@link OverrideSourceRule}). It is the violation code {@value OverrideSourceRule#CODE} of the graph document at
+     * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {
