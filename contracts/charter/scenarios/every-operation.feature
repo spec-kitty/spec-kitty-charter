@@ -24,11 +24,18 @@ Feature: The worktree guard answers in front of every operation
       | registerPackFromArchive         | PUT    | /packs/qa                                                                                     |
       | getPack                         | GET    | /packs/qa                                                                                     |
       | getPackDocument                 | GET    | /packs/qa/doc                                                                                 |
+      | listPackPresets                 | GET    | /packs/qa/presets                                                                             |
+      | getPackPreset                   | GET    | /packs/qa/presets/team                                                                        |
       | getPackRegistration             | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship             | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -55,6 +62,11 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
@@ -80,11 +92,18 @@ Feature: The worktree guard answers in front of every operation
       | registerPackFromArchive         | PUT    | /packs/qa                                                                                     |
       | getPack                         | GET    | /packs/qa                                                                                     |
       | getPackDocument                 | GET    | /packs/qa/doc                                                                                 |
+      | listPackPresets                 | GET    | /packs/qa/presets                                                                             |
+      | getPackPreset                   | GET    | /packs/qa/presets/team                                                                        |
       | getPackRegistration             | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship             | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -111,6 +130,11 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |

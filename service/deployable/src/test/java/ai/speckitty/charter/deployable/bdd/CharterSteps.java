@@ -54,6 +54,12 @@ public class CharterSteps {
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown");
+    /**
+     * An asset's payload read, in a pack or under an activation: a verified read whatever its media type, which carries
+     * the source fingerprint as the pack's payload does.
+     */
+    private static final Pattern PAYLOAD = Pattern.compile("/(packs|activations)/[^/]+/artifacts/asset/[^/]+/payload");
+
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
@@ -226,8 +232,9 @@ public class CharterSteps {
     }
 
     /**
-     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read), and any path but the root and the two activation reads
-     * that send no fingerprint ({@link #UNFINGERPRINTED}).
+     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read, or an asset's
+     * payload, whatever its type), and any path but the root and the two activation reads that send no fingerprint
+     * ({@link #UNFINGERPRINTED}).
      */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
         String type = response.getContentType();
@@ -236,7 +243,8 @@ public class CharterSteps {
                 && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
                 && (MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type))
-                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type)));
+                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type))
+                        || PAYLOAD.matcher(path).matches());
     }
 
     @When("the file {string} of the pack {string} is deleted")

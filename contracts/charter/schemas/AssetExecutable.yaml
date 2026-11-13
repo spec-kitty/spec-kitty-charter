@@ -1,0 +1,47 @@
+title: AssetExecutable
+description: >-
+  How an executable asset runs (ADR-0054 decision 5), present only on an asset that declares it: a runtime from the
+  closed allowlist, the entry the runtime is handed and the arguments after it. A client spawns the runtime's own
+  executable, then entry, then args, without a shell; no member is a command string.
+type: object
+additionalProperties: false
+required:
+  - runtime
+  - entry
+  - args
+properties:
+  runtime:
+    type: string
+    enum:
+      - python
+    description: The runtime, a vetted token the client maps to an executable itself, never an executable path.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ExecutableRuntime.java
+      symbol: ExecutableRuntime.token
+  minVersion:
+    type: string
+    pattern: '^[0-9]+(\.[0-9]+){0,2}$'
+    description: The lowest runtime version the asset needs, as dotted numbers; left out when the sidecar states none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Executable.java
+      symbol: Executable.minVersion
+  entry:
+    type: string
+    minLength: 1
+    description: >-
+      A payload file of the same pack, relative to its assets/ directory, the asset's own or another's: one argv
+      element.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Executable.java
+      symbol: Executable.entry
+  args:
+    type: array
+    description: The arguments after entry, each one argv element, in order; empty when the sidecar writes none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Executable.java
+      symbol: Executable.args
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Executable.java
+  symbol: Executable

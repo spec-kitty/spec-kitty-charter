@@ -37,11 +37,17 @@ public enum Relation {
     /** The pack-scoped read of the artifact a resolved reference names. */
     ARTIFACT("artifact"),
 
-    /** The stored pack a succeeded registration status points at, and the pack a document read belongs to. */
+    /**
+     * The stored pack a succeeded registration status points at, and the pack a document read, a preset list or a
+     * preset belongs to.
+     */
     PACK("pack"),
 
     /** A pack's document ({@code README.md}), present exactly when the pack holds one. */
-    DOC("doc");
+    DOC("doc"),
+
+    /** A pack's preset list, on every pack answer: a pack with no preset answers an empty list. */
+    PRESETS("presets");
 
     private final String wireKey;
 

@@ -1,0 +1,95 @@
+get:
+  operationId: getPackPreset
+  summary: Get one preset of a Charter Pack.
+  description: >-
+    One activation preset of the pack (presets/<presetId>.yaml, ADR-0042; #98): its id, its description and, for each
+    activatable kind it lists, an array named activated<Plural> holding the items in the order the file lists them,
+    each with its id and whether it is must-have. A kind the preset lists nothing of is left out. It shows what
+    applying the preset would put in force before a client applies it. A preset is read only in its pack; under an
+    activation, …/presets/{presetId} is the apply write (applyActivationPreset).
+
+    The pack is judged first, as the pack-scoped artifact reads judge it: an identifier that matches no configured
+    pack, by name or by declared pack_id, is a 404 pack_not_found, whatever preset the path names. Then a preset the
+    pack does not hold is a 404 preset_not_found, one that only another pack holds included: the read is of this
+    pack's preset. A configured pack whose directory is missing, that has no readable pack.yaml, or that holds a file
+    the fingerprint covers that cannot be read is a 500 pack_unreadable. The answer is verified against the source
+    fingerprint and carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the preset was read at, quoted, as getPack answers it: a token over this pack's
+    committed content, the preset included. It names nothing outside the pack (not its closure, not the offering)
+    and is not the Charter-Source-Fingerprint. The read takes no If-None-Match and never answers 304.
+  tags:
+    - Presets
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - name: presetId
+      in: path
+      required: true
+      description: >-
+        The id of a preset the pack holds, its file stem. A value outside the slug grammar breaks the parameter's
+        schema and is a 400 Problem without a code.
+      schema:
+        $ref: ../schemas/Slug.yaml
+  responses:
+    '200':
+      description: The preset.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: >-
+            The pack revision the preset was read at, quoted: a token over this pack's committed content, and over
+            nothing outside the pack.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Preset.yaml
+          examples:
+            team:
+              $ref: ../examples/Preset.team.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack or the preset the path names is not there, refused with 404. The pack is judged first: an identifier
+        that matches no configured pack is pack_not_found. Then a preset the pack does not hold is preset_not_found.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            preset-not-found:
+              summary: The pack holds no preset with the asked id.
+              value:
+                title: Preset not found
+                status: 404
+                code: preset_not_found
+                detail: Pack qa holds no preset ghost.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

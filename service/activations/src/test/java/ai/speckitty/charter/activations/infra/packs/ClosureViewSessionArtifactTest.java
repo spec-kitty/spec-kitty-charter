@@ -246,7 +246,8 @@ class ClosureViewSessionArtifactTest {
         });
 
         assertThat(packs.listedKinds()).isEqualTo(ArtifactReadService.listed());
-        assertThat(packs.listedKinds()).contains(ArtifactKind.DIRECTIVE, ArtifactKind.AGENT_PROFILE);
+        assertThat(packs.listedKinds())
+                .contains(ArtifactKind.DIRECTIVE, ArtifactKind.ASSET, ArtifactKind.SKILL, ArtifactKind.AGENT_PROFILE);
     }
 
     private static ProfileGovernance.Entry entry(Urn urn, GovernanceWalk.Step step, Urn via) {

@@ -9,3 +9,5 @@ files:
   - ActivationPackListETag.yaml
   - EffectiveETag.yaml
   - Location.yaml
+  - XContentTypeOptions.yaml
+  - ContentSecurityPolicy.yaml

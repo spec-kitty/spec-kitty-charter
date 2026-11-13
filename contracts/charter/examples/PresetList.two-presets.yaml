@@ -1,0 +1,31 @@
+summary: The two presets of the pack acme-review-pack, in id order.
+value:
+  items:
+    - id: minimal
+      description: The least a review needs.
+      activatedTactics:
+        - id: tdd-red-green-refactor
+          mustHave: false
+      _links:
+        self:
+          href: /api/v1/packs/acme-review-pack/presets/minimal
+        pack:
+          href: /api/v1/packs/acme-review-pack
+    - id: team
+      description: What a review team puts in force.
+      activatedDirectives:
+        - id: DIRECTIVE_001
+          mustHave: true
+      activatedTactics:
+        - id: tdd-red-green-refactor
+          mustHave: false
+      _links:
+        self:
+          href: /api/v1/packs/acme-review-pack/presets/team
+        pack:
+          href: /api/v1/packs/acme-review-pack
+  _links:
+    self:
+      href: /api/v1/packs/acme-review-pack/presets
+    pack:
+      href: /api/v1/packs/acme-review-pack

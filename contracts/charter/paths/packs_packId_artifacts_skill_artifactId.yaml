@@ -1,0 +1,88 @@
+get:
+  operationId: getPackSkill
+  summary: Get one skill of a Charter Pack.
+  description: >-
+    One skill of one pack in the Artifact envelope (#107, ADR-0074 decisions 4, 9 and 10): kind skill, id, packId,
+    _links and, in member skill, the skill as its file declares it, in camel case. A prompt skill carries its body: the
+    text of the file its body_path names, answered verbatim, exactly as the pack holds it, its final newline and every
+    character included. A wrapper skill carries what it expands to and no body. The body path itself is not answered
+    (the contract answers content, not paths), and neither are overrides and enhances: they are edges, read through
+    listArtifactReferences as for every kind. The link collection leads to the pack's skill list (listPackSkills). The
+    generic artifact item read (getPackArtifact) never renders a skill: this literal path is the read of the kind.
+
+    The pack is judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a 404
+    pack_not_found. A skill the pack does not hold is a 404 artifact_not_found. A configured pack without a readable
+    pack.yaml, or a pack holding a file the fingerprint covers that cannot be read, is a 500 pack_unreadable. The answer
+    is verified against the source fingerprint and carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the skill was read at, quoted, as a directive's or an agent profile's read answers
+    it. The read takes no If-None-Match and never answers 304.
+  tags:
+    - Skills
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+  responses:
+    '200':
+      description: The skill, with its body when it is a prompt skill.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision the skill was read at, quoted.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            prompt-skill:
+              $ref: ../examples/Artifact.skill.yaml
+            wrapper-skill:
+              $ref: ../examples/Artifact.skill-wrapper.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack or the skill the path names is not there, refused with 404. The pack is judged first: an identifier
+        that matches no configured pack (by name or by declared pack_id) is pack_not_found. Then a skill the pack does
+        not hold is artifact_not_found. A client error: the request named something that is not there.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            artifact-not-found:
+              summary: The pack holds no skill with the asked identity.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: Pack built-in has no skill nothing.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

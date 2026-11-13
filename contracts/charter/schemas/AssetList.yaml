@@ -1,0 +1,26 @@
+title: AssetList
+description: >-
+  Every asset a Charter Pack holds, as listPackAssets answers it: in id order and unpaged, deliberately, because a pack
+  holds few assets (paging it later would be an additive change). A pack with no asset answers an empty list. _links
+  holds self.
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The pack's assets in id order.
+    items:
+      $ref: AssetSummary.yaml
+    x-derived:
+      rule: The assets of the pack, sorted by id.
+      inputs:
+        - the asset sidecars under the assets/ directory of the pack
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The assets the service holds for the pack, read inside one verified read.
+  inputs:
+    - the asset sidecars under the assets/ directory of the pack

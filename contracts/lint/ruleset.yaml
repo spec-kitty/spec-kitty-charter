@@ -285,7 +285,6 @@ rules:
               - artifacts
               - graph
               - presets
-              - assets
               - resolution
               - distribute
               - kinds
@@ -303,6 +302,7 @@ rules:
               - apply-preset
               - artifact
               - references
+              - payload
               - effective-artifact
               - mission-type
               - step

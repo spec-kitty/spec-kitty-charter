@@ -135,8 +135,8 @@ get:
   description: >-
     The stored pack as a PackRegistration (FR-039), without an outcome or notices: its identity, version, level and
     revision, with an ETag that is the quoted revision (the value an If-Match names on a later write) and _links
-    holding self (this read), artifacts (the pack's artifacts) and, when the pack holds a README.md, doc (the pack's
-    document, getPackDocument); there is no edit link, so the whole-pack PUT is not advertised. It is the read a
+    holding self (this read), artifacts (the pack's artifacts), presets (the pack's presets, listPackPresets, on every
+    pack) and, when the pack holds a README.md, doc (the pack's document, getPackDocument); there is no edit link, so the whole-pack PUT is not advertised. It is the read a
     registration's Location and a result's self link point at. The identifier is judged as every pack path judges it:
     one that matches no configured pack, by name or by declared pack_id, is 404 pack_not_found, and so is a built-in
     pack, which is read-only and has no registration summary (PackRegistration.level is org or project). A configured pack whose

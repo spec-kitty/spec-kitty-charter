@@ -1,0 +1,26 @@
+summary: >-
+  The three assets of the built-in example pack of the charter (ADR-0070), in id order: two Python scripts, one of
+  which declares how it runs, and a PNG image.
+value:
+  items:
+    - id: carrier-lint
+      mime: text/x-python
+      executable: true
+      _links:
+        self:
+          href: /api/v1/packs/built-in/artifacts/asset/carrier-lint
+    - id: common-docs-structural-lint
+      mime: text/x-python
+      executable: false
+      _links:
+        self:
+          href: /api/v1/packs/built-in/artifacts/asset/common-docs-structural-lint
+    - id: logo
+      mime: image/png
+      executable: false
+      _links:
+        self:
+          href: /api/v1/packs/built-in/artifacts/asset/logo
+  _links:
+    self:
+      href: /api/v1/packs/built-in/artifacts/asset
