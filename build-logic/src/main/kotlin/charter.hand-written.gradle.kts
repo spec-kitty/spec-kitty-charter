@@ -121,6 +121,11 @@ tasks.named<Javadoc>("javadoc") {
         // Report every finding, not the first hundred.
         addStringOption("Xmaxwarns", "10000")
     }
+    // The javadoc tool refuses a source set that holds package-info files and no type ("No public or protected classes
+    // found to document"), which is a new module's skeleton (ADR-0075's pack-validation and pack-check, #550). Such a
+    // module has nothing to document, so the task is skipped until its first type lands; it then runs with every gate.
+    val sources = source
+    onlyIf("the module holds a type, not only package-info") { sources.any { it.name != "package-info.java" } }
 }
 
 // Coverage per module, XML for tools and HTML for readers; no threshold (FR-008 asks for a report).

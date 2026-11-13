@@ -250,6 +250,72 @@ class HexagonalArchitectureTest {
                 .hasMessageContaining("UsesThirdPartyType");
     }
 
+    /** The {@code pack-validation} module: every pack check, Spring-free (ADR-0075 decision 3). */
+    private static final String PACK_VALIDATION = ROOT + ".packvalidation..";
+    /** The {@code pack-check} module: the standalone CLI over {@code pack-validation} (ADR-0075 decision 9). */
+    private static final String PACK_CHECK = ROOT + ".packcheck..";
+
+    /**
+     * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3): neither {@code pack-validation} nor {@code pack-check}
+     * depends on Spring, on HTTP (the JDK client, Jakarta, the generated contract, the web transport or the kernel's
+     * transport vocabulary), on a commit store or on a lock. A commit store and the registry's lock live in the packs
+     * slice and its {@code infra} rings, so the rule refuses the packs and activations slices, every {@code application}
+     * and {@code infra} ring and the composition root outright: the modules depend on {@code kernel}, {@code profiles},
+     * {@code missions} and the parsing libraries only, which their builds pin too. The rule fails on an empty selection,
+     * so a module missing from this test's classpath fails it rather than passing unchecked.
+     */
+    private static final ArchRule PACK_VALIDATION_IS_FRAMEWORK_FREE = noClasses()
+            .that()
+            .resideInAnyPackage(PACK_VALIDATION, PACK_CHECK)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    FRAMEWORK,
+                    "jakarta..",
+                    "java.net.http..",
+                    GENERATED_API,
+                    WEB,
+                    KERNEL_TRANSPORT,
+                    ROOT + ".packs..",
+                    ROOT + ".activations..",
+                    "..application..",
+                    "..infra..",
+                    DEPLOYABLE,
+                    "java.util.concurrent.locks..")
+            .orShould()
+            .dependOnClassesThat()
+            .belongToAnyOf(java.nio.channels.FileLock.class)
+            .as("PACK_VALIDATION_IS_FRAMEWORK_FREE: pack-validation and pack-check use no Spring, HTTP, commit store"
+                    + " or lock");
+
+    @Test
+    @DisplayName("PACK_VALIDATION_IS_FRAMEWORK_FREE")
+    void packValidationIsFrameworkFree() {
+        PACK_VALIDATION_IS_FRAMEWORK_FREE.check(classes);
+    }
+
+    @Test
+    void thePackValidationRuleFailsOnAPlantedSpringHttpCommitStoreOrLockDependency() {
+        assertBites(
+                PACK_VALIDATION_IS_FRAMEWORK_FREE,
+                ROOT + ".packvalidation.badfixture",
+                "ValidationUsesSpring",
+                "org.springframework.stereotype.Component",
+                "ValidationSpeaksHttp",
+                "java.net.http.HttpClient",
+                "ValidationReachesCommitStore",
+                "CommitStorePackWriteStore",
+                "ValidationTakesALock",
+                "java.util.concurrent.locks.ReentrantLock",
+                "java.nio.channels.FileLock",
+                "RegistryWriteLock");
+        assertBites(
+                PACK_VALIDATION_IS_FRAMEWORK_FREE,
+                ROOT + ".packcheck.badfixture",
+                "CheckUsesSpring",
+                "org.springframework.stereotype.Component");
+    }
+
     /**
      * APPLICATION_IS_EDGE: the application ring is a Spring-managed edge. It may depend on itself, its slice's
      * domain, the kernel, {@code java}, JSpecify and the Spring framework, and on nothing else: not on any
