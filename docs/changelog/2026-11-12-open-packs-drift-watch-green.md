@@ -19,23 +19,25 @@ audience:
 # 2026-11-12 — The open-packs drift watch turns green
 
 **Slice B's deferred proof** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)). With open-packs #248
-merged (#241 and #242), every open-packs pack loads, writes and reads back through charter's loader, and the nightly
-drift watch ([#509](https://github.com/spec-kitty/spec-kitty-charter/issues/509)) has nothing left to report.
+merged, every open-packs pack loads, writes and reads back through charter's loader, and the nightly drift watch
+([#509](https://github.com/spec-kitty/spec-kitty-charter/issues/509)) has nothing left to report.
 
 - **The round trip writes an org fragment.** `drg/fragment.yaml` (gate kind `org-fragment`) was not a modelled kind, so
-  the round trip never wrote it. An org pack's step enhancements take their `enhances` edge from that fragment, so the
-  written `spdd` pack read back with none, and all five of its enhancements were refused. The round trip now writes the
-  fragment through `GraphShardWriter.writeFragment` before the read-back, as it writes the `*.graph.yaml` shards, and
-  compares it by meaning.
-- **A fragment edge keeps its `when`.** The org-fragment schema's edge (`_OrgDRGEdge`) declares `when`, and open-packs'
-  `spdd` fragment carries one, but `writeFragment` refused it. It now writes it, and the edge key order the reader
-  reports a finding by follows the schema. A fragment node still refuses provenance and tags, which the schema's node
-  does not hold.
+  the round trip never wrote it, so the written `spdd` pack read back with none of its five step enhancements. The
+  round trip now writes it through `GraphShardWriter.writeFragment` and compares it by meaning.
+- **A fragment edge keeps its `when`.** The org-fragment schema's edge declares `when`, and open-packs' `spdd` fragment
+  carries one, but `writeFragment` refused it. It now writes it. A fragment node still refuses provenance and tags.
 - **The gate covers the org example pack**, which carries the fragment `built-in` has none of. Its one `impacts` edge
   stays red, since a `Relationship` carries no strength
-  ([#477](https://github.com/spec-kitty/spec-kitty-charter/issues/477)); no open-packs pack has one.
-- **The pin.** `openPacksRef` moves from `a2a9379` to open-packs `1692a3b`, the `main` commit that carries #248, and
-  `packs/open-packs.lock.yaml` is re-synced, so `packs/internal` and `packs/qa` arrive without `org-charter.yaml`.
-- **The usability run follows open-packs' split `built-in`.** It configures the `depends_on` closure it needs and
-  reads the profile and mission type from the packs that hold them: 146 of 146 hops, and `internal` and `qa` register
-  as they are ([run record](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/)).
+  ([#477](https://github.com/spec-kitty/spec-kitty-charter/issues/477)).
+- **The pin.** `openPacksRef` moves from `a2a9379` to open-packs `1692a3b`, which carries #248, and
+  `packs/open-packs.lock.yaml` is re-synced.
+- **The usability run follows open-packs' split `built-in`**: 146 of 146 hops, and `internal` and `qa` register as they
+  are ([run record](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/)).
+- **After #542, the watch is red until open-packs regenerates three manifests.** Once
+  [#542](https://github.com/spec-kitty/spec-kitty-charter/issues/542) (manifest membership derived and checked) merges,
+  the drift watch at `1692a3b` refuses the hand-written manifests of open-packs `built-in` (it leaves out its 2
+  presets), `foundation` (31 constituents) and `writing` (21 constituents), as `:packs:driftTest` with #542 merged
+  confirms. The watch goes green again when
+  [spec-kitty-open-packs#250](https://github.com/spec-kitty/spec-kitty-open-packs/issues/250) regenerates them and
+  `openPacksRef` is raised.
