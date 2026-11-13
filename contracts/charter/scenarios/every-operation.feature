@@ -72,6 +72,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
       | getEffectiveMissionStepContract | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact            | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
+      | listEffectiveArtifactReferences | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
@@ -140,6 +141,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
       | getEffectiveMissionStepContract | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact            | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
+      | listEffectiveArtifactReferences | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |

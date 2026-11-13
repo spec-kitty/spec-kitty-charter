@@ -301,6 +301,48 @@ class EffectiveReadServiceHeldTest {
                 .isNotEqualTo(skill);
     }
 
+    // ---- the referrer of the references twin (WP07, research R10)
+
+    @Test
+    void theReferrerIsTheMergeWinnerOfAnyListedKindWithWhatTheClosureHoldsAndNoStateIsResolved() {
+        EffectiveReadService.ListedWinner asset = service.listedWinner(ID, "asset", "run");
+        EffectiveReadService.ListedWinner skill = service.listedWinner(ID, "skill", "land-pr");
+
+        assertThat(asset.winner()).isEqualTo(RUN_WINNER);
+        assertThat(skill.winner()).as("a kind the activation resolves, by the same rule").isEqualTo(SKILL_WINNER);
+        assertThat(asset.held()).containsExactlyInAnyOrder(LOGO, RUN, SKILL);
+        assertThat(asset.sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(asset.governanceFingerprint()).isEqualTo(CLOSURE);
+        assertThat(asset.stored().id()).isEqualTo(ID);
+        assertThat(packs.calls()).as("one session a read").isEqualTo(2);
+        assertThat(packs.queries()).as("no in-force resolution").isEmpty();
+        assertThat(packs.effectiveAsks()).as("no entity is read").isEmpty();
+    }
+
+    @Test
+    void theReferrerIsJudgedActivationThenKindThenArtifact() {
+        assertThatThrownBy(() -> service.listedWinner(new ActivationId("nope"), "nonsense", "x"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+        for (String unlisted : new String[] {"nonsense", "tactic", "template"}) {
+            assertThatThrownBy(() -> service.listedWinner(ID, unlisted, "run"))
+                    .as(unlisted)
+                    .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                        assertThat(refusal.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND);
+                        assertThat(refusal.getMessage())
+                                .isEqualTo("The service serves no artifact kind " + unlisted + ".");
+                    });
+        }
+        assertThat(packs.calls()).as("nothing is read before the kind").isZero();
+        assertThatThrownBy(() -> service.listedWinner(ID, "directive", "GHOST"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+                    assertThat(refusal.getMessage())
+                            .isEqualTo("No pack of the activation's closure holds the directive GHOST.");
+                });
+    }
+
     // ---- T008: the templated read
 
     @Test

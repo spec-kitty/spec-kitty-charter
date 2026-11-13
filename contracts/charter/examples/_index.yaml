@@ -61,3 +61,4 @@ files:
   - EffectiveAssetRead.asset.yaml
   - SkillList.activation.yaml
   - EffectiveSkillRead.skill.yaml
+  - ArtifactReferenceList.activation.yaml

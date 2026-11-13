@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveAssetsController;
+import ai.speckitty.charter.artifacts.infra.api.EffectiveReferencesController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveSkillsController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import java.io.IOException;
@@ -121,6 +122,32 @@ class ActivationRoutingTest {
             assertThat(routed.getBeanType().getName()).as(route[0]).isEqualTo(route[1]);
             assertThat(routed.getMethod().getName()).as(route[0]).isEqualTo(route[2]);
         }
+    }
+
+    /**
+     * No literal path of the activation tree ends in {@code /references}, so the references template is the route of
+     * every listed kind (WP07, #532): the references of an asset or a skill are the references read, never the literal
+     * item, its payload or a 404 of an unmatched path; and a payload stays the payload.
+     */
+    @Test
+    void theReferencesOfEveryKindReachTheReferencesTwinAndNoLiteralPathShadowsThem() throws Exception {
+        for (String path : new String[] {
+            "directive/D/references",
+            "agent_profile/java-jenny/references",
+            "asset/run/references",
+            "skill/land-pr/references",
+            "mission_type/software-dev/references",
+            "mission_step_contract/implement/references"
+        }) {
+            HandlerMethod routed = handler("GET", READ + path);
+
+            assertThat(routed.getBeanType()).as(path).isEqualTo(EffectiveReferencesController.class);
+            assertThat(routed.getMethod().getName()).as(path).isEqualTo("listEffectiveArtifactReferences");
+        }
+        HandlerMethod payload = handler("GET", READ + "asset/references/payload");
+        assertThat(payload.getMethod().getName())
+                .as("an asset whose id is references keeps its payload")
+                .isEqualTo("getEffectiveAssetPayload");
     }
 
     @Test

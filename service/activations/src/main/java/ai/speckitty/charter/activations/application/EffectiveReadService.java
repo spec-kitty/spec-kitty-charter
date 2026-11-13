@@ -263,6 +263,41 @@ public class EffectiveReadService {
         }
     }
 
+    /**
+     * The winner of one artifact of any listed kind and what else the closure holds, as {@link #listedWinner} answers
+     * them: the referrer of {@code listEffectiveArtifactReferences} (research R10).
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read, which the read of the winner's pack is checked against
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param winner the winner
+     * @param held every artifact of a listed kind the closure holds, as the layer merge keeps it
+     */
+    public record ListedWinner(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveHeldWinner winner,
+            Set<ArtifactRef> held) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param winner the winner
+         * @param held the held artifacts
+         */
+        public ListedWinner {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(winner, "winner");
+            held = Set.copyOf(Objects.requireNonNull(held, "held"));
+        }
+    }
+
     /** A page cursor of another set, which a client holds after the document or a pack of the closure changed. */
     public static final class StaleCursorException extends RuntimeException {
 
@@ -578,6 +613,43 @@ public class EffectiveReadService {
         }
         return new Read.Found<>(
                 new HeldAnswer(stored, closure.fingerprint(), closure.closureFingerprint(), winner), etag);
+    }
+
+    /**
+     * The winner of one artifact of any listed kind under an activation, whatever its state, with every artifact of a
+     * listed kind the closure holds and the source fingerprint, all from one {@link PacksSession}: the referrer of
+     * {@code listEffectiveArtifactReferences} (research R10). The winner is the layer merge's, the one rule
+     * {@link #heldWinner} and {@link #artifact} answer: for a kind the activation resolves it is the winner the effective
+     * set reads, and for an asset the winner {@link #heldWinner} reads. No state is resolved; the references are the
+     * packs slice's to read from the winner's pack, against the source fingerprint of this answer. It has no tag: the
+     * references read of a pack has none either.
+     *
+     * @param id the activation's id
+     * @param kindToken the kind's token, as the request names it
+     * @param artifactId the artifact's id, exactly as declared
+     * @return the winner, the held artifacts and the fingerprints
+     * @throws CharterRefusal with {@code activation_not_found}; then {@code kind_not_found} when the token names no kind
+     *     the packs slice lists; then {@code artifact_not_found} when no pack of the closure holds the artifact; or as
+     *     {@link #activation} does
+     */
+    public ListedWinner listedWinner(ActivationId id, String kindToken, String artifactId) {
+        Objects.requireNonNull(kindToken, "kindToken");
+        Objects.requireNonNull(artifactId, "artifactId");
+        StoredActivation stored = found(id);
+        List<ArtifactKind> listed = packs.listedKinds();
+        ArtifactKind kind =
+                ArtifactKind.fromToken(kindToken).filter(listed::contains).orElseThrow(() -> notServed(kindToken));
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ARTIFACT_NOT_FOUND,
+                        "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + "."));
+        Set<ArtifactRef> held = listed.stream()
+                .flatMap(each -> session.heldWinners(each).stream())
+                .map(EffectiveHeldWinner::ref)
+                .collect(Collectors.toUnmodifiableSet());
+        return new ListedWinner(stored, closure.fingerprint(), closure.closureFingerprint(), winner, held);
     }
 
     /**

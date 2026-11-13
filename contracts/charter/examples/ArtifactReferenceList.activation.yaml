@@ -1,0 +1,26 @@
+summary: >-
+  The references of directive D under an activation whose project pack overrides it: the pack read of proj, the pack
+  that holds the winner, with the target the closure holds linked under the activation too.
+value:
+  items:
+    - reference: tactic:T
+      relation: requires
+      holdingPack:
+        packId: core
+        descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+        name: core-pack
+      urn: tactic:T
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/tactic/T
+        artifact:
+          href: /api/v1/packs/core/artifacts/tactic/T
+    - reference: template:release-notes
+      relation: suggests
+      urn: template:release-notes
+      _links: {}
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/directive/D/references
+    up:
+      href: /api/v1/activations/a-1
