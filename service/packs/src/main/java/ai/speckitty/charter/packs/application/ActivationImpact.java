@@ -64,6 +64,20 @@ public interface ActivationImpact {
         return List.of();
     }
 
+    /**
+     * The registration gate of C38 (FR-001, OD-4 (i), squad A2): refuses the write when a stored activation whose
+     * closure it joins would, once it is stored, put a step enhancement in force whose slot the prompt in force does not
+     * declare. It is separate from the notices: the notices never refuse, and this never names an affected activation.
+     * The impact check calls it on every path (a whole-pack registration, a per-artifact registration, a relationship
+     * write and both {@code DELETE}s), before the commit and under the locks, with the closures it composed anyway; the
+     * refusal it raises reaches the caller as it is.
+     *
+     * @param closures the closures the write joins, by the root set of an activation
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PROMPT_SLOT_MISSING}, the activation named
+     *     in the detail; the default judges nothing, as a deployment with no activations slice stores no activation
+     */
+    default void requireComposable(ClosureChanges closures) {}
+
     /** The port of a deployment with no activations slice: no activation is stored. */
     ActivationImpact NONE = List::of;
 }

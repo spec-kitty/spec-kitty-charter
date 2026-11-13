@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -22,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -121,6 +123,16 @@ public record ClosureView(
 
         WinnerSource winners() {
             return winners;
+        }
+
+        /** The composed closure, in closure order. */
+        List<PackUnderResolution> packs() {
+            return packs;
+        }
+
+        /** The facts each pack was read with, by configured identifier. */
+        Map<String, PackCompositionFacts> facts() {
+            return facts;
         }
 
         /**
@@ -574,6 +586,45 @@ public record ClosureView(
     public InForceStates inForce(InForceRequest request) {
         MergedView view = merged();
         return InForceResolution.resolve(view.closure(), view.resolutionEdges(), request);
+    }
+
+    /**
+     * Refuses a request whose step enhancements in force name a slot the prompt in force of their step does not declare
+     * (C38, FR-001; {@link SlotCompose}): an enhancement in force, its winning copy only, judged against the prompt at
+     * the merged winner's place of its step. {@link #inForce} stays a pure resolution: a caller that composes asks this
+     * explicitly, once the states are resolved (squad A3): the composing reads, the registration gate per stored
+     * activation and the activation writes before they store. It reads nothing more than this view (NFR-007).
+     *
+     * @param states what {@link #inForce} answered for the request
+     * @throws CharterRefusal with {@code PROMPT_SLOT_MISSING} for the first missing slot, by enhancement in the order the
+     *     closure first holds them and then by fill, naming the enhancing pack and then the pack of the prompt in force;
+     *     or as {@link #merged()} does
+     */
+    public void requireSlots(InForceStates states) {
+        Objects.requireNonNull(states, "states");
+        MergedView view = merged();
+        Optional<SlotCompose.SlotViolation> first =
+                SlotCompose.missing(view.closure(), mergeInputs.facts(), states).stream()
+                        .findFirst();
+        if (first.isEmpty()) {
+            return;
+        }
+        Map<PackIdentifier, PackUnderResolution> byId = new LinkedHashMap<>();
+        mergeInputs.packs().forEach(pack -> byId.putIfAbsent(pack.configured().id(), pack));
+        SlotCompose.SlotViolation missing = first.get();
+        throw new CharterRefusal(
+                RefusalCode.PROMPT_SLOT_MISSING,
+                missing.detail(pack -> Optional.ofNullable(byId.get(pack))
+                        .map(held -> held.descriptor().name())
+                        .orElse(pack.value())),
+                missing.packs().stream()
+                        .map(pack -> Optional.ofNullable(byId.get(pack))
+                                .map(held -> new RefusalPack(
+                                        held.descriptor().packId(),
+                                        pack.value(),
+                                        held.descriptor().name()))
+                                .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value())))
+                        .toList());
     }
 
     /**

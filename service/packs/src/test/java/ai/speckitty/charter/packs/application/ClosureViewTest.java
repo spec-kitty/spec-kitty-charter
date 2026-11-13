@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
@@ -27,6 +28,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -553,5 +555,94 @@ class ClosureViewTest {
         view.merged().edges().holdsStep(u("action:M/a"));
 
         assertThat(factsRead).as("no pack was read again").isEqualTo(readOnce);
+    }
+
+    // ---- C38: every slot an in-force step enhancement names is declared by the prompt in force (FR-001) ----------
+
+    /** Gives a pack of the fixture its prompt facts. */
+    private void prompts(String name, PromptFacts prompts) {
+        PackCompositionFacts held = facts.get(name);
+        facts.put(
+                name,
+                new PackCompositionFacts(
+                        held.changed(),
+                        held.defined(),
+                        held.references(),
+                        held.policy(),
+                        held.presets(),
+                        held.edges(),
+                        held.languages(),
+                        held.bindings(),
+                        prompts));
+    }
+
+    private static List<PromptFacts.DeclaredSlot> declaring(String... slots) {
+        return java.util.Arrays.stream(slots)
+                .map(slot -> new PromptFacts.DeclaredSlot(new SlotId(slot), false))
+                .toList();
+    }
+
+    /**
+     * base (org) holds M, its step s, whose prompt declares spdd:reasons-block, and the enhancement x that fills it;
+     * proj (project) replaces M and s with a prompt that declares the given slots.
+     */
+    private void anOverrideOfTheEnhancedStepDeclaring(String... slots) {
+        pack(
+                "base",
+                PackLevel.ORG,
+                List.of(),
+                List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"));
+        prompts(
+                "base",
+                new PromptFacts(
+                        Map.of(u("action:M/s"), declaring("spdd:reasons-block")),
+                        Map.of(
+                                u("step_enhancement:x"),
+                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n")))));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:M", "action:M/s"));
+        prompts("proj", new PromptFacts(Map.of(u("action:M/s"), declaring(slots)), Map.of()));
+    }
+
+    @Test
+    void anInForceEnhancementOfASlotTheOverrideDropsIsRefusedPromptSlotMissingWhileInForceStaysPure() {
+        anOverrideOfTheEnhancedStepDeclaring();
+        ClosureView view = view();
+
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "step_enhancement:x")));
+
+        expect(states, "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
+        assertThatThrownBy(() -> view.requireSlots(states)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
+            assertThat(refused.getMessage())
+                    .contains("step_enhancement:x")
+                    .contains("`base`")
+                    .contains("spdd:reasons-block")
+                    .contains("`proj`");
+            assertThat(refused.packs())
+                    .extracting(RefusalPack::packId, RefusalPack::name, RefusalPack::descriptorPackId)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple("base", "base", "id-base"),
+                            org.assertj.core.groups.Tuple.tuple("proj", "proj", "id-proj"));
+        });
+    }
+
+    @Test
+    void theTwinTheSameEnhancementNotSelectedIsNotJudged() {
+        anOverrideOfTheEnhancedStepDeclaring();
+        ClosureView view = view();
+
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M")));
+
+        view.requireSlots(states);
+        expect(states, "step_enhancement:x", State.INACTIVE, Reason.NOT_SELECTED);
+    }
+
+    @Test
+    void theTwinAnOverrideThatDeclaresTheSlotComposes() {
+        anOverrideOfTheEnhancedStepDeclaring("spdd:reasons-block");
+        ClosureView view = view();
+
+        view.requireSlots(view.inForce(InForceRequest.selecting(urns("mission_type:M", "step_enhancement:x"))));
     }
 }
