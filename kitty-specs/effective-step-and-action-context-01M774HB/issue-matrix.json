@@ -109,7 +109,7 @@
       "wp": "WP11"
     },
     "#450": {
-      "evidence_ref": "Scoping half: WP01, WP02, WP08; body links shipped in PR #486",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/563",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -117,7 +117,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP02"
     },
     "#466": {
