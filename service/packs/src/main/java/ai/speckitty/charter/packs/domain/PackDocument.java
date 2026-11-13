@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,7 +114,7 @@ public record PackDocument(
     /** A part the Markdown model refuses is a breach of the document's rules, naming the part. */
     private static void guard(String part, Optional<String> problem) {
         problem.ifPresent(why -> {
-            throw new ConstraintBreachException(part + " " + why);
+            throw new ConstraintBreachException(Reason.failed(part + " " + why));
         });
     }
 }

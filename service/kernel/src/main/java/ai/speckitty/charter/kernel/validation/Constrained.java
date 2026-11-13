@@ -30,19 +30,19 @@ public final class Constrained<T> {
     }
 
     /**
-     * Pairs a value with one more constraint on top of the current ones.
+     * Pairs a value with one more rule on top of the current ones.
      *
-     * @param constraint the extra constraint
+     * @param rule the extra rule
      * @return the extended pairing; this one is unchanged
      */
-    public Constrained<T> adheresTo(Constraint<T> constraint) {
-        return new Constrained<>(data, toAdhereTo.must(constraint));
+    public Constrained<T> adheresTo(Rule<T> rule) {
+        return new Constrained<>(data, toAdhereTo.must(rule));
     }
 
     /**
-     * Whether the value passes every constraint.
+     * Whether the value passes, warnings aside.
      *
-     * @return true when no constraint is breached
+     * @return true when no rule finds a violation
      */
     public boolean isValid() {
         return rationale().isPassing();
@@ -51,7 +51,7 @@ public final class Constrained<T> {
     /**
      * The full collect-all assessment.
      *
-     * @return one reason per constraint
+     * @return every reason of every rule
      */
     public Rationale rationale() {
         return toAdhereTo.check(data);
@@ -61,7 +61,7 @@ public final class Constrained<T> {
      * Fail-fast: returns the value when valid.
      *
      * @return the validated value
-     * @throws ConstraintBreachException naming the first breached constraint
+     * @throws ConstraintBreachException carrying the first violation
      */
     public T guard() {
         toAdhereTo.guard(data);

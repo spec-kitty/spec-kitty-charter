@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -89,7 +90,7 @@ public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections)
      */
     static void guardContent(String content) {
         MarkdownDocument.blockProblem(content).ifPresent(problem -> {
-            throw new ConstraintBreachException("Guide content " + problem);
+            throw new ConstraintBreachException(Reason.failed("Guide content " + problem));
         });
     }
 }

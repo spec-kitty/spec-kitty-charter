@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.markdown.MarkdownLines;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,7 +61,7 @@ public record StepDocument(
      */
     static void guard(String part, Optional<String> problem) {
         problem.ifPresent(why -> {
-            throw new ConstraintBreachException("A step document's " + part + " " + why);
+            throw new ConstraintBreachException(Reason.failed("A step document's " + part + " " + why));
         });
     }
 }

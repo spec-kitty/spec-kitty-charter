@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,8 +60,8 @@ public final class GlossaryPack implements CharterArtifact {
         List<String> repeated = duplicateSurfaces(this.terms);
         if (!repeated.isEmpty()) {
             // A rule's description is fixed text; this one names the surfaces, as core's model does.
-            throw new ConstraintBreachException("Each term's surface must be unique within glossary pack " + id.value()
-                    + "; repeated: " + repeated);
+            throw new ConstraintBreachException(Reason.failed("Each term's surface must be unique within glossary pack "
+                    + id.value() + "; repeated: " + repeated));
         }
     }
 

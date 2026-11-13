@@ -9,12 +9,16 @@ The design is vendored, not the artifact: there is no runtime dependency on the 
 
 | Upstream | Disposition | Here |
 |---|---|---|
-| `Constraint` | took, changed | `Constraint` record (description + predicate); `equals`/`hashCode` are value-correct (see below) |
-| `Constraints`, `Checks` | took, trimmed | static factories and field predicates; `StringUtils.isNotBlank` became `s != null && !s.isBlank()` |
-| `ModularRuleset` | took, changed | immutable; `guard(T)` is fail-fast and throws `ConstraintBreachException`; `check(T)` collects every breach |
-| `Evaluation`, `Reason`, `Rationale` | took, changed | `Rationale` is an immutable record of `Reason`s (upstream: mutable list) |
+| (none) | added | `Rule<T>`: returns a list of `Reason`s, composes with `on`, `forEach` and `when` (ADR-0075 decision 1) |
+| `Constraint` | took, changed | a `Rule` of one predicate, a record with a severity, a code, and a location and detail that are functions of the subject; `equals`/`hashCode` are value-correct (see below) |
+| `Constraints`, `Checks` | took, trimmed | `of` and `notBlank`; `StringUtils.isNotBlank` became `s != null && !s.isBlank()`. The slug rules `slug(max)` and `letterFirstSlug(max)` live beside their grammar, in `kernel.domain.IdentifierGrammar` |
+| `ModularRuleset` | took, changed | immutable, and itself a `Rule`, so rulesets nest; `guard(T)` is fail-fast and throws `ConstraintBreachException`; `check(T)` collects every reason |
+| `Evaluation`, `Reason`, `Rationale` | took, changed | `Reason` carries the rule, the result, a `Severity`, a `ReasonCode`, a `Location` and a detail; `Rationale` is an immutable record of `Reason`s (upstream: mutable list) with `violations()`, `warnings()`, `notices()` and `and()` |
+| `Evidence` | replaced | `Location`: a file and a JSON pointer, typed and immutable |
+| (none) | added | `Severity` (`VIOLATION`, `WARNING`, `NOTICE`); only a violation fails a check or a guard |
+| (none) | added | `ReasonCode`: the typed code of a reason; a slice's enum implements it |
 | `Constrained` | took, trimmed | value + ruleset pairing; only the combinators in use |
-| `InvalidObjectException` (checked) | replaced | `ConstraintBreachException` (unchecked, names the breached constraint) |
+| `InvalidObjectException` (checked) | replaced | `ConstraintBreachException` (unchecked, carries the breached `Reason`) |
 
 ### Changed
 
@@ -23,8 +27,15 @@ The design is vendored, not the artifact: there is no runtime dependency on the 
 - **Fixed `Constraint.equals`**: upstream compared on the description only, so two different rules with the same wording
   were equal. A `Constraint` is now a record: equal only when description and predicate (by reference) are equal.
 
+- **Wired the dynamic descriptions**: upstream declared object-dependent descriptions but never used them. A
+  `Constraint`'s location and detail are functions of the subject, applied only to a breach.
+- **Replaced `Evidence`**: upstream's mutable string map, whose `merge` dropped the other side's keys, became the typed,
+  immutable `Location`.
+
 ### Omitted
 
-- `Evidence` (mutable, buggy upstream) and everything that carried it.
-- The dynamic, object-dependent descriptions (never wired through upstream).
 - The `dsl` module.
+
+The changes were offered upstream as
+[`sddevelopment-be/modular-validators#13`](https://github.com/sddevelopment-be/modular-validators/issues/13) (ADR-0075
+decision 10).

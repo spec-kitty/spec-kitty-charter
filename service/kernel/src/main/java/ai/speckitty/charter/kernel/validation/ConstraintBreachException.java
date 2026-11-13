@@ -1,30 +1,32 @@
 package ai.speckitty.charter.kernel.validation;
 
-/** Thrown by {@link ModularRuleset#guard} on the first breached constraint; names that constraint. */
+import java.util.Objects;
+
+/** Thrown by a {@code guard} on the first violation; carries that {@link Reason}. */
 public final class ConstraintBreachException extends RuntimeException {
 
     /** Serialization version. */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
-    /** The breached constraint. */
-    private final String constraintDescription;
+    /** The violation. */
+    private final transient Reason reason;
 
     /**
-     * Creates the exception for a breached constraint.
+     * Creates the exception for a violation.
      *
-     * @param constraintDescription the description of the breached constraint
+     * @param reason the breached reason
      */
-    public ConstraintBreachException(String constraintDescription) {
-        super("Constraint breached: " + constraintDescription);
-        this.constraintDescription = constraintDescription;
+    public ConstraintBreachException(Reason reason) {
+        super("Constraint breached: " + Objects.requireNonNull(reason, "reason").detail());
+        this.reason = reason;
     }
 
     /**
-     * The breached constraint.
+     * The violation.
      *
-     * @return its description
+     * @return the breached reason, with its code, location and detail
      */
-    public String constraintDescription() {
-        return constraintDescription;
+    public Reason reason() {
+        return reason;
     }
 }

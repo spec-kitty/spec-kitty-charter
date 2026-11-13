@@ -339,7 +339,7 @@ class AgentProfileEntityTest {
         assertThatThrownBy(() -> valid("p").role("Implementer").build())
                 .isInstanceOfSatisfying(
                         ConstraintBreachException.class,
-                        breach -> assertThat(breach.constraintDescription())
+                        breach -> assertThat(breach.reason().detail())
                                 .isEqualTo("An agent profile's role and alt-roles must be lowercase letters, digits and"
                                         + " hyphens, starting with a letter, at most 64 characters."));
     }

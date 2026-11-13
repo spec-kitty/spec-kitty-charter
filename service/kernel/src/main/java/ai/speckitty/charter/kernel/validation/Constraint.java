@@ -1,35 +1,116 @@
 package ai.speckitty.charter.kernel.validation;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 
 /**
- * A single named rule that can be applied to a value of type {@code T}.
+ * The {@link Rule} of one predicate: it gives exactly one {@link Reason} per subject.
  *
- * <p>Equality is that of a record: both the description and the predicate must be equal, and a predicate is compared
- * by reference. Upstream ({@code modular-validators}) compared on the description alone, so two different rules with
- * the same wording were "equal"; that defect is deliberately not reproduced. Two constraints are therefore equal only
- * when they are built from the same predicate instance and the same description.
+ * <p>A breach's location and detail are functions of the subject, the dynamic descriptions upstream declared but never
+ * wired. Neither runs when the predicate holds: a held reason carries {@link Location#NOWHERE} and the description.
+ * Without a location function a breach is at {@link Location#NOWHERE}, and without a detail function its detail is the
+ * description. Both are left out, not defaulted to a shared function, so that equality stays that of the parts given.
  *
- * @param description the human description, used in breach messages
- * @param predicate the rule; true means the value is acceptable
- * @param <T> the type of value the rule applies to
+ * <p>Equality is that of a record: every part must be equal, and a predicate or function is compared by reference.
+ * Upstream ({@code modular-validators}) compared on the description alone, so two different rules with the same
+ * wording were "equal"; that defect is deliberately not reproduced.
+ *
+ * @param description the rule's description, the same for every subject
+ * @param predicate the rule; true means the subject is acceptable
+ * @param severity how much a breach weighs
+ * @param code the code of a breach
+ * @param location where a breach points, from the subject; {@code null} for {@link Location#NOWHERE}
+ * @param detail what a breach says, from the subject; {@code null} for the description
+ * @param <T> the type of subject the rule applies to
  */
-public record Constraint<T>(String description, Predicate<T> predicate) {
+public record Constraint<T>(
+        String description,
+        Predicate<? super T> predicate,
+        Severity severity,
+        ReasonCode code,
+        @Nullable Function<? super T, Location> location,
+        @Nullable Function<? super T, String> detail)
+        implements Rule<T> {
 
-    /** Rejects a null description or predicate. */
+    /** Rejects a null part other than the location and the detail. */
     public Constraint {
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(predicate, "predicate");
+        Objects.requireNonNull(severity, "severity");
+        Objects.requireNonNull(code, "code");
     }
 
     /**
-     * Applies the rule to a value.
+     * A value object's invariant: a {@link Severity#VIOLATION} with code {@link ReasonCode#INVARIANT}, at no location,
+     * whose detail is its description.
      *
-     * @param value the value to test
-     * @return a {@link Reason} carrying this constraint's description and the outcome
+     * @param description the rule's description
+     * @param predicate the rule; true means the subject is acceptable
      */
-    public Reason applyTo(T value) {
-        return predicate.test(value) ? Reason.passed(description) : Reason.failed(description);
+    Constraint(String description, Predicate<? super T> predicate) {
+        this(description, predicate, Severity.VIOLATION, ReasonCode.INVARIANT, null, null);
+    }
+
+    /**
+     * Applies the rule to one subject.
+     *
+     * @param subject the subject to test
+     * @return the one reason: held, or breached with its location and detail
+     */
+    public Reason applyTo(T subject) {
+        if (predicate.test(subject)) {
+            return new Reason(description, Evaluation.PASS, severity, code, Location.NOWHERE, description);
+        }
+        String said = detail == null ? description : detail.apply(subject);
+        Location where = location == null ? Location.NOWHERE : location.apply(subject);
+        return new Reason(description, Evaluation.FAIL, severity, code, where, said);
+    }
+
+    @Override
+    public List<Reason> apply(T subject) {
+        return List.of(applyTo(subject));
+    }
+
+    /**
+     * This rule with another code.
+     *
+     * @param newCode the code of a breach
+     * @return the recoded rule; this one is unchanged
+     */
+    public Constraint<T> coded(ReasonCode newCode) {
+        return new Constraint<>(description, predicate, severity, newCode, location, detail);
+    }
+
+    /**
+     * This rule at another severity.
+     *
+     * @param weight how much a breach weighs
+     * @return the reweighed rule; this one is unchanged
+     */
+    public Constraint<T> as(Severity weight) {
+        return new Constraint<>(description, predicate, weight, code, location, detail);
+    }
+
+    /**
+     * This rule with a breach located from the subject.
+     *
+     * @param where where a breach points
+     * @return the located rule; this one is unchanged
+     */
+    public Constraint<T> locatedBy(Function<? super T, Location> where) {
+        return new Constraint<>(description, predicate, severity, code, where, detail);
+    }
+
+    /**
+     * This rule with a breach described from the subject.
+     *
+     * @param what what a breach says
+     * @return the described rule; this one is unchanged
+     */
+    public Constraint<T> detailedBy(Function<? super T, String> what) {
+        return new Constraint<>(description, predicate, severity, code, location, what);
     }
 }

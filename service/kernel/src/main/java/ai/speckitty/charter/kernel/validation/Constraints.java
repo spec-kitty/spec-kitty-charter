@@ -1,5 +1,7 @@
 package ai.speckitty.charter.kernel.validation;
 
+import java.util.function.Predicate;
+
 /** Ready-made constraints and the factory for custom ones. */
 public final class Constraints {
 
@@ -9,23 +11,25 @@ public final class Constraints {
     private Constraints() {}
 
     /**
-     * A custom constraint.
+     * A value object's invariant: a {@link Severity#VIOLATION} with code {@link ReasonCode#INVARIANT}, whose detail is
+     * its description. {@link Constraint#coded}, {@link Constraint#as}, {@link Constraint#locatedBy} and
+     * {@link Constraint#detailedBy} refine it.
      *
      * @param description the human description
      * @param predicate the rule; true means the value is acceptable
      * @param <T> the validated type
      * @return the constraint
      */
-    public static <T> Constraint<T> of(String description, java.util.function.Predicate<T> predicate) {
+    public static <T> Constraint<T> of(String description, Predicate<? super T> predicate) {
         return new Constraint<>(description, predicate);
     }
 
     /**
-     * The constraint that text is neither null nor blank.
+     * The rule that text is neither null nor blank.
      *
      * @return the shared instance
      */
-    public static Constraint<String> isNotBlank() {
+    public static Constraint<String> notBlank() {
         return NOT_BLANK;
     }
 }

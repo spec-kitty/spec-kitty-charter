@@ -14,7 +14,7 @@ class ModularRulesetTest {
     // Instance fields, not static ones, so the factories run inside each test and PIT can attribute their coverage to
     // the individual tests that use them. A broken factory would not hide behind a static field either: the class
     // would fail to initialise, and every test with it (ExceptionInInitializerError).
-    private final Constraint<String> notBlank = Constraints.isNotBlank();
+    private final Constraint<String> notBlank = Constraints.notBlank();
     private final Constraint<String> shortText = Constraints.of("must be at most 3 characters", s -> s.length() <= 3);
     private final Constraint<String> lower =
             Constraints.of("must be lower case", s -> s.equals(s.toLowerCase(Locale.ROOT)));
@@ -26,7 +26,7 @@ class ModularRulesetTest {
         assertThatThrownBy(() -> ruleset.guard("  "))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("mustn't be blank")
-                .extracting(e -> ((ConstraintBreachException) e).constraintDescription())
+                .extracting(e -> ((ConstraintBreachException) e).reason().detail())
                 .isEqualTo("mustn't be blank");
     }
 
@@ -35,8 +35,31 @@ class ModularRulesetTest {
         // "ABCDE" breaches shortText and lower; only the first, shortText, is reported.
         assertThatThrownBy(() -> ruleset.guard("ABCDE"))
                 .isInstanceOf(ConstraintBreachException.class)
-                .extracting(e -> ((ConstraintBreachException) e).constraintDescription())
+                .extracting(e -> ((ConstraintBreachException) e).reason().detail())
                 .isEqualTo("must be at most 3 characters");
+    }
+
+    @Test
+    void theBreachCarriesTheWholeReason() {
+        assertThatThrownBy(() -> ruleset.guard("ABCDE"))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessage("Constraint breached: must be at most 3 characters")
+                .extracting(e -> ((ConstraintBreachException) e).reason())
+                .isEqualTo(Reason.failed("must be at most 3 characters"));
+    }
+
+    @Test
+    void aRulesetStopsAtItsFirstBreachSoALaterRuleMayRelyOnAnEarlierOne() {
+        // the second rule would throw on null; the guard never reaches it
+        ModularRuleset<String> guarded = ModularRuleset.<String>emptyRules()
+                .must(Constraints.of("present", s -> s != null))
+                .must(Constraints.of("short", s -> s.length() <= 3));
+
+        assertThatThrownBy(() -> guarded.guard(null))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("present");
+        // control: a present, short value passes both
+        assertThatCode(() -> guarded.guard("abc")).doesNotThrowAnyException();
     }
 
     @Test
@@ -63,10 +86,10 @@ class ModularRulesetTest {
 
     @Test
     void theReadyMadeNotBlankConstraintRefusesNullAndBlankTextAndAcceptsText() {
-        assertThat(Constraints.isNotBlank().applyTo(" \t")).isEqualTo(Reason.failed("mustn't be blank"));
-        assertThat(Constraints.isNotBlank().applyTo(null)).isEqualTo(Reason.failed("mustn't be blank"));
+        assertThat(Constraints.notBlank().applyTo(" \t")).isEqualTo(Reason.failed("mustn't be blank"));
+        assertThat(Constraints.notBlank().applyTo(null)).isEqualTo(Reason.failed("mustn't be blank"));
         // control: the same constraint accepts text
-        assertThat(Constraints.isNotBlank().applyTo("abc")).isEqualTo(Reason.passed("mustn't be blank"));
+        assertThat(Constraints.notBlank().applyTo("abc")).isEqualTo(Reason.passed("mustn't be blank"));
     }
 
     @Test
@@ -80,7 +103,7 @@ class ModularRulesetTest {
 
         assertThatThrownBy(() -> extended.guard("  "))
                 .isInstanceOf(ConstraintBreachException.class)
-                .extracting(e -> ((ConstraintBreachException) e).constraintDescription())
+                .extracting(e -> ((ConstraintBreachException) e).reason().detail())
                 .isEqualTo("mustn't be blank");
         // must appends: the rules run in the order they were added
         assertThat(extended.check("ABCDE").details())
@@ -100,9 +123,13 @@ class ModularRulesetTest {
         Predicate<String> p1 = s -> true;
         Predicate<String> p2 = s -> false;
 
-        assertThat(new Constraint<>("same words", p1)).isNotEqualTo(new Constraint<>("same words", p2));
+        assertThat(Constraints.of("same words", p1)).isNotEqualTo(Constraints.of("same words", p2));
         // control: the same description and the same predicate are equal, with equal hash codes
-        assertThat(new Constraint<>("same words", p1)).isEqualTo(new Constraint<>("same words", p1));
-        assertThat(new Constraint<>("same words", p1)).hasSameHashCodeAs(new Constraint<>("same words", p1));
+        assertThat(Constraints.of("same words", p1)).isEqualTo(Constraints.of("same words", p1));
+        assertThat(Constraints.of("same words", p1)).hasSameHashCodeAs(Constraints.of("same words", p1));
+        // a different code or severity makes a different constraint
+        assertThat(Constraints.of("same words", p1).coded(ReasonCode.of("other")))
+                .isNotEqualTo(Constraints.of("same words", p1));
+        assertThat(Constraints.of("same words", p1).as(Severity.NOTICE)).isNotEqualTo(Constraints.of("same words", p1));
     }
 }
