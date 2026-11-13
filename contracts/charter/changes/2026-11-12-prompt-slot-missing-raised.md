@@ -21,5 +21,8 @@
     `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`,
     `reactivateActivationArtifact` and `applyActivationPreset`.
 
-  The code's `operations` map lists every `422` operation. No enum value is added. Core: nothing while it is not a
-  consumer (epic #186); a pack whose override drops a slot that an enhancement in force fills must declare it again.
+  The code's `operations` map lists every `422` operation, and the shared responses say so: `OfferingUnreadable` (the
+  `500` of the composing reads) names `prompt_slot_missing` with an example, beside the two new `pack_unreadable` causes
+  (C37 and #447); `ActivationInvalid` and the `422` of each impact-checked pack write name it too. No enum value is
+  added. Core: nothing while it is not a consumer (epic #186); a pack whose override drops a slot that an enhancement
+  in force fills must declare it again.
