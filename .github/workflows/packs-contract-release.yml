@@ -4,12 +4,13 @@ name: packs-contract-release
 # contract-packs-v<version> at the release's merge commit on main rebuilds the release assets at that tag with
 # scripts/release/packs-contract-release-assets.sh and attaches them to a GitHub Release of the tag:
 # packs-contract.tar.gz (the tracked files of contracts/packs/: file-kinds.yaml, the schemas, the classifier
-# conformance cases, the CHANGELOG and the README), packs-contract.sha256 (one checksum per file of the archive) and
+# conformance cases, the CHANGELOG and the README, plus RELEASE.json naming the version, tag and commit),
+# packs-contract.sha256 (one checksum per file of the archive) and
 # packs-contract.tar.gz.sha256. Nothing is published unless the tag and the top heading of
 # contracts/packs/CHANGELOG.md name one released version, the classifier passes the conformance cases, and the tagged
 # commit is on main; the publish job refuses a tag that moved while the assets were built. The workflow file runs
 # from the tagged commit, so these checks guard against mistakes, not against someone who can push tags: a tag
-# ruleset on contract-packs-v* limits who can publish (#196).
+# ruleset on contract-packs-v* is to limit who can publish (#196; push no tag before it exists).
 #
 # A manual run (workflow_dispatch) is a rehearsal: it assembles the assets of the chosen ref under the tag it is
 # given and uploads them as the workflow artifact `packs-contract-release`. It never creates a Release, and the

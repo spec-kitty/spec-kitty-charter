@@ -65,10 +65,11 @@
 #   directories (`<checkout>/packs/`), written with forward slashes. `*` matches within one path
 #   segment, `**/` matches zero or more whole segments, every other character is literal. There
 #   is no trailing `**`: a rule spans nested files with `**/*`.
-#   No file may match more than one rule across `files` and `exclusions`, and no file may match
-#   more than one `payloads` rule; a payload rule overlaps the other two by design and only the
-#   first match counts. The only overlap check is PackFileKindTest, over its sample paths; a file
-#   that matches nothing is left unclassified, not refused.
+#   The sections are consulted in the order `files`, `exclusions`, `retired`, `payloads`, then a
+#   root case variant, then `ignored`; within a section the first matching rule in table order
+#   decides (a payload rule overlaps the others by design, and only the first match counts). A file that no
+#   rule takes is refused as `unmodelled`. conformance/classifier-cases.yaml states the order
+#   exactly, with a case for every rule, and is what another implementation is held to.
 
 node_kinds:
   - directive

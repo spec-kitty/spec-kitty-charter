@@ -147,7 +147,8 @@ open-packs round-trip fail when the schemas, `file-kinds.yaml` and the service d
 Every change to a schema, `file-kinds.yaml` or the conformance cases adds a line to the top section of `CHANGELOG.md`
 in the same pull request. A change to a rule of `file-kinds.yaml` also adds or changes its conformance case:
 `ClassifierConformanceTest` runs every case against `PackFileKind.classify` and fails when a rule has no case, or a
-case names a rule the table does not hold.
+case names a rule the table does not hold. `:contracts:checkPacksChangelog`, part of `check`, refuses a malformed or
+misordered heading, or a 0.x minor bump without `### Breaking`.
 
 ## The packs contract and its releases (#559)
 
@@ -162,12 +163,14 @@ checks a release as [Pin the packs contract](../../docs/guides/pin-the-packs-con
 1. In a pull request, turn the top heading of `CHANGELOG.md` into the release (`## 0.1.0`), adding `### Breaking` for
    a new minor while the major is 0.
 2. After the merge, tag `main` at the merge commit, `git tag contract-packs-v0.1.0 <merge commit>`, and push the tag.
-   Only the operator pushes this tag; a tag ruleset on `contract-packs-v*` decides who can (#196).
+   Only the operator pushes this tag. Until a tag ruleset on `contract-packs-v*` is in place (#196, which covers
+   `contract-charter-v*` today), anyone with write access could; push the first tag only once it is.
 3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch).
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
 the tag with `scripts/release/packs-contract-release-assets.sh` and attaches `packs-contract.tar.gz`,
-`packs-contract.tar.gz.sha256` and `packs-contract.sha256` to a GitHub Release of the tag. It refuses, and publishes
+`packs-contract.tar.gz.sha256` and `packs-contract.sha256` to a GitHub Release of the tag; the archive also holds
+`packs-contract/RELEASE.json` (the version, the tag and the commit). It refuses, and publishes
 nothing, unless the tag and the top heading name one released version
 (`./gradlew :contracts:checkPacksReleaseTag -PreleaseTag=<tag>`), the classifier passes the conformance cases, and the
 tagged commit is on `main`; it also refuses a tag that moved while the assets were built. `service.yml` rehearses the whole path on every change

@@ -115,18 +115,38 @@ class ClassifierConformanceTest {
         }
     }
 
+    /**
+     * Every rule of the table, by section and glob, decides at least one case of its own section. A case-variant case
+     * (a {@code retired} outcome under a root {@code files} rule) covers no rule: the {@code files} rule still needs a
+     * {@code mapped} case.
+     */
     @Test
     void everyRuleOfTheTableHasACase() throws IOException {
         Set<String> rules = new LinkedHashSet<>();
-        KINDS.fileRules().forEach(r -> rules.add(r.match()));
-        KINDS.exclusionRules().forEach(r -> rules.add(r.match()));
-        KINDS.retiredRules().forEach(r -> rules.add(r.match()));
-        KINDS.payloadRules().forEach(r -> rules.add(r.match()));
-        KINDS.ignoredRules().forEach(r -> rules.add(r.match()));
+        KINDS.fileRules().forEach(r -> rules.add("files " + r.match()));
+        KINDS.exclusionRules().forEach(r -> rules.add("exclusions " + r.match()));
+        KINDS.retiredRules().forEach(r -> rules.add("retired " + r.match()));
+        KINDS.payloadRules().forEach(r -> rules.add("payloads " + r.match()));
+        KINDS.ignoredRules().forEach(r -> rules.add("ignored " + r.match()));
         Set<String> covered = new LinkedHashSet<>();
-        cases().forEach(c -> Optional.ofNullable(c.rule()).ifPresent(covered::add));
-        assertThat(covered).as("the rules the cases name").containsAll(rules);
-        assertThat(rules).as("the rules of file-kinds.yaml").containsAll(covered);
+        cases().forEach(c -> coveredRule(c).ifPresent(covered::add));
+        assertThat(covered).as("the rules the cases decide, by section").containsAll(rules);
+        assertThat(rules).as("the rules of file-kinds.yaml, by section").containsAll(covered);
+    }
+
+    /** The section and glob of the rule that decides {@code c}, or empty for an unmodelled or case-variant case. */
+    private static Optional<String> coveredRule(Case c) {
+        String rule = c.rule();
+        if (rule == null) {
+            return Optional.empty();
+        }
+        boolean exact = KINDS.matchingRules(c.path()).contains(rule);
+        return switch (c.expect()) {
+            case "mapped" -> Optional.of((exact ? "files " : "payloads ") + rule);
+            case "excluded" -> Optional.of((exact ? "exclusions " : "ignored ") + rule);
+            case "retired" -> exact ? Optional.of("retired " + rule) : Optional.empty();
+            default -> Optional.empty();
+        };
     }
 
     @Test

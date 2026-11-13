@@ -949,6 +949,19 @@ tasks.register<JavaExec>("checkPacksReleaseTag") {
     doNotTrackState("A gate with no outputs: it runs each time it is asked.")
 }
 
+// The packs contract's CHANGELOG rules on every build (#559): the heading, order and Breaking rules over
+// contracts/packs/CHANGELOG.md, so a malformed heading or a missing ### Breaking fails the pull request, not the tag.
+val checkPacksChangelog = tasks.register<JavaExec>("checkPacksChangelog") {
+    group = "contract"
+    description = "Checks contracts/packs/CHANGELOG.md: its headings, their order and the Breaking subsection."
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
+    val changelog = layout.projectDirectory.file("packs/CHANGELOG.md")
+    args("--packs-changelog", changelog.asFile.absolutePath)
+    inputs.file(changelog).withPathSensitivity(PathSensitivity.NONE)
+}
+
 // The release pull request's step (ADR-0047): assembles charter/changes/*.md into the top CHANGELOG section and deletes
 // them. It writes the source tree, so it is never part of `check`; run it, review the diff, commit it.
 tasks.register<JavaExec>("assembleContractChangelog") {
@@ -975,5 +988,5 @@ val checkContractChangelogFragments = tasks.register<JavaExec>("checkContractCha
 
 tasks.named("check") {
     dependsOn(bundleContract, lintContract, lintFixtures, checkClosedResponseObjects, checkRefusalExamples,
-        compatibilityFixtures, checkContractCompatibility, checkContractChangelogFragments)
+        compatibilityFixtures, checkContractCompatibility, checkContractChangelogFragments, checkPacksChangelog)
 }

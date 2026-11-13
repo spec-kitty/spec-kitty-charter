@@ -38,8 +38,8 @@ release once there is one. The commands are the same; only the source differs.
 
 ## Before you start
 
-- `curl`, `tar`, and GNU `sha256sum`. On macOS, install them with `brew install coreutils`, or use `shasum -a 256 -c`
-  in place of `sha256sum --check`.
+- `curl`, `tar`, and GNU `sha256sum`. On macOS, `brew install coreutils` installs it as `gsha256sum`; or use
+  `shasum -a 256 -c` without `--strict` and `--quiet`.
 
 ## Step 1: Download a release and check it
 
@@ -48,7 +48,7 @@ Each release `contract-packs-v<version>` carries three assets at
 
 | Asset | Holds |
 |---|---|
-| `packs-contract.tar.gz` | The tracked files of `contracts/packs/` at the tag, under `packs-contract/` |
+| `packs-contract.tar.gz` | The tracked files of `contracts/packs/` at the tag, under `packs-contract/`, and `packs-contract/RELEASE.json`, which names the version, the tag and the charter commit |
 | `packs-contract.tar.gz.sha256` | The archive's SHA-256 |
 | `packs-contract.sha256` | One SHA-256 per file of the archive, by its path in the archive |
 
@@ -59,9 +59,14 @@ for asset in packs-contract.tar.gz packs-contract.tar.gz.sha256 packs-contract.s
   curl -fsSLO "$base/$asset"
 done
 sha256sum --check --strict packs-contract.tar.gz.sha256
+rm -rf packs-contract
 tar -xzf packs-contract.tar.gz
 sha256sum --check --strict packs-contract.sha256
+diff <(find packs-contract -type f | LC_ALL=C sort) <(awk '{print $2}' packs-contract.sha256 | LC_ALL=C sort)
 ```
+
+Extract into a fresh `packs-contract/`: `sha256sum --check` ignores a file the list does not name, so a file left from
+an older release would pass unseen. The `diff` proves the directory holds exactly the listed files.
 
 Both checks print `OK` for every file. On `FAILED`, download again; never vendor a file that does not match. A
 checksum served beside its file proves the download is whole, not where it came from. Record the archive's SHA-256 in
@@ -73,7 +78,8 @@ The archive is built reproducibly: the same tag always gives the same bytes.
 
 Record, in your own lock file:
 
-- the release tag, `contract-packs-v<version>`;
+- the release tag, `contract-packs-v<version>`, and the charter commit it names, from `packs-contract/RELEASE.json`
+  (compare it with any charter commit your packs are proven against);
 - the SHA-256 of `packs-contract.tar.gz`;
 - the SHA-256 of each file you vendor, copied from `packs-contract.sha256`.
 

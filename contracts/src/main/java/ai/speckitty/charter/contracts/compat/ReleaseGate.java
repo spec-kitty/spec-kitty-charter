@@ -367,10 +367,33 @@ public final class ReleaseGate {
         }
         String named = tag.substring(PACKS_TAG_PREFIX.length());
         if (Version.parse(named).filter(Version::released).isEmpty()) {
-            return refuse("The tag " + tag + " names " + named + ", which is not a released version (X.Y.Z):"
-                    + " a -SNAPSHOT is never published.");
+            return refuse("The tag " + tag + " names " + named + ", which is not a released version (X.Y.Z): "
+                    + (named.endsWith("-SNAPSHOT")
+                            ? "a -SNAPSHOT is never published."
+                            : "it " + Version.malformation(named).orElse("is not X.Y.Z") + "."));
         }
         return changelogRefusal(named, sections(changelog), Line.packs(tag));
+    }
+
+    /**
+     * The packs contract's CHANGELOG rules on every build (#559): the heading, order and Breaking rules (1, 2 and 8)
+     * over {@code contracts/packs/CHANGELOG.md}, whose top heading, released or not, is the packs contract's version.
+     *
+     * @param changelog the text of {@code contracts/packs/CHANGELOG.md}
+     * @return the refusal, or empty when the rules pass
+     */
+    public static Optional<Decision.Refused> packsChangelogRefusal(String changelog) {
+        List<Section> sections = sections(changelog);
+        if (sections.isEmpty()) {
+            return refuse(PACKS_CHANGELOG + " has no version heading (## X.Y.Z).");
+        }
+        Section top = sections.getFirst();
+        if (top.version().isEmpty()) {
+            return refuse("The top heading '" + top.text() + "' of " + PACKS_CHANGELOG + " is not a version"
+                    + " (X.Y.Z or X.Y.Z-SNAPSHOT).");
+        }
+        String version = top.version().get().text();
+        return changelogRefusal(version, sections, Line.packs(PACKS_TAG_PREFIX + version));
     }
 
     /**

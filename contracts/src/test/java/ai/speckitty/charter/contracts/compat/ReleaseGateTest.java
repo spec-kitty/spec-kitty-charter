@@ -573,7 +573,9 @@ class ReleaseGateTest {
         @Test
         void anInfoVersionTheTopHeadingDoesNotMatchIsRefused() {
             assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.1.0", "0.1.0", "## 0.2.0\n\n## 0.1.0\n"))
-                    .isPresent();
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .isEqualTo("info.version 0.1.0 of contracts/charter/openapi.yaml does not equal the top"
+                                    + " heading 0.2.0 of contracts/charter/CHANGELOG.md; bump both together."));
         }
 
         @Test
@@ -617,15 +619,27 @@ class ReleaseGateTest {
         void aCharterTagOrABareVersionIsNotAPacksTag() {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-charter-v0.1.0", RELEASED))
                     .hasValueSatisfying(r -> assertThat(r.message()).contains("not a packs contract release tag"));
-            assertThat(ReleaseGate.packsReleaseRefusal("0.1.0", RELEASED)).isPresent();
-            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-vnext", RELEASED))
-                    .isPresent();
+            assertThat(ReleaseGate.packsReleaseRefusal("0.1.0", RELEASED))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("not a packs contract release tag"));
+        }
+
+        @Test
+        void aTagThatNamesNoVersionSaysWhyWithoutBlamingASnapshot() {
+            for (String tag :
+                    new String[] {"contract-packs-vnext", "contract-packs-v01.0.0", "contract-packs-v0.1.0+m"}) {
+                assertThat(ReleaseGate.packsReleaseRefusal(tag, RELEASED))
+                        .as(tag)
+                        .hasValueSatisfying(r -> assertThat(r.message())
+                                .contains("is not a released version")
+                                .doesNotContain("-SNAPSHOT is never published"));
+            }
         }
 
         @Test
         void theOrderAndBreakingRulesHoldOverThePacksChangelog() {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", "## 0.1.0\n\n## 0.2.0\n"))
-                    .hasValueSatisfying(r -> assertThat(r.message()).contains("contracts/packs/CHANGELOG.md"));
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("is not above the released 0.2.0 in contracts/packs/CHANGELOG.md"));
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.2.0", "## 0.2.0\n\n## 0.1.0\n"))
                     .hasValueSatisfying(r -> assertThat(r.message())
                             .contains("of contracts/packs/CHANGELOG.md raises the minor version of 0.x")
@@ -635,6 +649,23 @@ class ReleaseGateTest {
                     .isEmpty();
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.1", "## 0.1.1\n\n## 0.1.0\n"))
                     .isEmpty();
+        }
+
+        @Test
+        void everyBuildChecksThePacksChangelogReleasedOrNot() {
+            assertThat(ReleaseGate.packsChangelogRefusal("## 0.1.0-SNAPSHOT\n")).isEmpty();
+            assertThat(ReleaseGate.packsChangelogRefusal(RELEASED)).isEmpty();
+            assertThat(ReleaseGate.packsChangelogRefusal("## 0.2.0-SNAPSHOT\n\n## 0.1.0\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("of contracts/packs/CHANGELOG.md raises the minor version of 0.x"));
+            assertThat(ReleaseGate.packsChangelogRefusal("## 0.1.1\n\n## 0.1.0\n\n## 0.1.0\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("lists 0.1.0 twice"));
+            assertThat(ReleaseGate.packsChangelogRefusal("# Changelog\n\n## Unreleased\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("The top heading 'Unreleased' of contracts/packs/CHANGELOG.md is not a version"));
+            assertThat(ReleaseGate.packsChangelogRefusal("# Changelog\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .isEqualTo("contracts/packs/CHANGELOG.md has no version heading (## X.Y.Z)."));
         }
 
         @Test
