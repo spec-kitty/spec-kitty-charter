@@ -103,6 +103,8 @@ an empty selection:
   HTTP client and server.
 - **Transitive.** No charter class the modules reach uses that refused set; nor does any class the
   packs slice's file-system inspector reaches, which a composition root plugs into `pack-validation`.
+  The walk follows the classes a class names, not a port's implementations, so the inspector is walked
+  from its own root.
 
 Committed known-bad controls prove both halves bite. `:deployable`'s tests carry both modules. The
 module builds pin their dependencies too (`ModuleDependencyAllowlist`, on every configuration of the
@@ -114,8 +116,11 @@ transitive half of the rule.
 In the onion, `pack-validation` sits outside the packs slice and depends on its domain, as the slice
 edges do (ADR-0075's amendment of 2026-11-13, #553). No slice rule is widened for it: the packs domain
 stays in `packs.domain`, and the slice names no `packvalidation` class. Only a composition root
-(`deployable`, and `pack-check`'s main from #478) constructs the file-system inspector, as
-`ONION_DEPENDS_INWARD` requires.
+constructs the file-system inspector. Today that is `deployable`, as `ONION_DEPENDS_INWARD` requires.
+`pack-check`'s main becomes the second composition root in #478. That slice lets the main, and only
+the main, name the inspector in `ONION_DEPENDS_INWARD` and in the direct half of the rule, with a
+known-good control. Until then `pack-check` holds only its `package-info`, so both halves pass over it
+on that alone.
 
 ## Context
 
