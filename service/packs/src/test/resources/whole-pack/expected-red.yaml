@@ -1,17 +1,57 @@
-# What the whole-pack gate (#187) expects NOT to round-trip yet, at the pinned open-packs commit, under the rules of
-# ADR-0036. The gate passes only when the observed reds are exactly these: an unlisted red fails, and a listed item
-# that round-trips fails with "remove it". When your mission turns a kind green, remove its entry in the same change.
+# What the whole-pack gate (#187) expects NOT to round-trip yet over the charter example packs (ADR-0070), under the
+# rules of ADR-0036. Each example pack's run passes only when its observed reds are exactly the ones listed for it: an
+# unlisted red fails, and a listed item that round-trips fails with "remove it". When your mission turns a kind or a
+# file green, remove its entry in the same change.
 #
-# kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
-# empty_kinds: a modelled kind the pack has no file of; it goes stale when the pack gains one. The example packs carry
-# every kind (ADR-0070), so a missing kind is fixed in the example pack, never listed here, except a kind that belongs
-# to another level's example pack, which its own test proves.
-kinds: []
-files: []
-empty_kinds:
-  - kind: org-fragment
+# kinds: a file-kinds.yaml schema the round trip does not model, with the reason (#547). Every schema of the table is
+# modelled or listed here, and every entry here is a schema the round trip does not model; a file classed under a
+# listed schema is expected red in any example pack.
+# files: one file of a modelled kind that is known to differ. Its path starts with the example pack's name
+# (org-base/drg/fragment.yaml), and its `at` is where the file first differs, or the whole red detail of a refused file.
+# Every modelled kind has a file in some example pack (ADR-0070), so a missing kind is fixed in an example pack, never
+# listed here.
+kinds:
+  - kind: charter
     reason: >-
-      drg/fragment.yaml is an org pack's DRG document; the built-in pack's graph is its *.graph.yaml shards. The org
-      example pack carries one, proved by WholePackRoundTripTest.theOrgPackRoundTripsWholeWithItsFragment, whose
-      fragment stays red on its impacts edge until #477 lands, so both expectations go stale with #477.
-    issue: "#509"
+      A project's charter.yaml is not pack content: the store leaves it unmodelled, and the table's rule exists only so
+      that a stray one is validated rather than ignored.
+    issue: "#547"
+  - kind: toolguide-guide
+    reason: >-
+      A companion (ADR-0039) is modelled with the toolguide that names it, and the census classes it under the owner's
+      kind; a file classed under this schema is a guide no toolguide names, which the load refuses.
+    issue: "#194"
+  - kind: mission-step-prompt
+    reason: >-
+      A companion (ADR-0039, ADR-0044) is modelled with the mission type that names it, and the census classes it under
+      the owner's kind; a file classed under this schema is a prompt no step names, which the load refuses.
+    issue: "#194"
+  - kind: mission-step-guidelines
+    reason: >-
+      A companion (ADR-0039, ADR-0044) is modelled with the mission type that names it, and the census classes it under
+      the owner's kind; a file classed under this schema is guidelines no step names, which the load refuses.
+    issue: "#194"
+  - kind: prompt-fragment
+    reason: >-
+      A companion (ADR-0066) is modelled with the step enhancement that names it, and the census classes it under the
+      owner's kind; a file classed under this schema is a fragment no enhancement names, which the load refuses.
+    issue: "#194"
+files:
+  - path: org-base/drg/fragment.yaml
+    at: >-
+      refused: read-back: the written fragment does not build: [PackFinding[code=DRG_SCHEMA_ERROR,
+      file=drg/fragment.yaml, place=[edges, 2], detail=org-base/drg/fragment.yaml: an impacts edge is missing
+      'impacts']]
+    reason: >-
+      The org fragment's one impacts edge loses its strength in the domain, so the written fragment does not build on
+      read-back; its written copy stays unpaired.
+    issue: "#477"
+  - path: project/project.graph.yaml
+    at: >-
+      refused: read-back: the written shard does not build: [PackFinding[code=DRG_SCHEMA_ERROR,
+      file=project.graph.yaml, place=[edges, 1], detail=project/project.graph.yaml: an impacts edge is missing
+      'impacts']]
+    reason: >-
+      The project shard's impacts edge loses its strength in the domain, so the written shard does not build on
+      read-back; its written copy stays unpaired. The project pack had no gate run before #547.
+    issue: "#477"

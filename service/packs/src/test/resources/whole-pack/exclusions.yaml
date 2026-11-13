@@ -1,4 +1,5 @@
-# The whole-pack gate's own exclusion list (#187): files of the pinned built-in pack that the gate does not
+# The whole-pack gate's own exclusion list (#187): files of the charter example packs that the gate does not
 # compare, each with the reason. Append-only: add an entry, never edit or remove one, unless the gate reports it
-# as STALE_EXCLUSION. A file of a modelled kind can never be excluded (the gate fails with EXCLUDED_MODELLED).
+# as STALE_EXCLUSION. A file of a modelled kind can never be excluded (the gate fails with EXCLUDED_MODELLED). Each
+# match starts with the example pack's name (built-in/notes/**), so it applies to that pack's run alone.
 exclusions: []

@@ -3,7 +3,8 @@
 # spec-kitty-open-packs. Not for service defects (those are expected red, in expected-red.yaml) and not for files the
 # gate does not compare (exclusions.yaml).
 #
-# Each entry: path (pack-relative), at (where the file differs, exactly as the report's detail shows it before ": ";
+# Each entry: path (the example pack's name first, built-in/tactics/x.tactic.yaml), at (where the file differs,
+# exactly as the report's detail shows it before ": ";
 # for a refused file, the whole detail "refused: ..."), reason (one line) and issue
 # (spec-kitty/spec-kitty-open-packs#<number>). One
 # entry per file. An optional round_trip_only: true marks a refusal the gate's round trip reports but the store load
