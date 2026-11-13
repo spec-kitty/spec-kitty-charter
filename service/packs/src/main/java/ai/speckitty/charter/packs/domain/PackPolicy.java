@@ -1085,35 +1085,55 @@ public final class PackPolicy {
         String item = !pointer.isEmpty() && NODES.equals(pointer.get(0)) ? "node" : "edge";
         String value = v.value().orElse("");
         Optional<String> property = v.property();
-        boolean fragmentNodeId =
-                isFragment(file) && place == Place.ITEM_FIELD && NODES.equals(pointer.get(0)) && "id".equals(key);
+        boolean fragmentNodeId = isFragmentNodeId(file, place, pointer, key);
         return switch (v.keyword()) {
             case "type" -> typeDetail(v, o, descriptor, place, key, item);
-            case "additionalProperties" ->
-                property.map(p -> o + (place == Place.ITEM ? " " + item : "") + ": unknown key '" + p + "'")
-                        .orElseGet(() -> fallback(o, v));
-            case "required" ->
-                property.map(p -> descriptor ? o + " has no " + p : o + ": missing '" + p + "'")
-                        .orElseGet(() -> fallback(o, v));
-            case "minLength" ->
-                fragmentNodeId && v.args().containsKey("kind")
-                        ? o + ": " + emptyId(v.args().get("kind"))
-                        : descriptor
-                                        && place == Place.ROOT_FIELD
-                                        && v.value().filter(String::isEmpty).isPresent()
-                                ? o + ": " + key + " must not be empty"
-                                : fallback(o, v);
+            case "additionalProperties" -> additionalPropertiesDetail(v, o, place, item, property);
+            case "required" -> requiredDetail(v, o, descriptor, property);
+            case "minLength" -> minLengthDetail(v, o, descriptor, place, key, fragmentNodeId);
             case "pattern" -> patternDetail(v, o, place, key, fragmentNodeId, value);
             case "enum" -> enumDetail(v, o, descriptor, place, key, value);
             case "const" -> o + ": '" + key + "' has an unsupported value '" + value + "'";
-            case "minItems" -> {
-                String least = v.args().get("0");
-                yield least == null ? fallback(o, v) : o + ": '" + key + "' needs at least " + least + " item(s)";
-            }
-            case "minimum", "maximum", "exclusiveMinimum" ->
-                v.value().isPresent() ? o + ": '" + key + "' " + value + " is out of range" : fallback(o, v);
+            case "minItems" -> minItemsDetail(v, o, key);
+            case "minimum", "maximum", "exclusiveMinimum" -> rangeDetail(v, o, key, value);
             default -> fallback(o, v);
         };
+    }
+
+    /** Whether the violation sits on a node's {@code id} in a fragment, where the id's own rules name the fault. */
+    private static boolean isFragmentNodeId(String file, Place place, List<String> pointer, String key) {
+        return isFragment(file) && place == Place.ITEM_FIELD && NODES.equals(pointer.get(0)) && "id".equals(key);
+    }
+
+    private static String additionalPropertiesDetail(
+            SchemaViolation v, String o, Place place, String item, Optional<String> property) {
+        return property.map(p -> o + (place == Place.ITEM ? " " + item : "") + ": unknown key '" + p + "'")
+                .orElseGet(() -> fallback(o, v));
+    }
+
+    private static String requiredDetail(SchemaViolation v, String o, boolean descriptor, Optional<String> property) {
+        return property.map(p -> descriptor ? o + " has no " + p : o + ": missing '" + p + "'")
+                .orElseGet(() -> fallback(o, v));
+    }
+
+    private static String minLengthDetail(
+            SchemaViolation v, String o, boolean descriptor, Place place, String key, boolean fragmentNodeId) {
+        return fragmentNodeId && v.args().containsKey("kind")
+                ? o + ": " + emptyId(v.args().get("kind"))
+                : descriptor
+                                && place == Place.ROOT_FIELD
+                                && v.value().filter(String::isEmpty).isPresent()
+                        ? o + ": " + key + " must not be empty"
+                        : fallback(o, v);
+    }
+
+    private static String minItemsDetail(SchemaViolation v, String o, String key) {
+        String least = v.args().get("0");
+        return least == null ? fallback(o, v) : o + ": '" + key + "' needs at least " + least + " item(s)";
+    }
+
+    private static String rangeDetail(SchemaViolation v, String o, String key, String value) {
+        return v.value().isPresent() ? o + ": '" + key + "' " + value + " is out of range" : fallback(o, v);
     }
 
     private static String typeDetail(
