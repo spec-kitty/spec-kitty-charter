@@ -256,7 +256,8 @@ public interface ActivationArtifacts {
      * @param state the state's token
      * @param required whether a governing preset requires it or a pack locks it
      * @param reason the reason's token
-     * @param satisfiedBy the override that satisfies its requirement, when one does
+     * @param satisfiedBy every override that satisfies its requirement, in the order the resolution gives; empty when
+     *     none does
      * @param suggestion the words of the edge that suggests it, when it is a suggestion
      */
     record Facts(
@@ -264,7 +265,7 @@ public interface ActivationArtifacts {
             String state,
             boolean required,
             String reason,
-            Optional<Urn> satisfiedBy,
+            List<Urn> satisfiedBy,
             Optional<Words> suggestion) {
 
         /**
@@ -274,14 +275,14 @@ public interface ActivationArtifacts {
          * @param state the state
          * @param required the required flag
          * @param reason the reason
-         * @param satisfiedBy the satisfying override
+         * @param satisfiedBy the satisfying overrides
          * @param suggestion the suggestion's words
          */
         public Facts {
             Objects.requireNonNull(held, "held");
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(reason, "reason");
-            Objects.requireNonNull(satisfiedBy, "satisfiedBy");
+            satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
             Objects.requireNonNull(suggestion, "suggestion");
         }
     }
