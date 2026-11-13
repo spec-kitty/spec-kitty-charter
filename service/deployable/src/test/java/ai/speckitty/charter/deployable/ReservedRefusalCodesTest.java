@@ -13,7 +13,6 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaFieldAccess;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -69,9 +68,7 @@ class ReservedRefusalCodesTest {
     /** The classes that may name an unraised code because no operation reaches them, and the codes each may name. */
     private static final Map<String, Set<String>> OFF_WIRE = Map.of(PACK_FINDING_CODE, Set.of("PACK_LEVEL_MISMATCH"));
 
-    private static final JavaClasses MAIN = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("ai.speckitty.charter");
+    private static final JavaClasses MAIN = ServiceClasses.main();
 
     /** A class and its nested and synthetic classes. */
     private static String pattern(String className) {

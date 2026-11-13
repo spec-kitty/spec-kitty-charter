@@ -5,8 +5,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -23,9 +21,7 @@ import org.springframework.context.annotation.Profile;
  */
 class NoBuildTimeProfilesTest {
 
-    private static final JavaClasses SERVICE = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("ai.speckitty.charter");
+    private static final JavaClasses SERVICE = ServiceClasses.main();
 
     @Test
     void noServiceClassIsGatedByAProfile() {
