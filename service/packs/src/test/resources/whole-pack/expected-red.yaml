@@ -12,5 +12,6 @@ empty_kinds:
   - kind: org-fragment
     reason: >-
       drg/fragment.yaml is an org pack's DRG document; the built-in pack's graph is its *.graph.yaml shards. The org
-      example pack carries one, proved by WholePackRoundTripTest.theOrgPackRoundTripsWholeWithItsFragment.
+      example pack carries one, proved by WholePackRoundTripTest.theOrgPackRoundTripsWholeWithItsFragment, whose
+      fragment stays red on its impacts edge until #477 lands, so both expectations go stale with #477.
     issue: "#509"
