@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.model.term-ids`
 - **Input key:** `term_id_minting`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-13T18:11:36.311292+00:00`
+- **Resolved:** `2026-11-13T19:58:32.040423+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Term ids for existing example-pack terms: (A) mint from surface form as letter-f
 
 ## Final answer
 
-_(none)_
+A: mint each term id from its surface form as a letter-first kebab slug; the mapping is recorded in Mission research for open-packs (operator, 2026-11-13)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-13T18:11:36.311292+00:00` - opened
+- `2026-11-13T19:58:32.040423+00:00` - resolved (final_answer="A: mint each term id from its surface form as a letter-first kebab slug; the mapping is recorded in Mission research for open-packs (operator, 2026-11-13)")
