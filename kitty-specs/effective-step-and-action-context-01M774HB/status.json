@@ -259,7 +259,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -273,7 +273,8 @@
         "Cycle 2: M3 addressed in f3ab945df (M1, M2 fixed by the coordinator in 825f61455). WP09's one place rule (ClosureView.stepPlace, StepBearer.declaresStep) recorded on the rules page A7 amendment and F8 wording, the changelog bullet, getEffectiveMissionStep in service-contract.md and the artifact/step relations in hypermedia-hateoas.md; the prompt read recorded as unchanged pending Q3. Pins verified on lane-h. check_docs all, markdownlint-cli2 and cspell clean.",
         "Cycle 2: M1/M2 (825f61455) and M3 (f3ab945df) resolved; pins verified on lane-h; docs checks green.",
         "Operator ruling Q3 2026-11-13: record it",
-        "Q3 recorded in the latest WP08 commit: prompt read, C38, step read and links all at StepHolding.placeOf; StepBearer references replaced by PromptFacts.steps; no pending-Q3 wording left; known edge recorded (held step with no place: step read 404, context and prompt 200 empty). Pins verified on lane-h. check_docs all, markdownlint-cli2, cspell clean."
+        "Q3 recorded in the latest WP08 commit: prompt read, C38, step read and links all at StepHolding.placeOf; StepBearer references replaced by PromptFacts.steps; no pending-Q3 wording left; known edge recorded (held step with no place: step read 404, context and prompt 200 empty). Pins verified on lane-h. check_docs all, markdownlint-cli2, cspell clean.",
+        "Cycle 3: Q3 recorded (9f7928244); pins verified on lane-h; docs checks green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
