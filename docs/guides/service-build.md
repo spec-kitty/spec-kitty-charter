@@ -246,7 +246,9 @@ Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-ki
 `driftTest` is its own source set ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)):
 `check` compiles and lints it but never runs it, and no required check runs it. It puts every pack of the checkout
 through the whole-pack round trip below, with no expected-red baseline, and also reports the files the store does not
-model and the load warnings. The nightly `.github/workflows/open-packs-drift.yml` runs it against open-packs `main` and
+model and the load warnings. Every file of a pack that is not excluded needs a round-trip outcome: a file of a kind
+the round trip does not model fails it, naming the kind and the path (#547). spec-kitty-open-packs runs the same task
+as a required gate from its pinned charter checkout (ADR-0070 decision 4). The nightly `.github/workflows/open-packs-drift.yml` runs it against open-packs `main` and
 opens or comments on an `open-packs-drift` issue when it is red.
 
 ## The whole-pack round-trip gate
@@ -256,8 +258,8 @@ opens or comments on an `open-packs-drift` issue when it is red.
 ```
 
 The gate ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187), epic
-[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of the built-in example pack
-into the domain, writes it to a fresh directory through the storage service, reads it back, and compares each
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of every example pack
+(`built-in`, `org-base` and `project`, one run each of a single parameterized test, #547) into the domain, writes it to a fresh directory through the storage service, reads it back, and compares each
 written file with its source **by meaning**, as [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
 defines it: quoting, comments, layout and key order do not count, and for a declared field an absent value, `null`
 and an empty list or map are the same (inside an open map such as a styleguide's `tooling` they are data); a missing,
@@ -265,8 +267,9 @@ extra or changed key or value counts. Numbers compare by value. Graph-shard edge
 identical repeats do not count) and nodes by URN.
 
 It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.yaml` lists what does not round-trip
-yet: a whole kind that has no reader and writer (`kinds:`), or a single file of a modelled kind with every place it
-differs (`files:`, `at:` lists each difference path, joined by ` ; `), each with a reason and the issue that owns it.
+yet: a `file-kinds.yaml` schema that has no reader and writer (`kinds:`), or a single file of a modelled kind with
+every place it differs (`files:`, its path starting with the example pack's name, `at:` listing each difference path,
+joined by ` ; `, or holding the whole detail of a refused file), each with a reason and the issue that owns it.
 Because `at:` holds every difference, a new loss in a file that is already expected red still fails the gate. `exclusions.yaml` next to it is the gate's
 own append-only list of files it does not compare. The gate passes only when the result matches its lists exactly (the third,
 `known-failures.yaml`, is below):
@@ -275,8 +278,16 @@ own append-only list of files it does not compare. The gate passes only when the
   (`CHANGED_RED`);
 - a listed file or kind that now round-trips fails it too (`UNEXPECTEDLY_GREEN`): remove the entry in the same
   change that turns it green;
-- stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and a modelled kind with no
-  files fail it, so it cannot pass vacuously.
+- stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and an empty pack fail it,
+  so it cannot pass vacuously.
+
+Three checks look at the example packs together, and at the file-kind table (#547):
+
+- every `file-kinds.yaml` schema is modelled by the round trip or listed in `kinds:` with a reason, and every
+  `kinds:` entry is a schema the round trip does not model (`UNMODELLED_SCHEMA`, `STALE_BASELINE kind`);
+- every modelled kind has a file in some example pack (`EMPTY_MODELLED_KIND`);
+- every file entry, known failure and exclusion starts with the name of an example pack, so some pack's run
+  judges it.
 
 ### Known failures: the pack is wrong, not the service
 
@@ -285,7 +296,7 @@ service defect (expected red) nor a file the gate does not compare (an exclusion
 `service/packs/src/test/resources/whole-pack/known-failures.yaml`, the third list next to `expected-red.yaml` and
 `exclusions.yaml`. It ships empty. One entry per file, with four fields:
 
-- `path`: the file, relative to the pack;
+- `path`: the file, its example pack's name first (`built-in/…`);
 - `at`: where it differs, exactly as the report's detail shows it before the colon; for a refused file, the whole
   `refused: …` detail;
 - `reason`: one line;
@@ -320,7 +331,8 @@ Where the gate still differs from ADR-0036, on purpose and only towards false re
 - the open maps are listed per kind in `MeaningComparator` (styleguide `tooling` and `structural_lint_config`, agent-profile
   `excluding`), not derived from the schemas; a kind that brings an open map adds it there.
 
-The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
+The report, per kind and per file, is written per example pack to
+`service/packs/build/reports/whole-pack/<pack>.md`. CI runs the gate
 in its own workflow, `.github/workflows/whole-pack.yml`, and requires it: `CI gate / gate` calls the workflow for its
 `wholepack` group whenever a pull request changes `contracts/`, `service/`, the build or the workflow, so every such
 pull request has to keep the packs round-tripping (epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186),
