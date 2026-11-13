@@ -150,7 +150,7 @@ class EffectiveSkillsControllerTest {
     }
 
     private static Facts inactive() {
-        return new Facts(LAND, "inactive", false, "not_selected", Optional.empty(), Optional.empty());
+        return new Facts(LAND, "inactive", false, "not_selected", List.of(), Optional.empty());
     }
 
     @Test
@@ -228,7 +228,7 @@ class EffectiveSkillsControllerTest {
                 "inactive",
                 true,
                 "overridden",
-                Optional.of(new Urn(NodeKind.SKILL, "land-fast")),
+                List.of(new Urn(NodeKind.SKILL, "land-fast"), new Urn(NodeKind.SKILL, "land-safe")),
                 Optional.of(new Words(Optional.of("when"), Optional.empty())));
 
         mvc(facts)
@@ -236,7 +236,8 @@ class EffectiveSkillsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json("""
                         {"required": true, "reason": "overridden",
-                         "satisfiedBy": {"kind": "skill", "artifactId": "land-fast"},
+                         "satisfiedBy": [{"kind": "skill", "artifactId": "land-fast"},
+                                         {"kind": "skill", "artifactId": "land-safe"}],
                          "suggestion": {"when": "when"}}
                         """, JsonCompareMode.LENIENT));
     }
