@@ -25,3 +25,4 @@ files:
   - ActivationMissionSkeletonNotFound.yaml
   - ActivationMissionStepContractNotFound.yaml
   - AssetNotFound.yaml
+  - EffectiveAssetNotFound.yaml

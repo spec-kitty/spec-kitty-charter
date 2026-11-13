@@ -1,0 +1,66 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/ArtifactId.yaml
+get:
+  operationId: getEffectiveAssetPayload
+  summary: Read the payload of an asset in force under an activation, the bytes of the copy the layer merge keeps.
+  description: >-
+    The payload of the asset under an activation (FR-009, research R15), byte for byte: the bytes the pack that holds
+    the winning copy (getEffectiveAsset) holds at assets/<path>, the path that copy's sidecar names, whatever they are,
+    text or binary. A project copy of an asset that wins over a built-in one answers the project copy's bytes. The asset
+    is addressed by its id, never by the file's path. It is answered as getPackAssetPayload answers the pack's copy: the
+    Content-Type is the winning copy's mime when it is a well-formed type/subtype, and application/octet-stream
+    otherwise (and, as a limit of the transport, when a well-formed mime cannot be written as a header value); Accept
+    is ignored; every 200 carries X-Content-Type-Options: nosniff and Content-Security-Policy: sandbox.
+
+    The order of the refusals is getEffectiveAsset's: 404 activation_not_found, then 404 artifact_not_found, both
+    judged before any If-None-Match; 500 pack_unreadable. The bytes are read from the winner's pack against the source
+    fingerprint of the read that named the winner, which the 200 carries: inputs that change between the two are
+    stale_input, never a mix of two states.
+
+    The ETag identifies this representation: it changes with the activation's revision, with any pack of the
+    activation's closure, and with the asset, and it is not the tag of getEffectiveAsset. If-None-Match is compared
+    weakly (RFC 9110, section 13.1.2): * or a listed tag that matches the ETag answers 304 without a body, and a value
+    that is not an entity-tag list matches nothing.
+  tags:
+  - EffectiveAssets
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: >-
+        The bytes of the winning copy's payload, exactly as its pack holds them, with its mime as the Content-Type when
+        it is well-formed and application/octet-stream otherwise.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+        X-Content-Type-Options:
+          $ref: ../headers/XContentTypeOptions.yaml
+        Content-Security-Policy:
+          $ref: ../headers/ContentSecurityPolicy.yaml
+      content:
+        '*/*':
+          schema:
+            type: string
+            format: binary
+            description: The payload file's bytes, unchanged.
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/EffectiveAssetNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

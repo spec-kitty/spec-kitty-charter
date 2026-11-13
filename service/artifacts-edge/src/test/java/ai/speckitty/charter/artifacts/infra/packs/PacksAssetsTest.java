@@ -1,13 +1,16 @@
 package ai.speckitty.charter.artifacts.infra.packs;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.artifacts.application.AssetReads;
 import ai.speckitty.charter.artifacts.application.AssetView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -101,5 +104,52 @@ class PacksAssetsTest {
         assertThat(read.asset().executable()).isEmpty();
         assertThat(read.revision()).isEqualTo(REVISION.token());
         assertThat(read.sourceFingerprint()).isEqualTo(FINGERPRINT);
+    }
+
+    @Test
+    void theTwinsPayloadIsThePacksSlicesReadAgainstTheActivationsFingerprintAndItsMismatchIsStaleInput() {
+        byte[] bytes = {7, 8};
+        when(packs.payload(QA, "logo", FINGERPRINT))
+                .thenReturn(new ConsistentRead.Verified<>(
+                        new ForeignArtifactRead.AssetPayload(
+                                asset("logo", "image/png", null), Payload.of(bytes), REVISION),
+                        FINGERPRINT));
+        String other = "sha256:" + "0".repeat(64);
+        when(packs.payload(QA, "logo", other))
+                .thenThrow(new CharterRefusal(RefusalCode.STALE_INPUT, "The inputs changed."));
+
+        assertThat(new PacksAssets(packs).payload(QA, "logo", FINGERPRINT).bytes())
+                .isEqualTo(bytes);
+        assertThatThrownBy(() -> new PacksAssets(packs).payload(QA, "logo", other))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void theTwinsDescriptorAndListReadAtAnotherFingerprintAreStaleInput() {
+        ForeignArtifactRead.Foreign foreign = new ForeignArtifactRead.Foreign(
+                asset("run", "text/x-python", null), REVISION, Optional.empty(), List.of());
+        when(packs.read(QA, ArtifactKind.ASSET, "run", 0))
+                .thenReturn(new ConsistentRead.Verified<>(foreign, FINGERPRINT));
+        when(packs.held(QA, ArtifactKind.ASSET))
+                .thenReturn(new ConsistentRead.Verified<>(
+                        new ForeignArtifactRead.Held(List.of(asset("run", "text/x-python", null)), REVISION),
+                        FINGERPRINT));
+        PacksAssets adapter = new PacksAssets(packs);
+        String other = "sha256:" + "0".repeat(64);
+
+        assertThat(adapter.asset(QA, "run", FINGERPRINT).asset().id()).isEqualTo("run");
+        assertThat(adapter.list(QA, FINGERPRINT).assets())
+                .extracting(AssetView::id)
+                .containsExactly("run");
+        assertThatThrownBy(() -> adapter.asset(QA, "run", other))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        assertThatThrownBy(() -> adapter.list(QA, other))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 }

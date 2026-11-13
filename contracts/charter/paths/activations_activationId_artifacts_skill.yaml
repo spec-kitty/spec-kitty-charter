@@ -1,0 +1,64 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: listEffectiveSkills
+  summary: List the skills of an activation's closure.
+  description: >-
+    The skills of the activation's closure (FR-009, research R1 and R3): for each skill id a pack of the closure holds,
+    the copy the layer merge keeps across the levels (a project copy over an org or built-in one), each with its id,
+    title, description and form as that copy declares them. Every winner is listed whatever its state: an item carries
+    no state, and its read under the activation (getEffectiveSkill) answers the skill with its state and reason. The
+    effective list answers the same skills with their states (listEffectiveArtifacts with kind skill). The items are
+    in id order and the list is unpaged, deliberately: a closure holds few skills. A closure that holds no skill answers
+    200 with an empty list.
+
+    Each item links effective-artifact, its read under this activation (getEffectiveSkill), and artifact, the
+    pack-scoped read of the winning copy (getPackSkill). _links holds self and up (the activation).
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found, the only reason this read answers
+    404. A pack of the closure that is no longer configured, a closure that cannot compose or merge, and a winner's
+    pack that cannot be read are 500, with their code (pack_unreadable also for a layer override that the mutability
+    level forbids); stale_input and internal_error may be retried. The answer is never partial: the winners and the
+    skills are read against one source fingerprint, which the answer carries, and inputs that change between the two
+    are stale_input.
+
+    ETag identifies the representation: it changes with the activation's revision and with any pack of the
+    activation's closure, and it does not change when a pack outside the closure changes. A matching If-None-Match is a
+    304 without a body, and a tag of another representation never matches (RFC 9110 section 13.1.2).
+  tags:
+  - EffectiveSkills
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The skills of the activation's closure, in id order.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/SkillList.yaml
+          examples:
+            two-skills:
+              $ref: ../examples/SkillList.activation.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

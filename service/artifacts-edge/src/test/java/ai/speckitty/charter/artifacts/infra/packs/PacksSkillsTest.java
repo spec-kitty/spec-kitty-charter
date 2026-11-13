@@ -1,13 +1,16 @@
 package ai.speckitty.charter.artifacts.infra.packs;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.artifacts.application.SkillReads;
 import ai.speckitty.charter.artifacts.application.SkillView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -127,5 +130,40 @@ class PacksSkillsTest {
         assertThat(skill.invocation()).isEmpty();
         assertThat(skill.version()).isEmpty();
         assertThat(skill.maintainers()).isEmpty();
+    }
+
+    @Test
+    void theTwinMapsTheSkillTheActivationReadAndRefusesAnotherKindAsAFault() {
+        PacksSkills adapter = new PacksSkills(packs);
+
+        assertThat(adapter.view(prompt("land-pr"), "the read").body())
+                .isEqualTo(prompt("land-pr").body());
+        assertThat(adapter.view(prompt("land-pr"), "the read")).isEqualTo(PacksSkills.viewOf(prompt("land-pr")));
+        assertThatThrownBy(() -> adapter.view(
+                        ai.speckitty.charter.packs.domain.Asset.builder()
+                                .id(new ai.speckitty.charter.packs.domain.AssetIdentifier("logo"))
+                                .packId(QA)
+                                .mime("image/png")
+                                .path("logo.png")
+                                .build(),
+                        "The read of the skill logo"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("The read of the skill logo holds asset logo");
+    }
+
+    @Test
+    void theTwinsListReadAtAnotherFingerprintIsStaleInput() {
+        when(packs.held(QA, ArtifactKind.SKILL))
+                .thenReturn(new ConsistentRead.Verified<>(
+                        new ForeignArtifactRead.Held(List.of(prompt("land-pr")), REVISION), FINGERPRINT));
+        PacksSkills adapter = new PacksSkills(packs);
+
+        assertThat(adapter.list(QA, FINGERPRINT).skills())
+                .extracting(SkillView::id)
+                .containsExactly("land-pr");
+        assertThatThrownBy(() -> adapter.list(QA, "sha256:" + "0".repeat(64)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 }

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.artifacts.application;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
@@ -35,6 +36,29 @@ public interface SkillReads {
      * @throws CharterRefusal as the packs slice refuses
      */
     Read skill(PackIdentifier pack, String skillId);
+
+    /**
+     * The skills a pack holds, read against the source fingerprint a caller already holds (research R15): the read of
+     * the pack that holds the winners an activation named.
+     *
+     * @param pack the configured identifier of the pack
+     * @param expectedFingerprint the whole-source fingerprint of the caller's own verified read
+     * @return the skills, the pack revision and that fingerprint
+     * @throws CharterRefusal as {@link #list(PackIdentifier)} refuses, and with {@code stale_input} when this read
+     *     verified another fingerprint
+     */
+    Listed list(PackIdentifier pack, String expectedFingerprint);
+
+    /**
+     * The view of a skill another read already holds as a kernel artifact (the winner an activation read): the same
+     * mapping as {@link #skill}, with nothing read.
+     *
+     * @param skill the skill, as its pack stores it
+     * @param read the read that holds it, named by the fault when it is no skill
+     * @return the view
+     * @throws IllegalStateException when the artifact is no skill of the packs slice: a broken invariant of the read
+     */
+    SkillView view(CharterArtifact skill, String read);
 
     /**
      * What the list read answers.
