@@ -35,5 +35,5 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Service usability run, 2026-11-12: the slice B pin](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/) —
   at open-packs `1692a3b`, `internal` and `qa` register as they are and the run passes all 146 hops (#466).
 - [Open-packs drift watch research, 2026-11-13](/plans/engineering-notes/open-packs-drift-watch-research-2026-11-13/) —
-  why the drift watch (#509) is still red on `main`, where its design leaks, what gates what across
+  why the drift watch (#509) stays red on `main` after #545, where its design leaks, what gates what across
   charter and open-packs, and the operator's rulings on each recommendation.

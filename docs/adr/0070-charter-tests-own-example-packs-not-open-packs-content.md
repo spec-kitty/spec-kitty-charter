@@ -49,7 +49,7 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
 - **Charter keeps the round trip runnable and complete, and no longer runs it over open-packs.**
   - Charter owns the test code: the round trip, `OpenPacksDriftTest` and its `-PopenPacksDir` entry point.
   - The test fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)),
-    so the gate in open-packs cannot pass over a kind silently.
+    so the gate in open-packs cannot pass over a kind silently. #547 lands before the gate's first pin.
   - `open-packs-drift.yml` is removed once the open-packs gate is required. It is not kept beside the gate.
 - **Drift from charter `main` is watched in open-packs.** A nightly, non-blocking open-packs run against charter `main`
   takes over what the charter watch did. It files in open-packs on red, and on green proposes the bump of
