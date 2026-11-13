@@ -2,7 +2,7 @@
 title: "ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit"
 description: The service is onion-layered and cut into vertical concern slices, one Gradle module per slice with layers as packages; ArchUnit enforces inward dependencies and a pure domain.
 doc_status: draft
-updated: 2026-10-21T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-21'
 type: ADR
@@ -15,6 +15,7 @@ related:
   - architecture/resolution-model
   - architecture/architectural-patterns-applied
   - development/how-to-ddd
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the module layout, where each layer lives, and the ArchUnit rules your code must pass.
@@ -86,6 +87,19 @@ storage binds the slice's domain, the domain stays in `:<slice>` and the slice's
 `infra` rings live in `:<slice>-edge`, with the package names unchanged. The layers are still
 packages, and the rings are gated as before. The reason, the options and the rules are in
 [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-11-09.
+
+### Amendment 2026-11-13 — a framework-free library module beside the slices
+
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) adds two
+modules that are not slices: `pack-validation`, which holds every pack check, and `pack-check`, the
+standalone CLI over it. Neither has onion rings; each is one package root
+(`ai.speckitty.charter.packvalidation`, `ai.speckitty.charter.packcheck`). The ArchUnit gate gains
+`PACK_VALIDATION_IS_FRAMEWORK_FREE`: neither module depends on Spring, HTTP, a commit store or a lock,
+nor on the packs or activations slices, any `application` or `infra` ring, or the composition root.
+A committed known-bad control proves the rule bites. The rule fails on an empty selection, so
+`:deployable`'s tests carry both modules. The module builds pin their dependencies too
+(`ModuleDependencyAllowlist`), since the domain conventions refuse the parsing libraries
+`pack-validation` needs.
 
 ## Context
 

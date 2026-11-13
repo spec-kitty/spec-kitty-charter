@@ -17,6 +17,7 @@ related:
   - context/conceptual-model
   - architecture/logical-model
   - architecture/hexagonal-service
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before adding an artifact kind to the packs slice, or before loading or writing a whole pack.
@@ -192,6 +193,22 @@ amendment of 2026-11-09; it adds a second kind of edge module, which composes re
 - **When to use it.** A read that answers one slice's domain under another slice's resource, and that
   belongs to neither slice, goes to a domain-less edge. A read of a slice whose domain
   `packs.infra.storage` binds still goes to that slice's own edge (amendment of 2026-11-09).
+
+### Amendment 2026-11-13 (ADR-0075, #550): the module map gains pack-validation and pack-check
+
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) moves
+every pack check, and the load, codecs and classification they need, out of `packs` into a
+Spring-free module, `pack-validation`, and packages it as a CLI, `pack-check`. It changes no decision
+of this record: the registry and the whole-pack seam stay in `packs`, which comes to depend on
+`pack-validation` and keeps `WholePackStore` and its other beans as thin adapters over the module's
+load (from #553).
+
+- **The dependency direction.** `:kernel`, then `:profiles` and `:missions`, then `:pack-validation`,
+  then `:packs` and `:pack-check`. `pack-validation` never names `packs`, and `pack-check` names
+  `pack-validation` only.
+- **The gate.** `PACK_VALIDATION_IS_FRAMEWORK_FREE` in the architecture test, with a known-bad
+  control, and a dependency allowlist in each module's build (amendment of ADR-0006, 2026-11-13).
+- **Slice 1 (#550)** adds both modules empty. The load moves in with #553.
 
 ## Context
 
