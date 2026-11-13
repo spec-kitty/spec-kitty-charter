@@ -13,8 +13,6 @@ ModuleDependencyAllowlist(
     modules = setOf(
         // The JSON writer of the problem output.
         "tools.jackson.core:jackson-databind",
-        // A BOM only, which pins the Jackson version the service runs; it brings no Spring class.
-        "org.springframework.boot:spring-boot-dependencies",
     ),
 ).enforceOn(project)
 

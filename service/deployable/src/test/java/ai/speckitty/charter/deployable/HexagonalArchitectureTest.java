@@ -257,7 +257,7 @@ class HexagonalArchitectureTest {
 
     /**
      * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3): neither {@code pack-validation} nor {@code pack-check}
-     * depends on Spring, on HTTP or any other network I/O ({@code java.net} but {@code URI}, the JDK's HTTP client and
+     * depends on Spring, on HTTP or any other network I/O ({@code java.net} but {@code URI} and {@code URISyntaxException}, the JDK's HTTP client and
      * server, Jakarta, the generated contract, the web transport or the kernel's transport vocabulary), on a commit store
      * or on a lock. A commit store and the registry's lock live in the packs slice and its {@code infra} rings, so the
      * rule refuses the packs and activations slices, every {@code application} and {@code infra} ring (the modules' own
@@ -285,13 +285,13 @@ class HexagonalArchitectureTest {
                         KERNEL_TRANSPORT,
                         ROOT + ".packs..",
                         ROOT + ".activations..",
-                        "..application..",
-                        "..infra..",
+                        ROOT + "..application..",
+                        ROOT + "..infra..",
                         DEPLOYABLE,
                         "java.util.concurrent.locks..")
                 .orShould()
                 .dependOnClassesThat(DescribedPredicate.describe(
-                        "are java.net types other than URI, or FileLock",
+                        "are java.net types other than URI and URISyntaxException, or FileLock",
                         (JavaClass c) -> (c.getPackageName().equals("java.net")
                                         && !c.getName().equals("java.net.URI")
                                         && !c.getName().equals("java.net.URISyntaxException"))

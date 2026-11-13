@@ -19,8 +19,6 @@ ModuleDependencyAllowlist(
         "com.networknt:json-schema-validator",
         "tools.jackson.core:jackson-databind",
         "com.google.re2j:re2j",
-        // A BOM only, which aligns the Jackson and slf4j versions with the service's; it brings no Spring class.
-        "org.springframework.boot:spring-boot-dependencies",
     ),
 ).enforceOn(project)
 
