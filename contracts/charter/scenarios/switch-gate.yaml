@@ -49,6 +49,7 @@ operations:
   getPackMissionStep: {switch: ready}
   getPackMissionType: {switch: ready}
   getPackPreset: {switch: ready}
+  getPackSkill: {switch: ready}
   getPackRegistration:
     switch: held
     statuses: [500]
@@ -60,6 +61,7 @@ operations:
   listPackArtifacts: {switch: ready}
   listPackAssets: {switch: ready}
   listPackPresets: {switch: ready}
+  listPackSkills: {switch: ready}
   putPackDirective: {switch: ready}
   putPackParadigm: {switch: ready}
   putPackRelationship: {switch: ready}

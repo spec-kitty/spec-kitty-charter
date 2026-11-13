@@ -1,0 +1,37 @@
+summary: >-
+  The wrapper skill triage-status of the org-base example pack of the charter (ADR-0070), as getPackSkill answers it:
+  what it expands to, and no body. Its enhances edge is read through listArtifactReferences, not here.
+value:
+  kind: skill
+  id: triage-status
+  packId: org-base
+  _links:
+    self:
+      href: /api/v1/packs/org-base/artifacts/skill/triage-status
+    collection:
+      href: /api/v1/packs/org-base/artifacts/skill
+  skill:
+    schemaVersion: '1.0'
+    id: triage-status
+    title: Show the triage status
+    description: Use to list the mission's work packages by lane before a triage pass.
+    form: wrapper
+    triggers:
+      - triage status
+    parameters:
+      - name: mission
+        required: false
+        description: The mission handle.
+        default: current
+    invocation:
+      userInvocable: true
+      modelInvocable: true
+      sideEffects: []
+    expandsTo:
+      target: cli:spec-kitty agent tasks status
+      args: '--mission {mission}'
+    tools:
+      - Bash
+    version: 1.0.0
+    maintainers:
+      - '@spec-kitty/core'
