@@ -71,7 +71,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
   policy, the ADR-0068 fallback profile, qualified cross-pack references and the required floor each read every pack
   of the closure. The walker (`kernel.domain.GraphWalker`, driven by `GraphWalk`, `Reachability`, `GovernanceWalk`
   and `ActionContextWalk`) answers reads and validates nothing.
-- **open-packs has to prove its packs against a pinned charter.** ADR-0070, as amended on 2026-11-13, gates them in
+- **open-packs has to prove its packs against a pinned charter.** ADR-0070 decision 4, as PR [#548](https://github.com/spec-kitty/spec-kitty-charter/pull/548) amends it, gates them in
   open-packs at a pin ([spec-kitty-open-packs#252](https://github.com/spec-kitty/spec-kitty-open-packs/issues/252)).
   It needs a released artifact that runs charter's own checks
   ([#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478)).
@@ -181,7 +181,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 - **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`.
 - **ADR-0046:** the release carries `pack-check`.
 - **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`.
-- **ADR-0070:** open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.
+- **ADR-0070:** builds on the amendment of decision 4 in PR #548. open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.
 
 ## Consequences
 
@@ -244,7 +244,8 @@ Not chosen *(operator)*: see decision 10.
 - [#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547) (the round trip fails on an unmodelled kind)
 - [spec-kitty-open-packs#252](https://github.com/spec-kitty/spec-kitty-open-packs/issues/252) and
   [#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)
-- The open-packs drift watch research note (PR [#548](https://github.com/spec-kitty/spec-kitty-charter/pull/548))
+- The open-packs drift watch research note and the ADR-0070 decision 4 amendment (PR
+  [#548](https://github.com/spec-kitty/spec-kitty-charter/pull/548))
 - [`modular-validators`](https://github.com/sddevelopment-be/modular-validators) and `kernel-validation-ATTRIBUTION.md`
 
 ## Appendix: the upstream issue
