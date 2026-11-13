@@ -123,10 +123,28 @@ The drift has three structural roots:
 | 2 | Regenerate or drop the hand-written manifests of `built-in`, `foundation` and `writing` | open-packs | S | 2 | already tracked: spec-kitty-open-packs#250 |
 | 3 | The drift test fails on any census file with no round-trip outcome. The gate ties its kind check to `file-kinds.yaml` and round-trips every example pack. | charter | S/M | 3 | **filed: #547** |
 | 4 | `service-v*` releases, then a `pack-check` jar on the service's code path that also exposes the whole-pack round trip and file classification, so open-packs drops its Python mirror and gates on meaning | charter, then open-packs | M, then L | 4 | **commented on #478**, no new issue |
-| 5 | Watch lifecycle: run `alert` and `recover` only on `main`; put the open-packs SHA and failing packs in the issue and the job summary; reopen rather than duplicate; give build failures their own label | charter | S | — | not taken now (it could fold into #480 later) |
-| 6 | Pin policy: settle "may lag" against "stale is a defect", and let a green nightly run open a bot PR that raises `openPacksRef` | charter | M | — | not taken now |
-| 7 | Reverse drift watch in open-packs: a nightly run against charter `main` that files on red and bumps `charter.lock.yaml` on green | open-packs | M | after 4 | draft text below; to be filed by the orchestrator |
-| 8 | Meaning round trip in open-packs' `charter-service` job, through the `pack-check` jar of 4 | open-packs | M | after 4 | draft text below; to be filed by the orchestrator |
+| 5 | Watch lifecycle: run `alert` and `recover` only on `main`; put the open-packs SHA and failing packs in the issue and the job summary; reopen rather than duplicate; give build failures their own label | charter | S | — | moot: charter's watch is removed (ruling below); applies to open-packs' nightly instead |
+| 6 | Pin policy: settle "may lag" against "stale is a defect", and let a green nightly run open a bot PR that raises `openPacksRef` | charter | M | — | not taken now; `openPacksRef` feeds governance only |
+| 7 | Nightly open-packs watch of charter `main`: files on red, proposes the `charter.lock.yaml` bump on green. It replaces charter's watch. | open-packs | M | after 8 | **taken** (ADR-0070 amendment); draft A below |
+| 8 | The round trip over open-packs content is a required gate in open-packs' `charter-service` job, at its pin: charter's `:packs:driftTest` now, `pack-check` (4) later | open-packs | S now, M with 4 | after 1 and 2 | **taken** (ADR-0070 amendment); draft B below |
+| 9 | Remove `open-packs-drift.yml` once 8 is required | charter | S | after 8 | follows from the ruling |
+
+### Operator ruling 2026-11-13: the content test runs in open-packs
+
+The operator ruled that the round trip over open-packs content runs inside open-packs, not in charter, for the split
+of responsibility: open-packs owns its content and the proof of it. It is recorded as an amendment to
+[ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/) decision 4.
+
+- **What open-packs gains.** Its `charter-service` job already builds charter at the commit in `charter.lock.yaml`.
+  It now also runs `./gradlew :packs:driftTest -PopenPacksDir=<checkout>` there, as part of a required check. Pin
+  `17ce3f9` already holds that source set.
+- **What charter keeps.** Charter owns the test code and keeps it complete (#547). Its nightly watch is removed once
+  the open-packs gate is required.
+- **The first gate pin.** It must hold #545, or `spdd` stays red. Moving past #542 means regenerating or dropping
+  the three manifests (open-packs #250) in the same pull request as the lock bump.
+- **What this changes above.** Most of section 2's lifecycle and reporting leaks go away with charter's watch. They
+  apply to open-packs' new nightly instead. Leak 1, the silent unmodelled kind, matters more now, since a gate
+  inherits it: #547 should land before the gate's first pin.
 
 **Shared fixtures: not recommended.** ADR-0070 makes charter's example packs the only test input for
 charter. The contract both repositories already share is `contracts/packs/file-kinds.yaml` plus the
@@ -138,7 +156,7 @@ This session could not attach spec-kitty-open-packs with write access, so these 
 
 ### Draft A: a nightly watch of charter `main`
 
-> **Title:** Nightly: prove the packs against charter `main`, and bump `charter.lock.yaml` on green
+> **Title:** Nightly: prove the packs against charter `main`, and bump `charter.lock.yaml` on green (replaces charter's drift watch)
 >
 > `charter.lock.yaml` pins charter `17ce3f9`, 30 commits behind charter `main`. Charter #542 (manifest
 > membership derived, merged 2026-11-13) makes charter refuse the hand-written manifests of
@@ -147,24 +165,32 @@ This session could not attach spec-kitty-open-packs with write access, so these 
 >
 > **Ask:**
 >
-> - Add a scheduled, non-gating workflow that runs the `charter-service` job's checks against
->   charter `main`, the mirror of charter's `open-packs-drift.yml`.
+> - Add a scheduled, non-gating workflow that runs the `charter-service` job's checks, the round trip
+>   included, against charter `main`. It replaces charter's `open-packs-drift.yml` (ADR-0070 amendment of
+>   2026-11-13).
+> - Act on the issue only from a run on `main`: charter's watch closed its issue from a branch run (#509).
 > - On red, it opens or comments on one labelled issue naming the charter SHA and the failing packs.
 > - On green on `main`, it opens or updates one PR that bumps `charter.lock.yaml` to the tested SHA.
 >
 > **Refs:** charter #509, #542, #547; ADR-0070.
 
-### Draft B: a meaning round trip in the gate
+### Draft B: the round trip as a gate in the `charter-service` job
 
-> **Title:** Prove the whole-pack round trip in the `charter-service` job, through charter's `pack-check`
+> **Title:** Gate every pack on charter's whole-pack round trip, at the charter pin
 >
-> Only charter's nightly drift watch runs the write-back round trip (ADR-0036 equality of meaning)
-> over these packs, so a pack-content fault shows up after merge, in the charter repository. The
-> file classification in `validate` is a Python port of charter's rules (#249, #251).
+> Charter ADR-0070 decision 4 (amended 2026-11-13) moves the round trip over this repository's content from charter's
+> nightly drift watch into this repository's CI, as a gate. The `charter-service` job already builds charter at the
+> commit in `charter.lock.yaml`.
 >
-> **Ask:** once charter publishes `pack-check` (charter #478), the `charter-service` job does two things:
+> **Ask:**
 >
-> - it runs the round trip and the classification through `pack-check` at the pinned release, as a gate;
-> - it retires the Python port of `PackFileKind.classify`, `requiredNotHeld` and the required floor.
+> - In the `charter-service` job, from the pinned charter checkout, run
+>   `./gradlew --max-workers=1 :packs:driftTest -PopenPacksDir="$GITHUB_WORKSPACE"`. Fail the gate on red, and
+>   upload `service/packs/build/reports/tests/driftTest`.
+> - Move `charter.lock.yaml` to a charter commit that holds charter #545 (the `org-fragment` round trip), and #547
+>   once it lands. Regenerate or drop the hand-written manifests of `built-in`, `foundation` and `writing` (#250) in
+>   the same pull request: charter refuses them from #542 on.
+> - Once charter publishes `pack-check` (charter #478), run it from the pinned release instead, and retire the Python
+>   port of `PackFileKind.classify`, `requiredNotHeld` and the required floor (#249, #251).
 >
-> **Blocked by:** charter #478.
+> **Refs:** charter #509, #545, #547, #478; ADR-0070 amendment of 2026-11-13.
