@@ -1,5 +1,11 @@
 # Delegation candidates without a scope edge
 
+> **Correction (post-plan squad, 2026-11-13).** The table below counts a candidate as covered by any edge from the
+> action or from the mission type. The ruled rule (FR-005) needs a `scope` edge from the step's action itself. Under
+> that exact predicate, 64 of the 144 candidates are covered and **80 are missing** (79 distinct). The 8 extra
+> cases are qa's QA_001 to QA_006 delegations and plan/research `adr-drafting-workflow`, which have a scope edge from
+> the mission type only. The open-packs draft adds 80 edges.
+
 Open-packs at `1692a3b`. Of 144 delegation candidates in `*.step-contract.yaml`, 72 already have an edge from the step's `action:<type>/<step>` node or its mission type; the 72 below have none. Under research R3 (Q2) the open-packs migration adds a `scope` edge for each. Method: every `delegates_to.candidates` entry, as `<kind>:<candidate>`, matched against the edge pairs of every `*.graph.yaml` and `drg/fragment.yaml` in open-packs, with pack qualifiers stripped.
 
 | File | Substep | Source node | Candidate |
