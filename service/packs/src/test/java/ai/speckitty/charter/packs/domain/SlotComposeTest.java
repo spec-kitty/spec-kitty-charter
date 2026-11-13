@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * C38, the slot declared (FR-001, FR-006): every slot an <strong>in-force</strong> step enhancement names is declared
- * by the prompt in force of its step, the prompt at the merged winner's place of {@code action:M/s} (research R8). Each
+ * by the prompt in force of its step, the prompt at the step's place (StepHolding.placeOf; research R8, ruling Q3). Each
  * refusal has a failing fixture and a twin that differs only in the faulty part.
  */
 class SlotComposeTest {
