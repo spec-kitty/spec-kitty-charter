@@ -8,6 +8,7 @@ files:
   - ActivationETag.yaml
   - ActivationPackListETag.yaml
   - EffectiveETag.yaml
+  - PackRevisionETag.yaml
   - Location.yaml
   - XContentTypeOptions.yaml
   - ContentSecurityPolicy.yaml

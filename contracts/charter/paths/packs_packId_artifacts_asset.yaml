@@ -32,11 +32,7 @@ get:
         Charter-Source-Fingerprint:
           $ref: ../headers/CharterSourceFingerprint.yaml
         ETag:
-          description: The pack revision the assets were read at, quoted.
-          required: true
-          schema:
-            type: string
-            pattern: ^"sha256:[0-9a-f]{64}"$
+          $ref: ../headers/PackRevisionETag.yaml
       content:
         application/json:
           schema:
