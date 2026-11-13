@@ -32,11 +32,14 @@ operations:
   getEffectiveActionContext: {switch: ready}
   getEffectiveAgentProfile: {switch: ready}
   getEffectiveArtifact: {switch: ready}
+  getEffectiveAsset: {switch: ready}
+  getEffectiveAssetPayload: {switch: ready}
   getEffectiveGraph: {switch: ready}
   getEffectiveMissionSkeleton: {switch: ready}
   getEffectiveMissionStep: {switch: ready}
   getEffectiveMissionStepContract: {switch: ready}
   getEffectiveMissionType: {switch: ready}
+  getEffectiveSkill: {switch: ready}
   getOffering: {switch: ready}
   getOpenApiDocument: {switch: ready}
   getPack: {switch: ready}
@@ -58,6 +61,8 @@ operations:
   listActivationPacks: {switch: ready}
   listArtifactReferences: {switch: ready}
   listEffectiveArtifacts: {switch: ready}
+  listEffectiveAssets: {switch: ready}
+  listEffectiveSkills: {switch: ready}
   listPackArtifacts: {switch: ready}
   listPackAssets: {switch: ready}
   listPackPresets: {switch: ready}

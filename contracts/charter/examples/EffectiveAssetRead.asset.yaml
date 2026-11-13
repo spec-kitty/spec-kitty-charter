@@ -1,0 +1,37 @@
+summary: >-
+  The asset carrier-lint under an activation whose closure holds a built-in copy and a project copy: the project copy
+  won the layer merge, so it is the one answered, with its pack, level, policy and descriptor, and no state. self is
+  this request, artifact the pack-scoped read of the winner's pack, payload the winner's bytes under the activation,
+  collection the activation's assets and up the activation.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  kind: asset
+  artifactId: carrier-lint
+  packId: project
+  level: project
+  policy: open
+  asset:
+    id: carrier-lint
+    mime: text/x-python
+    path: carrier_lint.py
+    title: Traceability carrier lint, project copy
+    executable:
+      runtime: python
+      minVersion: '3.12'
+      entry: carrier_lint.py
+      args:
+        - --guard
+        - --strict
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/asset/carrier-lint
+    artifact:
+      href: /api/v1/packs/project/artifacts/asset/carrier-lint
+    payload:
+      href: /api/v1/activations/a-1/artifacts/asset/carrier-lint/payload
+    collection:
+      href: /api/v1/activations/a-1/artifacts/asset
+    up:
+      href: /api/v1/activations/a-1

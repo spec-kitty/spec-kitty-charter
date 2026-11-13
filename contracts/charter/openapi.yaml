@@ -67,6 +67,17 @@ tags:
       The agent profiles of an activation: the read of one profile under an activation, with its governance and the
       state of each entry. Its own tag, so that the :profiles-edge slice implements it in a controller of its own beside
       the activation set's: the generic effective read of an artifact never renders a profile body.
+  - name: EffectiveAssets
+    description: >-
+      The assets of an activation (ADR-0074 decision 9 as amended 2026-11-12): the assets the activation's closure
+      holds, each the copy the layer merge keeps, the read of one with its descriptor and no state, and the read of its
+      payload, the winning copy's bytes. An asset is in force when a pack of the closure holds it. Its own tag, so that
+      the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveSkills
+    description: >-
+      The skills of an activation: the skills the activation's closure holds, each the copy the layer merge keeps, and
+      the read of one with its state and the skill as the winning pack declares it, whatever its state. Its own tag, so
+      that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
   - name: EffectiveMissionTypes
     description: >-
       The mission types of an activation: the mission type the layer merge keeps under an activation, in the Artifact
@@ -163,6 +174,16 @@ paths:
     $ref: paths/activations_activationId_artifacts.yaml
   /activations/{activationId}/artifacts/agent_profile/{artifactId}:
     $ref: paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
+  /activations/{activationId}/artifacts/asset:
+    $ref: paths/activations_activationId_artifacts_asset.yaml
+  /activations/{activationId}/artifacts/asset/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_asset_artifactId.yaml
+  /activations/{activationId}/artifacts/asset/{artifactId}/payload:
+    $ref: paths/activations_activationId_artifacts_asset_artifactId_payload.yaml
+  /activations/{activationId}/artifacts/skill:
+    $ref: paths/activations_activationId_artifacts_skill.yaml
+  /activations/{activationId}/artifacts/skill/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_skill_artifactId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}:
     $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}:

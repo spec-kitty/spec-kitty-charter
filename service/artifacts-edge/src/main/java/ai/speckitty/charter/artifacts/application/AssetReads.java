@@ -49,6 +49,43 @@ public interface AssetReads {
     PayloadRead payload(PackIdentifier pack, String assetId);
 
     /**
+     * The assets a pack holds, read against the source fingerprint a caller already holds (research R15): the read of
+     * the pack that holds the winners an activation named.
+     *
+     * @param pack the configured identifier of the pack
+     * @param expectedFingerprint the whole-source fingerprint of the caller's own verified read
+     * @return the assets, the pack revision and that fingerprint
+     * @throws CharterRefusal as {@link #list(PackIdentifier)} refuses, and with {@code stale_input} when this read
+     *     verified another fingerprint
+     */
+    Listed list(PackIdentifier pack, String expectedFingerprint);
+
+    /**
+     * One asset's descriptor, read against the source fingerprint a caller already holds (research R15).
+     *
+     * @param pack the configured identifier of the pack that holds the winner
+     * @param assetId the asset's id
+     * @param expectedFingerprint the whole-source fingerprint of the caller's own verified read
+     * @return the asset, the pack revision and that fingerprint
+     * @throws CharterRefusal as {@link #asset(PackIdentifier, String)} refuses, and with {@code stale_input} when this
+     *     read verified another fingerprint
+     */
+    Read asset(PackIdentifier pack, String assetId, String expectedFingerprint);
+
+    /**
+     * One asset with the bytes of its payload, read against the source fingerprint a caller already holds (research
+     * R15): the bytes of the winner an activation named, of the inputs it judged.
+     *
+     * @param pack the configured identifier of the pack that holds the winner
+     * @param assetId the asset's id
+     * @param expectedFingerprint the whole-source fingerprint of the caller's own verified read
+     * @return the asset, its bytes, the pack revision and that fingerprint
+     * @throws CharterRefusal as {@link #payload(PackIdentifier, String)} refuses, and with {@code stale_input} when this
+     *     read verified another fingerprint
+     */
+    PayloadRead payload(PackIdentifier pack, String assetId, String expectedFingerprint);
+
+    /**
      * What the list read answers.
      *
      * @param assets the pack's assets, in id order

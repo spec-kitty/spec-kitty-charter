@@ -67,6 +67,30 @@ public final class PacksAssets implements AssetReads {
                 viewOf(read.asset()), read.payload().bytes(), read.revision().token(), verified.fingerprint());
     }
 
+    @Override
+    public Listed list(PackIdentifier pack, String expectedFingerprint) {
+        Listed listed = list(pack);
+        Fingerprints.require(listed.sourceFingerprint(), expectedFingerprint);
+        return listed;
+    }
+
+    @Override
+    public Read asset(PackIdentifier pack, String assetId, String expectedFingerprint) {
+        Read read = asset(pack, assetId);
+        Fingerprints.require(read.sourceFingerprint(), expectedFingerprint);
+        return read;
+    }
+
+    @Override
+    public PayloadRead payload(PackIdentifier pack, String assetId, String expectedFingerprint) {
+        // The packs slice's own check: the bytes are of the inputs the caller judged, or stale_input.
+        ConsistentRead.Verified<ForeignArtifactRead.AssetPayload> verified =
+                packs.payload(pack, assetId, expectedFingerprint);
+        ForeignArtifactRead.AssetPayload read = verified.value();
+        return new PayloadRead(
+                viewOf(read.asset()), read.payload().bytes(), read.revision().token(), verified.fingerprint());
+    }
+
     /**
      * The edge's view of a packs asset; the mime is judged by the packs domain's rule, which validate applies too.
      *

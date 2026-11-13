@@ -115,3 +115,5 @@ files:
   - SkillList.yaml
   - SkillParameter.yaml
   - SkillSummary.yaml
+  - EffectiveAssetRead.yaml
+  - EffectiveSkillRead.yaml

@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.activations.infra.api.ActivationController;
+import ai.speckitty.charter.artifacts.infra.api.EffectiveAssetsController;
+import ai.speckitty.charter.artifacts.infra.api.EffectiveSkillsController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -102,6 +104,23 @@ class ActivationRoutingTest {
                 .as("the literal path is preferred to the templated one")
                 .isEqualTo(EffectiveAgentProfilesController.class);
         assertThat(routed.getMethod().getName()).isEqualTo("getEffectiveAgentProfile");
+    }
+
+    @Test
+    void aGetOnAnAssetOrASkillReachesItsLiteralReadAndNotTheGenericRead() throws Exception {
+        String[][] routes = {
+            {"asset", EffectiveAssetsController.class.getName(), "listEffectiveAssets"},
+            {"asset/run", EffectiveAssetsController.class.getName(), "getEffectiveAsset"},
+            {"asset/run/payload", EffectiveAssetsController.class.getName(), "getEffectiveAssetPayload"},
+            {"skill", EffectiveSkillsController.class.getName(), "listEffectiveSkills"},
+            {"skill/land-pr", EffectiveSkillsController.class.getName(), "getEffectiveSkill"}
+        };
+        for (String[] route : routes) {
+            HandlerMethod routed = handler("GET", READ + route[0]);
+
+            assertThat(routed.getBeanType().getName()).as(route[0]).isEqualTo(route[1]);
+            assertThat(routed.getMethod().getName()).as(route[0]).isEqualTo(route[2]);
+        }
     }
 
     @Test

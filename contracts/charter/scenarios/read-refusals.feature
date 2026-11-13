@@ -54,6 +54,11 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | getEffectiveMissionType     | /activations/a-1/artifacts/mission_type/Main                                                              | /activations/a-1/artifacts/mission_type/main                   | 404    |
       | getEffectiveMissionStep     | /activations/a-1/artifacts/mission_type/Main/steps/specify                                                | /activations/a-1/artifacts/mission_type/main/steps/specify     | 404    |
       | getEffectiveMissionSkeleton | /activations/a-1/artifacts/mission_type/Main/skeletons/spec.md                                            | /activations/a-1/artifacts/mission_type/main/skeletons/spec.md | 404    |
+      | listEffectiveAssets         | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/asset            | /activations/a-1/artifacts/asset                               | 200    |
+      | getEffectiveAsset           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/asset/logo       | /activations/a-1/artifacts/asset/logo                          | 404    |
+      | getEffectiveAssetPayload    | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/asset/logo/payload | /activations/a-1/artifacts/asset/logo/payload                  | 404    |
+      | listEffectiveSkills         | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill            | /activations/a-1/artifacts/skill                               | 200    |
+      | getEffectiveSkill           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill/land-pr    | /activations/a-1/artifacts/skill/land-pr                       | 404    |
       | getActivationSkippedReport  | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/skipped                    | /activations/a-1/skipped                                       | 200    |
       | getEffectiveGraph           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/graph                      | /activations/a-1/graph                                         | 200    |
 

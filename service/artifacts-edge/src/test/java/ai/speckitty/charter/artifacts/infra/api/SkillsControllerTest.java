@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.speckitty.charter.artifacts.application.SkillReads;
 import ai.speckitty.charter.artifacts.application.SkillView;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -83,6 +84,16 @@ class SkillsControllerTest {
 
     private SkillReads reads() {
         return new SkillReads() {
+            @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public SkillView view(CharterArtifact skill, String read) {
+                throw new UnsupportedOperationException("the pack route maps no kernel artifact");
+            }
+
             @Override
             public Listed list(PackIdentifier pack) {
                 asked.add("list " + pack.value());
@@ -174,6 +185,16 @@ class SkillsControllerTest {
     @Test
     void aRefusalOfTheReadIsAnsweredByTheSharedHandler() throws Exception {
         SkillReads refusing = new SkillReads() {
+            @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack route reads against no fingerprint");
+            }
+
+            @Override
+            public SkillView view(CharterArtifact skill, String read) {
+                throw new UnsupportedOperationException("the pack route maps no kernel artifact");
+            }
+
             @Override
             public Listed list(PackIdentifier pack) {
                 throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack nope was not found.");
