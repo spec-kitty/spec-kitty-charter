@@ -215,7 +215,7 @@ class DoctrineValidationParityTest {
         assertThatThrownBy(parity.breach()::get)
                 .isInstanceOfSatisfying(
                         ConstraintBreachException.class,
-                        breach -> assertThat(breach.constraintDescription()).isEqualTo(parity.rule()));
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(parity.rule()));
 
         assertThat(parity.control().get()).isNotNull();
     }

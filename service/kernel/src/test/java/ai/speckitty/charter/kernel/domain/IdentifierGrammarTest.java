@@ -1,7 +1,10 @@
 package ai.speckitty.charter.kernel.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.validation.Constraint;
+import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -127,5 +130,38 @@ class IdentifierGrammarTest {
         assertThat(IdentifierGrammar.isLetterFirstSlug(null)).isFalse();
         assertThat(IdentifierGrammar.isDottedKey(null)).isFalse();
         assertThat(IdentifierGrammar.isRelativePath(null)).isFalse();
+    }
+
+    static Stream<Arguments> slugRules() {
+        return Stream.of(
+                // rule, text, verdict
+                Arguments.of(IdentifierGrammar.slug(63), "a".repeat(63), true),
+                Arguments.of(IdentifierGrammar.slug(63), "a".repeat(64), false),
+                Arguments.of(IdentifierGrammar.slug(63), "1-pack", true),
+                Arguments.of(IdentifierGrammar.slug(63), "a--b", false),
+                Arguments.of(IdentifierGrammar.slug(63), "a-", false),
+                Arguments.of(IdentifierGrammar.letterFirstSlug(64), "a".repeat(64), true),
+                Arguments.of(IdentifierGrammar.letterFirstSlug(8), "a".repeat(9), false),
+                Arguments.of(IdentifierGrammar.letterFirstSlug(64), "1-pack", false),
+                Arguments.of(IdentifierGrammar.letterFirstSlug(64), "a--b", false),
+                Arguments.of(IdentifierGrammar.letterFirstSlug(64), null, false));
+    }
+
+    /** The grammars as rules (ADR-0075 decision 1): the same verdict as the predicate, under a tighter cap. */
+    @ParameterizedTest(name = "{0} on \"{1}\": {2}")
+    @MethodSource("slugRules")
+    void theSlugRulesJudgeAsTheGrammarDoesUnderTheirCap(Constraint<String> rule, String text, boolean verdict) {
+        Reason reason = rule.applyTo(text);
+        assertThat(reason.isPassing()).isEqualTo(verdict);
+    }
+
+    @Test
+    void aSlugRuleNamesItsGrammarAndCapAndRefusesACapTheGrammarCannotHold() {
+        assertThat(IdentifierGrammar.slug(63).applyTo("a--b").detail())
+                .isEqualTo("must be a kebab slug of at most 63 characters");
+        assertThat(IdentifierGrammar.letterFirstSlug(64).applyTo("1").detail())
+                .isEqualTo("must be a letter-first kebab slug of at most 64 characters");
+        assertThatThrownBy(() -> IdentifierGrammar.slug(65)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> IdentifierGrammar.letterFirstSlug(0)).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -70,8 +70,15 @@ as a `ModularRuleset`, and uses one of two strategies.
 
 | Strategy | Behavior | Use it for |
 |---|---|---|
-| `guard(value)` | Stops at the first breached constraint and throws `ConstraintBreachException` | Constructors and builders: an invalid entity must never exist |
-| `check(value)` | Evaluates every constraint and returns an `Evaluation` with each `Reason` | Reporting: show a pack author everything that is wrong at once |
+| `guard(value)` | Stops at the first violation and throws `ConstraintBreachException`, which carries its `Reason` | Constructors and builders: an invalid entity must never exist |
+| `check(value)` | Applies every rule and returns a `Rationale` of every `Reason` | Reporting: show a pack author everything that is wrong at once |
+
+A `Rule` returns every `Reason` it finds. Each carries a code, a `Severity` (`VIOLATION`,
+`WARNING` or `NOTICE`) and a `Location` (a file and a JSON pointer); only a violation fails a
+check or a guard. `on(focus)`, `forEach(parts)` and `when(applicable)` compose rules, and a
+`ModularRuleset` is itself a rule (ADR-0075 decision 1). For an identifier, use the shared rules
+`Constraints.notBlank()`, `IdentifierGrammar.slug(max)` and `IdentifierGrammar.letterFirstSlug(max)`
+instead of a grammar of your own.
 
 ```java
 private static final ModularRuleset<Tactic> RULES = ModularRuleset.<Tactic>emptyRules()

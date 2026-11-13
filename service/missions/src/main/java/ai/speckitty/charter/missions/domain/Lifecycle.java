@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -98,14 +99,15 @@ public final class Lifecycle implements CharterArtifact {
     /** The checks whose refusal names the offender; they read the transitions, so they follow the ruleset. */
     private void requireWellFormedMachine() {
         if (states.stream().noneMatch(LifecycleState::isTerminal)) {
-            throw new ConstraintBreachException("A lifecycle declares at least one terminal state.");
+            throw new ConstraintBreachException(Reason.failed("A lifecycle declares at least one terminal state."));
         }
         Set<String> reached = reachableFromInitial();
         states.stream().filter(s -> !reached.contains(s.id())).findFirst().ifPresent(s -> {
-            throw new ConstraintBreachException("state '" + s.id() + "' is not reachable from the initial state");
+            throw new ConstraintBreachException(
+                    Reason.failed("state '" + s.id() + "' is not reachable from the initial state"));
         });
         nondeterminism().ifPresent(message -> {
-            throw new ConstraintBreachException(message);
+            throw new ConstraintBreachException(Reason.failed(message));
         });
     }
 
