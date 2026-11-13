@@ -17,5 +17,8 @@
   "target_branch": "feat/106-glossary-contexts",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "change_mode": "bulk_edit",
+  "vcs": "git",
+  "source_description": "#106 (R12) glossary contexts and terms; closes slice A2 #536. Operator interview 2026-11-13."
 }
