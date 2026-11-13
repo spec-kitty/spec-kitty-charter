@@ -88,6 +88,8 @@ Slice C and slice D run first. After them, in this order:
 - **Size:** S. **Risk:** open-packs content that ADR-0073 refuses beyond those two issues; the drift report
   names it, and the fix is filed in open-packs.
 
+*2026-11-13: #545 closed #509. Per the ADR-0070 amendment, the content round trip moves to open-packs (#252, #253), and `open-packs-drift.yml` is removed once that gate is required.*
+
 ### 2. A2: the reads ADR-0074 added (#536), large
 
 | Issue | What |
