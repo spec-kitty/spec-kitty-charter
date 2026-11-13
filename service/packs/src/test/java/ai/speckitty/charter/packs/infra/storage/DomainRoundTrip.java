@@ -793,9 +793,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     // ---- graph shards --------------------------------------------------------------------------
 
     private static Outcome shard(String name, Path source, Path target, String path, Shape shape) {
+        String noun = shape == Shape.FRAGMENT ? "fragment" : "shard";
         String text = read(source.resolve(path));
         if (!(GraphDocumentReader.read(text, shape, path) instanceof FileRead.Read<RawGraph> raw)) {
-            return new Refused("the shard does not read");
+            return new Refused("the " + noun + " does not read");
         }
         PackPolicy.GraphBuild build = PackPolicy.graph(name, raw.value());
         if (!build.findings().isEmpty()) {
@@ -810,18 +811,18 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                     ? GraphShardWriter.writeFragment(build.graph())
                     : GraphShardWriter.write(build.graph(), generatedBy);
         } catch (IllegalArgumentException e) {
-            return new Refused("the shard cannot be written: " + e.getMessage());
+            return new Refused("the " + noun + " cannot be written: " + e.getMessage());
         }
         write(target.resolve(path), writtenText);
         if (!(GraphDocumentReader.read(writtenText, shape, path) instanceof FileRead.Read<RawGraph> reread)) {
-            return new Refused("read-back: the written shard does not read");
+            return new Refused("read-back: the written " + noun + " does not read");
         }
         PackPolicy.GraphBuild rebuilt = PackPolicy.graph(name, reread.value());
         if (!rebuilt.findings().isEmpty()) {
-            return new Refused("read-back: the written shard does not build: " + rebuilt.findings());
+            return new Refused("read-back: the written " + noun + " does not build: " + rebuilt.findings());
         }
         if (!sameGraph(build.graph(), rebuilt.graph())) {
-            return new Refused("read-back: the written shard builds into another graph");
+            return new Refused("read-back: the written " + noun + " builds into another graph");
         }
         return new Written(path);
     }
