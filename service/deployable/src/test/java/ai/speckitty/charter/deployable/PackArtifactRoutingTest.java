@@ -6,21 +6,14 @@ import ai.speckitty.charter.artifacts.infra.api.AssetsController;
 import ai.speckitty.charter.artifacts.infra.api.SkillsController;
 import ai.speckitty.charter.packs.infra.api.ArtifactController;
 import ai.speckitty.charter.packs.infra.api.PackRegistrationController;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
-import org.jspecify.annotations.Nullable;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -43,40 +36,21 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  *   <li>a DELETE on an asset or a skill stays on the generic removal, which keeps its own kind set (research R14).
  * </ul>
  *
- * <p>The handler is asked of the request mapping, so no filter, interceptor or empty configuration answers first. The
- * activation tree's twin is {@link ActivationRoutingTest}.
+ * <p>The handler is asked of the request mapping, so no filter, interceptor or pack content answers first. The
+ * context is configured as {@link OfferingReadServiceCacheWiringTest}'s, so the two share one cached application
+ * context instead of starting another. The activation tree's twin is {@link ActivationRoutingTest}.
  */
 @SpringBootTest(
         classes = CharterServiceApplication.class,
-        properties = "charter.worktree-token=" + PackArtifactRoutingTest.TOKEN)
+        properties = "charter.worktree-token=" + ActivationTestWiring.TOKEN)
+@AutoConfigureMockMvc
+@Import(ConfigRootTestConfiguration.class)
 class PackArtifactRoutingTest {
 
-    static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final String PACK = "/api/v1/packs/built-in/artifacts/";
-    private static @Nullable Path root;
 
     /** One expected route: the request path under the pack's artifacts, the controller and the operation it reaches. */
     private record Route(String path, Class<?> controller, String operation) {}
-
-    @DynamicPropertySource
-    static void anEmptyConfigRoot(DynamicPropertyRegistry registry) throws IOException {
-        Path created = Files.createTempDirectory("charter-pack-artifact-routing");
-        root = created;
-        registry.add("charter.config-root", created::toString);
-    }
-
-    @AfterAll
-    static void deleteRoot() throws IOException {
-        // Only the temporary directory this class created is ever removed: nothing is deleted when it was never made.
-        if (root == null || !root.startsWith(Path.of(System.getProperty("java.io.tmpdir")))) {
-            return;
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
-                Files.delete(path);
-            }
-        }
-    }
 
     @Autowired
     @Qualifier("requestMappingHandlerMapping") private RequestMappingHandlerMapping mappings;
