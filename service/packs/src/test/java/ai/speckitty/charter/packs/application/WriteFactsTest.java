@@ -6,10 +6,12 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +19,8 @@ import org.junit.jupiter.api.Test;
 
 /** The facts a pack will have once a write is stored, laid over the facts it has now (IC-15). */
 class WriteFactsTest {
+
+    private static final SlotId REASONS = new SlotId("spdd:reasons-block");
 
     private static Urn directive(String id) {
         return Urn.parse("directive:" + id).orElseThrow();
@@ -136,5 +140,76 @@ class WriteFactsTest {
         Preset team = new Preset("team", "The team.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("B"))));
 
         assertThat(WriteFacts.withoutItems(team, directive("A"))).isSameAs(team);
+    }
+
+    // ---- the prompt facts (R9) -----------------------------------------------------------------------------------
+
+    private static Urn enhancement(String id) {
+        return Urn.parse("step_enhancement:" + id).orElseThrow();
+    }
+
+    private static PackCompositionFacts withPrompts(List<Relationship> edges) {
+        PackCompositionFacts facts = facts(edges, List.of());
+        return new PackCompositionFacts(
+                facts.changed(),
+                facts.defined(),
+                facts.references(),
+                facts.policy(),
+                facts.presets(),
+                facts.edges(),
+                facts.languages(),
+                facts.bindings(),
+                new PromptFacts(
+                        Map.of(
+                                Urn.action("software-dev", "plan"),
+                                List.of(new PromptFacts.DeclaredSlot(REASONS, false)),
+                                Urn.action("documentation", "write"),
+                                List.of()),
+                        Map.of(enhancement("reasons"), List.of(new PromptFacts.Fill(REASONS, "Reasons.\n")))));
+    }
+
+    @Test
+    void anArtifactWriteKeepsThePromptFacts() {
+        PackCompositionFacts facts = withPrompts(List.of());
+
+        assertThat(WriteFacts.withArtifact(facts, directive("C")).prompts())
+                .as("a per-artifact write writes no step prompt and no enhancement")
+                .isEqualTo(facts.prompts());
+    }
+
+    @Test
+    void aRegisteredEdgeWriteKeepsThePromptFacts() {
+        PackCompositionFacts facts = withPrompts(List.of());
+        Relationship overrides = edge("A", "OTHER", RelationType.OVERRIDES, "base");
+
+        PackCompositionFacts added = WriteFacts.withRegisteredEdges(facts, List.of(), List.of(overrides));
+
+        assertThat(added.prompts()).isEqualTo(facts.prompts());
+        assertThat(WriteFacts.withRegisteredEdges(added, List.of(overrides), List.of())
+                        .prompts())
+                .isEqualTo(facts.prompts());
+    }
+
+    @Test
+    void aRemovalOfAnotherKindKeepsThePromptFacts() {
+        Relationship outgoing = edge("A", "B", RelationType.SUGGESTS, null);
+        PackCompositionFacts facts = withPrompts(List.of(outgoing));
+
+        assertThat(WriteFacts.withoutArtifact(facts, directive("A"), List.of(outgoing))
+                        .prompts())
+                .isEqualTo(facts.prompts());
+    }
+
+    @Test
+    void aRemovedMissionTypeTakesItsStepPromptsAndARemovedEnhancementItsFills() {
+        PackCompositionFacts facts = withPrompts(List.of());
+
+        PackCompositionFacts typeless = WriteFacts.withoutArtifact(facts, Urn.missionType("software-dev"), List.of());
+        PackCompositionFacts unenhanced = WriteFacts.withoutArtifact(facts, enhancement("reasons"), List.of());
+
+        assertThat(typeless.prompts().declared().keySet()).containsExactly(Urn.action("documentation", "write"));
+        assertThat(typeless.prompts().fills()).isEqualTo(facts.prompts().fills());
+        assertThat(unenhanced.prompts().fills()).isEmpty();
+        assertThat(unenhanced.prompts().declared()).isEqualTo(facts.prompts().declared());
     }
 }
