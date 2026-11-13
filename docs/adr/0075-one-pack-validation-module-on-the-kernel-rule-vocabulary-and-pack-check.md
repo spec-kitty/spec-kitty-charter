@@ -156,7 +156,8 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 10. **The vendored port stays; the design is offered upstream** *(operator)*.
     - Charter cannot depend on the library today. It is an unreleased Java 21 `1.1.1-SNAPSHOT`, and it brings in
       commons-lang3, slf4j and first-party commons, which the kernel's purity rule refuses.
-    - The design of decision 1 is offered to `modular-validators` as an issue.
+    - The design of decision 1 is offered to `modular-validators` as an issue:
+      [sddevelopment-be/modular-validators#13](https://github.com/sddevelopment-be/modular-validators/issues/13).
     - Once upstream releases a core with no dependencies and this vocabulary, charter swaps the port for it in one
       change and deletes the port. The two never sit side by side.
 
@@ -229,7 +230,10 @@ Not chosen *(operator)*: see decision 10.
 - The open-packs drift watch research note (PR [#548](https://github.com/spec-kitty/spec-kitty-charter/pull/548))
 - [`modular-validators`](https://github.com/sddevelopment-be/modular-validators) and `kernel-validation-ATTRIBUTION.md`
 
-## Appendix: the upstream issue, ready to file
+## Appendix: the upstream issue
+
+Filed as [sddevelopment-be/modular-validators#13](https://github.com/sddevelopment-be/modular-validators/issues/13)
+on 2026-11-13. Its text, as proposed:
 
 > **Title:** A dependency-free core with rules that return many reasons, each with a code, location and severity
 >
