@@ -309,7 +309,8 @@
         "Cycle 2: H1/M1/L1/L3/L4 resolved (f3ad8c480); one place rule ClosureView.stepPlace; mutations A-D caught; Hexagonal green; full deployable 1781 green. LOW L-a (placed() refusal pass-through test) folded into consolidation.",
         "Operator ruling Q3 2026-11-13: the prompt read follows the one place rule",
         "Q3: ClosureView.effectivePrompt places the prompt at stepPlace (EffectivePromptQuery.answer takes the place); red scenario (probe 1 prompt read, promptPackId proj) + ClosureViewTest pin/twin first (cfdbf3593); contract wording for prompt path, promptPackId, WP09 fragment; WP07 refusal order corrected; L-a test. Also fixed SlotComposeTest compile break from the WP05/WP10 merge (05b0da69d). packs/activations/missions-edge tests, both features, contracts:check, full deployable:test (1791/0) green.",
-        "Q3 fold: slot check"
+        "Q3 fold: slot check",
+        "Q3 fold: slot check (C38) judges the prompt at the step's place via shared StepHolding.placeOf over facts (PromptFacts.steps filled in WP03's compositionFacts hunk); ClosureView.stepPlace delegates to it; kernel StepBearer withdrawn. Red scenario first (2347bc2c4), unit pins in SlotComposeTest/ClosureViewTest/PromptFactsTest. packs, activations, missions-edge, three features, contracts:check, full deployable:test (1793/0) green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
