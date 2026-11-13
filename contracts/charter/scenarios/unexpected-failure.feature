@@ -67,9 +67,14 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getPackArtifact        | /packs/qa/artifacts/directive/D                      |
       | listArtifactReferences | /packs/qa/artifacts/directive/D/references           |
       | getPackAgentProfile    | /packs/qa/artifacts/agent_profile/p                  |
+      | listPackAssets         | /packs/qa/artifacts/asset                            |
+      | getPackAsset           | /packs/qa/artifacts/asset/a                          |
+      | getPackAssetPayload    | /packs/qa/artifacts/asset/a/payload                  |
       | getPackMissionType     | /packs/qa/artifacts/mission_type/m                   |
       | getPackMissionStep     | /packs/qa/artifacts/mission_type/m/steps/s           |
       | getPackMissionSkeleton | /packs/qa/artifacts/mission_type/m/skeletons/spec.md |
+      | listPackPresets        | /packs/qa/presets                                    |
+      | getPackPreset          | /packs/qa/presets/team                               |
 
   Scenario Outline: <operation> of a stored activation that fails unexpectedly is 500 internal_error
     Given the activation "a-1" holds:

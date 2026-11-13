@@ -1,0 +1,174 @@
+title: Preset
+description: >-
+  One activation preset of a Charter Pack (presets/<id>.yaml, ADR-0042), as listPackPresets and getPackPreset answer
+  it: a named selection of artifacts that applyActivationPreset puts in force. A preset is a pack-level value, not an
+  artifact. For each activatable kind it lists, it carries one array, activated<Plural> in camel case, named after the
+  file's activated_<plural> key; a kind the preset lists nothing of is left out, never an empty array. Each item says whether it is must-have. The file's schema_version is not answered.
+type: object
+additionalProperties: false
+required:
+  - id
+  - description
+  - _links
+properties:
+  id:
+    type: string
+    description: The preset's identity, its file stem; the presetId of its path.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.id
+  description:
+    type: string
+    minLength: 1
+    description: What applying the preset puts in force.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.description
+  activatedDirectives:
+    type: array
+    minItems: 1
+    description: >-
+      The directives applying the preset selects, in the order the file lists them (activated_directives). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedTactics:
+    type: array
+    minItems: 1
+    description: >-
+      The tactics applying the preset selects, in the order the file lists them (activated_tactics). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedStyleguides:
+    type: array
+    minItems: 1
+    description: >-
+      The styleguides applying the preset selects, in the order the file lists them (activated_styleguides). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedToolguides:
+    type: array
+    minItems: 1
+    description: >-
+      The toolguides applying the preset selects, in the order the file lists them (activated_toolguides). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedParadigms:
+    type: array
+    minItems: 1
+    description: >-
+      The paradigms applying the preset selects, in the order the file lists them (activated_paradigms). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedProcedures:
+    type: array
+    minItems: 1
+    description: >-
+      The procedures applying the preset selects, in the order the file lists them (activated_procedures). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedAgentProfiles:
+    type: array
+    minItems: 1
+    description: >-
+      The agent profiles applying the preset selects, in the order the file lists them (activated_agent_profiles). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedMissionStepContracts:
+    type: array
+    minItems: 1
+    description: >-
+      The mission step contracts applying the preset selects, in the order the file lists them (activated_mission_step_contracts). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedGlossaryPacks:
+    type: array
+    minItems: 1
+    description: >-
+      The glossary packs applying the preset selects, in the order the file lists them (activated_glossary_packs). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedSkills:
+    type: array
+    minItems: 1
+    description: >-
+      The skills applying the preset selects, in the order the file lists them (activated_skills). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedAntiPatterns:
+    type: array
+    minItems: 1
+    description: >-
+      The anti patterns applying the preset selects, in the order the file lists them (activated_anti_patterns). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedMissionTypes:
+    type: array
+    minItems: 1
+    description: >-
+      The mission types applying the preset selects, in the order the file lists them (activated_mission_types). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  activatedStepEnhancements:
+    type: array
+    minItems: 1
+    description: >-
+      The step enhancements applying the preset selects, in the order the file lists them (activated_step_enhancements). Left out when the
+      preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+  symbol: Preset

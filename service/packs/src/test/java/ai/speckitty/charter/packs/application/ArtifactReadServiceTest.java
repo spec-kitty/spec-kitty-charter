@@ -14,6 +14,9 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.packs.domain.Asset;
+import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.AssetIdentifier;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
@@ -35,10 +38,14 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.ProcedureStep;
+import ai.speckitty.charter.packs.domain.Skill;
+import ai.speckitty.charter.packs.domain.SkillForm;
+import ai.speckitty.charter.packs.domain.SkillIdentifier;
 import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
@@ -63,6 +70,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -85,6 +93,8 @@ class ArtifactReadServiceTest {
     private static final PackIdentifier SIBLING = new PackIdentifier("pack-b");
     // The pack of the mission kinds' fixture (missionFixture): two mission types and three step contracts.
     private static final PackIdentifier MISSIONS = new PackIdentifier("missions");
+    // The pack of the literal kinds' fixture (#105, #107): two assets, one without a title, and a skill.
+    private static final PackIdentifier HOLDER = new PackIdentifier("holder");
     private static final String D1 = "sha256:" + "1".repeat(64);
     private static final String D2 = "sha256:" + "2".repeat(64);
     private static final PackRevision REVISION = PackRevision.compute(List.of("committed"));
@@ -107,7 +117,17 @@ class ArtifactReadServiceTest {
             EMPTY,
             Pack.builder().id(EMPTY).descriptor(descriptor(EMPTY)).build(),
             BARE,
-            Pack.builder().id(BARE).descriptor(descriptor(BARE)).build()));
+            Pack.builder().id(BARE).descriptor(descriptor(BARE)).build(),
+            HOLDER,
+            Pack.builder()
+                    .id(HOLDER)
+                    .descriptor(descriptor(HOLDER))
+                    .artifact(skill("land-pr"))
+                    .artifact(asset("run", "run.py", "Run the lint"))
+                    .artifact(asset("logo", "logo.png", null))
+                    .assetFile(new AssetFile("run.py", Payload.of(new byte[] {'1'})))
+                    .assetFile(new AssetFile("logo.png", Payload.of(new byte[] {(byte) 0x89, 'P'})))
+                    .build()));
 
     private final AtomicInteger digests = new AtomicInteger();
     /** What a descriptor lookup does to the inputs as it answers; nothing, unless a test plants a change. */
@@ -543,7 +563,7 @@ class ArtifactReadServiceTest {
     // ---- the served kinds -------------------------------------------------------------------------------------
 
     @Test
-    void theServedKindsAreTheFiveThenTheAgentProfileInTheirOrder() {
+    void theServedKindsAreTheFiveThenTheAssetAndTheSkillThenTheAgentProfileInTheirOrder() {
         assertThat(ArtifactReadService.SERVED)
                 .containsExactly(
                         ArtifactKind.TACTIC,
@@ -552,10 +572,14 @@ class ArtifactReadServiceTest {
                         ArtifactKind.PARADIGM,
                         ArtifactKind.TOOLGUIDE,
                         ArtifactKind.PROCEDURE,
+                        ArtifactKind.ASSET,
+                        ArtifactKind.SKILL,
                         ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
         assertThat(ArtifactReadService.listedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listedKind("procedure")).contains(ArtifactKind.PROCEDURE);
+        assertThat(ArtifactReadService.listedKind("asset")).contains(ArtifactKind.ASSET);
+        assertThat(ArtifactReadService.listedKind("skill")).contains(ArtifactKind.SKILL);
         assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("TACTIC")).isEmpty();
     }
@@ -579,7 +603,7 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void theTemplatedItemReadRendersTheFiveThenTheMissionStepContractButNoMissionTypeOrAgentProfile() {
+    void theTemplatedItemReadRendersTheFiveThenTheMissionStepContractButNoMissionTypeOrLiteralKind() {
         assertThat(ArtifactReadService.ITEM_KINDS)
                 .containsExactly(
                         ArtifactKind.TACTIC,
@@ -589,8 +613,16 @@ class ArtifactReadServiceTest {
                         ArtifactKind.TOOLGUIDE,
                         ArtifactKind.PROCEDURE,
                         ArtifactKind.MISSION_STEP_CONTRACT)
-                .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.AGENT_PROFILE);
+                .doesNotContain(
+                        ArtifactKind.MISSION_TYPE, ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL);
         assertThat(ArtifactReadService.LISTED).containsAll(ArtifactReadService.ITEM_KINDS);
+        assertThat(ArtifactReadService.LITERAL_ITEM_KINDS)
+                .containsExactly(ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL);
+        assertThat(ArtifactReadService.SERVED)
+                .as("every served kind is rendered by the templated item read or at its literal path, never both")
+                .allSatisfy(kind -> assertThat(ArtifactReadService.ITEM_KINDS.contains(kind))
+                        .as(kind.token())
+                        .isNotEqualTo(ArtifactReadService.LITERAL_ITEM_KINDS.contains(kind)));
         assertThat(ArtifactReadService.SERVED)
                 .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
     }
@@ -598,17 +630,20 @@ class ArtifactReadServiceTest {
     @Test
     void eachListedKindHasItsNotFoundCode() {
         // The five older kinds and the two mission kinds keep their own codes; the kinds served after them, the agent
-        // profile and the procedure, answer artifact_not_found (procedures.feature pins it end to end).
-        Map<ArtifactKind, RefusalCode> expected = Map.of(
-                ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND,
-                ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND,
-                ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
-                ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
-                ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
-                ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND,
-                ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
-                ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
-                ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND);
+        // profile, the procedure, the asset and the skill, answer artifact_not_found (procedures.feature pins it end to
+        // end).
+        Map<ArtifactKind, RefusalCode> expected = Map.ofEntries(
+                Map.entry(ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND),
+                Map.entry(ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND),
+                Map.entry(ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND),
+                Map.entry(ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND),
+                Map.entry(ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND),
+                Map.entry(ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND),
+                Map.entry(ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND),
+                Map.entry(ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND),
+                Map.entry(ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND),
+                Map.entry(ArtifactKind.ASSET, RefusalCode.ARTIFACT_NOT_FOUND),
+                Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND));
 
         assertThat(expected.keySet())
                 .as("the map names every listed kind, so a newly listed kind needs its row")
@@ -798,6 +833,58 @@ class ArtifactReadServiceTest {
                     assertThat(refused.getMessage()).contains("/packs/pack-a/artifacts/agent_profile/jenny");
                 });
         assertThat(codeOf(() -> service.item(ABSENT, "agent_profile", "jenny"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    }
+
+    // ---- the asset and the skill: listed, answered at their literal paths (#105, #107) --------------------------
+
+    @Test
+    void assetsAreListedBeforeSkillsAnAssetTitledByItsTitleOrItsId() {
+        assertThat(service.list(HOLDER, Optional.empty(), Optional.empty(), 50)
+                        .value()
+                        .items())
+                .extracting(ArtifactReadService.Summary::position, ArtifactReadService.Summary::title)
+                .containsExactly(
+                        tuple(position(ArtifactKind.ASSET, "logo"), "logo"),
+                        tuple(position(ArtifactKind.ASSET, "run"), "Run the lint"),
+                        tuple(position(ArtifactKind.SKILL, "land-pr"), "Land a PR"));
+    }
+
+    @Test
+    void anAssetFilterListsTheAssetsAndASkillFilterTheSkills() {
+        assertThat(service.list(HOLDER, Optional.of(ArtifactKind.ASSET), Optional.empty(), 50)
+                        .value()
+                        .items())
+                .extracting(ArtifactReadService.Summary::position)
+                .containsExactly(position(ArtifactKind.ASSET, "logo"), position(ArtifactKind.ASSET, "run"));
+        assertThat(service.list(HOLDER, Optional.of(ArtifactKind.SKILL), Optional.empty(), 50)
+                        .value()
+                        .items())
+                .extracting(ArtifactReadService.Summary::position)
+                .containsExactly(position(ArtifactKind.SKILL, "land-pr"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"asset, run", "skill, land-pr", "asset, ghost", "skill, ghost"})
+    void anAssetOrASkillIsNotRenderedByTheTemplatedItemReadAndIsKindNotFoundNamingItsLiteralPath(
+            String kind, String id) {
+        assertThatThrownBy(() -> service.item(HOLDER, kind, id))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND);
+                    assertThat(refused.getMessage())
+                            .contains("read it at /packs/holder/artifacts/" + kind + "/" + id + ".");
+                });
+        assertThat(codeOf(() -> service.item(ABSENT, kind, id))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    }
+
+    @Test
+    void anAssetOrASkillIsArtifactNotFoundWhenAbsent() {
+        assertThat(ArtifactReadService.absentCode(ArtifactKind.ASSET)).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+        assertThat(ArtifactReadService.absentCode(ArtifactKind.SKILL)).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+        ArtifactReadService withEdges = referenceFixture(() -> D1);
+        assertThat(codeOf(() -> withEdges.references(PACK, "asset", "ghost")))
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+        assertThat(codeOf(() -> withEdges.references(PACK, "skill", "ghost")))
+                .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
     }
 
     @Test
@@ -1064,6 +1151,29 @@ class ArtifactReadServiceTest {
                 .title("Title of " + id)
                 .intent("Intent of " + id)
                 .enforcement(Enforcement.REQUIRED);
+    }
+
+    private static Asset asset(String id, String path, @Nullable String title) {
+        return Asset.builder()
+                .id(new AssetIdentifier(id))
+                .packId(HOLDER)
+                .mime("application/octet-stream")
+                .path(path)
+                .title(title)
+                .build();
+    }
+
+    private static Skill skill(String id) {
+        return Skill.builder()
+                .id(new SkillIdentifier(id))
+                .packId(HOLDER)
+                .schemaVersion("1.0")
+                .title("Land a PR")
+                .description("Use when a pull request needs landing.")
+                .form(SkillForm.PROMPT)
+                .bodyPath(Optional.of(id + ".skill.md"))
+                .body(Optional.of("Goal: land it.\n"))
+                .build();
     }
 
     private static AgentProfile profile(String id) {

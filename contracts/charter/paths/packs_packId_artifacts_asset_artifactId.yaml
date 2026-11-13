@@ -1,0 +1,57 @@
+get:
+  operationId: getPackAsset
+  summary: Get one asset of a Charter Pack.
+  description: >-
+    One asset of one pack in the Artifact envelope (#105, ADR-0074 decisions 2, 10 and 13): kind asset, id, packId,
+    _links and, in member asset, the descriptor its sidecar declares: its id, its media type exactly as written, the
+    path of its payload and, when declared, its title and how it runs. The payload's bytes are not in it: the link
+    payload leads to them (getPackAssetPayload), and collection leads to the pack's asset list (listPackAssets). The
+    generic artifact item read (getPackArtifact) never renders an asset: this literal path is the read of the kind.
+
+    The pack is judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a 404
+    pack_not_found. An asset the pack does not hold is a 404 artifact_not_found. A configured pack without a readable
+    pack.yaml, or a pack holding a file the fingerprint covers that cannot be read, is a 500 pack_unreadable. The answer
+    is verified against the source fingerprint and carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the asset was read at, quoted, as a directive's or an agent profile's read answers
+    it. The read takes no If-None-Match and never answers 304; the payload read does.
+  tags:
+    - Assets
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+  responses:
+    '200':
+      description: The asset's descriptor.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision the asset was read at, quoted.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            asset:
+              $ref: ../examples/Artifact.asset.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/AssetNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

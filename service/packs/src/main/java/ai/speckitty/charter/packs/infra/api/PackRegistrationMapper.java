@@ -38,7 +38,8 @@ import org.springframework.stereotype.Component;
  * Maps the registration jobs and the stored pack summary to the contract shapes (T078): the
  * {@code PackRegistrationStatus} the {@code 202} and the status read answer, the {@code PackRegistration} of a succeeded
  * registration and of {@code GET /packs/{packId}}, and the problem of a refused one. The status carries the links the
- * relation table allows: {@code self}, and {@code pack} once the registration succeeded.
+ * relation table allows: {@code self}, and {@code pack} once the registration succeeded. A stored pack links
+ * {@code self}, {@code artifacts}, {@code doc} when it holds a document, and {@code presets}.
  */
 @Component
 final class PackRegistrationMapper {
@@ -48,6 +49,7 @@ final class PackRegistrationMapper {
     private static final String REGISTRATIONS = "pack-registrations";
     private static final String ARTIFACTS = "artifacts";
     private static final String DOC = "doc";
+    private static final String PRESETS = "presets";
 
     private final Hypermedia links;
     private final RefusalHandler refusals;
@@ -163,6 +165,7 @@ final class PackRegistrationMapper {
         if (hasDocument) {
             own.put(Relation.DOC, links.link(PACKS, packId, DOC));
         }
+        own.put(Relation.PRESETS, links.link(PACKS, packId, PRESETS));
         return new PackRegistration(
                 packId,
                 descriptor.packId(),
