@@ -102,8 +102,10 @@ Slice C and slice D run first. After them, in this order:
 - **Why now:** these are cutover reads core makes today, decided but not served. Presets are P1, and a guard
   names its implementation as `asset:<id>`, so a client that runs a guard needs the asset read.
 - **Depends on:** nothing open. Open-packs follows the `glossary` shape once #106 lands.
+- **State:** delivered by PR #546 except #106. The glossary read is now its own Mission (operator ruling at
+  specify, 2026-11-12), so A2 does not wait for it.
 - **Size:** L: six item operations in two trees, plus the payload and term reads.
-- **Risks:** #106 is a model change of its own, so it goes last and may split into its own Mission. The
+- **Risks:** #106 is a model change of its own, so it became its own Mission. The
   operations widen the contract; that is allowed in a 0.x minor.
 
 ### 3. F: the kind taxonomy and the mission-type schema (#537), medium to large
@@ -119,8 +121,8 @@ Slice C and slice D run first. After them, in this order:
 - **Why now:** R18 is one of the last undecided reads in epic #94, and core's scope migration moved these
   model rulings here. They change one model (which kinds exist, and how steps are authored), so they land
   together.
-- **Depends on:** A2, so the taxonomy includes `asset`, `skill` and `glossary`. Open-packs follows the
-  schema; the drift watch shows when it has.
+- **Depends on:** A2's kinds (delivered), so the taxonomy includes `asset` and `skill`; `glossary` joins it when
+  #106's Mission lands. Open-packs follows the schema; the drift watch shows when it has.
 - **Size:** M to L. **Risks:** #515 sets each relation's endpoint kinds, and open-packs edges that break them
   are refused, which the drift watch will show. Retiring a kind removes contract
   operations, which is a `### Breaking` CHANGELOG entry in a 0.x minor.
