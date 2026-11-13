@@ -226,7 +226,8 @@ class EffectiveAssetsControllerTest {
     @Test
     void thePayloadIsTheWinningCopysBytesWithItsMimeTheActivationsTagAndTheFingerprint() throws Exception {
         mvc(null)
-                .perform(get("/api/v1/activations/a-1/artifacts/asset/run/payload"))
+                .perform(get("/api/v1/activations/a-1/artifacts/asset/run/payload")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "text/x-python"))
                 .andExpect(header().string("ETag", "\"" + TAG + "\""))
@@ -244,7 +245,9 @@ class EffectiveAssetsControllerTest {
             "/api/v1/activations/a-1/artifacts/asset/run/payload"
         }) {
             for (String ifNoneMatch : new String[] {"\"" + TAG + "\"", "*"}) {
-                mvc.perform(get(path).header("If-None-Match", ifNoneMatch)).andExpect(status().isNotModified());
+                mvc.perform(get(path).header("If-None-Match", ifNoneMatch))
+                        .andExpect(status().isNotModified())
+                        .andExpect(header().doesNotExist("Charter-Source-Fingerprint"));
             }
             // a value that is not an entity-tag list matches nothing
             mvc.perform(get(path).header("If-None-Match", "not an entity-tag list"))
