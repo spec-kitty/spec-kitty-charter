@@ -1,6 +1,6 @@
 # Research: Slice A2 reads
 
-The operator asked for the mission to run end to end. Reversible calls are made here and reported at check-in (2026-11-12). Each call below is one of those, and the operator can reverse any of them. The post-plan brownfield squad (`research/squad-post-plan.md`) revised R2, R3, R6, R7, R8, R10 and R11, and added R13 to R15.
+The operator asked for the mission to run end to end, with reversible calls made in planning (2026-11-12). On 2026-11-13 the operator accepted R1, R3, R5, R6 and R14 as proposed: each is an operator ruling, status Accepted. The post-plan brownfield squad (`research/squad-post-plan.md`) revised R2, R3, R6, R7, R8, R10 and R11, and added R13 to R15.
 
 ## R1. Effective skill and references reads answer whatever the state
 
@@ -21,7 +21,7 @@ The operator asked for the mission to run end to end. Reversible calls are made 
   - Under an activation, the held assets are listed at `/activations/{a}/artifacts/asset`.
   - The templated effective item read refuses `asset` with `kind_not_found` and names the literal path.
 - **Rationale**: the effective list's items carry state, reason, policy and required (R2). The packs-side merge already rules that assets are never listed by the effective reads (decision `01M702A71YF7WNDTG2AA89K8ZA`, `ClosureView.java:704-706`).
-- **Recording**: an ADR-0074 amendment section (dated 2026-11-12). It is the agent's call under the operator's "make reversible calls" instruction, and an open review item at check-in.
+- **Recording**: an ADR-0074 amendment section (dated 2026-11-12). Operator ruling of 2026-11-13, status Accepted.
 
 ## R4. Absent asset or skill
 

@@ -107,7 +107,7 @@ python3 scripts/check_docs.py   # or the documented docs-check entry point
 
 ## Risks and reviewer guidance
 
-The ADR amendment must say plainly that it is an agent call awaiting operator review.
+The ADR amendment must say plainly that it is an operator ruling of 2026-11-13, status Accepted.
 
 ## Branch Strategy
 
