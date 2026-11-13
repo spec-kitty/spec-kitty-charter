@@ -42,7 +42,7 @@ gate would inherit the silent pass over an unmodelled kind, so #547 lands before
 | #555 (move into `pack-validation`) | Moves the same classes; names #547 as landing with it or before it. | This lands first. #555 moves the result as is. No overlap with open PR #561 (#553), which touches none of these files. |
 | #559 (publish the packs contract) | Consumers pin `file-kinds.yaml`. | Unaffected. The new schema check reads the bundled table, so a published table's schemas are held to the round trip. |
 | open-packs #252 (round trip as an open-packs gate) | The consumer of this fix. | The drift output changes form (`UNEXPECTED_RED <path> (<kind>): …`). Nothing parses it, either in charter's `open-packs-drift.yml` or in open-packs' workflows. |
-| open-packs #255 | Could not be read: this session has no GitHub API access to open-packs. | Not dispositioned here; the orchestrator should check it. |
+| open-packs #255 | Could not be read: this session has no GitHub API access to open-packs. | Not checked here; the orchestrator should check it. |
 | Slice C (#467) | No open PR. | No overlap. |
 
 **Similar surfaces.** A read-only sweep looked for other places that check "every file" but iterate only what an
@@ -59,7 +59,7 @@ adapter produced. Its findings are recorded below under "Similar surfaces".
    neither modelled nor listed in `kinds:`, and on a `kinds:` entry that is not a schema of the table. The modelled
    check stays in `evaluate` (`BASELINED_MODELLED_KIND`). `REQUIRED_KINDS` and the `modelledKinds == bound` assertion
    are removed: the schema check supersedes them, and `bound` restated the adapter's own list.
-3. **One parameterised gate test over `ExamplePacks.names()`** (done-when 3). It replaces
+3. **One parameterized gate test over `ExamplePacks.names()`** (done-when 3). It replaces
    `theBuiltInPackRoundTripsAsExpected` and `theOrgPackRoundTripsWholeWithItsFragment`. To share one set of lists
    across three runs:
    - file entries, known failures and exclusions name their pack as the first path segment;
@@ -105,4 +105,12 @@ There is no new red. The new judgement only adds problems, so no earlier red is 
 
 ## Similar surfaces
 
-See the PR body; findings below MEDIUM are folded or dropped there, per `docs/development/issue-tracker.md`.
+A read-only sweep of `service/` found nothing HIGH. No correctness gate passes vacuously today.
+
+| Finding | Severity | Disposition |
+| --- | --- | --- |
+| `ExamplePackCoverageTest.schemaGaps` lets a schema skip its example file when the store reports a placeholder as unmodelled (`leftUnmodelled`), so the excuse comes from what the store does, not from a list. A new unbound schema with no example would pass that test. | MEDIUM, mitigated | Not done here. The new `everyFileKindsSchemaIsModelledOrListedWithAReason` fails on the same input, so the suite still goes red. Replacing the excuse with an explicit allowlist is out of #547's scope; it is recorded in the PR body. |
+| `ExamplePackCoverageTest.fileGlobs` silently drops an `ArtifactKind` whose token is spelled differently from its schema. | LOW | Dropped (rule 1). The table's own vocabulary tests pin the lists. |
+| `WholePackExamplesRoundTripTest.meaning()` leaves out the policy, and its round trip compares neither the reloaded violations nor `unmodelled()`. | MEDIUM, mitigated | Not done here. `PolicyRoundTripTest` and `ExamplePacksTest` cover the store write and unmodelled files. #555 rebuilds this round trip in `pack-validation`. Recorded in the PR body. |
+
+No issue is filed: none of these is an uncovered correctness, data or security risk (`docs/development/issue-tracker.md`, rule 1).
