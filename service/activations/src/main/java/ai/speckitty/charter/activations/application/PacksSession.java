@@ -144,8 +144,8 @@ public interface PacksSession {
 
     /**
      * The effective prompt of one step under a document's request (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9;
-     * research R8): the stored prompt at the merged winner's place of {@code action:<missionType>/<action>}, every slot
-     * it declares and the fragments of the step enhancements in force that fill each. It judges no name and no mission
+     * research R8 as amended by operator ruling Q3): the stored prompt at the step's place ({@link #stepPlace}), every
+     * slot it declares and the fragments of the step enhancements in force that fill each. It judges no name and no mission
      * type: the caller has run {@link #requireAction} and found the mission type in force ({@link #isInForce}). It
      * answers from this session's read and its in-force resolution, whose slot check it runs first, as {@link #inForce}
      * does; the prompt is read against the digest the session was verified at.

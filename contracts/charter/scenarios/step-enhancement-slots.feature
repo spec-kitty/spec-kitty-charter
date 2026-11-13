@@ -2,8 +2,8 @@
 Feature: A step enhancement in force fills only a slot the prompt in force declares
   ADR-0066 decision 8, phase 2 (FR-001, FR-006, SC-002, SC-003; #438). C38, the slot declared: every slot a step
   enhancement in force names is declared by the prompt in force of its step. The prompt in force is the step prompt at
-  the merged winner's place of action:<type>/<step> (research R8, StepHolding), so a layer override of the mission type
-  that replaces the step's prompt replaces its slots too. Only an enhancement in force refuses (OD-1 (B)), and only the
+  the step's place (research R8 as amended by operator ruling Q3, StepHolding.placeOf), so a layer override of the
+  mission type that replaces the step's prompt replaces its slots too. Only an enhancement in force refuses (OD-1 (B)), and only the
   winning copy of it is judged. The refusal is prompt_slot_missing, naming the enhancement, its pack, the slot and the
   pack that holds the prompt in force:
 

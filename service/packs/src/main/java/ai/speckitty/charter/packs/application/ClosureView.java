@@ -220,7 +220,7 @@ public record ClosureView(
          * bytes as stored, never a re-rendering. A source that cannot read the stored step files answers a wiring fault
          * ({@link IllegalStateException}).
          *
-         * @param pack the configured pack at the merged winner's place of the step
+         * @param pack the configured pack at the step's place ({@link StepHolding#placeOf})
          * @param step the step, {@code action:M/s}
          * @return the prompt's bytes; empty when that pack's mission type gives the step no prompt
          */
@@ -608,7 +608,7 @@ public record ClosureView(
     /**
      * Refuses a request whose step enhancements in force name a slot the prompt in force of their step does not declare
      * (C38, FR-001; {@link SlotCompose}): an enhancement in force, its winning copy only, judged against the prompt at
-     * the merged winner's place of its step. {@link #inForce} stays a pure resolution: a caller that composes asks this
+     * its step's place ({@link StepHolding#placeOf}). {@link #inForce} stays a pure resolution: a caller that composes asks this
      * explicitly, once the states are resolved (squad A3): the composing reads, the registration gate per stored
      * activation and the activation writes before they store. It reads nothing more than this view (NFR-007).
      *
