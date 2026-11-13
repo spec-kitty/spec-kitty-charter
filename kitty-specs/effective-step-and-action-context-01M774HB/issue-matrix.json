@@ -133,7 +133,7 @@
       "wp": null
     },
     "#467": {
-      "evidence_ref": "Slice C tracking issue; ticked at closeout",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/563",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -141,7 +141,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP08"
     },
     "#484": {
