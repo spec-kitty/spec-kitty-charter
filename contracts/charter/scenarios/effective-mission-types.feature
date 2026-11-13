@@ -787,3 +787,120 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     When I GET "/packs/main/artifacts/mission_type/software-dev/steps/implement"
     Then the response status is 404
     And the problem code is "action_not_found"
+
+  Scenario: WP09 Q3 - the slot check judges the prompt at the step's place, the one the prompt read serves
+    Operator ruling Q3: every judgement of the prompt in force places it by the one rule, the slot check (C38) too.
+    proj's winning software-dev declares specify, and only main's graph declares action:software-dev/specify, so the
+    prompt in force is proj's, which declares no spdd:reasons-block; main's, which declares it, is not in force. The
+    enhancement reasons in force fills that slot: the prompt read and an activation write that puts it in force refuse
+    prompt_slot_missing, naming proj, never judging main's prompt. The twin differs only in proj's prompt.
+    Given the org pack "main" with the file "missions/software-dev/steps/specify.prompt.md":
+      """
+      # Specify at org
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/reasons.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: reasons
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: reasons.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/reasons.prompt-fragment.md":
+      """
+      Fill the REASONS canvas.
+      """
+    And the org pack "main" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/specify
+        kind: action
+        label: specify
+      edges:
+      - source: step_enhancement:reasons
+        target: action:software-dev/specify
+        relation: enhances
+      """
+    And the project pack "proj" with the file "missions/software-dev/steps/specify.prompt.md":
+      """
+      # Specify at project
+      """
+    And the activation "a-3" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
+      """
+    When I GET "/activations/a-3/mission-types/software-dev/actions/specify/prompt"
+    Then the response status is 500
+    And the problem code is "prompt_slot_missing"
+    And the field at "/detail" contains "step_enhancement:reasons"
+    And the field at "/detail" contains "`proj-pack`"
+    When I PUT "/activations/a-4" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
+      """
+    Then the response status is 422
+    And the problem code is "prompt_slot_missing"
+    When I GET "/activations/a-4"
+    Then the response status is 404
+
+  Scenario: WP09 Q3 - the twin: proj's prompt at the step's place declares the slot, so the read answers and the write is stored
+    The twin of the scenario above, differing only in proj's prompt, which declares spdd:reasons-block: the prompt read
+    answers proj's prompt with the fragment of reasons in the slot, and the activation write is stored.
+    Given the org pack "main" with the file "missions/software-dev/steps/specify.prompt.md":
+      """
+      # Specify at org
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/reasons.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: reasons
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: reasons.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/reasons.prompt-fragment.md":
+      """
+      Fill the REASONS canvas.
+      """
+    And the org pack "main" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/specify
+        kind: action
+        label: specify
+      edges:
+      - source: step_enhancement:reasons
+        target: action:software-dev/specify
+        relation: enhances
+      """
+    And the project pack "proj" with the file "missions/software-dev/steps/specify.prompt.md":
+      """
+      # Specify at project
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the activation "a-3" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
+      """
+    When I GET "/activations/a-3/mission-types/software-dev/actions/specify/prompt"
+    Then the response status is 200
+    And the field at "/promptPackId" is "proj"
+    And the field at "/slots/0/slot" is "spdd:reasons-block"
+    And the field at "/slots/0/fragments/0/enhancement" is "reasons"
+    When I PUT "/activations/a-4" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
+      """
+    Then the response status is 201
