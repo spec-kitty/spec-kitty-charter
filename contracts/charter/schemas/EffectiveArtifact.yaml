@@ -2,8 +2,8 @@ title: EffectiveArtifact
 description: >-
   One artifact of the merged closure under an activation (ADR-0020 D7): the version the layer merge keeps, with its
   state and the reason for it. Every artifact of the closure is listed, so "in force" is state active (operator
-  ruling Q1). satisfiedBy is present only for a required artifact that is out of force: it is the active artifact that
-  overrides it and so satisfies the requirement, never an enhancer (research R11). suggestion is present only for an artifact whose reason is not_selected and whose suggesting artifact is in force, reached only through a suggests edge,
+  ruling Q1). satisfiedBy is present only for a required artifact that is out of force: it lists every active artifact
+  that overrides it and so satisfies the requirement, never an enhancer (research R11), by level then URN (#439). suggestion is present only for an artifact whose reason is not_selected and whose suggesting artifact is in force, reached only through a suggests edge,
   with that edge's when and reason, and absent for one reached through requires or another hard relation (#408 ruling 3).
 
   _links holds effective-artifact, the read of this artifact under the activation (getEffectiveArtifact, or
@@ -72,7 +72,7 @@ properties:
     description: >-
       True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
       none of whose targets is in force or is bound to a mission type not in force (E9). A required one
-      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names every such override), or it
       cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
       mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
     x-derived:
@@ -80,7 +80,21 @@ properties:
       inputs:
       - schemas/ActivationConfig.yaml
   satisfiedBy:
-    $ref: ArtifactReference.yaml
+    type: array
+    minItems: 1
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      Present only for a required artifact that is out of force: every active artifact that overrides it, directly or
+      through a chain, and so satisfies the requirement, never an enhancer. Sorted by the level of the pack that holds
+      the version in force of each (built-in, then org, then project), then by full URN in Unicode code point order
+      (operator ruling of 2026-11-12 on #439); absent, never empty, when none does.
+    x-derived:
+      rule: >-
+        The artifacts of the effective set whose overrides edges reach the artifact, directly or through a chain (rules
+        E5, E9), sorted by the level of their winning pack, then by URN.
+      inputs:
+      - schemas/ActivationConfig.yaml
   suggestion:
     $ref: EffectiveArtifactSuggestion.yaml
   policy:

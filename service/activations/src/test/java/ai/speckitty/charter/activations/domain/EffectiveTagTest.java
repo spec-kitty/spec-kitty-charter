@@ -261,6 +261,10 @@ class EffectiveTagTest {
         assertThat(sha256("charter-effective-read\0v2\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
                 .as("the v2 literal is the v2 recipe over the same inputs")
                 .isEqualTo(graphV2);
+        assertThat(sha256("charter-effective-read\0v2\ncontext\n" + GOLDEN_REVISION.token()
+                        + "\nsha256:one\nmissionType=software-dev\naction=implement\ndepth=0"))
+                .as("the v2 literal is the v2 recipe over the same inputs")
+                .isEqualTo(contextV2);
         assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
                 .isNotEqualTo(graphV2);
         assertThat(EffectiveTag.context(

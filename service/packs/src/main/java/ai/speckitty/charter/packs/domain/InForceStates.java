@@ -18,7 +18,7 @@ import java.util.Optional;
  * @param denyNotApplied the deny entries that were not applied: on a locked artifact, or on a required one that nothing
  *     else satisfies (ADR-0013 D2), in URN order
  * @param overrideNotApplied the {@code overrides} edges of an artifact in force that were not applied because the
- *     target is not {@code open} (C27), in target then overrider order
+ *     target is not {@code open} (C27): each target once, in URN order, with every overrider in force whose edge names it
  * @param requiredNotHeld the must-have items that no pack of the closure holds (A10, C31), in URN order
  * @param requiredNotInForce the required or locked artifacts that cannot stand in force (the enhancer rule and the
  *     binding rule win over the floor), in URN order
@@ -103,10 +103,11 @@ public record InForceStates(
      * @param state in force, out of force, or denied
      * @param reason the first rule that decided the state
      * @param required whether a governing preset requires it or a pack locks it; it no longer implies {@code ACTIVE}
-     * @param satisfiedBy the artifact in force that overrides it, directly or through a chain, for a required artifact
-     *     that is out of force; the smallest URN when several do. Never an enhancer
-     * @param overriddenBy the artifact in force that hides it, directly or through a chain (the smallest URN when several
-     *     do), present exactly when {@code reason} is {@link Reason#OVERRIDDEN}
+     * @param satisfiedBy every artifact in force that overrides it, directly or through a chain, for a required artifact
+     *     that is out of force, by the level of its winning pack (built-in, org, project) and then by URN in code point
+     *     order (operator ruling of 2026-11-12 on #439, option (b)); empty otherwise. Never an enhancer
+     * @param overriddenBy every artifact in force that hides it, directly or through a chain, in the same order; non-empty
+     *     exactly when {@code reason} is {@link Reason#OVERRIDDEN}
      * @param bucket the skipped-report bucket, present only for an artifact the request selects or denies that is not in
      *     force
      */
@@ -115,8 +116,8 @@ public record InForceStates(
             State state,
             Reason reason,
             boolean required,
-            Optional<Urn> satisfiedBy,
-            Optional<Urn> overriddenBy,
+            List<Urn> satisfiedBy,
+            List<Urn> overriddenBy,
             Optional<Bucket> bucket) {
 
         /**
@@ -126,16 +127,16 @@ public record InForceStates(
          * @param state the state
          * @param reason the reason
          * @param required whether it is on the floor or locked
-         * @param satisfiedBy the artifact in force that satisfies its requirement
-         * @param overriddenBy the artifact in force that hides it
+         * @param satisfiedBy the artifacts in force that satisfy its requirement
+         * @param overriddenBy the artifacts in force that hide it
          * @param bucket its skipped-report bucket
          */
         public ArtifactState {
             Objects.requireNonNull(urn, "urn");
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(reason, "reason");
-            Objects.requireNonNull(satisfiedBy, "satisfiedBy");
-            Objects.requireNonNull(overriddenBy, "overriddenBy");
+            satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
+            overriddenBy = List.copyOf(Objects.requireNonNull(overriddenBy, "overriddenBy"));
             Objects.requireNonNull(bucket, "bucket");
         }
 
@@ -170,22 +171,27 @@ public record InForceStates(
     }
 
     /**
-     * An override that was not applied.
+     * The overrides of one target that were not applied.
      *
      * @param target the artifact that stays, because it is not {@code open}
-     * @param overriddenBy the artifact in force whose {@code overrides} edge names it
+     * @param overriddenBy every artifact in force whose {@code overrides} edge names it, by the level of its winning pack
+     *     and then by URN (#439); never empty
      */
-    public record OverrideNotApplied(Urn target, Urn overriddenBy) {
+    public record OverrideNotApplied(Urn target, List<Urn> overriddenBy) {
 
         /**
-         * Checks the fields.
+         * Checks and copies the fields.
          *
          * @param target the artifact that stays
-         * @param overriddenBy the overrider
+         * @param overriddenBy the overriders
+         * @throws IllegalArgumentException when no overrider is named
          */
         public OverrideNotApplied {
             Objects.requireNonNull(target, "target");
-            Objects.requireNonNull(overriddenBy, "overriddenBy");
+            overriddenBy = List.copyOf(Objects.requireNonNull(overriddenBy, "overriddenBy"));
+            if (overriddenBy.isEmpty()) {
+                throw new IllegalArgumentException("an override not applied names its overrider");
+            }
         }
     }
 

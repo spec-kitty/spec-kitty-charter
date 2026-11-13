@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
@@ -13,7 +14,6 @@ import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import ai.speckitty.charter.packs.domain.InForceStates.RequiredNotInForce;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -110,6 +110,27 @@ public final class InForceResolution {
         Model model = new Model(merged, edges, request);
         model.refuseOverrideCycle();
         return model.states(model.solve());
+    }
+
+    /**
+     * Two URNs by their full text in Unicode code point order, which differs from {@link Urn#compareTo} (UTF-16 units)
+     * only past the Basic Multilingual Plane.
+     */
+    private static int byCodePoint(Urn left, Urn right) {
+        String a = left.toString();
+        String b = right.toString();
+        int i = 0;
+        int j = 0;
+        while (i < a.length() && j < b.length()) {
+            int x = a.codePointAt(i);
+            int y = b.codePointAt(j);
+            if (x != y) {
+                return Integer.compare(x, y);
+            }
+            i += Character.charCount(x);
+            j += Character.charCount(y);
+        }
+        return Integer.compare(a.length() - i, b.length() - j);
     }
 
     /** What the strata settle: the set in force, what the pruning removed, and the overrides still applied. */
@@ -353,18 +374,22 @@ public final class InForceResolution {
             for (Urn urn : required) {
                 if (!locked.contains(urn)
                         && !inForce.contains(urn)
-                        && overriderOf(urn, inForce, reach).isEmpty()) {
+                        && overridersOf(urn, inForce, reach).isEmpty()) {
                     with.add(urn);
                 }
             }
             return minus(with, hiddenBy(with, reach));
         }
 
-        /** The smallest artifact of the set that overrides the target, directly or through a chain. */
-        private Optional<Urn> overriderOf(Urn target, Set<Urn> among, Map<Urn, Set<Urn>> reach) {
+        /**
+         * Every artifact of the set that overrides the target, directly or through a chain, in the ruled order (operator
+         * ruling of 2026-11-12 on #439, option (b)): by the level of its winning pack, then by URN.
+         */
+        private List<Urn> overridersOf(Urn target, Set<Urn> among, Map<Urn, Set<Urn>> reach) {
             return among.stream()
                     .filter(overrider -> reach.getOrDefault(overrider, Set.of()).contains(target))
-                    .min(Comparator.naturalOrder());
+                    .sorted(this::inRuledOrder)
+                    .toList();
         }
 
         private Set<Urn> hiddenBy(Set<Urn> overriders, Map<Urn, Set<Urn>> reach) {
@@ -435,21 +460,34 @@ public final class InForceResolution {
                     bucketOf(urn, state, reason));
         }
 
-        /** The artifact in force that satisfies a required artifact that is out of force (E5, E9). */
-        private Optional<Urn> satisfiedBy(Urn urn, Outcome outcome) {
+        /** Every artifact in force that satisfies a required artifact that is out of force (E5, E9), in the ruled order. */
+        private List<Urn> satisfiedBy(Urn urn, Outcome outcome) {
             if (!required.contains(urn)
                     || locked.contains(urn)
                     || outcome.inForce().contains(urn)) {
-                return Optional.empty();
+                return List.of();
             }
-            return overriderOf(urn, outcome.inForce(), outcome.reach());
+            return overridersOf(urn, outcome.inForce(), outcome.reach());
         }
 
-        /** The artifact in force that hides an artifact whose reason is {@link Reason#OVERRIDDEN} (the same walk as E5). */
-        private Optional<Urn> overriddenBy(Urn urn, Outcome outcome, Reason reason) {
-            return reason == Reason.OVERRIDDEN
-                    ? overriderOf(urn, outcome.inForce(), outcome.reach())
-                    : Optional.empty();
+        /**
+         * Every artifact in force that hides an artifact whose reason is {@link Reason#OVERRIDDEN} (the same walk as E5), in
+         * the ruled order.
+         */
+        private List<Urn> overriddenBy(Urn urn, Outcome outcome, Reason reason) {
+            return reason == Reason.OVERRIDDEN ? overridersOf(urn, outcome.inForce(), outcome.reach()) : List.of();
+        }
+
+        /** The ruled order of two overriders (#439): the level of the winning pack (built-in, org, project), then the URN. */
+        private int inRuledOrder(Urn left, Urn right) {
+            int byLevel = levelOf(left).compareTo(levelOf(right));
+            return byLevel != 0 ? byLevel : byCodePoint(left, right);
+        }
+
+        /** The level of the pack that holds the version in force of an artifact of the closure. */
+        private PackLevel levelOf(Urn urn) {
+            return Objects.requireNonNull(merged.winners().get(urn), "an overrider in force has a winner")
+                    .level();
         }
 
         private State decided(Urn urn, Outcome outcome, Reason reason) {
@@ -525,18 +563,27 @@ public final class InForceResolution {
             return entries;
         }
 
+        /**
+         * The overrides not applied because the target is not {@code open} (C27): each target in force once, with every
+         * overrider in force whose edge names it, in the ruled order.
+         */
         private List<OverrideNotApplied> overrideNotApplied(Outcome outcome) {
-            List<OverrideNotApplied> entries = new ArrayList<>();
+            Map<Urn, Set<Urn>> byTarget = new HashMap<>();
             notApplied.forEach((source, targets) -> {
                 if (outcome.inForce().contains(source)) {
                     targets.stream()
                             .filter(outcome.inForce()::contains)
-                            .forEach(target -> entries.add(new OverrideNotApplied(target, source)));
+                            .forEach(target -> byTarget.computeIfAbsent(target, ignored -> new HashSet<>())
+                                    .add(source));
                 }
             });
-            entries.sort(
-                    Comparator.comparing(OverrideNotApplied::target).thenComparing(OverrideNotApplied::overriddenBy));
-            return entries;
+            return sorted(byTarget.keySet()).stream()
+                    .map(target -> new OverrideNotApplied(
+                            target,
+                            byTarget.getOrDefault(target, Set.of()).stream()
+                                    .sorted(this::inRuledOrder)
+                                    .toList()))
+                    .toList();
         }
 
         private static List<Urn> sorted(Set<Urn> urns) {

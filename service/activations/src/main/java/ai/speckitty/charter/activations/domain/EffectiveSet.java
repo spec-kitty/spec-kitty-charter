@@ -153,7 +153,8 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
      * @param level the level of that pack
      * @param state in force, out of force, or denied
      * @param required whether a governing preset requires it or a pack locks it; it does not imply {@code active}
-     * @param satisfiedBy the artifact in force that overrides a required artifact that is out of force; never an
+     * @param satisfiedBy every artifact in force that overrides a required artifact that is out of force, by the level of
+     *     its winning pack and then by URN (operator ruling of 2026-11-12 on #439); empty otherwise, and never an
      *     enhancer
      * @param policy the mutability level of the version in force
      * @param reason the rule that decided the state
@@ -166,7 +167,7 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
             PackLevel level,
             State state,
             boolean required,
-            Optional<ArtifactRef> satisfiedBy,
+            List<ArtifactRef> satisfiedBy,
             Policy policy,
             Reason reason,
             Optional<Suggestion> suggestion) {
@@ -189,7 +190,7 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
             Objects.requireNonNull(packId, "packId");
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(state, "state");
-            Objects.requireNonNull(satisfiedBy, "satisfiedBy");
+            satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
             Objects.requireNonNull(policy, "policy");
             Objects.requireNonNull(reason, "reason");
             Objects.requireNonNull(suggestion, "suggestion");
@@ -242,7 +243,7 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
                             artifacts,
                             artifact -> artifact.required()
                                     && (artifact.state() == State.ACTIVE
-                                            || artifact.satisfiedBy().isPresent())),
+                                            || !artifact.satisfiedBy().isEmpty())),
                     count(artifacts, artifact -> artifact.policy() == Policy.LOCKED),
                     skipped.count());
         }
@@ -422,11 +423,7 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
                         .map(state -> new SkippedDeactivated(state.ref(), false, List.of()))
                         .toList(),
                 inBucket(states, Bucket.OVERRIDDEN)
-                        .map(state -> new Overridden(
-                                state.ref(),
-                                state.overriddenBy()
-                                        .orElseThrow(() -> new IllegalStateException(
-                                                state.ref() + " is overridden by an artifact in force"))))
+                        .map(state -> new Overridden(state.ref(), state.overriddenBy()))
                         .toList());
     }
 

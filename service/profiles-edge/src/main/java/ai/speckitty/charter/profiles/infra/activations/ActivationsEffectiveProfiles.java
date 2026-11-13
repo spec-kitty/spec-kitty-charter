@@ -125,7 +125,9 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
                 artifact.required(),
                 artifact.policy().token(),
                 artifact.reason().token(),
-                artifact.satisfiedBy().map(ActivationsEffectiveProfiles::urn),
+                artifact.satisfiedBy().stream()
+                        .map(ActivationsEffectiveProfiles::urn)
+                        .toList(),
                 suggestion.map(words -> new EdgeWords(words.when(), words.reason())));
     }
 
