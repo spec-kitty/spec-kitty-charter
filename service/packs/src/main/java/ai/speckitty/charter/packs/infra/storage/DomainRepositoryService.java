@@ -528,7 +528,7 @@ public final class DomainRepositoryService
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
-        FilesystemPackStore.PackRead read = resolved.store.read(resolved.key);
+        FilesystemPackStore.PackRead read = resolved.store.read(resolved.key, graphs);
         Pack assembled = readable(pack, read, graphs);
         MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
         Set<String> changed = new LinkedHashSet<>();
@@ -843,7 +843,8 @@ public final class DomainRepositoryService
     }
 
     private static Pack assemble(PackIdentifier pack, Resolved resolved) {
-        return assemble(pack, resolved.store.read(resolved.key), resolved.store.readGraphs(resolved.key));
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        return assemble(pack, resolved.store.read(resolved.key, graphs), graphs);
     }
 
     private static Pack assemble(

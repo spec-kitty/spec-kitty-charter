@@ -356,6 +356,20 @@ final class FilesystemPackStore {
     }
 
     /**
+     * Reads a pack, tolerating broken element files, judging the {@code overrides} edges of graph documents the caller
+     * has already read, so one read of a pack parses its graph documents once and judges the same documents it
+     * assembles.
+     *
+     * @param id the pack
+     * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
+     * @return as {@link #read(PackIdentifier)} answers
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(PackIdentifier id, GraphRead graphs) {
+        return read(id, KindBindings.all(), graphs);
+    }
+
+    /**
      * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
      *
      * <p>Last it judges the edges of the pack's readable graph documents by {@link OverrideSourceRule} (FR-014): each
@@ -371,6 +385,10 @@ final class FilesystemPackStore {
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
+        return read(id, kinds, readGraphs(id));
+    }
+
+    private PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
         PackFileSet.Listing listing = PackFileSet.listing(directory, companionRules.table());
@@ -400,7 +418,7 @@ final class FilesystemPackStore {
         List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
-        violations.addAll(overrideSourceViolations(readGraphs(id)));
+        violations.addAll(overrideSourceViolations(graphs));
         return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
     }
 
