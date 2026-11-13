@@ -259,7 +259,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -271,7 +271,8 @@
       "notes": [
         "Records and docs: ADR-0018 D5 amendment (ownership rule) with D2/D3 annotations; ADR-0066 annotations on d4, d7, d8, d9, now-built and Follow-ups marker; rules page Built (slice C) label, E16 rewritten, E5/E6/E9/E12/E14/E17/E18, C22/C25/C27, new C37/C38/F8, F6, G8, G21, A7, section 7 rows; DIV-245 + DIV-244 note (page and yaml); service contract R3/R9/operation lists; status codes, REST conventions; glossary terms; conceptual-model note; changelog page; roadmap and next-slices. check_docs all, markdownlint-cli2 and cspell clean.",
         "Cycle 2: M3 addressed in f3ab945df (M1, M2 fixed by the coordinator in 825f61455). WP09's one place rule (ClosureView.stepPlace, StepBearer.declaresStep) recorded on the rules page A7 amendment and F8 wording, the changelog bullet, getEffectiveMissionStep in service-contract.md and the artifact/step relations in hypermedia-hateoas.md; the prompt read recorded as unchanged pending Q3. Pins verified on lane-h. check_docs all, markdownlint-cli2 and cspell clean.",
-        "Cycle 2: M1/M2 (825f61455) and M3 (f3ab945df) resolved; pins verified on lane-h; docs checks green."
+        "Cycle 2: M1/M2 (825f61455) and M3 (f3ab945df) resolved; pins verified on lane-h; docs checks green.",
+        "Operator ruling Q3 2026-11-13: record it"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -282,14 +283,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 25347,
-      "shell_pid_created_at": "1794527255.74",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done"
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned"
       }
     },
     "WP09": {
