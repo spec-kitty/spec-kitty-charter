@@ -29,7 +29,7 @@ owned_files:
 - contracts/packs/schemas/graph-shard.schema.json
 - contracts/packs/schemas/org-fragment.schema.json
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DrgEdge.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/RelationshipMerge.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipMerge.java
 - service/packs/src/test/resources/planted/c12-*/**
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WireTokenParityTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/RelationSetParityTest.java

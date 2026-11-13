@@ -33,7 +33,7 @@ owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackFindingCode.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/OverrideSourceRule.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/EdgeIndex.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java
@@ -45,7 +45,7 @@ owned_files:
 - contracts/charter/scenarios/read-refusals.feature
 - service/packs/src/test/resources/planted/r*-edge-*/**
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java
-- contracts/src/test/java/ai/speckitty/charter/contracts/ExampleCoverageTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java
 role: implementer
 ---
 
