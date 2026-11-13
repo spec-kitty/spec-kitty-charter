@@ -267,6 +267,24 @@ object MutationFloors {
         }
     }
 
+    /**
+     * The `-D` arguments that give PIT's minion JVM the module's unit-test [systemProperties], in name order. The
+     * minion inherits none of the `test` task's properties, so a test that reads one fails with no mutation applied,
+     * and PIT writes no report for the module (#461: `:activations` on 2026-11-10). The plugin hands PIT its
+     * `jvmArgs` joined by commas, so a value with a comma, a `null` or an unresolved provider would reach the minion
+     * cut up or as text: each fails here, naming the property.
+     */
+    fun minionSystemProperties(projectPath: String, systemProperties: Map<String, Any?>): List<String> =
+        systemProperties.toSortedMap().map { (name, value) ->
+            if (value == null || value is org.gradle.api.provider.Provider<*> || ',' in value.toString()) {
+                throw GradleException(
+                    "$projectPath: the test system property $name cannot be passed to PIT's minion" +
+                        " (null, a provider or a comma in its value): '$value' (#461)",
+                )
+            }
+            "-D$name=$value"
+        }
+
     /** Fails naming every [targetClasses] pattern of the module that no floor group holds. */
     fun requireTargetsHeld(projectPath: String, targetClasses: Set<String>, groups: List<Group>) {
         val unheld = unheldTargets(targetClasses, groups)
