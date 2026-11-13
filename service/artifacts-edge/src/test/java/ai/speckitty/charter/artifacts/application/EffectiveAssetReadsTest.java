@@ -65,6 +65,12 @@ class EffectiveAssetReadsTest {
             }
 
             @Override
+            public Referrer referrer(String activationId, String kindToken, String artifactId) {
+
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch) {
                 throw new UnsupportedOperationException("no skill is read here");
             }
@@ -234,6 +240,12 @@ class EffectiveAssetReadsTest {
 
             @Override
             public Outcome<Winner> assetPayload(String activationId, String assetId, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Referrer referrer(String activationId, String kindToken, String artifactId) {
+
                 throw new UnsupportedOperationException();
             }
 

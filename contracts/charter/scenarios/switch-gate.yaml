@@ -60,6 +60,7 @@ operations:
   getServiceInfo: {switch: ready}
   listActivationPacks: {switch: ready}
   listArtifactReferences: {switch: ready}
+  listEffectiveArtifactReferences: {switch: ready}
   listEffectiveArtifacts: {switch: ready}
   listEffectiveAssets: {switch: ready}
   listEffectiveSkills: {switch: ready}

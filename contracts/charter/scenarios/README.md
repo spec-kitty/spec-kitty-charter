@@ -24,6 +24,10 @@ Keep it small; add a step only when a scenario cannot be written without it.
   remembered one`; `When I remember the header "<name>"`, then `Then the response header "<name>" is the remembered
   header` or `... differs from the remembered header` — for a whole answer, such as a listing, and a header that must
   stay or change with the files.
+- `When I remember the items of the response body without their links`, then `Then the items of the response body,
+  without their links, are the remembered ones` — a parity of two reads whose `items` agree member for member while
+  each links into its own tree (a pack read and its twin under an activation). Both steps refuse an answer without
+  items.
 - Every request carries the worktree token as `Authorization: Bearer <token>`, the token the suite configures the
   service with, unless one of these steps says otherwise. `<method>` is any HTTP method name, for example `GET` or
   `POST`, and `{token}` in a value stands for the suite's token:

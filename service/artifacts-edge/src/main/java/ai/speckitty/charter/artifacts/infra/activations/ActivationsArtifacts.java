@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -71,6 +72,18 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
                         scope(answer.stored(), answer.governanceFingerprint(), answer.sourceFingerprint()),
                         facts(answer.winner()),
                         answer.artifact()));
+    }
+
+    @Override
+    public Referrer referrer(String activationId, String kindToken, String artifactId) {
+        EffectiveReadService.ListedWinner listed =
+                effective.listedWinner(new ActivationId(activationId), kindToken, artifactId);
+        EffectiveHeldWinner winner = listed.winner();
+        return new Referrer(
+                scope(listed.stored(), listed.governanceFingerprint(), listed.sourceFingerprint()),
+                winner.ref().kind(),
+                held(winner),
+                listed.held().stream().map(ActivationsArtifacts::urn).collect(Collectors.toUnmodifiableSet()));
     }
 
     private static <T, R> Outcome<R> outcome(Read<T> read, Function<T, R> found) {

@@ -78,6 +78,12 @@ tags:
       The skills of an activation: the skills the activation's closure holds, each the copy the layer merge keeps, and
       the read of one with its state and the skill as the winning pack declares it, whatever its state. Its own tag, so
       that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveReferences
+    description: >-
+      The references of an artifact under an activation: the references the version in force writes, which are the
+      pack read of the references (listArtifactReferences) of the pack that holds the winner, with each target the
+      activation's closure holds linked under the activation. Its own tag, so that the :artifacts-edge module
+      implements it in a controller of its own beside the asset and skill reads.
   - name: EffectiveMissionTypes
     description: >-
       The mission types of an activation: the mission type the layer merge keeps under an activation, in the Artifact
@@ -194,6 +200,8 @@ paths:
     $ref: paths/activations_activationId_artifacts_mission_step_contract_contractId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
+  /activations/{activationId}/artifacts/{kind}/{artifactId}/references:
+    $ref: paths/activations_activationId_artifacts_kind_artifactId_references.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
   /activations/{activationId}/graph:

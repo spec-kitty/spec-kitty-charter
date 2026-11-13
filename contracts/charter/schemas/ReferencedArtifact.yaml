@@ -6,7 +6,8 @@ description: >-
   the link to read it. A bare reference is held
   by the pack that writes it, which shadows a same-named artifact of another pack (FR-014); a pack-qualified one is
   held by the pack it names. A reference no pack of the compose holds, such as one to a kind the pack does not
-  define, has no holdingPack and no artifact link.
+  define, has no holdingPack and no artifact link. Read under an activation (listEffectiveArtifactReferences), the same
+  reference also links effective-artifact, its read under the activation, when the activation's closure holds it.
 type: object
 additionalProperties: false
 required:
