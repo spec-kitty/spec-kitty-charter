@@ -3,7 +3,7 @@ package ai.speckitty.charter.artifacts.infra.api;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.web.DeferredETag;
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -60,7 +60,8 @@ public final class PayloadResponses {
     /**
      * The answer of a payload read.
      *
-     * @param bytes the payload's bytes
+     * @param length the payload's length in bytes
+     * @param body the payload's bytes, as a stream
      * @param mime the asset's media type, as the sidecar writes it
      * @param wellFormedMime whether the packs domain's rule calls {@code mime} well-formed
      * @param etagToken the answer's entity tag, without quotes
@@ -69,7 +70,8 @@ public final class PayloadResponses {
      * @return {@code 304} when {@code ifNoneMatch} matches, otherwise {@code 200} with the bytes and the headers
      */
     public static ResponseEntity<Resource> answer(
-            byte[] bytes,
+            int length,
+            InputStream body,
             String mime,
             boolean wellFormedMime,
             String etagToken,
@@ -83,11 +85,11 @@ public final class PayloadResponses {
         DeferredETag.offer(etag);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, contentType(mime, wellFormedMime))
-                .contentLength(bytes.length)
+                .contentLength(length)
                 .header(HeaderNames.SOURCE_FINGERPRINT, sourceFingerprint)
                 .header(CONTENT_TYPE_OPTIONS, NOSNIFF)
                 .header(CONTENT_SECURITY_POLICY, SANDBOX)
-                .body(new InputStreamResource(new ByteArrayInputStream(bytes)));
+                .body(new InputStreamResource(body));
     }
 
     /**

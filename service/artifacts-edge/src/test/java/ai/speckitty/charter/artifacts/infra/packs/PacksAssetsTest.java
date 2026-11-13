@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.domain.AssetIdentifier;
 import ai.speckitty.charter.packs.domain.Executable;
 import ai.speckitty.charter.packs.domain.ExecutableRuntime;
 import ai.speckitty.charter.packs.domain.Payload;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -88,7 +89,7 @@ class PacksAssetsTest {
     }
 
     @Test
-    void thePayloadCarriesTheBytesOfTheReadThatVerifiedThem() {
+    void thePayloadCarriesTheBytesOfTheReadThatVerifiedThem() throws IOException {
         byte[] bytes = {0, 1, (byte) 0xff};
         when(packs.payload(QA, "logo"))
                 .thenReturn(new ConsistentRead.Verified<>(
@@ -98,7 +99,8 @@ class PacksAssetsTest {
 
         AssetReads.PayloadRead read = new PacksAssets(packs).payload(QA, "logo");
 
-        assertThat(read.bytes()).isEqualTo(bytes);
+        assertThat(read.stream().readAllBytes()).isEqualTo(bytes);
+        assertThat(read.length()).isEqualTo(bytes.length);
         assertThat(read.asset().mime()).isEqualTo("image/png");
         assertThat(read.asset().title()).isEmpty();
         assertThat(read.asset().executable()).isEmpty();
@@ -107,7 +109,8 @@ class PacksAssetsTest {
     }
 
     @Test
-    void theTwinsPayloadIsThePacksSlicesReadAgainstTheActivationsFingerprintAndItsMismatchIsStaleInput() {
+    void theTwinsPayloadIsThePacksSlicesReadAgainstTheActivationsFingerprintAndItsMismatchIsStaleInput()
+            throws IOException {
         byte[] bytes = {7, 8};
         when(packs.payload(QA, "logo", FINGERPRINT))
                 .thenReturn(new ConsistentRead.Verified<>(
@@ -118,7 +121,8 @@ class PacksAssetsTest {
         when(packs.payload(QA, "logo", other))
                 .thenThrow(new CharterRefusal(RefusalCode.STALE_INPUT, "The inputs changed."));
 
-        assertThat(new PacksAssets(packs).payload(QA, "logo", FINGERPRINT).bytes())
+        assertThat(new PacksAssets(packs)
+                        .payload(QA, "logo", FINGERPRINT).stream().readAllBytes())
                 .isEqualTo(bytes);
         assertThatThrownBy(() -> new PacksAssets(packs).payload(QA, "logo", other))
                 .isInstanceOfSatisfying(
