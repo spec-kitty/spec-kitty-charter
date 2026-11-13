@@ -308,7 +308,8 @@
         "Cycle 1 fixes: one place rule in ClosureView.stepPlace (mission type winner if it declares s, else held action winner whose version declares s), used by stepPlace, the step read and the context artifact link; probes 1 and 2 as scenarios (red first, e80394a33); L1 step-contract step link by the place; M1, L3 contract wording; L4 controller test. Prompt read unchanged. activations, missions-edge, packs ClosureViewTest, feature, contracts:check and full deployable:test (1781/0) green.",
         "Cycle 2: H1/M1/L1/L3/L4 resolved (f3ad8c480); one place rule ClosureView.stepPlace; mutations A-D caught; Hexagonal green; full deployable 1781 green. LOW L-a (placed() refusal pass-through test) folded into consolidation.",
         "Operator ruling Q3 2026-11-13: the prompt read follows the one place rule",
-        "Q3: ClosureView.effectivePrompt places the prompt at stepPlace (EffectivePromptQuery.answer takes the place); red scenario (probe 1 prompt read, promptPackId proj) + ClosureViewTest pin/twin first (cfdbf3593); contract wording for prompt path, promptPackId, WP09 fragment; WP07 refusal order corrected; L-a test. Also fixed SlotComposeTest compile break from the WP05/WP10 merge (05b0da69d). packs/activations/missions-edge tests, both features, contracts:check, full deployable:test (1791/0) green."
+        "Q3: ClosureView.effectivePrompt places the prompt at stepPlace (EffectivePromptQuery.answer takes the place); red scenario (probe 1 prompt read, promptPackId proj) + ClosureViewTest pin/twin first (cfdbf3593); contract wording for prompt path, promptPackId, WP09 fragment; WP07 refusal order corrected; L-a test. Also fixed SlotComposeTest compile break from the WP05/WP10 merge (05b0da69d). packs/activations/missions-edge tests, both features, contracts:check, full deployable:test (1791/0) green.",
+        "Q3 fold: slot check"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
