@@ -37,6 +37,8 @@ val serviceModules = linkedMapOf(
     "missions-edge" to listOf("ai.speckitty.charter.missions.application", "ai.speckitty.charter.missions.infra"),
     "artifacts-edge" to listOf("ai.speckitty.charter.artifacts"),
     "activations" to listOf("ai.speckitty.charter.activations"),
+    "pack-validation" to listOf("ai.speckitty.charter.packvalidation"),
+    "pack-check" to listOf("ai.speckitty.charter.packcheck"),
     "web-transport" to listOf("ai.speckitty.charter.web"),
     "deployable" to listOf("ai.speckitty.charter.deployable"),
 )

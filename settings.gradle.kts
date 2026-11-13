@@ -32,6 +32,10 @@ listOf(
     // with no domain module: :activations names packs only from its own adapter (ADR-0037, amendment of 2026-11-13).
     "artifacts-edge",
     "activations",
+    // Every pack check as a kernel ruleset, without Spring, which the packs slice and pack-check run (ADR-0075).
+    "pack-validation",
+    // The standalone pack-check CLI over pack-validation, its own jar on the service-v* release (ADR-0075).
+    "pack-check",
     "charter-api",
     // The service-wide HTTP transport shared by every slice's inbound adapter (problems, refusals, body guard).
     "web-transport",
