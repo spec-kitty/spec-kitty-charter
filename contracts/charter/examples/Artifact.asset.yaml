@@ -1,0 +1,25 @@
+summary: >-
+  The executable asset carrier-lint of the built-in example pack of the charter (ADR-0070), as getPackAsset answers
+  it: the descriptor its sidecar declares, with links to its payload and to the pack's asset list.
+value:
+  kind: asset
+  id: carrier-lint
+  packId: built-in
+  _links:
+    self:
+      href: /api/v1/packs/built-in/artifacts/asset/carrier-lint
+    payload:
+      href: /api/v1/packs/built-in/artifacts/asset/carrier-lint/payload
+    collection:
+      href: /api/v1/packs/built-in/artifacts/asset
+  asset:
+    id: carrier-lint
+    mime: text/x-python
+    path: carrier_lint.py
+    title: Traceability carrier lint
+    executable:
+      runtime: python
+      minVersion: '3.11'
+      entry: carrier_lint.py
+      args:
+        - --guard

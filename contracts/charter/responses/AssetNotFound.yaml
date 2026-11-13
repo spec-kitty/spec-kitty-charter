@@ -1,0 +1,28 @@
+description: >-
+  The pack or the asset the path names is not there, refused with 404. The pack is judged first: an identifier that
+  matches no configured pack (by name or by declared pack_id) is pack_not_found. Then an asset the pack does not hold
+  is artifact_not_found. A client error: the request named something that is not there.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-not-found:
+        summary: No configured pack matches the identifier.
+        value:
+          title: Pack not found
+          status: 404
+          code: pack_not_found
+          detail: Pack nope was not found.
+      artifact-not-found:
+        summary: The pack holds no asset with the asked identity.
+        value:
+          title: Artifact not found
+          status: 404
+          code: artifact_not_found
+          detail: Pack built-in has no asset nothing.

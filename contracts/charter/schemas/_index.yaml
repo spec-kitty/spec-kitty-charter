@@ -107,6 +107,8 @@ files:
   - MissionType.yaml
   - Asset.yaml
   - AssetExecutable.yaml
+  - AssetList.yaml
+  - AssetSummary.yaml
   - Skill.yaml
   - SkillExpansion.yaml
   - SkillInvocation.yaml
