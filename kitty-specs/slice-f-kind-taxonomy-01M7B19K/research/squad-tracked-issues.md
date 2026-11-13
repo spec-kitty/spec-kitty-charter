@@ -15,7 +15,7 @@ This read-only lens ran before the spec on 2026-11-13. It covers the 140 open is
 | #520 mission-type schema | **IN**. Under the canonical-model rule, core #2751's org-pack exception for `action_sequence` has no place here. |
 | #515 endpoint kinds | **IN** |
 | #533 step-contract read under an activation | **OBSOLETED** by #514. Closed with evidence once the route is deleted. |
-| #447 `overrides` from a non-activatable kind | **IN**. #515 settles it (its option 1). It is labelled `slice:C`; ownership goes to the orchestrator (Q7). |
+| #447 `overrides` from a non-activatable kind | **SEQUENCE**. Slice C delivers it (C's FR-014). F folds C's rule into the endpoint table (research R8, Q7 revised). |
 | #350 refuse a procedure edge whose target is `action:` | **IN, proposed**. It is one row of the endpoint table, and its open question is the same ruling. Included only if the operator agrees (Q8). |
 | #154 `anti_pattern` kind | **TOUCH**. The `rejects` row. Refs. |
 | #49 derive hand-kept lists | **TOUCH**. The kind table is a source it could derive from. Refs. |
@@ -35,6 +35,6 @@ This read-only lens ran before the spec on 2026-11-13. It covers the 140 open is
 | #97, #452, #467 | **OUT** |
 | #94, #142, #537 | Ticked at landing. |
 
-Proposed closeout: `Closes #112, #514, #520, #515, #447, #533` (plus #350 if Q8). Refs #49, #154, #337, #355, #417, #433, #559.
+Proposed closeout: `Closes #112, #514, #520, #515, #533` (plus #350 if Q8). Refs #49, #154, #337, #355, #417, #433, #559.
 
 No finding is filed as a new issue. None is a correctness, data or security risk beyond what the slice already delivers (issue-tracker.md Rule 1).
