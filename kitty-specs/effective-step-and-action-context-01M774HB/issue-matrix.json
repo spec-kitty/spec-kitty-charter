@@ -73,7 +73,7 @@
       "wp": null
     },
     "#438": {
-      "evidence_ref": "ADR-0066 phase 2: WP03-WP07",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/563",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,7 +81,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP07"
     },
     "#439": {
