@@ -1,8 +1,9 @@
 name: whole-pack
 
-# The whole-pack round-trip gate (#187, epic #186): every file of the charter-owned example built-in pack (ADR-0070,
-# service/packs/src/testFixtures) is read into the domain, written back, read again and compared with its source by meaning, against the checked-in
-# expected-red baseline (service/packs/src/test/resources/whole-pack). It uploads the report as `whole-pack-report`.
+# The whole-pack round-trip gate (#187, epic #186): every file of every charter-owned example pack (ADR-0070, #547:
+# built-in, org-base and project, under service/packs/src/testFixtures) is read into the domain, written back, read
+# again and compared with its source by meaning, against the checked-in expected-red baseline
+# (service/packs/src/test/resources/whole-pack). It uploads one report per pack as `whole-pack-report`.
 #
 # A required check (epic #186, operator ruling of 2026-11-05): ci.yml calls this workflow for its `wholepack` group, so
 # it feeds `CI gate / gate` (ADR-0023), and every pull request that changes what it covers has to keep packs
@@ -55,17 +56,18 @@ jobs:
       - name: Whole-pack round trip
         run: ./gradlew :packs:wholePackRoundTrip
 
-      - name: Show the report
+      - name: Show the reports
         if: always()
         run: |
-          report=service/packs/build/reports/whole-pack/report.md
-          if [ -f "$report" ]; then sed -n '1,/^## Files/p' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
+          for report in service/packs/build/reports/whole-pack/*.md; do
+            if [ -f "$report" ]; then sed -n '1,/^## Files/p' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
 
       # Uploaded on a red run too, so the per-kind and per-file result is always visible.
-      - name: Upload the report
+      - name: Upload the reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: whole-pack-report
-          path: service/packs/build/reports/whole-pack/report.md
+          path: service/packs/build/reports/whole-pack/*.md
           if-no-files-found: warn
