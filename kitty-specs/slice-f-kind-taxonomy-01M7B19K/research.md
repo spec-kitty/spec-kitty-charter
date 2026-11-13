@@ -399,3 +399,30 @@ Dispositions are in `research/squad-tracked-issues.md`. The findings:
 | Q6 | Retire `impacts`, `replaces` and `delegates_to` in this slice (widens #515), or give them endpoint rows | Retire; flagged as a widening |
 | Q7 | Revised: slice C delivers #447 (FR-014, `overrides_source_not_activatable`). F folds that rule into the endpoint table. Should its violation code merge into `relationship_endpoint_not_allowed`? | Merge: one rule, one code |
 | Q8 | Include #350 (procedure edge to `action:`), a row of the endpoint table | Include |
+
+
+## R14. Operator rulings, 2026-11-13 (interview)
+
+The operator ruled directly in an interview. These rulings supersede the recommendations in R2 to R6 and in the R13
+table where they differ.
+
+| # | Ruling | Decision Moment |
+|---|---|---|
+| Q1 | As recommended: `GET /offering/kinds`, with `kinds` and `relations`, no core org facts, not deferred. | `DM-01M7B1YE4J84K0T4ZA27M48QKG` |
+| Q2 | **Fold the substeps into the step** (not R3's recommendation). The substeps are a flat, ordered list, one level deep. All fields are kept: `id`, `description`, `command`, `inputs`, `delegates_to` and `guidance`. A delegation is data, and it also needs a `scope` edge for each candidate. The kind is then retired. #513 stays open, narrowed to recursion and `DECOMPOSES_INTO`. | `DM-01M7B1YH1GF15RD0G4ZPSA8KW9` |
+| Q3 | Drop `template_set` from `charter.schema.json`. | `DM-01M7B1YKY84DQHZFDXEWNJGB5E` |
+| Q4 | **Keep the edge authored, and make it complete** (not R5's recommendation). Every step, on-demand steps included, has a `requires` edge from its type. A pack that misses one is refused at load. | `DM-01M7B1YQR5ZKQPDW6DX64KPNRN` |
+| Q5 | The endpoint table, as drafted. | `DM-01M7B1YTXP6QR1NQB784H4VX3W` |
+| Q6 | Retire `impacts`, `replaces` and `delegates_to`. `replaces` was sometimes used to mean `overrides`, so a `replaces` edge migrates to `overrides`. | `DM-01M7B1YXJHQCBSYJ145NJC77V5` |
+| Q7 | Slice C delivers #447. F folds `OverrideSourceRule` into the endpoint rule and **keeps C's code** `overrides_source_not_activatable` for that fault. | `DM-01M7B1Z03VF9A36FBV65431HR3` |
+| Q8 | Include #350. | `DM-01M7B1Z30AV54T9WM2WR61EK30` |
+| P1 | **One new ADR** holds every slice F decision. The touched ADRs get short notes. | `DM-01M7B3Q8R1C6J89MM3YWSMF8XZ` |
+| P2 | Kind marker types, `NodeRef<K>`, per-relation factories and one checked bridge. | `DM-01M7B3QBD0W0KTBHPHX55RB33K` |
+| P3 | One PR with ordered work packages. | `DM-01M7B3QE377FQXN0R02WNC829W` |
+
+Checked after the ruling:
+
+- All 28 open-packs step contracts name a step of their mission type, so each one folds into a step.
+- No `replaces` edge exists in any corpus.
+
+The census script is `research/edge-census.py`, with its output in `research/edge-census.csv`.
