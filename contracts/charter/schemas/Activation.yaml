@@ -10,10 +10,19 @@ description: >-
   droppedPins are on a replaceActivation answer only, and only when that write dropped something (A4, B1): a read never
   carries them.
 
-  _links holds self (the activation) and artifacts, the activation's effective artifact list as an RFC 6570 template
-  (/api/v1/activations/{activationId}/artifacts{?kind,state}, templated true; listEffectiveArtifacts), on every answer
-  that carries an Activation: a client reaches the effective reads from the activation it created or read, without
-  building a path.
+  _links holds, on every answer that carries an Activation (getActivation, createActivation and replaceActivation), the
+  relations a client follows from the activation it created or read, without building a path (#409, decision
+  DM-01M78RKM6Q23PA9QAC80QJKQFF). Its reads: self (the activation); artifacts, the effective artifact list as an RFC
+  6570 template (/api/v1/activations/{activationId}/artifacts{?kind,state}, templated true; listEffectiveArtifacts);
+  packs, its closure (listActivationPacks); graph, its effective graph (getEffectiveGraph); skipped, its skipped report
+  (getActivationSkippedReport); and effective-context, the action context as a template
+  (/api/v1/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}, templated true;
+  getEffectiveActionContext). offering is the offering it chooses from (getOffering). Its writes, each with its method:
+  edit (PUT, replaceActivation) and delete (DELETE, deleteActivation) on the activation itself; select
+  (…/selections/{kind}/{artifactId}, PUT, selectActivationArtifact) and exclude (…/exclusions/{kind}/{artifactId},
+  PUT, deactivateActivationArtifact), templated by kind and id; and apply-preset (…/presets/{presetId}, PUT,
+  applyActivationPreset), templated by the preset's id. unselect and include are not on the activation: they suit an
+  artifact already selected or excluded.
 type: object
 additionalProperties: false
 required:

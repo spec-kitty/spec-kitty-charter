@@ -1,0 +1,56 @@
+summary: >-
+  The prompt skill review-checklist under an activation that does not select it: it is answered with state inactive
+  and reason not_selected, the facts of the built-in copy that won the layer merge, and the skill with its body
+  verbatim. self is this request, artifact the pack-scoped read of the winner's pack, collection the activation's
+  skills and up the activation.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  kind: skill
+  artifactId: review-checklist
+  packId: built-in
+  level: built-in
+  state: inactive
+  required: false
+  policy: open
+  reason: not_selected
+  skill:
+    schemaVersion: '1.0'
+    id: review-checklist
+    title: Review a work package against its checklist
+    description: >-
+      Use to review one work package against its acceptance checklist and record a verdict with the evidence for each
+      item.
+    form: prompt
+    triggers:
+      - review against the checklist
+      - checklist review
+    parameters:
+      - name: work_package
+        required: true
+        description: The work package to review, by id.
+    invocation:
+      userInvocable: true
+      sideEffects: []
+    tools: []
+    version: 1.0.0
+    maintainers:
+      - '@spec-kitty/core'
+    body: |
+      Goal: review the work package named by `work_package` against its acceptance checklist.
+
+      ## Steps
+
+      1. Read the work package and its checklist.
+      2. For each item, record whether the change meets it and the evidence (a file, a test or a command output).
+      3. Record the verdict: approve when every item is met, otherwise reject with the unmet items.
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/skill/review-checklist
+    artifact:
+      href: /api/v1/packs/built-in/artifacts/skill/review-checklist
+    collection:
+      href: /api/v1/activations/a-1/artifacts/skill
+    up:
+      href: /api/v1/activations/a-1

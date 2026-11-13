@@ -203,6 +203,101 @@ public class EffectiveReadService {
         }
     }
 
+    /**
+     * The winners of one kind under an activation, as {@link #heldWinners} answers them.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read, which a read of the winners' packs is checked against
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param winners the winners, by id in code-point order
+     */
+    public record HeldWinners(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            List<EffectiveHeldWinner> winners) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param winners the winners
+         */
+        public HeldWinners {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            winners = List.copyOf(Objects.requireNonNull(winners, "winners"));
+        }
+    }
+
+    /**
+     * The winner of one artifact of a kind the activation does not resolve, as {@link #heldWinner} answers it.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read, which a read of the winner's pack is checked against
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param winner the winner
+     */
+    public record HeldAnswer(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveHeldWinner winner) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param winner the winner
+         */
+        public HeldAnswer {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(winner, "winner");
+        }
+    }
+
+    /**
+     * The winner of one artifact of any listed kind and what else the closure holds, as {@link #listedWinner} answers
+     * them: the referrer of {@code listEffectiveArtifactReferences} (research R10).
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read, which the read of the winner's pack is checked against
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param winner the winner
+     * @param held every artifact of a listed kind the closure holds, as the layer merge keeps it
+     */
+    public record ListedWinner(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveHeldWinner winner,
+            Set<ArtifactRef> held) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param winner the winner
+         * @param held the held artifacts
+         */
+        public ListedWinner {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(winner, "winner");
+            held = Set.copyOf(Objects.requireNonNull(held, "held"));
+        }
+    }
+
     /** A page cursor of another set, which a client holds after the document or a pack of the closure changed. */
     public static final class StaleCursorException extends RuntimeException {
 
@@ -368,7 +463,8 @@ public class EffectiveReadService {
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winner, or {@code NotModified} when the header matches the tag of this representation
      * @throws CharterRefusal with {@code activation_not_found}, then {@code kind_not_found} when the token names a kind
-     *     the packs slice does not list, or as {@link #artifact(ActivationId, ArtifactKind, String, int, String)} does
+     *     the packs slice does not list, or a listed kind the activation does not resolve (an asset, research R3), naming
+     *     its literal read, or as {@link #artifact(ActivationId, ArtifactKind, String, int, String)} does
      */
     public Read<EffectiveArtifactAnswer> artifact(
             ActivationId id, String kindToken, String artifactId, int depth, @Nullable String ifNoneMatch) {
@@ -376,7 +472,8 @@ public class EffectiveReadService {
         ArtifactKind kind = ArtifactKind.fromToken(kindToken)
                 .filter(packs.listedKinds()::contains)
                 .orElseThrow(() -> notServed(kindToken));
-        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, false);
+        requireActivatable(id, kind, artifactId);
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, EffectiveTag.Read.ARTIFACT);
     }
 
     /**
@@ -387,7 +484,9 @@ public class EffectiveReadService {
      * any {@code If-None-Match} is compared, so a name no pack holds is a {@code 404} whatever the header says; the tag
      * is the {@link EffectiveTag} of the read, which names the kind, the id and the depth and, for an agent profile, its
      * own read; and only a request whose header does not match asks the session for the entity and the in-force
-     * resolution, once each. An agent profile's answer carries its governance with the state of each entry.
+     * resolution, once each. An agent profile's answer carries its governance with the state of each entry, under the
+     * tag of its own read ({@link EffectiveTag.Read#PROFILE}); a skill's answer is the read of the skill route, under the
+     * tag of its own read too ({@link EffectiveTag.Read#SKILL}), so neither shares a tag with the generic route.
      *
      * @param id the activation's id
      * @param kind the artifact's kind
@@ -396,7 +495,7 @@ public class EffectiveReadService {
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winner, or {@code NotModified} when the header matches the tag of this representation
      * @throws CharterRefusal with {@code activation_not_found}; {@code kind_not_found} when the packs slice does not list
-     *     the kind; {@code pack_unreadable} when a pack the activation names is no longer configured, or the winner's
+     *     the kind, or lists one the activation does not resolve (an asset), naming its literal read; {@code pack_unreadable} when a pack the activation names is no longer configured, or the winner's
      *     pack cannot read the artifact, or as the merge refuses; {@code artifact_not_found} when no pack of the closure
      *     holds the artifact; {@code stale_input} when the packs changed since the session was verified
      */
@@ -407,7 +506,164 @@ public class EffectiveReadService {
         if (!packs.listedKinds().contains(kind)) {
             throw notServed(kind.token());
         }
-        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, kind == ArtifactKind.AGENT_PROFILE);
+        requireActivatable(id, kind, artifactId);
+        EffectiveTag.Read route = switch (kind) {
+            case AGENT_PROFILE -> EffectiveTag.Read.PROFILE;
+            case SKILL -> EffectiveTag.Read.SKILL;
+            default -> EffectiveTag.Read.ARTIFACT;
+        };
+        return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, route);
+    }
+
+    /**
+     * The winners of one kind under an activation, in id order (research R2, R3): {@code listEffectiveSkills} and
+     * {@code listEffectiveAssets}. Each is the version the layer merge keeps across the levels of the closure, with the
+     * pack and level that hold it and its policy, and no state; a skill's state is its own read's, and an asset has
+     * none. The whole set is answered, unpaged, from one {@link PacksSession}, with no in-force resolution; what each
+     * winner's pack stores is the packs slice's to read, against the source fingerprint of the answer.
+     *
+     * @param id the activation's id
+     * @param kind {@code skill} or {@code asset}
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the winners, or {@code NotModified} when the header matches the tag of the list
+     * @throws IllegalArgumentException when the contract lists no winners of the kind under an activation
+     * @throws CharterRefusal with {@code activation_not_found}, or as {@link #activation} does
+     */
+    public Read<HeldWinners> heldWinners(ActivationId id, ArtifactKind kind, @Nullable String ifNoneMatch) {
+        Objects.requireNonNull(kind, "kind");
+        EffectiveTag.Read read = switch (kind) {
+            case SKILL -> EffectiveTag.Read.SKILLS;
+            case ASSET -> EffectiveTag.Read.ASSETS;
+            default ->
+                throw new IllegalArgumentException("No read lists the winners of " + kind.token()
+                        + " under an activation; listEffectiveArtifacts lists them.");
+        };
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String etag =
+                EffectiveTag.winners(read, kind, stored.revision(), closure).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        return new Read.Found<>(
+                new HeldWinners(stored, closure.fingerprint(), closure.closureFingerprint(), session.heldWinners(kind)),
+                etag);
+    }
+
+    /**
+     * {@code getEffectiveAsset}: the winner of one artifact of a kind the activation does not resolve (an asset, research
+     * R2, operator ruling {@code DM-01M78S3RNPZ5ZFV5AR6H1X6HV1}): the version the layer merge keeps, the pack and level
+     * that hold it and its policy, and no state, reason or required, which would be invented. The activation is judged
+     * first, then whether a pack of the closure holds the artifact, both before any {@code If-None-Match}.
+     *
+     * @param id the activation's id
+     * @param kind a kind the activation does not resolve
+     * @param artifactId the artifact's id, exactly as declared
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the winner, or {@code NotModified} when the header matches the tag of this representation
+     * @throws IllegalArgumentException when the kind is one the activation resolves, which {@link #artifact} reads
+     * @throws CharterRefusal with {@code activation_not_found}; {@code artifact_not_found} when no pack of the closure
+     *     holds the artifact; or as {@link #activation} does
+     */
+    public Read<HeldAnswer> heldWinner(
+            ActivationId id, ArtifactKind kind, String artifactId, @Nullable String ifNoneMatch) {
+        return heldOf(id, kind, artifactId, ifNoneMatch, EffectiveTag.Read.ASSET);
+    }
+
+    /**
+     * {@code getEffectiveAssetPayload}: the winner of one asset, as {@link #heldWinner} judges it, under the tag of the
+     * payload read (research R15). The bytes are the packs slice's to read from the winner's pack, against the source
+     * fingerprint of this answer, so they are of the inputs this read judged or are refused {@code stale_input}.
+     *
+     * @param id the activation's id
+     * @param assetId the asset's id, exactly as declared
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the winner, or {@code NotModified} when the header matches the tag of the payload
+     * @throws CharterRefusal as {@link #heldWinner} does
+     */
+    public Read<HeldAnswer> heldPayload(ActivationId id, String assetId, @Nullable String ifNoneMatch) {
+        return heldOf(id, ArtifactKind.ASSET, assetId, ifNoneMatch, EffectiveTag.Read.ASSET_PAYLOAD);
+    }
+
+    private Read<HeldAnswer> heldOf(
+            ActivationId id,
+            ArtifactKind kind,
+            String artifactId,
+            @Nullable String ifNoneMatch,
+            EffectiveTag.Read read) {
+        Objects.requireNonNull(kind, "kind");
+        Objects.requireNonNull(artifactId, "artifactId");
+        if (kind.activatable()) {
+            throw new IllegalArgumentException(
+                    "The activation resolves " + kind.token() + "; its winner is read with its state by artifact.");
+        }
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ARTIFACT_NOT_FOUND,
+                        "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + "."));
+        String etag = EffectiveTag.winner(
+                        read, stored.revision(), closure, new EffectiveTag.ArtifactQuery(kind, artifactId, 0))
+                .token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        return new Read.Found<>(
+                new HeldAnswer(stored, closure.fingerprint(), closure.closureFingerprint(), winner), etag);
+    }
+
+    /**
+     * The winner of one artifact of any listed kind under an activation, whatever its state, with every artifact of a
+     * listed kind the closure holds and the source fingerprint, all from one {@link PacksSession}: the referrer of
+     * {@code listEffectiveArtifactReferences} (research R10). The winner is the layer merge's, the one rule
+     * {@link #heldWinner} and {@link #artifact} answer: for a kind the activation resolves it is the winner the effective
+     * set reads, and for an asset the winner {@link #heldWinner} reads. No state is resolved; the references are the
+     * packs slice's to read from the winner's pack, against the source fingerprint of this answer. It has no tag: the
+     * references read of a pack has none either.
+     *
+     * @param id the activation's id
+     * @param kindToken the kind's token, as the request names it
+     * @param artifactId the artifact's id, exactly as declared
+     * @return the winner, the held artifacts and the fingerprints
+     * @throws CharterRefusal with {@code activation_not_found}; then {@code kind_not_found} when the token names no kind
+     *     the packs slice lists; then {@code artifact_not_found} when no pack of the closure holds the artifact; or as
+     *     {@link #activation} does
+     */
+    public ListedWinner listedWinner(ActivationId id, String kindToken, String artifactId) {
+        Objects.requireNonNull(kindToken, "kindToken");
+        Objects.requireNonNull(artifactId, "artifactId");
+        StoredActivation stored = found(id);
+        List<ArtifactKind> listed = packs.listedKinds();
+        ArtifactKind kind =
+                ArtifactKind.fromToken(kindToken).filter(listed::contains).orElseThrow(() -> notServed(kindToken));
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ARTIFACT_NOT_FOUND,
+                        "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + "."));
+        Set<ArtifactRef> held = listed.stream()
+                .flatMap(each -> session.heldWinners(each).stream())
+                .map(EffectiveHeldWinner::ref)
+                .collect(Collectors.toUnmodifiableSet());
+        return new ListedWinner(stored, closure.fingerprint(), closure.closureFingerprint(), winner, held);
+    }
+
+    /**
+     * The gate of the templated read of one artifact under an activation (T008, FR-011, research R3): a listed kind the
+     * activation does not resolve has no state to answer there, so it is {@code kind_not_found}, and the refusal names
+     * the literal read of the kind. It is judged after the activation and before the packs are read.
+     */
+    private static void requireActivatable(ActivationId id, ArtifactKind kind, String artifactId) {
+        if (!kind.activatable()) {
+            throw new CharterRefusal(
+                    RefusalCode.KIND_NOT_FOUND,
+                    "The templated effective read renders no " + kind.token() + "; read it at /activations/"
+                            + id.value() + "/artifacts/" + kind.token() + "/" + artifactId + ".");
+        }
     }
 
     /**
@@ -510,10 +766,10 @@ public class EffectiveReadService {
     }
 
     /**
-     * The one read behind both routes. {@code profileRoute} is true for the profiles slice's route, whose body carries
-     * the governance and so names {@link EffectiveTag.Read#PROFILE}; the generic route names
-     * {@link EffectiveTag.Read#ARTIFACT} for every kind, agent profile included, because its body never renders the
-     * governance, so the two URLs never share a tag.
+     * The one read behind every route. {@code route} is {@link EffectiveTag.Read#PROFILE} for the profiles slice's route,
+     * whose body carries the governance, and {@link EffectiveTag.Read#SKILL} for the skill route, whose body carries the
+     * skill; the generic route names {@link EffectiveTag.Read#ARTIFACT} for every kind, agent profile and skill
+     * included, because its body never renders either, so no two URLs share a tag.
      */
     private Read<EffectiveArtifactAnswer> artifactOf(
             StoredActivation stored,
@@ -521,7 +777,8 @@ public class EffectiveReadService {
             String artifactId,
             int depth,
             @Nullable String ifNoneMatch,
-            boolean profileRoute) {
+            EffectiveTag.Read route) {
+        boolean profileRoute = route == EffectiveTag.Read.PROFILE;
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
         ArtifactRef ref = new ArtifactRef(kind, artifactId);
@@ -532,10 +789,12 @@ public class EffectiveReadService {
                     "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
         }
         EffectiveTag.ArtifactQuery asked = new EffectiveTag.ArtifactQuery(kind, artifactId, depth);
-        String etag = (profileRoute
-                        ? EffectiveTag.profile(stored.revision(), closure, asked)
-                        : EffectiveTag.artifact(stored.revision(), closure, asked))
-                .token();
+        EffectiveTag tag = switch (route) {
+            case PROFILE -> EffectiveTag.profile(stored.revision(), closure, asked);
+            case ARTIFACT -> EffectiveTag.artifact(stored.revision(), closure, asked);
+            default -> EffectiveTag.winner(route, stored.revision(), closure, asked);
+        };
+        String etag = tag.token();
         if (EntityTags.noneMatch(ifNoneMatch, etag)) {
             return new Read.NotModified<>(etag);
         }

@@ -559,8 +559,7 @@ public final class PackPolicy {
 
     private static Optional<String> mimeProblem(PackContents.AssetFacts asset) {
         String mime = asset.mime();
-        int slash = mime.indexOf('/');
-        if (slash <= 0 || slash == mime.length() - 1) {
+        if (!MediaTypes.wellFormed(mime)) {
             return Optional.of(asset.file() + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value");
         }
         return AssetMimeTable.expected(asset.path())

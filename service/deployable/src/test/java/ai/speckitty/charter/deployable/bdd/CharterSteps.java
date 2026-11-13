@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -54,7 +55,14 @@ public class CharterSteps {
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown");
+    /**
+     * An asset's payload read, in a pack or under an activation: a verified read whatever its media type, which carries
+     * the source fingerprint as the pack's payload does.
+     */
+    private static final Pattern PAYLOAD = Pattern.compile("/(packs|activations)/[^/]+/artifacts/asset/[^/]+/payload");
+
     private static final String BODY = "#body";
+    private static final String ITEMS_WITHOUT_LINKS = "#items-without-links";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
     private static final String BASE = "/api/v1";
@@ -64,6 +72,8 @@ public class CharterSteps {
     private final ScenarioHttp http;
     private final ScenarioPacks packs;
     private final Map<String, String> remembered = new HashMap<>();
+    private @Nullable String expandedHref;
+    private String expandedMethod = "GET";
 
     public CharterSteps(ScenarioHttp http, ScenarioPacks packs) {
         this.http = http;
@@ -226,8 +236,9 @@ public class CharterSteps {
     }
 
     /**
-     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read), and any path but the root and the two activation reads
-     * that send no fingerprint ({@link #UNFINGERPRINTED}).
+     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read, or an asset's
+     * payload, whatever its type), and any path but the root and the two activation reads that send no fingerprint
+     * ({@link #UNFINGERPRINTED}).
      */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
         String type = response.getContentType();
@@ -236,7 +247,8 @@ public class CharterSteps {
                 && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
                 && (MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type))
-                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type)));
+                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type))
+                        || PAYLOAD.matcher(path).matches());
     }
 
     @When("the file {string} of the pack {string} is deleted")
@@ -381,6 +393,33 @@ public class CharterSteps {
         assertThat(JSON.readTree(http.body())).isNotEqualTo(JSON.readTree(remembered.get(BODY)));
     }
 
+    /**
+     * Remembers the {@code items} of the answer, each without its {@code _links}: the side of a parity between two reads
+     * whose items must agree member for member while each links into its own tree. A parity of nothing proves nothing,
+     * so the answer must hold items.
+     */
+    @When("I remember the items of the response body without their links")
+    public void rememberItemsWithoutLinks() throws Exception {
+        remembered.put(ITEMS_WITHOUT_LINKS, itemsWithoutLinks().toString());
+    }
+
+    @Then("the items of the response body, without their links, are the remembered ones")
+    public void itemsWithoutLinksAreRemembered() throws Exception {
+        String held = remembered.get(ITEMS_WITHOUT_LINKS);
+        assertThat(held).as("items were remembered").isNotNull();
+        assertThat(itemsWithoutLinks()).isEqualTo(JSON.readTree(held));
+    }
+
+    private JsonNode itemsWithoutLinks() throws Exception {
+        JsonNode items = JSON.readTree(http.body()).path("items");
+        assertThat(items.isArray() && !items.isEmpty())
+                .as("the answer has items: %s", http.body())
+                .isTrue();
+        JsonNode copy = items.deepCopy();
+        copy.valueStream().forEach(item -> ((ObjectNode) item).remove("_links"));
+        return copy;
+    }
+
     @When("I remember the header {string}")
     public void rememberHeader(String name) {
         remembered.put(HEADER + name, String.valueOf(http.response().getHeader(name)));
@@ -516,6 +555,59 @@ public class CharterSteps {
                 .as("the link %s is templated: %s", relation, link)
                 .isTrue();
         http.get(belowBase(expand(linkOf(JSON.readTree(http.body()), relation), values.asMap())));
+    }
+
+    /**
+     * Follows a link of the last answer with the method the link declares ({@code GET} when it declares none), sending
+     * the JSON doc string: a create a client reaches from the root, such as {@code activations}.
+     */
+    @When("I follow the link {string} with its method and the body:")
+    public void followWithMethod(String relation, String body) throws Exception {
+        JsonNode answer = JSON.readTree(http.body());
+        http.perform(
+                methodOf(answer, relation),
+                belowBase(linkOf(answer, relation)),
+                Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE),
+                body);
+    }
+
+    /**
+     * Expands the RFC 6570 template of a link of the last answer with the table's values, as {@code I follow the
+     * templated link} does, and keeps the expansion and the link's method for {@code I follow the expanded link}, so a
+     * write with a body is reached by a link too.
+     */
+    @When("I expand the templated link {string} with:")
+    public void expandTemplated(String relation, DataTable values) throws Exception {
+        JsonNode answer = JSON.readTree(http.body());
+        assertThat(answer.path(LINKS).path(relation).path("templated").asBoolean(false))
+                .as("the link %s is templated: %s", relation, answer)
+                .isTrue();
+        expandedHref = expand(linkOf(answer, relation), values.asMap());
+        expandedMethod = methodOf(answer, relation);
+    }
+
+    /** Follows the link {@code I expand the templated link} expanded, with its method, an If-Match and the body. */
+    @When("I follow the expanded link with If-Match the remembered header {string} and the body:")
+    public void followExpanded(String header, String body) throws Exception {
+        assertThat(expandedHref)
+                .as("a link was expanded with: I expand the templated link")
+                .isNotNull();
+        String ifMatch = rememberedHeader(header);
+        assertThat(ifMatch).as("the header %s was remembered", header).isNotNull();
+        http.perform(
+                expandedMethod,
+                belowBase(Objects.requireNonNull(expandedHref)),
+                Map.of(
+                        HttpHeaders.CONTENT_TYPE,
+                        MediaType.APPLICATION_JSON_VALUE,
+                        HttpHeaders.IF_MATCH,
+                        Objects.requireNonNull(ifMatch)),
+                body);
+    }
+
+    /** The method a link of {@code answer} declares; {@code GET} when it declares none. */
+    private static String methodOf(JsonNode answer, String relation) {
+        return answer.path(LINKS).path(relation).path("method").asString("GET");
     }
 
     /** Follows the link {@code relation} of every element of the array {@code member} of the last answer. */

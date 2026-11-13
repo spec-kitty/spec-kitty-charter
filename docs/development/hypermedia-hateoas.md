@@ -121,39 +121,39 @@ used.
 | Relation | Points to | Method | On | Status |
 |---|---|---|---|---|
 | `self` | The resource itself | `GET` | Every success response whose URI has a `GET`: the root, the info, the offering, a page of artifacts, an artifact summary, an artifact (also as a write answers it), a mission type's step and skeleton. Not on a registered relationship, whose path has no `GET` | In the contract |
-| `collection` | The collection the resource belongs to | `GET` | An artifact: the pack's artifacts of its kind (`…/packs/{packId}/artifacts?kind=<kind>`); an effective mission type or step contract read: the activation's effective artifacts of its kind (`…/activations/{activationId}/artifacts?kind=<kind>`); a pack, once packs are read | In the contract (on an artifact) |
+| `collection` | The collection the resource belongs to | `GET` | An artifact: the pack's artifacts of its kind (`…/packs/{packId}/artifacts?kind=<kind>`; for an asset or a skill, the pack's list of that kind `…/packs/{packId}/artifacts/asset` or `…/artifacts/skill`); an effective mission type or step contract read: the activation's effective artifacts of its kind (`…/activations/{activationId}/artifacts?kind=<kind>`); a pack, once packs are read | In the contract (on an artifact) |
 | `item` | One member of a collection | `GET` | A listing item: pack, artifact | Proposed |
 | `up` | The parent resource | `GET` | An artifact (its pack); an effective artifact read, an effective agent profile read and an activation change (their activation). The effective mission reads (`getEffectiveMissionType`, `getEffectiveMissionStep`, `getEffectiveMissionSkeleton`, `getEffectiveMissionStepContract`) carry no `up`, deliberately: their `collection` or `mission-type` leads back | In the contract on the effective artifact read, the effective agent profile read and an activation change; proposed on an artifact |
 | `first` | The first page of a paged list: the same request without its page cursor ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page | In the contract |
 | `next` | The next page of a paged list ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page that is not the last; absent on the last | In the contract |
 | `info` | `/api/v1/info` | `GET` | Root | In the contract |
 | `service-desc` | The contract document, `/api/v1/openapi.yaml` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) | `GET` | Root; the service info | In the contract |
-| `packs` | `/api/v1/packs` | `GET` | Root | Proposed |
-| `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root; proposed elsewhere ([ADR-0020](/adr/0020-offering-and-activations/)) |
+| `packs` | The root: the registered packs, `/api/v1/packs`; an activation: its closure, `…/activations/{activationId}/packs` (`listActivationPacks`) | `GET` | Root; an activation | In the contract on an activation; proposed on the root |
+| `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root and on an activation; proposed on a pack in force ([ADR-0020](/adr/0020-offering-and-activations/)) |
 | `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored; a pack document read, a preset list and a preset: the pack they belong to | In the contract |
 | `doc` | `/api/v1/packs/{packId}/doc` | `GET` | A pack that holds a document (`README.md`), and a registration's stored answer for such a pack; absent otherwise | In the contract |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
 | `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`/api/v1/activations/{activationId}/artifacts{?kind,state}`, templated) | In the contract on the root, an offering pack, a registered relationship and an activation; proposed elsewhere |
-| `graph` | `…/graph` | `GET` | A pack; the offering; an activation | Proposed |
+| `graph` | `…/graph` | `GET` | A pack; the offering; an activation (`getEffectiveGraph`) | In the contract on an activation; proposed elsewhere |
 | `presets` | `/api/v1/packs/{packId}/presets` | `GET` | A pack, and a registration's stored answer: the pack's preset list (`listPackPresets`), on every pack; the offering | In the contract on a pack; proposed on the offering |
-| `assets` | `/api/v1/packs/{packId}/assets` | `GET` | A pack | Proposed |
 | `resolution` | `/api/v1/packs/{packId}/resolution` | `GET` | A pack | Proposed ([ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 7) |
 | `distribute` | `/api/v1/packs/{packId}/distributions` | `POST` | A pack that can be distributed | Proposed |
 | `kinds` | `/api/v1/offering/kinds` | `GET` | The offering | Proposed |
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
 | `activations` | `/api/v1/activations` | `POST` | Root | In the contract |
-| `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so neither an artifact's, a pack's nor a whole-pack registration is advertised by a link | Proposed |
-| `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
-| `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |
-| `effective-context` | `…/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An activation | Proposed |
-| `select`, `unselect` | `…/selections/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact | Proposed |
-| `exclude`, `include` | `…/exclusions/{kind}/{artifactId}` | `PUT`, `DELETE` | An effective artifact; `exclude` is absent on a required or locked one, `include` present only on an excluded one | Proposed |
-| `apply-preset` | `…/presets/{presetId}` | `PUT` | An offered preset, seen from an activation | Proposed |
+| `edit` | The activation (`replaceActivation`) | `PUT` | An activation. No other answer carries an `edit` link, so neither an artifact's, a pack's nor a whole-pack registration is advertised by a link | In the contract on an activation |
+| `delete` | The activation (`deleteActivation`) | `DELETE` | An activation | In the contract on an activation |
+| `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | In the contract on an activation |
+| `effective-context` | `…/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An activation (templated) | In the contract on an activation |
+| `select`, `unselect` | `…/selections/{kind}/{artifactId}` | `PUT`, `DELETE` | An activation (`select` only, templated by kind and id); an effective artifact | In the contract on an activation (`select`); proposed on an effective artifact |
+| `exclude`, `include` | `…/exclusions/{kind}/{artifactId}` | `PUT`, `DELETE` | An activation (`exclude` only, templated by kind and id); an effective artifact: `exclude` is absent on a required or locked one, `include` present only on an excluded one | In the contract on an activation (`exclude`); proposed on an effective artifact |
+| `apply-preset` | `…/presets/{presetId}` | `PUT` | An activation (templated by the preset's id); an offered preset, seen from an activation | In the contract on an activation; proposed on an offered preset |
 | `artifact` | `…/packs/{packId}/artifacts/{kind}/{artifactId}` | `GET` | A resolved reference: the pack-scoped read of the artifact it names; an effective artifact read, an effective agent profile read, and the `Artifact` envelope of `getEffectiveMissionType` and `getEffectiveMissionStepContract` (the winner's pack read); an effective list item, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve; a step contract's delegation candidate of a served kind; an effective action context: its step in the pack that holds the mission type in force (`…/packs/{packId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`) | In the contract |
 | `effective-artifact` | `…/activations/{activationId}/artifacts/{kind}/{artifactId}` | `GET` | An effective list item, an effective graph node, an action context item and a governance entry of an effective agent profile read, for a kind the pack-scoped artifact routes serve; an effective graph node of a step and an effective action context: the step under the activation (`…/activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}`); a delegation candidate of a served kind of a step contract read under an activation, when the activation's closure holds it | In the contract |
 | `references` | `…/packs/{packId}/artifacts/{kind}/{artifactId}/references` | `GET` | An agent profile: the references its pack writes for it | In the contract on an agent profile |
+| `payload` | `…/packs/{packId}/artifacts/asset/{artifactId}/payload` | `GET` | An asset (`getPackAsset`): its bytes, served with its own media type | In the contract on an asset |
 | `mission-type` | `…/artifacts/mission_type/{missionTypeId}` | `GET` | A step and a skeleton: the read of their mission type, under the same pack or activation. A step contract: the read of the type its `mission` names, when its scope holds it (in a pack, that pack; under an activation, the merged closure, so `getEffectiveMissionType`) | In the contract |
 | `step` | `…/artifacts/mission_type/{missionTypeId}/steps/{stepId}` | `GET` | A step contract: the step its `mission` and `action` name, when its scope holds it | In the contract |
 | `step-contract` | `…/artifacts/mission_step_contract/{artifactId}` | `GET` | A step: the step contract bound to it (its `mission` and `action`; the lowest id when several are); absent when none is | In the contract |
