@@ -76,8 +76,10 @@ tags:
   - name: EffectiveSkills
     description: >-
       The skills of an activation: the skills the activation's closure holds, each the copy the layer merge keeps, and
-      the read of one with its state and the skill as the winning pack declares it, whatever its state. Its own tag, so
-      that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+      the read of one with its state and the skill as the winning pack declares it, whatever its state. The list
+      answers every winner, unpaged and unfiltered; a client that wants the skills by state, or paged, reads
+      listEffectiveArtifacts with ?kind=skill (and ?state=), the stateful, paged list of the same winners. Its own tag,
+      so that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
   - name: EffectiveReferences
     description: >-
       The references of an artifact under an activation: the references the version in force writes, which are the

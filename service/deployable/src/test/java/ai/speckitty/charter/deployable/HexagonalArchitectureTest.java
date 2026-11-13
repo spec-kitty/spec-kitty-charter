@@ -1366,7 +1366,7 @@ class HexagonalArchitectureTest {
                 "ApplicationNamesMissionsInfra");
     }
 
-    // ---- The artifacts edge over the packs and activations slices (research R13 of the slice-a2 cutover reads) ----
+    // ---- The artifacts edge over the packs and activations slices (ADR-0037, amendment of 2026-11-13; research R13) -
     // The asset, skill and references reads of both trees live in :artifacts-edge, which follows the missions edge's
     // pattern with no domain module: :activations may not render a packs domain type (ACTIVATIONS_NAME_PACKS_ONLY_FROM_
     // ADAPTER). The edge asks the packs slice and the activations slice, each from one adapter package of its own, and
@@ -1550,6 +1550,10 @@ class HexagonalArchitectureTest {
                 portInterfacesResideInDomain("artifacts"),
                 ROOT + ".artifacts.application.badfixture",
                 "ArtifactsMisplacedRepository");
+        assertBites(
+                portImplementationsResideInStorage("artifacts"),
+                ROOT + ".artifacts.infra.api.badfixture",
+                "ArtifactsImplementsPortInEntrypoint");
     }
 
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------

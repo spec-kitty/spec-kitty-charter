@@ -22,7 +22,9 @@ import org.springframework.http.ResponseEntity;
  *       rule validate applies) and Spring can write it as a concrete header value; otherwise
  *       {@code application/octet-stream}. The second test is a limit of the transport, not a second rule: a mime the
  *       rule accepts but Spring cannot parse, or one with a wildcard, has no header value to give.
- *   <li>Every {@code 200} carries {@code X-Content-Type-Options: nosniff} and {@code Content-Security-Policy: sandbox}.
+ *   <li>Every {@code 200} carries {@code X-Content-Type-Options: nosniff} and
+ *       {@code Content-Security-Policy: sandbox; default-src 'none'}. No {@code Content-Disposition} is written, on
+ *       purpose: the payload is read by programs, and the two headers already contain a browser that opens it.
  *   <li>The {@code ETag} is the token the caller gives. {@code If-None-Match} is judged here by {@link EntityTags}, and
  *       a match ({@code *} included) is a {@code 304} without a body. On a {@code 200} the tag is handed to the web
  *       transport's {@link DeferredETag}, so that Spring's own conditional check, which mishandles {@code *} and a
@@ -44,8 +46,11 @@ public final class PayloadResponses {
     /** The value of {@link #CONTENT_TYPE_OPTIONS}: the client never sniffs another type. */
     public static final String NOSNIFF = "nosniff";
 
-    /** The value of {@link #CONTENT_SECURITY_POLICY}: a browser that opens the payload runs it in a sandbox. */
-    public static final String SANDBOX = "sandbox";
+    /**
+     * The value of {@link #CONTENT_SECURITY_POLICY}: a browser that opens the payload runs it in a sandbox and loads
+     * nothing from it.
+     */
+    public static final String SANDBOX = "sandbox; default-src 'none'";
 
     private static final char FIRST_VISIBLE = ' ';
     private static final char LAST_VISIBLE = '~';

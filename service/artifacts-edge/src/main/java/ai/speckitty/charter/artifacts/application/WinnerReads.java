@@ -10,6 +10,12 @@ import java.util.function.Supplier;
  * winner in that pack a moment ago, so a pack that is configured no longer ({@code pack_not_found}) or no longer holds
  * the artifact ({@code artifact_not_found}) means the packs changed between the two reads: {@code stale_input}, never a
  * refusal of a pack or artifact the request did not name.
+ *
+ * <p>The packs slice's {@code WinnerReferences} maps a vanished winner to {@code stale_input} too, on purpose and not as
+ * a copy of this one: the references read refuses an absent artifact with the not-found code of its kind
+ * ({@code directive_not_found}, {@code tactic_not_found}, ...), which this edge cannot see, because the references
+ * twin hands it any listed kind. This mapping serves the asset and skill twins, whose reads refuse with
+ * {@code artifact_not_found} alone. Each stays beside the read whose refusals it knows.
  */
 final class WinnerReads {
 

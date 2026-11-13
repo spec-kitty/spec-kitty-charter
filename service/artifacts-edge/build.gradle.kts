@@ -1,4 +1,4 @@
-// The edge rings of the artifacts reads (ADR-0006, ADR-0037 as amended 2026-11-09; research R13 of the slice-a2
+// The edge rings of the artifacts reads (ADR-0006, ADR-0037 as amended 2026-11-13; research R13 of the slice-a2
 // cutover reads): application, infra.api, infra.packs and infra.activations under ai.speckitty.charter.artifacts. They
 // hold the asset, skill and references reads of both trees, the pack and the activation, with one body mapper. They
 // cannot live in :activations, which names packs only from its infra.packs adapter, and they are not the packs slice's

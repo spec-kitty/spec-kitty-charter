@@ -689,9 +689,22 @@ public record ClosureView(
      * @return the winner's pack; empty when no pack of the closure holds the artifact
      */
     public Optional<PackIdentifier> winnerPackOf(ArtifactKind kind, String id) {
+        return heldWinner(kind, id).map(MergedClosure.Winner::packId);
+    }
+
+    /**
+     * The winner of one artifact across the closure's levels, read from the merge alone, as {@link #heldWinners} lists
+     * it: looked up by its URN in the merged closure, not found by filtering the list of its kind.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id
+     * @return the winner; empty when no pack of the closure holds the artifact, or the id is no URN id
+     * @throws CharterRefusal as {@link #merged()} does
+     */
+    public Optional<MergedClosure.Winner> heldWinner(ArtifactKind kind, String id) {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
-        return urnOf(kind, id).flatMap(merged().closure()::winnerOf).map(MergedClosure.Winner::packId);
+        return urnOf(kind, id).flatMap(merged().closure()::winnerOf);
     }
 
     /**

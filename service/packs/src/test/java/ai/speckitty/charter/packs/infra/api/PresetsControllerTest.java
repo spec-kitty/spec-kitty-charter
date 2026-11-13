@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.web.DeferredETag;
 import ai.speckitty.charter.web.ProblemHandler;
 import ai.speckitty.charter.web.RefusalHandler;
 import com.jayway.jsonpath.JsonPath;
@@ -39,7 +40,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The HTTP answers of {@code GET /packs/{packId}/presets} and {@code GET /packs/{packId}/presets/{presetId}} (#98): the
  * body with its links, the pack revision as the {@code ETag}, the fingerprint and the shared headers, the refusals, and
- * the wire name of every kind's list, which must be the camel case of the file's {@code activated_<plural>} key.
+ * the wire name of every kind's list, which must be the camel case of the file's {@code activated_<plural>} key. Neither
+ * read takes {@code If-None-Match}: a matching one still answers {@code 200} with the body.
  */
 class PresetsControllerTest {
 
@@ -57,7 +59,7 @@ class PresetsControllerTest {
         return MockMvcBuilders.standaloneSetup(
                         new PresetsController(presets, new PresetMapper(new Hypermedia("/api/v1"))))
                 .setMessageConverters(converters().toArray(new HttpMessageConverter<?>[0]))
-                .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
+                .setControllerAdvice(new RefusalHandler(), new ProblemHandler(), new DeferredETag())
                 .addFilters(new CharterHeaders(info))
                 .addPlaceholderValue("charter.api.base-path", "/api/v1")
                 .build();
@@ -173,6 +175,23 @@ class PresetsControllerTest {
                     .as("the list %s holds the %s item", wireName(kind), kind.token())
                     .isEqualTo(kind.token());
         }
+    }
+
+    @Test
+    void aMatchingIfNoneMatchStillAnswers200WithTheBodyOnBothReads() throws Exception {
+        holding(team());
+        when(presets.list(QA))
+                .thenReturn(new ConsistentRead.Verified<>(
+                        new PresetReadService.Listed(List.of(team()), REVISION), FINGERPRINT));
+
+        mvc.perform(get("/api/v1/packs/qa/presets/team").header("If-None-Match", TAG))
+                .andExpect(status().isOk())
+                .andExpect(header().string("ETag", TAG))
+                .andExpect(jsonPath("$.id").value("team"));
+        mvc.perform(get("/api/v1/packs/qa/presets").header("If-None-Match", TAG))
+                .andExpect(status().isOk())
+                .andExpect(header().string("ETag", TAG))
+                .andExpect(jsonPath("$.items[0].id").value("team"));
     }
 
     @Test

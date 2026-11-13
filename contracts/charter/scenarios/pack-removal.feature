@@ -305,7 +305,7 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 404
     And the response body is:
       """
-      {"title": "Kind not found", "status": 404, "code": "kind_not_found", "detail": "The service serves no artifact kind <kind>."}
+      {"title": "Kind not found", "status": 404, "code": "kind_not_found", "detail": "The service removes no artifact of kind <kind>."}
       """
     When I GET "/info"
     Then the field "sourceFingerprint" of the response body is the remembered one

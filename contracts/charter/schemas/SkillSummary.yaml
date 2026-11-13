@@ -1,7 +1,10 @@
 title: SkillSummary
 description: >-
-  One skill of a Charter Pack as listPackSkills lists it: its id, its title, when it applies, its form, and a self
-  link to the skill's own read (getPackSkill), which answers the whole skill and, for a prompt skill, its body.
+  One skill as a SkillList lists it: its id, its title, when it applies, and its form. In a pack (listPackSkills) it is
+  the pack's skill, and _links holds self, the skill's own read (getPackSkill), which answers the whole skill and, for
+  a prompt skill, its body. Under an activation (listEffectiveSkills) it is the copy the layer merge keeps, and _links
+  holds effective-artifact, its read under the activation (getEffectiveSkill), and artifact, the winning copy's read
+  in its pack (getPackSkill).
 type: object
 additionalProperties: false
 required:

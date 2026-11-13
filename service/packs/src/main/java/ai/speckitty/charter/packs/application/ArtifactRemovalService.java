@@ -210,7 +210,7 @@ public final class ArtifactRemovalService {
         ArtifactKind kind = ArtifactKind.fromToken(kindToken)
                 .filter(REMOVABLE::contains)
                 .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
+                        RefusalCode.KIND_NOT_FOUND, "The service removes no artifact of kind " + kindToken + "."));
         CharterRefusal absent = new CharterRefusal(
                 ArtifactReadService.absentCode(kind),
                 "Pack " + pack.value() + " holds no " + kind.token() + " " + artifactId + ".");

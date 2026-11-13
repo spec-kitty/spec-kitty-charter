@@ -90,7 +90,7 @@ Starting from the root, a client creates an activation and selects an artifact b
 
 - An asset sidecar whose payload file is missing is already refused at registration. The read never answers a descriptor with no bytes.
 - A templated item read (`…/artifacts/{kind}/{id}`) asked for `asset` or `skill` is refused with `kind_not_found`, and names the literal path, as for an agent profile.
-- A conditional read with a current `If-None-Match` answers `304` on each effective (activation) twin, as the existing effective reads do.
+- A conditional read with a current `If-None-Match` answers `304` on each effective asset and skill twin (`listEffectiveAssets`, `getEffectiveAsset`, `getEffectiveAssetPayload`, `listEffectiveSkills`, `getEffectiveSkill`), as the existing effective reads do. The references twin (`listEffectiveArtifactReferences`) takes no `ETag` and no `If-None-Match`, as its pack read (`listArtifactReferences`) takes none.
 - A preset is read only in its pack. Under an activation, `…/presets/{presetId}` stays the apply write.
 - A preset under the generic `?kind=` list does not exist: a preset is not an artifact.
 

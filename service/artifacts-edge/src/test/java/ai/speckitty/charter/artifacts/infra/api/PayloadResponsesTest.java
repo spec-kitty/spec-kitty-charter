@@ -59,7 +59,8 @@ class PayloadResponsesTest {
             assertThat(answer.getHeaders().getFirst("Charter-Source-Fingerprint"))
                     .isEqualTo(FINGERPRINT);
             assertThat(answer.getHeaders().getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
-            assertThat(answer.getHeaders().getFirst("Content-Security-Policy")).isEqualTo("sandbox");
+            assertThat(answer.getHeaders().getFirst("Content-Security-Policy"))
+                    .isEqualTo("sandbox; default-src 'none'");
             assertThat(answer.getHeaders().getETag())
                     .as("the tag is written with the body, after Spring's own check")
                     .isNull();

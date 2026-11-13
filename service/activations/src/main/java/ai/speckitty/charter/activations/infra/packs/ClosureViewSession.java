@@ -130,10 +130,8 @@ final class ClosureViewSession implements PacksSession {
     public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
-        return view.heldWinners(kind).stream()
-                .filter(winner -> winner.urn().id().equals(id))
-                .findFirst()
-                .map(ClosureViewSession::heldOf);
+        // The merged closure's own lookup by URN, the one winnerPackOf and the governance use.
+        return view.heldWinner(kind, id).map(ClosureViewSession::heldOf);
     }
 
     /** The activation domain's value of a winner of the packs slice's merge, of any kind. */

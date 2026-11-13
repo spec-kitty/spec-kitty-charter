@@ -164,7 +164,7 @@ Feature: The assets and skills of an activation are read as the copies the layer
     Then the response status is 200
     And the response header "Content-Type" is "text/x-python"
     And the response header "X-Content-Type-Options" is "nosniff"
-    And the response header "Content-Security-Policy" is "sandbox"
+    And the response header "Content-Security-Policy" is "sandbox; default-src 'none'"
     And the response header "Charter-Source-Fingerprint" appears once
     And the response body is the bytes of the file "assets/run.py" of the pack "proj"
     When I GET "/activations/a-1/artifacts/asset/run"
@@ -246,7 +246,7 @@ Feature: The assets and skills of an activation are read as the copies the layer
     And the field at "/reason" is "not_selected"
     And the field at "/skill/title" is "Terse"
 
-  Scenario Outline: <operation> answers 304 to a matching If-None-Match, and its tag is not the tag of another read
+  Scenario Outline: <operation> answers 304 to a matching If-None-Match, and its tag is not the tag of <against>
     When I GET "<path>"
     Then the response status is 200
     When I remember the header "ETag"
@@ -260,12 +260,12 @@ Feature: The assets and skills of an activation are read as the copies the layer
     Then the response status is 200
 
     Examples:
-      | operation                | path                                           | other                                          |
-      | listEffectiveAssets      | /activations/a-1/artifacts/asset               | /activations/a-1/artifacts/skill               |
-      | getEffectiveAsset        | /activations/a-1/artifacts/asset/run           | /activations/a-1/artifacts/asset/run/payload   |
-      | getEffectiveAssetPayload | /activations/a-1/artifacts/asset/run/payload   | /activations/a-1/artifacts/asset/run           |
-      | listEffectiveSkills      | /activations/a-1/artifacts/skill               | /activations/a-1/artifacts/asset               |
-      | getEffectiveSkill        | /activations/a-1/artifacts/skill/land-pr       | /activations/a-1/artifacts/skill/terse          |
+      | operation                | against                              | path                                         | other                                        |
+      | listEffectiveAssets      | listEffectiveSkills                  | /activations/a-1/artifacts/asset             | /activations/a-1/artifacts/skill             |
+      | getEffectiveAsset        | its payload                          | /activations/a-1/artifacts/asset/run         | /activations/a-1/artifacts/asset/run/payload |
+      | getEffectiveAssetPayload | its descriptor                       | /activations/a-1/artifacts/asset/run/payload | /activations/a-1/artifacts/asset/run         |
+      | listEffectiveSkills      | listEffectiveAssets                  | /activations/a-1/artifacts/skill             | /activations/a-1/artifacts/asset             |
+      | getEffectiveSkill        | another skill                        | /activations/a-1/artifacts/skill/land-pr     | /activations/a-1/artifacts/skill/terse       |
 
   Scenario Outline: <operation> under an activation that is not stored is 404 activation_not_found
     When I GET "<path>"
