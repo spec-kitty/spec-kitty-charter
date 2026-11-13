@@ -45,7 +45,7 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 - **The kernel's validator is a port of `modular-validators`.** `ai.speckitty.charter.kernel.validation` is a lean
   port of the operator's library ([`sddevelopment-be/modular-validators`](https://github.com/sddevelopment-be/modular-validators),
   Apache-2.0). It is vendored, and its attribution is in `kernel-validation-ATTRIBUTION.md`.
-  - 82 main files import it, but only as a check in constructors: 72 `guard()` calls, all fail-fast.
+  - 73 main files outside the package import it, but only as a check in constructors: 72 `guard()` calls, all fail-fast.
   - No main code uses `check()` or `Rationale`, so the full ruleset result goes unused.
   - Several adapters catch `ConstraintBreachException` to collect faults instead: `FilesystemPackStore`,
     `DomainRepositoryService`, `GuardClosure` and `GuideMarkdown`.
@@ -57,14 +57,16 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
     - load and registration: `FilesystemPackStore`, then `DomainRepositoryService.assembly`, then
       `WholePackStore.loadStaged`.
   - Converters glue the two pipelines together.
-  - `PackValidation`, the validate-mode entry point, is a bean that nothing injects. It misses the checks only the
+  - `PackValidation`, the validate-mode entry point, is wired as a bean in `CharterWiring` that no main code injects;
+    only tests use it. It misses the checks only the
     load runs: unmodelled files, manifest membership, the reserved shard and orphan fragments.
 - **Rules are duplicated.**
   - The pack-id grammar appears in both `PackRegistrationService` and `RegistrationAdmission`, while `PackIdentifier`
     checks only that the id is not blank.
   - Four identifier types write their own `^[a-z][a-z0-9-]*$`, which accepts `a--b`, beside the shared
     `IdentifierGrammar`.
-  - The kernel's `Constraints.isNotBlank()` has no callers; 20 sites write the same check inline.
+  - The kernel's `Constraints.isNotBlank()` has no callers; five sites write the same
+    `text != null && !text.isBlank()` check inline.
   - spec-kitty-open-packs re-implements the classification, the schema checks and the manifest rules in Python
     (`validate_pack_schemas.py`, 1,398 lines).
 - **The expensive checks compose a closure.** Registration impact (before and after each write), the mutability
