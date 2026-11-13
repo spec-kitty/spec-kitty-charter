@@ -91,8 +91,9 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
    - A `ModularRuleset<T>` is a `Rule` too, so a ruleset can hold rulesets. `check` returns a `Rationale` with every
      finding. `guard` stays for value objects, and its `ConstraintBreachException` carries the `Reason`.
    - `Location` is upstream's `Evidence` done right: typed and immutable, not a mutable string map.
-   - The kernel gains the shared grammar rules `notBlank`, `slug(max)` and `letterFirstSlug(max)`, the
-     `IdentifierGrammar` rules.
+   - The kernel turns the existing `IdentifierGrammar` predicates into the rules `notBlank`, `slug(max)` and
+     `letterFirstSlug(max)`. `isSlug` and `isLetterFirstSlug` are what the asset, skill, toolguide, preset, mission
+     type and mission step ids already use since #546.
 2. **Every identifier uses the shared grammar rules** *(operator, "everything strict")*. No identifier keeps a
    grammar of its own, so `a--b` and a trailing hyphen are refused everywhere.
    - **The pack id** is `slug(63)`: lowercase alphanumerics in hyphen-separated runs, with no leading, trailing or
