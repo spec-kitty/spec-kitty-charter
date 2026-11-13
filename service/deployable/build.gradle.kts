@@ -17,7 +17,8 @@ dependencies {
     // The asset, skill and references reads' edge rings, on the same terms.
     implementation(project(":artifacts-edge"))
     implementation(project(":web-transport"))
-    // pack-validation and pack-check (ADR-0075), on the test classpath only until :packs runs pack-validation (#553):
+    // pack-validation and pack-check (ADR-0075), on the test classpath only until this composition root wires
+    // pack-validation's rulesets into the service (#554):
     // HexagonalArchitectureTest runs PACK_VALIDATION_IS_FRAMEWORK_FREE once per module's package, and each run fails on
     // an empty selection, so a module missing here fails the gate rather than going unchecked. The service never runs pack-check.
     testImplementation(project(":pack-validation"))

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -20,12 +22,18 @@ import org.jspecify.annotations.Nullable;
  * What the whole-pack gate expects to see, and the two-way ratchet that holds the observed result to it.
  *
  * <p>Three checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
- * whole gate kind with no adapter ({@code kinds}), or a single file of a modelled kind ({@code files}), each with a
- * reason and the issue that owns it; it also names a modelled kind the pack has no file of ({@code empty_kinds}), which
- * the gate cannot prove and must not pass in silence. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
- * does not compare, each with a reason. {@code whole-pack/known-failures.yaml} names files of a modelled kind that fail
- * because the pack's own data is inconsistent, each pinned to where it differs and to the spec-kitty-open-packs issue
- * that owns the fix (ADR-0036 decision 5).
+ * single file of a modelled kind ({@code files}), with a reason and the issue that owns it; it also names each
+ * {@code file-kinds.yaml} schema the round trip does not model ({@code kinds}), with the reason, which excuses no file. {@code whole-pack/exclusions.yaml} is the gate's own append-only list
+ * of files it does not compare, each with a reason. {@code whole-pack/known-failures.yaml} names files of a modelled
+ * kind that fail because the pack's own data is inconsistent, each pinned to where it differs and to the
+ * spec-kitty-open-packs issue that owns the fix (ADR-0036 decision 5).
+ *
+ * <p>The gate runs over every charter example pack (ADR-0070, #547), so a file entry, a known failure and an exclusion
+ * name their pack as their first path segment ({@code org-base/drg/fragment.yaml}); {@link #forPack} scopes the lists
+ * to one pack, whose run is judged by {@link #evaluate}. What only all the packs together can prove is checked apart:
+ * every modelled kind has a file in some example pack ({@link #emptyKindProblems}), every entry names an example pack
+ * ({@link #unscopedEntries}), and every {@code file-kinds.yaml} schema is modelled or listed in {@code kinds} with a
+ * reason ({@link #schemaProblems}).
  *
  * <p>A file the table excludes (census kind {@code excluded:<glob>}) is judged apart, and is never red for being
  * unmodelled: the run checks that the store did not write it ({@link Status#EXCLUDED}), and the file needs no entry in
@@ -33,7 +41,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
  * listed item that now round-trips, so a fix is recorded the moment it lands. Stale entries, an exclusion over a
- * modelled file and a modelled kind with no files fail too, so the gate cannot pass vacuously.
+ * modelled file and an empty pack fail too, so the gate cannot pass vacuously. With no lists at all
+ * ({@link #none}) every red is a problem: the open-packs drift test judges each pack that way, so a file of a kind the
+ * round trip does not model fails it by kind and path.
  */
 final class WholePackExpectation {
 
@@ -59,30 +69,24 @@ final class WholePackExpectation {
     }
 
     /**
-     * An expected-red gate kind: no adapter models it yet.
+     * A {@code file-kinds.yaml} schema no adapter models, with the reason. It answers {@link #schemaProblems} alone and
+     * never excuses a file: a census file classed under it is red in every run, so a stray file of the kind, or a
+     * companion whose owner stopped naming it, fails the gate (#547). It goes stale when the round trip models the
+     * schema ({@code BASELINED_MODELLED_KIND}) or the table drops it ({@link #schemaProblems}).
      *
-     * @param kind the gate kind
-     * @param reason why it is red
-     * @param issue the issue that turns it green
+     * @param kind the schema name, as the census names a file of it
+     * @param reason why the round trip does not model it
+     * @param issue the issue that owns it
      */
     record KindEntry(String kind, String reason, String issue) {}
 
     /**
-     * A modelled gate kind the pinned pack has no file of, so the gate cannot prove it; listed so that an empty modelled
-     * kind is never passed in silence. The entry goes stale the moment the pack gains a file of the kind.
-     *
-     * @param kind the modelled gate kind
-     * @param reason why the pack has none, and where the kind is proved instead
-     * @param issue the issue that owns it
-     */
-    record EmptyKindEntry(String kind, String reason, String issue) {}
-
-    /**
      * An expected-red file of a modelled kind.
      *
-     * @param path the pack-relative path
-     * @param at where its first difference is expected (the path before the first {@code ": "} of the red detail, or
-     *     {@code refused}); a red file whose first difference moves elsewhere is a new loss, not this one
+     * @param path the path from the example packs' directory, the pack's name first ({@code org-base/drg/fragment.yaml});
+     *     pack-relative once {@link #forPack} has scoped the list
+     * @param at where its first difference is expected (as {@link #atOf}), or the whole red detail for a refused file;
+     *     a red file whose first difference moves elsewhere, or that is refused for another reason, is a new loss
      * @param reason why it is red
      * @param issue the issue that owns the fix
      */
@@ -92,7 +96,8 @@ final class WholePackExpectation {
      * A file of a modelled kind that fails because the pack's own data is inconsistent, while the fix is pending in
      * spec-kitty-open-packs (ADR-0036 decision 5). It expires itself: once the file round-trips, the gate fails.
      *
-     * @param path the pack-relative path
+     * @param path the path from the example packs' directory, the pack's name first; pack-relative once
+     *     {@link #forPack} has scoped the list
      * @param at where the file differs (as {@link #atOf}), or the whole red detail for a refused file
      * @param reason why it fails
      * @param issue the open-packs issue, {@code spec-kitty/spec-kitty-open-packs#<number>}
@@ -117,7 +122,8 @@ final class WholePackExpectation {
     /**
      * A class of files the gate does not compare.
      *
-     * @param match a pack-relative glob ({@code *} within a path segment, {@code **} across segments)
+     * @param match a glob from the example packs' directory, the pack's name first ({@code *} within a path segment,
+     *     {@code **} across segments); pack-relative once {@link #forPack} has scoped the list
      * @param reason why
      */
     record Exclusion(String match, String reason) {}
@@ -137,9 +143,8 @@ final class WholePackExpectation {
      *
      * @param files every census file, once, sorted by path
      * @param problems every reason the run fails; empty when it passes
-     * @param emptyKinds the listed modelled kinds the pack has no file of, which the run cannot prove
      */
-    record Evaluation(List<FileResult> files, List<String> problems, List<EmptyKindEntry> emptyKinds) {
+    record Evaluation(List<FileResult> files, List<String> problems) {
 
         /**
          * The count of each status per kind.
@@ -157,21 +162,138 @@ final class WholePackExpectation {
 
     private final List<KindEntry> kinds;
     private final List<FileEntry> files;
-    private final List<EmptyKindEntry> emptyKinds;
     private final List<Exclusion> exclusions;
     private final List<KnownFailure> knownFailures;
 
     private WholePackExpectation(
             List<KindEntry> kinds,
             List<FileEntry> files,
-            List<EmptyKindEntry> emptyKinds,
             List<Exclusion> exclusions,
             List<KnownFailure> knownFailures) {
         this.kinds = List.copyOf(kinds);
         this.files = List.copyOf(files);
-        this.emptyKinds = List.copyOf(emptyKinds);
         this.exclusions = List.copyOf(exclusions);
         this.knownFailures = List.copyOf(knownFailures);
+    }
+
+    /**
+     * No expectation at all: every red is a problem. The open-packs drift test judges each pack with it, so a file of a
+     * kind the round trip does not model, or a file the round trip gave no outcome for, fails by kind and path (#547).
+     *
+     * @return the empty expectation
+     */
+    static WholePackExpectation none() {
+        return new WholePackExpectation(List.of(), List.of(), List.of(), List.of());
+    }
+
+    /**
+     * The lists scoped to one example pack: the file entries, known failures and exclusions under {@code pack/},
+     * pack-relative, and every kind entry, which names a schema, not a file.
+     *
+     * @param pack the example pack's name
+     * @return the scoped expectation, judged by {@link #evaluate} against that pack's census
+     */
+    WholePackExpectation forPack(String pack) {
+        String prefix = pack + "/";
+        return new WholePackExpectation(
+                kinds,
+                files.stream()
+                        .filter(entry -> entry.path().startsWith(prefix))
+                        .map(entry -> new FileEntry(
+                                entry.path().substring(prefix.length()), entry.at(), entry.reason(), entry.issue()))
+                        .toList(),
+                exclusions.stream()
+                        .filter(entry -> entry.match().startsWith(prefix))
+                        .map(entry -> new Exclusion(entry.match().substring(prefix.length()), entry.reason()))
+                        .toList(),
+                knownFailures.stream()
+                        .filter(entry -> entry.path().startsWith(prefix))
+                        .map(entry -> new KnownFailure(
+                                entry.path().substring(prefix.length()),
+                                entry.at(),
+                                entry.reason(),
+                                entry.issue(),
+                                entry.roundTripOnly()))
+                        .toList());
+    }
+
+    /**
+     * The entries no {@link #forPack} scope reaches: a file entry, known failure or exclusion whose first path segment
+     * is not one of {@code packs}, so no pack's run would ever judge it.
+     *
+     * @param packs the example packs' names
+     * @return one problem per such entry, in list order
+     */
+    List<String> unscopedEntries(Collection<String> packs) {
+        List<String> problems = new ArrayList<>();
+        files.stream()
+                .map(FileEntry::path)
+                .filter(path -> !underOne(path, packs))
+                .forEach(path -> problems.add("STALE_BASELINE " + path + ": names no example pack " + packs
+                        + "; fix it in " + EXPECTED_RED_RESOURCE));
+        knownFailures.stream()
+                .map(KnownFailure::path)
+                .filter(path -> !underOne(path, packs))
+                .forEach(path -> problems.add("STALE_KNOWN_FAILURE " + path + ": names no example pack " + packs
+                        + "; fix it in " + KNOWN_FAILURES_RESOURCE));
+        exclusions.stream()
+                .map(Exclusion::match)
+                .filter(match -> !underOne(match, packs))
+                .forEach(match -> problems.add("STALE_EXCLUSION " + match + ": names no example pack " + packs
+                        + "; fix it in " + EXCLUSIONS_RESOURCE));
+        return problems;
+    }
+
+    private static boolean underOne(String path, Collection<String> packs) {
+        return packs.stream().anyMatch(pack -> path.startsWith(pack + "/"));
+    }
+
+    /**
+     * Ties the gate's kinds to the file-kind table (#547): every {@code file-kinds.yaml} schema is modelled by the round
+     * trip or listed in {@code kinds} with a reason, and every {@code kinds} entry is a schema of the table that the round
+     * trip does not model. A schema the round trip silently skips, as {@code org-fragment} was before #509, fails here
+     * whether or not an example pack holds a file of it.
+     *
+     * @param schemas the schema names of the table's {@code files} rules
+     * @param modelledKinds the gate kinds the round trip models
+     * @return one problem per schema or entry out of line, schemas first, each list sorted
+     */
+    List<String> schemaProblems(Collection<String> schemas, Set<String> modelledKinds) {
+        Set<String> listed = new TreeSet<>();
+        kinds.forEach(entry -> listed.add(entry.kind()));
+        List<String> problems = new ArrayList<>();
+        new TreeSet<>(schemas)
+                .stream()
+                        .filter(schema -> !modelledKinds.contains(schema) && !listed.contains(schema))
+                        .forEach(schema -> problems.add("UNMODELLED_SCHEMA " + schema
+                                + ": the round trip does not model this file-kinds.yaml schema, and "
+                                + EXPECTED_RED_RESOURCE
+                                + " does not list it in kinds with a reason"));
+        listed.stream()
+                .filter(kind -> !schemas.contains(kind))
+                .forEach(kind -> problems.add("STALE_BASELINE kind " + kind
+                        + ": not a file-kinds.yaml schema; remove it from " + EXPECTED_RED_RESOURCE));
+        return problems;
+    }
+
+    /**
+     * Every modelled kind has a file in at least one example pack, so the gate proves it somewhere (ADR-0070: the example
+     * packs carry every kind between them, each at the level it belongs to).
+     *
+     * @param censusByPack each example pack's census
+     * @param modelledKinds the gate kinds the round trip models
+     * @return one problem per modelled kind no pack has a file of, sorted
+     */
+    static List<String> emptyKindProblems(
+            Map<String, SortedMap<String, String>> censusByPack, Set<String> modelledKinds) {
+        Set<String> held = new HashSet<>();
+        censusByPack.values().forEach(census -> held.addAll(census.values()));
+        return new TreeSet<>(modelledKinds)
+                .stream()
+                        .filter(kind -> !held.contains(kind))
+                        .map(kind ->
+                                "EMPTY_MODELLED_KIND " + kind + ": no example pack has a file of this modelled kind")
+                        .toList();
     }
 
     /**
@@ -206,8 +328,7 @@ final class WholePackExpectation {
      *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
-        Map<String, Object> red =
-                document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files", "empty_kinds"));
+        Map<String, Object> red = document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files"));
         Map<String, Object> excluded = document(exclusionsYaml, EXCLUSIONS_RESOURCE, Set.of("exclusions"));
         List<KindEntry> kinds = new ArrayList<>();
         for (Map<String, String> entry : entries(red.get("kinds"), "kinds", List.of("kind", "reason", "issue"))) {
@@ -216,11 +337,6 @@ final class WholePackExpectation {
         List<FileEntry> files = new ArrayList<>();
         for (Map<String, String> entry : entries(red.get("files"), "files", List.of("path", "at", "reason", "issue"))) {
             files.add(new FileEntry(entry.get("path"), entry.get("at"), entry.get("reason"), entry.get("issue")));
-        }
-        List<EmptyKindEntry> emptyKinds = new ArrayList<>();
-        for (Map<String, String> entry :
-                entries(red.get("empty_kinds"), "empty_kinds", List.of("kind", "reason", "issue"))) {
-            emptyKinds.add(new EmptyKindEntry(entry.get("kind"), entry.get("reason"), entry.get("issue")));
         }
         List<Exclusion> exclusions = new ArrayList<>();
         for (Map<String, String> entry :
@@ -247,12 +363,13 @@ final class WholePackExpectation {
             }
             knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue, "true".equals(flag)));
         }
-        return new WholePackExpectation(kinds, files, emptyKinds, exclusions, knownFailures);
+        return new WholePackExpectation(kinds, files, exclusions, knownFailures);
     }
 
     /**
-     * The known failures, in list order: the single list the gate and every other ratchet over the gate's pack
-     * (built-in) read, never a copy. A refused file's entry pins the whole detail, {@code refused: <reason>}.
+     * The known failures, in list order: the single list the gate and every other ratchet over the example packs read,
+     * never a copy; scope it with {@link #forPack} first. A refused file's entry pins the whole detail,
+     * {@code refused: <reason>}.
      *
      * @return the known failures
      */
@@ -261,7 +378,7 @@ final class WholePackExpectation {
     }
 
     /**
-     * Judges one gate run.
+     * Judges one pack's gate run against lists scoped to it ({@link #forPack}, or {@link #none}).
      *
      * @param census every file of the pack with its gate kind
      * @param modelledKinds the gate kinds the round trip models
@@ -278,7 +395,7 @@ final class WholePackExpectation {
         judgement.checkKnownFailures();
         judgement.checkKindEntries();
         judgement.checkExclusions();
-        judgement.checkEmptyKinds();
+        judgement.checkNotEmpty();
         return judgement.evaluation();
     }
 
@@ -291,14 +408,12 @@ final class WholePackExpectation {
         private final Set<String> modelledKinds;
         private final Map<String, Optional<String>> observed;
         private final Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
-        private final Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
         private final Map<String, KnownFailure> knownEntries = new LinkedHashMap<>();
         private final Set<String> ambiguous;
         private final List<Pattern> patterns;
         private final List<FileResult> results = new ArrayList<>();
         private final List<String> problems = new ArrayList<>();
         private final Set<Integer> usedExclusions = new HashSet<>();
-        private final Set<String> redKinds = new HashSet<>();
         private final Set<String> excludedPaths = new HashSet<>();
 
         Judgement(SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
@@ -306,7 +421,6 @@ final class WholePackExpectation {
             this.modelledKinds = modelledKinds;
             this.observed = observed;
             files.forEach(entry -> fileEntries.put(entry.path(), entry));
-            kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
             knownFailures.forEach(entry -> knownEntries.put(entry.path(), entry));
             ambiguous = new HashSet<>(fileEntries.keySet());
             ambiguous.retainAll(knownEntries.keySet());
@@ -375,7 +489,6 @@ final class WholePackExpectation {
         }
 
         private void judgeRed(String path, String kind, boolean modelled, String red) {
-            redKinds.add(kind);
             if (ambiguous.contains(path)) {
                 // Judged by neither list, so it cannot pass by accident; the whole-list check names the conflict.
                 results.add(new FileResult(path, kind, Status.RED, red));
@@ -386,25 +499,21 @@ final class WholePackExpectation {
                 results.add(knownFailure(path, kind, red, knownEntry, problems));
                 return;
             }
-            @Nullable FileEntry fileEntry = fileEntries.get(path);
-            // A kind entry only ever covers a kind no adapter models; for a modelled kind each file is listed alone.
-            @Nullable KindEntry kindEntry = modelled ? null : kindEntries.get(kind);
-            results.add(expectedRed(path, kind, red, fileEntry, kindEntry));
+            // A kind entry never excuses a file (#547): a file of an unmodelled kind has no entry to match, so it is
+            // red.
+            @Nullable FileEntry fileEntry = modelled ? fileEntries.get(path) : null;
+            results.add(expectedRed(path, kind, red, fileEntry));
         }
 
-        /** Judges a red file against the expected-red list: by its file entry, else its kind entry. */
-        private FileResult expectedRed(
-                String path, String kind, String red, @Nullable FileEntry fileEntry, @Nullable KindEntry kindEntry) {
-            if (fileEntry != null && !atOf(red).equals(fileEntry.at())) {
+        /** Judges a red file of a modelled kind against its file entry, if it has one. */
+        private FileResult expectedRed(String path, String kind, String red, @Nullable FileEntry fileEntry) {
+            if (fileEntry != null && !matches(red, fileEntry.at())) {
                 problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '"
                         + fileEntry.at() + "', now: " + red);
                 return new FileResult(path, kind, Status.RED, red);
             } else if (fileEntry != null) {
                 return new FileResult(
                         path, kind, Status.EXPECTED_RED, expected(red, fileEntry.reason(), fileEntry.issue()));
-            } else if (kindEntry != null) {
-                return new FileResult(
-                        path, kind, Status.EXPECTED_RED, expected(red, kindEntry.reason(), kindEntry.issue()));
             }
             problems.add("UNEXPECTED_RED " + path + " (" + kind + "): " + red);
             return new FileResult(path, kind, Status.RED, red);
@@ -417,6 +526,10 @@ final class WholePackExpectation {
                             + EXPECTED_RED_RESOURCE);
                 } else if (excludedPaths.contains(entry.path())) {
                     problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
+                            + EXPECTED_RED_RESOURCE);
+                } else if (!modelledKinds.contains(census.get(entry.path()))) {
+                    problems.add("FILE_ENTRY_UNMODELLED " + entry.path() + " (" + census.get(entry.path())
+                            + "): no adapter models this kind, and an entry never excuses such a file; remove it from "
                             + EXPECTED_RED_RESOURCE);
                 }
             }
@@ -442,18 +555,16 @@ final class WholePackExpectation {
             }
         }
 
+        /**
+         * A kind entry names a schema, not this pack's files, so its staleness against the table is
+         * {@link #schemaProblems}'s; here only a modelled kind listed as a whole is a problem.
+         */
         void checkKindEntries() {
             for (KindEntry entry : kinds) {
                 if (modelledKinds.contains(entry.kind())) {
                     problems.add("BASELINED_MODELLED_KIND " + entry.kind()
                             + ": a modelled kind is never expected red as a whole; remove it from "
                             + EXPECTED_RED_RESOURCE + " and list any red file of it one by one");
-                } else if (!census.containsValue(entry.kind())) {
-                    problems.add("STALE_BASELINE kind " + entry.kind() + ": no file has this kind; remove it from "
-                            + EXPECTED_RED_RESOURCE);
-                } else if (!redKinds.contains(entry.kind())) {
-                    problems.add("UNEXPECTEDLY_GREEN kind " + entry.kind()
-                            + ": no file of it is red now; remove it from " + EXPECTED_RED_RESOURCE);
                 }
             }
         }
@@ -466,30 +577,15 @@ final class WholePackExpectation {
             }
         }
 
-        void checkEmptyKinds() {
-            Set<String> listedEmpty = new HashSet<>();
-            for (EmptyKindEntry entry : emptyKinds) {
-                listedEmpty.add(entry.kind());
-                if (!modelledKinds.contains(entry.kind())) {
-                    problems.add("STALE_BASELINE empty kind " + entry.kind() + ": not a modelled kind; remove it from "
-                            + EXPECTED_RED_RESOURCE);
-                } else if (census.containsValue(entry.kind())) {
-                    problems.add("STALE_BASELINE empty kind " + entry.kind()
-                            + ": the pack has a file of it now; remove it from " + EXPECTED_RED_RESOURCE);
-                }
-            }
-            for (String kind : new java.util.TreeSet<>(modelledKinds)) {
-                if (!census.containsValue(kind) && !listedEmpty.contains(kind)) {
-                    problems.add("EMPTY_MODELLED_KIND " + kind + ": the pack has no file of this modelled kind");
-                }
+        /** A run over no file proves nothing, so it cannot pass. */
+        void checkNotEmpty() {
+            if (census.isEmpty()) {
+                problems.add("EMPTY_PACK: the census has no file, so the run proves nothing");
             }
         }
 
         Evaluation evaluation() {
-            List<EmptyKindEntry> unproved = emptyKinds.stream()
-                    .filter(entry -> modelledKinds.contains(entry.kind()) && !census.containsValue(entry.kind()))
-                    .toList();
-            return new Evaluation(List.copyOf(results), List.copyOf(problems), unproved);
+            return new Evaluation(List.copyOf(results), List.copyOf(problems));
         }
     }
 
@@ -517,7 +613,7 @@ final class WholePackExpectation {
         return new FileResult(path, kind, Status.RED, red);
     }
 
-    /** Whether a red detail is the one a known failure pins: the same {@link #atOf}, or the whole refusal. */
+    /** Whether a red detail is the one an entry pins: the same {@link #atOf}, or the whole refusal. */
     private static boolean matches(String red, String at) {
         return "refused".equals(atOf(red)) ? red.equals(at) : atOf(red).equals(at);
     }

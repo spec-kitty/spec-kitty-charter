@@ -13,7 +13,6 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaFieldAccess;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -69,9 +68,7 @@ class ReservedRefusalCodesTest {
     /** The classes that may name an unraised code because no operation reaches them, and the codes each may name. */
     private static final Map<String, Set<String>> OFF_WIRE = Map.of(PACK_FINDING_CODE, Set.of("PACK_LEVEL_MISMATCH"));
 
-    private static final JavaClasses MAIN = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("ai.speckitty.charter");
+    private static final JavaClasses MAIN = ServiceClasses.main();
 
     /** A class and its nested and synthetic classes. */
     private static String pattern(String className) {
@@ -197,6 +194,16 @@ class ReservedRefusalCodesTest {
                         "PRESET_NOT_FOUND",
                         "ACTION_NOT_FOUND");
         assertThat(unraisedCodes()).doesNotContain("PRESET_NOT_FOUND", "ACTION_NOT_FOUND");
+        // #438 (FR-006, SC-003): the compose check of a step enhancement in force (C38) raises prompt_slot_missing on
+        // the composing reads, at registration, on the impact-checked writes and on the activation writes, so none of
+        // ADR-0066's four codes is reserved any more.
+        assertThat(raisedCodes())
+                .contains(
+                        "PROMPT_SLOT_MISSING",
+                        "PROMPT_SLOT_MALFORMED",
+                        "PROMPT_SLOT_NOT_EMPTY",
+                        "PROMPT_FRAGMENT_INVALID");
+        assertThat(unraisedCodes()).doesNotContain("PROMPT_SLOT_MISSING");
     }
 
     @ParameterizedTest
@@ -342,7 +349,8 @@ class ReservedRefusalCodesTest {
                 RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
                 RefusalCode.FALLBACK_PROFILE_MISSING,
                 RefusalCode.FALLBACK_PROFILE_CONFLICT,
-                RefusalCode.NO_PROFILE_MATCHED
+                RefusalCode.NO_PROFILE_MATCHED,
+                RefusalCode.MISSION_TYPE_NOT_IN_FORCE
             };
         }
     }

@@ -1,0 +1,208 @@
+{
+  "event_count": 126,
+  "last_event_id": "01M7ASBBMA17C17YY8NFNBR9BB",
+  "materialized_at": "2026-11-13T15:45:18.987036+00:00",
+  "mission_number": "",
+  "mission_slug": "effective-step-and-action-context-01M774HB",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 11,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7AS9P99H30RJZE43GG0638T",
+      "last_transition_at": "2026-11-13T15:44:24.361363+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP01-ownership-rule-walk/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP01-ownership-rule-walk/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 6273,
+      "shell_pid_created_at": "1794467223.7"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASA6GSQ0HCYXF31YN2WQCY",
+      "last_transition_at": "2026-11-13T15:44:40.985267+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP02-context-served-applies-through/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP02-context-served-applies-through/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3737,
+      "shell_pid_created_at": "1794473329.81"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7AS9W94VQFA556ESQ8J29RZ",
+      "last_transition_at": "2026-11-13T15:44:30.500745+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP03-prompt-facts/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP03-prompt-facts/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 17257,
+      "shell_pid_created_at": "1794484413.6"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASA1F3FSD70Q3MDRJNYZ64",
+      "last_transition_at": "2026-11-13T15:44:35.811149+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP04-compose-target-and-lock/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP04-compose-target-and-lock/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 30849,
+      "shell_pid_created_at": "1794468797.27"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASABZBBFDZ3Q403YWCD0C7",
+      "last_transition_at": "2026-11-13T15:44:46.571551+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP05-compose-slots-declared/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP05-compose-slots-declared/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 25908,
+      "shell_pid_created_at": "1794509487.02"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASAPE2D3BP44PP0NDY0K23",
+      "last_transition_at": "2026-11-13T15:44:57.282763+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP06-effective-prompt-query/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP06-effective-prompt-query/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 25906,
+      "shell_pid_created_at": "1794512940.24"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASB11VF1G864N81SQ816GV",
+      "last_transition_at": "2026-11-13T15:45:08.155196+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP07-effective-prompt-read-served/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP07-effective-prompt-read-served/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 25688,
+      "shell_pid_created_at": "1794520888.58"
+    },
+    "WP08": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASBBMA17C17YY8NFNBR9BB",
+      "last_transition_at": "2026-11-13T15:45:18.987036+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP08-records-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP08-records-and-docs/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 16929,
+      "shell_pid_created_at": "1794554516.16"
+    },
+    "WP09": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASB6HFKKFENSPH8NKQ4E0B",
+      "last_transition_at": "2026-11-13T15:45:13.775628+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP09-effective-step-follows-its-place/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP09-effective-step-follows-its-place/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1592,
+      "shell_pid_created_at": "1794550139.57"
+    },
+    "WP10": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASAVMDJQQ5NQD0EB3198GB",
+      "last_transition_at": "2026-11-13T15:45:02.605659+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP10-every-overrider-named/review-cycle-1.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP10-every-overrider-named/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 31137,
+      "shell_pid_created_at": "1794476791.84"
+    },
+    "WP11": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7ASAH8HBM4D3DXH57RNQGAQ",
+      "last_transition_at": "2026-11-13T15:44:51.985729+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/effective-step-and-action-context-01M774HB-coord/kitty-specs/effective-step-and-action-context-01M774HB/tasks/WP11-override-source-activatable/review-cycle-2.md",
+        "reference": "review-cycle://effective-step-and-action-context-01M774HB/WP11-override-source-activatable/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 24871,
+      "shell_pid_created_at": "1794483189.22"
+    }
+  }
+}

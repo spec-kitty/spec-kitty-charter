@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveArtifactRead;
+import ai.speckitty.charter.activations.domain.EffectivePrompt;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -20,17 +21,22 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.EdgeIndex;
+import ai.speckitty.charter.packs.application.EffectivePromptQuery;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -260,6 +266,69 @@ class ClosureViewSessionArtifactTest {
     }
 
     /** A closure of hand-built packs, merged for real, whose winners are read from a source that records its reads. */
+    // ---- the effective prompt (WP07): whether an artifact is in force, before the slot check, and the mapping
+
+    @Test
+    void anArtifactIsInForceExactlyWhenTheResolutionPutsItInForce() {
+        PacksSession session = new Closure()
+                .pack("beta", PackLevel.BUILT_IN, List.of(), List.of("directive:D", "directive:S"))
+                .session();
+
+        assertThat(session.isInForce(D_REF, selecting(D_REF))).as("selected").isTrue();
+        assertThat(session.isInForce(S_REF, selecting(D_REF)))
+                .as("held and not selected")
+                .isFalse();
+        assertThat(session.isInForce(ref("directive:GHOST"), selecting(D_REF)))
+                .as("not held")
+                .isFalse();
+    }
+
+    @Test
+    void theEffectivePromptIsMappedAsTextWithItsPacksSlotsFragmentsAndDiagnostic() {
+        EffectivePromptQuery.EffectivePrompt answer = new EffectivePromptQuery.EffectivePrompt(
+                Payload.of("# Plan \u2014 legacy\n".getBytes(StandardCharsets.UTF_8)),
+                Optional.of(new PackIdentifier("base")),
+                List.of(
+                        new EffectivePromptQuery.Slot(
+                                new SlotId("spdd:reasons-block"),
+                                List.of(new EffectivePromptQuery.Fragment(
+                                        new PackIdentifier("base"),
+                                        "base-pack",
+                                        PackLevel.ORG,
+                                        "spdd-plan",
+                                        "Fill.\n"))),
+                        new EffectivePromptQuery.Slot(new SlotId("team:checklist"), List.of())),
+                List.of(new Diagnostic(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY, "slot spdd:reasons-block holds text")));
+
+        EffectivePrompt prompt = ClosureViewSession.promptOf(answer);
+
+        assertThat(prompt.prompt()).isEqualTo("# Plan \u2014 legacy\n");
+        assertThat(prompt.promptPackId()).contains("base");
+        assertThat(prompt.slots())
+                .containsExactly(
+                        new EffectivePrompt.Slot(
+                                "spdd:reasons-block",
+                                List.of(new EffectivePrompt.Fragment(
+                                        "base", "base-pack", PackLevel.ORG, "spdd-plan", "Fill.\n"))),
+                        new EffectivePrompt.Slot("team:checklist", List.of()));
+        assertThat(prompt.diagnostics())
+                .containsExactly(new EffectivePrompt.Diagnostic(
+                        EffectivePrompt.Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY, "slot spdd:reasons-block holds text"));
+        assertThat(ClosureViewSession.promptOf(EffectivePromptQuery.EffectivePrompt.NONE))
+                .isEqualTo(EffectivePrompt.NONE);
+    }
+
+    @Test
+    void aDiagnosticThePromptQueryNeverListsIsAFault() {
+        EffectivePromptQuery.EffectivePrompt answer = new EffectivePromptQuery.EffectivePrompt(
+                Payload.of("# Plan\n".getBytes(StandardCharsets.UTF_8)),
+                Optional.of(new PackIdentifier("base")),
+                List.of(),
+                List.of(new Diagnostic(Diagnostic.Code.FILE_NOT_HELD, "notes.md")));
+
+        assertThatThrownBy(() -> ClosureViewSession.promptOf(answer)).isInstanceOf(IllegalStateException.class);
+    }
+
     private static final class Closure {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();

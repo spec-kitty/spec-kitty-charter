@@ -103,10 +103,17 @@ put:
         defining one id, among them), and one that would break a relation rule with override_not_permitted,
         enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
         root pack and the packs involved, and nothing is written.
+        A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
+        the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
+        named in the detail, and nothing is written.
         An edge that would give a held step enhancement an overrides edge or a second enhances edge, or replace its one
         enhances edge (prompt_fragment_invalid), is refused as well: an enhancement only adds and has exactly one
         enhances edge, and the detail names the enhancement. This is the one operation that answers the code as the
         problem's own, 422 in place of the 500 of a read; nothing is written.
+        An overrides edge whose from is not of an activatable kind (a template, an asset, a guard or a lifecycle;
+        FR-014) is refused validation_failed with one violation at /from whose code is overrides_source_not_activatable:
+        such an artifact has no activation state and cannot stand in for another. Nothing is written. The same edge
+        from an activatable kind is unchanged.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -116,6 +123,9 @@ put:
         application/problem+json:
           schema:
             $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            overrides-source-not-activatable:
+              $ref: ../examples/CharterRefusal.overrides-source-not-activatable.yaml
     '428':
       $ref: ../../_shared/responses/Problem.yaml
     '500':
@@ -256,6 +266,9 @@ delete:
         override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
         member naming the root pack of the closure and the packs involved; validation_failed when the pack that would
         result does not revalidate. The composition codes answer 422 here, in place of 500.
+        A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
+        the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
+        named in the detail, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

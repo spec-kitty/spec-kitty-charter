@@ -81,7 +81,7 @@ final class EffectiveReadFixture {
     final CountingSources digests;
     private final AtomicInteger revision = new AtomicInteger();
 
-    /** The digests the real sources took, as a read asks for them. */
+    /** The digests the real sources took, as a read asks for them: whole digests, and the packs closure digests read. */
     static final class CountingSources implements PackSources {
 
         private final PackSources real;
@@ -98,9 +98,10 @@ final class EffectiveReadFixture {
             return real.fingerprint();
         }
 
+        /** Counts each pack a closure digest reads, so the count is the work whether the packs come in one call or many. */
         @Override
         public String fingerprintOf(Collection<String> packNames) {
-            closure.incrementAndGet();
+            closure.addAndGet(packNames.size());
             return real.fingerprintOf(packNames);
         }
 

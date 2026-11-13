@@ -7,7 +7,9 @@ import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
@@ -59,7 +61,9 @@ public class ActivationJson {
                 .setMixInAnnotation(EffectiveArtifact.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveArtifactRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveArtifactSuggestion.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(EffectiveContextArtifact.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveGraphNode.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(EffectiveStepPrompt.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SkippedReport.class, OmitAbsentMembers.class);
     }
 

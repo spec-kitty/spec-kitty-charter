@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "mission_slug": "effective-step-and-action-context-01M774HB",
+  "mission_id": "01M774HBKQJ82W6EMZ8P2K4CHT",
+  "mission_branch": "kitty/mission-effective-step-and-action-context-01M774HB",
+  "target_branch": "slice-c/effective-step-context",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ActionContextWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ActionContextWalkOwnershipTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ActionContextWalkTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/WriteFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PromptFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositionFactsCacheTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/WriteFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PromptFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServicePromptFactsTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-step-enhancement-compose-target-and-lock.md",
+        "contracts/charter/scenarios/step-enhancement-compose.feature",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ImpactRelations.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/EnhancementCompose.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsEnhancementTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/OfferingReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/EnhancementComposeTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-effective-context-ownership.md",
+        "contracts/charter/scenarios/effective-context-scoping.feature",
+        "contracts/charter/scenarios/effective-graph-and-context.feature",
+        "contracts/charter/schemas/EffectiveActionContext.yaml",
+        "contracts/charter/schemas/EffectiveContextArtifact.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/ActionContext.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveContext.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSession.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveContextTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveTagTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapperTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-prompt-slot-missing-raised.md",
+        "contracts/charter/scenarios/errors.feature",
+        "contracts/charter/scenarios/step-enhancement-slots.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationWrites.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ActivationImpactAdapter.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationServiceTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ActivationImpactAdapterTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ActivationImpact.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RegistrationImpact.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SlotCompose.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationImpactTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/SlotComposeTest.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/RefusalHandler.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/RefusalHandlerTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP11"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-override-source-activatable.md",
+        "contracts/charter/scenarios/override-source-kind.feature",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/OverrideSourceRule.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/OverrideSourceRuleTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EffectivePromptQuery.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/EffectivePromptQueryTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-e"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-every-overrider-named.md",
+        "contracts/charter/scenarios/effective-overriders.feature",
+        "contracts/charter/schemas/EffectiveAgentProfileRead.yaml",
+        "contracts/charter/schemas/EffectiveArtifact.yaml",
+        "contracts/charter/schemas/EffectiveArtifactRead.yaml",
+        "contracts/charter/schemas/EffectiveGovernanceEntry.yaml",
+        "contracts/charter/schemas/OverriddenArtifact.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/DocumentRules.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveSet.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveSkippedReport.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/MergedSnapshot.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveArtifactMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceStates.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionOverridersTest.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileJson.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-effective-step-prompt.md",
+        "contracts/charter/changes/2026-11-12-mission-type-not-in-force.md",
+        "contracts/charter/headers/CharterSourceFingerprint.yaml",
+        "contracts/charter/headers/EffectiveETag.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml",
+        "contracts/charter/scenarios/effective-step-prompt.feature",
+        "contracts/charter/schemas/EffectivePromptFragment.yaml",
+        "contracts/charter/schemas/EffectivePromptSlot.yaml",
+        "contracts/charter/schemas/EffectiveStepPrompt.yaml",
+        "contracts/charter/schemas/SlotId.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "contracts/lint/ruleset.yaml",
+        "docs/development/hypermedia-hateoas.md",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/PacksSession.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectivePrompt.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationController.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectivePromptTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationControllerTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationMapperTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-e",
+        "lane-f"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-12-effective-step-follows-its-place.md",
+        "contracts/charter/scenarios/effective-mission-types.feature",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/ActivationMissionTypes.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/EffectiveMissionTypeReadService.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/EffectiveStepPlace.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/infra/activations/ActivationsMissionTypes.java",
+        "service/missions-edge/src/test/java/ai/speckitty/charter/missions/application/EffectiveMissionTypeReadServiceTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-g"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "docs/adr/0018-action-context-read-and-seam-access-surface.md",
+        "docs/adr/0066-a-step-enhancement-may-contribute-prompt-fragments.md",
+        "docs/api/service-contract.md",
+        "docs/architecture/composition-and-activation-rules.md",
+        "docs/changelog/2026-11-12-effective-step-and-action-context.md",
+        "docs/changelog/README.md",
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/divergences.yaml",
+        "docs/context/conceptual-model.md",
+        "docs/development/http-status-codes.md",
+        "docs/development/rest-resource-conventions.md",
+        "docs/glossary/charter/README.md",
+        "docs/plans/next-slices-2026-11-11.md",
+        "docs/plans/roadmap.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-d",
+        "lane-e",
+        "lane-g"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-11-12T07:54:56.696102+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP08"
+  ],
+  "planning_commit_sha": "e62d690b70870a699feb2140f8a71ff358d22ad7"
+}

@@ -211,4 +211,15 @@ class ActivationMapperTest {
         assertThat(Optional.ofNullable(alpha.getLinks().get("artifacts").getMethod()))
                 .isEmpty();
     }
+
+    @Test
+    void thePromptAndTheContextOfAStepAreTheContractsPathsUnderTheBasePathEachVariableEncoded() {
+        assertThat(mapper.prompt("a-1", "software-dev", "plan"))
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt");
+        assertThat(mapper.effectiveContext("a-1", "software-dev", "plan"))
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/plan/context");
+        assertThat(mapper.prompt("a/1", "m", "s?x"))
+                .as("a variable stays one segment")
+                .isEqualTo("/api/v1/activations/a%2F1/mission-types/m/actions/s%3Fx/prompt");
+    }
 }

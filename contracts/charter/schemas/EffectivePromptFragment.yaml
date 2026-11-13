@@ -1,0 +1,61 @@
+title: EffectivePromptFragment
+description: >-
+  One prompt fragment of a step enhancement in force, with where it came from: the pack that holds the winning copy of
+  the enhancement after the layer merge, that pack's descriptor name and level, and the enhancement. Only the winning
+  copy contributes.
+type: object
+additionalProperties: false
+required:
+- packId
+- packName
+- level
+- enhancement
+- text
+properties:
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the winning copy of the step enhancement, as the effective
+      reads name a pack.
+    x-derived:
+      rule: The pack of the winning version of the step enhancement after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packName:
+    type: string
+    minLength: 1
+    description: >-
+      The descriptor name of that pack (the name its pack.yaml declares), the second ordering key. Distinct from
+      packId, the configured identifier: two packs may sort one way by id and the other by name.
+    x-derived:
+      rule: The name of the descriptor of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of that pack (built-in, org or project), the first ordering key.
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  enhancement:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The step enhancement's declared id, without a kind prefix; the third ordering key.
+    x-derived:
+      rule: The id of the step enhancement whose prompt_fragments entry names the slot.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  text:
+    type: string
+    minLength: 1
+    description: >-
+      The fragment's Markdown body as the pack's prompt facts hold it: the canonical text of the held fragment, LF line
+      endings, with no frontmatter and no slot marker (both checked at load). Read as text: an artifact its prose
+      mentions is never a reference.
+    x-derived:
+      rule: The canonical text of the fragment file the prompt_fragments entry names.
+      inputs:
+      - schemas/ActivationConfig.yaml

@@ -1,8 +1,10 @@
 summary: >-
-  The effective context of one action: the directive in force that the step scopes, the enhancer in force of the step
-  itself, and a tactic the directive suggests that the activation does not select, listed as a suggestion with the
-  edge's when and reason. self is the context; effective-artifact is the step's read under the activation and artifact
-  its read in main, the pack that holds the mission type's version in force.
+  The effective context of one action: the directive in force that the step scopes (appliesThrough action), a directive
+  in force that no action and no mission type scopes (appliesThrough project), the enhancer in force of the step itself,
+  and a tactic the first directive suggests that the activation does not select, listed as a suggestion with the edge's
+  when and reason and the appliesThrough of the directive that suggests it. self is the context; effective-artifact is the step's read under the activation and artifact
+  its read in main, the pack of the step's place; prompt is the step's effective prompt,
+  offered because software-dev is in force.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -18,11 +20,26 @@ value:
       required: false
       policy: open
       reason: selected
+      appliesThrough: action
       _links:
         effective-artifact:
           href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_010
         artifact:
           href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_010
+    - kind: directive
+      artifactId: DIRECTIVE_032
+      packId: main
+      level: org
+      state: active
+      required: false
+      policy: open
+      reason: selected
+      appliesThrough: project
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_032
+        artifact:
+          href: /api/v1/packs/main/artifacts/directive/DIRECTIVE_032
     - kind: tactic
       artifactId: acceptance-test-first
       packId: main
@@ -31,6 +48,7 @@ value:
       required: false
       policy: open
       reason: not_selected
+      appliesThrough: action
       suggestion:
         when: the change has no test yet
         reason: a failing test shows the change is needed
@@ -68,3 +86,5 @@ value:
       href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
     artifact:
       href: /api/v1/packs/main/artifacts/mission_type/software-dev/steps/implement
+    prompt:
+      href: /api/v1/activations/a-1/mission-types/software-dev/actions/implement/prompt

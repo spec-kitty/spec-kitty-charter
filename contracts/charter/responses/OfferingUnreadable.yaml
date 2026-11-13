@@ -8,12 +8,15 @@ description: >-
   case; putPackRelationship answers the last three with 422 instead, for the to it was given, and also for a preset
   or lock mismatch),
   when the configured packs cannot be served together, with the packs member naming the packs involved, the
-  violating pack first; or one of three others: pack_unreadable, when a configured pack's directory is missing, it
+  violating pack first; or one of four others: pack_unreadable, when a configured pack's directory is missing, it
   has no readable pack.yaml, a preset item names an id outside the id grammar, or a file the fingerprint covers
   cannot be read or a directory cannot be listed; or the layer merge of the closure refuses: an override the
   mutability level of the overridden artifact forbids (C21), an overrides cycle, an answer that does not settle (an
-  unstable answer), or an overrides edge that ends at its own source (self_override), each naming the artifact or the
-  packs involved; stale_input, when the
+  unstable answer), an overrides edge that ends at its own source (self_override), an enhancement of a step whose
+  mission type is locked (C37), or an overrides edge whose source is not of an activatable kind (#447), each naming
+  the artifact, the graph document or the packs involved; prompt_slot_missing, when a step enhancement in force fills
+  a slot the prompt in force of its step does not declare (C38, ADR-0066 decision 8), naming the enhancement, its pack,
+  the slot, the step and the pack that holds the prompt in force; stale_input, when the
   packs or the project configuration changed while the read was answered, which may be retried; and
   internal_error, an unexpected failure, which may be retried. A refusal carries no source
   fingerprint header.
@@ -34,6 +37,15 @@ content:
           status: 500
           code: pack_unreadable
           detail: pack qa has no pack.yaml
+      prompt-slot-missing:
+        summary: A step enhancement in force fills a slot the prompt in force of its step does not declare.
+        value:
+          title: Prompt slot missing
+          status: 500
+          code: prompt_slot_missing
+          detail: >-
+            step_enhancement:spdd-plan in pack `base` fills the slot `spdd:reasons-block` of action:software-dev/plan,
+            but the prompt in force there, held by pack `proj`, declares no such slot
       pack-level-violation:
         summary: A pack depends on a pack further from built-in than itself.
         value:

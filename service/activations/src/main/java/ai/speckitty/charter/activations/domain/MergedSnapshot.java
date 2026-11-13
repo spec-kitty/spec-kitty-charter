@@ -184,8 +184,10 @@ public record MergedSnapshot(
      * @param state in force, out of force, or denied
      * @param reason the first rule that decided the state
      * @param required whether a governing preset requires it or a pack locks it
-     * @param satisfiedBy the artifact in force that satisfies the requirement of a required artifact that is out of force
-     * @param overriddenBy the artifact in force that hides it; present exactly for the reason {@link Reason#OVERRIDDEN}
+     * @param satisfiedBy every artifact in force that satisfies the requirement of a required artifact that is out of
+     *     force, in the order the resolution gives (the level of its winning pack, then its URN; #439)
+     * @param overriddenBy every artifact in force that hides it, in the same order; non-empty exactly for the reason
+     *     {@link Reason#OVERRIDDEN}
      * @param bucket the skipped-report bucket, present only for an artifact the document names that is not in force
      */
     public record ArtifactState(
@@ -193,8 +195,8 @@ public record MergedSnapshot(
             State state,
             Reason reason,
             boolean required,
-            Optional<ArtifactRef> satisfiedBy,
-            Optional<ArtifactRef> overriddenBy,
+            List<ArtifactRef> satisfiedBy,
+            List<ArtifactRef> overriddenBy,
             Optional<Bucket> bucket) {
 
         /**
@@ -212,8 +214,8 @@ public record MergedSnapshot(
             Objects.requireNonNull(ref, "ref");
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(reason, "reason");
-            Objects.requireNonNull(satisfiedBy, "satisfiedBy");
-            Objects.requireNonNull(overriddenBy, "overriddenBy");
+            satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
+            overriddenBy = List.copyOf(Objects.requireNonNull(overriddenBy, "overriddenBy"));
             Objects.requireNonNull(bucket, "bucket");
         }
     }

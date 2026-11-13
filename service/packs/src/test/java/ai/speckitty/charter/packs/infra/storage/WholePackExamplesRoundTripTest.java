@@ -158,7 +158,7 @@ class WholePackExamplesRoundTripTest {
      * entry is not one: the load accepts that file, so it has no place in this ratchet — the gate still pins it.
      */
     private Set<String> pinnedRefusals() {
-        return expectation.knownFailures().stream()
+        return expectation.forPack(BUILT_IN).knownFailures().stream()
                 .filter(failure -> !failure.roundTripOnly())
                 .filter(failure -> failure.at().startsWith(REFUSED))
                 .map(failure -> failure.path() + ": " + failure.at())

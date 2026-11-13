@@ -178,7 +178,10 @@ public class EffectiveBodies {
                 EffectiveSkillRead.ReasonEnum.fromValue(facts.reason()),
                 skills.skill(read.skill()),
                 links);
-        facts.satisfiedBy().map(EffectiveBodies::reference).ifPresent(wire::setSatisfiedBy);
+        if (!facts.satisfiedBy().isEmpty()) {
+            wire.setSatisfiedBy(
+                    facts.satisfiedBy().stream().map(EffectiveBodies::reference).toList());
+        }
         facts.suggestion().map(EffectiveBodies::suggestion).ifPresent(wire::setSuggestion);
         return wire;
     }

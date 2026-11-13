@@ -55,7 +55,9 @@ import org.springframework.stereotype.Component;
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
  *       answers the stored revision and writes nothing, unless the write dropped a stale id or a pin: one that did is
  *       never a no-op, even when the change put the id back (a stale preset member the stored list names); any other is
- *       judged by {@link DocumentRules#checkWrite} and written by a compare-and-set at the loaded revision
+ *       judged by {@link DocumentRules#checkWrite}, then by the slot check of its closure
+ *       ({@link PacksSession#requireComposable}, C38: {@code 422 prompt_slot_missing}), and written by a compare-and-set
+ *       at the loaded revision
  *       ({@code 412} when another writer came in between). Every id is judged (FR-017), but the floor only on the deny
  *       entries the write adds: a stored deny entry a pack upgrade put on the floor is tolerated, so it never makes a
  *       write of another id {@code 409}. An unknown pack is not dropped: it is still refused {@code 422}.
@@ -372,7 +374,9 @@ public class ActivationWrites {
      * @param session the request's session: its closure is what the rules judge the document against, and its in-force
      *     resolution gives the warnings of the change
      * @return the outcome
-     * @throws CharterRefusal when the computed document breaks its closure
+     * @throws CharterRefusal when the computed document breaks its closure, or with {@code prompt_slot_missing} when
+     *     it would put a step enhancement in force without its slot ({@link PacksSession#requireComposable}, asked of
+     *     the document before it is stored)
      * @throws PreconditionException ({@code STALE}) when another writer came in between
      */
     Outcome commit(StoredActivation loaded, ActivationChange computed, PacksSession session) {
@@ -389,6 +393,7 @@ public class ActivationWrites {
                 .ifPresent(refusal -> {
                     throw refusal;
                 });
+        session.requireComposable(EffectiveSet.queryOf(after));
         ActivationChange reported = warned(change, loaded.document(), session);
         CasResult result = repository.replace(loaded.id(), Optional.of(loaded.revision()), after);
         return switch (result) {

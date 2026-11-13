@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.Objects;
 
@@ -33,7 +34,8 @@ public record GuideSection(String title, String content) {
         Objects.requireNonNull(title, "title");
         Objects.requireNonNull(content, "content");
         MarkdownDocument.headingProblem(title).ifPresent(problem -> {
-            throw new ConstraintBreachException("A guide section's title " + problem);
+            throw new ConstraintBreachException(
+                    Reason.failed("A guide section's title is a free heading.", "A guide section's title " + problem));
         });
         TITLE_RULES.guard(title);
         Guide.guardContent(content);

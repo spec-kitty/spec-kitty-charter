@@ -82,6 +82,9 @@ post:
         defining one id, among them), and one that would break a relation rule with override_not_permitted,
         enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
         root pack and the packs involved, and nothing is written.
+        A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
+        the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
+        named in the detail, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

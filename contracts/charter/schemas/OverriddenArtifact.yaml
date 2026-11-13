@@ -1,8 +1,8 @@
 title: OverriddenArtifact
 description: >-
-  An artifact an active override concerns, and in overriddenBy the active artifact whose overrides edge reaches it. In
-  the overridden bucket the override is applied and the artifact is out of force; in overrideNotApplied the target is
-  locked, so both stay in force.
+  An artifact active overrides concern, listed once, and in overriddenBy every active artifact whose overrides edge
+  reaches it. In the overridden bucket the overrides are applied and the artifact is out of force; in overrideNotApplied
+  the target is locked, so it and its overriders stay in force.
 type: object
 additionalProperties: false
 required:
@@ -27,4 +27,17 @@ properties:
       inputs:
       - schemas/ActivationConfig.yaml
   overriddenBy:
-    $ref: ArtifactReference.yaml
+    type: array
+    minItems: 1
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      Every active artifact whose overrides edge reaches the artifact (in the overridden bucket directly or through a
+      chain), sorted by the level of the pack that holds the version in force of each (built-in, then org, then
+      project), then by full URN in Unicode code point order (operator ruling of 2026-11-12 on #439).
+    x-derived:
+      rule: >-
+        The artifacts of the effective set with an overrides edge to the artifact (rules E9, E14, C27), sorted by the
+        level of their winning pack, then by URN.
+      inputs:
+      - schemas/ActivationConfig.yaml

@@ -94,23 +94,33 @@ packages, and the rings are gated as before. The reason, the options and the rul
 modules that are not slices: `pack-validation`, which holds every pack check, and `pack-check`, the
 standalone CLI over it. Neither has onion rings; each is one package root
 (`ai.speckitty.charter.packvalidation`, `ai.speckitty.charter.packcheck`). The ArchUnit gate gains
-`PACK_VALIDATION_IS_FRAMEWORK_FREE`: neither module depends on Spring, HTTP, a commit store or a lock,
-nor on the packs or activations slices, any `application` or `infra` ring, or the composition root.
-It also refuses `java.net` beyond `URI` and `URISyntaxException`, and the JDK's HTTP client and server. A committed known-bad
-control proves the rule bites. The rule runs once per module's package and fails on an empty
-selection, so `:deployable`'s tests carry both modules. The module builds pin their dependencies too
-(`ModuleDependencyAllowlist`, on every configuration of the main compile and runtime classpath, custom
-ones they extend from included), since the domain conventions refuse the parsing libraries
-`pack-validation` needs. The builds pin the dependencies a module *declares*; the transitive ones those
-bring in are not judged. Slice #553 applies `charter.mutation-conventions` to `pack-validation` with
-its first move, and removes the javadoc-skip block of each module with its first type (#553 for
-`pack-validation`, #478 for `pack-check`).
+`PACK_VALIDATION_IS_FRAMEWORK_FREE`, in two halves, each run once per module's package and failing on
+an empty selection:
 
-In the onion, `pack-validation` is an inner library ring beside the `kernel`: `packs.domain` and
-`packs.application` will name its types once `PackPolicy`, `PackContents` and the load move into it.
-Today `DOMAIN_IS_PURE`, `APPLICATION_IS_EDGE` and `SLICES_DO_NOT_CROSS` refuse that, so slice #553
-widens them to allow `ai.speckitty.charter.packvalidation` with its first move, with a known-good
-control.
+- **Direct.** Neither module names Spring, HTTP, a commit store or a lock, nor any ring of the packs
+  slice but its domain, the activations slice, any other `application` or `infra` ring, or the
+  composition root. It also refuses `java.net` beyond `URI` and `URISyntaxException`, and the JDK's
+  HTTP client and server.
+- **Transitive.** No charter class the modules reach uses that refused set; nor does any class the
+  packs slice's file-system inspector reaches, which a composition root plugs into `pack-validation`.
+  The walk follows the classes a class names, not a port's implementations, so the inspector is walked
+  from its own root.
+
+Committed known-bad controls prove both halves bite. `:deployable`'s tests carry both modules. The
+module builds pin their dependencies too (`ModuleDependencyAllowlist`, on every configuration of the
+main compile and runtime classpath, custom ones they extend from included), since the domain
+conventions refuse the external dependencies `pack-validation` declares. The builds pin the
+dependencies a module *declares*; the transitive ones those bring in are not judged. Hence the
+transitive half of the rule.
+
+In the onion, `pack-validation` sits outside the packs slice and depends on its domain, as the slice
+edges do (ADR-0075's amendment of 2026-11-13, #553). No slice rule is widened for it: the packs domain
+stays in `packs.domain`, and the slice names no `packvalidation` class. Only a composition root
+constructs the file-system inspector. Today that is `deployable`, as `ONION_DEPENDS_INWARD` requires.
+`pack-check`'s main becomes the second composition root in #478. That slice lets the main, and only
+the main, name the inspector in `ONION_DEPENDS_INWARD` and in the direct half of the rule, with a
+known-good control. Until then `pack-check` holds only its `package-info`, so both halves pass over it
+on that alone.
 
 ## Context
 

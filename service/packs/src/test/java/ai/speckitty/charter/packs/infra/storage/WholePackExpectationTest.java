@@ -45,8 +45,16 @@ class WholePackExpectationTest {
             "pack.yaml", "pack-descriptor",
             "tactics/a.tactic.yaml", "tactic",
             "tactics/b.tactic.yaml", "tactic",
-            "procedures/p.procedure.yaml", "procedure",
             "README.md", "other:README.md");
+
+    /** {@link #PACK} with a file of {@code procedure}, a kind the round trip does not model. */
+    private static final SortedMap<String, String> WITH_PROCEDURE_FILE = withProcedureFile();
+
+    private static SortedMap<String, String> withProcedureFile() {
+        SortedMap<String, String> pack = new TreeMap<>(PACK);
+        pack.put("procedures/p.procedure.yaml", "procedure");
+        return pack;
+    }
 
     private static final Map<String, Optional<String>> ALL_GREEN = Map.of(
             "pack.yaml", Optional.empty(),
@@ -59,12 +67,6 @@ class WholePackExpectationTest {
                 reason: Procedures are not modelled.
                 issue: "#194"
             files: []
-            """;
-    private static final String EMPTY_DIRECTIVE = """
-            empty_kinds:
-              - kind: directive
-                reason: The pack has no directive.
-                issue: "#192"
             """;
     private static final String MATCHING_EXCLUSIONS = """
             exclusions:
@@ -118,7 +120,6 @@ class WholePackExpectationTest {
                             "pack.yaml", Status.GREEN,
                             "tactics/a.tactic.yaml", Status.GREEN,
                             "tactics/b.tactic.yaml", Status.GREEN,
-                            "procedures/p.procedure.yaml", Status.EXPECTED_RED,
                             "README.md", Status.EXCLUDED));
         }
 
@@ -177,23 +178,6 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void aKindEntryWhoseFilesAreAllExcludedFailsAsUnexpectedlyGreen() {
-            String withReadme = MATCHING_RED.replace("kinds:\n", """
-                    kinds:
-                      - kind: other:README.md
-                        reason: Was red.
-                        issue: "#187"
-                    """);
-
-            Evaluation evaluation = evaluate(withReadme, MATCHING_EXCLUSIONS, ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .containsExactly(
-                            "UNEXPECTEDLY_GREEN kind other:README.md: no file of it is red now; remove it from "
-                                    + WholePackExpectation.EXPECTED_RED_RESOURCE);
-        }
-
-        @Test
         void aModelledKindCanNeverBeExpectedRedAsAWhole() {
             String tacticKind = MATCHING_RED.replace("kind: procedure", "kind: tactic");
 
@@ -225,12 +209,38 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void anUnmodelledKindWithoutAnEntryIsAnUnexpectedRed() {
-            Evaluation evaluation = evaluate("kinds: []\nfiles: []\n", MATCHING_EXCLUSIONS, ALL_GREEN);
+        void aFileOfAnUnmodelledKindIsRedWhetherOrNotItsKindIsListed() {
+            for (String red : List.of("kinds: []\nfiles: []\n", MATCHING_RED)) {
+                Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
+                        .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+
+                assertThat(evaluation.problems())
+                        .as(red)
+                        .containsExactly("UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models"
+                                + " kind procedure");
+                assertThat(statuses(evaluation)).containsEntry("procedures/p.procedure.yaml", Status.RED);
+            }
+        }
+
+        @Test
+        void aFileEntryCannotExcuseAFileOfAnUnmodelledKind() {
+            String red = MATCHING_RED.replace("files: []", """
+                    files:
+                      - path: procedures/p.procedure.yaml
+                        at: no adapter models kind procedure
+                        reason: Trying to excuse an unmodelled file.
+                        issue: "#547"
+                    """);
+
+            Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
+                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
-                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure");
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure",
+                            "FILE_ENTRY_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models this"
+                                    + " kind, and an entry never excuses such a file; remove it from "
+                                    + WholePackExpectation.EXPECTED_RED_RESOURCE);
         }
 
         @Test
@@ -458,17 +468,18 @@ class WholePackExpectationTest {
         void anEntryForAnUnmodelledKindCanNeverExpire() {
             String path = "procedures/p.procedure.yaml";
 
-            Evaluation evaluation = evaluate(
-                    MATCHING_RED,
-                    MATCHING_EXCLUSIONS,
-                    known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE),
-                    ALL_GREEN);
+            Evaluation evaluation = WholePackExpectation.load(
+                            MATCHING_RED,
+                            MATCHING_EXCLUSIONS,
+                            known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE))
+                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure",
                             "KNOWN_FAILURE_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models "
                                     + "this kind, so the entry can never expire");
-            assertThat(statuses(evaluation)).containsEntry(path, Status.EXPECTED_RED);
+            assertThat(statuses(evaluation)).containsEntry(path, Status.RED);
         }
 
         @Test
@@ -535,7 +546,7 @@ class WholePackExpectationTest {
             String report = WholePackReport.render(evaluation, "built-in", "abc", Map.of());
 
             assertThat(report)
-                    .contains("- Files: 5, green 2, expected red 1, excluded 1, red 0, known failure 1\n")
+                    .contains("- Files: 4, green 2, expected red 0, excluded 1, red 0, known failure 1\n")
                     .contains("| kind | files | green | expected red | excluded | red | known failure |")
                     .contains("| tactics/a.tactic.yaml | tactic | known failure | steps[2].title: x, <absent> — known "
                             + "failure: The pack file holds two YAML documents. (" + OPEN_PACKS_ISSUE + ") |\n");
@@ -563,7 +574,7 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void aBaselinedKindWithNoFileFails() {
+        void aKindEntryNamesASchemaSoAPackWithNoFileOfItPasses() {
             String red = MATCHING_RED.replace("files: []", "") + """
                       - kind: agent-profile
                         reason: Not modelled.
@@ -571,10 +582,7 @@ class WholePackExpectationTest {
                     files: []
                     """;
 
-            assertThat(evaluate(red, MATCHING_EXCLUSIONS, ALL_GREEN).problems())
-                    .singleElement()
-                    .asString()
-                    .startsWith("STALE_BASELINE kind agent-profile");
+            assertThat(evaluate(red, MATCHING_EXCLUSIONS, ALL_GREEN).problems()).isEmpty();
         }
 
         @Test
@@ -618,92 +626,12 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void aModelledKindWithNoFilesFails() {
-            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive"), ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .containsExactly("EMPTY_MODELLED_KIND directive: the pack has no file of this modelled kind");
-        }
-
-        @Test
-        void aListedEmptyModelledKindPasses() {
-            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive"), ALL_GREEN);
-
-            assertThat(evaluation.problems()).isEmpty();
-        }
-
-        @Test
-        void aListedEmptyKindDoesNotExcuseAnotherEmptyKind() {
-            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive", "skill"), ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .containsExactly("EMPTY_MODELLED_KIND skill: the pack has no file of this modelled kind");
-        }
-
-        @Test
-        void aListedEmptyKindThatGainsAFileIsStale() {
-            Evaluation evaluation = WholePackExpectation.load(
-                            MATCHING_RED + EMPTY_DIRECTIVE.replace("directive", "tactic"), MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, MODELLED, ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .containsExactly("STALE_BASELINE empty kind tactic: the pack has a file of it now; remove it from "
-                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
-        }
-
-        @Test
-        void aListedEmptyKindThatIsNotModelledIsStale() {
-            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, MODELLED, ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .containsExactly("STALE_BASELINE empty kind directive: not a modelled kind; remove it from "
-                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
-        }
-
-        @Test
-        void aListedEmptyKindIsReportedAsNotProved() {
-            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive"), ALL_GREEN);
-
-            assertThat(evaluation.emptyKinds())
-                    .extracting(WholePackExpectation.EmptyKindEntry::kind)
-                    .containsExactly("directive");
-            assertThat(WholePackReport.render(evaluation, "p", "pin", Map.of()))
-                    .contains("## Modelled kinds with no file")
-                    .contains("- directive: not proved here. The pack has no directive. (#192)");
-        }
-
-        @Test
-        void anEmptyKindEntryWithoutAReasonIsRefused() {
-            assertThatThrownBy(() -> WholePackExpectation.load(
-                            MATCHING_RED + EMPTY_DIRECTIVE.replace("    reason: The pack has no directive.\n", ""),
-                            MATCHING_EXCLUSIONS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("empty_kinds entry")
-                    .hasMessageContaining("has no reason");
-        }
-
-        @Test
-        void anEmptyKindEntryWithoutAnIssueIsRefused() {
-            assertThatThrownBy(() -> WholePackExpectation.load(
-                            MATCHING_RED + EMPTY_DIRECTIVE.replace("    issue: \"#192\"\n", ""), MATCHING_EXCLUSIONS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("empty_kinds entry")
-                    .hasMessageContaining("has no issue");
-        }
-
-        @Test
         void anEmptyPackCannotPass() {
             Evaluation evaluation =
                     WholePackExpectation.load("{}", NO_EXCLUSIONS).evaluate(new TreeMap<>(), MODELLED, Map.of());
 
             assertThat(evaluation.problems())
-                    .hasSize(2)
-                    .allSatisfy(p -> assertThat(p).startsWith("EMPTY_MODELLED_KIND"));
+                    .containsExactly("EMPTY_PACK: the census has no file, so the run proves nothing");
         }
 
         @Test
@@ -716,6 +644,165 @@ class WholePackExpectationTest {
                             .mapToInt(Integer::intValue)
                             .sum())
                     .isEqualTo(PACK.size());
+        }
+    }
+
+    /** #547: one gate run per example pack, and what only the packs together, or the file-kind table, can prove. */
+    @Nested
+    class AcrossTheExamplePacks {
+
+        private static final String TWO_PACKS = """
+                kinds: []
+                files:
+                  - path: built-in/tactics/a.tactic.yaml
+                    at: l
+                    reason: The writer drops the empty list.
+                    issue: "#187"
+                  - path: org-base/tactics/gone.tactic.yaml
+                    at: l
+                    reason: Only org-base has it.
+                    issue: "#187"
+                """;
+
+        private static final Set<String> WITH_PROCEDURE = Set.of("tactic", "pack-descriptor", "procedure");
+
+        @Test
+        void aPacksRunIsJudgedByItsOwnEntriesAlone() {
+            WholePackExpectation expectation = WholePackExpectation.load(TWO_PACKS, NO_EXCLUSIONS);
+            SortedMap<String, String> pack = new TreeMap<>(PACK);
+            pack.remove("procedures/p.procedure.yaml");
+            pack.remove("README.md");
+            Map<String, Optional<String>> red = withRed("tactics/a.tactic.yaml", "l: [], <absent>");
+
+            assertThat(expectation
+                            .forPack("built-in")
+                            .evaluate(pack, MODELLED, red)
+                            .problems())
+                    .as("built-in: its entry pins the red, and org-base's entry is not stale here")
+                    .isEmpty();
+            assertThat(expectation
+                            .forPack("org-base")
+                            .evaluate(pack, MODELLED, red)
+                            .problems())
+                    .containsExactly(
+                            "UNEXPECTED_RED tactics/a.tactic.yaml (tactic): l: [], <absent>",
+                            "STALE_BASELINE tactics/gone.tactic.yaml: no such file; remove it from "
+                                    + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        @Test
+        void anEntryThatNamesNoExamplePackIsUnscoped() {
+            WholePackExpectation expectation = WholePackExpectation.load(
+                    TWO_PACKS.replace("org-base/", "org/"),
+                    MATCHING_EXCLUSIONS,
+                    known("project/x.tactic.yaml", "x", OPEN_PACKS_ISSUE));
+
+            assertThat(expectation.unscopedEntries(List.of("built-in", "org-base", "project")))
+                    .containsExactly(
+                            "STALE_BASELINE org/tactics/gone.tactic.yaml: names no example pack [built-in, org-base,"
+                                    + " project]; fix it in " + WholePackExpectation.EXPECTED_RED_RESOURCE,
+                            "STALE_EXCLUSION **/README.md: names no example pack [built-in, org-base, project]; fix it"
+                                    + " in " + WholePackExpectation.EXCLUSIONS_RESOURCE);
+        }
+
+        @Test
+        void everySchemaIsModelledOrListedAndEveryListedKindIsAnUnmodelledSchema() {
+            WholePackExpectation expectation = WholePackExpectation.load(MATCHING_RED, NO_EXCLUSIONS);
+
+            assertThat(expectation.schemaProblems(Set.of("tactic", "pack-descriptor", "procedure"), MODELLED))
+                    .as("procedure is listed with a reason")
+                    .isEmpty();
+            assertThat(expectation.schemaProblems(Set.of("tactic", "procedure", "org-fragment", "guard"), MODELLED))
+                    .containsExactly(
+                            "UNMODELLED_SCHEMA guard: the round trip does not model this file-kinds.yaml schema, and "
+                                    + WholePackExpectation.EXPECTED_RED_RESOURCE
+                                    + " does not list it in kinds with a reason",
+                            "UNMODELLED_SCHEMA org-fragment: the round trip does not model this file-kinds.yaml"
+                                    + " schema, and " + WholePackExpectation.EXPECTED_RED_RESOURCE
+                                    + " does not list it in kinds with a reason");
+            assertThat(expectation.schemaProblems(Set.of("tactic", "pack-descriptor"), MODELLED))
+                    .containsExactly("STALE_BASELINE kind procedure: not a file-kinds.yaml schema; remove it from "
+                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        @Test
+        void aListedKindTheRoundTripModelsNowIsBaselinedModelled() {
+            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS)
+                    .evaluate(
+                            WITH_PROCEDURE_FILE,
+                            WITH_PROCEDURE,
+                            Map.of(
+                                    "pack.yaml", Optional.empty(),
+                                    "tactics/a.tactic.yaml", Optional.empty(),
+                                    "tactics/b.tactic.yaml", Optional.empty(),
+                                    "procedures/p.procedure.yaml", Optional.empty()));
+
+            assertThat(evaluation.problems())
+                    .singleElement()
+                    .asString()
+                    .startsWith("BASELINED_MODELLED_KIND procedure");
+        }
+
+        @Test
+        void aModelledKindNoExamplePackHoldsFails() {
+            SortedMap<String, String> org = census("drg/fragment.yaml", "org-fragment");
+            Map<String, SortedMap<String, String>> byPack = Map.of("built-in", PACK, "org-base", org);
+
+            assertThat(WholePackExpectation.emptyKindProblems(byPack, Set.of("tactic", "org-fragment")))
+                    .as("each kind is held by one pack")
+                    .isEmpty();
+            assertThat(WholePackExpectation.emptyKindProblems(byPack, Set.of("tactic", "org-fragment", "guard")))
+                    .containsExactly("EMPTY_MODELLED_KIND guard: no example pack has a file of this modelled kind");
+        }
+
+        @Test
+        void withNoExpectationAFileOfAnUnmodelledKindFailsByKindAndPath() {
+            Evaluation evaluation = WholePackExpectation.none().evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly(
+                            "UNEXPECTED_RED README.md (other:README.md): no adapter models kind other:README.md",
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure");
+        }
+
+        @Test
+        void withNoExpectationAModelledFileTheRoundTripSkippedFails() {
+            Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
+            observed.remove("tactics/b.tactic.yaml");
+
+            assertThat(WholePackExpectation.none()
+                            .evaluate(PACK, WITH_PROCEDURE, observed)
+                            .problems())
+                    .contains("UNEXPECTED_RED tactics/b.tactic.yaml (tactic): the round trip gave no outcome for this"
+                            + " file");
+        }
+
+        @Test
+        void aListedRefusedFileMustMatchTheWholeRefusal() {
+            String red = MATCHING_RED.replace("files: []", """
+                    files:
+                      - path: tactics/a.tactic.yaml
+                        at: "refused: read-back: the impacts edge is missing 'impacts'"
+                        reason: The domain drops an impacts strength.
+                        issue: "#477"
+                    """);
+
+            assertThat(evaluate(
+                                    red,
+                                    MATCHING_EXCLUSIONS,
+                                    withRed(
+                                            "tactics/a.tactic.yaml",
+                                            "refused: read-back: the impacts edge is missing 'impacts'"))
+                            .problems())
+                    .isEmpty();
+            assertThat(evaluate(
+                                    red,
+                                    MATCHING_EXCLUSIONS,
+                                    withRed("tactics/a.tactic.yaml", "refused: read-back: an enhances edge is lost"))
+                            .problems())
+                    .singleElement()
+                    .asString()
+                    .startsWith("CHANGED_RED tactics/a.tactic.yaml (tactic)");
         }
     }
 

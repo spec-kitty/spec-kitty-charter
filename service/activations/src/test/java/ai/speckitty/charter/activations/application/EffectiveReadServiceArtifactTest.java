@@ -119,7 +119,7 @@ class EffectiveReadServiceArtifactTest {
     }
 
     private static ArtifactState state(ArtifactRef ref, State state, Reason reason) {
-        return new ArtifactState(ref, state, reason, false, Optional.empty(), Optional.empty(), Optional.empty());
+        return new ArtifactState(ref, state, reason, false, List.of(), List.of(), Optional.empty());
     }
 
     private static InForceAnswer answer() {

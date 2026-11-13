@@ -1,0 +1,129 @@
+{
+  "mission_slug": "effective-step-and-action-context-01M774HB",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "An in-force enhancement naming an undeclared slot is refused prompt_slot_missing (500 on reads, 422 at registration, impact-checked and activation writes)",
+      "proof_type": "automated_test",
+      "evidence": "step-enhancement-slots.feature; SlotComposeTest; ActivationImpactAdapterTest; RegistrationImpactTest (WP05, approved cycle 2)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:33.939105+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Compose refuses an unheld target (C37) and an inherited lock (422 override_not_permitted / 500 pack_unreadable)",
+      "proof_type": "automated_test",
+      "evidence": "step-enhancement-compose.feature; EnhancementComposeTest; PackCompositionResolverTest (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:38.958000+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "getEffectiveStepPrompt serves the prompt in force as stored with ordered fragments per slot",
+      "proof_type": "automated_test",
+      "evidence": "effective-step-prompt.feature SC-001 on example packs and three-levels order; EffectivePromptQueryTest; EffectivePromptDeterminismTest; effective-mission-types.feature (WP06, WP07, WP09)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:43.818720+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "A held but not-in-force mission type answers 409 mission_type_not_in_force",
+      "proof_type": "automated_test",
+      "evidence": "effective-step-prompt.feature (409 scenarios incl. R10 probe 1bd7396c5); errors.feature; EffectiveReadServiceTest (WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:48.790191+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Legacy slot text is listed with its fragments and a prompt_slot_not_empty diagnostic",
+      "proof_type": "automated_test",
+      "evidence": "effective-step-prompt.feature FR-005/C-005 legacy slot scenario; EffectivePromptQueryTest (WP06/WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:53.869786+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "prompt_slot_missing raised with its operations map and narrowed clause",
+      "proof_type": "automated_test",
+      "evidence": "CharterRefusalCode.yaml x-refusal; errors.feature pins; RefusalHandlerTest; ReservedRefusalCodesTest (WP05)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:50:58.985425+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "The action context links the prompt read as prompt when the mission type is in force",
+      "proof_type": "automated_test",
+      "evidence": "effective-step-prompt.feature FR-007; EffectiveReadMapperTest; contracts/lint/ruleset.yaml + hypermedia-hateoas.md (WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:03.848103+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "The effective context applies the ownership rule in three passes",
+      "proof_type": "automated_test",
+      "evidence": "effective-context-scoping.feature (16-directive table); ActionContextWalkOwnershipTest; effective-graph-and-context.feature (WP01, WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:08.705292+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Each context item carries appliesThrough",
+      "proof_type": "automated_test",
+      "evidence": "EffectiveContextArtifact.yaml; EffectiveReadMapperTest.everyAppliesThroughIsMappedToTheValueTheContractSpells; scoping scenarios (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:13.509911+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "The ruling is recorded",
+      "proof_type": "automated_test",
+      "evidence": "ADR-0018 D5 amendment, rules page E16, DIV-245 (divergence-register.md, divergences.yaml, DivergenceRegisterTest); docs commits 4c8d7a1f4..f3ab945df (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:18.496730+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "R3 decided and recorded",
+      "proof_type": "automated_test",
+      "evidence": "docs/api/service-contract.md R3 row (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:23.548526+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Phase-2 rulings recorded",
+      "proof_type": "automated_test",
+      "evidence": "ADR-0066 dated annotations d4/d7/d8/d9, built markers; rules page C22/C25/C37/C38/F6/G8 (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-12T23:51:28.391744+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

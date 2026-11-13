@@ -1,5 +1,7 @@
 package ai.speckitty.charter.kernel.domain;
 
+import ai.speckitty.charter.kernel.validation.Constraint;
+import ai.speckitty.charter.kernel.validation.Constraints;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -94,5 +96,40 @@ public final class IdentifierGrammar {
         return text != null
                 && text.length() <= MAX_PATH_LENGTH
                 && RELATIVE_PATH_PATTERN.matcher(text).matches();
+    }
+
+    /**
+     * The rule that a text is a {@link #SLUG} of at most {@code max} characters (ADR-0075 decision 1).
+     *
+     * @param max the cap, from 1 to {@value #MAX_SLUG_LENGTH}
+     * @return the rule; its detail names the grammar and the cap
+     * @throws IllegalArgumentException when the cap is out of range
+     */
+    public static Constraint<String> slug(int max) {
+        int cap = cap(max);
+        return Constraints.of(
+                "must be a kebab slug of at most " + cap + " characters", text -> isSlug(text) && text.length() <= cap);
+    }
+
+    /**
+     * The rule that a text is a {@link #LETTER_FIRST_SLUG} of at most {@code max} characters (ADR-0075 decision 1).
+     *
+     * @param max the cap, from 1 to {@value #MAX_SLUG_LENGTH}
+     * @return the rule; its detail names the grammar and the cap
+     * @throws IllegalArgumentException when the cap is out of range
+     */
+    public static Constraint<String> letterFirstSlug(int max) {
+        int cap = cap(max);
+        return Constraints.of(
+                "must be a letter-first kebab slug of at most " + cap + " characters",
+                text -> isLetterFirstSlug(text) && text.length() <= cap);
+    }
+
+    private static int cap(int max) {
+        if (max < 1 || max > MAX_SLUG_LENGTH) {
+            throw new IllegalArgumentException(
+                    "A slug's cap is from 1 to " + MAX_SLUG_LENGTH + " characters, not " + max + ".");
+        }
+        return max;
     }
 }

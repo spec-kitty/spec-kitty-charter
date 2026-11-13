@@ -19,7 +19,6 @@ import com.tngtech.archunit.core.domain.JavaFieldAccess;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -38,9 +37,7 @@ class HexagonalArchitectureTest {
 
     @BeforeAll
     static void importClasses() {
-        classes = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("ai.speckitty.charter");
+        classes = ServiceClasses.main();
     }
 
     // ---- ADR-0006 rules -------------------------------------------------------------------------------------
@@ -255,18 +252,79 @@ class HexagonalArchitectureTest {
     /** The {@code pack-check} module: the standalone CLI over {@code pack-validation} (ADR-0075 decision 9). */
     private static final String PACK_CHECK = ROOT + ".packcheck..";
 
+    /** The packs slice's commit stores and write locks, which share {@code packs.infra.storage} with its Spring-free load. */
+    private static final java.util.Set<String> COMMIT_STORES_AND_LOCKS = java.util.Set.of(
+            ROOT + ".packs.infra.storage.PackCommitStore",
+            ROOT + ".packs.infra.storage.CommitStorePackWriteStore",
+            ROOT + ".packs.infra.storage.PackWriteLocks",
+            ROOT + ".packs.application.RegistryWriteLock");
+
+    /** What neither module may use, directly or through anything it reaches: Spring, HTTP, a commit store or a lock. */
+    private static final DescribedPredicate<JavaClass> FRAMEWORK_HTTP_STORE_OR_LOCK = DescribedPredicate.describe(
+            "use Spring, Jakarta, HTTP or other network I/O, the generated contract, the web or kernel transport, a commit"
+                    + " store or a lock",
+            (JavaClass c) -> {
+                String pkg = c.getPackageName();
+                String name = c.getName();
+                return pkg.startsWith("org.springframework")
+                        || pkg.startsWith("jakarta")
+                        || pkg.startsWith("java.net.http")
+                        || pkg.startsWith("com.sun.net.httpserver")
+                        || (pkg.equals("java.net")
+                                && !name.equals("java.net.URI")
+                                && !name.equals("java.net.URISyntaxException"))
+                        || pkg.startsWith("java.util.concurrent.locks")
+                        || name.equals("java.nio.channels.FileLock")
+                        || pkg.equals(ROOT + ".api")
+                        || pkg.startsWith(ROOT + ".api.")
+                        || pkg.equals(ROOT + ".web")
+                        || pkg.startsWith(ROOT + ".web.")
+                        || pkg.startsWith(ROOT + ".kernel.transport")
+                        || COMMIT_STORES_AND_LOCKS.contains(name);
+            });
+
     /**
-     * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3): neither {@code pack-validation} nor {@code pack-check}
-     * depends on Spring, on HTTP or any other network I/O ({@code java.net} but {@code URI} and {@code URISyntaxException}, the JDK's HTTP client and
-     * server, Jakarta, the generated contract, the web transport or the kernel's transport vocabulary), on a commit store
-     * or on a lock. A commit store and the registry's lock live in the packs slice and its {@code infra} rings, so the
-     * rule refuses the packs and activations slices, every {@code application} and {@code infra} ring (the modules' own
-     * packages included: they have no rings) and the composition root outright. The modules depend on {@code kernel},
-     * {@code profiles}, {@code missions} and the parsing libraries only, which their builds pin too. A lock is caught by
-     * its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
-     * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and review checks those.
+     * What the modules may not name directly, beyond {@link #FRAMEWORK_HTTP_STORE_OR_LOCK}: every ring of the packs slice
+     * but its domain (which holds the {@code PackInspector} port of the load, ADR-0075 as amended 2026-11-13), the
+     * activations slice, every other {@code application} or {@code infra} ring and the composition root. The modules'
+     * own packages have no rings; a composition root plugs the load's adapter in.
+     */
+    private static final DescribedPredicate<JavaClass> OUTSIDE_THE_DOMAIN = DescribedPredicate.describe(
+            "belong to a charter package other than the modules' own, kernel, profiles.domain, missions.domain and"
+                    + " packs.domain",
+            (JavaClass c) -> {
+                String pkg = c.getPackageName();
+                return pkg.startsWith(ROOT + ".")
+                        && Stream.of(
+                                        "packvalidation",
+                                        "packcheck",
+                                        "kernel",
+                                        "profiles.domain",
+                                        "missions.domain",
+                                        "packs.domain")
+                                .map(allowed -> ROOT + "." + allowed)
+                                .noneMatch(allowed -> pkg.equals(allowed) || pkg.startsWith(allowed + "."));
+            });
+
+    /**
+     * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3, as amended 2026-11-13): neither {@code pack-validation} nor
+     * {@code pack-check} uses Spring, HTTP or other network I/O ({@code java.net} but {@code URI} and
+     * {@code URISyntaxException}, the JDK's HTTP client and server, Jakarta, the generated contract, the web transport, the
+     * kernel's transport vocabulary), a commit store or a lock, <em>directly or through any charter class it reaches</em>.
+     * {@code pack-validation} reads a pack through the packs slice's {@code PackInspector} port and its domain, so the
+     * direct half allows {@code packs.domain} and no other ring of the slice. The transitive half walks every charter class
+     * the module reaches and fails on any that touches the refused set: it holds when a composition root
+     * ({@code pack-check}'s main, #478) plugs in the file-system adapter, which shares its package with the slice's Spring
+     * beans, commit stores and locks. A class of the JDK or a library is not walked into, and nor is a port's
+     * implementation: the walk follows the classes a class names, so the inspector the composition root plugs in is walked
+     * from its own root ({@link #THE_PACKS_LOAD_REACHES_NO_FRAMEWORK}). Until #478 adds its main, {@code pack-check} holds
+     * only its {@code package-info}, so both halves pass over it on that alone. #478 also lets that main, the module's
+     * composition root, name the file-system inspector, in this rule and in {@code ONION_DEPENDS_INWARD}. A lock is caught
+     * by its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
+     * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and the commit stores and locks are a list of
+     * names ({@link #COMMIT_STORES_AND_LOCKS}): review checks a new one.
      *
-     * <p>The rule runs once per module's package and fails on an empty selection, so a module missing from this test's
+     * <p>Each half runs once per module's package and fails on an empty selection, so a module missing from this test's
      * classpath fails it rather than passing unchecked.
      */
     private static ArchRule packModuleIsFrameworkFree(String modulePackage) {
@@ -274,36 +332,85 @@ class HexagonalArchitectureTest {
                 .that()
                 .resideInAPackage(modulePackage)
                 .should()
-                .dependOnClassesThat()
-                .resideInAnyPackage(
-                        FRAMEWORK,
-                        "jakarta..",
-                        "java.net.http..",
-                        "com.sun.net.httpserver..",
-                        GENERATED_API,
-                        WEB,
-                        KERNEL_TRANSPORT,
-                        ROOT + ".packs..",
-                        ROOT + ".activations..",
-                        ROOT + "..application..",
-                        ROOT + "..infra..",
-                        DEPLOYABLE,
-                        "java.util.concurrent.locks..")
-                .orShould()
-                .dependOnClassesThat(DescribedPredicate.describe(
-                        "are java.net types other than URI and URISyntaxException, or FileLock",
-                        (JavaClass c) -> (c.getPackageName().equals("java.net")
-                                        && !c.getName().equals("java.net.URI")
-                                        && !c.getName().equals("java.net.URISyntaxException"))
-                                || c.getName().equals("java.nio.channels.FileLock")))
-                .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (" + modulePackage + "): no Spring, HTTP, commit store or lock");
+                .dependOnClassesThat(FRAMEWORK_HTTP_STORE_OR_LOCK.or(OUTSIDE_THE_DOMAIN))
+                .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (" + modulePackage
+                        + "), direct: only the packs domain, no Spring," + " HTTP, commit store or lock");
+    }
+
+    /**
+     * The walk of the transitive half: from a class, through every charter class it reaches, to a class in
+     * {@link #FRAMEWORK_HTTP_STORE_OR_LOCK}. A class outside {@code ai.speckitty.charter} is checked but never walked into.
+     */
+    private static final ArchCondition<JavaClass> REACHES_NO_FRAMEWORK =
+            new ArchCondition<JavaClass>("reach no charter class that uses Spring, HTTP, a commit store or a lock") {
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                    java.util.Map<JavaClass, JavaClass> via = new java.util.HashMap<>();
+                    java.util.ArrayDeque<JavaClass> queue = new java.util.ArrayDeque<>(List.of(item));
+                    via.put(item, item);
+                    java.util.Set<JavaClass> reported = new java.util.HashSet<>();
+                    while (!queue.isEmpty()) {
+                        JavaClass current = queue.removeFirst();
+                        for (var dependency : current.getDirectDependenciesFromSelf()) {
+                            JavaClass target = dependency.getTargetClass().getBaseComponentType();
+                            if (FRAMEWORK_HTTP_STORE_OR_LOCK.test(target) && reported.add(target)) {
+                                events.add(SimpleConditionEvent.violated(
+                                        item,
+                                        item.getName() + " reaches " + target.getName() + " through "
+                                                + path(via, current)));
+                            } else if (!FRAMEWORK_HTTP_STORE_OR_LOCK.test(target)
+                                    && target.getPackageName().startsWith(ROOT + ".")
+                                    && !via.containsKey(target)) {
+                                via.put(target, current);
+                                queue.addLast(target);
+                            }
+                        }
+                    }
+                }
+            };
+
+    /** The transitive half of {@link #packModuleIsFrameworkFree}: no charter class the module reaches is refused. */
+    private static ArchRule packModuleReachesNoFramework(String modulePackage) {
+        return classes()
+                .that()
+                .resideInAPackage(modulePackage)
+                .should(REACHES_NO_FRAMEWORK)
+                .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (" + modulePackage + "), transitive: nothing reached uses"
+                        + " Spring, HTTP, a commit store or a lock");
+    }
+
+    /**
+     * The transitive half over the load a composition root plugs into pack-validation: the packs slice's file-system
+     * inspector, which {@code pack-check} runs without Spring, reaches no charter class that uses Spring, HTTP, a commit
+     * store or a lock (ADR-0075 as amended 2026-11-13, #553).
+     */
+    private static final ArchRule THE_PACKS_LOAD_REACHES_NO_FRAMEWORK = classes()
+            .that()
+            .haveFullyQualifiedName(ROOT + ".packs.infra.storage.FileSystemPackInspector")
+            .should(REACHES_NO_FRAMEWORK)
+            .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (the packs load), transitive: nothing reached uses Spring, HTTP, a"
+                    + " commit store or a lock");
+
+    /** The chain of classes from the checked class to {@code last}, by simple name. */
+    private static String path(java.util.Map<JavaClass, JavaClass> via, JavaClass last) {
+        java.util.Deque<String> names = new java.util.ArrayDeque<>();
+        JavaClass at = last;
+        while (via.get(at) != at) {
+            names.addFirst(at.getSimpleName());
+            at = via.get(at);
+        }
+        names.addFirst(at.getSimpleName());
+        return String.join(" -> ", names);
     }
 
     @Test
     @DisplayName("PACK_VALIDATION_IS_FRAMEWORK_FREE")
     void packValidationIsFrameworkFree() {
-        packModuleIsFrameworkFree(PACK_VALIDATION).check(classes);
-        packModuleIsFrameworkFree(PACK_CHECK).check(classes);
+        for (String module : List.of(PACK_VALIDATION, PACK_CHECK)) {
+            packModuleIsFrameworkFree(module).check(classes);
+            packModuleReachesNoFramework(module).check(classes);
+        }
+        THE_PACKS_LOAD_REACHES_NO_FRAMEWORK.check(classes);
     }
 
     @Test
@@ -323,6 +430,17 @@ class HexagonalArchitectureTest {
                 "java.util.concurrent.locks.ReentrantLock",
                 "java.nio.channels.FileLock",
                 "RegistryWriteLock");
+        // Two hops through a class the direct half allows: the fixture names a packs.domain class only, and that class
+        // carries a Spring annotation. The direct half passes it; the transitive half must not.
+        JavaClasses twoHops = new ClassFileImporter()
+                .importClasses(
+                        ai.speckitty.charter.packvalidation.badfixture.ValidationReachesSpringThroughTheDomain.class,
+                        ai.speckitty.charter.packs.domain.badfixture.DomainUsesSpring.class);
+        packModuleIsFrameworkFree(PACK_VALIDATION).check(twoHops);
+        assertThatThrownBy(() -> packModuleReachesNoFramework(PACK_VALIDATION).check(twoHops))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("ValidationReachesSpringThroughTheDomain reaches org.springframework")
+                .hasMessageContaining("through ValidationReachesSpringThroughTheDomain -> DomainUsesSpring");
         assertBites(
                 packModuleIsFrameworkFree(PACK_CHECK),
                 ROOT + ".packcheck.badfixture",

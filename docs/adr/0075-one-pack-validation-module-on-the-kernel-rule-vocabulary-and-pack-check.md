@@ -40,6 +40,54 @@ audience:
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
+### Amendment 2026-11-13 (operator, #553): pack-validation reads the packs load; the packs domain stays
+
+Slice #553 measured what decision 3's extraction would move. The load that builds `PackContents` needs
+every kind's codec and the artifact domain: a closure of 168 classes (about 24,000 lines), 79 of the
+113 `packs.domain` types and 89 `packs.infra.storage` codecs, 79 of them package-private. Moving them
+would split the packs slice, which ruling 2 refused. The operator asked why `pack-validation` did not
+import them instead, and then ruled for that: the packs domain model stays in `packs`.
+
+- **The dependency direction is reversed.** `pack-validation` depends on `:packs`, not the other way.
+  It names only `packs.domain`. It reads a pack through the slice's public `PackInspector` port
+  (`PackLoad.contents`), and it never parses a file itself (no second derivation). A composition root
+  plugs in the file-system adapter, `FileSystemPackInspector`: the service's `deployable`, and
+  `pack-check`'s main (#478). #478 lets that main name the adapter in
+  `PACK_VALIDATION_IS_FRAMEWORK_FREE` and `ONION_DEPENDS_INWARD`, with a known-good control.
+- **Decision 3, "what moves in", is replaced.** Nothing moves. `PackSchemas`, `PackFileKind`,
+  `ManifestMembership` and the readers stay in `packs.infra.storage`. `pack-validation` holds
+  `PackLoad`, its read over the port, and the rulesets of later slices.
+- **Framework-free, by reach.** `:packs` puts Spring on the classpath of both modules. So
+  `PACK_VALIDATION_IS_FRAMEWORK_FREE` gains a transitive half: no charter class the modules reach, and
+  none the file-system inspector reaches, uses Spring, HTTP, a commit store or a lock. The direct half
+  allows `packs.domain` and no other ring of the slice. The walk follows the classes a class names, not
+  a port's implementations, so the inspector is walked from its own root. Leaving Spring off
+  `pack-check`'s runtime classpath, and proving it runs without it, is an obligation of #478. Until
+  then, Spring is on that classpath, unused.
+- **Rulings 1 and 2 hold.** `pack-check` stays its own module and jar, and `packs` is not split.
+
+The other decisions follow the reversed direction. Each is confirmed, or changed, in its own slice:
+
+- **Decision 4 (one pipeline).**
+  - `FileSystemPackInspector` is not deleted: it is the read that `pack-validation`'s rulesets run
+    over.
+  - The converters between `PackFinding`, `PackElementViolation` and `RefusalViolation` still go.
+  - The registration load (`WholePackStore`, `DomainRepositoryService`) keeps its own reader. It runs
+    the same `PACK` ruleset through a port that `packs.domain` declares and `deployable` wires; #554
+    decides which contents it judges.
+  - Until then, validate mode's verdict stays `PackValidation`'s, in `packs.domain`.
+- **Decision 6 (external checks behind ports).**
+  - `packs.domain` declares `ClosureWalk`, `ImpactCheck` and `MutabilityCheck`, not `pack-validation`,
+    which would be a cycle.
+  - `packs.application` implements them over `GraphWalk`, `Reachability`, `RegistrationImpact`,
+    `FallbackProfileRule` and `PackMutabilityPolicy`.
+  - `pack-validation`'s rules call the ports, and `deployable` wires them. `pack-check` composes none
+    of them.
+- **Decision 8 (the round trip).** The round trip moves from the `packs` test source set into `packs`
+  main code (`packs.infra.storage`, beside the codecs it needs). A composition root calls it through a
+  public entry: the whole-pack gate and the drift test through the service's wiring, and
+  `pack-check --round-trip` through its main. It does not move into `pack-validation`.
+
 ## Context
 
 - **The kernel's validator is a port of `modular-validators`.** `ai.speckitty.charter.kernel.validation` is a lean
@@ -178,9 +226,12 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 
 ### Amends, as each slice lands
 
-- **ADR-0006 and ADR-0037:** the module map gains `pack-validation` and `pack-check`, and the new ArchUnit rule.
-- **ADR-0017:** schema validation is a rule of `pack-validation`.
-- **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`.
+- **ADR-0006 and ADR-0037:** the module map gains `pack-validation` and `pack-check`, and the new ArchUnit rule; as
+  amended on 2026-11-13 (#553), `pack-validation` depends on `packs`.
+- **ADR-0017:** schema validation is a rule of `pack-validation`; as amended on 2026-11-13 (#553), it stays a check
+  of the codecs in `packs.infra.storage`, whose findings reach the `PACK` ruleset through `PackContents`.
+- **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`; as amended on
+  2026-11-13 (#553), main code of `packs`.
 - **ADR-0046:** the release carries `pack-check`.
 - **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`.
 - **ADR-0070:** builds on the amendment of decision 4 in PR #548. open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.

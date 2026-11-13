@@ -137,9 +137,20 @@ Keep it small; add a step only when a scenario cannot be written without it.
   can spell out.
 - `Then the graph holds exactly the nodes:`, `... the edges:` and `... the layer overrides:` followed by a doc string, one
   line per member, in the answer's order: a URN; `<source> <relation> <target>`; `<artifact> won by <pack>@<level> over
-  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason>`, then
-  `suggested when "<when>" because "<reason>"` after a space for a suggestion) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
+  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason> <appliesThrough>`,
+  then `suggested when "<when>" because "<reason>"` after a space for a suggestion; an item without `appliesThrough` reads
+  `(no appliesThrough)`) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
   ...]`) read the action context the same way (`effective-graph-and-context.feature`, bound in `EffectiveGraphSteps`).
+  `Then the context lists "<kind>:<id>" as "<expected>"` reads one artifact of the context: `listed / <appliesThrough>`
+  when exactly one item is that artifact, with that `appliesThrough`, and `absent` when none is
+  (`effective-context-scoping.feature`, bound in `EffectiveGraphSteps`).
+- `Given the example pack "<name>" of the charter` — configures one of charter's example packs (ADR-0070; `built-in`,
+  `org-base` or `project`, held in `service/packs/src/testFixtures/resources/example-packs`) under its own name and at
+  its own level, every file as it is held. `Then the field at "<json-pointer>" is the file "<path>" of the pack "<name>"`
+  — the string member is that file of the configured pack, byte for byte. `Then the prompt holds exactly the slots:`
+  followed by a doc string reads an effective prompt's `slots`, in the answer's order: one line per fragment, `<slot>
+  <level> <packId> "<packName>" <enhancement>`, and `<slot> (empty)` for a slot no fragment fills
+  (`effective-step-prompt.feature`, bound in `CharterSteps` and `EffectiveGraphSteps`).
 - `Then the field at "<json-pointer>" is null` — the member is there and is JSON `null`, as a required nullable member is
   written; a member the answer leaves out is `is absent` (agent-profile-reads.feature, bound in `ProfileSteps`).
 - `Then the governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of the last
@@ -331,7 +342,16 @@ from ready to held, is a breaking change of the contract.
   context (PR C, IC-11, FR-018 to FR-021, US5 AS1 to AS5): an edge with an endpoint out of force is absent, a layer
   override is listed (a held step's, not a template's), an enhancer is read from the node's side, a suggestion only
   through `suggests`, a mission type not in force answers an empty context, an unknown mission type or action is `404`,
-  and each read has an `ETag` of its own. No operation is reserved any more, so no scenario pins a `501`
+  and each read has an `ETag` of its own. `effective-context-scoping.feature`: the ownership rule of the effective action
+  context (operator ruling of 2026-11-12; FR-008 to FR-010, SC-004): the 16 directives of the 2026-11-12 evidence as an
+  example table (the one home of that table), a type-scoped directive listed through the mission type, another mission
+  type's directive absent whether or not that type is in force, a required directive scoped only to another action
+  absent, an unscoped procedure absent and its twin reached from a project-wide directive listed, and the
+  `appliesThrough` of a suggestion. `effective-step-prompt.feature`: the effective prompt of a step (FR-003 to FR-005,
+  FR-007, SC-001): the prompt in force as stored with the fragments in force of each slot in the order of ADR-0066
+  decision 5, on the example packs and on a three-level fixture, an empty slot listed, a legacy slot's diagnostic,
+  `409 mission_type_not_in_force` where the context answers empty, the refusals before the `304`, the `ETag` and the
+  context's `prompt` link. No operation is reserved any more, so no scenario pins a `501`
   (`ReservedOperationCoverageTest` keeps the machinery, with a planted contract as its control).
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
@@ -359,9 +379,17 @@ from ready to held, is a breaking change of the contract.
 - `step-enhancements.feature`: a held step enhancement (ADR-0066, #428): its file and Markdown companions register with
   the pack, it is selectable directly and through a preset, two packs of one level that define one id are refused
   `pack_sibling_conflict`, and two enhancers of one step with different ids compose.
+- `step-enhancement-compose.feature`: the two compose checks of a step enhancement (ADR-0066 decision 8, #438): its
+  step held by a pack of the enhancing pack's `depends_on` closure (C37, `pack_reference_pack_missing` or
+  `pack_reference_artifact_missing`), and the lock a step inherits from its mission type (`422 override_not_permitted`
+  at registration and on the impact-checked writes, `500 pack_unreadable` on the reads), each beside its passing twin.
 - `prompt-fragment-refusals.feature`: a malformed step enhancement or prompt fragment, refused `prompt_fragment_invalid`
   at its file (a violation of a `422 validation_failed` registration, `500 pack_unreadable` on a read, and the top-level
   code of `putPackRelationship`'s `422`), each refusal beside its passing twin.
+- `override-source-kind.feature`: an `overrides` edge whose source is not of an activatable kind (FR-014, #447),
+  refused `overrides_source_not_activatable` (a violation of a `422 validation_failed` registration at the graph
+  document and of `putPackRelationship`'s `422 validation_failed` at `/from`, `500 pack_unreadable` on a read), each
+  refusal beside its passing twin.
 - `prompt-slots.feature`: the slots a step prompt declares (ADR-0066, #424): `prompt_slot_malformed` whatever the
   descriptor declares, `prompt_slot_not_empty` only behind the descriptor's `schema_version: "1.0"` gate, each at the
   prompt file and beside its passing twin.

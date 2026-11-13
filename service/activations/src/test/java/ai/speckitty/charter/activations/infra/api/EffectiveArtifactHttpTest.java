@@ -74,13 +74,7 @@ class EffectiveArtifactHttpTest {
             states.put(
                     ref,
                     new ArtifactState(
-                            ref,
-                            State.ACTIVE,
-                            Reason.SELECTED,
-                            false,
-                            Optional.empty(),
-                            Optional.empty(),
-                            Optional.empty()));
+                            ref, State.ACTIVE, Reason.SELECTED, false, List.of(), List.of(), Optional.empty()));
         }
         packs.resolves(
                 query -> new InForceAnswer(states, List.of(), List.of(), List.of(), List.of(), List.of(), Map.of()));

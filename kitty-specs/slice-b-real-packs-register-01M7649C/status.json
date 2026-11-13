@@ -2,9 +2,9 @@
   "event_count": 89,
   "last_event_id": "01M77C48J979WJX6F9M591W9P0",
   "materialized_at": "2026-11-12T07:56:31.690037+00:00",
-  "mission_number": "",
+  "mission_number": "23",
   "mission_slug": "slice-b-real-packs-register-01M7649C",
-  "mission_type": "",
+  "mission_type": "software-dev",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -19,155 +19,296 @@
   "work_packages": {
     "WP01": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-orchestrator",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3PSRF0FF2T03N0JKAB1Y",
       "last_transition_at": "2026-11-12T07:56:13.496647+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Spike accepted by the orchestrator: pattern (b); tie-break follows Accept order (RFC 9110), carried into WP05 and the new ADR."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP01-doc-read-contract-spike/review-cycle-1.md",
         "reviewer": "claude-orchestrator",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 13916,
-      "shell_pid_created_at": "1794429862.59"
+      "shell_pid_created_at": "1794429862.59",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done"
+      }
     },
     "WP02": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3C06WB09M5W65GKWZ4F1",
       "last_transition_at": "2026-11-12T07:56:02.438155+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Approved on re-review (reviewer-renata, opus): M1, M2, L3-L5, L7 fixed; the last LOW (comment) folded by the orchestrator in a comment-only commit."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP02-readme-is-the-pack-document/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP02-readme-is-the-pack-document/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 371,
-      "shell_pid_created_at": "1794431986.0"
+      "shell_pid_created_at": "1794431986.0",
+      "subtasks": {
+        "T004": "done",
+        "T005": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done"
+      }
     },
     "WP03": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3FHEVNAJ2PA3QD72GSS7",
       "last_transition_at": "2026-11-12T07:56:06.062042+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Review 2 by an independent reviewer (review 1 in scratch wp03-review1.md); in_review was claimed under the implementer's name by mistake, hence --force. H1 fixed: spotlessCheck passes at 9b6cdbe6 and 7f0e71a3 alone; :packs:check, :contracts:check, CharterContractSuite green at 620e420a with --rerun-tasks. L1 and L2 folded; L3 skipped as optional. Rulings: file path stays in Diagnostic.detail (no pointer field in the closed schema); 7-arg LoadedPack constructor kept (no legacy shape); lazy validate walk accepted."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP03-excluded-files-reported-and-stripped/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP03-excluded-files-reported-and-stripped/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 2147,
-      "shell_pid_created_at": "1794434151.79"
+      "shell_pid_created_at": "1794434151.79",
+      "subtasks": {
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
     },
     "WP04": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3K9QCAZN7XF3ZYCSFM6A",
       "last_transition_at": "2026-11-12T07:56:09.911823+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "org-charter.yaml retired (retired rule, schema+page+ORG_CHARTER_SCHEMA_ERROR deleted); active_charter removed from the closed descriptor (unknown key); OrgCharterRetirementTest agreement test; fixtures/scenarios/planted updated; fragment 2026-11-11-org-charter-is-retired. Commits daec03be, 0f5b5270. packs:check, wholePackRoundTrip, contracts:check, CharterContractSuite green with --rerun-tasks.",
+        "Review 1 fixed: M1 charter.schema.json no longer names org-charter.yaml; L2 fragment split across both commits; L3 long lines wrapped. Commits ec91f09c, 00938272.",
+        "Review 2: M1 fixed in ec91f09c (charter.schema.json no longer names org-charter.yaml); L2 fragment now in commit 1, extended in commit 2; L3 wrapped. Delta vs 0f5b5270 is 4 files, 7 lines; both commits signed, no trailers. L1 (unknown-key message not naming the key) is a pre-existing gap, out of scope. Rulings: active_charter refusal meets call 6/FR-010; pins and manifest_hash independently verified; c10 planted case deletion correct."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP04-retire-org-charter/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP04-retire-org-charter/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 12561,
-      "shell_pid_created_at": "1794440769.43"
+      "shell_pid_created_at": "1794440769.43",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
+      }
     },
     "WP05": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 8,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3Y077DJW76E3BD6H21V8",
       "last_transition_at": "2026-11-12T07:56:20.871763+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP05 done: 0e0d8e56 (domain port + README read), 8f4ca676 (GET /packs/{packId}/doc, doc link, scenarios). --force: the kitty-specs gate trips on research/doc-read-spike.md, which reached lane-d through the WP01 planning-lane merge and is byte-identical to feat/466 (38958ece); WP05 does not touch it.",
+        "Review 1 fixed (M1 body via MarkdownCodec.canonicalBody, L1-L3). --force only because the kitty-specs gate objects to doc-read-spike.md, which lane-d inherited from the WP01 lane merge, not from WP05. Commits 6c6451ed, afffe356; :packs:check :contracts:check :deployable:check green.",
+        "Review 2: M1 fixed via MarkdownCodec.canonicalBody (renders the parsed blocks without the title, so it cannot refuse a parsed README); Markdown form is the held bytes; red-first recorded (2/13). L1-L3 folded; L4 inherited, left. Delta vs 8f4ca676: 7 files; both commits signed, no trailers; tip :packs:check :contracts:check :deployable:check green with --rerun-tasks. --force: lane carries the identical WP01 spike file (kitty-specs gate)."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP05-pack-document-read/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP05-pack-document-read/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 30729,
-      "shell_pid_created_at": "1794446216.12"
+      "shell_pid_created_at": "1794446216.12",
+      "subtasks": {
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done",
+        "T026": "done",
+        "T027": "done"
+      }
     },
     "WP06": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 5,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C41T4ENTK7H8CM7W5K28M",
       "last_transition_at": "2026-11-12T07:56:24.772700+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Forced only past the kitty-specs gate: research/doc-read-spike.md is inherited from the planning lane, byte-identical to feat/466. Readers ride out the swap window (#490): PackDirectories resolver behind PackLocator.read (live dir, else the sole .pack-old aside, identity-checked re-read on fileKey+creation time, progress-only retries capped at 8 -> stale_input); every lock-free reader routed through it; listing only tryLocks and lists a held half-swapped pack via its aside; empty plain entry reads as no pack. SwapPhases hook in the real swap. T1-T7 red on pre-fix code, green after. Flake root cause: currentRevision read outside the lock met the swap window (5/300 under load before, 0/300 after); RegistrationConcurrencyTest class 20/20 via gradle loop. Commits 23a4ce37, 0006f349.",
+        "Independent review (reviewer-renata + debugger-debbie lenses) started on 23a4ce37/0006f349.",
+        "Approved. Independent review: no CRITICAL/HIGH. Reviewer reran 59 targeted tests, RegistrationConcurrencyTest 10/10, :packs:check -x test, :deployable:check; red-first evidence spot-checked (5/300 red -> 0/300; SwapWindowReadTest 7/7 red on commit 1). MEDIUM (fragment overstated the stale_input cap as 'eight replaces'; it counts directory moves, ~4 replaces) fixed by reviewer-orchestrator in the fragment, amended into tip 2f9b10b5 (signed). LOWs folded, not filed: D8 partial (refusal in the window may name the aside dir; classification unaffected), creationTime falls back to mtime where no birth time, null body answer -> NPE (latent), late hook throw misreports a test-seam commit, failed stale-aside hide can leave two asides (pre-existing), declaredLevel maps STALE_INPUT to ORG, T6 models the reservation. FileSystemPackInspector exclusion accepted (no production consumer). --force: WP assigned to claude; lane carries the inherited byte-identical doc-read-spike.md."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP06-swap-window-readers/review-cycle-1.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP06-swap-window-readers/review-cycle-1.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 15785,
-      "shell_pid_created_at": "1794452788.48"
+      "shell_pid_created_at": "1794452788.48",
+      "subtasks": {
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
+      }
     },
     "WP07": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 5,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C4571X8MYSXAE943VSKN7",
       "last_transition_at": "2026-11-12T07:56:28.257910+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "FR-023 in 81c24720 (one signed commit, reverts cleanly): ConsistentRead answers a read that starts and ends in the same odd write generation when its digests agree; the generation is re-checked after the second digest; a load or first-digest failure inside a swap stays stale_input; even path unchanged. VerifiedReadDuringSwapTest (real swap paused at afterAside, latches only) answers R0 then R1. Out-of-map: one javadoc sentence in PackWriteGeneration. :packs:test, :packs:check -x test :kernel:check :contracts:check, :deployable:test, :deployable:check -x test green with --rerun-tasks. --force: the kitty-specs gate refused on inherited files only (WP07 commit touches no kitty-specs): research/doc-read-spike.md byte-identical to feat/466, and pack-item-etags-and-resolver-retirement-01M75WRS/* byte-identical to origin/main, inherited from lane-e.",
+        "Independent review started on 81c24720.",
+        "Approved. Independent review (reviewer-renata + debugger-debbie): no CRITICAL/HIGH/MEDIUM. Premise verified in code: all four generation brackets (commit, remove, replaceWhole, create) run under the shared RegistryWriteLock, never nest, one visible old->new transition per bracket; rollback is not a third state. Revert check: 8/29 tests fail with main code reverted; git revert reproduces the parent tree. Targeted tests 40/40 and :packs:check -x test green. --force on move to for_review accepted: kitty-specs files are inherited (doc-read-spike.md byte-identical to feat/466; pack-item-etags files byte-identical to origin/main). LOWs folded, not filed: PackWriteGeneration javadoc still says counters stay correct under overlapping swaps (FR-023 acceptance assumes no overlap; production serializes); a refusal from the load inside any odd window (e.g. DIRECTIVE_NOT_FOUND in another pack) still answers 500 stale_input rather than 404, unchanged from before -- recorded for the operator in the ADR/PR, not changed here."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP07-consistent-read-during-swap/review-cycle-1.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP07-consistent-read-during-swap/review-cycle-1.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 16088,
-      "shell_pid_created_at": "1794462371.76"
+      "shell_pid_created_at": "1794462371.76",
+      "subtasks": {
+        "T034": "done",
+        "T035": "done"
+      }
     },
     "WP08": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 8,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C48J979WJX6F9M591W9P0",
       "last_transition_at": "2026-11-12T07:56:31.690037+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: ADR-0073 (Proposed) and dated amendments to ADR-0042/0036/0031/0065/0019/0040; how-to docs/guides/enforce-org-presets.md; architecture/context/schema pages and three diagrams (re-rendered, plantuml check ok); DIV-302/DIV-303; changelog; usability workaround removed. Docs checks, markdownlint, cspell green; Gradle module checks green in chunks except :build-logic:test RegexRecursionGuardTest, which flags PackFileKind.java:235 (WP03 ignoredPatterns) against the guard main added with #465: not introduced by WP08, needs a code fix or allow-list entry. Generated docs/glossary pages not regenerated: @spec-kitty/doc-toolkit needs a GitHub Packages token (npm 401). --force: the kitty-specs gate refused only inherited files, verified with git diff: pack-item-etags-and-resolver-retirement-01M75WRS byte-identical to origin/main; research/doc-read-spike.md and WP09 review-cycle files byte-identical to feat/466-slice-b-real-packs-register.",
+        "Independent review of f44b195b..e6b7068a.",
+        "Changes requested: M1 DIV-302 misses core's PROVENANCE.md seed; M2 usability README misstates the active_charter refusal (held until the FR-010 code fix settles the wire shape); LOWs L1-L8.",
+        "Review 1 addressed: M1 and L2-L8 in d7e49557; M2 and L1 in cb514338, worded to the FR-010 wire shape (pack_unreadable at pack, detail names the undeclared key). Docs checks, markdownlint 0.18.1 and cspell green; no Gradle run (slot held by the fixer). --force only for inherited kitty-specs files, verified with git diff: pack-item-etags-and-resolver-retirement-01M75WRS identical to origin/main; research/doc-read-spike.md identical to feat/466-slice-b-real-packs-register.",
+        "Re-review of d7e49557 and cb514338.",
+        "Approved on re-review. M1 (DIV-302 now records core's PROVENANCE.md seed, citations confirmed at 78c48ce9), M2/L1 (active_charter wire shape matches FR-010 fix d86ed545, which lands with the record via cherry-pick), L2-L8 all fixed and accurate. check_docs all ok, markdownlint 0.18.1 and cspell clean on changed files; DivergenceRegisterTest green on d7e49557. Known gap: generated docs/glossary pages not regenerated (npm 401 on the private generator), reported to the orchestrator. --force: inherited kitty-specs files only, verified byte-identical."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP08-record-and-docs/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP08-record-and-docs/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 5867,
-      "shell_pid_created_at": "1794464786.58"
+      "shell_pid_created_at": "1794464786.58",
+      "subtasks": {
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done",
+        "T040": "done"
+      }
     },
     "WP09": {
       "actor": "merge",
-      "agent": "claude",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 4,
-      "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M77C3TFX4F20GYC7P5CXSESX",
       "last_transition_at": "2026-11-12T07:56:17.277931+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Dry run at open-packs a6cfeab against lane-e: 19/19 packs refused today (47 retired, 12 pack_unreadable for active_charter); 19/19 register with both drafts applied. Drafts finalized; leftovers (charter/core side) in research/open-packs-dry-run.md (c).",
+        "Independent review of 14dba944.",
+        "Changes requested: 4 MEDIUM text fixes in the drafts (missed retired-mechanism mentions, pack.md preamble rule, CI-checked generated docs, register-claim wording) plus LOWs.",
+        "Review 1 fixes (ce4b507c): M1 org-charter draft lists every live mention outside ADRs/changelog (root README, docs/packs, docsite-design, catalog-proposal, overview, guides, contracts, organisations, glossary, _meta, .kittify, internal README:149, go/rust presets, core-seeded glossary :996) and acceptance widened; M2 readme-doc drops pack.md preamble (go/rust keep para 1), apply_drafts.py follows it, re-run 0/19 -> 19/19; M3 gen_pack_reference.py regenerate + commit docs/packs/*.md in both drafts, docs/packs/index.md:49,76; M4 'pass the registration load (IC-04 step 2)' wording everywhere. LOWs: BOM at start; MarkdownScanner rules incl closing # and open fence; lines 5-7/bullets 1-3; 'delete it'; foundation/writing 'This file'; event-driven preset stays opt-in; canonical root layout; PR #501 for ADR-0042/how-to; apply_drafts fully described and driver calls pasted.",
+        "Re-review of ce4b507c.",
+        "Approved on re-review. All review-1 MEDIUMs (M1 missed retired-mechanism mentions, M2 pack.md preamble rule, M3 CI-checked generated docs, M4 'pass the registration load' wording) and LOWs fixed in ce4b507c; reviewer re-ran from fresh copies: 0/19 as found, 19/19 pass the registration load with both drafts, READMEs meet the draft's acceptance. Three new LOWs (two more skill_namespace mentions + acceptance bullet; 'in most packs'; descriptor-fact acceptance scoped to restated descriptor facts) folded by the orchestrator in 1d638945 (signed, text only)."
+      ],
+      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-b-real-packs-register-01M7649C-coord/kitty-specs/slice-b-real-packs-register-01M7649C/tasks/WP09-open-packs-drafts/review-cycle-2.md",
         "reference": "review-cycle://slice-b-real-packs-register-01M7649C/WP09-open-packs-drafts/review-cycle-2.md",
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
+      "role": "reviewer",
       "shell_pid": 31676,
-      "shell_pid_created_at": "1794464417.29"
+      "shell_pid_created_at": "1794464417.29",
+      "subtasks": {
+        "T041": "done",
+        "T042": "done"
+      }
     }
   }
 }

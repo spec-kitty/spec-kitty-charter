@@ -1,24 +1,26 @@
 package ai.speckitty.charter.kernel.validation;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * An ordered, immutable set of {@link Constraint}s with two evaluation strategies: {@link #guard} fails fast on the
- * first breach, {@link #check} collects every breach.
+ * An ordered, immutable set of {@link Rule}s that is itself a rule, so a ruleset can hold rulesets. {@link #check}
+ * collects every reason; {@link #guard} fails fast on the first violation, rule by rule, so a later rule may rely on
+ * an earlier one having held.
  *
  * @param <T> the validated type
  */
-public final class ModularRuleset<T> {
+public final class ModularRuleset<T> implements Rule<T> {
 
-    private final List<Constraint<T>> rules;
+    private final List<Rule<T>> rules;
 
-    private ModularRuleset(List<Constraint<T>> rules) {
+    private ModularRuleset(List<? extends Rule<T>> rules) {
         this.rules = List.copyOf(rules);
     }
 
     /**
-     * A ruleset with no constraints; every value passes.
+     * A ruleset with no rules; every value passes.
      *
      * @param <T> the validated type
      * @return the empty ruleset
@@ -28,51 +30,55 @@ public final class ModularRuleset<T> {
     }
 
     /**
-     * A ruleset of the given constraints, evaluated in order.
+     * A ruleset of the given rules, applied in order.
      *
-     * @param rules the constraints
+     * @param rules the rules
      * @param <T> the validated type
      * @return the ruleset
      */
-    public static <T> ModularRuleset<T> of(List<Constraint<T>> rules) {
+    public static <T> ModularRuleset<T> of(List<? extends Rule<T>> rules) {
         return new ModularRuleset<>(rules);
     }
 
     /**
-     * A new ruleset with one more constraint at the end; this ruleset is unchanged.
+     * A new ruleset with one more rule at the end; this ruleset is unchanged.
      *
-     * @param rule the constraint to add
+     * @param rule the rule to add, a constraint or a ruleset
      * @return the extended ruleset
      */
-    public ModularRuleset<T> must(Constraint<T> rule) {
+    public ModularRuleset<T> must(Rule<T> rule) {
         Objects.requireNonNull(rule, "rule");
-        var extended = new java.util.ArrayList<>(rules);
+        var extended = new ArrayList<>(rules);
         extended.add(rule);
         return new ModularRuleset<>(extended);
     }
 
     /**
-     * Fail-fast: stops at the first breached constraint.
+     * Collect-all: applies every rule.
      *
      * @param value the value to validate
-     * @throws ConstraintBreachException naming the first breached constraint
+     * @return every reason of every rule, in rule order
      */
-    public void guard(T value) {
-        for (var rule : rules) {
-            if (rule.applyTo(value).isFailing()) {
-                throw new ConstraintBreachException(rule.description());
-            }
+    @Override
+    public List<Reason> apply(T value) {
+        List<Reason> reasons = new ArrayList<>();
+        for (Rule<T> rule : rules) {
+            reasons.addAll(rule.apply(value));
         }
+        return List.copyOf(reasons);
     }
 
     /**
-     * Collect-all: evaluates every constraint and reports each outcome.
+     * Fail-fast: applies the rules in order and stops at the first that finds a violation.
      *
      * @param value the value to validate
-     * @return one reason per constraint, in order
+     * @throws ConstraintBreachException carrying the first violation
      */
-    public Rationale check(T value) {
-        return new Rationale(rules.stream().map(rule -> rule.applyTo(value)).toList());
+    @Override
+    public void guard(T value) {
+        for (Rule<T> rule : rules) {
+            rule.guard(value);
+        }
     }
 
     /**

@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackDocumentRepository;
@@ -49,6 +50,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
@@ -503,7 +505,10 @@ public final class DomainRepositoryService
      *       makes the pack unreadable here as any other file does;
      *   <li>the typed edges it writes, as written, from the same graph read and assembly ({@link #typedEdges});
      *   <li>the {@code applies_to_languages} of each artifact it holds that declares any, by bare URN, from the same
-     *       assembly ({@link #languagesOf}).
+     *       assembly ({@link #languagesOf});
+     *   <li>the slots each step prompt declares and the fills each step enhancement writes, from the same read, over
+     *       the canonical texts the load rule judges ({@link PromptFacts#of}, research R9), and the steps each mission
+     *       type it holds declares, from the same assembly, which place a step's prompt in force (operator ruling Q3).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -523,7 +528,8 @@ public final class DomainRepositoryService
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
-        Pack assembled = readable(pack, resolved);
+        FilesystemPackStore.PackRead read = resolved.store.read(resolved.key, graphs);
+        Pack assembled = readable(pack, read, graphs);
         MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
         Set<String> changed = new LinkedHashSet<>();
         Set<String> references = new LinkedHashSet<>();
@@ -535,6 +541,7 @@ public final class DomainRepositoryService
         Set<String> defined = new LinkedHashSet<>();
         Map<String, List<String>> languages = new LinkedHashMap<>();
         Map<String, String> bindings = new LinkedHashMap<>();
+        Map<Urn, List<String>> steps = new LinkedHashMap<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
             if (artifact.urn().kind().authoredInGraphs()) {
@@ -545,6 +552,12 @@ public final class DomainRepositoryService
                 }
                 missionTypeOf(artifact)
                         .ifPresent(missionType -> bindings.put(artifact.urn().toString(), missionType.toString()));
+                if (artifact instanceof MissionType type) {
+                    List<String> declaredSteps = new ArrayList<>();
+                    type.steps().forEach(step -> declaredSteps.add(step.id()));
+                    type.onDemandSteps().forEach(step -> declaredSteps.add(step.id()));
+                    steps.put(artifact.urn(), declaredSteps);
+                }
             }
         }
         defined.addAll(declared);
@@ -556,7 +569,28 @@ public final class DomainRepositoryService
                 assembled.presets(),
                 typedEdges(graphs.documents(), assembled),
                 languages,
-                bindings);
+                bindings,
+                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps));
+    }
+
+    /**
+     * The slot parse of each step prompt of the stored mission types, at the prompt's pack-relative file, over the
+     * canonical text the load rule parses ({@link #recordPromptSlotFaults}): the input of the prompt facts (research R9).
+     */
+    private static List<PackContents.PromptSlotFacts> promptSlotFacts(FilesystemPackStore.PackRead read) {
+        List<PackContents.PromptSlotFacts> prompts = new ArrayList<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            List<MissionTypeDso.Step> steps = new ArrayList<>(stored.dso().steps());
+            steps.addAll(stored.dso().onDemandSteps());
+            for (MissionTypeDso.Step step : steps) {
+                if (step.promptPath().isPresent() && step.prompt().isPresent()) {
+                    prompts.add(new PackContents.PromptSlotFacts(
+                            companionFile(stored.file(), step.promptPath().get()),
+                            PromptSlots.parse(MarkdownCodec.write(step.prompt().get()))));
+                }
+            }
+        }
+        return prompts;
     }
 
     /**
@@ -740,8 +774,9 @@ public final class DomainRepositoryService
     }
 
     /** The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. */
-    private static Pack readable(PackIdentifier pack, Resolved resolved) {
-        Pack assembled = assemble(pack, resolved);
+    private static Pack readable(
+            PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
+        Pack assembled = assemble(pack, read, graphs);
         if (!assembled.violations().isEmpty()) {
             PackElementViolation first = assembled.violations().getFirst();
             throw new CharterRefusal(
@@ -808,14 +843,14 @@ public final class DomainRepositoryService
     }
 
     private static Pack assemble(PackIdentifier pack, Resolved resolved) {
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        return assemble(pack, resolved.store.read(resolved.key, graphs), graphs);
+    }
+
+    private static Pack assemble(
+            PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
         // No read serves the warnings in phase 1: the list is filled and dropped.
-        return assembly(
-                        pack,
-                        resolved.store.read(resolved.key),
-                        new HashMap<>(),
-                        resolved.store.readGraphs(resolved.key),
-                        new ArrayList<>())
-                .build();
+        return assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>()).build();
     }
 
     /**

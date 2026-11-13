@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -132,11 +133,13 @@ final class FilesystemPackStore {
 
     /**
      * What a pack directory held: the descriptor, the readable files of every bound kind and a violation per file
-     * that could not be read.
+     * that could not be read, and per {@code overrides} edge of a graph document whose source kind is not activatable
+     * (FR-014).
      *
      * @param descriptor the descriptor
      * @param elements the readable files of each bound kind, in path order; a kind with none may be absent
-     * @param violations the files that could not be read, in kind then path order
+     * @param violations the files that could not be read, in kind then path order, then the refused {@code overrides}
+     *     edges at their graph documents, in {@link #readGraphs} order
      * @param assetFiles the asset files, in path order
      * @param templates the templates, in path order
      * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
@@ -353,14 +356,39 @@ final class FilesystemPackStore {
     }
 
     /**
+     * Reads a pack, tolerating broken element files, judging the {@code overrides} edges of graph documents the caller
+     * has already read, so one read of a pack parses its graph documents once and judges the same documents it
+     * assembles.
+     *
+     * @param id the pack
+     * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
+     * @return as {@link #read(PackIdentifier)} answers
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(PackIdentifier id, GraphRead graphs) {
+        return read(id, KindBindings.all(), graphs);
+    }
+
+    /**
      * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
+     *
+     * <p>Last it judges the edges of the pack's readable graph documents by {@link OverrideSourceRule} (FR-014): each
+     * {@code overrides} edge whose source kind is not activatable is a violation at its document. Every assembly of the
+     * read records it, so a registration lists it and a composing read refuses the pack {@code pack_unreadable} naming
+     * the document, as a step enhancement's edge fault (ADR-0066 OD-3 (a)). A graph document that cannot be read is
+     * not judged here: {@link #readGraphs} reports it on its own.
      *
      * @param id the pack
      * @param kinds the bindings to read, in order
-     * @return the descriptor, the readable files of each binding's kind and a violation per broken file
+     * @return the descriptor, the readable files of each binding's kind and a violation per broken file and per refused
+     *     {@code overrides} edge
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
+        return read(id, kinds, readGraphs(id));
+    }
+
+    private PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
         PackFileSet.Listing listing = PackFileSet.listing(directory, companionRules.table());
@@ -390,7 +418,21 @@ final class FilesystemPackStore {
         List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
+        violations.addAll(overrideSourceViolations(graphs));
         return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
+    }
+
+    /** Each {@code overrides} edge of a readable graph document whose source kind is not activatable, at its file. */
+    private static List<PackElementViolation> overrideSourceViolations(GraphRead graphs) {
+        List<OverrideSourceRule.Edge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                edges.add(new OverrideSourceRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
+            }
+        }
+        return OverrideSourceRule.judge(edges).stream()
+                .map(OverrideSourceRule::violationOf)
+                .toList();
     }
 
     /**
