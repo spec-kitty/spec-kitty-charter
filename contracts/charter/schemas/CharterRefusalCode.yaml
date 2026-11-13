@@ -129,9 +129,11 @@ description: >-
   not reveal what exists. pack_source_unavailable (503): registration, or the source kind, is switched
   off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
   self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the
-  closure and the packs involved (IC-15): an overrides edge onto a target that is not open, an enhances cycle or an
-  enhancer with no route to a non-enhancer, an artifact that both enhances and overrides one target, an overrides edge
-  that resolves to its own source, and an overrides cycle. registration_timed_out (504): the registration job's end
+  closure and the packs involved (IC-15): an overrides edge onto a target that is not open, or an enhancement of a step
+  whose mission type is locked (a step takes its mission type's level, OD-2; a read of such a closure answers 500
+  pack_unreadable, as a forbidden layer override does), an enhances cycle or an enhancer with no route to a
+  non-enhancer, an artifact that both enhances and overrides one target, an overrides edge that resolves to its own
+  source, and an overrides cycle. registration_timed_out (504): the registration job's end
   state at the source deadline plus 30 seconds (NFR-008); the 504 is the planner's proposal, no earlier text gave the
   code a status, and this contract confirms it. pack_storage_full (503): less than the
   per-job peak (about three times the archive bound) is free on the staging or the pack volume (NFR-009), checked before
@@ -718,7 +720,7 @@ x-refusal:
     status: 422
     retryable: false
     raised: true
-    description: an overrides edge onto a target that is not open
+    description: an overrides edge onto a target that is not open, or an enhancement of a step whose mission type is locked
   enhances_cycle:
     status: 422
     retryable: false

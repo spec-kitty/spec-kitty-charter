@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceResolution;
 import ai.speckitty.charter.packs.domain.InForceStates;
@@ -136,12 +137,33 @@ public record ClosureView(
             return built != null ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
         }
 
+        /**
+         * The layer merge, built once. Two closure-level refusals come out of it, both {@code 500 pack_unreadable}
+         * whatever the activation: a layer override the overridden artifact's level forbids (C21, from
+         * {@link LayerMerge}), and then an enhancement of a step whose mission type is locked along the closure without
+         * the enhancing pack's own policy (C22 and C25 as amended, OD-2 (A)), the read side of the
+         * {@code override_not_permitted} the registration impact check answers.
+         */
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             if (built == null) {
                 MergedClosure merged = LayerMerge.merge(packs, facts, policy);
+                refuseLockedStepEnhanced(policy);
                 built = new MergedView(merged, edges.merged(merged), bindingsOf(merged));
             }
             return built;
+        }
+
+        private void refuseLockedStepEnhanced(PerPackPolicy policy) {
+            EnhancementCompose.lockedTargets(
+                            packs,
+                            pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
+                                    .edges(),
+                            policy)
+                    .stream()
+                    .findFirst()
+                    .ifPresent(locked -> {
+                        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, locked.detail(), locked.packs());
+                    });
         }
 
         /**
