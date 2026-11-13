@@ -15,7 +15,7 @@ Serve the reads ADR-0074 decided into slice A, without the glossary (#106, split
 
 Every read follows ADR-0074 decisions 9 to 14. The reads are built the way the existing literal kind reads (`agent_profile`, `mission_type`) are built: a contract path file per operation, a tag per controller, a packs-side read for the pack tree, and an `EffectiveReadService` read for the activation tree. Each read is proven by `@contract` scenarios that pass the switch-gate register.
 
-The planning interrogation was skipped at the operator's instruction ("drive end to end; make reversible calls yourself and check in later"). Each call made in its place is recorded in [research.md](research.md) as R1 to R12, for the operator's check-in.
+The planning interrogation was skipped at the operator's instruction ("drive end to end; make reversible calls yourself and check in later"). Each call made in its place is recorded in [research.md](research.md) as R1 to R15. The operator accepted R1, R3, R5, R6 and R14 on 2026-11-13.
 
 ## Technical Context
 

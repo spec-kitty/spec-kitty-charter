@@ -3,7 +3,7 @@ title: "ADR-0074: The remaining cutover reads, and the paths a client reads them
 description: How the seven open cutover reads (R4, R11 to R16) are decided, and the paths assets, skills, glossary contexts and presets are read by.
 doc_status: active
 updated: 2026-11-13T00:00:00Z
-decision_status: Accepted; decision 9 amended for assets under an activation (2026-11-12, an agent call awaiting operator review)
+decision_status: Accepted; decision 9 amended for assets under an activation (2026-11-12, accepted by operator ruling 2026-11-13)
 decision_date: '2026-11-12'
 type: ADR
 kind: ADR
@@ -161,7 +161,7 @@ both to the operator, who ruled on each (decisions 9 to 14).
 
    The kinds served before this record keep `?kind=` only; their collection paths stay write targets.
 
-   *Amended 2026-11-12 (an agent call awaiting operator review; see [Amendment 2026-11-12](#amendment-2026-11-12)):
+   *Amended 2026-11-12 (accepted by operator ruling 2026-11-13; see [Amendment 2026-11-12](#amendment-2026-11-12)):
    under an activation, the effective list does not take `?kind=asset`, which it answers 400 as before; an
    activation's assets are listed at `/activations/{activationId}/artifacts/asset` only. `?kind=skill` lists skills
    in both trees.*
@@ -245,10 +245,9 @@ both to the operator, who ruled on each (decisions 9 to 14).
 
 ## Amendment 2026-11-12
 
-**Status: an agent call, awaiting operator review.** The operator asked for slice A2 (#536) to run end to end and
-for reversible calls to be made and reported at the check-in. This amendment is one of those calls, made in planning
-(research R3 of the mission `slice-a2-cutover-reads-01M78RJD`) and logged as an open review item; the operator can
-reverse it. It reads decision 9 for assets under an activation.
+**Status: Accepted, by operator ruling of 2026-11-13.** The operator asked for slice A2 (#536) to run end to end;
+this amendment was proposed in planning (research R3 of the mission `slice-a2-cutover-reads-01M78RJD`), and the
+operator accepted it on 2026-11-13, with the two calls below it. It reads decision 9 for assets under an activation.
 
 - **The effective list does not take `asset`.** `GET /activations/{activationId}/artifacts?kind=asset` stays a
   `400` Problem without a code, as before (`ActivationController.kindFilter` refuses a kind that is not
@@ -266,7 +265,7 @@ reverse it. It reads decision 9 for assets under an activation.
 packs-side merge already rules that assets are never listed by the effective reads (packs decision
 `01M702A71YF7WNDTG2AA89K8ZA`). Listing them there would invent a state, such as a `held` reason, and widen an enum.
 
-Two more agent calls of the same mission bear on decisions 11 and 13, and are recorded here for the same review:
+Two more calls of the same mission bear on decisions 11 and 13. The operator accepted them too, on 2026-11-13:
 
 - **One media-type rule** (research R6). "Well-formed" for the payload's `Content-Type` is the rule validate already
   applies (a slash with text on both sides), extracted to one domain function that both call; the payload is
