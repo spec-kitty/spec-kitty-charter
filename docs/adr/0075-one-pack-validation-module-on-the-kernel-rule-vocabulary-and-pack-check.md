@@ -34,6 +34,9 @@ audience:
 - **The squad.** A four-lens squad (architect, patterns, code shape, reducer) read the code and proposed the design.
 - **The rulings.** The operator ruled its six open questions one at a time, in an interview on 2026-11-13. The rulings
   are marked *(operator)* below.
+- **The identifier ruling.** When the landing review raised that the pack id, the roles and the slot ids were left out,
+  the operator ruled on 2026-11-13: "everything strict", meaning every identifier, including the pack id, roles and
+  slot ids.
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices #550 to #557 with #547 and #478.
 
@@ -90,10 +93,19 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
    - `Location` is upstream's `Evidence` done right: typed and immutable, not a mutable string map.
    - The kernel gains the shared grammar rules `notBlank`, `slug(max)` and `letterFirstSlug(max)`, the
      `IdentifierGrammar` rules.
-2. **Every identifier uses the shared grammar rules** *(operator)*.
-   - `PackIdentifier` holds the pack-id grammar, and the two regex copies in registration go.
-   - `ParadigmIdentifier`, `StyleguideIdentifier`, `MissionStepContractIdentifier` and `ProcedureStep` move to the
-     shared slug rule. That refuses `a--b` and trailing hyphens, which they accept today.
+2. **Every identifier uses the shared grammar rules** *(operator, "everything strict")*. No identifier keeps a
+   grammar of its own, so `a--b` and a trailing hyphen are refused everywhere.
+   - **The pack id** is `slug(63)`: lowercase alphanumerics in hyphen-separated runs, with no leading, trailing or
+     doubled hyphen, at most 63 characters. A digit first stays allowed, because `isSlug` (the non-letter-first
+     slug) permits it, as the pack id does today. `PackIdentifier` holds the rule, and the copies go:
+     the regex `^[a-z0-9][a-z0-9-]{0,62}$` in `PackRegistrationService` and `RegistrationAdmission`, and the contract's
+     `PackId.yaml`, `PackSource.yaml` and the two `packs_packId` path parameters, which take the same pattern as the
+     rule (`^[a-z0-9]+(-[a-z0-9]+)*$`, `maxLength: 63`).
+   - **The letter-first types** move to `letterFirstSlug`, because each is letter-first today:
+     - `ParadigmIdentifier`, `StyleguideIdentifier`, `MissionStepContractIdentifier` and `ProcedureStep`, which write
+       `^[a-z][a-z0-9-]*$` and accept `a--b`;
+     - the agent role (`AgentProfile`) and the mission step role (`MissionStep`), which write `[a-z][a-z0-9-]*`;
+     - the slot id (`SlotId`, and the slot of `StepEnhancement`): each of its two parts is a `letterFirstSlug`.
    - The charter's model is canonical: fixtures and example packs follow, and an open-packs id that breaks is fixed
      in open-packs.
 3. **A new `pack-validation` module holds every pack check as a kernel ruleset** *(operator: extract only what is
@@ -187,8 +199,12 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 
 - **Large, refactor-heavy migration.** It touches `PackPolicy` (1,269 lines), `FilesystemPackStore`, `WholePackStore`
   and `DomainRepositoryService`.
-- **Stricter identifiers.** Ids that are valid today (`a--b`) are refused. Fixtures, example packs and any open-packs
-  id that breaks must change.
+- **Breaking: stricter identifiers.** Ids that are valid today (`a--b`, or a trailing hyphen) are refused, for the
+  pack id, the roles and the slot ids as much as for the other types. A registered pack whose id has a doubled or
+  trailing hyphen is refused.
+  - A contract change fragment and a `### Breaking` CHANGELOG entry land with slice #552 (ADR-0022).
+  - Fixtures and example packs change with the model.
+  - open-packs must check its pack ids, roles and slot ids, and fix any that break.
 - **Mixed `packs` module.** Without the split, `packs` keeps its Spring beans and pure code side by side. Only the
   extracted module is framework-free.
 
