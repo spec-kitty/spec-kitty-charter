@@ -37,3 +37,6 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Open-packs drift watch research, 2026-11-13](/plans/engineering-notes/open-packs-drift-watch-research-2026-11-13/) —
   why the drift watch (#509) stays red on `main` after #545, where its design leaks, what gates what across
   charter and open-packs, and the operator's rulings on each recommendation.
+- [Mutation testing no-report research, 2026-11-13](/plans/engineering-notes/mutation-testing-no-report-research-2026-11-13/) —
+  why each red mutation run since 2026-11-10 left a module with no report, what main already fixes,
+  and the failure class still open: a `test` system property PIT's minion never receives (#461).
