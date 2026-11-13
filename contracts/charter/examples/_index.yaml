@@ -50,3 +50,5 @@ files:
   - Artifact.activation-mission-step-contract.yaml
   - MissionStep.activation-implement.yaml
   - MissionSkeleton.activation-spec-template.yaml
+  - Preset.team.yaml
+  - PresetList.two-presets.yaml
