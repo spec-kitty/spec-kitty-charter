@@ -124,6 +124,14 @@ relayed by the orchestrator); the rest are this mission's planning decisions, pu
   `action_not_found` for a step only a replaced version keeps, where the context and prompt reads answer. This is
   pre-existing (slice A). Operator ruling of 2026-11-12: fold the fix into this mission (WP09), so the step, context
   and prompt reads agree.
+- **Amended 2026-11-13 (operator ruling Q3).** Action nodes come only from graph documents, so the winner of
+  `action:M/s` is not always the winner of `mission_type:M` even when the winning version declares the step (a project
+  that overrides only the type yaml). The one place rule is `StepHolding.placeOf`: the winner of `mission_type:M` when
+  its version declares `s`; else the winner of `action:M/s` when its version declares `s`; else no place. The prompt in
+  force is the stored companion at that place, and every judgement of it uses the same rule: the prompt read, the C38
+  slot check (reads, registration, impact-checked writes, activation writes), the step read and the context and
+  step-contract links (WP09). Known edge, not changed: a held step no version at either place declares answers
+  `404 action_not_found` on the step read and `200` (empty prompt) on the context and prompt reads.
 
 ## R9. Slot facts are composition facts (planning decision, revised after the squad, A1)
 
