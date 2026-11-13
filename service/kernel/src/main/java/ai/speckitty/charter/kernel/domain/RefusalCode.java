@@ -1,5 +1,8 @@
 package ai.speckitty.charter.kernel.domain;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Refusal codes; part of the contract ({@code CharterRefusalCode}). The constant names are Java's; the
  * {@link #token()} is the snake_case wire spelling, which never changes once released.
@@ -242,6 +245,26 @@ public enum RefusalCode {
      */
     MISSION_TYPE_NOT_IN_FORCE("mission_type_not_in_force");
 
+    /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
+    private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(
+            MISSION_TYPE_NOT_FOUND,
+            ACTION_NOT_FOUND,
+            PACK_NOT_FOUND,
+            PACK_DOCUMENT_NOT_FOUND,
+            TACTIC_NOT_FOUND,
+            DIRECTIVE_NOT_FOUND,
+            STYLEGUIDE_NOT_FOUND,
+            PARADIGM_NOT_FOUND,
+            TOOLGUIDE_NOT_FOUND,
+            KIND_NOT_FOUND,
+            ACTIVATION_NOT_FOUND,
+            ARTIFACT_NOT_FOUND,
+            PRESET_NOT_FOUND,
+            RELATIONSHIP_NOT_FOUND,
+            REGISTRATION_NOT_FOUND,
+            MISSION_STEP_CONTRACT_NOT_FOUND,
+            SKELETON_NOT_FOUND);
+
     private final String token;
 
     RefusalCode(String token) {
@@ -268,22 +291,6 @@ public enum RefusalCode {
      *     {@link #SKELETON_NOT_FOUND}
      */
     public boolean notFound() {
-        return this == MISSION_TYPE_NOT_FOUND
-                || this == ACTION_NOT_FOUND
-                || this == PACK_NOT_FOUND
-                || this == PACK_DOCUMENT_NOT_FOUND
-                || this == TACTIC_NOT_FOUND
-                || this == DIRECTIVE_NOT_FOUND
-                || this == STYLEGUIDE_NOT_FOUND
-                || this == PARADIGM_NOT_FOUND
-                || this == TOOLGUIDE_NOT_FOUND
-                || this == KIND_NOT_FOUND
-                || this == ACTIVATION_NOT_FOUND
-                || this == ARTIFACT_NOT_FOUND
-                || this == PRESET_NOT_FOUND
-                || this == RELATIONSHIP_NOT_FOUND
-                || this == REGISTRATION_NOT_FOUND
-                || this == MISSION_STEP_CONTRACT_NOT_FOUND
-                || this == SKELETON_NOT_FOUND;
+        return NOT_FOUND.contains(this);
     }
 }
