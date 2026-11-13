@@ -52,6 +52,7 @@ public class ActivationMapper {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final TypeReference<Map<String, @Nullable List<String>>> KIND_LISTS = new TypeReference<>() {};
+    private static final String PUT = "PUT";
 
     private final String basePath;
 
@@ -93,17 +94,43 @@ public class ActivationMapper {
     }
 
     /**
-     * The answer for a stored activation, its {@code self} link included.
+     * The answer for a stored activation, with the links of every activation answer ({@link #activationLinks}).
      *
      * @param stored the activation
      * @return the answer
      */
     public Activation toActivation(StoredActivation stored) {
         String id = stored.id().value();
+        return new Activation(id, stored.revision().token(), toConfig(stored.document()), activationLinks(id));
+    }
+
+    /**
+     * The links of an activation answer (#409, ruling {@code DM-01M78RKM6Q23PA9QAC80QJKQFF}): its reads ({@code self},
+     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}), the
+     * {@code offering} it chooses from, and its writes ({@code edit}, {@code delete}, {@code select}, {@code exclude},
+     * {@code apply-preset}), each write with its method. {@code unselect} and {@code include} suit an artifact already
+     * selected or excluded, so the activation carries neither.
+     *
+     * @param activationId the activation's id
+     * @return the links, in the contract's order
+     */
+    private Map<String, Link> activationLinks(String activationId) {
+        String self = self(activationId);
         Map<String, Link> links = new LinkedHashMap<>();
-        links.put("self", link(self(id)));
-        links.put("artifacts", new Link(self(id) + "/artifacts{?kind,state}").templated(true));
-        return new Activation(id, stored.revision().token(), toConfig(stored.document()), links);
+        links.put("self", link(self));
+        links.put("artifacts", templated(self + "/artifacts{?kind,state}"));
+        links.put("offering", link(href("offering")));
+        links.put("edit", link(self).method(PUT));
+        links.put("delete", link(self).method("DELETE"));
+        links.put("select", templated(self + "/selections/{kind}/{artifactId}").method(PUT));
+        links.put("exclude", templated(self + "/exclusions/{kind}/{artifactId}").method(PUT));
+        links.put("apply-preset", templated(self + "/presets/{presetId}").method(PUT));
+        links.put("packs", link(self + "/packs"));
+        links.put("graph", link(self + "/graph"));
+        links.put("skipped", link(self + "/skipped"));
+        links.put(
+                "effective-context", templated(self + "/mission-types/{missionType}/actions/{action}/context{?depth}"));
+        return links;
     }
 
     /**
@@ -273,5 +300,9 @@ public class ActivationMapper {
 
     private static Link link(String href) {
         return new Link(href);
+    }
+
+    private static Link templated(String template) {
+        return new Link(template).templated(true);
     }
 }

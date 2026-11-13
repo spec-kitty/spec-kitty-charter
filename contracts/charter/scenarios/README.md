@@ -106,6 +106,14 @@ Keep it small; add a step only when a scenario cannot be written without it.
   the link must carry `templated: true`; its RFC 6570 `href` is expanded with the table's values (a simple `{name}`
   becomes the percent-encoded value, a form-style query `{?a,b}` becomes `?a=..&b=..` for the names the table gives,
   and nothing when it gives none) and followed like `I follow the link`.
+- `When I follow the link "<relation>" with its method and the body:` followed by a JSON doc string — sends the doc
+  string to the `href` of that relation with the link's `method` (`GET` when it has none), for example the root's
+  `activations`, which is followed with `POST`.
+- `When I expand the templated link "<relation>" with:` followed by a `| name | value |` table, then `When I follow
+  the expanded link with If-Match the remembered header "<name>" and the body:` followed by a JSON doc string — the
+  link must carry `templated: true`; its `href` is expanded as `I follow the templated link` expands it, and the
+  expansion is sent with the link's `method`, `If-Match` the header remembered with `When I remember the header`, and
+  the doc string: a write reached by a link, such as an activation's `select`.
 - `Then following the link "<relation>" of every element of "<member>" answers <n>` — GETs the `href` of that
   relation in the `_links` of every element of the array `<member>` of the last answer, which must hold at least one,
   and expects each to answer `<n>`.
