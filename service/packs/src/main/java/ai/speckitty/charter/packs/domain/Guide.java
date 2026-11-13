@@ -90,7 +90,8 @@ public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections)
      */
     static void guardContent(String content) {
         MarkdownDocument.blockProblem(content).ifPresent(problem -> {
-            throw new ConstraintBreachException(Reason.failed("Guide content " + problem));
+            throw new ConstraintBreachException(Reason.failed(
+                    "Guide content stands as an H2 section of the stored file.", "Guide content " + problem));
         });
     }
 }

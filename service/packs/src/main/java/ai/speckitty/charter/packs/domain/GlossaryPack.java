@@ -59,9 +59,11 @@ public final class GlossaryPack implements CharterArtifact {
         RULES.guard(this);
         List<String> repeated = duplicateSurfaces(this.terms);
         if (!repeated.isEmpty()) {
-            // A rule's description is fixed text; this one names the surfaces, as core's model does.
-            throw new ConstraintBreachException(Reason.failed("Each term's surface must be unique within glossary pack "
-                    + id.value() + "; repeated: " + repeated));
+            // The rule is fixed text; the detail names the surfaces, as core's model does.
+            throw new ConstraintBreachException(Reason.failed(
+                    "Each term's surface is unique within its glossary pack.",
+                    "Each term's surface must be unique within glossary pack " + id.value() + "; repeated: "
+                            + repeated));
         }
     }
 

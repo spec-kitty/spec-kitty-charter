@@ -9,7 +9,7 @@ public final class ConstraintBreachException extends RuntimeException {
     private static final long serialVersionUID = 2L;
 
     /** The violation. */
-    private final transient Reason reason;
+    private final Reason reason;
 
     /**
      * Creates the exception for a violation.

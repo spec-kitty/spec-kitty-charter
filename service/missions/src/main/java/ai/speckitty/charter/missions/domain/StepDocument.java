@@ -61,7 +61,9 @@ public record StepDocument(
      */
     static void guard(String part, Optional<String> problem) {
         problem.ifPresent(why -> {
-            throw new ConstraintBreachException(Reason.failed("A step document's " + part + " " + why));
+            throw new ConstraintBreachException(Reason.failed(
+                    "A step document's parts follow the Markdown model's rules.",
+                    "A step document's " + part + " " + why));
         });
     }
 }

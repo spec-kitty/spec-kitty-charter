@@ -1,6 +1,8 @@
 package ai.speckitty.charter.kernel.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +22,7 @@ class RuleTest {
     record Book(String file, String title) {}
 
     private static final ReasonCode TITLE_BLANK = ReasonCode.of("title_blank");
+    private static final ReasonCode SHELF_CROWDED = new ReasonCode("shelf_crowded", Severity.WARNING);
 
     // The detail and the location are functions of the subject: the dynamic description upstream never wired.
     private final Constraint<Book> titled = Constraints.<Book>of(
@@ -39,6 +42,7 @@ class RuleTest {
         assertThat(reason.rule()).isEqualTo("a book has a title");
         assertThat(reason.code()).isEqualTo(TITLE_BLANK);
         assertThat(reason.severity()).isEqualTo(Severity.VIOLATION);
+        assertThat(reason.isFailing(Severity.WARNING)).isFalse();
         assertThat(reason.location()).isEqualTo(new Location("b.md", "/title"));
         assertThat(reason.detail()).isEqualTo("The book 'b.md' has no title.");
         // control: a held constraint reports its rule as its detail, at no location
@@ -91,8 +95,7 @@ class RuleTest {
     void aRulesetIsARuleSoRulesetsNestAndFindingsKeepTheirSeverity() {
         Constraint<Shelf> fewBooks = Constraints.<Shelf>of(
                         "a shelf holds at most two books", s -> s.books().size() <= 2)
-                .as(Severity.WARNING)
-                .coded(ReasonCode.of("shelf_crowded"));
+                .coded(SHELF_CROWDED);
         ModularRuleset<Book> bookRules = ModularRuleset.<Book>emptyRules().must(titled);
         ModularRuleset<Shelf> shelfRules = ModularRuleset.<Shelf>emptyRules()
                 .must(Constraints.notBlank().on(Shelf::id))
@@ -102,7 +105,7 @@ class RuleTest {
         Rationale rationale = shelfRules.check(shelf);
 
         assertThat(rationale.violations()).extracting(Reason::code).containsExactly(TITLE_BLANK, TITLE_BLANK);
-        assertThat(rationale.warnings()).extracting(Reason::code).containsExactly(ReasonCode.of("shelf_crowded"));
+        assertThat(rationale.warnings()).extracting(Reason::code).containsExactly(SHELF_CROWDED);
         assertThat(rationale.isPassing()).isFalse();
         // control: with the untitled books gone, only the warning is left, and a warning does not fail the check
         Rationale crowdedOnly = shelfRules.check(
@@ -114,14 +117,57 @@ class RuleTest {
 
     @Test
     void aGuardFailsOnAViolationButNotOnAWarning() {
-        ModularRuleset<String> rules = ModularRuleset.<String>emptyRules()
-                .must(Constraints.<String>of("short", s -> s.length() <= 3).as(Severity.WARNING));
+        ModularRuleset<String> warnOnly = ModularRuleset.<String>emptyRules()
+                .must(Constraints.<String>of("short", s -> s.length() <= 3)
+                        .coded(new ReasonCode("long", Severity.WARNING)));
 
-        rules.guard("longer");
+        assertThatCode(() -> warnOnly.guard("longer")).doesNotThrowAnyException();
         // control: the same rule as a violation breaks the guard
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> ModularRuleset.<String>emptyRules()
+        assertThatThrownBy(() -> ModularRuleset.<String>emptyRules()
                         .must(Constraints.<String>of("short", s -> s.length() <= 3))
                         .guard("longer"))
                 .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
+    void aWrappedRulesetStillStopsAtItsFirstViolationSoALaterRuleMayRelyOnAnEarlierOne() {
+        // the second rule would throw on a null title; the guard must never reach it
+        ModularRuleset<Book> titleRules = ModularRuleset.<Book>emptyRules()
+                .must(Constraints.<Book>of("a book has a title", book -> book.title() != null))
+                .must(Constraints.<Book>of(
+                        "a title is short", book -> book.title().length() <= 40));
+        Rule<Shelf> wrapped = titleRules
+                .forEach(Shelf::books)
+                .when(s -> !s.books().isEmpty())
+                .on(java.util.function.Function.<Shelf>identity());
+        Shelf untitled = new Shelf("s4", java.util.Arrays.asList(new Book("a.md", "A"), new Book("b.md", null)));
+
+        assertThatThrownBy(() -> wrapped.guard(untitled))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessage("Constraint breached: a book has a title");
+        // control: a shelf of titled books passes the same wrapped guard, and an empty one is not judged
+        assertThatCode(() -> wrapped.guard(shelf)).doesNotThrowAnyException();
+        assertThat(wrapped.apply(new Shelf("s5", List.of()))).isEmpty();
+    }
+
+    @Test
+    void locatedAtPlacesEveryBreachOfASharedRuleByTheWholeSubject() {
+        Rule<Shelf> idRule = Constraints.notBlank()
+                .on(Shelf::id)
+                .locatedAt(s ->
+                        Location.in("shelves/" + s.books().size() + ".yaml").at("/id"));
+
+        assertThat(idRule.check(new Shelf(" ", List.of())).violations())
+                .extracting(Reason::location)
+                .containsExactly(new Location("shelves/0.yaml", "/id"));
+        assertThatThrownBy(() -> idRule.guard(new Shelf(" ", List.of())))
+                .isInstanceOf(ConstraintBreachException.class)
+                .extracting(e -> ((ConstraintBreachException) e).reason().location())
+                .isEqualTo(new Location("shelves/0.yaml", "/id"));
+        // control: a held reason is not placed
+        assertThat(idRule.apply(shelf))
+                .singleElement()
+                .extracting(Reason::location)
+                .isEqualTo(Location.NOWHERE);
     }
 }

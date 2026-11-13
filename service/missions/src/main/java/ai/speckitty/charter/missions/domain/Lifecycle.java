@@ -103,11 +103,12 @@ public final class Lifecycle implements CharterArtifact {
         }
         Set<String> reached = reachableFromInitial();
         states.stream().filter(s -> !reached.contains(s.id())).findFirst().ifPresent(s -> {
-            throw new ConstraintBreachException(
-                    Reason.failed("state '" + s.id() + "' is not reachable from the initial state"));
+            throw new ConstraintBreachException(Reason.failed(
+                    "Every state is reachable from the initial state.",
+                    "state '" + s.id() + "' is not reachable from the initial state"));
         });
         nondeterminism().ifPresent(message -> {
-            throw new ConstraintBreachException(Reason.failed(message));
+            throw new ConstraintBreachException(Reason.failed("A lifecycle's transitions are deterministic.", message));
         });
     }
 

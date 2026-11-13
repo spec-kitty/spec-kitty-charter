@@ -1,5 +1,6 @@
 package ai.speckitty.charter.kernel.validation;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -12,7 +13,10 @@ import java.util.Objects;
  * @param file the file, relative to the subject's root; empty for none
  * @param pointer the JSON pointer into the file; empty for the whole file
  */
-public record Location(String file, String pointer) {
+public record Location(String file, String pointer) implements Serializable {
+
+    /** Serialization version. */
+    private static final long serialVersionUID = 1L;
 
     /** No file, and so no place in one. */
     public static final Location NOWHERE = new Location("", "");
@@ -34,6 +38,7 @@ public record Location(String file, String pointer) {
      *
      * @param file the file, relative to the subject's root
      * @return the location of the file
+     * @throws IllegalArgumentException when the file is empty
      */
     public static Location in(String file) {
         if (file.isEmpty()) {
@@ -47,6 +52,7 @@ public record Location(String file, String pointer) {
      *
      * @param jsonPointer the JSON pointer into the file
      * @return the location at that pointer
+     * @throws IllegalArgumentException when this location names no file, or the pointer does not start with '/'
      */
     public Location at(String jsonPointer) {
         return new Location(file, jsonPointer);

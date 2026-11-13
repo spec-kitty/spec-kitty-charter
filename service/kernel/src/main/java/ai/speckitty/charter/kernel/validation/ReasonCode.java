@@ -1,49 +1,46 @@
 package ai.speckitty.charter.kernel.validation;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * The machine-readable code of a {@link Reason}, such as {@code file_not_held}. A slice declares its codes as an enum
- * that implements this, so its codes are typed; {@link #of} names a code that has no enum of its own.
+ * The machine-readable code of a {@link Reason}, such as {@code file_not_held}, with the {@link Severity} a breach of
+ * it weighs. A code owns its severity, as a pack finding's code does: one condition at two severities is two codes.
+ *
+ * <p>There is one form of code, so two codes with the same wire value and severity are equal wherever they come from.
+ * A slice that types its codes declares an enum whose constants each hold a {@code ReasonCode}, and hands that to
+ * {@link Constraint#coded}.
+ *
+ * @param value the code as it is written on the wire, never blank
+ * @param severity how much a breach of it weighs
  */
-public interface ReasonCode {
+public record ReasonCode(String value, Severity severity) implements Serializable {
+
+    /** Serialization version. */
+    private static final long serialVersionUID = 1L;
 
     /**
-     * The code a value object's invariant carries when its rule names no code of its own. A {@code guard} breach
-     * reports it; a check whose findings reach a caller names its own code instead.
+     * The code of a value object's invariant, a {@link Severity#VIOLATION}: what a rule reports when it names no code
+     * of its own. A check whose findings reach a caller names its own code instead.
      */
-    ReasonCode INVARIANT = of("invariant");
+    public static final ReasonCode INVARIANT = new ReasonCode("invariant", Severity.VIOLATION);
+
+    /** Rejects a null part or a blank value. */
+    public ReasonCode {
+        Objects.requireNonNull(value, "value");
+        Objects.requireNonNull(severity, "severity");
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("A reason code is not blank.");
+        }
+    }
 
     /**
-     * The code as it is written on the wire.
-     *
-     * @return the code, never blank
-     */
-    String value();
-
-    /**
-     * A code by its wire value.
+     * A code whose breach is a {@link Severity#VIOLATION}.
      *
      * @param value the wire value
      * @return the code
      */
-    static ReasonCode of(String value) {
-        return new Named(value);
-    }
-
-    /**
-     * A code by its wire value alone.
-     *
-     * @param value the wire value, never blank
-     */
-    record Named(String value) implements ReasonCode {
-
-        /** Rejects a null or blank value. */
-        public Named {
-            Objects.requireNonNull(value, "value");
-            if (value.isBlank()) {
-                throw new IllegalArgumentException("A reason code is not blank.");
-            }
-        }
+    public static ReasonCode of(String value) {
+        return new ReasonCode(value, Severity.VIOLATION);
     }
 }

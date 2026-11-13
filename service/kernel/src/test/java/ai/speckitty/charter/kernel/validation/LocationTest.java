@@ -35,11 +35,40 @@ class LocationTest {
     }
 
     @Test
-    void aReasonCodeIsNotBlankAndEqualByItsValue() {
-        assertThat(ReasonCode.of("file_not_held")).isEqualTo(ReasonCode.of("file_not_held"));
+    void aReasonCodeIsNotBlankOwnsItsSeverityAndIsEqualByValueAndSeverity() {
+        assertThat(ReasonCode.of("file_not_held")).isEqualTo(new ReasonCode("file_not_held", Severity.VIOLATION));
         assertThat(ReasonCode.of("file_not_held").value()).isEqualTo("file_not_held");
         assertThatThrownBy(() -> ReasonCode.of(" ")).isInstanceOf(IllegalArgumentException.class);
-        // control: a different value is a different code
-        assertThat(ReasonCode.of("file_not_held")).isNotEqualTo(ReasonCode.INVARIANT);
+        assertThat(ReasonCode.INVARIANT.severity()).isEqualTo(Severity.VIOLATION);
+        // control: the same value at another severity is another code, and a reason takes its code's severity
+        var warning = new ReasonCode("file_not_held", Severity.WARNING);
+        assertThat(warning).isNotEqualTo(ReasonCode.of("file_not_held"));
+        assertThat(new Reason("r", Evaluation.FAIL, warning, Location.NOWHERE, "d").severity())
+                .isEqualTo(Severity.WARNING);
+    }
+
+    @Test
+    void aBreachOfAHandWrittenCheckKeepsItsRuleFixedAndSaysWhatItFound() {
+        Reason reason = Reason.failed("Every state is reachable from the initial state.", "state 'x' is not reachable");
+
+        assertThat(reason.rule()).isEqualTo("Every state is reachable from the initial state.");
+        assertThat(reason.detail()).isEqualTo("state 'x' is not reachable");
+        assertThat(new ConstraintBreachException(reason)).hasMessage("Constraint breached: state 'x' is not reachable");
+        // control: the one-argument form uses the description as both
+        assertThat(Reason.failed("fixed").detail()).isEqualTo("fixed");
+    }
+
+    @Test
+    void aBreachSurvivesSerializationWithItsReason() throws Exception {
+        var breach =
+                new ConstraintBreachException(Reason.failed("rule", "detail").at(Location.in("pack.yaml")));
+        var bytes = new java.io.ByteArrayOutputStream();
+        try (var out = new java.io.ObjectOutputStream(bytes)) {
+            out.writeObject(breach);
+        }
+        try (var in = new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray()))) {
+            var read = (ConstraintBreachException) in.readObject();
+            assertThat(read.reason()).isEqualTo(breach.reason());
+        }
     }
 }

@@ -114,7 +114,8 @@ public record PackDocument(
     /** A part the Markdown model refuses is a breach of the document's rules, naming the part. */
     private static void guard(String part, Optional<String> problem) {
         problem.ifPresent(why -> {
-            throw new ConstraintBreachException(Reason.failed(part + " " + why));
+            throw new ConstraintBreachException(
+                    Reason.failed("A pack document's parts follow the Markdown model's rules.", part + " " + why));
         });
     }
 }

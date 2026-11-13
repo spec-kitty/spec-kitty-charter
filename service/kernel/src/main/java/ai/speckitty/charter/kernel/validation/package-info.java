@@ -4,8 +4,8 @@
  * location, and composes with {@code on}, {@code forEach} and {@code when}. A
  * {@link ai.speckitty.charter.kernel.validation.Constraint} is the rule of one predicate; a
  * {@link ai.speckitty.charter.kernel.validation.ModularRuleset} is a rule of rules that either collects every reason
- * ({@code check}) or fails fast on the first violation ({@code guard}). Depends on {@code java} and JSpecify only; the rule is
- * pinned by {@code HexagonalArchitectureTest}. Derived from {@code modular-validators} (Apache-2.0); see
+ * ({@code check}) or fails fast on the first violation ({@code guard}). Depends on {@code java} and JSpecify only;
+ * the rule is pinned by {@code HexagonalArchitectureTest}. Derived from {@code modular-validators} (Apache-2.0); see
  * {@code kernel-validation-ATTRIBUTION.md}.
  */
 @NullMarked

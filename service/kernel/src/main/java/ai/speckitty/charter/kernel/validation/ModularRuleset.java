@@ -15,7 +15,7 @@ public final class ModularRuleset<T> implements Rule<T> {
 
     private final List<Rule<T>> rules;
 
-    private ModularRuleset(List<Rule<T>> rules) {
+    private ModularRuleset(List<? extends Rule<T>> rules) {
         this.rules = List.copyOf(rules);
     }
 
@@ -37,7 +37,7 @@ public final class ModularRuleset<T> implements Rule<T> {
      * @return the ruleset
      */
     public static <T> ModularRuleset<T> of(List<? extends Rule<T>> rules) {
-        return new ModularRuleset<>(List.copyOf(rules));
+        return new ModularRuleset<>(rules);
     }
 
     /**
