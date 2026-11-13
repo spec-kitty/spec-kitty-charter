@@ -28,6 +28,9 @@ listOf(
     // The edge rings of the missions slice (application, infra.api, infra.packs, infra.activations), apart from the
     // domain because packs depends on missions (ADR-0037, amendment of 2026-11-09).
     "missions-edge",
+    // The edge rings of the asset, skill and references reads (application, infra.api, infra.packs, infra.activations),
+    // with no domain module: :activations names packs only from its own adapter (ADR-0037, amendment of 2026-11-09).
+    "artifacts-edge",
     "activations",
     "charter-api",
     // The service-wide HTTP transport shared by every slice's inbound adapter (problems, refusals, body guard).
