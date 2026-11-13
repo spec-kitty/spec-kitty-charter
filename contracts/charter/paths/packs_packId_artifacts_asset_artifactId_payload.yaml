@@ -27,7 +27,7 @@ get:
     - Assets
   parameters:
     - $ref: ../parameters/PackId.yaml
-    - $ref: ../parameters/ArtifactId.yaml
+    - $ref: ../parameters/AssetOrSkillId.yaml
     - $ref: ../parameters/IfNoneMatch.yaml
   responses:
     '200':

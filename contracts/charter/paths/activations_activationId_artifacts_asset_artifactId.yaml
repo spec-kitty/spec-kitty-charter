@@ -1,6 +1,6 @@
 parameters:
 - $ref: ../parameters/ActivationId.yaml
-- $ref: ../parameters/ArtifactId.yaml
+- $ref: ../parameters/AssetOrSkillId.yaml
 get:
   operationId: getEffectiveAsset
   summary: Read an asset in force under an activation, the copy the layer merge keeps.

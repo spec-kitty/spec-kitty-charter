@@ -1,0 +1,12 @@
+name: artifactId
+in: path
+required: true
+description: >-
+  The identity of an asset or a skill within its pack: one lowercase kebab-case segment of at most 64 characters
+  (ADR-0074 decision 10), the grammar both kinds declare. Any other spelling is a 400 without a code; a well-formed id
+  that no pack holds is a 404.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 64
+  pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'

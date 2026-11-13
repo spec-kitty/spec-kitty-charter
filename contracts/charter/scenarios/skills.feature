@@ -201,4 +201,3 @@ Feature: A pack's skills are listed and read, a prompt skill with its body exact
     Examples:
       | path                                     |
       | /packs/qa/artifacts/skill/nothing        |
-      | /packs/qa/artifacts/skill/land-pr.skill  |

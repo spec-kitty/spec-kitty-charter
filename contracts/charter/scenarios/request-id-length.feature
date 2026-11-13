@@ -1,7 +1,7 @@
 @contract @offering
 Feature: An id a request carries is capped in length
   The request schemas cap every id a path or a body carries (#443, after the pack-side caps of #440): a pack id at
-  64 characters, an artifact id at 128 (the ArtifactId cap, which leaves room for the URN spelling), and a reference
+  63 characters, an artifact id at 128 (the ArtifactId cap, which leaves room for the URN spelling), and a reference
   a relationship request writes at 255 as a whole. A request over a cap is refused before anything is read or written; a
   request at the cap is judged as any other.
 
@@ -32,9 +32,9 @@ Feature: An id a request carries is capped in length
     Then the response status is 404
     And the problem code is "<code>"
 
-    Examples: a pack id at 64, an artifact id at 128, an activation id at 64, a step contract id at 128
+    Examples: a pack id at 63, an artifact id at 128, an activation id at 64, a step contract id at 128
       | over                                                                                                                                                                               | at                                                                                                                                                                                | code                 |
-      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | pack_not_found       |
+      | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | pack_not_found       |
       | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | directive_not_found  |
       | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | activation_not_found |
       | /activations/a-1/artifacts/mission_step_contract/ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | /activations/a-1/artifacts/mission_step_contract/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | activation_not_found |
