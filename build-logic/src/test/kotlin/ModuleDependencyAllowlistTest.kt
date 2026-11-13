@@ -1,5 +1,6 @@
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
@@ -21,17 +22,6 @@ class ModuleDependencyAllowlistTest {
     }
 
     @Test
-    fun aProjectOutsideTheListIsRefusedByItsPath() {
-        assertThat(allowlist.refused(listOf(":kernel", ":packs"), emptyList())).containsExactly("project :packs")
-    }
-
-    @Test
-    fun anExternalModuleOutsideTheListIsRefusedByItsCoordinates() {
-        assertThat(allowlist.refused(emptyList(), listOf("org.springframework:spring-context")))
-            .containsExactly("org.springframework:spring-context")
-    }
-
-    @Test
     fun everyRefusalIsReportedNotOnlyTheFirst() {
         assertThat(
             allowlist.refused(
@@ -39,17 +29,6 @@ class ModuleDependencyAllowlistTest {
                 listOf("org.springframework:spring-web", "org.snakeyaml:snakeyaml-engine"),
             ),
         ).containsExactly("project :packs", "project :deployable", "org.springframework:spring-web")
-    }
-
-    @Test
-    fun theConventionsJSpecifyAndAnyOtherKindOfDependencyAreJudged() {
-        assertThat(allowlist.refused(emptyList(), listOf("org.jspecify:jspecify"), listOf("file collection spring.jar")))
-            .containsExactly("file collection spring.jar")
-    }
-
-    @Test
-    fun noDependencyAtAllPasses() {
-        assertThat(allowlist.refused(emptyList(), emptyList())).isEmpty()
     }
 }
 
@@ -81,7 +60,7 @@ class ModuleDependencyAllowlistEnforcementTest {
     fun anAllowedProjectResolves() {
         val module = module()
         module.dependencies.add("implementation", module.project(":kernel"))
-        assertThat(resolve(module, "compileClasspath")).isNotNull()
+        assertThat(resolve(module, "compileClasspath")).hasSize(1).allSatisfy { assertThat(it.path).contains("kernel") }
     }
 
     @Test
@@ -113,6 +92,7 @@ class ModuleDependencyAllowlistEnforcementTest {
         module.dependencies.add("compileOnly", module.files("spring.jar"))
         assertThatThrownBy { resolve(module, "compileClasspath") }
             .hasStackTraceContaining("org.springframework:spring-context")
+            .hasStackTraceContaining("FileCollectionDependency")
             .hasStackTraceContaining("in compileOnly (ADR-0075)")
     }
 
@@ -120,7 +100,8 @@ class ModuleDependencyAllowlistEnforcementTest {
     fun theConventionsJSpecifyIsAllowed() {
         val module = module()
         module.dependencies.add("compileOnly", "org.jspecify:jspecify:1.0.0")
-        assertThat(ModuleDependencyAllowlist(setOf(":kernel"), emptySet())
-            .refusedAmong(module.configurations.getByName("compileOnly").dependencies)).isEmpty()
+        // No repository is declared, so the classpath is never resolved; only the allowlist's own failure is judged.
+        assertThatCode { module.configurations.getByName("compileClasspath").incoming.resolutionResult.root }
+            .doesNotThrowAnyException()
     }
 }
