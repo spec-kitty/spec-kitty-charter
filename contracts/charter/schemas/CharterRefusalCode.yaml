@@ -59,7 +59,8 @@ description: >-
   write whose path names an artifact the activation's closure does not hold, and a read or removal on a pack path of
   an agent profile or a procedure the pack does not hold (pack read and removal), and getEffectiveArtifact or getEffectiveAgentProfile for an id no pack of
   the activation's closure holds; preset_not_found (404), a preset
-  application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
+  application whose path names a preset no pack of the activation's closure holds, and getPackPreset for a preset the
+  pack does not hold: a preset a pack, or the activation's closure, does not hold; activation_invalid (422), a
   document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
   validation_failed, not activation_invalid); artifact_required and
   artifact_locked (409), a deactivation a pack requires or locks (a required artifact is accepted when an active
@@ -348,6 +349,9 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
+    description: >-
+      a preset a pack, or the activation's closure, does not hold (getPackPreset, applyActivationPreset); an unknown
+      pack is pack_not_found, an unknown activation activation_not_found
   artifact_required:
     status: 409
     retryable: false

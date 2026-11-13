@@ -1,0 +1,25 @@
+title: PresetItem
+description: >-
+  One item of a preset's list: the id of an artifact or a mission type, and whether it is must-have. The must-have
+  items of a preset are its required set (ADR-0031).
+type: object
+additionalProperties: false
+required:
+  - id
+  - mustHave
+properties:
+  id:
+    type: string
+    minLength: 1
+    description: The artifact's or mission type's id, as its own file declares it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/PresetItem.java
+      symbol: PresetItem.id
+  mustHave:
+    type: boolean
+    description: >-
+      True when the preset file marks the item must_have: true, false otherwise: the file has no false spelling, and
+      the answer always states it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/PresetItem.java
+      symbol: PresetItem.mustHave

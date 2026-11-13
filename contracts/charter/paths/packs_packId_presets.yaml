@@ -1,0 +1,60 @@
+get:
+  operationId: listPackPresets
+  summary: List the presets of a Charter Pack.
+  description: >-
+    Every activation preset the pack holds (presets/<id>.yaml, ADR-0042; #98), each as getPackPreset answers it: its
+    id, its description and, for each activatable kind it lists, the items in the order the file lists them, each
+    saying whether it is must-have. The items are in id order and the list is unpaged, deliberately: a pack holds few
+    presets. A pack that holds no preset answers 200 with an empty list. A preset is read only in its pack; under an
+    activation, …/presets/{presetId} is the apply write (applyActivationPreset).
+
+    The pack is judged first, as the pack-scoped artifact reads judge it: an identifier that matches no configured
+    pack, by name or by declared pack_id, is a 404 pack_not_found, and it is the only reason this read answers 404. A
+    configured pack whose directory is missing, that has no readable pack.yaml, or that holds a file the fingerprint
+    covers that cannot be read is a 500 pack_unreadable. The answer is verified against the source fingerprint and
+    carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the presets were read at, quoted, as getPack answers it: a token over this pack's
+    committed content, the presets included. It names nothing outside the pack (not its closure, not the offering)
+    and is not the Charter-Source-Fingerprint. The read takes no If-None-Match and never answers 304.
+  tags:
+    - Presets
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  responses:
+    '200':
+      description: The pack's presets, in id order.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: >-
+            The pack revision the presets were read at, quoted: a token over this pack's committed content, and over
+            nothing outside the pack.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PresetList.yaml
+          examples:
+            two-presets:
+              $ref: ../examples/PresetList.two-presets.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
