@@ -1,0 +1,52 @@
+# Bulk-edit classification for mission glossary-contexts-and-terms-01M7B1PP (DIRECTIVE_035).
+# glossary_pack is replaced by glossary (kind token) and glossary_context / term (URN node kinds), and the
+# shape changes too (ADR-0049). It is not a pure string rename: each hit is reviewed, and no alias is kept.
+target:
+  term: "glossary_pack"
+  replacement: "glossary"
+  operation: rename
+
+categories:
+  code_symbols:         { action: manual_review }          # GlossaryPack* types are replaced by GlossaryContext/GlossaryTerm with a new shape; NodeKind splits into GLOSSARY_CONTEXT and TERM
+  import_paths:         { action: rename }                 # imports follow the replaced types; no package moves
+  filesystem_paths:     { action: manual_review }          # glossary_packs/*.glossary-pack.yaml -> glossaries/*.glossary.yaml in fixtures; packs/ synced content is not edited here
+  serialized_keys:      { action: manual_review }          # kind tokens, selected/deactivated members, activated_* and required_* keys change on purpose (### Breaking); the URN token is glossary_context, not glossary
+  cli_commands:         { action: do_not_change }          # no CLI surface
+  user_facing_strings:  { action: rename_if_user_visible } # contract descriptions and docs name the new kind
+  tests_fixtures:       { action: rename }                 # tests carry only the canonical shape, except the named refusal tests
+  logs_telemetry:       { action: do_not_change }          # no log keys or metrics name the kind
+
+exceptions:
+  - path: "packs/**"
+    action: do_not_change
+    reason: "Synced open-packs content; it migrates in spec-kitty-open-packs (draft issue in research)"
+  - path: "kitty-specs/**"
+    action: do_not_change
+    reason: "Other missions' records are history; only this mission's own directory is written"
+  - path: "kitty-ops/**"
+    action: do_not_change
+    reason: "Op records are history"
+  - path: "docs/adr/**"
+    action: manual_review
+    reason: "ADRs are not rewritten; ADR-0049 and ADR-0074 get dated annotations, ADR-0076 is new"
+  - path: "docs/changelog/**"
+    action: do_not_change
+    reason: "Dated changelog entries describe what landed then"
+  - path: "contracts/charter/CHANGELOG.md"
+    action: manual_review
+    reason: "Earlier entries stay; the rename is a new ### Breaking entry"
+  - path: "contracts/charter/changes/**"
+    action: manual_review
+    reason: "Earlier change fragments stay as written; a new fragment records the rename"
+  - path: "service/packs/src/test/resources/planted/**"
+    action: manual_review
+    reason: "r15-glossary-urn-* refuse core's glossary: URN and keep doing so; a new planted case refuses the old glossary_pack shape"
+  - path: "site/.contextive/**"
+    action: manual_review
+    reason: "This repository's own docs glossary (ADR-0029): only its activated_<kind> definition text names the old plural"
+  - path: ".kittify/**"
+    action: manual_review
+    reason: "The spec-kitty CLI's own charter config; it follows the CLI's vocabulary, not the service's"
+  - path: "scripts/usability/**"
+    action: manual_review
+    reason: "The usability converter maps core's charter.yaml; its glossary key mapping moves to the new kind"

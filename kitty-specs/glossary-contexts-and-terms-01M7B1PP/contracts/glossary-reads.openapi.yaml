@@ -1,0 +1,22 @@
+# Sketch of the reads this Mission adds. contracts/charter/ is the source of record; this file is not built.
+openapi: 3.1.0
+info: { title: glossary reads (sketch), version: 0.0.0 }
+paths:
+  /packs/{packId}/artifacts/glossary:
+    get: { operationId: listPackGlossaryContexts, tags: [Glossaries], responses: { '200': { description: GlossaryContextList }, '404': { description: pack_not_found } } }
+  /packs/{packId}/artifacts/glossary/{contextId}:
+    get: { operationId: getPackGlossaryContext, tags: [Glossaries], responses: { '200': { description: Artifact (member glossary) }, '404': { description: pack_not_found, artifact_not_found (names the context) } } }
+  /packs/{packId}/artifacts/glossary/{contextId}/terms/{termId}:
+    get: { operationId: getPackGlossaryTerm, tags: [Glossaries], responses: { '200': { description: GlossaryTerm }, '404': { description: pack_not_found, artifact_not_found (names the context or the term) } } }
+  /activations/{activationId}/artifacts/glossary:
+    get: { operationId: listEffectiveGlossaryContexts, tags: [EffectiveGlossaries], responses: { '200': { description: winners with state }, '404': { description: activation_not_found } } }
+  /activations/{activationId}/artifacts/glossary/{contextId}:
+    get: { operationId: getEffectiveGlossaryContext, tags: [EffectiveGlossaries], responses: { '200': { description: EffectiveGlossaryContextRead }, '304': { description: not modified }, '404': { description: activation_not_found, artifact_not_found } } }
+  /activations/{activationId}/artifacts/glossary/{contextId}/terms/{termId}:
+    get: { operationId: getEffectiveGlossaryTerm, tags: [EffectiveGlossaries], responses: { '200': { description: EffectiveGlossaryTermRead }, '304': { description: not modified }, '404': { description: activation_not_found, artifact_not_found } } }
+  /activations/{activationId}/vocabulary/terms:
+    get: { operationId: getActivationVocabularyTerms, tags: [Vocabulary], responses: { '200': { description: ActiveTermList (JSON) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
+  /activations/{activationId}/vocabulary/contextive:
+    get: { operationId: getActivationVocabularyContextive, tags: [Vocabulary], responses: { '200': { description: Contextive v1 document (application/yaml) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
+  /activations/{activationId}/vocabulary/avoid:
+    get: { operationId: getActivationVocabularyAvoid, tags: [Vocabulary], responses: { '200': { description: AvoidList (JSON) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
