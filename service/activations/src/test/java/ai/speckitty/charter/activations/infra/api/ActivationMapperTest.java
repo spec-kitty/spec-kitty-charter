@@ -114,7 +114,20 @@ class ActivationMapperTest {
 
         assertThat(activation.getActivationId()).isEqualTo("A-1");
         assertThat(activation.getRevision()).isEqualTo(document.revision().token());
-        assertThat(activation.getLinks()).containsOnlyKeys("self", "artifacts");
+        assertThat(activation.getLinks())
+                .containsOnlyKeys(
+                        "self",
+                        "artifacts",
+                        "offering",
+                        "edit",
+                        "delete",
+                        "select",
+                        "exclude",
+                        "apply-preset",
+                        "packs",
+                        "graph",
+                        "skipped",
+                        "effective-context");
         assertThat(activation.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/A-1");
         assertThat(mapper.self("a b")).isEqualTo("/api/v1/activations/a%20b");
     }
