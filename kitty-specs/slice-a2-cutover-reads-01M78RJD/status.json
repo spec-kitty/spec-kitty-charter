@@ -1,7 +1,7 @@
 {
-  "event_count": 39,
-  "last_event_id": "01M797GFHDT3X3SMJ4GSNYNFGK",
-  "materialized_at": "2026-11-13T01:14:18.029724+00:00",
+  "event_count": 41,
+  "last_event_id": "01M797GSW1D32F34QNCWKV7H1Z",
+  "materialized_at": "2026-11-13T01:14:28.502169+00:00",
   "mission_number": "",
   "mission_slug": "slice-a2-cutover-reads-01M78RJD",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -217,11 +217,20 @@
       }
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M78VN73NQVKGNGWT9N9J30YP",
-      "last_transition_at": "2026-11-12T21:47:10.325074+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M797GSW1D32F34QNCWKV7H1Z",
+      "last_transition_at": "2026-11-13T01:14:28.502169+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 14893,
+      "shell_pid_created_at": "1794532435.87"
     },
     "WP08": {
       "actor": "finalize-tasks",
