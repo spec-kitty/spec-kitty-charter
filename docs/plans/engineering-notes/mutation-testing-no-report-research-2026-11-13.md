@@ -41,8 +41,11 @@ shards, 120-minute budget) and `cad3f433` (`RegistrationJobsTest`). The first sh
 A module's `test` task can set a system property that a test reads. PIT's minion JVM does not
 inherit it, so each module has to copy it into `pitest { jvmArgs }` by hand. `:activations`
 forgot, and the 11-10 run went red. Nothing stops the next module from forgetting the same way.
-Main has also moved 115 commits since the green run, with no run since. It added
-`:artifacts-edge`, and `pack-validation` is coming in #561.
+The green run is also not a proof of main. It ran on `ops/mutation-nightly-timeout` at
+`f7ef7dc7`, which is not an ancestor of main. Main has 115 commits after `ecd257d9`, the landed
+form of that branch, and no run has been made on it since. Several things on main have therefore
+never run: the renamed `mutation-testing.yml` (`98f3288c`), the summary turning red on a group no
+shard reported (`63d49d55`) and `:artifacts-edge` (`84db84e2`). `pack-validation` comes next, in #561.
 
 ## Run by run
 
@@ -67,18 +70,18 @@ not a cause here.
 | `others` | kernel | 692 | 579 | 12,495 | 114 s | 13 min |
 | | missions | 150 | 118 | 230 | 37 s | |
 | | profiles | 85 | 83 | 88 | 23 s | |
-| | profiles-edge | 122 | 121 | — | 86 s | |
-| | missions-edge | 177 | 164 | — | 97 s | |
-| | activations | 1,414 | 1,309 | — | 540 s | |
+| | profiles-edge | 122 | 121 | 432 | 86 s | |
+| | missions-edge | 177 | 164 | 274 | 97 s | |
+| | activations | 1,414 | 1,309 | 7,189 | 540 s | |
 | `packs-core` | domain+application, infra.fetch | 4,060 | 3,612 | 26,772 | 2,318 s | 41 min |
 | `packs-storage` | infra.storage, infra.archive | 3,069 | 2,752 | 27,664 | 2,598 s | 47 min |
 
 **Trend.** On one runner, `:packs` took 48 min on 11-05 (ADR-0062). On 11-12 it was 66 min locally
-and about 93 min on a runner. Its mutants grew from 3,999 (ADR-0062 first run) to 7,129. The 11-12
+and about 93 min on a runner. Its mutants grew from 3,999 (the sum of ADR-0062's first-run table) to 7,129. The 11-12
 log shows `:kernel` at 692 mutants (378 at first run) and `:activations` at 1,414 (581 at its
 amendment). The shards take this growth with room to spare: the slowest used 43 % of its step
-budget. Main has changed 65 `:packs` main files and 117 `:packs` test files since then, so the
-next run will be slower by an amount nobody has measured.
+budget. Since `f7ef7dc7`, main has changed 65 `:packs` main files and 117 `:packs` test files,
+so the next run will be slower by an amount nobody has measured.
 
 ## Similar surfaces
 
@@ -90,7 +93,7 @@ next run will be slower by an amount nobody has measured.
 | `open-packs-drift.yml` | No. Red on content (the 3 hand-written manifests, open-packs#250 and #255), not on a missing report | Known; tracked under #549 |
 | `service-native.yml` | No. Red 11-11 and 11-12, green since 11-12 dispatch | None |
 | Other `Test` tasks in `:packs` (`wholePackRoundTrip`, `gitHostTest`, `timingBudgets`, `driftTest`) | Each sets its own properties; none feeds PIT | None |
-| `pitest` in every module with `charter.mutation-conventions` | **Yes, the hazard.** `:packs` copies its shared map, and `:activations` copies one property by hand. The other seven modules set no test property today, so they are safe only by accident | Fixed in this change (below) |
+| `pitest` in every module with `charter.mutation-conventions` | **Yes, the hazard.** `:packs` copies its shared map, and `:activations` copies one property by hand. The other six (kernel, missions, profiles and the three edges) set no test property today, so they are safe only by accident | Fixed: the convention passes them (Remediation) |
 
 ## Tracked issues
 
@@ -104,11 +107,24 @@ next run will be slower by an amount nobody has measured.
 | #549 / #561 | `pack-validation` joins the `others` shard at floor 85 with **margin 0** (1 mutant) | Overlap: #561 edits the `mutation-testing.yml` header comment. A single surviving mutant there turns the run red. That is the operator's ruled floor, so it is flagged, not changed |
 | #387, #388, #389 | Mutation CI hardening | Delivered in `8626feae` |
 
-## Recommendation
+## Remediation
 
-1. **Close the failure class, not just its instances.** `charter.mutation-conventions` should pass
-   every system property of the module's `test` task to PIT's minion. Then a property a test needs
-   reaches PIT by construction. `:activations` and `:packs` can drop their copies.
-2. **Prove main before Monday.** Run `workflow_dispatch` of `mutation-testing.yml` on the fix
-   branch. The last green run is 115 commits old and predates `:artifacts-edge`.
-3. Keep every floor, the shards and the 120/110-minute budget as ruled.
+1. **Close the failure class, not just its instances.** `charter.mutation-conventions` now passes
+   every system property of the module's `test` task, and the JUnit tags it leaves out, to PIT's
+   minion. A property a test needs therefore reaches PIT by construction. `:activations` and
+   `:packs` drop their copies, and `:packs` still leaves `stress` out of PIT alone.
+   - The values are read through `provider {}`. A mapped `test` provider would have made `pitest`
+     depend on `test`: the review squad caught this, and `:activations:test` ran before `pitest`
+     in the first local runs.
+   - A property the minion cannot receive intact fails the build and is named: a `null`, a
+     provider, or a comma, since the plugin joins `jvmArgs` with commas.
+2. **Prove main before Monday.** A `workflow_dispatch` of `mutation-testing.yml` on the fix
+   branch is the gate before the 2026-11-16 run. Without it, the renamed workflow, the summary's
+   gap check and `:artifacts-edge` run for the first time on the scheduled run itself.
+3. Every floor, the shards and the 120/110-minute budget stay as ruled.
+
+**Not done (latent, no Monday risk).** `profiles-edge`, `missions-edge` and `artifacts-edge` keep
+PIT's default `targetClasses` (`ai.speckitty.charter.*`), and their groups exclude `*.config`. A
+whole-module run never tells PIT to leave those packages out. Today their config classes are empty
+`@ComponentScan` classes and produce no mutants. A `@Bean` added to one would put a mutant into a
+package that no group holds, and `checkMutationFloors` would fail the module.
