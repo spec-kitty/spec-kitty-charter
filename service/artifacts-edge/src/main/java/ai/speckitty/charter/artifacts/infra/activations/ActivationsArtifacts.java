@@ -121,7 +121,7 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
                 artifact.state().token(),
                 artifact.required(),
                 artifact.reason().token(),
-                artifact.satisfiedBy().map(ActivationsArtifacts::urn),
+                artifact.satisfiedBy().stream().map(ActivationsArtifacts::urn).toList(),
                 artifact.suggestion().map(words -> new Words(words.when(), words.reason())));
     }
 

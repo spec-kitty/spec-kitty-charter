@@ -72,7 +72,7 @@ class EffectiveSkillReadsTest {
                 "inactive",
                 false,
                 "not_selected",
-                Optional.empty(),
+                List.of(),
                 Optional.empty());
         SkillView view = new SkillView(
                 "land-pr",
