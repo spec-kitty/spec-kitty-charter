@@ -1,13 +1,16 @@
 description: >-
   A strong entity tag of a read that depends on the packs of an activation's closure (the effective reads,
   listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph, getEffectiveActionContext,
-  getEffectiveArtifact, getEffectiveAgentProfile, listEffectiveSkills, getEffectiveSkill, listEffectiveAssets,
-  getEffectiveAsset and getEffectiveAssetPayload, and getActivation): an opaque digest that changes when the activation's revision or a pack of its closure changes, and,
-  for the effective reads, with the query (the artifact list's kind, state, cursor and page size; the context's mission
-  type, action and depth; the artifact read's kind, id and depth; the agent profile read's id and depth; the skill, asset and payload reads' id); a pack outside the closure leaves it unchanged. In
-  double quotes. Opaque to consumers, who compare it and never parse it. The recipe carries a version, bumped whenever
-  a read answers another body for the same inputs (today v3: getActivation's links, and the links of a skill item), so
-  a tag from an earlier version never matches and the read answers 200.
+  getEffectiveArtifact, getEffectiveAgentProfile, getEffectiveStepPrompt, listEffectiveSkills, getEffectiveSkill,
+  listEffectiveAssets, getEffectiveAsset and getEffectiveAssetPayload, and getActivation): an opaque digest that
+  changes when the activation's revision or a pack of its closure changes (any of its files, a step prompt or a prompt
+  fragment included), and, for the effective reads, with the query (the artifact list's kind, state, cursor and page
+  size; the context's mission type, action and depth; the artifact read's kind, id and depth; the agent profile read's
+  id and depth; the prompt's mission type and action; the skill, asset and payload reads' id); a pack outside the
+  closure leaves it unchanged. In double quotes. Opaque to consumers, who compare it and never parse it. The recipe
+  carries a version, bumped whenever a read answers another body for the same inputs (today v3: getActivation's links,
+  the links of a skill item, and the action context's ownership rule, its appliesThrough and every overrider in force),
+  so a tag from an earlier version never matches and the read answers 200.
 required: true
 schema:
   type: string

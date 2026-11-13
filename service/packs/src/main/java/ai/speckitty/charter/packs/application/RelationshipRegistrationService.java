@@ -5,10 +5,12 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -80,6 +82,8 @@ public final class RelationshipRegistrationService {
      *     before (in either orientation)
      * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown,
      *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack,
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value OverrideSourceRule#CODE} at
+     *     {@code /from} when the edge is an {@code overrides} edge whose source kind is not activatable (FR-014),
      *     {@link RefusalCode#PROMPT_FRAGMENT_INVALID} (422 here) when the edge would give a held step enhancement an
      *     {@code overrides} edge, a second {@code enhances} edge or replace its one {@code enhances} edge, the
      *     compose's {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
@@ -114,6 +118,7 @@ public final class RelationshipRegistrationService {
             // Before anything is written: an edge that breaks the edge rules of a held step enhancement would make
             // every composing read of the pack refuse (R-REL), and a target the compose cannot resolve the next
             // offering read.
+            refuseInactivatableOverrider(relationship);
             refuseStepEnhancementEdge(current, relationship, existing);
             targets.require(pack, relationship.toReference());
             policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
@@ -122,6 +127,20 @@ public final class RelationshipRegistrationService {
             PackRevision revision =
                     writeStore.commit(pack, ifMatch, PackWriteStore.Change.relationships(current, merged));
             return new Registered(revision, created, relationship.from());
+        });
+    }
+
+    /**
+     * Refuses an {@code overrides} edge whose source is not of an activatable kind (FR-014, operator ruling of
+     * 2026-11-12 on #447): every composing read of the pack would refuse it, as the load does such an edge in a graph
+     * document. The refusal is {@code validation_failed} with one violation at {@code /from}.
+     */
+    private static void refuseInactivatableOverrider(Relationship relationship) {
+        OverrideSourceRule.refusal(relationship).ifPresent(reason -> {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The relationship is refused: " + reason + ".",
+                    List.of(new RefusalViolation("/from", OverrideSourceRule.CODE, reason)));
         });
     }
 

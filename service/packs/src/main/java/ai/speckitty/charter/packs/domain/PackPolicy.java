@@ -188,6 +188,7 @@ public final class PackPolicy {
         findings.addAll(assetRules(contents.assets()));
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.addAll(promptSlotFindings(contents));
+        findings.addAll(overrideSourceFindings(name, contents));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
@@ -285,9 +286,39 @@ public final class PackPolicy {
             case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID.token();
             case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED.token();
             case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
+            case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> OverrideSourceRule.CODE;
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
+    }
+
+    // ---- the source of an overrides edge ------------------------------------------------------------
+
+    /**
+     * Judges the edges of every graph document that was read by {@link OverrideSourceRule} (FR-014), as the load does:
+     * one blocking finding per {@code overrides} edge whose source kind is not activatable, at its document and its
+     * place {@code /edges/<index>}. A document that could not be read is refused on its own and not judged here.
+     */
+    private static List<PackFinding> overrideSourceFindings(String packName, PackContents contents) {
+        List<PackFinding> findings = new ArrayList<>();
+        for (FileRead<RawGraph> document : documents(contents)) {
+            if (!(document instanceof FileRead.Read<RawGraph> read)) {
+                continue;
+            }
+            RawGraph raw = read.value();
+            for (int i = 0; i < raw.edges().size(); i++) {
+                RawEdge edge = raw.edges().get(i);
+                for (OverrideSourceRule.Fault fault : OverrideSourceRule.judge(List.of(
+                        new OverrideSourceRule.Edge(raw.file(), edge.source(), edge.target(), edge.relation())))) {
+                    findings.add(new PackFinding(
+                            PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                            fault.file(),
+                            List.of(EDGES, Integer.toString(i)),
+                            origin(packName, fault.file()) + ": " + fault.reason()));
+                }
+            }
+        }
+        return findings;
     }
 
     // ---- step prompt slots ------------------------------------------------------------------------

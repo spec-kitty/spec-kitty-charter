@@ -31,7 +31,8 @@ public final class WriteFacts {
     private WriteFacts() {}
 
     /**
-     * The facts with an artifact held: a write of an artifact the pack holds already changes none of them.
+     * The facts with an artifact held: a write of an artifact the pack holds already changes none of them. The prompt
+     * facts are kept: no per-artifact write writes a mission type's step prompts or a step enhancement's entries.
      *
      * @param facts the facts of the stored pack
      * @param artifact the artifact the write adds or replaces
@@ -52,12 +53,14 @@ public final class WriteFacts {
                 facts.presets(),
                 facts.edges(),
                 facts.languages(),
-                facts.bindings());
+                facts.bindings(),
+                facts.prompts());
     }
 
     /**
      * The facts with the registered relationships replaced: the edges the new set lacks go, the edges it adds come, and
-     * the {@code overrides} targets and the references that only those edges gave go and come with them.
+     * the {@code overrides} targets and the references that only those edges gave go and come with them. An edge
+     * changes no prompt fact.
      *
      * @param facts the facts of the stored pack
      * @param before the registered relationships the pack stores now
@@ -77,7 +80,8 @@ public final class WriteFacts {
 
     /**
      * The facts without an artifact: it is no longer held, the registered edges that start at it are gone, and so are
-     * the preset items that name it.
+     * the preset items that name it. A mission type takes its steps' prompts with it and a step enhancement its fills
+     * ({@link ai.speckitty.charter.packs.domain.PromptFacts#without}).
      *
      * @param facts the facts of the stored pack
      * @param artifact the artifact the write removes
@@ -100,7 +104,8 @@ public final class WriteFacts {
                         .toList(),
                 edgeless.edges(),
                 languagesWithout(edgeless.languages(), artifact),
-                bindingsWithout(edgeless.bindings(), artifact));
+                bindingsWithout(edgeless.bindings(), artifact),
+                edgeless.prompts().without(artifact));
     }
 
     /**
@@ -167,7 +172,8 @@ public final class WriteFacts {
                 facts.presets(),
                 remaining,
                 facts.languages(),
-                facts.bindings());
+                facts.bindings(),
+                facts.prompts());
     }
 
     /** The {@code overrides} targets: those of the dropped edges go unless another edge still overrides them. */

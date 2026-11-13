@@ -112,6 +112,17 @@ public class CharterSteps {
         packs.addFile(PackLevel.fromToken(level).orElseThrow(), pack, path, content);
     }
 
+    /**
+     * Configures one of charter's example packs (ADR-0070) under its own name and at its own level, every file as it is
+     * held (effective-step-prompt.feature, SC-001).
+     *
+     * @param name {@code built-in}, {@code org-base} or {@code project}
+     */
+    @Given("the example pack {string} of the charter")
+    public void examplePack(String name) {
+        packs.addExamplePack(name);
+    }
+
     @After
     public void deletePacks() {
         packs.delete();
@@ -466,6 +477,22 @@ public class CharterSteps {
         JsonNode field = at(pointer);
         assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
         assertThat(field.asString()).isEqualTo(value);
+    }
+
+    /**
+     * The string member is the held file of a configured pack, byte for byte as UTF-8 (effective-step-prompt.feature:
+     * the prompt in force served as stored).
+     *
+     * @param pointer the member's JSON pointer
+     * @param path the file's path below the pack directory
+     * @param pack the configured name of the pack
+     * @throws Exception when the answer is no JSON
+     */
+    @Then("the field at {string} is the file {string} of the pack {string}")
+    public void fieldIsFile(String pointer, String path, String pack) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
+        assertThat(field.asString()).isEqualTo(new String(packs.fileOf(pack, path), StandardCharsets.UTF_8));
     }
 
     @Then("the field at {string} is absent")

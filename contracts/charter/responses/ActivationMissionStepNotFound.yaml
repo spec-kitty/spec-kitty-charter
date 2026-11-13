@@ -2,7 +2,7 @@ description: >-
   The activation, the mission type or the step the path names is not there, refused with 404, judged in that order:
   activation_not_found for an activation no document is stored under (or one this client may not see); then
   mission_type_not_found for a mission type the activation's merged closure does not hold; then action_not_found for
-  a step the winning type holds neither among its steps nor among its on-demand steps.
+  a step no version of the closure holds, judged as getEffectiveActionContext judges it.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
@@ -18,9 +18,9 @@ content:
       mission-type-not-found:
         $ref: ../examples/CharterRefusal.mission-type-not-found.yaml
       action-not-found:
-        summary: The winning mission type has no such step.
+        summary: No version of the mission type in the closure holds such a step.
         value:
           title: Action not found
           status: 404
           code: action_not_found
-          detail: Mission type software-dev of activation a-1 has no step deploy.
+          detail: the closure holds no action `deploy` of the mission type `software-dev`

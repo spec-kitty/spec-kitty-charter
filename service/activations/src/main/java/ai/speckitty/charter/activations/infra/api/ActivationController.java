@@ -22,6 +22,7 @@ import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveGraph;
+import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectionRequest;
@@ -53,9 +54,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
  * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
  * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
- * once the preconditions hold. {@code getActivation} and the four effective reads ({@code listEffectiveArtifacts},
- * {@code getActivationSkippedReport}, and, in PR C, {@code getEffectiveGraph} and {@code getEffectiveActionContext})
- * answer through {@link EffectiveReadService}. Every operation is built, so none carries a {@code ReservedOperation} mark
+ * once the preconditions hold. {@code getActivation} and the effective reads ({@code listEffectiveArtifacts},
+ * {@code getActivationSkippedReport}, {@code getEffectiveGraph}, {@code getEffectiveActionContext} and
+ * {@code getEffectiveStepPrompt}) answer through {@link EffectiveReadService}. Every operation is built, so none carries a {@code ReservedOperation} mark
  * (ADR-0020 D8); an operation reserved later is marked on its method alone, and the composition root's
  * {@code ReservedOperationInterceptor} answers a marked one {@code 501} before the request is bound. A marked method reads
  * and stores nothing ({@code HexagonalArchitectureTest}).
@@ -203,6 +204,16 @@ public class ActivationController implements ActivationApi {
                 effective.graph(new ActivationId(activationId), ifNoneMatch),
                 EffectiveReadService.GraphRead::sourceFingerprint,
                 reads::toGraph);
+    }
+
+    @Override
+    public ResponseEntity<EffectiveStepPrompt> getEffectiveStepPrompt(
+            String activationId, String missionType, String action, @Nullable String ifNoneMatch) {
+        return verified(
+                effective.prompt(
+                        new ActivationId(activationId), new EffectiveTag.PromptQuery(missionType, action), ifNoneMatch),
+                EffectiveReadService.PromptRead::sourceFingerprint,
+                reads::toPrompt);
     }
 
     @Override

@@ -422,7 +422,7 @@ public final class DocumentRules {
         return Urn.parse(urn)
                 .flatMap(ArtifactRef::of)
                 .map(states::get)
-                .flatMap(ArtifactState::satisfiedBy)
+                .filter(state -> !state.satisfiedBy().isEmpty())
                 .isPresent();
     }
 

@@ -2,17 +2,23 @@ get:
   operationId: getEffectiveMissionStep
   summary: Get one step of the mission type that wins the layer merge under an activation.
   description: >-
-    It answers the step of the layer-merge winner of the mission type, as getPackMissionStep does, with its prompt and guidelines
-    files as the pack that holds the winner stores them; its step-contract link names the layer-merge winner of the
-    step contract of the merged closure bound to the step, and every link stays under the activation. An unknown
-    activation is a 404 activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step
-    the winning type does not hold a 404 action_not_found. A holding pack that is configured no longer or no longer
-    holds the type between the two reads is stale_input, as for getEffectiveMissionType. No ETag.
+    It answers the step at the step's place, as getPackMissionStep does: the layer-merge winner of the mission type when
+    that version declares the step, with its prompt and guidelines files as the pack that holds the winner stores them;
+    else, when the closure holds the step, the version of the pack that holds the merged winner of
+    action:<missionTypeId>/<stepId>, when that version declares it, with that pack's files. A winning mission type keeps
+    the unique steps of the versions it replaced (A7), and the action context places the step by the same rule. Its
+    step-contract link names the layer-merge winner of the step contract of the merged closure bound to the step. Every
+    link stays under the activation, but the skeleton links of a step read from a replaced version, which name the place
+    pack's getPackMissionSkeleton, the read that serves that version's skeletons. An unknown activation is a 404
+    activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step no version of the
+    closure holds a 404 action_not_found, judged as getEffectiveActionContext judges it. A holding pack, or the pack of
+    the step's place, that is configured no longer or no longer holds the type between the reads is stale_input, as for
+    getEffectiveMissionType. No ETag.
 
-    Where this read differs from getPackMissionStep: here the step is the winning type's and its prompt and guidelines
-    files are those of the pack that holds the winner, while its step-contract link names the merged closure's winner,
-    which another pack of the closure may hold; getPackMissionStep answers the requested pack's own copy and links that
-    pack's own step contract.
+    Where this read differs from getPackMissionStep: here the step is the version at the step's place (the winning type's,
+    or a replaced version's that keeps it) and its prompt and guidelines files are those of that place's pack, while its
+    step-contract link names the merged closure's winner, which another pack of the closure may hold;
+    getPackMissionStep answers the requested pack's own copy and links that pack's own step contract.
   tags:
     - EffectiveMissionTypes
   parameters:
@@ -21,7 +27,7 @@ get:
     - $ref: ../parameters/StepId.yaml
   responses:
     '200':
-      description: The step of the mission type that wins the layer merge.
+      description: The step at its place, of the mission type that wins the layer merge or of a version it replaced that keeps the step.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

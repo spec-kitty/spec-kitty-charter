@@ -97,7 +97,7 @@ public final class ProfileFixtures {
                 false,
                 "open",
                 "selected",
-                Optional.empty(),
+                List.of(),
                 Optional.empty());
     }
 

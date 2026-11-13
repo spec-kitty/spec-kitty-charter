@@ -251,6 +251,32 @@ public class ActivationMapper {
     }
 
     /**
+     * The path of the effective prompt of one step under an activation ({@code getEffectiveStepPrompt}), from the
+     * contract's path template.
+     *
+     * @param activationId the activation's id
+     * @param missionTypeId the mission type's id
+     * @param action the step's id
+     * @return the absolute path, each variable strictly percent-encoded
+     */
+    public String prompt(String activationId, String missionTypeId, String action) {
+        return expand(ActivationApi.PATH_GET_EFFECTIVE_STEP_PROMPT, activationId, missionTypeId, action);
+    }
+
+    /**
+     * The path of the effective action context of one step under an activation ({@code getEffectiveActionContext}),
+     * without a {@code depth}, from the contract's path template.
+     *
+     * @param activationId the activation's id
+     * @param missionTypeId the mission type's id
+     * @param action the step's id
+     * @return the absolute path, each variable strictly percent-encoded
+     */
+    public String effectiveContext(String activationId, String missionTypeId, String action) {
+        return expand(ActivationApi.PATH_GET_EFFECTIVE_ACTION_CONTEXT, activationId, missionTypeId, action);
+    }
+
+    /**
      * The path of the pack-scoped read of one step of a mission type ({@code getPackMissionStep}).
      *
      * @param packId the pack's configured id

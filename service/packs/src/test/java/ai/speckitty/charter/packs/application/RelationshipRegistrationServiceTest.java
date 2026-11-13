@@ -334,6 +334,89 @@ class RelationshipRegistrationServiceTest {
                 .containsExactly(Relationship.of(MINUTES, LOGO, RelationType.REQUIRES));
     }
 
+    // ---- FR-014: an overrides edge comes from an activatable artifact (#447, option 1) ------------------------------
+
+    /**
+     * An {@code overrides} edge from the held template, and one from the held asset, is refused {@code 422
+     * validation_failed} with the violation {@code overrides_source_not_activatable} at {@code /from}, and nothing is
+     * written; the same edge from a held directive, the twin, registers on the same fixture.
+     */
+    @Test
+    void anOverridesEdgeFromATemplateOrAnAssetIsRefusedAndTheSameEdgeFromADirectiveRegisters(@TempDir Path host)
+            throws IOException {
+        RealPack real = RealPack.over(host, new PackMutabilityPolicy());
+        real.directives.registerDirective(
+                PACK,
+                directive("T"),
+                false,
+                real.writeStore.currentRevision(PACK).token());
+        real.directives.registerDirective(
+                PACK,
+                directive("E"),
+                false,
+                real.writeStore.currentRevision(PACK).token());
+        Urn target = new Urn(NodeKind.DIRECTIVE, "T");
+        PackRevision before = real.writeStore.currentRevision(PACK);
+
+        for (Urn source : List.of(MINUTES, LOGO)) {
+            assertThatThrownBy(() -> real.relationships.registerRelationship(
+                            PACK, Relationship.of(source, target, RelationType.OVERRIDES), before.token()))
+                    .as("%s overrides %s", source, target)
+                    .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                        assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                        assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                            assertThat(violation.pointer()).isEqualTo("/from");
+                            assertThat(violation.code()).isEqualTo("overrides_source_not_activatable");
+                            assertThat(violation.detail()).contains(source.toString());
+                        });
+                    });
+            assertThat(real.writeStore.currentRevision(PACK))
+                    .as("the refusal committed nothing")
+                    .isEqualTo(before);
+            assertThat(real.writeStore.registeredRelationships(PACK)).isEmpty();
+        }
+
+        Relationship twin = Relationship.of(new Urn(NodeKind.DIRECTIVE, "E"), target, RelationType.OVERRIDES);
+        assertThatCode(() -> real.relationships.registerRelationship(PACK, twin, before.token()))
+                .doesNotThrowAnyException();
+        assertThat(real.writeStore.registeredRelationships(PACK)).containsExactly(twin);
+    }
+
+    /**
+     * The load meets an {@code overrides} edge from a template in a graph document of a stored pack: a violation of the
+     * pack at the document, so a composing read refuses it and a registration lists it; the same document with the
+     * edge from a directive loads clean.
+     */
+    @Test
+    void aStoredOverridesEdgeFromATemplateIsALoadViolationAtItsGraphDocument(@TempDir Path host) throws IOException {
+        RealPack real = RealPack.over(host, new PackMutabilityPolicy());
+        Path shard = host.resolve(PACK.value()).resolve("overrides.graph.yaml");
+        String document = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: %s
+                  target: directive:T
+                  relation: overrides
+                """;
+        Files.writeString(shard, document.formatted("template:writing/minutes.md"), StandardCharsets.UTF_8);
+
+        assertThat(real.repository.load(PACK).violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo("overrides.graph.yaml");
+            assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable");
+            assertThat(violation.reason()).contains("template:writing/minutes.md");
+        });
+
+        Files.writeString(shard, document.formatted("asset:logo"), StandardCharsets.UTF_8);
+        assertThat(real.repository.load(PACK).violations())
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable"));
+
+        Files.writeString(shard, document.formatted("directive:E"), StandardCharsets.UTF_8);
+        assertThat(real.repository.load(PACK).violations()).isEmpty();
+    }
+
     /** The production wiring over a temp pack named {@code pack-a} holding a sidecar, its payload and a template. */
     private record RealPack(
             DomainRepositoryService repository,

@@ -1,0 +1,14 @@
+summary: The relationship body asks for an overrides edge from a template, which is not activatable (FR-014).
+value:
+  title: Validation failed
+  status: 422
+  code: validation_failed
+  detail: >-
+    The relationship is refused: the overrides edge from template:t.md to base::directive:D is refused: a template is
+    not an activatable kind, so it cannot stand in for the artifact it overrides.
+  violations:
+  - pointer: /from
+    code: overrides_source_not_activatable
+    detail: >-
+      the overrides edge from template:t.md to base::directive:D is refused: a template is not an activatable kind, so
+      it cannot stand in for the artifact it overrides
