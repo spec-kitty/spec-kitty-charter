@@ -137,8 +137,7 @@ class SlotComposeTest {
     }
 
     private static InForceStates.ArtifactState state(Urn urn, InForceStates.State state, InForceStates.Reason reason) {
-        return new InForceStates.ArtifactState(
-                urn, state, reason, false, Optional.empty(), Optional.empty(), Optional.empty());
+        return new InForceStates.ArtifactState(urn, state, reason, false, List.of(), List.of(), Optional.empty());
     }
 
     private static InForceStates states(Map<Urn, InForceStates.ArtifactState> states) {
