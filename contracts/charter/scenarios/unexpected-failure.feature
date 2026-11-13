@@ -94,6 +94,7 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | listActivationPacks             | /activations/a-1/packs                                      |
       | listEffectiveArtifacts          | /activations/a-1/artifacts                                  |
       | getEffectiveArtifact            | /activations/a-1/artifacts/directive/D                      |
+      | listEffectiveArtifactReferences | /activations/a-1/artifacts/directive/D/references           |
       | getEffectiveAgentProfile        | /activations/a-1/artifacts/agent_profile/p                  |
       | listEffectiveAssets             | /activations/a-1/artifacts/asset                            |
       | getEffectiveAsset               | /activations/a-1/artifacts/asset/a                          |

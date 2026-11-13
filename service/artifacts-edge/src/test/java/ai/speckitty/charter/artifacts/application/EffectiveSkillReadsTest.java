@@ -106,6 +106,12 @@ class EffectiveSkillReadsTest {
             }
 
             @Override
+            public Referrer referrer(String activationId, String kindToken, String artifactId) {
+
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch) {
                 return new Outcome.Found<>(new SkillWinner(SCOPE, facts, entity), ETAG);
             }

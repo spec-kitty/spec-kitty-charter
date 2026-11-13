@@ -1,17 +1,22 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.ArtifactReferenceList;
 import ai.speckitty.charter.api.model.AssetList;
 import ai.speckitty.charter.api.model.AssetSummary;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveAssetRead;
 import ai.speckitty.charter.api.model.EffectiveSkillRead;
+import ai.speckitty.charter.api.model.HoldingPack;
 import ai.speckitty.charter.api.model.Link;
+import ai.speckitty.charter.api.model.ReferencedArtifact;
 import ai.speckitty.charter.api.model.SkillList;
 import ai.speckitty.charter.api.model.SkillSummary;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.EffectiveAssetReads;
+import ai.speckitty.charter.artifacts.application.EffectiveReferenceReads;
 import ai.speckitty.charter.artifacts.application.EffectiveSkillReads;
+import ai.speckitty.charter.artifacts.application.ReferenceReads;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 
 /**
- * The wire form of the asset and skill reads under an activation (FR-009, research R1 and R2): the facts the activation
+ * The wire form of the asset, skill and references reads under an activation (FR-009, research R1 and R2): the facts the activation
  * gives the winner and the member as the pack-scoped reads map it ({@link AssetBodies#asset}, {@link SkillBodies#skill}),
  * so a descriptor and a skill are mapped once in the edge (research R13). The links start at the base path the
  * controllers are mapped under.
@@ -39,6 +44,8 @@ import org.springframework.web.util.UriUtils;
  *   <li>An asset links {@code self}, {@code artifact}, {@code payload} (its bytes under the activation),
  *       {@code collection} (the activation's assets) and {@code up}.
  *   <li>A skill links {@code self}, {@code artifact}, {@code collection} (the activation's skills) and {@code up}.
+ *   <li>A references answer links {@code self} and {@code up}; each reference links {@code effective-artifact} when
+ *       the closure holds its target, and {@code artifact} as the pack read of the winner's pack links it.
  * </ul>
  */
 @Component
@@ -52,6 +59,7 @@ public class EffectiveBodies {
     private static final String UP = "up";
     private static final String ARTIFACT = "artifact";
     private static final String COLLECTION = "collection";
+    private static final String REFERENCES = "references";
     private static final String EFFECTIVE_ARTIFACT = "effective-artifact";
     private static final String ASSET = ArtifactKind.ASSET.token();
     private static final String SKILL = ArtifactKind.SKILL.token();
@@ -172,6 +180,60 @@ public class EffectiveBodies {
                 links);
         facts.satisfiedBy().map(EffectiveBodies::reference).ifPresent(wire::setSatisfiedBy);
         facts.suggestion().map(EffectiveBodies::suggestion).ifPresent(wire::setSuggestion);
+        return wire;
+    }
+
+    /**
+     * The references of an artifact under an activation: each reference as the pack read of the winner's pack maps it
+     * (the written target, the relation, the URN, the holding pack and, for a held target of a listed kind, the
+     * {@code artifact} link to its holder's pack read), with {@code effective-artifact}, its read under the activation,
+     * when the closure holds the target. The answer links {@code self} and {@code up} (the activation).
+     *
+     * @param read what the application ring read
+     * @return the {@code ArtifactReferenceList}
+     */
+    public ArtifactReferenceList references(EffectiveReferenceReads.Read read) {
+        String activation = read.scope().activationId();
+        List<ReferencedArtifact> items =
+                read.items().stream().map(item -> referenced(activation, item)).toList();
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put(
+                SELF,
+                new Link(href(
+                        ACTIVATIONS,
+                        activation,
+                        ARTIFACTS,
+                        read.kind().token(),
+                        read.winner().id(),
+                        REFERENCES)));
+        links.put(UP, new Link(href(ACTIVATIONS, activation)));
+        return new ArtifactReferenceList(items, links);
+    }
+
+    private ReferencedArtifact referenced(String activation, EffectiveReferenceReads.Item item) {
+        ReferenceReads.Reference reference = item.reference();
+        Urn urn = reference.urn();
+        Map<String, Link> links = new LinkedHashMap<>();
+        reference.listed().ifPresent(kind -> {
+            if (item.held()) {
+                links.put(
+                        EFFECTIVE_ARTIFACT, new Link(href(ACTIVATIONS, activation, ARTIFACTS, kind.token(), urn.id())));
+            }
+            reference
+                    .holder()
+                    .ifPresent(holder -> links.put(
+                            ARTIFACT,
+                            new Link(href(PACKS, holder.packId().value(), ARTIFACTS, kind.token(), urn.id()))));
+        });
+        ReferencedArtifact wire = new ReferencedArtifact(
+                reference.written().toString(),
+                ReferencedArtifact.RelationEnum.fromValue(reference.relation().token()),
+                urn.toString(),
+                links);
+        reference
+                .holder()
+                .ifPresent(holder -> wire.setHoldingPack(
+                        new HoldingPack(holder.packId().value(), holder.descriptorPackId(), holder.name())));
         return wire;
     }
 

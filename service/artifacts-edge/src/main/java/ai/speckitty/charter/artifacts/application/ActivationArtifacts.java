@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -71,6 +72,22 @@ public interface ActivationArtifacts {
      *     holds the skill
      */
     Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch);
+
+    /**
+     * The winner of one artifact of any listed kind under an activation, whatever its state, with every artifact of a
+     * listed kind the closure holds: the referrer of {@code listEffectiveArtifactReferences} (research R10). The winner
+     * is the layer merge's, the one rule every effective read of one artifact names. It has no tag, as the references
+     * read of a pack has none.
+     *
+     * @param activationId the activation's id, exactly as the request names it
+     * @param kindToken the kind's token, as the request names it
+     * @param artifactId the artifact's id
+     * @return the winner and what the closure holds
+     * @throws CharterRefusal with {@code ACTIVATION_NOT_FOUND}; then {@code KIND_NOT_FOUND} when the token names no
+     *     listed kind; then {@code ARTIFACT_NOT_FOUND} when no pack of the closure holds the artifact; or with
+     *     {@code PACK_UNREADABLE}, the code of a closure that cannot compose or merge, or {@code STALE_INPUT}
+     */
+    Referrer referrer(String activationId, String kindToken, String artifactId);
 
     /**
      * What a read under an activation answers.
@@ -289,6 +306,32 @@ public interface ActivationArtifacts {
             Objects.requireNonNull(scope, "scope");
             Objects.requireNonNull(facts, "facts");
             Objects.requireNonNull(skill, "skill");
+        }
+    }
+
+    /**
+     * The winner of one artifact of a listed kind, with what else the closure holds.
+     *
+     * @param scope the activation and the read
+     * @param kind the winner's kind
+     * @param winner the winner
+     * @param held every artifact of a listed kind the closure holds, as the layer merge keeps it
+     */
+    record Referrer(Scope scope, ArtifactKind kind, Held winner, Set<Urn> held) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param scope the scope
+         * @param kind the kind
+         * @param winner the winner
+         * @param held the held artifacts
+         */
+        public Referrer {
+            Objects.requireNonNull(scope, "scope");
+            Objects.requireNonNull(kind, "kind");
+            Objects.requireNonNull(winner, "winner");
+            held = Set.copyOf(Objects.requireNonNull(held, "held"));
         }
     }
 }
