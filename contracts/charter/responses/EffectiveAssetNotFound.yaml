@@ -1,0 +1,23 @@
+description: >-
+  What the path of an asset read under an activation names is not there, refused with 404, in this order: the
+  activation (activation_not_found, also for an activation this client may not see, so ids do not leak), then an asset
+  that no pack of the activation's closure holds (artifact_not_found). Both are judged before any If-None-Match.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      activation-not-found:
+        $ref: ../examples/CharterRefusal.activation-not-found.yaml
+      artifact-not-found:
+        summary: No pack of the activation's closure holds the asset.
+        value:
+          title: Artifact not found
+          status: 404
+          code: artifact_not_found
+          detail: No pack of the activation's closure holds the asset nothing.

@@ -1,0 +1,8 @@
+description: >-
+  Always nosniff: the client takes the Content-Type as given and never guesses another type from the bytes, so a
+  payload is never rendered as something its pack did not declare.
+required: true
+schema:
+  type: string
+  enum:
+    - nosniff

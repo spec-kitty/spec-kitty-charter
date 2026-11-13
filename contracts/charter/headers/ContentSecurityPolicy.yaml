@@ -1,0 +1,8 @@
+description: >-
+  Always sandbox: a payload a browser opens directly runs in a sandbox, without scripts, forms or its own origin,
+  whatever its Content-Type.
+required: true
+schema:
+  type: string
+  enum:
+    - sandbox

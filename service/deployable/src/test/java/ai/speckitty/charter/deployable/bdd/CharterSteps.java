@@ -54,7 +54,14 @@ public class CharterSteps {
             Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown");
+    /**
+     * An asset's payload read, in a pack or under an activation: a verified read whatever its media type, which carries
+     * the source fingerprint as the pack's payload does.
+     */
+    private static final Pattern PAYLOAD = Pattern.compile("/(packs|activations)/[^/]+/artifacts/asset/[^/]+/payload");
+
     private static final String BODY = "#body";
+    private static final String ITEMS_WITHOUT_LINKS = "#items-without-links";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
     private static final String BASE = "/api/v1";
@@ -226,8 +233,9 @@ public class CharterSteps {
     }
 
     /**
-     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read), and any path but the root and the two activation reads
-     * that send no fingerprint ({@link #UNFINGERPRINTED}).
+     * A {@code GET} answer of a verified read: 200, a JSON body (or the Markdown form of the document read, or an asset's
+     * payload, whatever its type), and any path but the root and the two activation reads that send no fingerprint
+     * ({@link #UNFINGERPRINTED}).
      */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
         String type = response.getContentType();
@@ -236,7 +244,8 @@ public class CharterSteps {
                 && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
                 && (MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type))
-                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type)));
+                        || MARKDOWN.isCompatibleWith(MediaType.parseMediaType(type))
+                        || PAYLOAD.matcher(path).matches());
     }
 
     @When("the file {string} of the pack {string} is deleted")
@@ -379,6 +388,33 @@ public class CharterSteps {
     @Then("the response body differs from the remembered one")
     public void bodyDiffersFromRemembered() throws Exception {
         assertThat(JSON.readTree(http.body())).isNotEqualTo(JSON.readTree(remembered.get(BODY)));
+    }
+
+    /**
+     * Remembers the {@code items} of the answer, each without its {@code _links}: the side of a parity between two reads
+     * whose items must agree member for member while each links into its own tree. A parity of nothing proves nothing,
+     * so the answer must hold items.
+     */
+    @When("I remember the items of the response body without their links")
+    public void rememberItemsWithoutLinks() throws Exception {
+        remembered.put(ITEMS_WITHOUT_LINKS, itemsWithoutLinks().toString());
+    }
+
+    @Then("the items of the response body, without their links, are the remembered ones")
+    public void itemsWithoutLinksAreRemembered() throws Exception {
+        String held = remembered.get(ITEMS_WITHOUT_LINKS);
+        assertThat(held).as("items were remembered").isNotNull();
+        assertThat(itemsWithoutLinks()).isEqualTo(JSON.readTree(held));
+    }
+
+    private JsonNode itemsWithoutLinks() throws Exception {
+        JsonNode items = JSON.readTree(http.body()).path("items");
+        assertThat(items.isArray() && !items.isEmpty())
+                .as("the answer has items: %s", http.body())
+                .isTrue();
+        JsonNode copy = items.deepCopy();
+        copy.valueStream().forEach(item -> ((ObjectNode) item).remove("_links"));
+        return copy;
     }
 
     @When("I remember the header {string}")

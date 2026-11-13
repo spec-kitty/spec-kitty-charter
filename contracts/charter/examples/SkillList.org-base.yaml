@@ -1,0 +1,25 @@
+summary: >-
+  The two skills of the org-base example pack of the charter (ADR-0070), in id order: a prompt skill and a wrapper
+  skill that expands to a spec-kitty command.
+value:
+  items:
+    - id: issue-triage
+      title: Triage GitHub issues
+      description: >-
+        Use to triage a batch of open GitHub issues on spec-kitty/spec-kitty (default, those opened in the last 7
+        days). Sets type, priority, domain, parent and milestone, and reports stale, duplicate or clustered issues for
+        an operator decision.
+      form: prompt
+      _links:
+        self:
+          href: /api/v1/packs/org-base/artifacts/skill/issue-triage
+    - id: triage-status
+      title: Show the triage status
+      description: Use to list the mission's work packages by lane before a triage pass.
+      form: wrapper
+      _links:
+        self:
+          href: /api/v1/packs/org-base/artifacts/skill/triage-status
+  _links:
+    self:
+      href: /api/v1/packs/org-base/artifacts/skill

@@ -52,3 +52,13 @@ files:
   - MissionSkeleton.activation-spec-template.yaml
   - Preset.team.yaml
   - PresetList.two-presets.yaml
+  - Artifact.asset.yaml
+  - AssetList.built-in.yaml
+  - Artifact.skill.yaml
+  - Artifact.skill-wrapper.yaml
+  - SkillList.org-base.yaml
+  - AssetList.activation.yaml
+  - EffectiveAssetRead.asset.yaml
+  - SkillList.activation.yaml
+  - EffectiveSkillRead.skill.yaml
+  - ArtifactReferenceList.activation.yaml

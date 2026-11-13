@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.PackDocumentRead;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.PackDocumentQuery;
+import ai.speckitty.charter.web.DeferredETag;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.Function;
@@ -14,8 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * The adapter of {@code GET /packs/{packId}/doc} (#451): the two forms of one read, and the answer they share. It is
@@ -26,8 +25,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * here, from {@link EntityTags}, and never by Spring's own conditional check: that check scans a header for any quoted
  * tag it finds, so a value the contract answers {@code 200} (not an entity-tag list) would be a {@code 304}, and it does
  * not match {@code *} on a {@code GET}. Spring runs it only for an entity that carries an {@code ETag}, so the tag is not
- * put on the entity: it is handed to {@link PackDocumentETag} through the request, and set when the body is written,
- * after that check has run.
+ * put on the entity: it is handed to the web transport's {@link DeferredETag} through the request, and set when the
+ * body is written, after that check has run.
  */
 @Component
 final class PackDocumentController {
@@ -89,7 +88,7 @@ final class PackDocumentController {
                     .header(HttpHeaders.VARY, ACCEPT)
                     .build();
         }
-        PackDocumentETag.offer(currentRequest(), etag);
+        DeferredETag.offer(etag);
         ResponseEntity.BodyBuilder ok = ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .header(HttpHeaders.VARY, ACCEPT);
@@ -97,12 +96,5 @@ final class PackDocumentController {
             ok.contentType(contentType);
         }
         return ok.body(body.apply(verified.value()));
-    }
-
-    private static jakarta.servlet.http.HttpServletRequest currentRequest() {
-        if (RequestContextHolder.currentRequestAttributes() instanceof ServletRequestAttributes servlet) {
-            return servlet.getRequest();
-        }
-        throw new IllegalStateException("no servlet request is being handled");
     }
 }

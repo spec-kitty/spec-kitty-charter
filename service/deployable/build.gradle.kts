@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":profiles-edge"))
     // The missions slice's edge rings, on the same terms.
     implementation(project(":missions-edge"))
+    // The asset, skill and references reads' edge rings, on the same terms.
+    implementation(project(":artifacts-edge"))
     implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("spring-boot-starter-validation"))

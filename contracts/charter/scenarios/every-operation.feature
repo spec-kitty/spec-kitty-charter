@@ -31,6 +31,11 @@ Feature: The worktree guard answers in front of every operation
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -57,11 +62,17 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
       | getEffectiveMissionStepContract | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact            | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
+      | listEffectiveArtifactReferences | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
@@ -89,6 +100,11 @@ Feature: The worktree guard answers in front of every operation
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
       | listPackArtifacts               | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile             | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
+      | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
+      | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
+      | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -115,11 +131,17 @@ Feature: The worktree guard answers in front of every operation
       | applyActivationPreset           | PUT    | /activations/01ARWG13C000000000000000AC/presets/strict                                        |
       | listEffectiveArtifacts          | GET    | /activations/01ARWG13C000000000000000AC/artifacts                                             |
       | getEffectiveAgentProfile        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/agent_profile/rehearse                      |
+      | listEffectiveAssets             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset                                       |
+      | getEffectiveAsset               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo                                  |
+      | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
+      | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
+      | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
       | getEffectiveMissionStepContract | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact            | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
+      | listEffectiveArtifactReferences | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport      | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
       | getEffectiveGraph               | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext       | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |

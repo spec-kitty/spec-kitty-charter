@@ -1,0 +1,97 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- name: kind
+  in: path
+  required: true
+  description: >-
+    The kind of the artifact, as its token: one of the kinds the pack-scoped artifact list serves (tactic, directive,
+    styleguide, paradigm, toolguide, procedure, asset, skill, agent_profile, mission_type and mission_step_contract),
+    the kinds listArtifactReferences reads. No literal path of the activation ends in /references, so every listed
+    kind is answered here, an asset and a skill included. The parameter is a slug, not an enum: a value that is not a
+    slug (Tactic, -tactic) is a 400 Problem without a code, before the activation is judged, and a slug that names no
+    listed kind is answered 404 kind_not_found by the service, after the activation is found.
+  schema:
+    $ref: ../schemas/Slug.yaml
+- $ref: ../parameters/ArtifactId.yaml
+get:
+  operationId: listEffectiveArtifactReferences
+  summary: List the references the version of one artifact in force under an activation writes.
+  description: >-
+    The references of the version in force: the pack read of the winner's pack (ADR-0074 decision 12; FR-012,
+    research R10). The winner is the version the layer merge keeps across the levels of the activation's closure, as
+    getEffectiveArtifact names it, so an artifact a project copy overrides answers the references the project copy
+    writes. The answer is listArtifactReferences of the pack that holds the winner, for the same kind and id, item for
+    item: the same targets as written, relations, holding packs, URNs and artifact links, in the same order; this read
+    computes no reference of its own. Each item whose target the activation's closure holds, of a kind the pack-scoped
+    artifact list serves, also links effective-artifact, its read under the activation
+    (/activations/{activationId}/artifacts/{kind}/{artifactId}, the literal read of an agent_profile, a mission_type,
+    an asset or a skill and the templated read of the other kinds). _links.self is this request and _links.up the
+    activation. The artifact is answered whatever its state under the activation (research R1).
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found; then a slug that names no listed
+    kind is a 404 kind_not_found; then an id that no pack of the activation's closure holds is a 404
+    artifact_not_found, whatever its kind. A pack of the closure that is no longer configured, a closure that cannot
+    compose or merge, and a compose the references read cannot resolve are 500, with their code. The references are
+    read from the winner's pack against the source fingerprint of the read that named the winner, and the answer
+    carries it: packs that change between the two reads are 500 stale_input, which may be retried. As
+    listArtifactReferences, the read has no ETag.
+  tags:
+  - EffectiveReferences
+  responses:
+    '200':
+      description: The references of the winner, as the pack read of its pack answers them, linked under the activation.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ArtifactReferenceList.yaml
+          examples:
+            activation:
+              $ref: ../examples/ArtifactReferenceList.activation.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        What the path names is not there, refused with 404, in this order: the activation (activation_not_found, also for
+        an activation this client may not see, so ids do not leak), then a kind the service does not list
+        (kind_not_found), then an artifact that no pack of the activation's closure holds (artifact_not_found).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            kind-not-found:
+              summary: The path names a kind the service does not list.
+              value:
+                title: Kind not found
+                status: 404
+                code: kind_not_found
+                detail: The service serves no artifact kind template.
+            artifact-not-found:
+              summary: No pack of the activation's closure holds the artifact.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: No pack of the activation's closure holds the directive DIRECTIVE_999.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
