@@ -266,19 +266,21 @@ extra or changed key or value counts. Numbers compare by value. Graph-shard edge
 identical repeats do not count) and nodes by URN.
 
 It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.yaml` lists what does not round-trip
-yet: a `file-kinds.yaml` schema that has no reader and writer (`kinds:`), or a single file of a modelled kind with
-every place it differs (`files:`, its path starting with the example pack's name, `at:` listing each difference path,
-joined by ` ; `, or holding the whole detail of a refused file), each with a reason and the issue that owns it.
+yet: a single file of a modelled kind with every place it differs (`files:`, its path starting with the example
+pack's name, `at:` listing each difference path, joined by ` ; `, or holding the whole detail of a refused file), with
+a reason and the issue that owns it. It also lists each `file-kinds.yaml` schema that has no reader and writer
+(`kinds:`), with the reason; that entry excuses no file, so a file of such a kind is red wherever it appears.
 Because `at:` holds every difference, a new loss in a file that is already expected red still fails the gate. `exclusions.yaml` next to it is the gate's
 own append-only list of files it does not compare. The gate passes only when the result matches its lists exactly (the third,
 `known-failures.yaml`, is below):
 
 - an unlisted red file fails it (`UNEXPECTED_RED`), and so does a listed file whose differences changed
   (`CHANGED_RED`);
-- a listed file or kind that now round-trips fails it too (`UNEXPECTEDLY_GREEN`): remove the entry in the same
-  change that turns it green;
-- stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and an empty pack fail it,
-  so it cannot pass vacuously.
+- a listed file that now round-trips fails it too (`UNEXPECTEDLY_GREEN`): remove the entry in the same change that
+  turns it green;
+- a file entry for a missing or excluded file (`STALE_BASELINE`) or for a file of an unmodelled kind
+  (`FILE_ENTRY_UNMODELLED`), an exclusion that matches nothing or a modelled file, a `kinds:` entry for a modelled
+  kind (`BASELINED_MODELLED_KIND`) and an empty pack fail it, so it cannot pass vacuously.
 
 Three checks look at the example packs together, and at the file-kind table (#547):
 

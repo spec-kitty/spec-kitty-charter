@@ -139,12 +139,17 @@ class WholePackRoundTripTest {
      * known failure and exclusion names one of them, so no pack's run leaves it unjudged.
      */
     @Test
-    void theExamplePacksTogetherHoldEveryModelledKindAndEveryEntry() {
+    void theExamplePacksTogetherHoldEveryModelledKindAndEveryEntry() throws IOException {
         Map<String, SortedMap<String, String>> censusByPack = new TreeMap<>();
         examplePacks().forEach(name -> censusByPack.put(name, WholePackCensus.of(ExamplePacks.pack(name))));
         WholePackExpectation expectation = WholePackExpectation.fromClasspath();
 
         assertThat(censusByPack.keySet()).containsExactly(BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+        try (Stream<Path> dirs = Files.list(ExamplePacks.packsDirectory())) {
+            assertThat(dirs.filter(Files::isDirectory).map(dir -> String.valueOf(dir.getFileName())))
+                    .as("every directory under the example packs is a gated example pack")
+                    .containsExactlyInAnyOrderElementsOf(censusByPack.keySet());
+        }
         assertThat(WholePackExpectation.emptyKindProblems(
                         censusByPack, new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds()))
                 .isEmpty();

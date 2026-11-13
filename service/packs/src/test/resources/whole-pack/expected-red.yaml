@@ -4,8 +4,8 @@
 # file green, remove its entry in the same change.
 #
 # kinds: a file-kinds.yaml schema the round trip does not model, with the reason (#547). Every schema of the table is
-# modelled or listed here, and every entry here is a schema the round trip does not model; a file classed under a
-# listed schema is expected red in any example pack.
+# modelled or listed here, and every entry here is a schema the round trip does not model. An entry excuses no file: a
+# file classed under a listed schema is red in every example pack's run.
 # files: one file of a modelled kind that is known to differ. Its path starts with the example pack's name
 # (org-base/drg/fragment.yaml), and its `at` is where the file first differs, or the whole red detail of a refused file.
 # Every modelled kind has a file in some example pack (ADR-0070), so a missing kind is fixed in an example pack, never
@@ -14,7 +14,7 @@ kinds:
   - kind: charter
     reason: >-
       A project's charter.yaml is not pack content: the store leaves it unmodelled, and the table's rule exists only so
-      that a stray one is validated rather than ignored.
+      that a stray one is validated rather than ignored. A stray one in an example pack fails the gate.
     issue: "#547"
   - kind: toolguide-guide
     reason: >-
