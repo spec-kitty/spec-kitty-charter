@@ -91,6 +91,13 @@ description: >-
   the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
+  A violation code of validation_failed need not be a code of this enum. overrides_source_not_activatable (FR-014,
+  operator ruling of 2026-11-12 on #447) is one: an overrides edge whose source is not of an activatable kind (a
+  template, an asset, a guard or a lifecycle) is refused wherever it enters. A registration lists one such violation
+  per edge at its pack-relative graph document inside 422 validation_failed, putPackRelationship answers 422
+  validation_failed with the violation at /from and writes nothing, and a composing read of a closure holding such a
+  pack answers 500 pack_unreadable naming the graph document. An overrides edge from an activatable kind is unchanged.
+
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
   representation the operation does not have, a method the path does not have, a request the
@@ -337,6 +344,11 @@ x-refusal:
     status: 422
     retryable: false
     raised: true
+    description: >-
+      the request or the pack it registers breaks a schema or an invariant; a refused registration lists every fault as
+      a violation at its pack-relative file. Its violation codes include the raised codes above and
+      overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
+      putPackRelationship lists at /from
   registration_conflict:
     status: 409
     retryable: false
