@@ -16,7 +16,7 @@ name: CPU-time budgets (nightly)
 
 on:
   schedule:
-    # Nightly, off the hour, clear of mutation-nightly.yml (43 2 * * *).
+    # Nightly, off the hour, clear of mutation-testing.yml (43 2 * * 1).
     - cron: '17 4 * * *'
   workflow_dispatch:
 

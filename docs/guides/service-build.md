@@ -144,12 +144,14 @@ versions, the HTML and XML reports and PIT's default mutators:
 | profiles | `profiles` | the whole module | 90 % |
 | activations | `activations` | the whole module | 85 % |
 | profiles-edge | `profiles-edge` | `profiles.application` and `profiles.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| missions-edge | `missions-edge` | `missions.application` and `missions.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| artifacts-edge | `artifacts-edge` | `artifacts.application` and `artifacts.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
 
 Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs, activations and
-profiles-edge apply it directly (profiles-edge cannot take the domain convention: its rings carry external
+the three edge modules apply it directly (an edge cannot take the domain convention: its rings carry external
 dependencies).
 Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `whole-pack`, `git-host` or
@@ -180,17 +182,22 @@ fail the check too.
 `-Dpit.classes` and `-Dpit.tests`, for one work package's classes; its header has the full command. A narrowed run is
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
-**The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
-90-minute timeout, 80 of them for the mutation step. It syncs the packs at the pin, then runs
-`./gradlew mutationModules pitest --continue`. `mutationModules` writes the list of modules that apply
-`charter.mutation-conventions` (#388). Whatever the result, it runs the summary script's unit tests,
-`scripts/ci/mutation_summary.py --modules` turns every listed module's `floors.json` into a job-summary table (score,
+**The mutation run.** `.github/workflows/mutation-testing.yml` runs on its schedule and on `workflow_dispatch` only;
+the schedule is the operator's to set. PIT runs in three shards, each on its own runner with a 120-minute timeout, 110 of them for the
+mutation step (#461): `:packs`'s floor groups in two halves (`-PmutationGroups=domain+application,infra.fetch` and
+`-PmutationGroups=infra.storage,infra.archive`) and every other module. A shard mutates and scores only its groups, so
+each group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Each shard syncs the packs at
+the pin, then runs `./gradlew mutationModules <its tasks> --continue`. `mutationModules` writes the modules that apply
+`charter.mutation-conventions`, with their floor groups (#388). A summary job then runs, whatever the shards' results:
+it runs the summary script's unit tests, merges the shards' reports, and
+`scripts/ci/mutation_summary.py --modules` turns every module's floors files into a job-summary table (score,
 strength, uncovered and timed-out mutants, floor, margin to the floor, verdict and the classes with the most surviving
-or uncovered mutants), shows "no report" for a listed module that wrote none, and quotes PIT's lines about any test
-that fails with no mutation applied (#461). The module list, the step's output (`pitest.log`) and every module's report go
-up as the `mutation-report` artifact, kept for 14 days. When a scheduled run does not
-succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
-`workflow_dispatch` with `force_issue` tests that path.
+or uncovered mutants), shows "no report" for a listed module or group that wrote none, and quotes PIT's lines about
+any test that fails with no mutation applied (#461). The script exits 1 when a listed module or group has no
+readable report, so the summary job is red and the alert fires. The module list, each shard's output (`pitest-<shard>.log`) and
+every module's report go up as the `mutation-report-<shard>` artifacts, kept for 14 days. When a scheduled run does
+not succeed, a timeout or a red summary included, the workflow opens one issue labelled `mutation-testing`, or
+comments on the open one; a `workflow_dispatch` with `force_issue` tests that path.
 
 **Never in the required check.** PIT runs only in the nightly (ADR-0060). The root build fails any invocation in which
 `verifyAll` or a `check` depends on `pitest` or `checkMutationFloors`, and build-logic's `MutationWorkflowGuardTest`

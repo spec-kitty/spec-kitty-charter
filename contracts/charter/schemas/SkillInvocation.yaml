@@ -1,0 +1,33 @@
+title: SkillInvocation
+description: >-
+  Who may invoke a skill, exactly as the file writes it, present only when the file writes an invocation block. A
+  runtime may force modelInvocable off for a skill with side effects; that is the runtime's reading, not what the file
+  says, so it is not applied here.
+type: object
+additionalProperties: false
+required:
+  - sideEffects
+properties:
+  userInvocable:
+    type: boolean
+    description: Whether a user may invoke the skill; left out when the file does not say.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillInvocation.java
+      symbol: SkillInvocation.userInvocable
+  modelInvocable:
+    type: boolean
+    description: Whether a model may invoke the skill; left out when the file does not say.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillInvocation.java
+      symbol: SkillInvocation.modelInvocable
+  sideEffects:
+    type: array
+    description: The skill's declared side effects, in authored order; empty when the file writes none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillInvocation.java
+      symbol: SkillInvocation.sideEffects
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillInvocation.java
+  symbol: SkillInvocation

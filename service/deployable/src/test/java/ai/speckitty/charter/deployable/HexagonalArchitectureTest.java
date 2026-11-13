@@ -250,6 +250,86 @@ class HexagonalArchitectureTest {
                 .hasMessageContaining("UsesThirdPartyType");
     }
 
+    /** The {@code pack-validation} module: every pack check, Spring-free (ADR-0075 decision 3). */
+    private static final String PACK_VALIDATION = ROOT + ".packvalidation..";
+    /** The {@code pack-check} module: the standalone CLI over {@code pack-validation} (ADR-0075 decision 9). */
+    private static final String PACK_CHECK = ROOT + ".packcheck..";
+
+    /**
+     * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3): neither {@code pack-validation} nor {@code pack-check}
+     * depends on Spring, on HTTP or any other network I/O ({@code java.net} but {@code URI} and {@code URISyntaxException}, the JDK's HTTP client and
+     * server, Jakarta, the generated contract, the web transport or the kernel's transport vocabulary), on a commit store
+     * or on a lock. A commit store and the registry's lock live in the packs slice and its {@code infra} rings, so the
+     * rule refuses the packs and activations slices, every {@code application} and {@code infra} ring (the modules' own
+     * packages included: they have no rings) and the composition root outright. The modules depend on {@code kernel},
+     * {@code profiles}, {@code missions} and the parsing libraries only, which their builds pin too. A lock is caught by
+     * its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
+     * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and review checks those.
+     *
+     * <p>The rule runs once per module's package and fails on an empty selection, so a module missing from this test's
+     * classpath fails it rather than passing unchecked.
+     */
+    private static ArchRule packModuleIsFrameworkFree(String modulePackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(modulePackage)
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage(
+                        FRAMEWORK,
+                        "jakarta..",
+                        "java.net.http..",
+                        "com.sun.net.httpserver..",
+                        GENERATED_API,
+                        WEB,
+                        KERNEL_TRANSPORT,
+                        ROOT + ".packs..",
+                        ROOT + ".activations..",
+                        ROOT + "..application..",
+                        ROOT + "..infra..",
+                        DEPLOYABLE,
+                        "java.util.concurrent.locks..")
+                .orShould()
+                .dependOnClassesThat(DescribedPredicate.describe(
+                        "are java.net types other than URI and URISyntaxException, or FileLock",
+                        (JavaClass c) -> (c.getPackageName().equals("java.net")
+                                        && !c.getName().equals("java.net.URI")
+                                        && !c.getName().equals("java.net.URISyntaxException"))
+                                || c.getName().equals("java.nio.channels.FileLock")))
+                .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (" + modulePackage + "): no Spring, HTTP, commit store or lock");
+    }
+
+    @Test
+    @DisplayName("PACK_VALIDATION_IS_FRAMEWORK_FREE")
+    void packValidationIsFrameworkFree() {
+        packModuleIsFrameworkFree(PACK_VALIDATION).check(classes);
+        packModuleIsFrameworkFree(PACK_CHECK).check(classes);
+    }
+
+    @Test
+    void thePackValidationRuleFailsOnAPlantedSpringHttpCommitStoreOrLockDependency() {
+        assertBites(
+                packModuleIsFrameworkFree(PACK_VALIDATION),
+                ROOT + ".packvalidation.badfixture",
+                "ValidationUsesSpring",
+                "org.springframework.stereotype.Component",
+                "ValidationSpeaksHttp",
+                "java.net.http.HttpClient",
+                "ValidationOpensAUrl",
+                "java.net.HttpURLConnection",
+                "ValidationReachesCommitStore",
+                "CommitStorePackWriteStore",
+                "ValidationTakesALock",
+                "java.util.concurrent.locks.ReentrantLock",
+                "java.nio.channels.FileLock",
+                "RegistryWriteLock");
+        assertBites(
+                packModuleIsFrameworkFree(PACK_CHECK),
+                ROOT + ".packcheck.badfixture",
+                "CheckUsesSpring",
+                "org.springframework.stereotype.Component");
+    }
+
     /**
      * APPLICATION_IS_EDGE: the application ring is a Spring-managed edge. It may depend on itself, its slice's
      * domain, the kernel, {@code java}, JSpecify and the Spring framework, and on nothing else: not on any
@@ -725,7 +805,12 @@ class HexagonalArchitectureTest {
             .resideInAPackage(WEB)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(ROOT + ".packs..", ROOT + ".activations..", ROOT + ".profiles..", ROOT + ".missions..");
+            .resideInAnyPackage(
+                    ROOT + ".packs..",
+                    ROOT + ".activations..",
+                    ROOT + ".profiles..",
+                    ROOT + ".missions..",
+                    ROOT + ".artifacts..");
 
     @Test
     @DisplayName("WEB_IS_AN_ADAPTER_RING")
@@ -738,7 +823,7 @@ class HexagonalArchitectureTest {
     void theWebRingRulesFailOnTheKnownBads() {
         assertBites(
                 WEB_IS_AN_ADAPTER_RING, ROOT + ".activations.application.badfixture", "ApplicationNamesWebTransport");
-        assertBites(WEB_NAMES_NO_SLICE, ROOT + ".web.badfixture", "WebNamesASlice");
+        assertBites(WEB_NAMES_NO_SLICE, ROOT + ".web.badfixture", "WebNamesASlice", "WebNamesTheArtifactsEdge");
     }
 
     /**
@@ -1359,6 +1444,196 @@ class HexagonalArchitectureTest {
                 onlyDeployableComposesAdapters("missions"),
                 ROOT + ".activations.application.badfixture",
                 "ApplicationNamesMissionsInfra");
+    }
+
+    // ---- The artifacts edge over the packs and activations slices (ADR-0037, amendment of 2026-11-13; research R13) -
+    // The asset, skill and references reads of both trees live in :artifacts-edge, which follows the missions edge's
+    // pattern with no domain module: :activations may not render a packs domain type (ACTIVATIONS_NAME_PACKS_ONLY_FROM_
+    // ADAPTER). The edge asks the packs slice and the activations slice, each from one adapter package of its own, and
+    // only their application and domain rings; and neither of those slices names the edge back.
+
+    private static final String ARTIFACTS = ROOT + ".artifacts..";
+    /** The one artifacts package that may name the packs slice. */
+    private static final String ARTIFACTS_PACKS_ADAPTER = ROOT + ".artifacts.infra.packs..";
+    /** The one artifacts package that may name the activations slice. */
+    private static final String ARTIFACTS_ACTIVATIONS_ADAPTER = ROOT + ".artifacts.infra.activations..";
+
+    /** The artifacts edge rings, each of which must be on the classpath for the rules below to check anything. */
+    private static final List<String> ARTIFACTS_EDGE_RINGS = List.of(
+            "ai.speckitty.charter.artifacts.application",
+            "ai.speckitty.charter.artifacts.infra.api",
+            "ai.speckitty.charter.artifacts.infra.packs",
+            "ai.speckitty.charter.artifacts.infra.activations");
+
+    /** AN ARTIFACTS EDGE OVER PACKS (1/2): no artifacts class names the packs slice, but those of its packs adapter. */
+    private static final ArchRule ARTIFACTS_NAME_PACKS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(ARTIFACTS)
+            .and()
+            .resideOutsideOfPackage(ARTIFACTS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS);
+
+    /**
+     * AN ARTIFACTS EDGE OVER PACKS (2/2): that adapter names only the packs application ring and the packs domain
+     * values its answers carry, never a packs adapter: no {@code Hypermedia}, no {@code ArtifactDtos}, no
+     * {@code CharterHeaders}.
+     */
+    private static final ArchRule ARTIFACTS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(ARTIFACTS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(PACKS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(PACKS_APPLICATION, PACKS_DOMAIN)));
+
+    /** AN ARTIFACTS EDGE OVER ACTIVATIONS (1/2): no artifacts class names the activations slice, but its adapter's. */
+    private static final ArchRule ARTIFACTS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(ARTIFACTS)
+            .and()
+            .resideOutsideOfPackage(ARTIFACTS_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ACTIVATIONS);
+
+    /** AN ARTIFACTS EDGE OVER ACTIVATIONS (2/2): that adapter names only the activations application and domain rings. */
+    private static final ArchRule ARTIFACTS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(ARTIFACTS_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ACTIVATIONS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(
+                            ACTIVATIONS_APPLICATION, ACTIVATIONS_DOMAIN_RING)));
+
+    /**
+     * THE ARTIFACTS EDGE IS NOT NAMED BACK: the packs and activations slices never name any artifacts class. The edge
+     * has no domain module, so unlike the profiles and missions edges there is no domain the pack store may bind.
+     */
+    private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ARTIFACTS_EDGE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS, ACTIVATIONS)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ARTIFACTS);
+
+    @Test
+    @DisplayName("ARTIFACTS_EDGE_OVER_PACKS_AND_ACTIVATIONS")
+    void theArtifactsEdgeNamesPacksAndActivationsOnlyThroughItsAdapters() {
+        ARTIFACTS_NAME_PACKS_ONLY_FROM_ADAPTER.check(classes);
+        ARTIFACTS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION.check(classes);
+        ARTIFACTS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
+        ARTIFACTS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
+        NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ARTIFACTS_EDGE.check(classes);
+    }
+
+    /**
+     * The edge has no domain ring, so it is not in {@link #SLICES} (whose domain rules select a ring the edge lacks).
+     * It is held to the per-slice rings that apply to an edge instead: its application ring is an edge
+     * (APPLICATION_IS_EDGE), its inbound adapter names no other adapter of its own, only it and the root name its
+     * adapters, and it declares no repository or gateway port.
+     */
+    @Test
+    @DisplayName("ARTIFACTS_EDGE_RINGS")
+    void theArtifactsEdgeIsHeldToTheEdgeRings() {
+        applicationIsEdge("artifacts").check(classes);
+        entrypointOverApplication("artifacts").check(classes);
+        onlyDeployableComposesAdapters("artifacts").check(classes);
+        portInterfacesResideInDomain("artifacts").check(classes);
+        portImplementationsResideInStorage("artifacts").check(classes);
+    }
+
+    /**
+     * The slice rules use {@code allowEmptyShould}, so a module missing from the classpath passes with nothing checked.
+     * This test fails instead: every artifacts edge ring holds a class, which means {@code :deployable} depends on
+     * {@code :artifacts-edge} and the rules above, and the edge rings, gate the real packages.
+     */
+    @Test
+    void everyArtifactsEdgeRingIsOnTheGatedClasspath() {
+        for (String ring : ARTIFACTS_EDGE_RINGS) {
+            assertThat(classes.stream()
+                            .filter(c -> c.getPackageName().equals(ring)
+                                    || c.getPackageName().startsWith(ring + ".")))
+                    .as("classes in the ring %s", ring)
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void theArtifactsEdgeOverPacksRulesFailOnTheKnownBads() {
+        assertBites(
+                ARTIFACTS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".artifacts.application.badfixture",
+                "ArtifactsApplicationNamesPacks");
+        assertBites(
+                ARTIFACTS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".artifacts.infra.api.badfixture",
+                "ArtifactsApiNamesPacksApi",
+                "ArtifactController");
+        assertBites(
+                ARTIFACTS_PACKS_ADAPTER_NAMES_PACKS_APPLICATION,
+                ROOT + ".artifacts.infra.packs.badfixture",
+                "ArtifactsPacksAdapterNamesPacksStorage",
+                "ConfigRoot");
+    }
+
+    @Test
+    void theArtifactsEdgeOverActivationsRulesFailOnTheKnownBads() {
+        assertBites(
+                ARTIFACTS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".artifacts.application.badfixture",
+                "ArtifactsApplicationNamesActivations");
+        assertBites(
+                ARTIFACTS_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".artifacts.infra.packs.badfixture",
+                "ArtifactsPacksAdapterNamesActivations");
+        assertBites(
+                ARTIFACTS_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION,
+                ROOT + ".artifacts.infra.activations.badfixture",
+                "ArtifactsActivationsAdapterNamesActivationsApi",
+                "ActivationController");
+    }
+
+    @Test
+    void theArtifactsEdgeIsNotNamedBackRuleFailsOnPacksAndActivationsClassesThatNameIt() {
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ARTIFACTS_EDGE,
+                ROOT + ".packs.application.badfixture",
+                "ApplicationNamesArtifactsApplication",
+                "ArtifactsUseCaseStandIn");
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ARTIFACTS_EDGE,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesArtifactsInfra",
+                "ArtifactsApiStandIn");
+    }
+
+    /** The edge rings bite on the artifacts known-bads: the same factories the slices of {@link #SLICES} run. */
+    @Test
+    void theEdgeRingRulesBiteOnTheArtifactsEdgeRings() {
+        assertBites(
+                applicationIsEdge("artifacts"),
+                ROOT + ".artifacts.application.badfixture",
+                "ArtifactsApplicationNamesPacks",
+                "ArtifactsApplicationNamesActivations",
+                "ArtifactsApplicationNamesWebTransport");
+        assertBites(
+                entrypointOverApplication("artifacts"),
+                ROOT + ".artifacts.infra.api.badfixture",
+                "ArtifactsApiNamesPacksAdapter",
+                "ArtifactsPacksStandIn");
+        assertBites(
+                onlyDeployableComposesAdapters("artifacts"),
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesArtifactsInfra");
+        assertBites(
+                portInterfacesResideInDomain("artifacts"),
+                ROOT + ".artifacts.application.badfixture",
+                "ArtifactsMisplacedRepository");
+        assertBites(
+                portImplementationsResideInStorage("artifacts"),
+                ROOT + ".artifacts.infra.api.badfixture",
+                "ArtifactsImplementsPortInEntrypoint");
     }
 
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------

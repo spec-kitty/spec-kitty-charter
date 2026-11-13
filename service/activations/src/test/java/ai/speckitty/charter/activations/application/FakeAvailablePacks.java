@@ -59,6 +59,8 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private Function<PromptAsk, EffectivePrompt> promptAnswer = ask -> EffectivePrompt.NONE;
     private final List<PromptAsk> promptAsks = new ArrayList<>();
     private BiFunction<String, String, Optional<String>> placeAnswer = (missionType, action) -> Optional.empty();
+    private Function<ArtifactKind, List<EffectiveHeldWinner>> heldAnswer = kind -> List.of();
+    private final List<ArtifactKind> heldAsks = new ArrayList<>();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -254,6 +256,25 @@ public final class FakeAvailablePacks implements AvailablePacks {
     }
 
     /**
+     * Answers every held-winner read of a session with this function from now on; a function that throws a refusal
+     * answers as the packs slice does for a merge it refuses.
+     *
+     * @param next the answers of {@link PacksSession#heldWinners}, by kind; {@link PacksSession#heldWinner} filters them
+     */
+    public void heldWinners(Function<ArtifactKind, List<EffectiveHeldWinner>> next) {
+        this.heldAnswer = next;
+    }
+
+    /**
+     * The kinds the sessions were asked the held winners of, in order, an item read included.
+     *
+     * @return the kinds
+     */
+    public List<ArtifactKind> heldAsks() {
+        return List.copyOf(heldAsks);
+    }
+
+    /**
      * Lists these kinds from now on.
      *
      * @param next the answer of {@link AvailablePacks#listedKinds}
@@ -425,6 +446,20 @@ public final class FakeAvailablePacks implements AvailablePacks {
         @Override
         public Optional<String> stepPlace(String missionType, String action) {
             return placeAnswer.apply(missionType, action);
+        }
+
+        @Override
+        public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
+            heldAsks.add(kind);
+            return heldAnswer.apply(kind);
+        }
+
+        @Override
+        public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
+            heldAsks.add(kind);
+            return heldAnswer.apply(kind).stream()
+                    .filter(winner -> winner.ref().id().equals(id))
+                    .findFirst();
         }
 
         @Override

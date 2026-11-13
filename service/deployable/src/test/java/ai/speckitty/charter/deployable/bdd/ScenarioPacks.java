@@ -109,6 +109,22 @@ public final class ScenarioPacks {
     }
 
     void addFile(PackLevel level, String pack, String relativePath, String content) {
+        addBytes(
+                level,
+                pack,
+                relativePath,
+                (content.endsWith("\n") ? content : content + "\n").getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Writes one file of a pack byte for byte, configuring the pack at that level on its first file: a binary payload.
+     *
+     * @param level the pack's level
+     * @param pack the configured name of the pack
+     * @param relativePath the file's path below the pack directory
+     * @param bytes the file's exact content
+     */
+    void addBytes(PackLevel level, String pack, String relativePath, byte[] bytes) {
         if (root == null) {
             throw new IllegalStateException("no scenario is running");
         }
@@ -119,7 +135,26 @@ public final class ScenarioPacks {
         Path file = packRoot.resolve(relativePath);
         try {
             Files.createDirectories(file.getParent());
-            Files.writeString(file, content.endsWith("\n") ? content : content + "\n", StandardCharsets.UTF_8);
+            Files.write(file, bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * The exact bytes of one file of a configured pack, as stored now.
+     *
+     * @param pack the configured pack's name
+     * @param relativePath the path inside the pack
+     * @return the file's content
+     */
+    byte[] bytesOf(String pack, String relativePath) {
+        PackLocation location = locations.stream()
+                .filter(l -> l.name().equals(pack))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no pack " + pack + " is configured"));
+        try {
+            return Files.readAllBytes(location.root().resolve(relativePath));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

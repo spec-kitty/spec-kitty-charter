@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: a905fd4080bf0ea37cbbf35f16fe1109e7af7782e06c6c39dd497045947f19c6
+manifest_hash: 3c74e9a4ca7549ed3f30711442d0edef2f4459e088a4eb0d552cfefce13ed579
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -49,6 +49,66 @@ constituents:
   id: spec-kitty-core
   path: glossary_packs/spec-kitty-core.glossary-pack.yaml
   content_hash: 3d43ef4901127d3fb5d7f5847fffc7d68d84fd131a4a6cc969578ffb5a33a704
+- kind: guard
+  id: subtasks-ready
+  path: guards/subtasks-ready.guard.yaml
+  content_hash: 3f290fbb37dbd04344f016e529d708e539cd0aec03184cf4cc56d9fd3a7e90bf
+- kind: guard
+  id: traceability-ready
+  path: guards/traceability-ready.guard.yaml
+  content_hash: fffca74b8d2dc9982319feca7dc685a481dcc190c81d0b3c91bfe62fea581557
+- kind: lifecycle
+  id: work-package
+  path: lifecycles/work-package.lifecycle.yaml
+  content_hash: b32cc98b9d2924923e3d0ea49a3e7306670874bfdb333c4aeffbab73bca16878
+- kind: mission_step_contract
+  id: implement
+  path: missions/built_in_step_contracts/implement.step-contract.yaml
+  content_hash: 6273f60e38eabe53cc90d0c734d47ca43ba1203ad1d69951ecb5e0a7a1537cec
+- kind: mission_step_contract
+  id: plan
+  path: missions/built_in_step_contracts/plan.step-contract.yaml
+  content_hash: 729a3ad149f06039772af72dcb9131ec78cc60916b5b0ba08c888a765636fdbf
+- kind: mission_step_contract
+  id: review
+  path: missions/built_in_step_contracts/review.step-contract.yaml
+  content_hash: c150f34e268fdaab1f680910fb0cea785b4af0e5c3e77f091f6f57f778f0d75e
+- kind: mission_step_contract
+  id: specify
+  path: missions/built_in_step_contracts/specify.step-contract.yaml
+  content_hash: 94b194e080cba0c22d30fe35016eb41f79676e50fd769327ca02070ba4186374
+- kind: mission_step_contract
+  id: tasks
+  path: missions/built_in_step_contracts/tasks.step-contract.yaml
+  content_hash: 5db598a1a48436ebe6736827d5a9abae6dc9280705323c9eb8c20c6d2c37333d
+- kind: step_enhancement
+  id: plan-risk-notes
+  path: missions/software-dev/enhancements/plan-risk-notes.step-enhancement.yaml
+  content_hash: 4003981bf8da61dd51a70835edc1d4bcc9d3fa60699f3a308680d77876415488
+- kind: mission_type
+  id: software-dev
+  path: missions/software-dev/software-dev.mission-type.yaml
+  content_hash: 633a6459a7c4d5bd3a10ad4b526fb5767bfd948d66fbbed8548f19ea821edfcd
+- kind: template
+  id: software-dev/plan-template.md
+  path: missions/software-dev/templates/plan-template.md
+  content_hash: 23724c536bcc6d474eda9d50a9c1f8f0d513aa67c578fa054498f126cb1c83af
+- kind: template
+  id: software-dev/research-template.md
+  path: missions/software-dev/templates/research-template.md
+  content_hash: 8be66344376fc78a1af3fc64afb6dedc86032836f9aa75b6708ce7c4623770bd
+- kind: template
+  id: software-dev/spec-template.md
+  path: missions/software-dev/templates/spec-template.md
+  content_hash: c697bf8379a923876b170c573ea94339a61d4a9cb1936c5af2b612dbf5d6e0f5
+- kind: template
+  id: software-dev/task-prompt-template.md
+  path: missions/software-dev/templates/task-prompt-template.md
+  content_hash: 0b88a1343a19b211cda4e904c58f4d032944d462de41704d6bb404c0445f20eb
+- kind: template
+  id: software-dev/tasks-template.md
+  path: missions/software-dev/templates/tasks-template.md
+  content_hash: c0bf1031a8fdf07b51d34d8d3bef22d4a00984ca2490ce3500a409010d2bc8a8
 - kind: paradigm
   id: atomic-design
   path: paradigms/atomic-design.paradigm.yaml
@@ -61,6 +121,10 @@ constituents:
   id: adversarial-squad-deployment
   path: procedures/adversarial-squad-deployment.procedure.yaml
   content_hash: 9cf80cc6660d8c7c498699564f34f22604550b254ad7993b40a8e0c13f38133b
+- kind: skill
+  id: review-checklist
+  path: skills/review-checklist.skill.yaml
+  content_hash: 576700d5bc00cad32b0c7d71db5d90f52ddfe0b3e080f09eaa23ed8d0fd46441
 - kind: styleguide
   id: aggregate-design-rules
   path: styleguides/aggregate-design-rules.styleguide.yaml
@@ -85,6 +149,14 @@ constituents:
   id: autonomous-operation-protocol
   path: tactics/autonomous-operation-protocol.tactic.yaml
   content_hash: 1a50ad533d46d870be5df64262205cd4147dbfbfb2288d06d8ceb374f4c39184
+- kind: template
+  id: writing/meeting-discussion-notes.md
+  path: templates/writing/meeting-discussion-notes.md
+  content_hash: 1236a67f21f1e4f4f17af147141944800e8c8fd879aba59a290c6377b9e9bf6e
+- kind: template
+  id: writing/meeting-minutes.md
+  path: templates/writing/meeting-minutes.md
+  content_hash: 2478adfd6fb03126d57a999de9887330052d45e601b028ef34f03cbe7ae51a02
 - kind: toolguide
   id: efficient-local-tooling
   path: toolguides/efficient-local-tooling.toolguide.yaml

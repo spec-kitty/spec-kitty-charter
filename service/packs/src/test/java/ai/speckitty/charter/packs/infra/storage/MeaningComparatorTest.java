@@ -353,13 +353,13 @@ class MeaningComparatorTest {
                     schema_version: '1.0'
                     manifest_hash: %s
                     constituents:
-                    - kind: tactic
-                      id: t
-                      path: tactics/t.tactic.yaml
-                      content_hash: %s
                     - kind: directive
                       id: D
                       path: d.directive.yaml
+                      content_hash: %s
+                    - kind: tactic
+                      id: t
+                      path: tactics/t.tactic.yaml
                       content_hash: %s
                     presets:
                     - id: p
@@ -379,9 +379,20 @@ class MeaningComparatorTest {
         @Test
         void aChangedPathOrIdCounts() {
             assertThat(compare(KIND, manifest(A), manifest(B).replace("tactics/t.tactic.yaml", "t.tactic.yaml")))
-                    .contains(new Difference("constituents[0].path", "tactics/t.tactic.yaml", "t.tactic.yaml"));
+                    .contains(new Difference("constituents[1].path", "tactics/t.tactic.yaml", "t.tactic.yaml"));
             assertThat(compare(KIND, manifest(A), manifest(B).replace("id: p\n", "id: q\n")))
                     .contains(new Difference("presets[0].id", "p", "q"));
+        }
+
+        @Test
+        void theListsOrderIsDerivedAndDoesNotCount() {
+            String tactic = "- kind: tactic\n  id: t\n  path: tactics/t.tactic.yaml\n  content_hash: " + B + "\n";
+            String reordered = manifest(B).replace(tactic, "").replace("constituents:\n", "constituents:\n" + tactic);
+
+            assertThat(reordered).as("the edit moved the tactic first").isNotEqualTo(manifest(B));
+            assertThat(compare(KIND, manifest(A), reordered))
+                    .as("#110: every write lists the entries in path order, so their order is derived")
+                    .isEmpty();
         }
 
         @Test

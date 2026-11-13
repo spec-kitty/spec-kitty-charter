@@ -1293,7 +1293,7 @@ C38, `PromptFactsTest` (`aStepIsDeclaredWhenThePacksVersionOfItsMissionTypeLists
 `DomainRepositoryServicePromptFactsTest.theFactsCarryTheStepsEachMissionTypeDeclaresWhichPlaceAStepsPrompt` and
 `EffectiveMissionTypeReadServiceTest.aStepContractPassesARefusalOfThePlaceReadOtherThanActionNotFoundThroughUnchanged`.
 
-**E17 Validators.** `ETag = sha256("charter-effective-read\0v2\n", read, rev(D), closureFingerprint(C), query)`; a weak match
+**E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
 An effective answer changes with the document or the packs of its closure, and nothing else. `query` is the normalized
 `kind`, `state`, cursor and page size, so each representation has its own tag; the graph's `read` has no query, and the context's is

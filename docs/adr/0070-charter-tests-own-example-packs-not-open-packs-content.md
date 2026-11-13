@@ -2,8 +2,8 @@
 title: "ADR-0070: Charter tests its own example packs; open-packs proves its content against a pinned charter"
 description: "The contract tests stop reading pinned open-packs content: charter-owned example packs carry the round trip, and open-packs validates its packs against a charter release."
 doc_status: active
-updated: 2026-11-11T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-13T00:00:00Z
+decision_status: 'Accepted; decision 4 amended 2026-11-13 (the round trip over open-packs content runs in open-packs, #509)'
 decision_date: '2026-11-11'
 type: ADR
 kind: ADR
@@ -31,6 +31,32 @@ audience:
 merge" (the whole-pack round trip, operator ruling of 2026-11-05, epic #186) and the open-packs clause of PROJECT_002,
 as [Consequences](#consequences) sets out. The work is planned in
 [the example-packs plan](/plans/charter-example-packs/).
+
+### Amendment 2026-11-13 (#509): the round trip over open-packs content runs in open-packs
+
+Ruled by the operator on 2026-11-13, after the research on the drift watch
+([#509](https://github.com/spec-kitty/spec-kitty-charter/issues/509); the
+[research note](/plans/engineering-notes/open-packs-drift-watch-research-2026-11-13/)). The reason is the split of
+responsibility: open-packs owns its content, so the proof that its content round-trips belongs to open-packs, as a
+gate on its own pull requests. Decision 4 carries a note where it changes; the rest of the decision text is unchanged.
+
+- **open-packs runs the whole-pack round trip as a gate.** Its `charter-service` job already builds charter at the
+  commit in `charter.lock.yaml`. It also runs charter's round trip over every pack there, at that pin, and the job
+  stays required. Until charter publishes `pack-check` ([#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478)),
+  the job runs `./gradlew :packs:driftTest -PopenPacksDir=<the open-packs checkout>` from the pinned charter checkout.
+  After that, it runs `pack-check` from the pinned release, and the Python port of charter's file classification retires.
+  Tracked in [spec-kitty-open-packs#252](https://github.com/spec-kitty/spec-kitty-open-packs/issues/252).
+- **Charter keeps the round trip runnable and complete, and no longer runs it over open-packs.**
+  - Charter owns the test code: the round trip, `OpenPacksDriftTest` and its `-PopenPacksDir` entry point.
+  - The test fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)),
+    so the gate in open-packs cannot pass over a kind silently. #547 lands before the gate's first pin.
+  - `open-packs-drift.yml` is removed once the open-packs gate is required. It is not kept beside the gate.
+- **Drift from charter `main` is watched in open-packs.** A nightly, non-blocking open-packs run against charter `main`
+  takes over what the charter watch did. It files in open-packs on red, and on green proposes the bump of
+  `charter.lock.yaml` ([spec-kitty-open-packs#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)).
+- **The first pin of the gate.** It must hold #545 (the `org-fragment` round trip). Charter after #542 refuses the
+  hand-written manifests of `built-in`, `foundation` and `writing`, so the pull request that moves the lock past #542
+  also regenerates or drops them (spec-kitty-open-packs#250). Charter's model is canonical, so the pack follows it.
 
 ## Context
 
@@ -63,6 +89,9 @@ as [Consequences](#consequences) sets out. The work is planned in
 4. **A drift watch, never a gate.** Charter may keep a nightly, non-blocking run of the round trip over open-packs
    `main` (as ADR-0057 and ADR-0060 do for other slow or external checks). It opens an issue on red and never blocks a
    pull request.
+   *Amended 2026-11-13: the round trip over open-packs content is a gate in open-packs, at its pin. The nightly
+   watch of the other repository moves to open-packs, against charter `main`, and charter's watch is removed once
+   that gate is required (amendment above).*
 5. **The governance sync stays.** `syncPacks` keeps feeding `packs/internal` and `packs/qa` to this repository's own
    governance from the pin; it is not a test input, and its pin may lag a contract change without blocking it.
 

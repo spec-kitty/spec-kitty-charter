@@ -2,7 +2,7 @@
 title: "ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store"
 description: Sanitized-shape rules for artifact kinds; the procedure shape; the structured toolguide guide as a Markdown companion, sent over HTTP as content or a fetched URI.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 decision_status: Proposed, with Amendment 2026-11-05 (ADR-0064); decision 3 superseded by ADR-0052 (2026-11-02)
 decision_date: '2026-10-29'
 type: ADR
@@ -359,7 +359,8 @@ ADR-0039 decision 8 recorded its own:
   does (ADR-0037).
 - A guide is a companion, not a manifest constituent, so no `content_hash` of the derived manifest
   covers a guide edit: a changed guide leaves the manifest unchanged. Whether companions join the
-  constituents is a follow-up for [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110).
+  constituents is a follow-up for [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110). *(#110 kept them
+  out on 2026-11-12: a constituent is one artifact at its own file; see ADR-0042's amendment of that date.)*
 - The migration drops meaning on purpose: an `actor: agent` or `actor: system` step carries no role,
   which reads as "any role may act", so the fact that a system or an agent performs the step is
   lost. ADR-0036 would flag such a loss; the operator ruled it (2026-10-29).

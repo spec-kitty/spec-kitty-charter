@@ -32,11 +32,14 @@ operations:
   getEffectiveActionContext: {switch: ready}
   getEffectiveAgentProfile: {switch: ready}
   getEffectiveArtifact: {switch: ready}
+  getEffectiveAsset: {switch: ready}
+  getEffectiveAssetPayload: {switch: ready}
   getEffectiveGraph: {switch: ready}
   getEffectiveMissionSkeleton: {switch: ready}
   getEffectiveMissionStep: {switch: ready}
   getEffectiveMissionStepContract: {switch: ready}
   getEffectiveMissionType: {switch: ready}
+  getEffectiveSkill: {switch: ready}
   getEffectiveStepPrompt: {switch: ready}
   getOffering: {switch: ready}
   getOpenApiDocument: {switch: ready}
@@ -44,9 +47,13 @@ operations:
   getPackDocument: {switch: ready}
   getPackAgentProfile: {switch: ready}
   getPackArtifact: {switch: ready}
+  getPackAsset: {switch: ready}
+  getPackAssetPayload: {switch: ready}
   getPackMissionSkeleton: {switch: ready}
   getPackMissionStep: {switch: ready}
   getPackMissionType: {switch: ready}
+  getPackPreset: {switch: ready}
+  getPackSkill: {switch: ready}
   getPackRegistration:
     switch: held
     statuses: [500]
@@ -54,8 +61,14 @@ operations:
   getServiceInfo: {switch: ready}
   listActivationPacks: {switch: ready}
   listArtifactReferences: {switch: ready}
+  listEffectiveArtifactReferences: {switch: ready}
   listEffectiveArtifacts: {switch: ready}
+  listEffectiveAssets: {switch: ready}
+  listEffectiveSkills: {switch: ready}
   listPackArtifacts: {switch: ready}
+  listPackAssets: {switch: ready}
+  listPackPresets: {switch: ready}
+  listPackSkills: {switch: ready}
   putPackDirective: {switch: ready}
   putPackParadigm: {switch: ready}
   putPackRelationship: {switch: ready}

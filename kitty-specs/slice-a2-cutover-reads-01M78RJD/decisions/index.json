@@ -1,0 +1,78 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-12T20:53:52.471589Z",
+      "decision_id": "01M78RKM6Q23PA9QAC80QJKQFF",
+      "final_answer": "Writes + offering + built effective reads: the #409 write relations (edit, delete, select, exclude, apply-preset) and offering, plus links to each built effective read (artifacts, graph, skipped, packs). No link to a 501 op; slice C adds prompt.",
+      "input_key": "activation_link_breadth",
+      "mission_id": "01M78RJDSHSFWBXZQDVGBFT70J",
+      "mission_slug": "slice-a2-cutover-reads-01M78RJD",
+      "opened_by": "cli",
+      "options": [
+        "Writes + offering + built effective reads",
+        "Only the #409 writes + offering",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "On an activation (#409), which links should the answer carry beyond self?",
+      "rationale": null,
+      "resolved_at": "2026-11-12T21:02:36.295645Z",
+      "resolved_by": null,
+      "slot_key": "specify.links.activation-relations",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-12T20:53:54.854074Z",
+      "decision_id": "01M78RKPH6W3YT9YRPB98DP102",
+      "final_answer": "artifact_not_found (as agent_profile and procedure); no new CharterRefusalCode values.",
+      "input_key": "absent_asset_skill_code",
+      "mission_id": "01M78RJDSHSFWBXZQDVGBFT70J",
+      "mission_slug": "slice-a2-cutover-reads-01M78RJD",
+      "opened_by": "cli",
+      "options": [
+        "artifact_not_found (as agent_profile and procedure)",
+        "New asset_not_found and skill_not_found",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which refusal code answers an asset or skill the pack (or activation) does not hold?",
+      "rationale": null,
+      "resolved_at": "2026-11-12T21:02:38.820318Z",
+      "resolved_by": null,
+      "slot_key": "specify.refusals.absent-asset-skill",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-12T21:02:41.334667Z",
+      "decision_id": "01M78S3RNPZ5ZFV5AR6H1X6HV1",
+      "final_answer": "Held by the closure: every asset a pack of the activation's closure holds is in force; across levels the same id is a layer override (project over org over built-in, ADR-0053 d6); no selection, deny or cascade applies.",
+      "input_key": "asset_in_force_rule",
+      "mission_id": "01M78RJDSHSFWBXZQDVGBFT70J",
+      "mission_slug": "slice-a2-cutover-reads-01M78RJD",
+      "opened_by": "cli",
+      "options": [
+        "Held by a pack of the closure, layer override picks the winner",
+        "Only when a guard in force names it",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Asset is not an activatable kind. When is an asset in force under an activation, for the asset twins?",
+      "rationale": null,
+      "resolved_at": "2026-11-12T21:14:35.711178Z",
+      "resolved_by": null,
+      "slot_key": "specify.assets.in-force",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M78RJDSHSFWBXZQDVGBFT70J",
+  "version": 1
+}

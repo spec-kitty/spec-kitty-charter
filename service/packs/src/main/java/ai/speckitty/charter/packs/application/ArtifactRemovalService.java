@@ -54,6 +54,23 @@ import org.springframework.stereotype.Service;
 @Service
 public final class ArtifactRemovalService {
 
+    /**
+     * The kinds a {@code DELETE} removes, in the list order: the kinds listed before the asset and the skill were
+     * (R14 of slice A2). It is its own set, not {@link ArtifactReadService#LISTED}, so listing a kind never opens its
+     * removal: an asset or a skill is listed and read, but its removal is not built (an asset's payload has no removal
+     * rule), so a {@code DELETE} of one is {@link RefusalCode#KIND_NOT_FOUND}, as it was before they were listed.
+     */
+    public static final List<ArtifactKind> REMOVABLE = List.of(
+            ArtifactKind.TACTIC,
+            ArtifactKind.DIRECTIVE,
+            ArtifactKind.STYLEGUIDE,
+            ArtifactKind.PARADIGM,
+            ArtifactKind.TOOLGUIDE,
+            ArtifactKind.PROCEDURE,
+            ArtifactKind.AGENT_PROFILE,
+            ArtifactKind.MISSION_TYPE,
+            ArtifactKind.MISSION_STEP_CONTRACT);
+
     private final PackRepository packs;
     private final PackRemovalStore store;
     private final WritePolicyGate gate;
@@ -186,13 +203,14 @@ public final class ArtifactRemovalService {
     // ----------------------------------------------------------------------------------------------------------
 
     /**
-     * The artifact's URN once the kind is listed ({@link ArtifactReadService#LISTED}) and the pack holds the artifact; the
-     * not-found code of the path otherwise.
+     * The artifact's URN once the kind is removable ({@link #REMOVABLE}) and the pack holds the artifact; the not-found
+     * code of the path otherwise.
      */
     private static Urn requireHeld(Pack current, PackIdentifier pack, String kindToken, String artifactId) {
-        ArtifactKind kind = ArtifactReadService.listedKind(kindToken)
+        ArtifactKind kind = ArtifactKind.fromToken(kindToken)
+                .filter(REMOVABLE::contains)
                 .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
+                        RefusalCode.KIND_NOT_FOUND, "The service removes no artifact of kind " + kindToken + "."));
         CharterRefusal absent = new CharterRefusal(
                 ArtifactReadService.absentCode(kind),
                 "Pack " + pack.value() + " holds no " + kind.token() + " " + artifactId + ".");

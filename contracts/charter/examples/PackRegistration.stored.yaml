@@ -14,3 +14,5 @@ value:
       templated: true
     doc:
       href: /api/v1/packs/acme-review-pack/doc
+    presets:
+      href: /api/v1/packs/acme-review-pack/presets

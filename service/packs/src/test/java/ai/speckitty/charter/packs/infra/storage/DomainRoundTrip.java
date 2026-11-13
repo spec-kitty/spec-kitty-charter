@@ -40,7 +40,8 @@ import org.jspecify.annotations.Nullable;
  * kind bound in {@link KindBindings}, with every read violation); a second one over the target directory saves the
  * descriptor and each artefact; loading the target is the read-back. Graph shards go through
  * {@link GraphDocumentReader} → {@link PackPolicy#graph} → {@link GraphShardWriter}, keeping the source's
- * {@code generated_by}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
+ * {@code generated_by}; an org fragment ({@code drg/fragment.yaml}, #509) takes the same path in the fragment's shape,
+ * through {@link GraphShardWriter#writeFragment}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
  * <p>A new artefact is written as {@code <id>.<fileToken>.yaml} at the pack root, wherever its source lived, so source
  * and written files are paired by kind and {@code id}. The exception is a kind whose place cannot be derived from its
@@ -77,6 +78,13 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     static final String DESCRIPTOR = "pack-descriptor";
     static final String GRAPH_SHARD = "graph-shard";
+
+    /**
+     * #509: the org fragment, {@code drg/fragment.yaml}, an org pack's DRG document: read and written in the fragment's
+     * shape (nodes by bare id and plural kind), paired by path like a shard. Its {@code enhances} edges are what a step
+     * enhancement's read-back needs, so it is written before the read-back with the shards.
+     */
+    static final String ORG_FRAGMENT = "org-fragment";
     /** The read-back key that stands for every written file when the written pack does not load at all. */
     private static final String READ_BACK_FAILED = "";
 
@@ -112,7 +120,15 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(),
                     Stream.of(
-                            DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST, PACK_DOCUMENT, POLICY))
+                            DESCRIPTOR,
+                            GRAPH_SHARD,
+                            ORG_FRAGMENT,
+                            ASSET_PAYLOAD,
+                            TEMPLATE,
+                            PRESET,
+                            MANIFEST,
+                            PACK_DOCUMENT,
+                            POLICY))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
@@ -182,50 +198,34 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         @Nullable String policyFailure = descriptorFailure == null ? writePolicy(from, to, id) : null;
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
-        // The shards are written before the read-back: the step enhancement rules read the pack's graph documents.
-        Map<String, Outcome> shards = new HashMap<>();
-        kindOf.forEach((path, kind) -> {
-            if (GRAPH_SHARD.equals(kind) && !companions.containsKey(path)) {
-                shards.put(path, shard(name, source, target, path));
-            }
-        });
+        // The shards and the org fragment are written before the read-back: the step enhancement rules read the pack's
+        // graph documents.
+        Map<String, Outcome> shards = shards(name, source, target, kindOf, companions.keySet());
         Loaded reloaded = descriptorFailure == null ? load(to, id) : new Loaded(null, "nothing was written");
-        Map<String, List<String>> readBack = reloaded.pack() == null
-                ? Map.of(READ_BACK_FAILED, List.of("read-back: the written pack does not load: " + reloaded.failure()))
-                : byFile(reloaded.pack().violations(), "read-back: ");
+        Map<String, List<String>> readBack = readBack(reloaded);
         Map<String, String> written = writtenByKindAndId(target);
-        Map<String, List<String>> missingPayloads = pack == null ? Map.of() : missingPayloads(pack);
+        Rewrite rewrite = new Rewrite(
+                source,
+                target,
+                kindOf,
+                sourceIds,
+                pack,
+                assemblyFailure,
+                descriptorFailure,
+                policyFailure,
+                refusals,
+                readBack,
+                written,
+                pack == null ? Map.of() : missingPayloads(pack),
+                shards,
+                reloaded);
         kindOf.forEach((path, kind) -> {
             if (companions.containsKey(path)) {
                 return; // paired below, once its owner's outcome is known
             }
-            if (DESCRIPTOR.equals(kind)) {
-                outcomes.put(
-                        path,
-                        descriptorFailure != null
-                                ? new Refused(descriptorFailure)
-                                : readBackOr(PackFileSet.PACK_YAML, readBack));
-            } else if (missingPayloads.containsKey(path)) {
-                outcomes.put(path, new Refused(String.join("; ", missingPayloads.get(path))));
-            } else if (ARTEFACT_KINDS.contains(kind)) {
-                outcomes.put(
-                        path,
-                        artefact(source, path, kind, refusals, readBack, written, kindOf, sourceIds, assemblyFailure));
-            } else if (GRAPH_SHARD.equals(kind)) {
-                outcomes.put(path, shards.get(path));
-            } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
-                outcomes.put(path, payload(path, kind, pack, assemblyFailure, reloaded));
-            } else if (MANIFEST.equals(kind)) {
-                outcomes.put(path, manifest(source, target, path, written));
-            } else if (PRESET.equals(kind)) {
-                outcomes.put(
-                        path, inPlace(path, "preset", DomainRoundTrip::holdsPreset, pack, assemblyFailure, reloaded));
-            } else if (POLICY.equals(kind)) {
-                outcomes.put(path, policy(target, path, descriptorFailure, policyFailure, readBack));
-            } else if (PACK_DOCUMENT.equals(kind)) {
-                outcomes.put(
-                        path,
-                        inPlace(path, "document", DomainRoundTrip::holdsDocument, pack, assemblyFailure, reloaded));
+            @Nullable Outcome outcome = outcomeOf(path, kind, rewrite);
+            if (outcome != null) {
+                outcomes.put(path, outcome);
             }
         });
         SortedMap<String, WholePackCensus.CompanionFile> writtenCompanions = WholePackCensus.companionsOf(target);
@@ -235,6 +235,95 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             }
         });
         return outcomes;
+    }
+
+    /** Writes every graph shard that is no companion, by its path. */
+    private static Map<String, Outcome> shards(
+            String name, Path source, Path target, Map<String, String> kindOf, Set<String> companionPaths) {
+        Map<String, Outcome> shards = new HashMap<>();
+        kindOf.forEach((path, kind) -> {
+            if (GRAPH_SHARD.equals(kind) && !companionPaths.contains(path)) {
+                shards.put(path, shard(name, source, target, path, Shape.SHARD));
+            } else if (ORG_FRAGMENT.equals(kind) && !companionPaths.contains(path)) {
+                shards.put(path, shard(name, source, target, path, Shape.FRAGMENT));
+            }
+        });
+        return shards;
+    }
+
+    /** The read-back's refusals by file, or the one refusal of a written pack that does not load. */
+    private static Map<String, List<String>> readBack(Loaded reloaded) {
+        return reloaded.pack() == null
+                ? Map.of(READ_BACK_FAILED, List.of("read-back: the written pack does not load: " + reloaded.failure()))
+                : byFile(reloaded.pack().violations(), "read-back: ");
+    }
+
+    /**
+     * What one round trip read and wrote, for judging its files: the source pack as loaded, every failure on the way,
+     * and the written pack as read back.
+     */
+    private record Rewrite(
+            Path source,
+            Path target,
+            Map<String, String> kindOf,
+            Map<String, @Nullable String> sourceIds,
+            @Nullable Pack pack,
+            @Nullable String assemblyFailure,
+            @Nullable String descriptorFailure,
+            @Nullable String policyFailure,
+            Map<String, List<String>> refusals,
+            Map<String, List<String>> readBack,
+            Map<String, String> written,
+            Map<String, List<String>> missingPayloads,
+            Map<String, Outcome> shards,
+            Loaded reloaded) {}
+
+    /** The outcome of a file that is no companion, by its gate kind; none for a kind the round trip does not model. */
+    private @Nullable Outcome outcomeOf(String path, String kind, Rewrite rewrite) {
+        if (DESCRIPTOR.equals(kind)) {
+            return rewrite.descriptorFailure() != null
+                    ? new Refused(rewrite.descriptorFailure())
+                    : readBackOr(PackFileSet.PACK_YAML, rewrite.readBack());
+        } else if (rewrite.missingPayloads().containsKey(path)) {
+            return new Refused(String.join("; ", rewrite.missingPayloads().get(path)));
+        } else if (ARTEFACT_KINDS.contains(kind)) {
+            return artefact(
+                    rewrite.source(),
+                    path,
+                    kind,
+                    rewrite.refusals(),
+                    rewrite.readBack(),
+                    rewrite.written(),
+                    rewrite.kindOf(),
+                    rewrite.sourceIds(),
+                    rewrite.assemblyFailure());
+        } else if (GRAPH_SHARD.equals(kind) || ORG_FRAGMENT.equals(kind)) {
+            return rewrite.shards().get(path);
+        } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
+            return payload(path, kind, rewrite.pack(), rewrite.assemblyFailure(), rewrite.reloaded());
+        } else if (MANIFEST.equals(kind)) {
+            return manifest(rewrite.source(), rewrite.target(), path, rewrite.written());
+        } else if (PRESET.equals(kind)) {
+            return inPlace(
+                    path,
+                    "preset",
+                    DomainRoundTrip::holdsPreset,
+                    rewrite.pack(),
+                    rewrite.assemblyFailure(),
+                    rewrite.reloaded());
+        } else if (POLICY.equals(kind)) {
+            return policy(
+                    rewrite.target(), path, rewrite.descriptorFailure(), rewrite.policyFailure(), rewrite.readBack());
+        } else if (PACK_DOCUMENT.equals(kind)) {
+            return inPlace(
+                    path,
+                    "document",
+                    DomainRoundTrip::holdsDocument,
+                    rewrite.pack(),
+                    rewrite.assemblyFailure(),
+                    rewrite.reloaded());
+        }
+        return null;
     }
 
     // ---- companions (ADR-0039, #194) ------------------------------------------------------------
@@ -594,9 +683,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!misplaced.isEmpty()) {
             return new Refused(String.join("; ", misplaced));
         }
-        Map<String, String> pairing = pairing(good.value(), target, written);
+        // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses, and
+        // the gate writes the derived lists, in path order, as the store's write does.
+        PackManifestDso derived = ManifestMembership.derivedAt(source, new WholePackStore(strategy));
+        List<String> membership = ManifestMembership.mismatch(good.value(), derived);
+        if (!membership.isEmpty()) {
+            return new Refused(String.join("; ", membership));
+        }
+        Map<String, String> pairing = pairing(derived, target, written);
         PackManifests.Recomputed recomputed = PackManifests.recompute(
-                good.value(),
+                derived,
                 listed -> pairing.containsKey(listed)
                         ? FilesystemPackStore.readBytes(target.resolve(pairing.get(listed)))
                         : Optional.empty());
@@ -696,10 +792,11 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     // ---- graph shards --------------------------------------------------------------------------
 
-    private static Outcome shard(String name, Path source, Path target, String path) {
+    private static Outcome shard(String name, Path source, Path target, String path, Shape shape) {
+        String noun = shape == Shape.FRAGMENT ? "fragment" : "shard";
         String text = read(source.resolve(path));
-        if (!(GraphDocumentReader.read(text, Shape.SHARD, path) instanceof FileRead.Read<RawGraph> raw)) {
-            return new Refused("the shard does not read");
+        if (!(GraphDocumentReader.read(text, shape, path) instanceof FileRead.Read<RawGraph> raw)) {
+            return new Refused("the " + noun + " does not read");
         }
         PackPolicy.GraphBuild build = PackPolicy.graph(name, raw.value());
         if (!build.findings().isEmpty()) {
@@ -708,17 +805,24 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         @Nullable String generatedBy = Yaml.load(text) instanceof Map<?, ?> document && document.get("generated_by") != null
                 ? String.valueOf(document.get("generated_by"))
                 : null;
-        String writtenText = GraphShardWriter.write(build.graph(), generatedBy);
+        String writtenText;
+        try {
+            writtenText = shape == Shape.FRAGMENT
+                    ? GraphShardWriter.writeFragment(build.graph())
+                    : GraphShardWriter.write(build.graph(), generatedBy);
+        } catch (IllegalArgumentException e) {
+            return new Refused("the " + noun + " cannot be written: " + e.getMessage());
+        }
         write(target.resolve(path), writtenText);
-        if (!(GraphDocumentReader.read(writtenText, Shape.SHARD, path) instanceof FileRead.Read<RawGraph> reread)) {
-            return new Refused("read-back: the written shard does not read");
+        if (!(GraphDocumentReader.read(writtenText, shape, path) instanceof FileRead.Read<RawGraph> reread)) {
+            return new Refused("read-back: the written " + noun + " does not read");
         }
         PackPolicy.GraphBuild rebuilt = PackPolicy.graph(name, reread.value());
         if (!rebuilt.findings().isEmpty()) {
-            return new Refused("read-back: the written shard does not build: " + rebuilt.findings());
+            return new Refused("read-back: the written " + noun + " does not build: " + rebuilt.findings());
         }
         if (!sameGraph(build.graph(), rebuilt.graph())) {
-            return new Refused("read-back: the written shard builds into another graph");
+            return new Refused("read-back: the written " + noun + " builds into another graph");
         }
         return new Written(path);
     }

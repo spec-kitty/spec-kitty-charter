@@ -71,7 +71,7 @@ public final class GraphShardWriter {
             nodes.add(out);
         }
         root.put("nodes", nodes);
-        root.put("edges", edges(graph, true));
+        root.put("edges", edges(graph));
         return dump(root);
     }
 
@@ -82,8 +82,8 @@ public final class GraphShardWriter {
      *
      * @param graph the graph to write
      * @return the fragment's YAML text
-     * @throws IllegalArgumentException when a node has provenance or tags, or an edge has a condition, none of which a
-     *     fragment can hold
+     * @throws IllegalArgumentException when a node has provenance or tags, neither of which a fragment's node can hold;
+     *     a fragment's edge holds a {@code when} as a shard's does (the org-fragment schema's {@code _OrgDRGEdge}, #509)
      */
     public static String writeFragment(DoctrineGraph graph) {
         List<Object> nodes = new ArrayList<>();
@@ -99,23 +99,16 @@ public final class GraphShardWriter {
         }
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("nodes", nodes);
-        root.put("edges", edges(graph, false));
+        root.put("edges", edges(graph));
         return dump(root);
     }
 
     /** The relationships, then the tensions; edges are a set, so the order carries no meaning (ADR-0036). */
-    private static List<Object> edges(DoctrineGraph graph, boolean conditionAllowed) {
+    private static List<Object> edges(DoctrineGraph graph) {
         List<Object> edges = new ArrayList<>();
         for (Relationship relationship : graph.relationships()) {
             DrgEdge edge = RelationshipMapper.toDso(relationship);
-            edges.add(edge(
-                    edge.source(),
-                    edge.target(),
-                    edge.relation(),
-                    edge.impacts(),
-                    edge.when(),
-                    edge.reason(),
-                    conditionAllowed));
+            edges.add(edge(edge.source(), edge.target(), edge.relation(), edge.impacts(), edge.when(), edge.reason()));
         }
         for (Tension tension : graph.tensions()) {
             edges.add(edge(
@@ -124,8 +117,7 @@ public final class GraphShardWriter {
                     PackPolicy.TENSION,
                     Optional.empty(),
                     tension.when(),
-                    tension.rationale(),
-                    conditionAllowed));
+                    tension.rationale()));
         }
         return edges;
     }
@@ -136,12 +128,7 @@ public final class GraphShardWriter {
             String relation,
             Optional<Double> impacts,
             Optional<String> when,
-            Optional<String> reason,
-            boolean conditionAllowed) {
-        if (!conditionAllowed && when.isPresent()) {
-            throw new IllegalArgumentException(
-                    "a fragment cannot hold the 'when' of the " + relation + " edge " + source + " -> " + target);
-        }
+            Optional<String> reason) {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("source", source);
         out.put("target", target);

@@ -107,27 +107,29 @@ final class GeneratedPackTree {
 
     /** The loaded kinds, spelled as the file names spell them. */
     enum Kind {
-        TACTIC("tactic"),
-        DIRECTIVE("directive"),
-        STYLEGUIDE("styleguide"),
-        TOOLGUIDE("toolguide"),
-        PARADIGM("paradigm"),
-        AGENT_PROFILE("agent"),
-        MISSION_STEP_CONTRACT("step-contract"),
-        GLOSSARY_PACK("glossary-pack"),
-        SKILL("skill"),
-        PROCEDURE("procedure"),
-        MISSION_TYPE("mission-type"),
-        GUARD("guard"),
-        LIFECYCLE("lifecycle"),
-        STEP_ENHANCEMENT("step-enhancement"),
+        TACTIC("tactic", "t-"),
+        DIRECTIVE("directive", "D-"),
+        STYLEGUIDE("styleguide", "s-"),
+        TOOLGUIDE("toolguide", "tg-"),
+        PARADIGM("paradigm", "p-"),
+        AGENT_PROFILE("agent", "ap-"),
+        MISSION_STEP_CONTRACT("step-contract", "msc-"),
+        GLOSSARY_PACK("glossary-pack", "gp-"),
+        SKILL("skill", "sk-"),
+        PROCEDURE("procedure", "pr-"),
+        MISSION_TYPE("mission-type", "mt-"),
+        GUARD("guard", "g-"),
+        LIFECYCLE("lifecycle", "lc-"),
+        STEP_ENHANCEMENT("step-enhancement", "se-"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
-        ASSET("asset");
+        ASSET("asset", "a-");
 
         private final String token;
+        private final String idPrefix;
 
-        Kind(String token) {
+        Kind(String token, String idPrefix) {
             this.token = token;
+            this.idPrefix = idPrefix;
         }
 
         String token() {
@@ -519,6 +521,30 @@ final class GeneratedPackTree {
 
     private Planted plantLoaded(Pack pack, Shape shape, Kind wanted) throws IOException {
         int n = ++counter;
+        Kind kind = plantedKind(shape, wanted);
+        String stem = stemIsId(kind) ? idOf(kind, n) : "e" + n;
+        String path = switch (kind) {
+            case MISSION_TYPE -> "missions/" + stem + "/" + stem + ".mission-type.yaml";
+            case GUARD -> "guards/" + stem + ".guard.yaml";
+            case LIFECYCLE -> "lifecycles/" + stem + ".lifecycle.yaml";
+            case STEP_ENHANCEMENT -> "missions/t" + n + "/enhancements/" + stem + ".step-enhancement.yaml";
+            default -> loadedPath(shape, stem, kind);
+        };
+        boolean valid =
+                pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;
+        String id = idOf(kind, n);
+        String content = valid ? validContent(pack, shape, kind, stem, id) : MALFORMED;
+        Path file = write(pack, path, content);
+        if (valid) {
+            plantCompanion(file, kind, id);
+        }
+        Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
+        remember(pack, shape, planted);
+        return planted;
+    }
+
+    /** The kind planted for a wanted one: a tactic stands in where the wanted kind cannot sit in the shape. */
+    private static Kind plantedKind(Shape shape, Kind wanted) {
         // A procedure's id is its file stem (ADR-0043 S1), and the id cannot hold a dot: a procedure is planted under
         // its id, and never in a shape whose stem holds a dot (a hidden or a config stem), where a tactic stands in.
         boolean dottedStem = shape == Shape.LOADED_HIDDEN_STEM || shape == Shape.LOADED_CONFIG_STEM;
@@ -531,50 +557,42 @@ final class GeneratedPackTree {
                 || wanted == Kind.GUARD
                 || wanted == Kind.LIFECYCLE
                 || wanted == Kind.STEP_ENHANCEMENT;
-        Kind kind = (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
+        return (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
                 ? Kind.TACTIC
                 : wanted;
-        boolean stemIsId = kind == Kind.PROCEDURE
+    }
+
+    private static boolean stemIsId(Kind kind) {
+        return kind == Kind.PROCEDURE
                 || kind == Kind.MISSION_TYPE
                 || kind == Kind.GUARD
                 || kind == Kind.LIFECYCLE
                 || kind == Kind.STEP_ENHANCEMENT;
-        String stem = stemIsId ? idOf(kind, n) : "e" + n;
-        String path = switch (kind) {
-            case MISSION_TYPE -> "missions/" + stem + "/" + stem + ".mission-type.yaml";
-            case GUARD -> "guards/" + stem + ".guard.yaml";
-            case LIFECYCLE -> "lifecycles/" + stem + ".lifecycle.yaml";
-            case STEP_ENHANCEMENT -> "missions/t" + n + "/enhancements/" + stem + ".step-enhancement.yaml";
-            default -> loadedPath(shape, stem, kind);
-        };
-        boolean valid =
-                pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;
-        String id = idOf(kind, n);
-        String content = MALFORMED;
-        if (valid && kind == Kind.ASSET) {
-            String payload = directories(2) + stem + ".bin";
-            plantPayload(pack, shape, PackFileSet.ASSETS + payload);
-            content = sidecar(id, payload);
-        } else if (valid) {
-            content = contentOf(kind, id);
+    }
+
+    /** A valid file's content; an asset's sidecar names the payload planted with it. */
+    private String validContent(Pack pack, Shape shape, Kind kind, String stem, String id) throws IOException {
+        if (kind != Kind.ASSET) {
+            return contentOf(kind, id);
         }
-        Path file = write(pack, path, content);
-        if (valid && kind == Kind.TOOLGUIDE) {
-            // A toolguide's guide companion (#194), beside it; part of the toolguide's row, not a shape of its own.
+        String payload = directories(2) + stem + ".bin";
+        plantPayload(pack, shape, PackFileSet.ASSETS + payload);
+        return sidecar(id, payload);
+    }
+
+    /** A valid file's companion, beside it, if its kind has one; part of the file's row, not a shape of its own. */
+    private static void plantCompanion(Path file, Kind kind, String id) throws IOException {
+        if (kind == Kind.TOOLGUIDE) {
+            // A toolguide's guide companion (#194).
             Files.writeString(file.resolveSibling(id + ".guide.md"), TOOLGUIDE_GUIDE, StandardCharsets.UTF_8);
-        }
-        if (valid && kind == Kind.STEP_ENHANCEMENT) {
-            // The enhancement's fragment companion (ADR-0066), beside it; part of its row, not a shape of its own. The
-            // plant holds no enhances edge: one tree holds no base pack to qualify a target with, and the digest
-            // oracle reads files, not edges. It is LOADED for listing purposes only: under the edge rules a
-            // registration or load would refuse it (EDGE_COUNT), so the verdict says it is listed and digested, not
-            // that the pack it sits in would register.
+        } else if (kind == Kind.STEP_ENHANCEMENT) {
+            // The enhancement's fragment companion (ADR-0066). The plant holds no enhances edge: one tree holds no
+            // base pack to qualify a target with, and the digest oracle reads files, not edges. It is LOADED for
+            // listing purposes only: under the edge rules a registration or load would refuse it (EDGE_COUNT), so the
+            // verdict says it is listed and digested, not that the pack it sits in would register.
             Files.writeString(
                     file.resolveSibling(id + ".prompt-fragment.md"), ENHANCEMENT_FRAGMENT, StandardCharsets.UTF_8);
         }
-        Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
-        remember(pack, shape, planted);
-        return planted;
     }
 
     /**
@@ -711,19 +729,65 @@ final class GeneratedPackTree {
 
     private String decoyPath(Shape shape, String stem) {
         return switch (shape) {
+            case GRAPH_ROOT,
+                    GRAPH_HIDDEN_ROOT,
+                    GRAPH_FRAGMENT,
+                    MANIFEST,
+                    RETIRED_PACK_DOCUMENT,
+                    RETIRED_ORG_CHARTER,
+                    DECOY_NOTES,
+                    DECOY_SUB_R,
+                    DECOY_SUB_CHARTER,
+                    DECOY_SUB_PACK,
+                    DECOY_SUB_PACK_DOCUMENT,
+                    DECOY_NESTED_SHARD,
+                    DECOY_NESTED_FRAGMENT -> fixedDecoyPath(shape);
+            case DECOY_YML,
+                    DECOY_UPPER_EXTENSION,
+                    DECOY_UPPER_KIND,
+                    DECOY_BAK,
+                    DECOY_KIND_THEN_CONFIG,
+                    DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + decoySuffix(shape);
+            default -> payloadPath(shape, stem);
+        };
+    }
+
+    /** The path of a shape planted at one fixed place. */
+    private static String fixedDecoyPath(Shape shape) {
+        return switch (shape) {
             case GRAPH_ROOT -> "a.graph.yaml";
             case GRAPH_HIDDEN_ROOT -> ".b.graph.yaml";
             case GRAPH_FRAGMENT -> "drg/fragment.yaml";
             case MANIFEST -> PackFileSet.MANIFEST;
             case RETIRED_PACK_DOCUMENT -> "pack.md";
             case RETIRED_ORG_CHARTER -> "org-charter.yaml";
-            case DECOY_YML -> directories(2) + stem + ".tactic.yml";
-            case DECOY_UPPER_EXTENSION -> directories(2) + stem + ".tactic.YAML";
-            case DECOY_UPPER_KIND -> directories(2) + stem + ".TACTIC.yaml";
-            case DECOY_BAK -> directories(2) + stem + ".tactic.yaml.bak";
-            case DECOY_KIND_THEN_CONFIG -> directories(2) + stem + ".tactic.config.yaml";
             case DECOY_NOTES -> "notes.yaml";
             case DECOY_SUB_R -> "sub/r.yaml";
+            case DECOY_SUB_CHARTER -> "sub/charter.yaml";
+            case DECOY_SUB_PACK -> "sub/pack.yaml";
+            case DECOY_SUB_PACK_DOCUMENT -> "sub/pack.md";
+            case DECOY_NESTED_SHARD -> "sub/y.graph.yaml";
+            case DECOY_NESTED_FRAGMENT -> "sub/drg/fragment.yaml";
+            default -> throw new IllegalArgumentException(shape + " has no file path");
+        };
+    }
+
+    /** What follows the stem of a decoy planted under zero to two directories outside the payload roots. */
+    private static String decoySuffix(Shape shape) {
+        return switch (shape) {
+            case DECOY_YML -> ".tactic.yml";
+            case DECOY_UPPER_EXTENSION -> ".tactic.YAML";
+            case DECOY_UPPER_KIND -> ".TACTIC.yaml";
+            case DECOY_BAK -> ".tactic.yaml.bak";
+            case DECOY_KIND_THEN_CONFIG -> ".tactic.config.yaml";
+            case DECOY_PAYLOAD_OUTSIDE_ASSETS -> ".png";
+            default -> throw new IllegalArgumentException(shape + " has no file path");
+        };
+    }
+
+    /** The path of a shape planted under the payload roots, or a mission's templates. */
+    private String payloadPath(Shape shape, String stem) {
+        return switch (shape) {
             case PAYLOAD_UNNAMED -> PackFileSet.ASSETS + directories(2) + stem + ".config.yaml";
             case PAYLOAD_NESTED -> PackFileSet.ASSETS + "a/b/" + stem + ".png";
             case TEMPLATE_TOP -> PackFileSet.TEMPLATES + directories(2) + stem + ".md";
@@ -734,12 +798,6 @@ final class GeneratedPackTree {
             // A mission type's template is a template payload (#194, ADR-0044); without a type directory it is no file.
             case TEMPLATE_MISSION -> "missions/m/templates/" + directories(1) + stem + ".md";
             case DECOY_MISSION_TEMPLATE -> "missions/templates/" + stem + ".md";
-            case DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + ".png";
-            case DECOY_SUB_CHARTER -> "sub/charter.yaml";
-            case DECOY_SUB_PACK -> "sub/pack.yaml";
-            case DECOY_SUB_PACK_DOCUMENT -> "sub/pack.md";
-            case DECOY_NESTED_SHARD -> "sub/y.graph.yaml";
-            case DECOY_NESTED_FRAGMENT -> "sub/drg/fragment.yaml";
             default -> throw new IllegalArgumentException(shape + " has no file path");
         };
     }
@@ -775,26 +833,26 @@ final class GeneratedPackTree {
     // ---- content -------------------------------------------------------------------------------------------------
 
     private static String idOf(Kind kind, int n) {
-        return switch (kind) {
-            case TACTIC -> "t-" + n;
-            case DIRECTIVE -> "D-" + n;
-            case STYLEGUIDE -> "s-" + n;
-            case TOOLGUIDE -> "tg-" + n;
-            case PARADIGM -> "p-" + n;
-            case AGENT_PROFILE -> "ap-" + n;
-            case MISSION_STEP_CONTRACT -> "msc-" + n;
-            case GLOSSARY_PACK -> "gp-" + n;
-            case SKILL -> "sk-" + n;
-            case PROCEDURE -> "pr-" + n;
-            case MISSION_TYPE -> "mt-" + n;
-            case GUARD -> "g-" + n;
-            case LIFECYCLE -> "lc-" + n;
-            case STEP_ENHANCEMENT -> "se-" + n;
-            case ASSET -> "a-" + n;
-        };
+        return kind.idPrefix + n;
     }
 
     private static String contentOf(Kind kind, String id) {
+        return switch (kind) {
+            case TACTIC,
+                    DIRECTIVE,
+                    STYLEGUIDE,
+                    TOOLGUIDE,
+                    PARADIGM,
+                    AGENT_PROFILE,
+                    MISSION_STEP_CONTRACT,
+                    GLOSSARY_PACK,
+                    SKILL -> doctrineContentOf(kind, id);
+            case PROCEDURE, MISSION_TYPE, GUARD, LIFECYCLE, STEP_ENHANCEMENT -> missionContentOf(kind, id);
+            case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
+        };
+    }
+
+    private static String doctrineContentOf(Kind kind, String id) {
         return switch (kind) {
             case TACTIC -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsteps:\n  - title: S\n";
             case DIRECTIVE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nintent: I\nenforcement: advisory\n";
@@ -816,6 +874,12 @@ final class GeneratedPackTree {
             case SKILL ->
                 "id: " + id
                         + "\nschema_version: '1.0'\ntitle: T\ndescription: D\nform: wrapper\nexpands_to:\n  target: builtin:x\n";
+            default -> throw new IllegalArgumentException(kind + " is not a doctrine kind");
+        };
+    }
+
+    private static String missionContentOf(Kind kind, String id) {
+        return switch (kind) {
             case PROCEDURE ->
                 "schema_version: '1.0'\nid: " + id
                         + "\ntitle: T\ndescription: D\nentry_condition: E\nexit_condition: X\nsteps:\n  - title: S\n";
@@ -831,7 +895,7 @@ final class GeneratedPackTree {
             case STEP_ENHANCEMENT ->
                 "schema_version: '1.0'\nid: " + id + "\nprompt_fragments:\n  - slot: spdd:slot\n    path: " + id
                         + ".prompt-fragment.md\n";
-            case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
+            default -> throw new IllegalArgumentException(kind + " is not a mission kind");
         };
     }
 

@@ -1,0 +1,34 @@
+title: SkillList
+description: >-
+  The skills of one of two trees, in id order and unpaged, deliberately, because a pack holds few skills (paging it
+  later would be an additive change); a tree with none answers an empty list. In a pack (listPackSkills): every skill
+  the pack holds, and _links holds self. Under an activation (listEffectiveSkills): the skill winners of the
+  activation's closure, the copy of each id the layer merge keeps across the levels (project over org over built-in),
+  and _links holds self and up (the activation).
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The pack's skills, or the closure's skill winners, in id order.
+    items:
+      $ref: SkillSummary.yaml
+    x-derived:
+      rule: >-
+        In a pack, the skills of the pack; under an activation, the layer-merge winner of each skill id the packs of
+        the closure hold. Sorted by id.
+      inputs:
+        - the skill files under the skills/ directory of the pack
+        - under an activation, the activation's closure (listActivationPacks) and its layer merge
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: >-
+    In a pack, the skills the service holds for the pack; under an activation, the skill winners of the closure.
+    Read inside one verified read.
+  inputs:
+    - the skill files under the skills/ directory of the pack
+    - under an activation, the activation's closure (listActivationPacks) and its layer merge

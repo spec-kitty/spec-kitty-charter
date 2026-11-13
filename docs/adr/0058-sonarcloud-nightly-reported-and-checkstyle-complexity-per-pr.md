@@ -180,5 +180,5 @@ the stronger signal.
 - [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) — refactor the existing
   over-limit methods; a prerequisite of the complexity gate
 - [#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) and [#372](https://github.com/spec-kitty/spec-kitty-charter/issues/372) — the complexity gate and the nightly scan
-- `.github/workflows/mutation-nightly.yml` — the local nightly, report-only shape (*2026-11-06: amended by [ADR-0062](/adr/0062-nightly-mutation-floor/): the mutation nightly now turns red below a floor; it still gates no pull request.*)
+- `.github/workflows/mutation-testing.yml` (`mutation-nightly.yml` until 2026-11-12) — the local nightly, report-only shape (*2026-11-06: amended by [ADR-0062](/adr/0062-nightly-mutation-floor/): the mutation nightly now turns red below a floor; it still gates no pull request.*)
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — mutation floors

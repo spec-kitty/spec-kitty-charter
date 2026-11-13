@@ -1,0 +1,8 @@
+{
+  "event": "completed",
+  "invocation_id": "01M78KRYD8EWWZ57FNW3T1Q7RA",
+  "completed_at": "2026-11-12T20:54:39.917743+00:00",
+  "outcome": "done",
+  "closed_by": "agent",
+  "evidence_ref": "/tmp/claude-0/-home-user-spec-kitty-charter/e4095dbe-febb-51b5-9c9c-9058b4148401/scratchpad/op-evidence.md"
+}

@@ -185,7 +185,7 @@ An agent profile: a named specialist who fills one primary role and optionally a
 
 ## Profile selection
 
-How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin overrides the choice for its role.
+How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin narrows the candidates to the pinned profile and its specializations, and settles a tie it is part of; any other tie returns every equal candidate.
 
 **Meta:**
 
@@ -195,7 +195,7 @@ How the service picks the profile for a step: role fit first (primary role beats
 
 ## Profile tie
 
-Two or more equally fitting profiles after profile selection. There is no hidden tie-break; whether the service returns all candidates for the client to choose, or picks one at random with a warning, is still open (ADR-0032).
+Two or more equally fitting profiles after profile selection. There is no hidden tie-break: when the pinned profile is among them, it is the answer; otherwise the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decisions 8 and 9).
 
 **Meta:**
 
@@ -215,7 +215,7 @@ What a mission step asks for and a profile fills, such as implementer, reviewer 
 
 ## Role pin
 
-A derived pack's setting that fixes the profile filling a role: every step asking for that role gets the pinned profile, whatever the mission type. Profiles that specialize the pinned one also fit. Role pins, role locks and other integrity settings live in a policy file at the pack root.
+A derived pack's setting that narrows the profiles filling a role to the pinned profile and the profiles that specialize it, before the selection order runs; the pinned profile wins a tie it is part of. Every step asking for that role is served from that narrowed set, whatever the mission type. Role pins, role locks and other integrity settings live in a policy file at the pack root.
 
 **Meta:**
 

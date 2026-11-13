@@ -8,6 +8,54 @@ class MutationFloorsTest {
 
     private val kernel = MutationFloors.Group("kernel", listOf("ai.speckitty.charter.kernel"), emptyList(), 65)
 
+    private val packs = listOf(
+        MutationFloors.Group(
+            "domain+application",
+            listOf("ai.speckitty.charter.packs.application", "ai.speckitty.charter.packs.domain"),
+            listOf("ai.speckitty.charter.packs.application.config"),
+            85,
+        ),
+        MutationFloors.Group("infra.storage", listOf("ai.speckitty.charter.packs.infra.storage"), emptyList(), 85),
+        MutationFloors.Group(
+            "infra.fetch",
+            listOf("ai.speckitty.charter.packs.infra.fetch"),
+            listOf("ai.speckitty.charter.packs.infra.fetch.config"),
+            70,
+        ),
+    )
+
+    @Test
+    fun aShardMutatesAndScoresOnlyItsGroupsInTheModulesOrder() {
+        val shard = MutationFloors.shard(":packs", " infra.fetch , domain+application", packs)
+
+        assertThat(shard.groups.map { it.name }).containsExactly("domain+application", "infra.fetch")
+        assertThat(shard.name).isEqualTo("domain-application_infra.fetch")
+        assertThat(shard.targetClasses).containsExactlyInAnyOrder(
+            "ai.speckitty.charter.packs.application.*",
+            "ai.speckitty.charter.packs.domain.*",
+            "ai.speckitty.charter.packs.infra.fetch.*",
+        )
+        assertThat(shard.excludedClasses).containsExactlyInAnyOrder(
+            "ai.speckitty.charter.packs.application.config.*",
+            "ai.speckitty.charter.packs.infra.fetch.config.*",
+        )
+        // A package PIT mutates that no floor group holds would be dropped by every shard: refused, never silent.
+        assertThat(MutationFloors.unheldTargets(shard.targetClasses, packs)).isEmpty()
+        // A broad pattern is not held by a group that covers only part of it.
+        assertThat(MutationFloors.unheldTargets(setOf("ai.speckitty.charter.packs.infra.*"), listOf(packs[1]))).isNotEmpty()
+        val mutated = shard.targetClasses + "ai.speckitty.charter.packs.infra.archive.*"
+        assertThatThrownBy { MutationFloors.requireTargetsHeld(":packs", mutated, packs) }
+            .hasMessageContaining(":packs: PIT mutates ai.speckitty.charter.packs.infra.archive.*, which no floor group holds")
+    }
+
+    @Test
+    fun aMisspeltOrEmptyShardFailsInsteadOfWideningOrNarrowing() {
+        assertThatThrownBy { MutationFloors.shard(":packs", "infra.storage,infra.fecth", packs) }
+            .hasMessageContaining(":packs: -PmutationGroups names infra.fecth, which are not among its floor groups")
+        assertThatThrownBy { MutationFloors.shard(":packs", " , ", packs) }
+            .hasMessageContaining(":packs: -PmutationGroups names no floor group")
+    }
+
     @Test
     fun aRawLessThanInADescriptionDoesNotStopTheReading() {
         val parsed = MutationFloors.parse(report(killed = 2, survived = 1, noCoverage = 1))
@@ -71,6 +119,10 @@ class MutationFloorsTest {
         assertThat(MutationFloors.failures(":kernel", listOf(result))).containsExactly(
             ":kernel kernel: mutation score 64.0 % is below its floor 65 % (#239, ADR-0062)",
         )
+        // A mutant outside every group fails the check too, whatever the module's PIT targets say.
+        val stray = mutations(mutation("ai.speckitty.charter.other.C\$D", "KILLED"))
+        assertThat(MutationFloors.evaluate(":kernel", "r", stray, listOf(kernel)).failures)
+            .anyMatch { it.contains(":kernel: PIT mutated ai.speckitty.charter.other.C, which no floor group holds") }
     }
 
     @Test

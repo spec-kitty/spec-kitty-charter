@@ -31,9 +31,13 @@ another option in its place, exits 2 with the usage text.
 
 ## What it does
 
-1. **Packs, as pinned.** `packs/built-in` is extracted with `git archive` at the pin into `<config-root>/packs/`. The
-   git tree of the copy is computed in a scratch repository and must equal `git rev-parse HEAD:packs/built-in`.
-   `built-in` is never edited. The service starts with registration and the filesystem pack source on, a random
+1. **Packs, as pinned.** Since open-packs split `built-in` (open-packs #73), `built-in` aggregates bundles through
+   `depends_on` and holds no artifact of its own. The run reads the pin's `pack.yaml` files and configures the
+   `depends_on` closure of `built-in`, of the pack that holds the profile (`java` for `java-jenny`), of the pack that
+   holds the mission type (`foundation` for `software-dev`) and of each `--packs` pack's dependencies, less the `--packs`
+   packs, which are registered instead. Each is extracted with `git archive` at the pin into `<config-root>/packs/`; the
+   git tree of each copy is computed in a scratch repository and must equal `git rev-parse HEAD:packs/<dir>`. No pack is
+   edited. The service starts with registration and the filesystem pack source on, a random
    token (passed in the environment, and to curl through an options file) and port 0.
 2. **Registration.** Each pack of `--packs` goes through `POST /packs` with a filesystem source, under the name its
    `pack.yaml` declares (the registration requires `packId` to equal it: `internal` is `spec-kitty-internal`). A pack
@@ -43,14 +47,14 @@ another option in its place, exits 2 with the usage text.
    Since slice B (#466) the service refuses `pack.md`, `PROVENANCE.md` and `org-charter.yaml` by name, as
    `retired`, and excludes Markdown no rule models. A `pack.yaml` that still declares `active_charter` is refused as
    unreadable (`pack_unreadable` at `pack`); the detail names the undeclared key, and the pack's other faults show
-   only once the key is removed. The registration hops pass once spec-kitty-open-packs applies
-   spec-kitty/spec-kitty-open-packs#241 (the README as the pack document) and spec-kitty/spec-kitty-open-packs#242 (the org
-   charter as a governing preset) and the pin moves past them; until then they fail, naming the retired files.
+   only once the key is removed. The registration hops pass from the pin `1692a3b`,
+   which carries spec-kitty/spec-kitty-open-packs#241 (the README as the pack document) and
+   spec-kitty/spec-kitty-open-packs#242 (the org charter as a governing preset).
 3. **The activation document.** `charter-to-activation.py` turns `.kittify/charter/charter.yaml` into an activation
    document and adds the profile. It maps the directive slugs to the ids the service holds
    (`001-project-intent-directive` is `PROJECT_001`).
 4. **The walk** (hop ids in the output):
-   - pack-scoped: root `artifacts` (`packId=built-in`, `kind=agent_profile`) → the profile's list item `self` → body and
+   - pack-scoped: root `artifacts` (`packId=` the pack holding the profile, `kind=agent_profile`) → the profile's list item `self` → body and
      `governance` → each held entry's `artifact`;
    - under the activation: root `activations` (method POST, the document) → the answer's `self` (A3) →
      that activation's `artifacts` (A4, `kind=agent_profile`, `{?kind,state}`) → the profile's item `effective-artifact` → body and `governance` → each
@@ -66,7 +70,7 @@ another option in its place, exits 2 with the usage text.
    the summary lists the counts by kind, and the `RESULT` line carries their total as `unlinked=<n>`. Entries with
    `held=false` have no pack and are counted in the walk line.
 
-   - mission type, pack-scoped (#99): root `artifacts` (`packId=built-in`, `kind=mission_type`) → the `software-dev`
+   - mission type, pack-scoped (#99): root `artifacts` (`packId=` the pack holding the type, `kind=mission_type`) → the `software-dev`
      list item `self` → each step's `self` (13: 8 in sequence, in order, and 5 on demand) → each step's `step-contract`
      where present (exactly 5: specify, plan, tasks, implement, review) → each expected output's `skeleton` (exactly 2:
      specify → `spec-template.md`, plan → `plan-template.md`) → each listed skeleton's `self` (4);
@@ -115,7 +119,7 @@ and exits 1.
 | `1` | A hop failed, an assertion failed or a p95 was too high. The summary lists them. This is the code of the red baseline. |
 | `2` | Usage or prerequisite error: an option without its value, an unknown option, a missing tool, no checkout, or a checkout that is not at the pin. |
 | `3` | The service could not be built or did not start. |
-| `4` | The packs could not be provisioned: the copy of `built-in` differs from the pin, or a pack is missing. |
+| `4` | The packs could not be provisioned: a configured pack's copy differs from the pin, a pack is missing, or the profile or mission type is not held by exactly one pack. |
 | `130`, `143` | Interrupted. The service is stopped unless `--keep` is given. |
 
 With `--keep`, the stop hint is printed before the last line. The last line is `RESULT PASS|FAIL hops=<ok>/<all> failed=<n> workarounds=<n> unheld=<n> unlinked=<n> p95=<pack>/<activation>ms client=<8>[-dirty] [jar=<12>|service=unknown] pin=<8>`.

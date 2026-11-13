@@ -32,10 +32,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -53,11 +56,17 @@ class RegistrationJobsTest {
     private static final Origin ORIGIN =
             new Origin("worktree-1", Credential.WORKTREE_TOKEN, "registerPackFromArchive", "archive", "");
 
-    private final List<RegistrationJobs> opened = new ArrayList<>();
+    private final List<Harness> opened = new ArrayList<>();
 
+    /**
+     * Lets every held worker go before closing: a test that failed while a worker waited on a gate, the audit or the
+     * clock would otherwise keep {@code close()} waiting out its 30 s grace, and under PIT turn a killed mutant into a
+     * timed-out one (#461). A mutant that breaks the shutdown itself still hangs {@code close()}.
+     */
     @AfterEach
     void closeTheJobs() {
-        opened.forEach(RegistrationJobs::close);
+        opened.forEach(Harness::releaseEveryHold);
+        opened.forEach(harness -> harness.jobs.close());
     }
 
     // ---- the limits --------------------------------------------------------------------------------------------
@@ -640,6 +649,19 @@ class RegistrationJobsTest {
         for (int i = 1; i <= 4; i++) {
             waiting.add(h.start("pack-" + i, Preconditions.none(), h.stage(h.pack("pack-" + i, "1.0.0"))));
         }
+        // The two workers stay held until close() has refused all four jobs, then wake inside close()'s grace and must
+        // neither run a refused job nor write anything. Left held, they would keep close() waiting out its whole 30 s
+        // grace on every run, and under PIT on every mutant this test covers (#461).
+        Thread releaser = new Thread(() -> {
+            h.await(() -> waiting.stream()
+                    .allMatch(reservation -> h.jobs.status(reservation.id())
+                            .map(Status::state)
+                            .filter(state -> state == State.REFUSED)
+                            .isPresent()));
+            h.gate.releaseBeforeRun();
+        });
+        releaser.setDaemon(true);
+        releaser.start();
 
         h.jobs.close();
 
@@ -650,6 +672,7 @@ class RegistrationJobsTest {
                     .isInstanceOfSatisfying(
                             Refused.class, why -> assertThat(why.kind()).isEqualTo(Kind.BUSY));
         }
+        assertThat(h.gate.ran()).as("a job refused before it ran never runs").isEmpty();
         assertThat(h.audit.entries()).hasSize(4);
         assertThat(h.stagingEntries()).isEmpty();
         assertThat(h.rig.packs).isEmptyDirectory();
@@ -781,6 +804,10 @@ class RegistrationJobsTest {
             now = now.plus(by);
         }
 
+        void releasePause() {
+            pausedRelease.countDown();
+        }
+
         @Override
         public ZoneOffset getZone() {
             return ZoneOffset.UTC;
@@ -805,6 +832,7 @@ class RegistrationJobsTest {
     static final class TestGate implements RegistrationJobs.JobGate {
         private volatile CountDownLatch before = new CountDownLatch(0);
         private volatile CountDownLatch running = new CountDownLatch(0);
+        private final Set<String> ran = ConcurrentHashMap.newKeySet();
 
         void holdBeforeRun() {
             before = new CountDownLatch(1);
@@ -822,6 +850,11 @@ class RegistrationJobsTest {
             running.countDown();
         }
 
+        void releaseAll() {
+            releaseBeforeRun();
+            releaseWhileRunning();
+        }
+
         @Override
         public void beforeRun(String id) {
             await(before);
@@ -829,7 +862,13 @@ class RegistrationJobsTest {
 
         @Override
         public void whileRunning(String id) {
+            ran.add(id);
             await(running);
+        }
+
+        /** The jobs whose worker reached the running step. */
+        Set<String> ran() {
+            return Set.copyOf(ran);
         }
     }
 
@@ -854,6 +893,10 @@ class RegistrationJobsTest {
         /** Makes every write wait for {@code release}, to pin what a reader may see in the meantime. */
         void holdWrites(CountDownLatch release) {
             hold = release;
+        }
+
+        void releaseWrites() {
+            hold.countDown();
         }
 
         List<Entry> entries() {
@@ -891,7 +934,13 @@ class RegistrationJobsTest {
                     gate,
                     () -> room.require(),
                     new FileStagingArea(staging)));
-            opened.add(jobs);
+            opened.add(this);
+        }
+
+        void releaseEveryHold() {
+            gate.releaseAll();
+            audit.releaseWrites();
+            clock.releasePause();
         }
 
         Packs pack(String name, String version) {
@@ -927,17 +976,20 @@ class RegistrationJobsTest {
             return status(reservation);
         }
 
+        /**
+         * Polls every 100 µs: a test that waits for a thousand short jobs one after another spent most of its time in
+         * a coarser poll's sleeps (#461).
+         */
         void await(BooleanSupplier condition) {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
             while (!condition.getAsBoolean()) {
                 if (System.nanoTime() > deadline) {
                     throw new AssertionError("the condition did not hold within 20 s");
                 }
-                try {
-                    Thread.sleep(2);
-                } catch (InterruptedException interrupted) {
+                LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
+                if (Thread.interrupted()) {
                     Thread.currentThread().interrupt();
-                    throw new AssertionError("interrupted while waiting", interrupted);
+                    throw new AssertionError("interrupted while waiting");
                 }
             }
         }

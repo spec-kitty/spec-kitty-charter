@@ -24,9 +24,11 @@ public final class FileStagingArea implements StagingArea {
      * A staging area under {@code root}, which is created, with its missing parents, when the first directory is.
      *
      * @param root the staging root
+     * @throws IllegalStateException when the root's file system cannot make a path owner-only (#510)
      */
     public FileStagingArea(Path root) {
         this.root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
+        OwnerOnly.requireSupported(this.root);
     }
 
     @Override

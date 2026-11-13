@@ -27,7 +27,7 @@ class MutationIsolationTest {
         val planted = real + (":packs:check" to listOf(":packs:test", ":packs:pitest"))
 
         assertThat(MutationIsolation.violation(tasks(planted), graph(planted)))
-            .startsWith("Mutation testing runs only in mutation-nightly.yml")
+            .startsWith("Mutation testing runs only in mutation-testing.yml")
             .contains(":verifyAll reaches :packs:pitest", ":packs:check reaches :packs:pitest")
     }
 

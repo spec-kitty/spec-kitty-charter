@@ -80,7 +80,7 @@ class InterruptedCommitRepairTest {
 
         write(locations, lastCommitted);
 
-        assertThat(snapshot(live))
+        assertThat(afterWrite(live))
                 .as("the last committed state, plus the write; the interrupted commit is gone")
                 .isEqualTo(withWrite(committed));
         assertThat(residue(packs)).as("the aside copy was moved back").isEmpty();
@@ -105,7 +105,7 @@ class InterruptedCommitRepairTest {
 
         assertThat(Files.isSymbolicLink(link)).as("the link is still a link").isTrue();
         assertThat(Files.readSymbolicLink(link)).as("to the same target").isEqualTo(target);
-        assertThat(snapshot(target)).isEqualTo(withWrite(committed));
+        assertThat(afterWrite(target)).isEqualTo(withWrite(committed));
         assertThat(residue(vendor)).as("the aside copy was moved back").isEmpty();
         assertThat(residue(packs)).isEmpty();
     }
@@ -145,7 +145,7 @@ class InterruptedCommitRepairTest {
                 .as("the domain is still a link")
                 .isTrue();
         assertThat(Files.readSymbolicLink(domain)).as("to the same directory").isEqualTo(shared);
-        assertThat(snapshot(live)).isEqualTo(withWrite(committed));
+        assertThat(afterWrite(live)).isEqualTo(withWrite(committed));
         assertThat(residue(shared)).isEmpty();
     }
 
@@ -425,7 +425,7 @@ class InterruptedCommitRepairTest {
             assertThat(Files.isSymbolicLink(link.getKey())).isTrue();
             assertThat(Files.readSymbolicLink(link.getKey())).isEqualTo(link.getValue());
         }
-        assertThat(snapshot(target)).isEqualTo(withWrite(committed));
+        assertThat(afterWrite(target)).isEqualTo(withWrite(committed));
         assertThat(residue(vendor)).isEmpty();
     }
 
@@ -453,7 +453,28 @@ class InterruptedCommitRepairTest {
         Map<String, String> expected = new TreeMap<>(committed);
         expected.put("fd.toolguide.yaml", "");
         expected.put("fd.guide.md", "");
+        expected.remove(PackFileSet.MANIFEST); // #110: the write restamps it; afterWrite checks it on its own
         return expected;
+    }
+
+    /**
+     * The pack's files after a write, less its manifest, once the manifest is shown to be the one the write must leave
+     * (#110): its lists derived from the pack, the written toolguide among them, and every derived field fresh.
+     */
+    private static Map<String, String> afterWrite(Path pack) {
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        PackManifestDso manifest = loaded.manifest().orElseThrow(() -> new AssertionError(pack + " has no manifest"));
+        assertThat(ManifestMembership.mismatch(manifest, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+                .isEmpty();
+        assertThat(manifest.constituents())
+                .extracting(PackManifestDso.Constituent::id)
+                .contains("fd");
+        assertThat(PackManifests.stale(manifest, path -> FilesystemPackStore.readBytes(pack.resolve(path))))
+                .isEmpty();
+        Map<String, String> files = new TreeMap<>(snapshot(pack));
+        files.remove(PackFileSet.MANIFEST);
+        return files;
     }
 
     private static void complete(CompletableFuture<Pack> read, DomainRepositoryService reader) {

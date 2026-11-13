@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -847,9 +848,44 @@ public record ClosureView(
      * @return the winner's pack; empty when no pack of the closure holds the artifact
      */
     public Optional<PackIdentifier> winnerPackOf(ArtifactKind kind, String id) {
+        return heldWinner(kind, id).map(MergedClosure.Winner::packId);
+    }
+
+    /**
+     * The winner of one artifact across the closure's levels, read from the merge alone, as {@link #heldWinners} lists
+     * it: looked up by its URN in the merged closure, not found by filtering the list of its kind.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id
+     * @return the winner; empty when no pack of the closure holds the artifact, or the id is no URN id
+     * @throws CharterRefusal as {@link #merged()} does
+     */
+    public Optional<MergedClosure.Winner> heldWinner(ArtifactKind kind, String id) {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
-        return urnOf(kind, id).flatMap(merged().closure()::winnerOf).map(MergedClosure.Winner::packId);
+        return urnOf(kind, id).flatMap(merged().closure()::winnerOf);
+    }
+
+    /**
+     * The winners of one kind across the closure's levels, read from the merge alone: the version of each artifact of
+     * the kind that the layer merge keeps, with the pack and level that hold it and its policy, whatever the kind. It is
+     * what the activation reads of a kind the effective set does not resolve (an asset, research R2) list, since the
+     * effective reads never list such a kind (decision {@code 01M702A71YF7WNDTG2AA89K8ZA}); a copy a nearer level
+     * replaces is not among them.
+     *
+     * @param kind the artifacts' kind
+     * @return the winners of the kind, by id in code-point order; empty when no pack of the closure holds one
+     * @throws CharterRefusal as {@link #merged()} does
+     */
+    public List<MergedClosure.Winner> heldWinners(ArtifactKind kind) {
+        Objects.requireNonNull(kind, "kind");
+        NodeKind node = NodeKind.of(kind);
+        return merged().closure().winners().values().stream()
+                .filter(winner -> winner.urn().kind() == node)
+                .sorted((left, right) -> Arrays.compare(
+                        left.urn().id().codePoints().toArray(),
+                        right.urn().id().codePoints().toArray()))
+                .toList();
     }
 
     private static Optional<Urn> urnOf(ArtifactKind kind, String id) {

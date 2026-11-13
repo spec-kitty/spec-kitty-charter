@@ -231,8 +231,10 @@ pinned file in another shape is refused, never tolerated, and fixed in the pack.
 - **The manifest.** It lists the pack's constituents (`kind`, `id`, `path`, `content_hash`) and
   presets (`id`, `path`, `content_hash`), and carries a `manifest_hash`. The hashes are derived
   fields: a whole-pack write recomputes them from the bytes it writes, the reader takes them as
-  written, and the round-trip gate verifies them. Membership is kept as read; which files belong in
-  it is [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110)'s to decide.
+  written, and the round-trip gate verifies them. Membership is derived, never kept as read
+  ([#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), ADR-0042 amendment of 2026-11-12): one
+  constituent per artifact at its own file and one entry per preset, in path order. Every write restamps the manifest
+  and generates it where the pack held none, and a registration refuses an uploaded manifest whose lists differ.
 - **The fingerprint** covers them after every other file: the presets in path order, then `README.md`, then the
   manifest, then `policy.yaml`, then any retired file. A pack without them keeps its fingerprint.
 - **Retired and excluded files.** `pack.md`, `PROVENANCE.md` and `org-charter.yaml` at the pack root are retired:

@@ -244,8 +244,16 @@ final class ContractConformance {
         String mediaType = contentType == null ? "" : contentType.split(";", 2)[0].strip();
         Object media = content.get(mediaType);
         if (media == null) {
+            // A payload is declared by a media range (*/*): the answer's own type is then any type the range covers.
+            media = content.get(rangeOf(mediaType, content.keySet()));
+        }
+        if (media == null) {
             return List.of(response.file() + " declares no content of type '" + mediaType + "' for " + status
                     + "; it declares " + content.keySet());
+        }
+        if (isBinary(mapping(media, response.file()).get("schema"))) {
+            // A binary payload's bytes are whatever the pack holds: the scenarios compare them byte for byte.
+            return List.of();
         }
         if (body == null) {
             // A text type (the contract document's application/yaml) is not read as JSON; a JSON type must be JSON.
@@ -271,6 +279,26 @@ final class ContractConformance {
         List<String> violations = new ArrayList<>();
         validate(value, new Located(document(schemaResource), schemaResource), "$", violations);
         return violations;
+    }
+
+    /**
+     * The declared media range ({@code type/*} or {@code *}{@code /*}) that covers a concrete media type, the most
+     * specific first, or the empty key when none does.
+     */
+    private static String rangeOf(String mediaType, Set<String> declared) {
+        int slash = mediaType.indexOf('/');
+        String typeRange = slash > 0 ? mediaType.substring(0, slash) + "/*" : "";
+        if (!typeRange.isEmpty() && declared.contains(typeRange)) {
+            return typeRange;
+        }
+        return slash > 0 && declared.contains("*/*") ? "*/*" : "";
+    }
+
+    /** Whether a declared schema is a binary string, the schema of a payload's bytes. */
+    private static boolean isBinary(@Nullable Object schema) {
+        return schema instanceof Map<?, ?> map
+                && "string".equals(map.get("type"))
+                && "binary".equals(map.get("format"));
     }
 
     /** Whether a media type is JSON: {@code application/json} or a {@code +json} type such as a problem. */

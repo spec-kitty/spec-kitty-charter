@@ -15,7 +15,9 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -203,6 +205,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     private final DirectoryRename rename;
     private final RegistryWriteLock registryLock;
     private final PackWriteGeneration generation;
+    private final WholePackStore wholePack;
 
     /**
      * A commit store that swaps directories atomically.
@@ -261,6 +264,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.rename = Objects.requireNonNull(rename, "rename");
+        this.wholePack = new WholePackStore(strategy);
         this.registryLock = Objects.requireNonNull(registryLock, "registryLock");
         this.generation = Objects.requireNonNull(generation, "generation");
     }
@@ -387,6 +391,8 @@ public final class PackCommitStore implements WholePackWriteStore {
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
             edit.apply(staging, parent);
+            // #110: every commit restamps the manifest over the edited copy, and generates it when the pack held none.
+            ManifestMembership.stamp(staging, wholePack, strategy);
             PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up
@@ -672,12 +678,32 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** Renames a staged tree over the empty directory a write reserved. */
     static void moveOver(Path staging, Path reserved) throws IOException {
+        moveOver(staging, reserved, Files::move);
+    }
+
+    /**
+     * The atomic replace is not always possible: some file systems cannot do it at all, and Windows refuses it with an
+     * {@link AccessDeniedException} when the target is a directory. Either way the empty reserved directory is deleted
+     * and the tree moved into its place.
+     */
+    static void moveOver(Path staging, Path reserved, Mover mover) throws IOException {
         try {
-            Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException notAtomic) {
-            Files.delete(reserved);
-            Files.move(staging, reserved);
+            mover.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException | AccessDeniedException refused) {
+            try {
+                Files.delete(reserved);
+                mover.move(staging, reserved);
+            } catch (IOException | RuntimeException fallback) {
+                fallback.addSuppressed(refused);
+                throw fallback;
+            }
         }
+    }
+
+    /** {@link Files#move} as a seam, so a test can make the atomic replace fail as Windows does. */
+    @FunctionalInterface
+    interface Mover {
+        void move(Path source, Path target, CopyOption... options) throws IOException;
     }
 
     /** Removes a reserved target if it is still the empty directory the write created. */

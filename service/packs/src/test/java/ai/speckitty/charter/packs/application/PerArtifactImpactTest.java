@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 class PerArtifactImpactTest {
 
     private static final String MID_ID = PackRegistrationServiceTest.ulid('Q');
+    private static final String ALPHA_ID = PackRegistrationServiceTest.ulid('A');
 
     /** The registration services over the rig's real stores and the gate the deployment wires. */
     private static final class Writes {
@@ -171,6 +172,52 @@ class PerArtifactImpactTest {
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
                 .containsKey("DERIVED_TWO.directive.yaml")
                 .containsKey("registered.graph.yaml");
+    }
+
+    /** A preset that names the directive {@code guard}, which the pack does not hold yet. */
+    private static final String NAMES_GUARD = """
+            schema_version: '1.0'
+            id: team
+            description: A preset of the team
+            activated_directives:
+              - id: guard
+            """;
+
+    /**
+     * #412: a write that makes the pack's own closure stop composing is refused before the commit. With a preset that
+     * names {@code guard}, a {@code PUT} of {@code GUARD} would leave the preset naming an id the pack holds only in
+     * another case, which the compose refuses; before the impact check the write was stored and the next read of the
+     * offering failed.
+     */
+    @Test
+    void aPutThatLeavesAPresetNamingTheIdOnlyInAnotherCaseIsRefusedAndAnotherIdIsNot(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "alpha",
+                rig.stage(Packs.of(ALPHA_ID, "alpha", "1.0.0", "org")
+                        .directive("ALPHA_ONE", "Own")
+                        .file("presets/team.yaml", NAMES_GUARD)),
+                Preconditions.none());
+        Writes writes = new Writes(rig);
+        PackIdentifier alpha = new PackIdentifier("alpha");
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("alpha"));
+
+        CharterRefusal refused =
+                refusal(() -> writes.directives.registerDirective(alpha, directive("alpha", "GUARD"), false, null));
+
+        assertThat(refused.code())
+                .as("the preset names directive:guard and the pack would hold directive:GUARD")
+                .isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("alpha");
+        assertThat(rig.filesOf(rig.packs.resolve("alpha")))
+                .as("nothing changed")
+                .isEqualTo(before);
+
+        writes.directives.registerDirective(alpha, directive("alpha", "SHIELD"), false, null);
+        assertThat(rig.filesOf(rig.packs.resolve("alpha")))
+                .as("the control: an id the preset does not name in any case is written")
+                .containsKey("SHIELD.directive.yaml")
+                .doesNotContainKey("GUARD.directive.yaml");
     }
 
     // ---- the cost of the check

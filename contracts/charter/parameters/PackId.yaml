@@ -5,4 +5,5 @@ description: The identity of the Charter Pack, as the pack declares it.
 schema:
   type: string
   minLength: 1
-  maxLength: 64
+  maxLength: 63
+  pattern: '^[a-z0-9][a-z0-9-]{0,62}$'

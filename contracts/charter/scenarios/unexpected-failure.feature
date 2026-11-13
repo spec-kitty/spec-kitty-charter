@@ -67,9 +67,16 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getPackArtifact        | /packs/qa/artifacts/directive/D                      |
       | listArtifactReferences | /packs/qa/artifacts/directive/D/references           |
       | getPackAgentProfile    | /packs/qa/artifacts/agent_profile/p                  |
+      | listPackAssets         | /packs/qa/artifacts/asset                            |
+      | getPackAsset           | /packs/qa/artifacts/asset/a                          |
+      | getPackAssetPayload    | /packs/qa/artifacts/asset/a/payload                  |
+      | listPackSkills         | /packs/qa/artifacts/skill                            |
+      | getPackSkill           | /packs/qa/artifacts/skill/s                          |
       | getPackMissionType     | /packs/qa/artifacts/mission_type/m                   |
       | getPackMissionStep     | /packs/qa/artifacts/mission_type/m/steps/s           |
       | getPackMissionSkeleton | /packs/qa/artifacts/mission_type/m/skeletons/spec.md |
+      | listPackPresets        | /packs/qa/presets                                    |
+      | getPackPreset          | /packs/qa/presets/team                               |
 
   Scenario Outline: <operation> of a stored activation that fails unexpectedly is 500 internal_error
     Given the activation "a-1" holds:
@@ -87,7 +94,13 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | listActivationPacks             | /activations/a-1/packs                                      |
       | listEffectiveArtifacts          | /activations/a-1/artifacts                                  |
       | getEffectiveArtifact            | /activations/a-1/artifacts/directive/D                      |
+      | listEffectiveArtifactReferences | /activations/a-1/artifacts/directive/D/references           |
       | getEffectiveAgentProfile        | /activations/a-1/artifacts/agent_profile/p                  |
+      | listEffectiveAssets             | /activations/a-1/artifacts/asset                            |
+      | getEffectiveAsset               | /activations/a-1/artifacts/asset/a                          |
+      | getEffectiveAssetPayload        | /activations/a-1/artifacts/asset/a/payload                  |
+      | listEffectiveSkills             | /activations/a-1/artifacts/skill                            |
+      | getEffectiveSkill               | /activations/a-1/artifacts/skill/s                          |
       | getEffectiveMissionType         | /activations/a-1/artifacts/mission_type/m                   |
       | getEffectiveMissionStep         | /activations/a-1/artifacts/mission_type/m/steps/s           |
       | getEffectiveMissionSkeleton     | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |

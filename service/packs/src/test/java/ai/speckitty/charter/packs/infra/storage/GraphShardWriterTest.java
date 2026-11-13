@@ -140,7 +140,7 @@ class GraphShardWriterTest {
     }
 
     @Test
-    void aFragmentCannotHoldProvenanceTagsOrAConditionSoEachIsRefusedNotDropped() {
+    void aFragmentNodeCannotHoldProvenanceOrTagsSoEachIsRefusedNotDropped() {
         assertThatThrownBy(() -> GraphShardWriter.writeFragment(
                         new DoctrineGraph(List.of(node(A, Optional.of("p"), List.of(), Optional.empty())), List.of())))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -149,14 +149,47 @@ class GraphShardWriterTest {
                         List.of(node(A, Optional.empty(), List.of("t"), Optional.empty())), List.of())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("tags");
-        assertThatThrownBy(() -> GraphShardWriter.writeFragment(new DoctrineGraph(
-                        List.of(),
-                        List.of(new Relationship(A, B, RelationType.REQUIRES, Optional.of("w"), Optional.empty())))))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("when");
-        assertThatThrownBy(() -> GraphShardWriter.writeFragment(new DoctrineGraph(
-                        List.of(), List.of(), List.of(new Tension(A, B, Optional.of("w"), Optional.empty())))))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("when");
+    }
+
+    /**
+     * #509: the org-fragment schema's edge ({@code _OrgDRGEdge}) holds a {@code when}, so a fragment's conditional
+     * relationship and conditional tension are written with it and read back the same, as open-packs' spdd fragment
+     * and the org example pack carry one.
+     */
+    @Test
+    void aFragmentEdgeKeepsItsWhenThroughTheRoundTrip() {
+        String source = """
+                nodes:
+                - id: QA_001
+                  kind: directives
+                  title: Traceability
+                edges:
+                - source: directive:QA_001
+                  target: styleguide:reasons-canvas-writing
+                  relation: suggests
+                  when: writing a REASONS canvas
+                  reason: the canvas has its own writing rules
+                - source: directive:QA_001
+                  target: directive:DIRECTIVE_010
+                  relation: in_tension_with
+                  when: under deadline
+                """;
+        DoctrineGraph graph = PackPolicy.graph(
+                        "qa",
+                        ((FileRead.Read<RawGraph>)
+                                        GraphDocumentReader.read(source, Shape.FRAGMENT, "drg/fragment.yaml"))
+                                .value())
+                .graph();
+
+        String written = GraphShardWriter.writeFragment(graph);
+
+        assertThat(written)
+                .contains("  relation: suggests\n  when: writing a REASONS canvas\n")
+                .contains("  relation: in_tension_with\n  when: under deadline\n");
+        MeaningComparator comparator = MeaningComparator.adr0036();
+        assertThat(comparator.compareTexts("org-fragment", source, written)).isEmpty();
+        // Positive control: the comparator would see the condition go missing.
+        assertThat(comparator.compareTexts("org-fragment", source, written.replace("  when: under deadline\n", "")))
+                .isPresent();
     }
 }

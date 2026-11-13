@@ -1,12 +1,9 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -25,7 +22,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -91,39 +87,6 @@ class PackManifestRoundTripTest {
     }
 
     @Test
-    @DisplayName("a manifest that lists a file the write does not hold refuses the write and leaves no target")
-    void aListedPathTheWriteDoesNotHoldRefusesTheWrite(@TempDir Path host) throws IOException, URISyntaxException {
-        WholePackStore.LoadedPack loaded = store.load(fixture(host));
-        PackManifestDso manifest = loaded.manifest().orElseThrow();
-        List<PackManifestDso.Constituent> constituents = new ArrayList<>(manifest.constituents());
-        constituents.add(new PackManifestDso.Constituent("tactic", "ghost", "ghost.tactic.yaml", "0".repeat(64)));
-        WholePackStore.LoadedPack ghostly = new WholePackStore.LoadedPack(
-                loaded.pack(),
-                loaded.layout(),
-                loaded.graphs(),
-                loaded.unmodelled(),
-                Optional.of(new PackManifestDso(
-                        manifest.schemaVersion(), manifest.manifestHash(), constituents, manifest.presets())));
-        Path clean = host.resolve("clean").resolve(FIXTURE);
-        Path refused = host.resolve("refused").resolve(FIXTURE);
-
-        store.write(loaded, clean);
-        assertThatThrownBy(() -> store.write(ghostly, refused))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                    assertThat(refusal.getMessage())
-                            .isEqualTo("pack-manifest.yaml of 01M60H1AMANFESTPACK0000000 lists ghost.tactic.yaml,"
-                                    + " which the write does not hold");
-                });
-
-        assertThat(clean.resolve(PackFileSet.MANIFEST)).isRegularFile();
-        assertThat(refused).doesNotExist();
-        try (Stream<Path> left = Files.list(refused.getParent())) {
-            assertThat(left).as("no staging residue").isEmpty();
-        }
-    }
-
-    @Test
     @DisplayName("a stale source content_hash is reported at its constituent; the reader still loads the pack")
     void aStaleSourceHashIsReportedAndLoaded(@TempDir Path host) throws IOException, URISyntaxException {
         Path fresh = fixture(host.resolve("fresh"));
@@ -161,8 +124,8 @@ class PackManifestRoundTripTest {
     }
 
     @Test
-    @DisplayName("a registration leaves the manifest byte-identical: membership is carried until #110 restamps it")
-    void aRegistrationLeavesTheManifestAsItWas(@TempDir Path host) throws IOException, URISyntaxException {
+    @DisplayName("a registration lists the toolguide it adds and restamps the manifest (#110)")
+    void aRegistrationRestampsTheManifest(@TempDir Path host) throws IOException, URISyntaxException {
         Path pack = fixture(host);
         byte[] before = Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST));
         Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
@@ -200,12 +163,16 @@ class PackManifestRoundTripTest {
         assertThat(service.load(id).toolguides())
                 .extracting(t -> t.id().value())
                 .containsExactly("ripgrep");
-        assertThat(Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST)))
-                .as("the known gap: the new toolguide is not listed until #110")
-                .isEqualTo(before);
-        assertThat(store.load(pack).manifest().orElseThrow().constituents())
+        assertThat(Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST))).isNotEqualTo(before);
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        PackManifestDso restamped = loaded.manifest().orElseThrow();
+        assertThat(restamped.constituents())
                 .extracting(PackManifestDso.Constituent::id)
-                .doesNotContain("ripgrep");
+                .contains("ripgrep");
+        assertThat(ManifestMembership.mismatch(restamped, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+                .isEmpty();
+        assertThat(PackManifests.stale(restamped, path -> bytesOf(pack.resolve(path))))
+                .isEmpty();
     }
 
     // ---- the gate ------------------------------------------------------------------------------------------------
@@ -250,7 +217,7 @@ class PackManifestRoundTripTest {
     }
 
     @Test
-    @DisplayName("the gate refuses an unreadable manifest with the store's reasons, and one listing an unwritten file")
+    @DisplayName("the gate refuses an unreadable manifest with the store's reasons, and one listing an unheld file")
     void theGateRefusesAnUnreadableManifestAndAnUnwrittenListedFile(@TempDir Path host)
             throws IOException, URISyntaxException {
         Path unreadable = fixture(host.resolve("unreadable"));
@@ -287,8 +254,9 @@ class PackManifestRoundTripTest {
                 .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'charter'; "
                         + "additionalProperties violated at the document: undeclared key 'generated_by'"));
         assertThat(refusedUnwritten.get(PackFileSet.MANIFEST))
+                .as("#110: the procedure does not load, so the pack does not hold it")
                 .isEqualTo(new Refused(
-                        "pack-manifest.yaml lists procedures/p.procedure.yaml, which the round trip did not write"));
+                        "lists constituent procedure:p at procedures/p.procedure.yaml, which the pack does not hold"));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.application.EffectiveHeldWinner;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -127,6 +128,16 @@ public class ActivationTestWiring {
                 @Override
                 public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
                     return EffectivePrompt.NONE;
+                }
+
+                @Override
+                public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
+                    return List.of();
+                }
+
+                @Override
+                public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
+                    return Optional.empty();
                 }
 
                 @Override

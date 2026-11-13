@@ -1,0 +1,20 @@
+{
+  "covers": [
+    "FR-006"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "assets/run.py.asset.yaml",
+      "place": [
+        "id"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false
+  }
+}

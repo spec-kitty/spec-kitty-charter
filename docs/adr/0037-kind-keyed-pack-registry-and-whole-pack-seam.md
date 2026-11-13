@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
@@ -17,6 +17,7 @@ related:
   - context/conceptual-model
   - architecture/logical-model
   - architecture/hexagonal-service
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before adding an artifact kind to the packs slice, or before loading or writing a whole pack.
@@ -160,6 +161,54 @@ that slice needs read endpoints of its own.
     `AgentProfile`, so the two would cycle.
   - (e) A separate edge module per slice. Chosen: the slice keeps its package names and its domain
     module, the direction stays acyclic, and the rings are gated by the rules above.
+
+### Amendment 2026-11-13: a domain-less read-composition edge
+
+Made by the slice A2 cutover reads mission (`slice-a2-cutover-reads-01M78RJD`, #536, research R13), on
+the finding of its pre-merge squad. It changes no decision of this record and keeps the rule of the
+amendment of 2026-11-09; it adds a second kind of edge module, which composes reads but holds no slice.
+
+- **The problem.** The asset, skill and references reads answer packs domain types (`Asset`, `Skill`)
+  in a pack and under an activation. Under an activation they need the activation's winner, so they
+  must name both `activations` and `packs`. `:activations` cannot host them:
+  `ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER` lets it name `packs` only from `activations.infra.packs`,
+  which implements its own `AvailablePacks` port, so no inbound adapter or application ring of
+  `activations` may render a packs type. `:packs` cannot name `activations` either.
+- **The rule.** `:artifacts-edge` is a read-composition edge with no domain module: its `application`,
+  `infra.api`, `infra.packs` and `infra.activations` rings live under `ai.speckitty.charter.artifacts`.
+  Its application ring speaks in kernel types and its own value records, and declares no repository or
+  gateway port. In the dependency direction it sits beside the slice edges: `:profiles`, then `:packs`,
+  then `:activations`, then `:profiles-edge`, `:missions-edge` and `:artifacts-edge`, then `:deployable`.
+- **The rings.**
+  - `artifacts.infra.packs` is the one package of the edge that names `packs`, and only
+    `packs.application` and `packs.domain`.
+  - `artifacts.infra.activations` is the one package that names `activations`, and only
+    `activations.application` and `activations.domain`.
+  - Only these adapters, and `:deployable`, which composes them, name the edge's adapters.
+  - No `packs` or `activations` class names any `artifacts` class: the edge is not named back. Having no
+    domain module, it offers the pack store nothing to bind, unlike the profiles and missions edges.
+  - The architecture test pins each of these with a known-bad control, and holds the edge to the
+    per-slice rings that apply to a ring without a domain (`APPLICATION_IS_EDGE`, the entrypoint,
+    adapter-composition and port rules).
+- **When to use it.** A read that answers one slice's domain under another slice's resource, and that
+  belongs to neither slice, goes to a domain-less edge. A read of a slice whose domain
+  `packs.infra.storage` binds still goes to that slice's own edge (amendment of 2026-11-09).
+
+### Amendment 2026-11-13 (ADR-0075, #550): the module map gains pack-validation and pack-check
+
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) moves
+every pack check, and the load, codecs and classification they need, out of `packs` into a
+Spring-free module, `pack-validation`, and packages it as a CLI, `pack-check`. It changes no decision
+of this record: the registry and the whole-pack seam stay in `packs`, which comes to depend on
+`pack-validation` and keeps `WholePackStore` and its other beans as thin adapters over the module's
+load (from #553).
+
+- **The dependency direction.** `:kernel`, then `:profiles` and `:missions`, then `:pack-validation`,
+  then `:packs` and `:pack-check`. `pack-validation` never names `packs`, and `pack-check` names
+  `pack-validation` only.
+- **The gate.** `PACK_VALIDATION_IS_FRAMEWORK_FREE` in the architecture test, with a known-bad
+  control, and a dependency allowlist in each module's build (amendment of ADR-0006, 2026-11-13).
+- **Slice 1 (#550)** adds both modules empty. The load moves in with #553.
 
 ## Context
 

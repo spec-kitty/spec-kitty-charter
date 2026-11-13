@@ -96,7 +96,8 @@ public final class PackPolicy {
     private static final List<String> FRAGMENT_NODE_KEYS = List.of("id", "kind", "title", "body_path");
     private static final List<String> SHARD_EDGE_KEYS =
             List.of("source", "target", "relation", "when", "reason", "impacts");
-    private static final List<String> FRAGMENT_EDGE_KEYS = List.of("source", "target", "relation", "reason", "impacts");
+    // #509: a fragment's edge holds a when, as the org-fragment schema's _OrgDRGEdge declares, in a shard edge's order.
+    private static final List<String> FRAGMENT_EDGE_KEYS = SHARD_EDGE_KEYS;
 
     /** The plan's precedence: file group, then file name, then the place within the file. */
     static final Comparator<PackFinding> PRECEDENCE = Comparator.comparingInt(PackPolicy::group)
@@ -590,8 +591,7 @@ public final class PackPolicy {
 
     private static Optional<String> mimeProblem(PackContents.AssetFacts asset) {
         String mime = asset.mime();
-        int slash = mime.indexOf('/');
-        if (slash <= 0 || slash == mime.length() - 1) {
+        if (!MediaTypes.wellFormed(mime)) {
             return Optional.of(asset.file() + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value");
         }
         return AssetMimeTable.expected(asset.path())

@@ -38,12 +38,25 @@ tags:
       The whole Charter Pack: register it from an archive or from a source and poll the registration's status,
       read the stored pack, and remove one artifact or one registered relationship from it (ADR-0065). Declared in
       full: an operation not built yet carries x-reserved and answers 501 until it is (ADR-0020 D8).
+  - name: Presets
+    description: >-
+      The activation presets of a Charter Pack (ADR-0042): the list of a pack's presets and the read of one, each with
+      its kind lists and their must-have items. A preset is a pack-level value, not an artifact, and is read only in its
+      pack; under an activation, a preset is applied (Activation).
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
   - name: Artifacts
     description: >-
       The artifacts of a Charter Pack of every served kind, read through one paged list and one
       item.
+  - name: Assets
+    description: >-
+      The assets of a Charter Pack (ADR-0054, ADR-0074): the list of a pack's assets, the read of one asset's
+      descriptor and the read of its payload, its bytes with the asset's own media type.
+  - name: Skills
+    description: >-
+      The skills of a Charter Pack (ADR-0074): the list of a pack's skills and the read of one skill as the pack
+      declares it, with the body of a prompt skill exactly as held.
   - name: AgentProfiles
     description: >-
       The agent profiles of a Charter Pack: the pack-scoped read of one profile with its governance. The profile
@@ -54,6 +67,25 @@ tags:
       The agent profiles of an activation: the read of one profile under an activation, with its governance and the
       state of each entry. Its own tag, so that the :profiles-edge slice implements it in a controller of its own beside
       the activation set's: the generic effective read of an artifact never renders a profile body.
+  - name: EffectiveAssets
+    description: >-
+      The assets of an activation (ADR-0074 decision 9 as amended 2026-11-12): the assets the activation's closure
+      holds, each the copy the layer merge keeps, the read of one with its descriptor and no state, and the read of its
+      payload, the winning copy's bytes. An asset is in force when a pack of the closure holds it. Its own tag, so that
+      the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveSkills
+    description: >-
+      The skills of an activation: the skills the activation's closure holds, each the copy the layer merge keeps, and
+      the read of one with its state and the skill as the winning pack declares it, whatever its state. The list
+      answers every winner, unpaged and unfiltered; a client that wants the skills by state, or paged, reads
+      listEffectiveArtifacts with ?kind=skill (and ?state=), the stateful, paged list of the same winners. Its own tag,
+      so that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveReferences
+    description: >-
+      The references of an artifact under an activation: the references the version in force writes, which are the
+      pack read of the references (listArtifactReferences) of the pack that holds the winner, with each target the
+      activation's closure holds linked under the activation. Its own tag, so that the :artifacts-edge module
+      implements it in a controller of its own beside the asset and skill reads.
   - name: EffectiveMissionTypes
     description: >-
       The mission types of an activation: the mission type the layer merge keeps under an activation, in the Artifact
@@ -86,6 +118,10 @@ paths:
     $ref: paths/packs_packId.yaml
   /packs/{packId}/doc:
     $ref: paths/packs_packId_doc.yaml
+  /packs/{packId}/presets:
+    $ref: paths/packs_packId_presets.yaml
+  /packs/{packId}/presets/{presetId}:
+    $ref: paths/packs_packId_presets_presetId.yaml
   /pack-registrations/{registrationId}:
     $ref: paths/pack-registrations_registrationId.yaml
   /packs/{packId}/relationships:
@@ -94,6 +130,16 @@ paths:
     $ref: paths/packs_packId_artifacts.yaml
   /packs/{packId}/artifacts/agent_profile/{artifactId}:
     $ref: paths/packs_packId_artifacts_agent_profile_artifactId.yaml
+  /packs/{packId}/artifacts/asset:
+    $ref: paths/packs_packId_artifacts_asset.yaml
+  /packs/{packId}/artifacts/asset/{artifactId}:
+    $ref: paths/packs_packId_artifacts_asset_artifactId.yaml
+  /packs/{packId}/artifacts/asset/{artifactId}/payload:
+    $ref: paths/packs_packId_artifacts_asset_artifactId_payload.yaml
+  /packs/{packId}/artifacts/skill:
+    $ref: paths/packs_packId_artifacts_skill.yaml
+  /packs/{packId}/artifacts/skill/{artifactId}:
+    $ref: paths/packs_packId_artifacts_skill_artifactId.yaml
   /packs/{packId}/artifacts/directive:
     $ref: paths/packs_packId_artifacts_directive.yaml
   /packs/{packId}/artifacts/directive/{artifactId}:
@@ -136,6 +182,16 @@ paths:
     $ref: paths/activations_activationId_artifacts.yaml
   /activations/{activationId}/artifacts/agent_profile/{artifactId}:
     $ref: paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
+  /activations/{activationId}/artifacts/asset:
+    $ref: paths/activations_activationId_artifacts_asset.yaml
+  /activations/{activationId}/artifacts/asset/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_asset_artifactId.yaml
+  /activations/{activationId}/artifacts/asset/{artifactId}/payload:
+    $ref: paths/activations_activationId_artifacts_asset_artifactId_payload.yaml
+  /activations/{activationId}/artifacts/skill:
+    $ref: paths/activations_activationId_artifacts_skill.yaml
+  /activations/{activationId}/artifacts/skill/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_skill_artifactId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}:
     $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}:
@@ -146,6 +202,8 @@ paths:
     $ref: paths/activations_activationId_artifacts_mission_step_contract_contractId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
+  /activations/{activationId}/artifacts/{kind}/{artifactId}/references:
+    $ref: paths/activations_activationId_artifacts_kind_artifactId_references.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
   /activations/{activationId}/graph:

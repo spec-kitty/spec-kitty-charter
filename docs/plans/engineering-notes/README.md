@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -32,3 +32,8 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Service usability run, 2026-11-10: mission types](/plans/engineering-notes/service-usability-run-2026-11-10-mission-types/) —
   a client that starts at the API root reaches `software-dev`, its 13 steps, its 5 step contracts and its skeletons,
   from the pack and under an activation. It is the proof of SC-001 of the mission type reads (#99).
+- [Service usability run, 2026-11-12: the slice B pin](/plans/engineering-notes/service-usability-run-2026-11-12-slice-b-pin/) —
+  at open-packs `1692a3b`, `internal` and `qa` register as they are and the run passes all 146 hops (#466).
+- [Open-packs drift watch research, 2026-11-13](/plans/engineering-notes/open-packs-drift-watch-research-2026-11-13/) —
+  why the drift watch (#509) stays red on `main` after #545, where its design leaks, what gates what across
+  charter and open-packs, and the operator's rulings on each recommendation.
