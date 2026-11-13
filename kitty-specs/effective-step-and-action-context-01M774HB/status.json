@@ -1,7 +1,7 @@
 {
-  "event_count": 104,
-  "last_event_id": "01M79RCANMEJ15AEQ9RH1F3DV5",
-  "materialized_at": "2026-11-13T06:09:07.603290+00:00",
+  "event_count": 108,
+  "last_event_id": "01M79WGNY0Z0TXXX518G8M2YJQ",
+  "materialized_at": "2026-11-13T07:21:24.672424+00:00",
   "mission_number": "24",
   "mission_slug": "effective-step-and-action-context-01M774HB",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -294,20 +294,23 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
-      "force_count": 2,
+      "force_count": 3,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M79RCANMEJ15AEQ9RH1F3DV5",
-      "last_transition_at": "2026-11-13T06:09:07.603290+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M79WGNY0Z0TXXX518G8M2YJQ",
+      "last_transition_at": "2026-11-13T07:21:24.672424+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "getEffectiveMissionStep reads a step only a replaced version keeps from its place (merged winner of action:M/s) via ActivationMissionTypes.stepPlace / EffectiveReadService.stepPlace; unheld step 404 action_not_found on step, context and prompt reads; stale_input mapping as storedBeside; skeleton links and the context artifact link name the place's pack; fragment ### Changed. :activations:test, :missions-edge:test, feature, full :deployable:test (1779/0) green.",
         "Cycle 1 fixes: one place rule in ClosureView.stepPlace (mission type winner if it declares s, else held action winner whose version declares s), used by stepPlace, the step read and the context artifact link; probes 1 and 2 as scenarios (red first, e80394a33); L1 step-contract step link by the place; M1, L3 contract wording; L4 controller test. Prompt read unchanged. activations, missions-edge, packs ClosureViewTest, feature, contracts:check and full deployable:test (1781/0) green.",
         "Cycle 2: H1/M1/L1/L3/L4 resolved (f3ad8c480); one place rule ClosureView.stepPlace; mutations A-D caught; Hexagonal green; full deployable 1781 green. LOW L-a (placed() refusal pass-through test) folded into consolidation.",
-        "Operator ruling Q3 2026-11-13: the prompt read follows the one place rule"
+        "Operator ruling Q3 2026-11-13: the prompt read follows the one place rule",
+        "Q3: ClosureView.effectivePrompt places the prompt at stepPlace (EffectivePromptQuery.answer takes the place); red scenario (probe 1 prompt read, promptPackId proj) + ClosureViewTest pin/twin first (cfdbf3593); contract wording for prompt path, promptPackId, WP09 fragment; WP07 refusal order corrected; L-a test. Also fixed SlotComposeTest compile break from the WP05/WP10 merge (05b0da69d). packs/activations/missions-edge tests, both features, contracts:check, full deployable:test (1791/0) green.",
+        "Q3 fold: slot check",
+        "Q3 fold: slot check (C38) judges the prompt at the step's place via shared StepHolding.placeOf over facts (PromptFacts.steps filled in WP03's compositionFacts hunk); ClosureView.stepPlace delegates to it; kernel StepBearer withdrawn. Red scenario first (2347bc2c4), unit pins in SlotComposeTest/ClosureViewTest/PromptFactsTest. packs, activations, missions-edge, three features, contracts:check, full deployable:test (1793/0) green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -317,13 +320,13 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 15187,
+      "shell_pid_created_at": "1794554478.99",
       "subtasks": {
-        "T040": "planned",
-        "T041": "planned",
-        "T042": "planned"
+        "T040": "done",
+        "T041": "done",
+        "T042": "done"
       }
     },
     "WP10": {
