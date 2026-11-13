@@ -6,8 +6,12 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.api.ActivationApi;
+import ai.speckitty.charter.api.EffectiveAssetsApi;
 import ai.speckitty.charter.api.EffectiveMissionTypesApi;
+import ai.speckitty.charter.api.EffectiveSkillsApi;
 import ai.speckitty.charter.api.MissionTypesApi;
+import ai.speckitty.charter.api.OfferingApi;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ActivationPackList;
@@ -106,31 +110,61 @@ public class ActivationMapper {
 
     /**
      * The links of an activation answer (#409, ruling {@code DM-01M78RKM6Q23PA9QAC80QJKQFF}): its reads ({@code self},
-     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}), the
-     * {@code offering} it chooses from, and its writes ({@code edit}, {@code delete}, {@code select}, {@code exclude},
-     * {@code apply-preset}), each write with its method. {@code unselect} and {@code include} suit an artifact already
-     * selected or excluded, so the activation carries neither.
+     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}, and the held assets
+     * and skills: {@code assets}, the templated {@code asset} and {@code skills}), the {@code offering} it chooses from,
+     * and its writes ({@code edit}, {@code delete}, {@code select}, {@code exclude}, {@code apply-preset}), each write
+     * with its method. {@code unselect} and {@code include} suit an artifact already selected or excluded, so the
+     * activation carries neither. Each link expands the generated path constant of the operation it names: only
+     * {@code {activationId}} is filled in, and a template keeps its other variables.
      *
      * @param activationId the activation's id
      * @return the links, in the contract's order
      */
     private Map<String, Link> activationLinks(String activationId) {
-        String self = self(activationId);
+        String self = under(ActivationApi.PATH_GET_ACTIVATION, activationId);
         Map<String, Link> links = new LinkedHashMap<>();
         links.put("self", link(self));
-        links.put("artifacts", templated(self + "/artifacts{?kind,state}"));
-        links.put("offering", link(href("offering")));
-        links.put("edit", link(self).method(PUT));
-        links.put("delete", link(self).method("DELETE"));
-        links.put("select", templated(self + "/selections/{kind}/{artifactId}").method(PUT));
-        links.put("exclude", templated(self + "/exclusions/{kind}/{artifactId}").method(PUT));
-        links.put("apply-preset", templated(self + "/presets/{presetId}").method(PUT));
-        links.put("packs", link(self + "/packs"));
-        links.put("graph", link(self + "/graph"));
-        links.put("skipped", link(self + "/skipped"));
         links.put(
-                "effective-context", templated(self + "/mission-types/{missionType}/actions/{action}/context{?depth}"));
+                "artifacts",
+                templated(under(ActivationApi.PATH_LIST_EFFECTIVE_ARTIFACTS, activationId) + "{?kind,state}"));
+        links.put("offering", link(basePath + OfferingApi.PATH_GET_OFFERING));
+        links.put(
+                "edit",
+                link(under(ActivationApi.PATH_REPLACE_ACTIVATION, activationId)).method(PUT));
+        links.put(
+                "delete",
+                link(under(ActivationApi.PATH_DELETE_ACTIVATION, activationId)).method("DELETE"));
+        links.put(
+                "select",
+                templated(under(ActivationApi.PATH_SELECT_ACTIVATION_ARTIFACT, activationId))
+                        .method(PUT));
+        links.put(
+                "exclude",
+                templated(under(ActivationApi.PATH_DEACTIVATE_ACTIVATION_ARTIFACT, activationId))
+                        .method(PUT));
+        links.put(
+                "apply-preset",
+                templated(under(ActivationApi.PATH_APPLY_ACTIVATION_PRESET, activationId))
+                        .method(PUT));
+        links.put("packs", link(under(ActivationApi.PATH_LIST_ACTIVATION_PACKS, activationId)));
+        links.put("graph", link(under(ActivationApi.PATH_GET_EFFECTIVE_GRAPH, activationId)));
+        links.put("skipped", link(under(ActivationApi.PATH_GET_ACTIVATION_SKIPPED_REPORT, activationId)));
+        links.put(
+                "effective-context",
+                templated(under(ActivationApi.PATH_GET_EFFECTIVE_ACTION_CONTEXT, activationId) + "{?depth}"));
+        links.put("assets", link(under(EffectiveAssetsApi.PATH_LIST_EFFECTIVE_ASSETS, activationId)));
+        links.put("asset", templated(under(EffectiveAssetsApi.PATH_GET_EFFECTIVE_ASSET, activationId)));
+        links.put("skills", link(under(EffectiveSkillsApi.PATH_LIST_EFFECTIVE_SKILLS, activationId)));
         return links;
+    }
+
+    /**
+     * The base path and a contract path template with its {@code {activationId}} filled in, the id percent-encoded as
+     * one segment; the template's other variables are left for the client to expand.
+     */
+    private String under(String template, String activationId) {
+        return basePath
+                + template.replace("{activationId}", UriUtils.encodePathSegment(activationId, StandardCharsets.UTF_8));
     }
 
     /**
@@ -175,7 +209,7 @@ public class ActivationMapper {
      * @return the absolute path
      */
     public String self(String activationId) {
-        return href("activations", activationId);
+        return under(ActivationApi.PATH_GET_ACTIVATION, activationId);
     }
 
     /**

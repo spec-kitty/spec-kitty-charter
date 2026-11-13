@@ -7,7 +7,7 @@
   `collection` (the asset list). The payload answers the bytes the pack holds, unchanged, with the asset's `mime` as
   `Content-Type` when it is a well-formed `type/subtype` (validate's one rule) and `application/octet-stream`
   otherwise; it ignores `Accept`, and every `200` carries `X-Content-Type-Options: nosniff` and
-  `Content-Security-Policy: sandbox` (headers `XContentTypeOptions`, `ContentSecurityPolicy`). All three answer the
+  `Content-Security-Policy: sandbox; default-src 'none'`, and no `Content-Disposition`, on purpose (headers `XContentTypeOptions`, `ContentSecurityPolicy`). All three answer the
   pack revision as `ETag` and the source fingerprint; the payload answers `304` to a matching `If-None-Match`,
   `*` included. An unknown pack is `404 pack_not_found`, an asset the pack does not hold `404 artifact_not_found`
   (response `AssetNotFound`). The relation `payload` joins the relation table and the lint ruleset's relation

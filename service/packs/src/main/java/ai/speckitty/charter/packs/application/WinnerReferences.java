@@ -21,6 +21,11 @@ import org.springframework.stereotype.Service;
  * is configured no longer ({@code pack_not_found}) or no longer holds the artifact (the not-found code of its kind) means
  * the packs changed between the two reads: {@code stale_input} too, never a refusal of a pack or an artifact the request
  * did not name. Any other refusal is the pack read's, unchanged.
+ *
+ * <p>The artifacts edge's {@code WinnerReads} maps a vanished asset or skill winner to {@code stale_input} the same way.
+ * Both mappings stay, on purpose: this one maps the not-found code of the winner's own kind
+ * ({@link ArtifactReadService#absentCode}), which only the packs slice knows for every listed kind, while the asset and
+ * skill twins refuse with {@code artifact_not_found} alone, and the edge cannot name this slice's refusal table.
  */
 @Service
 public final class WinnerReferences {

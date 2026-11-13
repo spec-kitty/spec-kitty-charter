@@ -304,6 +304,9 @@ rules:
               - references
               - payload
               - effective-artifact
+              - assets
+              - asset
+              - skills
               - mission-type
               - step
               - step-contract

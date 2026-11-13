@@ -2,10 +2,11 @@
 Feature: An activation is discoverable by links
   A client that knows only the root reaches an activation's reads and writes by links (#409, decision
   DM-01M78RKM6Q23PA9QAC80QJKQFF, FR-013 and FR-014). The root's activations link is followed with POST to create one;
-  the activation answers self, artifacts, offering, packs, graph, skipped and the templated effective-context, and its
-  writes with their methods: edit (PUT) and delete (DELETE) on itself, and select, exclude and apply-preset (PUT),
-  templated. unselect and include are not on the activation. Every href the scenarios use comes from a link: none is
-  built by hand.
+  the activation answers self, artifacts, offering, packs, graph, skipped, the templated effective-context, its held
+  assets and skills (assets, the templated asset, skills), and its writes with their methods: edit (PUT) and delete
+  (DELETE) on itself, and select, exclude and apply-preset (PUT), templated. unselect and include are not on the
+  activation. Every href the scenarios use comes from a link: none is built by hand, not even by a guard runner that
+  reads an asset (asset:<id>).
 
   Background:
     Given the org pack "main" with the file "pack.yaml":
@@ -34,6 +35,17 @@ Feature: An activation is discoverable by links
         - id: implement
           title: implement
           role: implementer
+      """
+    And the org pack "main" with the file "assets/run.py.asset.yaml":
+      """
+      id: run
+      mime: text/x-python
+      path: run.py
+      title: Run
+      """
+    And the org pack "main" with the file "assets/run.py":
+      """
+      print("run")
       """
     And the org pack "main" with the file "edges.graph.yaml":
       """
@@ -98,6 +110,8 @@ Feature: An activation is discoverable by links
       | packs    |
       | graph    |
       | skipped  |
+      | assets   |
+      | skills   |
 
   Scenario: The templated effective-context of an activation answers once expanded
     When I GET "/"
@@ -112,3 +126,22 @@ Feature: An activation is discoverable by links
       | depth       | 0            |
     Then the response status is 200
     And the field at "/missionType" is "software-dev"
+
+  Scenario: A guard runner reads an asset under an activation by links only
+    When I GET "/"
+    And I follow the link "activations" with its method and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    Then the response status is 201
+    And the field at "/_links/asset/templated" is true
+    When I follow the templated link "asset" with:
+      | artifactId | run |
+    Then the response status is 200
+    And the field at "/kind" is "asset"
+    And the field at "/artifactId" is "run"
+    And the field at "/packId" is "main"
+    When I follow the link "payload"
+    Then the response status is 200
+    And the response header "Content-Type" is "text/x-python"
+    And the response body is the bytes of the file "assets/run.py" of the pack "main"

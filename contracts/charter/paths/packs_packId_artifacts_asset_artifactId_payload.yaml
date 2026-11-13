@@ -12,8 +12,10 @@ get:
     rule, when a well-formed mime cannot be written as a header value. The payload ignores Accept: it has the one form
     its mime gives, so no Accept is refused with 406, and an Accept that names another type (application/json) is
     answered the same bytes and the same Content-Type. Every 200 carries X-Content-Type-Options: nosniff and
-    Content-Security-Policy: sandbox, so a client never guesses another type from the bytes and a browser that opens
-    the payload runs it in a sandbox.
+    Content-Security-Policy: sandbox; default-src 'none', so a client never guesses another type from the bytes and a
+    browser that opens the payload runs it in a sandbox that loads nothing. No Content-Disposition is answered, on
+    purpose: the payload is read by programs (a guard runner, core's client), and nosniff plus the sandbox already
+    contain a browser that opens it.
 
     The pack is judged first, then the asset, as getPackAsset judges them: 404 pack_not_found, then 404
     artifact_not_found; 500 pack_unreadable. The bytes are read in the same verified read as the asset, against the

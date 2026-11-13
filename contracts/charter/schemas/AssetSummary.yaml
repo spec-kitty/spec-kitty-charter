@@ -1,8 +1,10 @@
 title: AssetSummary
 description: >-
-  One asset of a Charter Pack as listPackAssets lists it: its id, its media type as the sidecar writes it, whether it
-  declares how it runs, and a self link to the asset's own read (getPackAsset), which answers the whole descriptor and
-  links its payload.
+  One asset as an AssetList lists it: its id, its media type as the sidecar writes it, and whether it declares how it
+  runs. In a pack (listPackAssets) it is the pack's asset, and _links holds self, the asset's own read (getPackAsset),
+  which answers the whole descriptor and links its payload. Under an activation (listEffectiveAssets) it is the copy
+  the layer merge keeps, and _links holds effective-artifact, its read under the activation (getEffectiveAsset), and
+  artifact, the winning copy's read in its pack (getPackAsset).
 type: object
 additionalProperties: false
 required:

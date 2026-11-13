@@ -127,6 +127,33 @@ class EffectiveTagTest {
                 .hasSize(3);
     }
 
+    @Test
+    void eachReadOfTheSameArtifactHasATagNamespaceOfItsOwn() {
+        ClosureSnapshot closure = closure("sha256:one");
+        EffectiveTag.ArtifactQuery skill = new EffectiveTag.ArtifactQuery(ArtifactKind.SKILL, "land-pr", 0);
+        EffectiveTag.ArtifactQuery asset = new EffectiveTag.ArtifactQuery(ArtifactKind.ASSET, "run", 0);
+
+        Set<EffectiveTag> ofTheSkill = new HashSet<>(List.of(
+                EffectiveTag.artifact(REVISION, closure, skill),
+                EffectiveTag.winner(EffectiveTag.Read.SKILL, REVISION, closure, skill),
+                EffectiveTag.profile(REVISION, closure, skill)));
+        Set<EffectiveTag> ofTheAsset = new HashSet<>(List.of(
+                EffectiveTag.artifact(REVISION, closure, asset),
+                EffectiveTag.winner(EffectiveTag.Read.ASSET, REVISION, closure, asset),
+                EffectiveTag.winner(EffectiveTag.Read.ASSET_PAYLOAD, REVISION, closure, asset)));
+        Set<EffectiveTag> listsOfOneKind = new HashSet<>(List.of(
+                EffectiveTag.winners(EffectiveTag.Read.SKILLS, ArtifactKind.SKILL, REVISION, closure),
+                EffectiveTag.winners(EffectiveTag.Read.ASSETS, ArtifactKind.SKILL, REVISION, closure)));
+
+        assertThat(ofTheSkill)
+                .as("the generic read, the skill read and the profile read of one id and depth")
+                .hasSize(3);
+        assertThat(ofTheAsset)
+                .as("the generic read, the asset read and the payload read of one id and depth")
+                .hasSize(3);
+        assertThat(listsOfOneKind).as("two lists over the same query").hasSize(2);
+    }
+
     // ---- the graph and the action context (T140, T141): each representation has its own tag ----
 
     private static final EffectiveTag.ContextQuery IMPLEMENT =

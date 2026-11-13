@@ -1,8 +1,7 @@
 description: >-
-  Always sandbox: a payload a browser opens directly runs in a sandbox, without scripts, forms or its own origin,
-  whatever its Content-Type.
+  Always "sandbox; default-src 'none'": a payload a browser opens directly runs in a sandbox, without scripts, forms
+  or its own origin, and loads nothing (no script, style, image, frame or connection), whatever its Content-Type.
 required: true
 schema:
   type: string
-  enum:
-    - sandbox
+  const: "sandbox; default-src 'none'"

@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * An activation is discoverable by links (#409, ruling {@code DM-01M78RKM6Q23PA9QAC80QJKQFF}): every activation answer
- * links its reads, the offering and its writes, each write with its method and each template marked templated.
+ * links its reads, its held assets and skills, the offering and its writes, each write with its method and each
+ * template marked templated.
  */
 class ActivationMapperLinksTest {
 
@@ -53,7 +54,10 @@ class ActivationMapperLinksTest {
                                 "effective-context",
                                 SELF + "/mission-types/{missionType}/actions/{action}/context{?depth}",
                                 null,
-                                true));
+                                true),
+                        tuple("assets", SELF + "/artifacts/asset", null, null),
+                        tuple("asset", SELF + "/artifacts/asset/{artifactId}", null, true),
+                        tuple("skills", SELF + "/artifacts/skill", null, null));
     }
 
     @Test

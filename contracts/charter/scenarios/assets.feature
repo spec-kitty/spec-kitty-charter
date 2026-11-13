@@ -9,7 +9,7 @@ Feature: A pack's assets are listed, read and their payloads served byte for byt
   A client lists a pack's assets, reads one to learn how it runs, and follows its payload link to fetch its bytes. The
   payload is the file the asset names, unchanged, served with the asset's mime as its Content-Type when the mime is a
   well-formed type/subtype and as application/octet-stream when it is not, always with X-Content-Type-Options: nosniff
-  and Content-Security-Policy: sandbox. It ignores Accept. Every read answers the pack revision as its ETag, and the
+  and Content-Security-Policy: sandbox; default-src 'none'. It ignores Accept. Every read answers the pack revision as its ETag, and the
   payload answers 304 to a matching If-None-Match. The pack is judged first: an unknown pack is 404 pack_not_found,
   then an asset the pack does not hold is 404 artifact_not_found.
 
@@ -118,7 +118,7 @@ Feature: A pack's assets are listed, read and their payloads served byte for byt
     Then the response status is 200
     And the response header "Content-Type" is "text/x-python"
     And the response header "X-Content-Type-Options" is "nosniff"
-    And the response header "Content-Security-Policy" is "sandbox"
+    And the response header "Content-Security-Policy" is "sandbox; default-src 'none'"
     And the response header "ETag" is the remembered header
     And the response body is the bytes of the file "assets/run.py" of the pack "qa"
 
@@ -127,7 +127,7 @@ Feature: A pack's assets are listed, read and their payloads served byte for byt
     Then the response status is 200
     And the response header "Content-Type" is "image/png"
     And the response header "X-Content-Type-Options" is "nosniff"
-    And the response header "Content-Security-Policy" is "sandbox"
+    And the response header "Content-Security-Policy" is "sandbox; default-src 'none'"
     And the response body is the bytes of the file "assets/logo.png" of the pack "qa"
 
   Scenario: The payload ignores Accept: a request for JSON is answered the same bytes and type
@@ -173,7 +173,7 @@ Feature: A pack's assets are listed, read and their payloads served byte for byt
     Then the response status is 200
     And the response header "Content-Type" is "application/octet-stream"
     And the response header "X-Content-Type-Options" is "nosniff"
-    And the response header "Content-Security-Policy" is "sandbox"
+    And the response header "Content-Security-Policy" is "sandbox; default-src 'none'"
     And the response body is the bytes of the file "assets/notes.txt" of the pack "odd"
 
   Scenario Outline: <operation> of a pack no configured pack answers to is 404 pack_not_found

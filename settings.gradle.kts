@@ -29,7 +29,7 @@ listOf(
     // domain because packs depends on missions (ADR-0037, amendment of 2026-11-09).
     "missions-edge",
     // The edge rings of the asset, skill and references reads (application, infra.api, infra.packs, infra.activations),
-    // with no domain module: :activations names packs only from its own adapter (ADR-0037, amendment of 2026-11-09).
+    // with no domain module: :activations names packs only from its own adapter (ADR-0037, amendment of 2026-11-13).
     "artifacts-edge",
     "activations",
     "charter-api",

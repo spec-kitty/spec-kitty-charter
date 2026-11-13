@@ -233,7 +233,7 @@ class EffectiveAssetsControllerTest {
                 .andExpect(header().string("ETag", "\"" + TAG + "\""))
                 .andExpect(header().string("Charter-Source-Fingerprint", FINGERPRINT))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().string("Content-Security-Policy", "sandbox"))
+                .andExpect(header().string("Content-Security-Policy", "sandbox; default-src 'none'"))
                 .andExpect(content().bytes(SCRIPT));
         assertThat(asked).containsExactly("payload proj/run");
     }

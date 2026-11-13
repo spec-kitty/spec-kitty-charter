@@ -17,7 +17,10 @@ description: >-
   packs, its closure (listActivationPacks); graph, its effective graph (getEffectiveGraph); skipped, its skipped report
   (getActivationSkippedReport); and effective-context, the action context as a template
   (/api/v1/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}, templated true;
-  getEffectiveActionContext). offering is the offering it chooses from (getOffering). Its writes, each with its method:
+  getEffectiveActionContext); assets, the assets its closure holds (listEffectiveAssets); asset, one of them as a
+  template (/api/v1/activations/{activationId}/artifacts/asset/{artifactId}, templated true; getEffectiveAsset), which a
+  guard runner (asset:<id>) expands with the asset's id; and skills, the skills its closure holds
+  (listEffectiveSkills). offering is the offering it chooses from (getOffering). Its writes, each with its method:
   edit (PUT, replaceActivation) and delete (DELETE, deleteActivation) on the activation itself; select
   (…/selections/{kind}/{artifactId}, PUT, selectActivationArtifact) and exclude (…/exclusions/{kind}/{artifactId},
   PUT, deactivateActivationArtifact), templated by kind and id; and apply-preset (…/presets/{presetId}, PUT,

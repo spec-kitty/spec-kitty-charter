@@ -11,7 +11,9 @@ get:
     is addressed by its id, never by the file's path. It is answered as getPackAssetPayload answers the pack's copy: the
     Content-Type is the winning copy's mime when it is a well-formed type/subtype, and application/octet-stream
     otherwise (and, as a limit of the transport, when a well-formed mime cannot be written as a header value); Accept
-    is ignored; every 200 carries X-Content-Type-Options: nosniff and Content-Security-Policy: sandbox.
+    is ignored; every 200 carries X-Content-Type-Options: nosniff and Content-Security-Policy: sandbox; default-src
+    'none'. No Content-Disposition is answered, on purpose: the payload is read by programs, and nosniff plus the
+    sandbox already contain a browser that opens it.
 
     The order of the refusals is getEffectiveAsset's: 404 activation_not_found, then 404 artifact_not_found, both
     judged before any If-None-Match; 500 pack_unreadable. The bytes are read from the winner's pack against the source

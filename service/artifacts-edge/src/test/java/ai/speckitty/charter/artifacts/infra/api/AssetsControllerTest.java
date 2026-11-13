@@ -172,7 +172,7 @@ class AssetsControllerTest {
                 .andExpect(header().string("Content-Type", "image/png"))
                 .andExpect(header().string("Content-Length", String.valueOf(PNG.length)))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().string("Content-Security-Policy", "sandbox"))
+                .andExpect(header().string("Content-Security-Policy", "sandbox; default-src 'none'"))
                 .andExpect(header().string("ETag", ETAG))
                 .andExpect(header().string("Charter-Source-Fingerprint", FINGERPRINT))
                 .andExpect(header().doesNotExist("Accept-Ranges"))
