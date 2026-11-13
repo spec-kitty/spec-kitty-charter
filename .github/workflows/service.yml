@@ -31,6 +31,7 @@ on:
       - ".github/workflows/service.yml"
       - ".github/workflows/sonar.yml"
       - ".github/workflows/contract-release.yml"
+      - ".github/workflows/packs-contract-release.yml"
       - ".github/workflows/service-release.yml"
       - "scripts/release/**"
       # The pack sync and its lockfile (packs/internal and packs/qa are synced from open-packs, not committed).
@@ -239,8 +240,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The release path of contract-release.yml, run on a synthetic release in a throwaway clone with no
-  # remote: an unreleased commit is refused, a released one yields the three assets. Nothing is tagged
+  # The release paths of contract-release.yml and packs-contract-release.yml, each run on a synthetic release in a
+  # throwaway clone with no remote: an unreleased commit is refused, a released one yields its assets. Nothing is tagged
   # on this repository and nothing is published. Skipped when the docs site calls this workflow.
   release-rehearsal:
     if: github.workflow != 'Docs site'

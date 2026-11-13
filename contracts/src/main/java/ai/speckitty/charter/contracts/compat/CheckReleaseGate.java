@@ -32,6 +32,10 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * the refusal and exits 1. Given the changelog fragments directory, it also refuses while a fragment is left
  * unassembled ({@link ChangelogFragments}, ADR-0047). The Gradle task {@code checkReleaseTag} runs it.
  *
+ * <p>{@code CheckReleaseGate --packs-release <CHANGELOG.md> <tag>} checks a tag pushed to publish a packs contract
+ * release ({@link ReleaseGate#packsReleaseRefusal}, #559): it prints {@code RELEASE <version>} and exits 0, or prints
+ * the refusal and exits 1. The Gradle task {@code checkPacksReleaseTag} runs it.
+ *
  * <p>{@code CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>} prints
  * {@code PREVIOUS_BREAKING <tag>} when the version is a breaking bump (a major bump, or a minor bump while the major
  * is 0) over a release whose tag is merged ({@link ReleaseGate#previousBreakingBaseline}), else {@code NONE}; it exits
@@ -43,6 +47,7 @@ public final class CheckReleaseGate {
             "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)"
                     + " | CheckReleaseGate --baseline <openapi.yaml> <tag>"
                     + " | CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag> [<changes-dir>]"
+                    + " | CheckReleaseGate --packs-release <CHANGELOG.md> <tag>"
                     + " | CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>";
 
     private CheckReleaseGate() {}
@@ -66,6 +71,9 @@ public final class CheckReleaseGate {
         if ((args.size() == 4 || args.size() == 5) && "--release".equals(args.get(0))) {
             @Nullable Path changes = args.size() == 5 ? Path.of(args.get(4)) : null;
             return release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), changes, out);
+        }
+        if (args.size() == 3 && "--packs-release".equals(args.get(0))) {
+            return packsRelease(Path.of(args.get(1)), args.get(2), out);
         }
         if (args.size() == 3 && "--baseline".equals(args.get(0))) {
             return baseline(Path.of(args.get(1)), args.get(2), out);
@@ -173,6 +181,26 @@ public final class CheckReleaseGate {
         }
         out.println("RELEASE " + version);
         out.println("The tag " + tag + ", info.version and the top CHANGELOG heading name release " + version + ".");
+        return 0;
+    }
+
+    private static int packsRelease(Path changelog, String tag, PrintStream out) {
+        String log;
+        try {
+            log = Files.readString(changelog);
+        } catch (IOException e) {
+            out.println("Cannot read the release gate's inputs: " + e.getMessage());
+            return 2;
+        }
+        Optional<Decision.Refused> refused = ReleaseGate.packsReleaseRefusal(tag, log);
+        if (refused.isPresent()) {
+            out.println(refused.get().message());
+            return 1;
+        }
+        String version = tag.substring(ReleaseGate.PACKS_TAG_PREFIX.length());
+        out.println("RELEASE " + version);
+        out.println("The tag " + tag + " and the top heading of " + ReleaseGate.PACKS_CHANGELOG + " name release "
+                + version + ".");
         return 0;
     }
 

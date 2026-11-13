@@ -66,6 +66,21 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aPacksContractReleaseMustBeTheVersionItsTagNamesAndTheChangelogTops() throws IOException {
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-SNAPSHOT\n");
+        List<String> args = List.of("--packs-release", log.toString(), "contract-packs-v0.1.0");
+        assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
+        assertThat(printed()).contains("contract-packs-v0.1.0 names 0.1.0");
+        output.reset();
+        Files.writeString(log, "## 0.1.0\n");
+        assertThat(CheckReleaseGate.run(args, out)).isZero();
+        assertThat(printed()).startsWith("RELEASE 0.1.0\n");
+        output.reset();
+        List<String> missing = List.of("--packs-release", dir.resolve("absent.md").toString(), "contract-packs-v0.1.0");
+        assertThat(CheckReleaseGate.run(missing, out)).isEqualTo(2);
+    }
+
+    @Test
     void aReleaseIsRefusedWhileAChangelogFragmentIsNotAssembled() throws IOException {
         Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 0.1.0\n");
         Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0\n");

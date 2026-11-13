@@ -931,6 +931,24 @@ tasks.register<CheckReleaseTag>("checkReleaseTag") {
     tag = providers.gradleProperty("releaseTag")
 }
 
+// The publishing gate of a packs contract release tag (#559, ReleaseGate.packsReleaseRefusal): -PreleaseTag must be
+// contract-packs-v<version> for the released version the top heading of contracts/packs/CHANGELOG.md names.
+// packs-contract-release.yml runs it before it assembles anything; like checkReleaseTag, it is not part of `check`.
+tasks.register<JavaExec>("checkPacksReleaseTag") {
+    group = "contract"
+    description = "Checks that -PreleaseTag and the top heading of contracts/packs/CHANGELOG.md name one released version."
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
+    val changelog = layout.projectDirectory.file("packs/CHANGELOG.md").asFile.absolutePath
+    val releaseTag = providers.gradleProperty("releaseTag")
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf("--packs-release", changelog, releaseTag.orNull
+            ?: throw GradleException("Name the release tag: -PreleaseTag=contract-packs-v<version>"))
+    })
+    doNotTrackState("A gate with no outputs: it runs each time it is asked.")
+}
+
 // The release pull request's step (ADR-0047): assembles charter/changes/*.md into the top CHANGELOG section and deletes
 // them. It writes the source tree, so it is never part of `check`; run it, review the diff, commit it.
 tasks.register<JavaExec>("assembleContractChangelog") {

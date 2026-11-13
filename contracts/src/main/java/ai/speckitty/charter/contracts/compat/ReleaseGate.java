@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BinaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -60,12 +61,23 @@ import java.util.stream.IntStream;
  *       released version equal to {@code info.version}, and the heading, order and version gates (rules 1 to 3)
  *       must pass, so the top heading is that version too ({@link #releaseRefusal}). The workflow
  *       {@code contract-release.yml} publishes nothing when this refuses.</li>
+ *   <li><b>Packs contract tag.</b> The packs contract ({@code contracts/packs/}, #559) is its own versioned line: its
+ *       version is the top heading of {@code contracts/packs/CHANGELOG.md}, and rules 1, 2 and 8 hold over that
+ *       file. A tag pushed to publish it must be {@code contract-packs-v<version>} for a released version equal to
+ *       that heading ({@link #packsReleaseRefusal}); {@code packs-contract-release.yml} publishes nothing when this
+ *       refuses. The other rules read the charter contract only.</li>
  * </ol>
  */
 public final class ReleaseGate {
 
     /** The prefix of a released contract's tag; the version follows it. */
     public static final String TAG_PREFIX = "contract-charter-v";
+
+    /** The tag prefix of a packs contract release ({@code contracts/packs/}, #559). */
+    public static final String PACKS_TAG_PREFIX = "contract-packs-v";
+
+    /** The packs contract's CHANGELOG, whose top heading is the packs contract's version (#559). */
+    public static final String PACKS_CHANGELOG = "contracts/packs/CHANGELOG.md";
 
     private static final String NUMBER = "(0|[1-9]\\d*)";
     private static final Pattern VERSION = Pattern.compile(NUMBER + "\\." + NUMBER + "\\." + NUMBER + "(-SNAPSHOT)?");
@@ -193,6 +205,31 @@ public final class ReleaseGate {
     private record Section(String text, String token, Optional<Version> version, boolean breaking) {}
 
     /**
+     * A versioned line the CHANGELOG gates check: the charter contract, or the packs contract (#559).
+     *
+     * @param changelog the CHANGELOG's repository path, named in every refusal
+     * @param mismatch  the refusal when the version source and the top heading differ, given both versions
+     */
+    private record Line(String changelog, BinaryOperator<String> mismatch) {
+        static final Line CHARTER = new Line(
+                "contracts/charter/CHANGELOG.md",
+                (version, top) -> "info.version " + version + " of contracts/charter/openapi.yaml does not equal the"
+                        + " top heading " + top + " of contracts/charter/CHANGELOG.md; bump both together.");
+
+        static Line packs(String tag) {
+            return new Line(
+                    PACKS_CHANGELOG,
+                    (version, top) -> "The tag " + tag + " names " + version + ", but the top heading of "
+                            + PACKS_CHANGELOG + " at that commit is " + top + ". A release tag names the released"
+                            + " version the top heading carries: tag the release's merge commit on main.");
+        }
+
+        String mismatch(String version, String top) {
+            return mismatch.apply(version, top);
+        }
+    }
+
+    /**
      * Runs the gate.
      *
      * @param infoVersion the {@code info.version} of the contract
@@ -314,6 +351,29 @@ public final class ReleaseGate {
     }
 
     /**
+     * The publishing rule of the packs contract (rule 12, #559): a tag pushed to publish a packs contract release must
+     * be {@code contract-packs-v<version>} for a released version, and the heading, order and Breaking rules (1, 2 and
+     * 8) must pass over {@code contracts/packs/CHANGELOG.md} with that version as its top heading. The packs contract
+     * has no other version carrier: its CHANGELOG's top heading is its version.
+     *
+     * @param tag       the pushed tag, {@code contract-packs-v<version>}
+     * @param changelog the text of {@code contracts/packs/CHANGELOG.md} at that tag
+     * @return the refusal, or empty when the tag and the top heading name one released version
+     */
+    public static Optional<Decision.Refused> packsReleaseRefusal(String tag, String changelog) {
+        if (!tag.startsWith(PACKS_TAG_PREFIX)) {
+            return refuse("The tag " + tag + " is not a packs contract release tag: it must be " + PACKS_TAG_PREFIX
+                    + "<version>.");
+        }
+        String named = tag.substring(PACKS_TAG_PREFIX.length());
+        if (Version.parse(named).filter(Version::released).isEmpty()) {
+            return refuse("The tag " + tag + " names " + named + ", which is not a released version (X.Y.Z):"
+                    + " a -SNAPSHOT is never published.");
+        }
+        return changelogRefusal(named, sections(changelog), Line.packs(tag));
+    }
+
+    /**
      * The release a breaking bump is shown against, for information only: when the top section raises the release
      * line above that of the previous release (a major bump, or a minor bump while the major is 0), that release's
      * tag, provided it is merged into HEAD.
@@ -354,38 +414,49 @@ public final class ReleaseGate {
 
     /** The heading, order and version gates (rules 1 to 3) and the Breaking subsection (rule 8). */
     private static Optional<Decision.Refused> changelogRefusal(String infoVersion, List<Section> sections) {
+        return changelogRefusal(infoVersion, sections, Line.CHARTER);
+    }
+
+    /**
+     * The heading, order and version gates and the Breaking subsection of one versioned line.
+     *
+     * @param infoVersion the version the line's version source names, which the top heading must equal
+     * @param sections    the line's CHANGELOG headings
+     * @param line        the line, for its CHANGELOG's name and its version mismatch
+     */
+    private static Optional<Decision.Refused> changelogRefusal(
+            String infoVersion, List<Section> sections, Line line) {
+        String file = line.changelog();
         Optional<Version> info = Version.parse(infoVersion);
         if (info.isEmpty()) {
             return refuse("info.version '" + infoVersion + "' "
                     + Version.malformation(infoVersion).orElse("is not X.Y.Z or X.Y.Z-SNAPSHOT") + ".");
         }
         if (sections.isEmpty()) {
-            return refuse("contracts/charter/CHANGELOG.md has no version heading (## X.Y.Z).");
+            return refuse(file + " has no version heading (## X.Y.Z).");
         }
         for (Section section : sections) {
             Optional<String> malformed = Version.malformation(section.token());
             if (malformed.isPresent()) {
-                return refuse("The heading '" + section.text() + "' of contracts/charter/CHANGELOG.md names a version"
+                return refuse("The heading '" + section.text() + "' of " + file + " names a version"
                         + " that " + malformed.get() + ".");
             }
         }
         Section top = sections.getFirst();
         if (top.version().isEmpty()) {
-            return refuse("The top heading '" + top.text() + "' of contracts/charter/CHANGELOG.md is not a version"
+            return refuse("The top heading '" + top.text() + "' of " + file + " is not a version"
                     + " (X.Y.Z or X.Y.Z-SNAPSHOT).");
         }
         if (!top.version().get().text().equals(infoVersion)) {
-            return refuse("info.version " + infoVersion + " of contracts/charter/openapi.yaml does not equal the top"
-                    + " heading " + top.version().get().text() + " of contracts/charter/CHANGELOG.md; bump both"
-                    + " together.");
+            return refuse(line.mismatch(infoVersion, top.version().get().text()));
         }
-        Optional<Decision.Refused> unordered = orderRefusal(sections);
+        Optional<Decision.Refused> unordered = orderRefusal(sections, file);
         if (unordered.isPresent()) {
             return unordered;
         }
         Optional<Version> previous = previousRelease(sections);
         if (previous.isPresent() && info.get().lineAbove(previous.get()) && !top.breaking()) {
-            return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md raises the "
+            return refuse("The top section " + infoVersion + " of " + file + " raises the "
                     + (info.get().major() > previous.get().major() ? "major version" : "minor version of 0.x")
                     + " from " + previous.get().text() + " to " + infoVersion + " but has no ### Breaking"
                     + " subsection; list what breaks there.");
@@ -403,13 +474,13 @@ public final class ReleaseGate {
     }
 
     /** The order rules (rule 2): no version twice, the top above every release, strictly descending. */
-    private static Optional<Decision.Refused> orderRefusal(List<Section> sections) {
+    private static Optional<Decision.Refused> orderRefusal(List<Section> sections, String file) {
         List<Version> versions =
                 sections.stream().flatMap(s -> s.version().stream()).toList();
         Set<String> seen = new TreeSet<>();
         for (Version version : versions) {
             if (!seen.add(version.text())) {
-                return refuse("contracts/charter/CHANGELOG.md lists " + version.text() + " twice; each version has one"
+                return refuse(file + " lists " + version.text() + " twice; each version has one"
                         + " section.");
             }
         }
@@ -422,12 +493,12 @@ public final class ReleaseGate {
         if (above.isPresent()) {
             return refuse("The top heading " + top.text() + " is not above the released "
                     + above.get().text()
-                    + " in contracts/charter/CHANGELOG.md. A new version is higher than every release: after "
+                    + " in " + file + ". A new version is higher than every release: after "
                     + above.get().text() + " open the next -SNAPSHOT (heading and info.version together).");
         }
         for (int i = 1; i < versions.size(); i++) {
             if (versions.get(i).compareTo(versions.get(i - 1)) > 0) {
-                return refuse("The version headings of contracts/charter/CHANGELOG.md are not in descending order,"
+                return refuse("The version headings of " + file + " are not in descending order,"
                         + " newest first: " + versions.get(i).text() + " is listed after "
                         + versions.get(i - 1).text() + ".");
             }
