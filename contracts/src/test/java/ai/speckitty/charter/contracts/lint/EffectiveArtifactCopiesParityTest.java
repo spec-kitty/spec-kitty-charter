@@ -16,12 +16,13 @@ import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 
 /**
- * {@code EffectiveArtifactRead}, {@code EffectiveGovernanceEntry} and {@code EffectiveAgentProfileRead} copy the members of
- * {@code EffectiveArtifact} (the schemas are closed and carry no {@code allOf} of it, so that a read can add its own
+ * {@code EffectiveArtifactRead}, {@code EffectiveGovernanceEntry}, {@code EffectiveAgentProfileRead} and
+ * {@code EffectiveSkillRead} copy the members of {@code EffectiveArtifact} (the schemas are closed and carry no {@code allOf} of it, so that a read can add its own
  * members): a member of the item that one of them lacks, or spells differently, would make the same fact read two ways
  * under one activation. Each copy repeats every member of the item, with the same schema, except what the item or the copy
  * says apart: {@code _links}, which the copies require and the item leaves optional (the item links only the kinds the
- * pack-scoped routes serve), and {@code suggestion}, which a governance entry replaces with {@code edge}.
+ * pack-scoped routes serve), and {@code suggestion}, which a governance entry replaces with {@code edge}. The skill read
+ * is the artifact read with the winner's skill beside it, and nothing else.
  *
  * <p>{@code EffectiveContextArtifact}, the item of the effective action context, is a copy of another sort: it is an item
  * too, so it repeats every member of the item, {@code _links} included and optional as the item's, and adds the one
@@ -32,7 +33,7 @@ class EffectiveArtifactCopiesParityTest {
     private static final Path SCHEMAS = Path.of(System.getProperty("charter.charterSchemas"));
     private static final String ITEM = "EffectiveArtifact";
     private static final List<String> COPIES =
-            List.of("EffectiveArtifactRead", "EffectiveGovernanceEntry", "EffectiveAgentProfileRead");
+            List.of("EffectiveArtifactRead", "EffectiveGovernanceEntry", "EffectiveAgentProfileRead", "EffectiveSkillRead");
     private static final List<String> APART = List.of("_links");
     private static final Map<String, List<String>> ABSENT_BY_DESIGN =
             Map.of("EffectiveGovernanceEntry", List.of("suggestion"));
@@ -107,6 +108,27 @@ class EffectiveArtifactCopiesParityTest {
         assertThat(required)
                 .as("the item leaves _links optional: it links only the kinds the pack-scoped routes serve")
                 .doesNotContain("_links");
+    }
+
+    @Test
+    void theSkillReadIsTheArtifactReadWithTheSkillBesideIt() {
+        Map<String, Object> read = properties("EffectiveArtifactRead");
+        Map<String, Object> skillRead = properties("EffectiveSkillRead");
+
+        for (Map.Entry<String, Object> member : read.entrySet()) {
+            if (APART.contains(member.getKey())) {
+                continue;
+            }
+            assertThat(skillRead)
+                    .as("EffectiveSkillRead has the member %s of EffectiveArtifactRead", member.getKey())
+                    .containsEntry(member.getKey(), member.getValue());
+        }
+        assertThat(skillRead.keySet())
+                .as("the one member of its own")
+                .containsExactlyInAnyOrderElementsOf(concat(read.keySet(), List.of("skill")));
+        assertThat(required("EffectiveSkillRead"))
+                .as("the required members of EffectiveSkillRead")
+                .containsExactlyInAnyOrderElementsOf(concat(required("EffectiveArtifactRead"), List.of("skill")));
     }
 
     @Test
