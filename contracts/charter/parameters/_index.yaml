@@ -1,5 +1,6 @@
 files:
   - ArtifactId.yaml
+  - AssetOrSkillId.yaml
   - ArtifactKind.yaml
   - ArtifactKindFilter.yaml
   - PackId.yaml

@@ -21,7 +21,7 @@ get:
     - Skills
   parameters:
     - $ref: ../parameters/PackId.yaml
-    - $ref: ../parameters/ArtifactId.yaml
+    - $ref: ../parameters/AssetOrSkillId.yaml
   responses:
     '200':
       description: The skill, with its body when it is a prompt skill.

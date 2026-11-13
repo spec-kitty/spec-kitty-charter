@@ -19,7 +19,7 @@ get:
     - Assets
   parameters:
     - $ref: ../parameters/PackId.yaml
-    - $ref: ../parameters/ArtifactId.yaml
+    - $ref: ../parameters/AssetOrSkillId.yaml
   responses:
     '200':
       description: The asset's descriptor.

@@ -1,6 +1,6 @@
 parameters:
 - $ref: ../parameters/ActivationId.yaml
-- $ref: ../parameters/ArtifactId.yaml
+- $ref: ../parameters/AssetOrSkillId.yaml
 get:
   operationId: getEffectiveAssetPayload
   summary: Read the payload of an asset in force under an activation, the bytes of the copy the layer merge keeps.

@@ -1,6 +1,6 @@
 parameters:
 - $ref: ../parameters/ActivationId.yaml
-- $ref: ../parameters/ArtifactId.yaml
+- $ref: ../parameters/AssetOrSkillId.yaml
 get:
   operationId: getEffectiveSkill
   summary: Read a skill under an activation, with its state and the skill as its winning pack declares it.
