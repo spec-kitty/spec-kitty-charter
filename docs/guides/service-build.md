@@ -146,6 +146,7 @@ versions, the HTML and XML reports and PIT's default mutators:
 | profiles-edge | `profiles-edge` | `profiles.application` and `profiles.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | missions-edge | `missions-edge` | `missions.application` and `missions.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | artifacts-edge | `artifacts-edge` | `artifacts.application` and `artifacts.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| pack-validation | `pack-validation` | the whole module (`packvalidation`) | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |

@@ -194,21 +194,22 @@ amendment of 2026-11-09; it adds a second kind of edge module, which composes re
   belongs to neither slice, goes to a domain-less edge. A read of a slice whose domain
   `packs.infra.storage` binds still goes to that slice's own edge (amendment of 2026-11-09).
 
-### Amendment 2026-11-13 (ADR-0075, #550): the module map gains pack-validation and pack-check
+### Amendment 2026-11-13 (ADR-0075, #550 and #553): the module map gains pack-validation and pack-check
 
-[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) moves
-every pack check, and the load, codecs and classification they need, out of `packs` into a
-Spring-free module, `pack-validation`, and packages it as a CLI, `pack-check`. It changes no decision
-of this record: the registry and the whole-pack seam stay in `packs`, which comes to depend on
-`pack-validation` and keeps `WholePackStore` and its other beans as thin adapters over the module's
-load (from #553).
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) runs
+every pack check in a Spring-free module, `pack-validation`, and packages it as a CLI, `pack-check`. It
+changes no decision of this record. The registry, the whole-pack seam, the load, the codecs and the
+classification all stay in `packs`, and so does the packs domain model (ADR-0075's amendment of
+2026-11-13, an operator ruling on #553).
 
-- **The dependency direction.** `:kernel`, then `:profiles` and `:missions`, then `:pack-validation`,
-  then `:packs` and `:pack-check`. `pack-validation` never names `packs`, and `pack-check` names
-  `pack-validation` only.
-- **The gate.** `PACK_VALIDATION_IS_FRAMEWORK_FREE` in the architecture test, with a known-bad
-  control, and a dependency allowlist in each module's build (amendment of ADR-0006, 2026-11-13).
-- **Slice 1 (#550)** adds both modules empty. The load moves in with #553.
+- **The dependency direction.** `:kernel`, then `:profiles` and `:missions`, then `:packs`, then
+  `:pack-validation`, then `:pack-check`. `pack-validation` names only `packs.domain`: it reads a pack
+  through the `PackInspector` port, and a composition root plugs in `FileSystemPackInspector`. `packs`
+  names no `pack-validation` class; the service runs its rulesets through a port `packs.domain` declares
+  (#554).
+- **The gate.** `PACK_VALIDATION_IS_FRAMEWORK_FREE` in the architecture test, direct and transitive,
+  with known-bad controls, and a dependency allowlist in each module's build (amendment of ADR-0006,
+  2026-11-13).
 
 ## Context
 
