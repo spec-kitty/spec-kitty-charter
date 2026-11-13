@@ -23,3 +23,6 @@ question, the evidence gathered, and a recommendation; the decision it feeds lan
   whether CRG multigraph pairs can collapse to one unidirectional relationship, the data and
   architecture findings, and the conditions a collapse must carry. Feeds a future identity ADR that
   would revise [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/).
+- [Grounding for the glossary contexts and terms Mission](/development/notes/glossary-contexts-grounding/) —
+  the rulings, rename surface, overlap with slice C and epic #549, and issue dispositions for #106, written
+  before its spec.
