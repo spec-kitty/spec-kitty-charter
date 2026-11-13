@@ -6,9 +6,10 @@ import org.gradle.api.artifacts.ProjectDependency
 
 /**
  * The only dependencies a module may declare (ADR-0075 decision 3): charter projects by path and external modules by
- * `group:name`. `pack-validation` and `pack-check` pin theirs with it, on every configuration that puts a jar on the
- * module's main compile or runtime classpath ([CONFIGURATIONS]), so neither a Spring starter nor the packs slice can
- * enter their build, at compile time or riding along at run time. `HexagonalArchitectureTest`'s
+ * `group:name`. `pack-validation` and `pack-check` pin theirs with it, judging every configuration in the hierarchy of
+ * the module's main compile and runtime classpaths ([CLASSPATHS]), custom ones they extend from included, so neither a
+ * Spring starter nor the packs slice can enter their build, at compile time or riding along at run time. Only the
+ * dependencies a module declares are judged: what they bring in transitively is not. `HexagonalArchitectureTest`'s
  * `PACK_VALIDATION_IS_FRAMEWORK_FREE` pins the classes they use.
  *
  * @property projects the charter project paths allowed, such as `:kernel`
@@ -36,20 +37,24 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
     )
 
     /**
-     * Fails the build when a configuration in [CONFIGURATIONS] of [project] declares a dependency the list does not
-     * allow, naming every one. The check runs when the configuration's dependencies are first read, so a resolution of
-     * the module's classpath fails with this message as its cause.
+     * Fails the build when a dependency the list does not allow reaches a configuration in [CLASSPATHS] of [project],
+     * naming every one and the configuration that declares it. That is every configuration in the classpath's
+     * hierarchy, so a custom configuration the main ones `extendsFrom` is judged too. The check runs when the
+     * classpath's dependencies are first read, so a resolution of it fails with this message as its cause.
      */
     fun enforceOn(project: Project) {
         val allowlist = this
-        project.configurations.matching { it.name in CONFIGURATIONS }.configureEach {
-            val configuration = name
+        project.configurations.matching { it.name in CLASSPATHS }.configureEach {
+            val classpath = this
             withDependencies {
-                val refused = allowlist.refusedAmong(this)
-                if (refused.isNotEmpty()) {
+                val refusals = classpath.hierarchy.mapNotNull { declaring ->
+                    allowlist.refusedAmong(declaring.dependencies).takeIf { it.isNotEmpty() }?.let { declaring.name to it }
+                }
+                if (refusals.isNotEmpty()) {
                     throw GradleException(
-                        "${project.path} may not declare $refused in $configuration (ADR-0075); it may depend on " +
-                            "${allowlist.projects.sorted()} and ${allowlist.modules.sorted()} only",
+                        refusals.joinToString("; ") { (declaring, refused) ->
+                            "${project.path} may not declare $refused in $declaring (ADR-0075)"
+                        } + "; it may depend on ${allowlist.projects.sorted()} and ${allowlist.modules.sorted()} only",
                     )
                 }
             }
@@ -57,8 +62,8 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
     }
 
     companion object {
-        /** The declarable configurations that feed the main compile or runtime classpath of a `java-library` module. */
-        val CONFIGURATIONS = setOf("api", "implementation", "compileOnly", "compileOnlyApi", "runtimeOnly")
+        /** The resolvable configurations that are the main compile and runtime classpath of a `java-library` module. */
+        val CLASSPATHS = setOf("compileClasspath", "runtimeClasspath")
 
         /** What `charter.hand-written` itself declares on every hand-written module: JSpecify, `compileOnly`. */
         val CONVENTION_MODULES = setOf("org.jspecify:jspecify")
