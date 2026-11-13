@@ -24,6 +24,8 @@ Feature: The worktree guard answers in front of every operation
       | registerPackFromArchive         | PUT    | /packs/qa                                                                                     |
       | getPack                         | GET    | /packs/qa                                                                                     |
       | getPackDocument                 | GET    | /packs/qa/doc                                                                                 |
+      | listPackPresets                 | GET    | /packs/qa/presets                                                                             |
+      | getPackPreset                   | GET    | /packs/qa/presets/team                                                                        |
       | getPackRegistration             | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship             | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
@@ -80,6 +82,8 @@ Feature: The worktree guard answers in front of every operation
       | registerPackFromArchive         | PUT    | /packs/qa                                                                                     |
       | getPack                         | GET    | /packs/qa                                                                                     |
       | getPackDocument                 | GET    | /packs/qa/doc                                                                                 |
+      | listPackPresets                 | GET    | /packs/qa/presets                                                                             |
+      | getPackPreset                   | GET    | /packs/qa/presets/team                                                                        |
       | getPackRegistration             | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship             | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship          | DELETE | /packs/qa/relationships                                                                       |
