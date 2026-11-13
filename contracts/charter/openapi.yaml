@@ -53,6 +53,10 @@ tags:
     description: >-
       The assets of a Charter Pack (ADR-0054, ADR-0074): the list of a pack's assets, the read of one asset's
       descriptor and the read of its payload, its bytes with the asset's own media type.
+  - name: Skills
+    description: >-
+      The skills of a Charter Pack (ADR-0074): the list of a pack's skills and the read of one skill as the pack
+      declares it, with the body of a prompt skill exactly as held.
   - name: AgentProfiles
     description: >-
       The agent profiles of a Charter Pack: the pack-scoped read of one profile with its governance. The profile
@@ -113,6 +117,10 @@ paths:
     $ref: paths/packs_packId_artifacts_asset_artifactId.yaml
   /packs/{packId}/artifacts/asset/{artifactId}/payload:
     $ref: paths/packs_packId_artifacts_asset_artifactId_payload.yaml
+  /packs/{packId}/artifacts/skill:
+    $ref: paths/packs_packId_artifacts_skill.yaml
+  /packs/{packId}/artifacts/skill/{artifactId}:
+    $ref: paths/packs_packId_artifacts_skill_artifactId.yaml
   /packs/{packId}/artifacts/directive:
     $ref: paths/packs_packId_artifacts_directive.yaml
   /packs/{packId}/artifacts/directive/{artifactId}:

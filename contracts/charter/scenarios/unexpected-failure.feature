@@ -70,6 +70,8 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | listPackAssets         | /packs/qa/artifacts/asset                            |
       | getPackAsset           | /packs/qa/artifacts/asset/a                          |
       | getPackAssetPayload    | /packs/qa/artifacts/asset/a/payload                  |
+      | listPackSkills         | /packs/qa/artifacts/skill                            |
+      | getPackSkill           | /packs/qa/artifacts/skill/s                          |
       | getPackMissionType     | /packs/qa/artifacts/mission_type/m                   |
       | getPackMissionStep     | /packs/qa/artifacts/mission_type/m/steps/s           |
       | getPackMissionSkeleton | /packs/qa/artifacts/mission_type/m/skeletons/spec.md |
