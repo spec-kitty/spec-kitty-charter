@@ -40,6 +40,32 @@ audience:
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
+### Amendment 2026-11-13 (operator, #553): pack-validation reads the packs load; the packs domain stays
+
+Slice #553 measured what decision 3's extraction would move. The load that builds `PackContents` needs
+every kind's codec and the artifact domain: a closure of 168 classes (about 24,000 lines), 79 of the
+113 `packs.domain` types and 89 `packs.infra.storage` codecs, 79 of them package-private. Moving them
+would split the packs slice, which ruling 2 refused. The operator asked why `pack-validation` did not
+import them instead, and then ruled for that: the packs domain model stays in `packs`.
+
+- **The dependency direction is reversed.** `pack-validation` depends on `:packs`, not the other way.
+  It names only `packs.domain`: it reads a pack through the slice's public `PackInspector` port, and
+  judges it with the public `PackPolicy` and `PackValidation`. It never parses a file itself (no second
+  derivation). A composition root plugs in the file-system adapter, `FileSystemPackInspector`: the
+  service's `deployable`, and `pack-check`'s main (#478).
+- **Decision 3, "what moves in", is replaced.** Nothing moves: `PackSchemas`, `PackFileKind`,
+  `ManifestMembership` and the readers stay in `packs.infra.storage`. `pack-validation` holds the
+  rulesets of later slices and `PackLoad`, its entry over the port.
+- **Decision 4, one pipeline, holds.** The service runs `pack-validation`'s rulesets through a port that
+  `packs.domain` declares and `deployable` wires (#554), so validate mode and the load still run the same
+  `PACK` ruleset.
+- **Framework-free, by reach.** `:packs` puts Spring on the module's classpath, so
+  `PACK_VALIDATION_IS_FRAMEWORK_FREE` gains a transitive half. Nothing the modules reach, and nothing the
+  file-system inspector reaches, uses Spring, HTTP, a commit store or a lock. The direct half allows
+  `packs.domain` and no other ring of the slice. `pack-check` leaves Spring off its runtime classpath, and
+  #478 proves it runs without it.
+- **Rulings 1 and 2 hold.** `pack-check` stays its own module and jar, and `packs` is not split.
+
 ## Context
 
 - **The kernel's validator is a port of `modular-validators`.** `ai.speckitty.charter.kernel.validation` is a lean
@@ -178,7 +204,8 @@ The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-char
 
 ### Amends, as each slice lands
 
-- **ADR-0006 and ADR-0037:** the module map gains `pack-validation` and `pack-check`, and the new ArchUnit rule.
+- **ADR-0006 and ADR-0037:** the module map gains `pack-validation` and `pack-check`, and the new ArchUnit rule; as
+  amended on 2026-11-13 (#553), `pack-validation` depends on `packs`.
 - **ADR-0017:** schema validation is a rule of `pack-validation`.
 - **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`.
 - **ADR-0046:** the release carries `pack-check`.
