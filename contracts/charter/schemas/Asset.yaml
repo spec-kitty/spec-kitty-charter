@@ -1,0 +1,50 @@
+title: Asset
+description: >-
+  One asset of a Charter Pack, its sidecar's descriptor as the pack declares it (assets/<path>.asset.yaml, ADR-0054):
+  its id, its media type as written, the path of its payload and, when declared, its title and how it runs. The
+  payload's bytes are not in it: the asset's payload read answers them. An asset is answered in the Artifact envelope's
+  member asset by its own literal read, never by the templated item read.
+type: object
+additionalProperties: false
+required:
+  - id
+  - mime
+  - path
+properties:
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      The asset's identity within its pack: one lowercase kebab-case segment of at most 64 characters, so it names one
+      segment of the asset's paths.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.id
+  mime:
+    type: string
+    minLength: 1
+    description: >-
+      The media type exactly as the sidecar writes it. It is not normalized; whether it is a well-formed type/subtype
+      decides only the Content-Type its payload is served with.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.mime
+  path:
+    type: string
+    minLength: 1
+    description: The payload's path, relative to the pack's assets/ directory, as the sidecar writes it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.path
+  title:
+    type: string
+    description: The asset's human-facing title; left out when the sidecar declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+      symbol: Asset.title
+  executable:
+    $ref: AssetExecutable.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+  symbol: Asset

@@ -192,7 +192,8 @@ class WireTokenParityTest {
                         values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
                         CharterRefusal.CodeEnum::fromValue),
                 // The listed kinds against ArtifactKindToken, which only the ?kind= filter references (#99: the kinds
-                // the filter takes are the served ones, then mission_type and mission_step_contract). The generator
+                // the filter takes are the served ones, asset and skill among them since #105 and #107, then
+                // mission_type and mission_step_contract). The generator
                 // types that parameter as a String, so the enum is read from the contract file itself.
                 new Pair(
                         "ArtifactKindToken",

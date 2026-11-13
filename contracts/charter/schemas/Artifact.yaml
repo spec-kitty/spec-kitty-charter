@@ -8,7 +8,8 @@ description: >-
   answered by the generic item read (getPackArtifact) in member missionStepContract. A mission_type is answered in
   member missionType by its own read, getPackMissionType, whose literal path the service prefers over the generic
   one. Both reads carry the pack revision as their ETag, like every pack read of one artifact; neither kind has a
-  write, so it is a concurrency token for a DELETE, not a cache validator.
+  write, so it is a concurrency token for a DELETE, not a cache validator. An asset is answered in member asset and a
+  skill in member skill, each by its own literal read; the templated item read never answers either.
 type: object
 additionalProperties: false
 required:
@@ -30,6 +31,10 @@ oneOf:
   - required:
       - procedure
   - required:
+      - asset
+  - required:
+      - skill
+  - required:
       - agentProfile
   - required:
       - missionType
@@ -42,9 +47,10 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide,
-      procedure, agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know (skips the
-      item). It names the one member that holds the artifact: agent_profile names agentProfile, the member of
-      mission_type is missionType and the member of mission_step_contract is missionStepContract.
+      procedure, asset, skill, agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does
+      not know (skips the item). It names the one member that holds the artifact: agent_profile names agentProfile, the
+      member of mission_type is missionType and the member of mission_step_contract is missionStepContract. asset and
+      skill are answered by their own literal reads, in members asset and skill.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -74,6 +80,10 @@ properties:
     $ref: Toolguide.yaml
   procedure:
     $ref: Procedure.yaml
+  asset:
+    $ref: Asset.yaml
+  skill:
+    $ref: Skill.yaml
   agentProfile:
     $ref: AgentProfile.yaml
   missionType:

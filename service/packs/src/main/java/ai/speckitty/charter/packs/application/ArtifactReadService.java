@@ -51,13 +51,16 @@ import org.springframework.stereotype.Service;
  * gone. The item delegates to the per-kind read service of its kind ({@link TacticReadService} and the rest), which the
  * generic reads compose (#169 folds the kinds into a registry later).
  *
- * <p>Three sets of kinds (#99): {@link #SERVED}, the kinds with a per-kind read and the agent profile, whose body the
- * profiles slice renders; {@link #LISTED}, the one kind gate ({@link #listedKind(String)}) of the list, its
- * {@code ?kind=} filter, the item read, the references read and the removal, the served ones, then the mission type,
- * then the mission step contract; and {@link #ITEM_KINDS}, the listed kinds the templated item read renders, the served
- * ones but the agent profile, then the mission step contract, read from the pack aggregate. An agent profile's and a
- * mission type's items are answered at their own literal paths, by the profiles and the missions slices, never by the
- * templated item read, which refuses them {@link RefusalCode#KIND_NOT_FOUND} after the pack, never a server error.
+ * <p>Four sets of kinds (#99, #105, #107): {@link #SERVED}, the kinds a pack holds that this service answers, the ones
+ * with a per-kind read, then the asset and the skill, then the agent profile; {@link #LISTED}, the one kind gate
+ * ({@link #listedKind(String)}) of the list, its {@code ?kind=} filter, the item read and the references read, the
+ * served ones, then the mission type, then the mission step contract; {@link #LITERAL_ITEM_KINDS}, the listed kinds
+ * whose item is answered at its own literal path (the agent profile, the asset and the skill); and {@link #ITEM_KINDS},
+ * the listed kinds the templated item read renders, the served ones but the literal ones, then the mission step
+ * contract, read from the pack aggregate. The items of the literal kinds and of a mission type are answered at their
+ * own literal paths, by the profiles, the artifacts and the missions slices, never by the templated item read, which
+ * refuses them {@link RefusalCode#KIND_NOT_FOUND} after the pack, naming the literal path, never a server error. The
+ * removal keeps its own set, {@link ArtifactRemovalService#REMOVABLE}, so listing a kind never opens its DELETE.
  *
  * <p>The list is one read verified by {@link ConsistentRead}: the pack aggregate is loaded between two digests, so a
  * page and its fingerprint name the same inputs. The pack is judged before the kind: an identifier that names no
@@ -77,11 +80,12 @@ import org.springframework.stereotype.Service;
 public final class ArtifactReadService {
 
     /**
-     * The kinds this service serves, in the list order; {@code agent_profile} is last. They are the head of
-     * {@link #LISTED}, so a kind appended here stays before the mission kinds. Other kernel kinds are not served yet. An
-     * agent profile is listed, referenced and removed here, but its body is rendered by the profiles slice's literal
-     * route ({@code getPackAgentProfile}), which always wins over the templated item route; the templated item read
-     * refuses it {@link RefusalCode#KIND_NOT_FOUND} where that route is not wired, never a server error.
+     * The kinds this service serves, in the list order: the kinds with a per-kind read, then the asset and the skill,
+     * then {@code agent_profile}, which is last. They are the head of {@link #LISTED}, so a kind appended here stays
+     * before the mission kinds. Other kernel kinds are not served yet. The asset, the skill and the agent profile are
+     * listed and referenced here, but their items are answered at their own literal paths ({@link #LITERAL_ITEM_KINDS}),
+     * which always win over the templated item route; the templated item read refuses them
+     * {@link RefusalCode#KIND_NOT_FOUND} where that route is not wired, never a server error.
      */
     public static final List<ArtifactKind> SERVED = List.of(
             ArtifactKind.TACTIC,
@@ -90,29 +94,41 @@ public final class ArtifactReadService {
             ArtifactKind.PARADIGM,
             ArtifactKind.TOOLGUIDE,
             ArtifactKind.PROCEDURE,
+            ArtifactKind.ASSET,
+            ArtifactKind.SKILL,
             ArtifactKind.AGENT_PROFILE);
 
     /**
-     * The kinds the templated item read renders: the {@link #SERVED} kinds but the agent profile, then the mission step
-     * contract. An agent profile and a mission type are listed but not among them: each is rendered at its own literal
-     * path, and the templated item read refuses them {@link RefusalCode#KIND_NOT_FOUND} after the one kind gate,
-     * {@link #listedKind(String)}.
+     * The served kinds whose item is answered at its own literal path, never by the templated item read: the agent
+     * profile ({@code getPackAgentProfile}), the asset and the skill (ADR-0074 decision 9). The templated item read
+     * refuses each {@link RefusalCode#KIND_NOT_FOUND} and names the literal path.
+     */
+    public static final List<ArtifactKind> LITERAL_ITEM_KINDS =
+            List.of(ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL);
+
+    /**
+     * The kinds the templated item read renders: the {@link #SERVED} kinds but the {@link #LITERAL_ITEM_KINDS}, then
+     * the mission step contract. It is derived, not listed, so a kind added to {@link #SERVED} reaches the item read's
+     * per-kind switch only when it is not a literal kind. The literal kinds and a mission type are listed but not among
+     * them: each is rendered at its own literal path, and the templated item read refuses them
+     * {@link RefusalCode#KIND_NOT_FOUND} after the one kind gate, {@link #listedKind(String)}.
      */
     public static final List<ArtifactKind> ITEM_KINDS = Stream.concat(
-                    SERVED.stream().filter(kind -> kind != ArtifactKind.AGENT_PROFILE),
+                    SERVED.stream().filter(kind -> !LITERAL_ITEM_KINDS.contains(kind)),
                     Stream.of(ArtifactKind.MISSION_STEP_CONTRACT))
             .toList();
 
     /**
      * The listed kinds, in the list order: the {@link #SERVED} kinds, then the mission type, then the mission step
-     * contract. They are the kinds of the list and its {@code ?kind=} filter, of the references read and of the removal.
+     * contract. They are the kinds of the list and its {@code ?kind=} filter and of the references read; the removal
+     * gates on its own set, {@link ArtifactRemovalService#REMOVABLE}.
      */
     public static final List<ArtifactKind> LISTED =
             afterTheServed(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
 
     /**
-     * The kinds a client can list and follow from a list: the list, its {@code ?kind=} filter, the positions of a page,
-     * a reference's {@code artifact} link and the removal of an artifact. Every gate on the listable kinds reads this
+     * The kinds a client can list and follow from a list: the list, its {@code ?kind=} filter, the positions of a page
+     * and a reference's {@code artifact} link. Every gate on the listable kinds reads this
      * accessor and not {@link #SERVED}, so that a kind can later be served without being listed, or the other way round.
      * It is {@link #LISTED}: the served kinds, then the mission type, then the mission step contract.
      *
@@ -124,19 +140,22 @@ public final class ArtifactReadService {
 
     private static final String STALE_LIST = "The inputs changed while the artifacts were read; read them again.";
     private static final String STALE_ONE = "The inputs changed while the artifact was read; read it again.";
-    private static final Map<ArtifactKind, RefusalCode> ABSENT = Map.of(
-            ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND,
-            ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND,
-            ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
-            ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
-            ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
+    private static final Map<ArtifactKind, RefusalCode> ABSENT = Map.ofEntries(
+            Map.entry(ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND),
+            Map.entry(ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND),
+            Map.entry(ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND),
+            Map.entry(ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND),
+            Map.entry(ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND),
             // a procedure, served after the per-kind codes, uses artifact_not_found as the agent profile does (#484)
-            ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND,
+            Map.entry(ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND),
             // agent_profile uses artifact_not_found; tactic to toolguide keep their own codes (contract rule), and the
             // mission kinds have their own codes (#99).
-            ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
-            ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND,
-            ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
+            Map.entry(ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND),
+            // an asset and a skill, listed after the agent profile was, answer artifact_not_found too (#105, #107)
+            Map.entry(ArtifactKind.ASSET, RefusalCode.ARTIFACT_NOT_FOUND),
+            Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND),
+            Map.entry(ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND),
+            Map.entry(ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND));
 
     /**
      * The code a request for an artifact of a listed kind that the pack does not hold is refused with.
@@ -400,8 +419,9 @@ public final class ArtifactReadService {
     }
 
     /**
-     * The listed kind a token names: the one kind gate of the list, the item read, the references read, the removal
-     * and the list's positions, so that a read and a removal never disagree on {@code kind_not_found}.
+     * The listed kind a token names: the one kind gate of the list, the item read, the references read and the list's
+     * positions. The removal gates on {@link ArtifactRemovalService#REMOVABLE}, which is narrower: a listed kind whose
+     * removal is not built (an asset, a skill) is {@code kind_not_found} to a DELETE.
      *
      * @param token a kind token, for example {@code mission_type}
      * @return the kind; empty when the token names no kind, or one this service does not list ({@link #LISTED})
@@ -448,7 +468,8 @@ public final class ArtifactReadService {
      * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
      *     whatever the kind; with {@link RefusalCode#PACK_UNREADABLE} when the configured pack has no readable
      *     {@code pack.yaml}, whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no listed kind, or names
-     *     a listed kind outside {@link #ITEM_KINDS} ({@code agent_profile} or {@code mission_type}), which its literal route renders; with the
+     *     a listed kind outside {@link #ITEM_KINDS} ({@code agent_profile}, {@code asset}, {@code skill} or
+     *     {@code mission_type}), which its literal route renders, naming that route; with the
      *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_NOT_FOUND}
      *     when the kind's read cannot read the pack aggregate or its revision; with {@link RefusalCode#PACK_UNREADABLE} or
      *     {@link RefusalCode#STALE_INPUT} as every verified read refuses
@@ -695,7 +716,7 @@ public final class ArtifactReadService {
 
     /**
      * The artifact whose references are read: through its kind's item read, or, for a kind the templated item read does
-     * not render (an agent profile, a mission type), the stored entity, in one verified read. The id is not parsed as an
+     * not render (an agent profile, an asset, a skill, a mission type), the stored entity, in one verified read. The id is not parsed as an
      * identifier of the kind: an id the pack does not hold, malformed or not, is the kind's not-found.
      */
     private ConsistentRead.Verified<CharterArtifact> referrer(PackIdentifier pack, ArtifactKind kind, String id) {
