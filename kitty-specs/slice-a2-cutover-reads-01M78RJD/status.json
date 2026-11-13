@@ -194,7 +194,8 @@
       "last_transition_at": "2026-11-13T01:14:18.029724+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Reviewed: 5 twins ready; layer override proven on bytes; fingerprint-verified second read -> stale_input; distinct EffectiveTag reads; templated gate; deployable 1831/0"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
