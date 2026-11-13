@@ -77,7 +77,11 @@ class ModuleDependencyAllowlistEnforcementTest {
         module.dependencies.add("runtimeOnly", "org.springframework.boot:spring-boot-starter:4.0.0")
         assertThatThrownBy { resolve(module, "runtimeClasspath") }
             .hasStackTraceContaining("[org.springframework.boot:spring-boot-starter] in runtimeOnly (ADR-0075)")
-        // A custom configuration the main ones extend from reaches the classpath too, and is judged by its own name.
+    }
+
+    @Test
+    fun aCustomConfigurationTheClasspathExtendsFromIsJudged() {
+        val module = module()
         val extras = module.configurations.create("extras")
         extras.dependencies.add(module.dependencies.create("org.springframework:spring-web:7.0.0"))
         module.configurations.getByName("implementation").extendsFrom(extras)
