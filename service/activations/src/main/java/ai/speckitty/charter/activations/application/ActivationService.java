@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.ActivationRepository.DeleteResult
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StaleIds;
@@ -235,7 +236,8 @@ public class ActivationService {
 
     /**
      * The body judged against the document it replaces, less what the packs no longer satisfy (A4, B1). A deny entry the
-     * body adds on a required artifact is judged by the session's in-force resolution (IC-13).
+     * body adds on a required artifact is judged by the session's in-force resolution (IC-13), and the document as it
+     * will be stored by the slot check of its closure (C38, {@link PacksSession#requireComposable}).
      */
     private static StaleIds.Dropped judged(
             ActivationDocument.Built normalized, ActivationDocument replaced, PacksSession session) {
@@ -244,7 +246,9 @@ public class ActivationService {
                 .ifPresent(refusal -> {
                     throw refusal;
                 });
-        return StaleIds.drop(normalized.document(), snapshot);
+        StaleIds.Dropped drops = StaleIds.drop(normalized.document(), snapshot);
+        session.requireComposable(EffectiveSet.queryOf(drops.document()));
+        return drops;
     }
 
     /**
@@ -299,7 +303,10 @@ public class ActivationService {
                 : new Read.Found<>(snapshot, etag);
     }
 
-    /** A create's document, when it may be stored: one snapshot of the closure it names, and every rule over it. */
+    /**
+     * A create's document, when it may be stored: one snapshot of the closure it names, and every rule over it, the slot
+     * check of C38 last ({@link PacksSession#requireComposable}).
+     */
     private ActivationDocument checked(ActivationDocument.Built built) {
         PacksSession session = packs.session(packIdsOf(built.document()));
         ClosureSnapshot snapshot = session.snapshot();
@@ -307,6 +314,7 @@ public class ActivationService {
         DocumentRules.check(normalized, snapshot, session::inForce).ifPresent(refusal -> {
             throw refusal;
         });
+        session.requireComposable(EffectiveSet.queryOf(normalized.document()));
         return normalized.document();
     }
 

@@ -641,4 +641,105 @@ class ActivationServiceTest {
 
         assertThat(packs.lastRoots()).isEqualTo(Optional.of(List.of("beta", "alpha")));
     }
+
+    // ---- C38: an activation write that would put an enhancement in force without its slot (squad A3)
+    // ------------------
+
+    private static final CharterRefusal SLOT_MISSING = new CharterRefusal(
+            RefusalCode.PROMPT_SLOT_MISSING, "step_enhancement:x fills a slot the prompt in force does not declare");
+
+    /** The fake judges the compose as the slot check would: a document that puts D2 in force is refused. */
+    private void d2DoesNotCompose() {
+        packs.composes(query -> query.selected().contains(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2"))
+                ? Optional.of(SLOT_MISSING)
+                : Optional.empty());
+    }
+
+    @Test
+    void createRefusesADocumentThatDoesNotComposeAndStoresNothing() {
+        d2DoesNotCompose();
+
+        assertThatThrownBy(() -> service.create(selecting("D2"))).isSameAs(SLOT_MISSING);
+
+        assertThat(repository.list()).isEmpty();
+        assertThat(packs.composabilityChecks())
+                .singleElement()
+                .satisfies(
+                        query -> assertThat(query.selected()).contains(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2")));
+        assertThat(packs.queries())
+                .as("the slot check is asked for itself, never reached through the floor's resolution")
+                .isEmpty();
+    }
+
+    @Test
+    void theTwinCreateOfADocumentThatComposesIsStoredAfterItsCheck() {
+        d2DoesNotCompose();
+
+        StoredActivation created = service.create(selecting("D1"));
+
+        assertThat(repository.find(created.id())).contains(created);
+        assertThat(packs.composabilityChecks()).hasSize(1);
+    }
+
+    @Test
+    void putRefusesADocumentThatDoesNotComposeAndLeavesTheStoredOne() {
+        StoredActivation before = stored(selecting("D1"));
+        d2DoesNotCompose();
+
+        assertThatThrownBy(() -> service.put(ID, selecting("D2"), quoted(before), null))
+                .isSameAs(SLOT_MISSING);
+        assertThatThrownBy(() -> service.put(new ActivationId("a-2"), selecting("D2"), null, "*"))
+                .isSameAs(SLOT_MISSING);
+
+        assertThat(repository.find(ID)).contains(before);
+        assertThat(repository.find(new ActivationId("a-2"))).isEmpty();
+    }
+
+    @Test
+    void theTwinPutOfADocumentThatComposesReplacesTheStoredOne() {
+        StoredActivation before = stored(selecting("D1"));
+        d2DoesNotCompose();
+
+        ActivationService.Written written = service.put(ID, selecting("D1", "D1"), quoted(before), null);
+
+        assertThat(written.stored().revision()).isEqualTo(before.revision());
+        assertThat(packs.composabilityChecks()).isNotEmpty();
+    }
+
+    @Test
+    void aPerArtifactWriteRefusesADocumentThatDoesNotComposeBeforeItIsStored() {
+        StoredActivation before = stored(selecting("D1"));
+        d2DoesNotCompose();
+        ActivationSelectionService selections = new ActivationSelectionService(new ActivationWrites(repository, packs));
+
+        assertThatThrownBy(() -> selections.select(
+                        ID,
+                        "directive",
+                        "D2",
+                        Optional.empty(),
+                        false,
+                        java.util.OptionalInt.empty(),
+                        List.of(),
+                        quoted(before)))
+                .isSameAs(SLOT_MISSING);
+
+        assertThat(repository.find(ID)).contains(before);
+    }
+
+    @Test
+    void theTwinAPerArtifactWriteThatComposesIsStored() {
+        StoredActivation before = stored(selecting("D2"));
+        d2DoesNotCompose();
+        ActivationSelectionService selections = new ActivationSelectionService(new ActivationWrites(repository, packs));
+
+        ActivationWrites.Outcome outcome = selections.unselect(ID, "directive", "D2", quoted(before));
+
+        assertThat(outcome.stored()
+                        .document()
+                        .selected(ArtifactKind.DIRECTIVE)
+                        .<Set<String>>map(set -> set)
+                        .orElse(Set.of()))
+                .isEmpty();
+        assertThat(repository.find(ID)).contains(outcome.stored());
+    }
 }

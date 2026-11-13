@@ -91,6 +91,13 @@ description: >-
   the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
+  A violation code of validation_failed need not be a code of this enum. overrides_source_not_activatable (FR-014,
+  operator ruling of 2026-11-12 on #447) is one: an overrides edge whose source is not of an activatable kind (a
+  template, an asset, a guard or a lifecycle) is refused wherever it enters. A registration lists one such violation
+  per edge at its pack-relative graph document inside 422 validation_failed, putPackRelationship answers 422
+  validation_failed with the violation at /from and writes nothing, and a composing read of a closure holding such a
+  pack answers 500 pack_unreadable naming the graph document. An overrides edge from an activatable kind is unchanged.
+
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
   representation the operation does not have, a method the path does not have, a request the
@@ -191,8 +198,11 @@ description: >-
   read answers 500 pack_unreadable naming the file.
   prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration) and prompt_slot_not_empty
   (non-whitespace between paired markers at descriptor schema_version "1.0") are raised the same way, at the prompt
-  file. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
-  enhancement names at compose, and the phase-2 mission (#438) raises it with the compose check. pack_reference_pack_missing and
+  file. prompt_slot_missing was reserved until the phase-2 mission (#438) built the compose check that raises it (C38):
+  the prompt in force declares no slot a step enhancement in force names. It was first worded for an active or inactive
+  enhancement; an enhancement that is not in force never refuses (OD-1 (B)). A composing read answers it 500; a
+  registration, the impact-checked pack writes and the activation writes answer it 422 (its operations map).
+  pack_reference_pack_missing and
   pack_reference_artifact_missing keep their existing meanings for references between packs; no ADR-0066 refusal
   is artifact_locked.
 type: string
@@ -334,6 +344,11 @@ x-refusal:
     status: 422
     retryable: false
     raised: true
+    description: >-
+      the request or the pack it registers breaks a schema or an invariant; a refused registration lists every fault as
+      a violation at its pack-relative file. Its violation codes include the raised codes above and
+      overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
+      putPackRelationship lists at /from
   registration_conflict:
     status: 409
     retryable: false
@@ -782,8 +797,53 @@ x-refusal:
   prompt_slot_missing:
     status: 500
     retryable: false
-    raised: false
-    description: the prompt in force declares no slot an enhancement names (ADR-0066, reserved for the phase-2 mission, #438)
+    raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
+      putPackRelationship:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
+      createActivation:
+        status: 422
+      replaceActivation:
+        status: 422
+      selectActivationArtifact:
+        status: 422
+      unselectActivationArtifact:
+        status: 422
+      deactivateActivationArtifact:
+        status: 422
+      reactivateActivationArtifact:
+        status: 422
+      applyActivationPreset:
+        status: 422
+    description: >-
+      the prompt in force of a step declares no slot that a step enhancement in force names (ADR-0066 decision 8, C38):
+      the prompt at the merged winner's place of the step, judged for the winning copy of the enhancement; an
+      enhancement that is not in force never refuses. A composing read of an activation that puts it in force answers
+      500. A registration, each impact-checked pack write (judged for every stored activation whose closure the write
+      joins, the activation named in the detail) and each activation write (before the document is stored) answer 422.
+      The detail names the enhancement, its pack, the slot and the pack that holds the prompt in force
   mission_step_contract_not_found:
     status: 404
     retryable: false
