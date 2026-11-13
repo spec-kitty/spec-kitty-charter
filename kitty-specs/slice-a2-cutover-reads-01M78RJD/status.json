@@ -260,7 +260,8 @@
       "last_transition_at": "2026-11-13T02:15:30.651625+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Reviewed: 12 links, methods checked vs paths; root-to-select by links only; no prompt/unselect/include; deployable 1856/0"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
