@@ -57,6 +57,8 @@ public final class PacksReferences implements ReferenceReads {
 
     private static Holder holderOf(PackUnderResolution holder) {
         return new Holder(
-                holder.configured().id(), holder.descriptor().packId(), holder.descriptor().name());
+                holder.configured().id(),
+                holder.descriptor().packId(),
+                holder.descriptor().name());
     }
 }

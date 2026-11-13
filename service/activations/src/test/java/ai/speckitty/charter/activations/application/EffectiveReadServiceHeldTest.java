@@ -309,7 +309,9 @@ class EffectiveReadServiceHeldTest {
         EffectiveReadService.ListedWinner skill = service.listedWinner(ID, "skill", "land-pr");
 
         assertThat(asset.winner()).isEqualTo(RUN_WINNER);
-        assertThat(skill.winner()).as("a kind the activation resolves, by the same rule").isEqualTo(SKILL_WINNER);
+        assertThat(skill.winner())
+                .as("a kind the activation resolves, by the same rule")
+                .isEqualTo(SKILL_WINNER);
         assertThat(asset.held()).containsExactlyInAnyOrder(LOGO, RUN, SKILL);
         assertThat(asset.sourceFingerprint()).isEqualTo(SOURCE);
         assertThat(asset.governanceFingerprint()).isEqualTo(CLOSURE);

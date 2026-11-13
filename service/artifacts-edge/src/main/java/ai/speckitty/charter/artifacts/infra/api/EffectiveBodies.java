@@ -194,9 +194,8 @@ public class EffectiveBodies {
      */
     public ArtifactReferenceList references(EffectiveReferenceReads.Read read) {
         String activation = read.scope().activationId();
-        List<ReferencedArtifact> items = read.items().stream()
-                .map(item -> referenced(activation, item))
-                .toList();
+        List<ReferencedArtifact> items =
+                read.items().stream().map(item -> referenced(activation, item)).toList();
         Map<String, Link> links = new LinkedHashMap<>();
         links.put(
                 SELF,
@@ -220,16 +219,21 @@ public class EffectiveBodies {
                 links.put(
                         EFFECTIVE_ARTIFACT, new Link(href(ACTIVATIONS, activation, ARTIFACTS, kind.token(), urn.id())));
             }
-            reference.holder().ifPresent(holder -> links.put(
-                    ARTIFACT, new Link(href(PACKS, holder.packId().value(), ARTIFACTS, kind.token(), urn.id()))));
+            reference
+                    .holder()
+                    .ifPresent(holder -> links.put(
+                            ARTIFACT,
+                            new Link(href(PACKS, holder.packId().value(), ARTIFACTS, kind.token(), urn.id()))));
         });
         ReferencedArtifact wire = new ReferencedArtifact(
                 reference.written().toString(),
                 ReferencedArtifact.RelationEnum.fromValue(reference.relation().token()),
                 urn.toString(),
                 links);
-        reference.holder().ifPresent(holder -> wire.setHoldingPack(new HoldingPack(
-                holder.packId().value(), holder.descriptorPackId(), holder.name())));
+        reference
+                .holder()
+                .ifPresent(holder -> wire.setHoldingPack(
+                        new HoldingPack(holder.packId().value(), holder.descriptorPackId(), holder.name())));
         return wire;
     }
 

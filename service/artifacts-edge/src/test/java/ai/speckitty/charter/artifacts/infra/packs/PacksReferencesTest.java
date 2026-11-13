@@ -70,7 +70,11 @@ class PacksReferencesTest {
     @Test
     void theKindsOfTheListAreCarriedTheAssetSkillAndMissionKindsIncludedAndNoOther() {
         for (NodeKind listed : new NodeKind[] {
-            NodeKind.DIRECTIVE, NodeKind.AGENT_PROFILE, NodeKind.ASSET, NodeKind.SKILL, NodeKind.MISSION_TYPE,
+            NodeKind.DIRECTIVE,
+            NodeKind.AGENT_PROFILE,
+            NodeKind.ASSET,
+            NodeKind.SKILL,
+            NodeKind.MISSION_TYPE,
             NodeKind.MISSION_STEP_CONTRACT
         }) {
             assertThat(listedOf(new Urn(listed, "x"))).as("%s", listed).isEqualTo(listed.artifactKind());

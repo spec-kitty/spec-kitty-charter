@@ -92,13 +92,10 @@ class EffectiveSkillsControllerTest {
             }
 
             @Override
-
             public Referrer referrer(String activationId, String kindToken, String artifactId) {
 
                 throw new UnsupportedOperationException();
-
             }
-
 
             @Override
             public Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch) {

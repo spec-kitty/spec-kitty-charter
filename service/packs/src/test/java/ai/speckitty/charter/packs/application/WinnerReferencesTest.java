@@ -89,9 +89,9 @@ class WinnerReferencesTest {
 
     @Test
     void anotherRefusalOfThePackReadIsTheAnswerUnchanged() {
-        for (RefusalCode code : new RefusalCode[] {
-            RefusalCode.PACK_UNREADABLE, RefusalCode.STALE_INPUT, RefusalCode.TACTIC_NOT_FOUND
-        }) {
+        for (RefusalCode code :
+                new RefusalCode[] {RefusalCode.PACK_UNREADABLE, RefusalCode.STALE_INPUT, RefusalCode.TACTIC_NOT_FOUND
+                }) {
             assertThatThrownBy(() -> refusing(code).of(PROJ, ArtifactKind.DIRECTIVE, "D", HELD))
                     .as("%s", code)
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
