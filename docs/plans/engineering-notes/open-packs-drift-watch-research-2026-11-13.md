@@ -125,8 +125,8 @@ The drift has three structural roots:
 | 4 | `service-v*` releases, then a `pack-check` jar on the service's code path that also exposes the whole-pack round trip and file classification, so open-packs drops its Python mirror and gates on meaning | charter, then open-packs | M, then L | 4 | **commented on #478**, no new issue |
 | 5 | Watch lifecycle: run `alert` and `recover` only on `main`; put the open-packs SHA and failing packs in the issue and the job summary; reopen rather than duplicate; give build failures their own label | charter | S | — | moot: charter's watch is removed (ruling below); applies to open-packs' nightly instead |
 | 6 | Pin policy: settle "may lag" against "stale is a defect", and let a green nightly run open a bot PR that raises `openPacksRef` | charter | M | — | not taken now; `openPacksRef` feeds governance only |
-| 7 | Nightly open-packs watch of charter `main`: files on red, proposes the `charter.lock.yaml` bump on green. It replaces charter's watch. | open-packs | M | after 8 | **taken** (ADR-0070 amendment); draft A below |
-| 8 | The round trip over open-packs content is a required gate in open-packs' `charter-service` job, at its pin: charter's `:packs:driftTest` now, `pack-check` (4) later | open-packs | S now, M with 4 | after 1 and 2 | **taken** (ADR-0070 amendment); draft B below |
+| 7 | Nightly open-packs watch of charter `main`: files on red, proposes the `charter.lock.yaml` bump on green. It replaces charter's watch. | open-packs | M | after 8 | **taken** (ADR-0070 amendment); filed as spec-kitty-open-packs#253 |
+| 8 | The round trip over open-packs content is a required gate in open-packs' `charter-service` job, at its pin: charter's `:packs:driftTest` now, `pack-check` (4) later | open-packs | S now, M with 4 | after 1 and 2 | **taken** (ADR-0070 amendment); filed as spec-kitty-open-packs#252 |
 | 9 | Remove `open-packs-drift.yml` once 8 is required | charter | S | after 8 | follows from the ruling |
 
 ### Operator ruling 2026-11-13: the content test runs in open-packs
@@ -152,7 +152,7 @@ schemas. Recommendations 3, 4 and 7 make that one contract cover both sides, rat
 
 ## 5. Draft issues for spec-kitty-open-packs
 
-This session could not attach spec-kitty-open-packs with write access, so these are drafts.
+This session could not attach spec-kitty-open-packs with write access, so these were drafts. The orchestrator filed them: draft B is spec-kitty-open-packs#252, and draft A is spec-kitty-open-packs#253, sequenced after #252.
 
 ### Draft A: a nightly watch of charter `main`
 

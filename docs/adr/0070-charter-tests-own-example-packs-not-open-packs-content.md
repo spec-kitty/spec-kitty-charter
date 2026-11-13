@@ -45,6 +45,7 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
   stays required. Until charter publishes `pack-check` ([#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478)),
   the job runs `./gradlew :packs:driftTest -PopenPacksDir=<the open-packs checkout>` from the pinned charter checkout.
   After that, it runs `pack-check` from the pinned release, and the Python port of charter's file classification retires.
+  Tracked in [spec-kitty-open-packs#252](https://github.com/spec-kitty/spec-kitty-open-packs/issues/252).
 - **Charter keeps the round trip runnable and complete, and no longer runs it over open-packs.**
   - Charter owns the test code: the round trip, `OpenPacksDriftTest` and its `-PopenPacksDir` entry point.
   - The test fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)),
@@ -52,7 +53,7 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
   - `open-packs-drift.yml` is removed once the open-packs gate is required. It is not kept beside the gate.
 - **Drift from charter `main` is watched in open-packs.** A nightly, non-blocking open-packs run against charter `main`
   takes over what the charter watch did. It files in open-packs on red, and on green proposes the bump of
-  `charter.lock.yaml`.
+  `charter.lock.yaml` ([spec-kitty-open-packs#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)).
 - **The first pin of the gate.** It must hold #545 (the `org-fragment` round trip). Charter after #542 refuses the
   hand-written manifests of `built-in`, `foundation` and `writing`, so the pull request that moves the lock past #542
   also regenerates or drops them (spec-kitty-open-packs#250). Charter's model is canonical, so the pack follows it.
