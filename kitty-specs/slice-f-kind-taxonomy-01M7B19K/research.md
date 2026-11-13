@@ -254,7 +254,10 @@ What this table would refuse:
 
 **#447.** The `overrides` row requires the source to be the same, activatable kind as the target. That is #447's
 option 1, refusal at registration. The census finds **0** `overrides` edges from a non-activatable kind in either
-corpus. `ClosureViewSessionStepRefsTest`, which pins the asymmetry, is rewritten as a refusal test.
+corpus.
+
+Slice C already builds option 1 as FR-014 (R8), so F does not deliver #447. F generalizes C's rule into the endpoint
+table, and adds the "same kind" half.
 
 **Retired relations still in the enums.**
 
@@ -280,13 +283,24 @@ ruling.
   - after #554, a rule in the graph ruleset (ADR-0075 decision 3).
 - The write-side refusal is in `RelationshipRegistrationService`, following `refuseStepEnhancementEdge`.
 
-**Refusal code.**
+**Refusal shape (revised 2026-11-13, after reading slice C).**
 
-- Proposed: a new `relationship_endpoint_not_allowed`, 422 on write and `pack_unreadable` detail on read, named per
-  edge.
+- Slice C already refuses one row of this table. Its FR-014 builds `OverrideSourceRule`
+  (`packs.domain`) for #447.
+- On write, its refusal is `422 validation_failed` with a violation `overrides_source_not_activatable` at `/from`.
+- On a composing read of a stored pack, it is `500 pack_unreadable`.
+- The checks run in `RelationshipRegistrationService` and `PackPolicy` on branch
+  `slice-c/effective-step-context`, at `b336e590`.
+
+Proposed for F:
+
+- **Follow C's pattern** rather than mint a new top-level refusal code: one violation code,
+  `relationship_endpoint_not_allowed`, inside `422 validation_failed`, and `pack_unreadable` on read.
+- **Replace `OverrideSourceRule` with the general endpoint rule.** Its `overrides` row is one case of the table, so a
+  separate rule would be a second source for one fact.
+- **Ruling needed:** whether C's violation code `overrides_source_not_activatable` folds into the general code, or
+  stays as the `overrides` row's own code (Q7, revised).
 - The reserved `unresolved_edge_endpoint` means a missing node, not a disallowed kind, so it is not reused.
-- Adding a code touches `RefusalCode`, `CharterRefusalCode.yaml` (with its `x-refusal` entry), `RefusalHandler`,
-  `ReservedRefusalCodesTest`, `docs/development/http-status-codes.md` and a changes fragment.
 
 ## R7. Glossary joins the taxonomy later (#106)
 
@@ -302,9 +316,19 @@ Not blocking.
 
 - **No slice C mission branch is pushed**, and there is no slice C directory in `kitty-specs/`. Its state is asked of the
   orchestrator.
-- **#447 is labelled `slice:C`, but ADR-0064 decision 13 says slice F settles it.** The rule, typed endpoints, is
-  F's. Proposed: F closes #447, and slice C does not change the `overrides` binding. Ownership goes to the
-  orchestrator.
+- **Slice C** is mission `effective-step-and-action-context-01M774HB`, on `origin/slice-c/effective-step-context`
+  at `b336e590` (orchestrator, 2026-11-13). A rebased branch, `slice-c/effective-step-context-rebased`, is being
+  prepared.
+- **Slice C delivers #447 (its FR-014).** It adds `OverrideSourceRule` and refusals in `RelationshipRegistrationService`,
+  `PackPolicy` and the activations read. So #447 stays with C. F rebases onto it and folds C's rule into the endpoint
+  table (R6, Q7 revised).
+- **Files both slices change.** C's diff against its merge-base touches all of these, which F also changes:
+  - `PackPolicy`, `RelationshipRegistrationService`, `DomainRepositoryService` and `ImpactRelations`;
+  - `EffectiveReadService`, `ClosureViewSession`, `MissionBodies`, `EffectiveMissionTypesController` and
+    `EffectiveMissionTypeReadService`;
+  - `RefusalCode`, `CharterRefusalCode.yaml`, `ReservedRefusalCodesTest` and `packs_packId_relationships.yaml`.
+
+  This confirms the ruled order: F implements only on top of C.
 - **Effective step context (#438, #450):** `ActionContextWalk`, `EffectiveReadService` and `MissionBodies`.
   - `EffectiveReadService:702, 728-749` (`stepContractWinner`) and `MissionBodies:168-216` (delegation candidates)
     are step-contract code that R3 deletes.
@@ -355,7 +379,7 @@ Dispositions are in `research/squad-similar-surfaces.md`. In short, every part o
 
 Dispositions are in `research/squad-tracked-issues.md`. The findings:
 
-- **Closes:** #112, #514, #520, #515, #447 and #533.
+- **Closes:** #112, #514, #520, #515 and #533. #447 is delivered by slice C (R8).
 - **#350**, refusing a procedure edge to `action:`, is one row of the endpoint table. It is proposed as in scope only
   if the operator agrees (Q8).
 - **Refs:** #49, #154, #337, #355, #417, #433 and #559.
@@ -373,5 +397,5 @@ Dispositions are in `research/squad-tracked-issues.md`. The findings:
 | Q4 | `mission_type → action`: derive it from `steps` and refuse an authored copy, or keep it authored | Derive (R5) |
 | Q5 | The endpoint table (R6) | As drafted |
 | Q6 | Retire `impacts`, `replaces` and `delegates_to` in this slice (widens #515), or give them endpoint rows | Retire; flagged as a widening |
-| Q7 | #447 ownership: slice F, not slice C | F closes it |
+| Q7 | Revised: slice C delivers #447 (FR-014, `overrides_source_not_activatable`). F folds that rule into the endpoint table. Should its violation code merge into `relationship_endpoint_not_allowed`? | Merge: one rule, one code |
 | Q8 | Include #350 (procedure edge to `action:`), a row of the endpoint table | Include |
