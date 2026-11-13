@@ -95,6 +95,11 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | listEffectiveArtifacts          | /activations/a-1/artifacts                                  |
       | getEffectiveArtifact            | /activations/a-1/artifacts/directive/D                      |
       | getEffectiveAgentProfile        | /activations/a-1/artifacts/agent_profile/p                  |
+      | listEffectiveAssets             | /activations/a-1/artifacts/asset                            |
+      | getEffectiveAsset               | /activations/a-1/artifacts/asset/a                          |
+      | getEffectiveAssetPayload        | /activations/a-1/artifacts/asset/a/payload                  |
+      | listEffectiveSkills             | /activations/a-1/artifacts/skill                            |
+      | getEffectiveSkill               | /activations/a-1/artifacts/skill/s                          |
       | getEffectiveMissionType         | /activations/a-1/artifacts/mission_type/m                   |
       | getEffectiveMissionStep         | /activations/a-1/artifacts/mission_type/m/steps/s           |
       | getEffectiveMissionSkeleton     | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |
