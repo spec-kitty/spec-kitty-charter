@@ -150,6 +150,23 @@ class ActivationRoutingTest {
                 .isEqualTo("getEffectiveAssetPayload");
     }
 
+    /** A payload and a references read are told apart by their last segment, whatever the asset's id. */
+    @Test
+    void anAssetWhoseIdIsPayloadOrReferencesIsReadLikeAnyOther() throws Exception {
+        String[][] routes = {
+            {"asset/payload", "getEffectiveAsset"},
+            {"asset/references", "getEffectiveAsset"},
+            {"asset/payload/payload", "getEffectiveAssetPayload"},
+            {"asset/payload/references", "listEffectiveArtifactReferences"},
+            {"asset/references/references", "listEffectiveArtifactReferences"}
+        };
+        for (String[] route : routes) {
+            assertThat(handler("GET", READ + route[0]).getMethod().getName())
+                    .as(route[0])
+                    .isEqualTo(route[1]);
+        }
+    }
+
     @Test
     void theListRouteStaysWhereItWasAndAWriteOnTheReadPathIsAMethodNotAllowed() throws Exception {
         HandlerMethod list = handler("GET", "/api/v1/activations/a-1/artifacts");
