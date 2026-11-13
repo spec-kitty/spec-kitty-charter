@@ -589,7 +589,9 @@ public class CharterSteps {
     /** Follows the link {@code I expand the templated link} expanded, with its method, an If-Match and the body. */
     @When("I follow the expanded link with If-Match the remembered header {string} and the body:")
     public void followExpanded(String header, String body) throws Exception {
-        assertThat(expandedHref).as("a link was expanded with: I expand the templated link").isNotNull();
+        assertThat(expandedHref)
+                .as("a link was expanded with: I expand the templated link")
+                .isNotNull();
         String ifMatch = rememberedHeader(header);
         assertThat(ifMatch).as("the header %s was remembered", header).isNotNull();
         http.perform(
