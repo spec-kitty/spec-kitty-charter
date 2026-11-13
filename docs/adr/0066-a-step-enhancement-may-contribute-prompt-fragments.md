@@ -298,11 +298,16 @@ Operator ruling OD-5, which stands (Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`
 
 - **The read.** `getEffectiveStepPrompt`,
   `GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt`, answers the prompt in force
-  at the merged winner's place of the step and, per slot it declares, the fragments of the enhancements in force, in
+  and, per slot it declares, the fragments of the enhancements in force, in
   the order of decision 5, each with its pack and enhancement. The prompt is served as it is stored. That is what
   "the base prompt text unchanged" means here: the service neither renders nor rewrites it. A slot that still holds
   legacy text under an unversioned descriptor is listed with its fragments and a `prompt_slot_not_empty` diagnostic
   (OD-7, OD-8). The action context links the read as `prompt`.
+- **Where the prompt in force is** (research R8, amended by operator ruling Q3 of 2026-11-13). The prompt in force is
+  the stored prompt companion at the step's place: the version in force of the mission type when it declares the step,
+  else the merged winner of `action:<type>/<step>` when its version declares it (`StepHolding.placeOf`, the rule the step
+  read uses). The compose check of decision 8 (`prompt_slot_missing`) judges the same prompt, so the check and the read
+  never disagree on which prompt declares a slot.
 - **The 409.** For a mission type the closure holds and the activation does not put in force, the read answers
   `409 mission_type_not_in_force`. It is judged after `activation_not_found`, `mission_type_not_found` and
   `action_not_found` (which need a closure that composes and merges), and before `prompt_slot_missing` and any `304`. Its ground is decision 4: a step's prompt
