@@ -73,6 +73,7 @@ class WholePackRoundTripTest {
             "paradigm",
             "pack-descriptor",
             "graph-shard",
+            "org-fragment", // #509
             "agent-profile",
             "mission-step-contract",
             "asset",
@@ -112,11 +113,12 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
-        // The descriptor and the shards, #193's two payload kinds (bytes, no binding), #195's presets and manifest,
-        // #260's pack document, #476's mutability policy and every bound kind.
+        // The descriptor, the shards and the org fragment (#509), #193's two payload kinds (bytes, no binding), #195's
+        // presets and manifest, #260's pack document, #476's mutability policy and every bound kind.
         Set<String> bound = new TreeSet<>(Set.of(
                 DomainRoundTrip.DESCRIPTOR,
                 DomainRoundTrip.GRAPH_SHARD,
+                DomainRoundTrip.ORG_FRAGMENT,
                 DomainRoundTrip.ASSET_PAYLOAD,
                 DomainRoundTrip.TEMPLATE,
                 DomainRoundTrip.PRESET,
@@ -132,6 +134,51 @@ class WholePackRoundTripTest {
                 .as("whole-pack round trip against %s; report: %s", WholePackExpectation.EXPECTED_RED_RESOURCE, report)
                 .isEmpty();
         assertAssetsAndTemplates(pack, census, evaluation, observed);
+    }
+
+    /**
+     * The org example pack round-trips whole (#509): its {@code drg/fragment.yaml}, the org-level DRG document the
+     * built-in pack has no file of, is written and read back with its {@code enhances} edges, so its step enhancements
+     * survive the read-back. Every file of a modelled kind is green but the fragment, whose one {@code impacts} edge
+     * loses its strength in the domain (#477 owns it; this expectation goes stale when #477 lands), and no written file
+     * is left unpaired but the refused fragment's written copy.
+     */
+    @Test
+    void theOrgPackRoundTripsWholeWithItsFragment(@TempDir Path temp) {
+        Path pack = ExamplePacks.pack(ExamplePacks.ORG);
+        SortedMap<String, String> census = WholePackCensus.of(pack);
+        WholePackRoundTrip roundTrip = new DomainRoundTrip(new YamlSerializationStrategy());
+        Set<String> paired = new TreeSet<>();
+
+        Map<String, Optional<String>> observed =
+                observe(roundTrip, pack, temp.resolve(ExamplePacks.ORG), census, new TreeMap<>(), paired);
+
+        assertThat(census).containsEntry(PackFileSet.FRAGMENT, DomainRoundTrip.ORG_FRAGMENT);
+        assertThat(census).containsValue("step-enhancement");
+        assertThat(observed).containsKey(PackFileSet.FRAGMENT);
+        census.forEach((path, kind) -> {
+            if (roundTrip.modelledKinds().contains(kind)) {
+                assertThat(observed).as("%s (%s) is observed", path, kind).containsKey(path);
+            }
+        });
+        census.forEach((path, kind) -> {
+            if (kind.equals("step-enhancement")) {
+                assertThat(observed.get(path))
+                        .as("%s keeps its enhances edge", path)
+                        .isEmpty();
+            }
+        });
+        Map<String, String> red = new TreeMap<>();
+        observed.forEach((path, detail) -> detail.ifPresent(text -> red.put(path, text)));
+        assertThat(red)
+                .as("red files of the org example pack: only the fragment's impacts strength (#477)")
+                .containsOnlyKeys(PackFileSet.FRAGMENT);
+        assertThat(red.get(PackFileSet.FRAGMENT))
+                .startsWith("refused: read-back: the written fragment does not build")
+                .contains("place=[edges, 2]", "an impacts edge is missing 'impacts'");
+        assertThat(unpaired(temp.resolve(ExamplePacks.ORG), paired))
+                .as("written files no source file pairs with: only the refused fragment's written copy (#477)")
+                .containsExactly(PackFileSet.FRAGMENT);
     }
 
     /**
@@ -403,14 +450,9 @@ class WholePackRoundTripTest {
         }
     }
 
-    /**
-     * The bytes branch over a PNG/OTF-like fixture (NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final
-     * newline): equal bytes are green, one changed byte is red at its offset, a shorter file is red at its length, and
-     * no file is ever read as text (that would throw on the bytes that are not UTF-8).
-     */
-    @Test
-    void theBytesBranchComparesBytesAndNeverReadsText(@TempDir Path temp) throws IOException {
-        byte[] png = {
+    /** A PNG-like fixture: NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final newline. */
+    private static byte[] pngLikeFixture() {
+        return new byte[] {
             (byte) 0x89,
             'P',
             'N',
@@ -430,6 +472,16 @@ class WholePackRoundTripTest {
             (byte) 0xFF,
             (byte) 0xFE
         };
+    }
+
+    /**
+     * The bytes branch over a PNG/OTF-like fixture (NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final
+     * newline): equal bytes are green, one changed byte is red at its offset, a shorter file is red at its length, and
+     * no file is ever read as text (that would throw on the bytes that are not UTF-8).
+     */
+    @Test
+    void theBytesBranchComparesBytesAndNeverReadsText(@TempDir Path temp) throws IOException {
+        byte[] png = pngLikeFixture();
         byte[] otf = {'O', 'T', 'T', 'O', 0, 0x0B, 0, (byte) 0x80, '\r', '\n', (byte) 0xC3, 0, '\r', '\n', 'x'};
         byte[] changedOtf = otf.clone();
         changedOtf[10] = (byte) 0xC4;

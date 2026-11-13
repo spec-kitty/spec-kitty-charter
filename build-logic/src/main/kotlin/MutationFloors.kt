@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * The nightly mutation floor (#239): the pure reading and scoring of PIT's `mutations.xml`, kept free of Gradle so
+ * The mutation floor (#239): the pure reading and scoring of PIT's `mutations.xml`, kept free of Gradle so
  * that it is unit-tested in build-logic. [CheckMutationFloors] is the task around it.
  *
  * **Score.** The score is PIT's own "mutation score" (`MutationStatistics.getPercentageDetected`): the mutants PIT
@@ -201,14 +201,82 @@ object MutationFloors {
             )
         }
         val results = score(report.mutants, groups)
+        // A mutant no group holds is scored by no floor, however the module's PIT targets are written.
+        val unscored = report.mutants.map { it.topLevelClass }.filter { cls -> groups.none { it.contains(cls) } }.toSortedSet()
+        val gap = if (unscored.isEmpty()) emptyList() else listOf(
+            "$projectPath: PIT mutated ${unscored.take(5).joinToString()}${if (unscored.size > 5) ", ..." else ""}," +
+                " which no floor group holds (${groups.joinToString { it.name }}) $REFERENCE",
+        )
         return Outcome(
             lines = results.map { it.line(projectPath) },
             summary = toJson(projectPath, report.mutants.size, results),
-            failures = failures(projectPath, results),
+            failures = failures(projectPath, results) + gap,
         )
     }
 
     private fun refused(failure: String) = Outcome(emptyList(), null, listOf(failure))
+
+    /**
+     * A shard of a module's PIT run (#461): the floor groups that `-PmutationGroups` names, in the module's own order.
+     * The shard mutates exactly those groups' classes ([targetClasses] less [excludedClasses]) and is scored on exactly
+     * those groups, so each group's score is the one a whole-module run gives: PIT runs a mutant's covering tests either
+     * way. [name] names the shard's report directory and floors file, so two shards of one module never overwrite
+     * each other.
+     */
+    data class Shard(val name: String, val groups: List<Group>) {
+        val targetClasses: Set<String> get() = groups.flatMap { it.packages }.map { "$it.*" }.toSet()
+        val excludedClasses: Set<String> get() = groups.flatMap { it.excludes }.map { "$it.*" }.toSet()
+    }
+
+    /**
+     * The shard that [requested] (`-PmutationGroups`, comma-separated group names) selects from a module's [groups].
+     * Every name must be one of the module's groups, and at least one must be given: a misspelt name never widens a
+     * shard back to the whole module, nor narrows it to nothing.
+     */
+    fun shard(projectPath: String, requested: String, groups: List<Group>): Shard {
+        val names = requested.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        if (names.isEmpty()) {
+            throw GradleException("$projectPath: -PmutationGroups names no floor group")
+        }
+        val unknown = names - groups.map { it.name }.toSet()
+        if (unknown.isNotEmpty()) {
+            throw GradleException(
+                "$projectPath: -PmutationGroups names ${unknown.sorted().joinToString()}, which are not among its" +
+                    " floor groups (${groups.joinToString { it.name }})",
+            )
+        }
+        val selected = groups.filter { it.name in names }
+        return Shard(selected.joinToString("_") { it.name.replace(Regex("[^A-Za-z0-9.-]"), "-") }, selected)
+    }
+
+    /**
+     * The module's [targetClasses] patterns (PIT's `targetClasses`) that no floor group holds: a package PIT mutates
+     * but no group scores, which a shard would silently drop (#461). A pattern is held when a group's package is it,
+     * or above it, and does not exclude it: a narrower group leaves the rest of the pattern unscored.
+     */
+    fun unheldTargets(targetClasses: Set<String>, groups: List<Group>): List<String> = targetClasses.sorted().filter { target ->
+        val prefix = target.removeSuffix("*").removeSuffix(".")
+        groups.none { group ->
+            group.packages.any { pkg ->
+                val held = pkg.removeSuffix(".*").removeSuffix(".")
+                held == prefix || prefix.startsWith("$held.")
+            } && group.excludes.none { ex ->
+                val excluded = ex.removeSuffix(".*").removeSuffix(".")
+                prefix == excluded || prefix.startsWith("$excluded.")
+            }
+        }
+    }
+
+    /** Fails naming every [targetClasses] pattern of the module that no floor group holds. */
+    fun requireTargetsHeld(projectPath: String, targetClasses: Set<String>, groups: List<Group>) {
+        val unheld = unheldTargets(targetClasses, groups)
+        if (unheld.isNotEmpty()) {
+            throw GradleException(
+                "$projectPath: PIT mutates ${unheld.joinToString()}, which no floor group holds" +
+                    " (${groups.joinToString { it.name }}): add it to a group, or leave it out of the mutated packages",
+            )
+        }
+    }
 
     /** Scores [mutants] per group, in the order of [groups]. */
     fun score(mutants: List<Mutant>, groups: List<Group>): List<GroupResult> = groups.map { group ->
@@ -240,7 +308,7 @@ object MutationFloors {
     fun failures(projectPath: String, results: List<GroupResult>): List<String> =
         results.mapNotNull { it.failure(projectPath) }
 
-    /** The machine-readable summary (`floors.json`) the nightly workflow reads. */
+    /** The machine-readable summary (`floors.json`) the mutation workflow reads. */
     fun toJson(projectPath: String, totalMutants: Int, results: List<GroupResult>): String = buildString {
         append("{\n")
         append("  \"project\": ").append(quote(projectPath)).append(",\n")

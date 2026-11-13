@@ -10,7 +10,7 @@ name: service
 # `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
-# Mutation testing is not here: it runs nightly only (mutation-nightly.yml). Nor are the CPU-time budgets
+# Mutation testing is not here: it runs only on its schedule (mutation-testing.yml). Nor are the CPU-time budgets
 # (#316, ADR-0057): they run nightly, report-only (timing-nightly.yml).
 on:
   # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls

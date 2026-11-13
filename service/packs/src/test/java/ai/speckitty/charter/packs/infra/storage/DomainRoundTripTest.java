@@ -476,6 +476,7 @@ class DomainRoundTripTest {
         Set<String> expected = new HashSet<>(Set.of(
                 "pack-descriptor",
                 "graph-shard",
+                "org-fragment", // #509
                 "asset-payload",
                 "template",
                 "preset",

@@ -300,10 +300,12 @@ class PackRegistrationServiceTest {
         assertThat(outcome.outcome()).isEqualTo(Outcome.CREATED);
         assertThat(rig.filesOf(rig.packs.resolve("pack-x")).keySet())
                 .as("the stored pack holds the staged tree less the excluded files")
-                .containsExactlyInAnyOrder("pack.yaml", "directives/DIRECTIVE_001.directive.yaml");
+                .containsExactlyInAnyOrder(
+                        "pack.yaml", "directives/DIRECTIVE_001.directive.yaml", "pack-manifest.yaml");
         assertThat(rig.filesOf(upload.directory()).keySet())
                 .as("the strip happened in the staging area, and its empty directories went with the files")
-                .containsExactlyInAnyOrder("pack.yaml", "directives/DIRECTIVE_001.directive.yaml");
+                .containsExactlyInAnyOrder(
+                        "pack.yaml", "directives/DIRECTIVE_001.directive.yaml", "pack-manifest.yaml");
         assertThat(upload.directory().resolve("docs")).doesNotExist();
         assertThat(outcome.revision()).isEqualTo(rig.commits.revisionOf(upload));
         assertThat(outcome.diagnostics()).extracting(Diagnostic::code).containsOnly(Diagnostic.Code.FILE_NOT_HELD);

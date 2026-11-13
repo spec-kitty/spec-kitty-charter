@@ -1,0 +1,9 @@
+description: >-
+  A strong entity tag of a read of one pack: the pack revision the answer was read at, quoted, a token over the pack's
+  committed content and over nothing outside the pack, as getPack answers it. Opaque to consumers, who compare it and
+  never parse it. Only the asset payload reads (getPackAssetPayload) honor If-None-Match against it and answer 304; the
+  pack's other reads (the list and item reads of presets, assets and skills) offer it and take no If-None-Match.
+required: true
+schema:
+  type: string
+  pattern: ^"sha256:[0-9a-f]{64}"$

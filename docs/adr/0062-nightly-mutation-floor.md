@@ -101,6 +101,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | activations | `activations` | `ai.speckitty.charter.activations` | 85 | 37 |
    | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
    | missions-edge | `missions-edge` | `missions.application`, `missions.infra`, without the four `*.config` packages | 85 | not yet measured |
+   | artifacts-edge | `artifacts-edge` | `artifacts.application`, `artifacts.infra`, without the four `*.config` packages | 85 | not yet measured |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -227,7 +228,7 @@ module, and asked whether the thresholds should live in `gradle.properties`. Not
   found during the kernel triage
 - [The service build guide](/guides/service-build/#mutation-testing) — how to run PIT and read the floors
 - `build-logic/src/main/kotlin/charter.mutation-conventions.gradle.kts` and `MutationFloors.kt`
-- `.github/workflows/mutation-nightly.yml` and `scripts/ci/mutation_summary.py`
+- `.github/workflows/mutation-testing.yml` (`mutation-nightly.yml` until 2026-11-12) and `scripts/ci/mutation_summary.py`
 
 ## Amendment, 2026-11-06: kernel and profiles floors raised
 
@@ -299,6 +300,47 @@ change:
   the floor). The summary table shows them as the "Timed out" and "Margin" columns, so a slide shows before a floor
   trips.
 - **A red night names its failing test (#461).** The mutation step's output is kept as
-  `build/reports/mutation-floors/pitest.log` in the `mutation-report` artifact (14 days), and the summary, which the
+  `build/reports/mutation-floors/pitest-<shard>.log` in the `mutation-report-<shard>` artifacts (14 days), and the summary, which the
   alert issue quotes, lists PIT's lines about tests that fail with no mutation applied. Such a test leaves its module
   without a report. On 2026-11-11 the job log that named one returned errors and then expired before anyone read it.
+
+## Amendment, 2026-11-12 (#461): a scheduled run, in shards, 120 minutes a shard
+
+The operator ruled these changes after the nightly ran out of its 80-minute step two nights running.
+
+- **A schedule, not a nightly.** The run is scheduled weekly for now; the cadence is the operator's to set, and the
+  names say what runs, never when. A mutation result is worth a run only when someone acts on it, so the run follows
+  the cadence its findings are triaged at. The workflow is renamed `.github/workflows/mutation-testing.yml` (name
+  "Mutation testing") and its alert label `mutation-testing`. `workflow_dispatch` is unchanged. Where this ADR says
+  "the nightly", `mutation-nightly.yml` or the `mutation-nightly` label, read the scheduled run,
+  `mutation-testing.yml` and `mutation-testing`.
+- **Shards.** PIT runs on three runners: `:packs`'s floor groups in two halves (domain+application with infra.fetch,
+  and infra.storage with infra.archive, about half of its test runs each) and every other module. A module's shard
+  is `-PmutationGroups=<groups>` (`charter.mutation-conventions`): it mutates and scores exactly those groups, so each
+  group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Unknown names fail the run.
+  The module list names each module's groups, and the summary shows "no report" for a group no shard reported. A
+  listed module or group with no readable report also makes the summary script exit 1, so the summary job is red and the
+  alert fires: a group no shard names would otherwise never be mutated while every job stays green. A group below its floor still
+  exits 0, as the `pitest` step is what fails the run for it.
+- **120 minutes a shard**, 110 of them for the mutation step, replacing the 90 and 80 of section 8.
+
+Why: a full `:packs:pitest` measured 1h06m34s alone on an idle 4-core machine (7129 mutants), and a GitHub runner is
+about 1.4 times slower through the whole mutation phase (run 43176780670), so `:packs` needs about 93 minutes on one
+runner. Test bodies are about 9 % of that time; the rest is PIT's per-run overhead over 52,898 test runs, half of them
+for survivors and late kills. A squad of three lenses measured this; its levers that change no floor and no scope are
+the shards, three test-design fixes in this change, and two follow-ups (#530, minion JVM tuning; #531, the remaining
+test fixes). Floors and the PIT scope are unchanged. The first sharded run (43209733136) took 48 minutes, the slowest
+shard 47 of its 110, with every group at the score of a whole-module run.
+
+## Amendment, 2026-11-12 (#536): the artifacts-edge module joins the scheduled run
+
+Status: Accepted, as an amendment of this accepted ADR.
+
+`service/artifacts-edge`, the edge of the asset, skill and references reads, applies `charter.mutation-conventions`
+directly, with one whole-module group, `artifacts-edge`, at a floor of 85. The floor follows the precedent of
+`:activations`, `:profiles-edge` and `:missions-edge`: a first floor of 85 until the first score is known, raised by
+pull request once the score clears it by 5. No score has been measured yet, so the table states no margin. The group
+mutates `ai.speckitty.charter.artifacts.application` and `ai.speckitty.charter.artifacts.infra`, without the four
+Spring wiring packages (`application.config`, `infra.api.config`, `infra.packs.config`, `infra.activations.config`).
+No other group mutates `ai.speckitty.charter.artifacts`, so the scopes do not overlap. The `others` shard's `pitest`
+already reaches the module, and `mutationModules` lists it. The other floors are unchanged.

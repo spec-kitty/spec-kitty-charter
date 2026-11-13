@@ -468,6 +468,56 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the response status is 404
 
+  # #110 (ADR-0042 amendment of 2026-11-12): the manifest's lists are derived from the pack. An uploaded manifest whose
+  # lists differ is refused at the manifest, one violation per entry; its order and its hashes are not judged, as the
+  # registration restamps them (the control: both directives listed, every hash a placeholder).
+  Scenario: An uploaded manifest that leaves out an artifact the pack holds is refused at the manifest
+    Given the archive "partial" is a copy of the archive "v1"
+    And the archive "partial" holds the file "pack-manifest.yaml":
+      """
+      schema_version: '1.0'
+      manifest_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      constituents:
+      - kind: directive
+        id: A
+        path: directives/A.directive.yaml
+        content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      """
+    When I PUT "/packs/acme" with the archive "partial"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "manifest_membership"
+    And the field at "/problem/violations/0/pointer" is "pack-manifest.yaml"
+    And the field at "/problem/violations/0/detail" contains "leaves out constituent directive:B at directives/B.directive.yaml"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
+  Scenario: An uploaded manifest that lists every artifact registers, its order and its stale hashes restamped
+    Given the archive "listed" is a copy of the archive "v1"
+    And the archive "listed" holds the file "pack-manifest.yaml":
+      """
+      schema_version: '1.0'
+      manifest_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      constituents:
+      - kind: directive
+        id: B
+        path: directives/B.directive.yaml
+        content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      - kind: directive
+        id: A
+        path: directives/A.directive.yaml
+        content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      """
+    When I PUT "/packs/acme" with the archive "listed"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "created"
+    When I GET "/packs/acme/artifacts/directive/B"
+    Then the response status is 200
+
   # FR-004: only Markdown is excluded by the fallback; any other file nothing models is still refused (the control).
   Scenario: A text file the pack model does not know stays refused as unmodelled
     Given the archive "stray" is a copy of the archive "v1"

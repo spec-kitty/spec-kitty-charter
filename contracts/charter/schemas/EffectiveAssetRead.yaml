@@ -1,0 +1,104 @@
+title: EffectiveAssetRead
+description: >-
+  One asset under an activation (research R2, operator ruling DM-01M78S3RNPZ5ZFV5AR6H1X6HV1): the copy the layer merge
+  keeps across the levels of the activation's closure, with the pack and the level that hold it, its policy and, in
+  asset, its descriptor as that pack's sidecar declares it. An asset is in force when a pack of the closure holds it: it
+  is never selected, denied or cascaded to, so it carries no state, reason, required, satisfiedBy or suggestion, which
+  would be invented. The payload's bytes are not in it: _links.payload leads to them.
+
+  _links holds self (this request), artifact (the pack-scoped read of the asset in the pack that holds the version in
+  force, whose member asset is the same descriptor), payload (the bytes of that copy under the activation), collection
+  (the activation's assets) and up (the activation). The schema is closed.
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- governanceFingerprint
+- kind
+- artifactId
+- packId
+- level
+- policy
+- asset
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The charter-closure/v1 digest of the packs of the activation's closure alone, taken in the same consistent read as
+      the answer. It is not ServiceInfo.sourceFingerprint and not the Charter-Source-Fingerprint header, which digest the
+      whole source; a change to a pack outside the closure leaves it unchanged.
+    x-derived:
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  kind:
+    type: string
+    enum:
+    - asset
+    description: >-
+      The artifact's kind, always asset. It is not an ActivatableKind: an asset is not resolved by an activation.
+    x-derived:
+      rule: The kind of the literal path, asset.
+      inputs:
+      - paths/activations_activationId_artifacts_asset_artifactId.yaml
+  artifactId:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The asset's id, as its sidecar declares it.
+    x-derived:
+      rule: The declared id of the asset the merged closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version in force: the winner of the layer merge, the
+      provenance of the descriptor and of the payload's bytes.
+    x-derived:
+      rule: The pack of the winning version of the asset after the layer merge (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of the pack that holds the version in force (built-in, org or project).
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  policy:
+    allOf:
+    - $ref: ArtifactPolicy.yaml
+    description: The mutability level the closure's packs declare for the asset, a fact of the winning copy.
+    x-derived:
+      rule: The level the owning pack declares (ADR-0012), along the closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  asset:
+    $ref: Asset.yaml
+  _links:
+    $ref: Links.yaml

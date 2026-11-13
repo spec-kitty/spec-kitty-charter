@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -69,18 +68,12 @@ class PackFileSetExactnessTest {
     /** Only a hang cap: the time budget is {@link PackFileSetBudgetTest}'s. */
     private static final int HANG_CAP_SECONDS = 60;
 
+    /**
+     * The trees written so far, each on first use ({@link #tree}). Not written up front: PIT runs each test method in a
+     * run of its own, and most of them use only the exhaustive tree 0, so writing all {@value #TREES} first cost every
+     * such run about 3 s of writing (#461).
+     */
     private static final Map<Integer, GeneratedPackTree> TREES_BY_INDEX = new HashMap<>();
-
-    /** Writes the trees once, before any check, as {@link PackFileSetBudgetTest} does. */
-    @BeforeAll
-    static void generateTheTrees() throws IOException {
-        if (!SymbolicLinks.supported(home)) {
-            return;
-        }
-        for (int i = 0; i < TREES; i++) {
-            tree(i);
-        }
-    }
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
@@ -299,66 +292,7 @@ class PackFileSetExactnessTest {
         for (Pack pack : tree.packs()) {
             String where = where(tree, pack);
             FilesystemPackStore.PackRead read = store.read(new PackIdentifier(pack.directoryName()));
-
-            Map<Kind, Set<String>> typed = new LinkedHashMap<>();
-            typed.put(Kind.TACTIC, ids(read.dsos(TacticBinding.INSTANCE), TacticDso::id));
-            typed.put(Kind.DIRECTIVE, ids(read.dsos(DirectiveBinding.INSTANCE), DirectiveDso::id));
-            typed.put(Kind.STYLEGUIDE, ids(read.dsos(StyleguideBinding.INSTANCE), StyleguideDso::id));
-            typed.put(Kind.TOOLGUIDE, ids(read.dsos(ToolguideBinding.INSTANCE), ToolguideDso::id));
-            typed.put(Kind.PARADIGM, ids(read.dsos(ParadigmBinding.INSTANCE), ParadigmDso::id));
-            typed.put(Kind.AGENT_PROFILE, ids(read.dsos(AgentProfileBinding.INSTANCE), AgentProfileDso::profileId));
-            typed.put(
-                    Kind.MISSION_STEP_CONTRACT,
-                    ids(read.dsos(MissionStepContractBinding.INSTANCE), MissionStepContractDso::id));
-            typed.put(Kind.GLOSSARY_PACK, ids(read.dsos(GlossaryPackBinding.INSTANCE), GlossaryPackDso::id));
-            typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
-            typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));
-            typed.put(Kind.MISSION_TYPE, ids(read.dsos(MissionTypeBinding.INSTANCE), MissionTypeDso::id));
-            typed.put(Kind.GUARD, ids(read.dsos(GuardBinding.INSTANCE), GuardDso::id));
-            typed.put(Kind.LIFECYCLE, ids(read.dsos(LifecycleBinding.INSTANCE), LifecycleDso::id));
-            typed.put(Kind.STEP_ENHANCEMENT, ids(read.dsos(StepEnhancementBinding.INSTANCE), StepEnhancementDso::id));
-            typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
-            Set<String> observed = new LinkedHashSet<>();
-            observed.add(PACK_YAML);
-            for (Kind kind : Kind.values()) {
-                Set<String> validIds = validIds(pack, kind);
-                assertThat(typed.get(kind))
-                        .as("%s the valid %s files the store read, by planted id", where, kind.token())
-                        .isNotEmpty()
-                        .isEqualTo(validIds);
-                pack.planted().values().stream()
-                        .filter(p ->
-                                p.kind() == kind && p.valid() && typed.get(kind).contains(p.id()))
-                        .forEach(p -> observed.add(p.path()));
-            }
-            // #195: a preset is no kind; the store reads the valid ones into their own slot.
-            Set<String> presets = read.presets().stream()
-                    .map(FilesystemPackStore.Stored::file)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            assertThat(presets).as("%s the valid presets the store read", where).isEqualTo(validPresets(pack));
-            observed.addAll(presets);
-            // #260: the pack document is no kind either; the store reads a valid one into its own slot.
-            read.document().map(FilesystemPackStore.Stored::file).ifPresent(observed::add);
-            Planted document = pack.planted().get(PackDocumentMarkdown.FILE);
-            assertThat(read.document().isPresent())
-                    .as("%s the pack document is held exactly when a valid one is planted", where)
-                    .isEqualTo(document != null && document.valid());
-            read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
-            Set<String> payloads = new LinkedHashSet<>();
-            for (AssetFile file : read.assetFiles()) {
-                payloads.add(PackFileSet.ASSETS + file.path());
-                assertSameBytes(pack, PackFileSet.ASSETS + file.path(), file.payload(), where);
-            }
-            for (FilesystemPackStore.TemplateFile file : read.templates()) {
-                payloads.add(file.place());
-                assertSameBytes(pack, file.place(), file.content(), where);
-                assertThat(PackFileSet.templateId(file.place()))
-                        .as("%s the id of %s", where, file.place())
-                        .isEqualTo(file.path());
-            }
-            assertThat(payloads)
-                    .as("%s the asset files and templates the store read", where)
-                    .isEqualTo(pack.paths(Verdict.PAYLOAD));
+            Set<String> observed = assertTheStoreReadTheValidFilesOfEveryKind(pack, read, where);
 
             Set<String> expected = new LinkedHashSet<>();
             expected.add(PACK_YAML);
@@ -373,30 +307,112 @@ class PackFileSetExactnessTest {
                     .as("%s the files the store reported as unreadable", where)
                     .isEqualTo(Stream.concat(malformed(pack).stream(), pack.paths(Verdict.RETIRED).stream())
                             .collect(Collectors.toSet()));
-            assertThat(service.tacticsOf(new PackIdentifier(pack.name())).stream()
-                            .map(Tactic::id)
-                            .map(id -> id.value())
-                            .collect(Collectors.toSet()))
-                    .as("%s the tactics the service answers", where)
-                    .isEqualTo(validIds(pack, Kind.TACTIC));
-            ai.speckitty.charter.packs.domain.Pack loaded = service.load(new PackIdentifier(pack.name()));
-            Set<String> held = new LinkedHashSet<>();
-            loaded.assetFiles().forEach(file -> held.add(PackFileSet.ASSETS + file.path()));
-            // A template is held by its id (a mission type's is <type>/<path>, #194), so its planted path is mapped to
-            // it.
-            loaded.templates()
-                    .forEach(template -> held.add("template:" + template.id().value()));
-            assertThat(held)
-                    .as("%s the asset files and templates the loaded pack holds", where)
-                    .isEqualTo(pack.paths(Verdict.PAYLOAD).stream()
-                            .map(path -> path.startsWith(PackFileSet.ASSETS)
-                                    ? path
-                                    : "template:" + PackFileSet.templateId(path))
-                            .collect(Collectors.toSet()));
-            assertThat(loaded.assets().stream().map(asset -> asset.id().value()).collect(Collectors.toSet()))
-                    .as("%s the assets the loaded pack holds", where)
-                    .isEqualTo(validIds(pack, Kind.ASSET));
+            assertTheServiceAnswersThePacksValidFiles(service, pack, where);
         }
+    }
+
+    /**
+     * Asserts the store read the valid files of every kind, the valid presets, the pack document and the payloads of
+     * the pack, and answers every file it observed: {@code pack.yaml}, those it read and those it reported.
+     */
+    private static Set<String> assertTheStoreReadTheValidFilesOfEveryKind(
+            Pack pack, FilesystemPackStore.PackRead read, String where) {
+        Map<Kind, Set<String>> typed = typedIdsRead(read);
+        Set<String> observed = new LinkedHashSet<>();
+        observed.add(PACK_YAML);
+        for (Kind kind : Kind.values()) {
+            Set<String> validIds = validIds(pack, kind);
+            assertThat(typed.get(kind))
+                    .as("%s the valid %s files the store read, by planted id", where, kind.token())
+                    .isNotEmpty()
+                    .isEqualTo(validIds);
+            pack.planted().values().stream()
+                    .filter(p ->
+                            p.kind() == kind && p.valid() && typed.get(kind).contains(p.id()))
+                    .forEach(p -> observed.add(p.path()));
+        }
+        // #195: a preset is no kind; the store reads the valid ones into their own slot.
+        Set<String> presets = read.presets().stream()
+                .map(FilesystemPackStore.Stored::file)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        assertThat(presets).as("%s the valid presets the store read", where).isEqualTo(validPresets(pack));
+        observed.addAll(presets);
+        // #260: the pack document is no kind either; the store reads a valid one into its own slot.
+        read.document().map(FilesystemPackStore.Stored::file).ifPresent(observed::add);
+        Planted document = pack.planted().get(PackDocumentMarkdown.FILE);
+        assertThat(read.document().isPresent())
+                .as("%s the pack document is held exactly when a valid one is planted", where)
+                .isEqualTo(document != null && document.valid());
+        read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
+        assertTheStoreReadThePlantedPayloads(pack, read, where);
+        return observed;
+    }
+
+    private static Map<Kind, Set<String>> typedIdsRead(FilesystemPackStore.PackRead read) {
+        Map<Kind, Set<String>> typed = new LinkedHashMap<>();
+        typed.put(Kind.TACTIC, ids(read.dsos(TacticBinding.INSTANCE), TacticDso::id));
+        typed.put(Kind.DIRECTIVE, ids(read.dsos(DirectiveBinding.INSTANCE), DirectiveDso::id));
+        typed.put(Kind.STYLEGUIDE, ids(read.dsos(StyleguideBinding.INSTANCE), StyleguideDso::id));
+        typed.put(Kind.TOOLGUIDE, ids(read.dsos(ToolguideBinding.INSTANCE), ToolguideDso::id));
+        typed.put(Kind.PARADIGM, ids(read.dsos(ParadigmBinding.INSTANCE), ParadigmDso::id));
+        typed.put(Kind.AGENT_PROFILE, ids(read.dsos(AgentProfileBinding.INSTANCE), AgentProfileDso::profileId));
+        typed.put(
+                Kind.MISSION_STEP_CONTRACT,
+                ids(read.dsos(MissionStepContractBinding.INSTANCE), MissionStepContractDso::id));
+        typed.put(Kind.GLOSSARY_PACK, ids(read.dsos(GlossaryPackBinding.INSTANCE), GlossaryPackDso::id));
+        typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
+        typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));
+        typed.put(Kind.MISSION_TYPE, ids(read.dsos(MissionTypeBinding.INSTANCE), MissionTypeDso::id));
+        typed.put(Kind.GUARD, ids(read.dsos(GuardBinding.INSTANCE), GuardDso::id));
+        typed.put(Kind.LIFECYCLE, ids(read.dsos(LifecycleBinding.INSTANCE), LifecycleDso::id));
+        typed.put(Kind.STEP_ENHANCEMENT, ids(read.dsos(StepEnhancementBinding.INSTANCE), StepEnhancementDso::id));
+        typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
+        return typed;
+    }
+
+    private static void assertTheStoreReadThePlantedPayloads(
+            Pack pack, FilesystemPackStore.PackRead read, String where) {
+        Set<String> payloads = new LinkedHashSet<>();
+        for (AssetFile file : read.assetFiles()) {
+            payloads.add(PackFileSet.ASSETS + file.path());
+            assertSameBytes(pack, PackFileSet.ASSETS + file.path(), file.payload(), where);
+        }
+        for (FilesystemPackStore.TemplateFile file : read.templates()) {
+            payloads.add(file.place());
+            assertSameBytes(pack, file.place(), file.content(), where);
+            assertThat(PackFileSet.templateId(file.place()))
+                    .as("%s the id of %s", where, file.place())
+                    .isEqualTo(file.path());
+        }
+        assertThat(payloads)
+                .as("%s the asset files and templates the store read", where)
+                .isEqualTo(pack.paths(Verdict.PAYLOAD));
+    }
+
+    private static void assertTheServiceAnswersThePacksValidFiles(
+            DomainRepositoryService service, Pack pack, String where) {
+        assertThat(service.tacticsOf(new PackIdentifier(pack.name())).stream()
+                        .map(Tactic::id)
+                        .map(id -> id.value())
+                        .collect(Collectors.toSet()))
+                .as("%s the tactics the service answers", where)
+                .isEqualTo(validIds(pack, Kind.TACTIC));
+        ai.speckitty.charter.packs.domain.Pack loaded = service.load(new PackIdentifier(pack.name()));
+        Set<String> held = new LinkedHashSet<>();
+        loaded.assetFiles().forEach(file -> held.add(PackFileSet.ASSETS + file.path()));
+        // A template is held by its id (a mission type's is <type>/<path>, #194), so its planted path is mapped to
+        // it.
+        loaded.templates()
+                .forEach(template -> held.add("template:" + template.id().value()));
+        assertThat(held)
+                .as("%s the asset files and templates the loaded pack holds", where)
+                .isEqualTo(pack.paths(Verdict.PAYLOAD).stream()
+                        .map(path ->
+                                path.startsWith(PackFileSet.ASSETS) ? path : "template:" + PackFileSet.templateId(path))
+                        .collect(Collectors.toSet()));
+        assertThat(loaded.assets().stream().map(asset -> asset.id().value()).collect(Collectors.toSet()))
+                .as("%s the assets the loaded pack holds", where)
+                .isEqualTo(validIds(pack, Kind.ASSET));
     }
 
     private static void assertSameBytes(Pack pack, String path, Payload payload, String where) {

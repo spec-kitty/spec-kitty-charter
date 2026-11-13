@@ -1,0 +1,23 @@
+title: SkillExpansion
+description: What a wrapper skill expands to; present exactly when the skill's form is wrapper.
+type: object
+additionalProperties: false
+required:
+  - target
+properties:
+  target:
+    type: string
+    pattern: '^(builtin:.+|cli:spec-kitty( .*)?)$'
+    description: A builtin command (builtin:<name>) or a spec-kitty argv (cli:spec-kitty <args>).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillExpansion.java
+      symbol: SkillExpansion.target
+  args:
+    type: string
+    description: The arguments the expansion takes; left out when the file writes none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillExpansion.java
+      symbol: SkillExpansion.args
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillExpansion.java
+  symbol: SkillExpansion

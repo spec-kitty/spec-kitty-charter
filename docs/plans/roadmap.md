@@ -14,6 +14,7 @@ related:
   - adr/0055-cutover-sequencing-the-java-service-first
   - adr/0059-switch-gate-cascade-edges-and-activation-rulings
   - plans/engineering-notes/service-usability-run-2026-11-09
+  - plans/next-slices-2026-11-12
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the next checkable step and what it depends on.
@@ -67,7 +68,10 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-11-11. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
+As of 2026-11-12: slice B is built (PR #501), slice A closed (#492), the quick wins of 2026-11-11 closed except #494 (green nightly runs), the switch
+gate is checked per operation (PR #527, #9 and #72), and ADR-0074 decided the remaining cutover reads (PR #529). The
+next slices are in [Next slices after the 2026-11-12 slice review](/plans/next-slices-2026-11-12/). The notes below
+are as of 2026-11-11. Sources: the [usability run of 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/),
 an architecture and planning review of the plan pages against `main`, the tracker, and the nightly SonarCloud scan.
 
 - **Phase 1 steps 1 to 5, 3a and the activation register are built.** The contract holds the API root, the offering
@@ -93,16 +97,23 @@ an architecture and planning review of the plan pages against `main`, the tracke
 
 ## Toward a service core can use
 
-The next slices, in order. Each ticket carries a `slice:A` to `slice:E` label next to its milestone; B to D have a
-tracking issue. Re-run the usability run after slices B and C; its checklist is the readiness gate.
+The slices, in order. Each ticket carries a `slice:A` to `slice:G` label next to its milestone, and each slice has
+a tracking issue. Re-run the usability run after slices B and C; its checklist is the readiness gate. The state of
+each slice and the reasons for the order are in [Next slices after the 2026-11-12 slice review](/plans/next-slices-2026-11-12/).
 
 | Slice | Scope | Done when | Depends on |
 |---|---|---|---|
-| **A. Every kind is readable** | ~~#407, #99, #100, #148~~ done; #96 open for procedure and template bodies (tracker milestone: 4.x cutover; #469: the activation links its graph and context) | Profile, mission type, step contract, procedure and template bodies are served through the generic kind route with `_links` | Profiles (PR #470) and mission types, steps, step contracts and skeletons (PR #472) are served; procedures and templates are not |
-| **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | #451 (documentation files), #431 (`org-charter.yaml`), #453 (language-tag aliasing, needs a ruling), then the open-packs pin bump #405, #435 | The usability run registers the open-packs unedited | A for the read checks |
-| **C. The effective step and action context explain every directive in force** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018; #103 closed into it); #97 (R3, decided), #439 and #447 (added 2026-11-12) | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body. *Progress 2026-11-12: built by mission `effective-step-and-action-context-01M774HB` (the ownership rule, the effective step prompt and its compose checks, every overrider named, an activatable `overrides` source); the spdd pack case waits on slice B and open-packs* | A; B for the spdd (structured-prompt-driven development) pack |
-| **D. A contract release core can vendor** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #454, #312, #367; narrow or close #47; #9 and #72, re-scoped to ADR-0059 D1 | A tagged 0.x release carries slices A to C. The operator cuts it once the main API interactions stabilize (2026-11-10) | A to C |
-| **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70, #71 | Core's seam tests pass through the generated client | D |
+| **A. Every kind is readable** | Done (#492): profiles, mission types, steps, step contracts, skeletons, procedures; the template read decided (#104) | Bodies are served through the generic kind route with `_links` | — |
+| **B. Real packs register as they are** ([#466](https://github.com/spec-kitty/spec-kitty-charter/issues/466)) | Built in PR #501 (#451, #431, #432, #490; ADR-0073). Left: open-packs regenerates the manifests of `built-in`, `foundation` and `writing` (open-packs #250). The round trip over open-packs content moves to an open-packs gate (ADR-0070 amendment 2026-11-13, open-packs #252). #110 (manifest restamping) is built; a pack registered before gets a one-time `409` on its first unchanged re-registration, so send a new `pack_version`. #545 closed #509 and raised `openPacksRef` | Open-packs `main` registers unedited (proved by the open-packs gate), and the usability run's registration checks pass | open-packs #250 (#241 and #242 closed) |
+| **C. The effective step and action context match core** ([#467](https://github.com/spec-kitty/spec-kitty-charter/issues/467)) | #438 (effective step prompt), #450 (scoping of required and project directives, body links; amends ADR-0018), #97, #439, #447. *Progress 2026-11-12: built by mission `effective-step-and-action-context-01M774HB` (the ownership rule, the effective step prompt and its compose checks, every overrider named, an activatable `overrides` source); the spdd pack case waits on slice B and open-packs* | Core's 16 directives for `software-dev/implement` are explained, and each item links to its body | — |
+| **D. Release machinery and clean-up** ([#468](https://github.com/spec-kitty/spec-kitty-charter/issues/468)) | #196, #45, #367, #371 left; #454, #406, #312, #47, #9 and #72 done | Its tickets close. A release is not tied to any slice: the operator cuts a 0.x release when what the contract offers suits them (ruling, 2026-11-12) | — |
+| **A2. The reads ADR-0074 added** ([#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)) | Delivered by PR #546: #98 presets, #105 assets, #107 skills, #532, #409. Left: #106 glossary, now its own Mission (operator ruling at specify, 2026-11-12) | Presets, assets and skills are served by ADR-0074's paths, each through the ADR-0059 D1 gate; glossary contexts follow with #106 | — (runs after C and D); open-packs follows #106 |
+| **F. The kind taxonomy and the mission-type schema** ([#537](https://github.com/spec-kitty/spec-kitty-charter/issues/537)) | #112 (R18), #514, #520, #515 (needs a ruling), #533 | The kind table is served as data; `mission_step_contract` is retired; steps are the single authoring surface | A2 |
+| **G. Agent profile resolution** ([#538](https://github.com/spec-kitty/spec-kitty-charter/issues/538)) | #102 (R8), #42, #512, #380 | Profile resolution is a contract operation; a human can serve an `operator` step | F |
+| **E. Core ingests** (phase 2, tracked on [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13)) | #13, #452 and the id spelling at the seam (from #361), #70 | Core's seam tests pass through the generated client | A released contract |
+
+After G, #108 (R14, the routing catalog) runs as a Mission of its own, with the build ADR of ADR-0074 decision 8
+first. Then every read in epic #94 has a contract operation.
 
 Alongside, not on the critical path: the SonarCloud findings (Security rating D, Reliability rating E, from a handful
 of issues; #463 to #465, see [Milestones](/plans/milestones/#sonarcloud-findings)). Hosted work (#127, #396) and contract 1.0.0
@@ -144,6 +155,6 @@ the shadow comparison stay in core.
 The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Both things it
 waited on are built: the fix for the duplicate classes code generation emitted (#119), so that
 core's generated client is clean, and the publishing workflow (#45). What remains is cutting the
-release. The operator ruled on 2026-11-10 to cut it once the main API interactions stabilize (slice D above), following
+release. The operator cuts it when what the contract offers is to their liking; it waits for no slice (ruling, 2026-11-12), following
 [the release procedure](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#releasing-a-contract-version). Shapes may still change in a 0.x minor; they freeze at 1.0.0
 (#128).

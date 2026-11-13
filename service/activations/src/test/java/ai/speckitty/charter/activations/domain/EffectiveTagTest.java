@@ -127,6 +127,33 @@ class EffectiveTagTest {
                 .hasSize(3);
     }
 
+    @Test
+    void eachReadOfTheSameArtifactHasATagNamespaceOfItsOwn() {
+        ClosureSnapshot closure = closure("sha256:one");
+        EffectiveTag.ArtifactQuery skill = new EffectiveTag.ArtifactQuery(ArtifactKind.SKILL, "land-pr", 0);
+        EffectiveTag.ArtifactQuery asset = new EffectiveTag.ArtifactQuery(ArtifactKind.ASSET, "run", 0);
+
+        Set<EffectiveTag> ofTheSkill = new HashSet<>(List.of(
+                EffectiveTag.artifact(REVISION, closure, skill),
+                EffectiveTag.winner(EffectiveTag.Read.SKILL, REVISION, closure, skill),
+                EffectiveTag.profile(REVISION, closure, skill)));
+        Set<EffectiveTag> ofTheAsset = new HashSet<>(List.of(
+                EffectiveTag.artifact(REVISION, closure, asset),
+                EffectiveTag.winner(EffectiveTag.Read.ASSET, REVISION, closure, asset),
+                EffectiveTag.winner(EffectiveTag.Read.ASSET_PAYLOAD, REVISION, closure, asset)));
+        Set<EffectiveTag> listsOfOneKind = new HashSet<>(List.of(
+                EffectiveTag.winners(EffectiveTag.Read.SKILLS, ArtifactKind.SKILL, REVISION, closure),
+                EffectiveTag.winners(EffectiveTag.Read.ASSETS, ArtifactKind.SKILL, REVISION, closure)));
+
+        assertThat(ofTheSkill)
+                .as("the generic read, the skill read and the profile read of one id and depth")
+                .hasSize(3);
+        assertThat(ofTheAsset)
+                .as("the generic read, the asset read and the payload read of one id and depth")
+                .hasSize(3);
+        assertThat(listsOfOneKind).as("two lists over the same query").hasSize(2);
+    }
+
     // ---- the graph and the action context (T140, T141): each representation has its own tag ----
 
     private static final EffectiveTag.ContextQuery IMPLEMENT =
@@ -249,9 +276,9 @@ class EffectiveTagTest {
     }
 
     /**
-     * Rule E17 as amended (research R10, squad D1): the context answers the ownership rule under an unchanged revision
-     * and closure fingerprint, so the domain moved to {@code v3} for every effective read, and a tag a client kept from
-     * {@code v2} never matches again. The {@code v2} tokens are the literals the earlier recipe gave for the same inputs.
+     * Rule E17 as amended (research R10, squad D1) and slice A2's links (#536): the context answers the ownership rule,
+     * and existing reads carry new links, under an unchanged revision and closure fingerprint, so the domain moved once
+     * to {@code v3} for every effective read, and a tag a client kept from {@code v2} never matches again. The {@code v2} tokens are the literals the earlier recipe gave for the same inputs.
      */
     @Test
     void aTagOfTheV2RecipeNoLongerMatchesAnyEffectiveRead() {

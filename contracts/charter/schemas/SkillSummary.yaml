@@ -1,0 +1,52 @@
+title: SkillSummary
+description: >-
+  One skill as a SkillList lists it: its id, its title, when it applies, and its form. In a pack (listPackSkills) it is
+  the pack's skill, and _links holds self, the skill's own read (getPackSkill), which answers the whole skill and, for
+  a prompt skill, its body. Under an activation (listEffectiveSkills) it is the copy the layer merge keeps, and _links
+  holds effective-artifact, its read under the activation (getEffectiveSkill), and artifact, the winning copy's read
+  in its pack (getPackSkill).
+type: object
+additionalProperties: false
+required:
+  - id
+  - title
+  - description
+  - form
+  - _links
+properties:
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The skill's identity within its pack, as Skill.id.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.id
+  title:
+    type: string
+    minLength: 1
+    description: The skill's title, as Skill.title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.title
+  description:
+    type: string
+    minLength: 1
+    description: When the skill applies, as Skill.description.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+      symbol: Skill.description
+  form:
+    type: string
+    enum:
+      - prompt
+      - wrapper
+    description: prompt, a skill whose body is the prompt, or wrapper, a skill that expands to a command, as Skill.form.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillForm.java
+      symbol: SkillForm.token
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java
+  symbol: Skill

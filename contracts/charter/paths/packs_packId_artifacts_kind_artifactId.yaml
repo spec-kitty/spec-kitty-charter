@@ -14,7 +14,9 @@ get:
     The kinds this read serves are tactic, directive, styleguide, paradigm, toolguide, procedure and
     mission_step_contract. An agent_profile is a kind of the pack that the
     literal operation getPackAgentProfile answers, with the profile and its governance, and its not-found code is
-    artifact_not_found; this templated read never carries a profile body. The item of a mission_type is answered
+    artifact_not_found; this templated read never carries a profile body. An asset and a skill are listed kinds
+    too, answered by their own literal reads: this templated read refuses them 404 kind_not_found, naming the literal
+    path, and never carries an asset or a skill member. The item of a mission_type is answered
     by getPackMissionType, GET /packs/{packId}/artifacts/mission_type/{missionTypeId}, a literal path the service
     prefers over this templated one, in the same envelope with member missionType; mission_type is listed and
     filtered like the other kinds, and its references are read on the templated references path.
@@ -95,7 +97,8 @@ delete:
     not-found code of its kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
     toolguide_not_found, mission_type_not_found or mission_step_contract_not_found), the code the item read answers on
     the same path, and artifact_not_found for a procedure, as the item read answers it, and for an agent_profile,
-    which getPackAgentProfile answers likewise. An agent
+    which getPackAgentProfile answers likewise. An asset and a skill are listed but not removed: a DELETE of one is
+    404 kind_not_found, whether the pack holds it or not. An agent
     profile is removed as the writable kinds are, with the If-Match of the ETag getPackAgentProfile gave. A mission
     type is removed with its step prompt and guidelines files and its skeletons, the files
     under its templates/, as one removal under one impact check: every check below judges them together (#99, D10). The
@@ -172,12 +175,12 @@ delete:
                 code: pack_not_found
                 detail: Pack nope was not found.
             kind-not-found:
-              summary: The path names a kind the service does not serve.
+              summary: The path names a kind the service does not remove.
               value:
                 title: Kind not found
                 status: 404
                 code: kind_not_found
-                detail: The service serves no artifact kind procedure.
+                detail: The service removes no artifact of kind skill.
             directive-not-found:
               summary: The pack holds no artifact with the asked kind and id; the code is the one of the kind.
               value:

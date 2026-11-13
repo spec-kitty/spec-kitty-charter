@@ -14,7 +14,7 @@ name: Sonar (nightly, reported)
 # starts no scan (!cancelled()).
 #
 # Schedule: 04:23 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), outside
-# 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-nightly.yml at 02:43 UTC.
+# 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-testing.yml at 02:43 UTC.
 #
 # build-logic/src/test/kotlin/SonarWorkflowGuardTest.kt guards the triggers, the SHA pins and where the
 # token may appear.
@@ -157,12 +157,12 @@ jobs:
           args: >
             -Dsonar.organization=spec-kitty
             -Dsonar.projectKey=spec-kitty_spec-kitty-charter
-            -Dsonar.sources=service/kernel/src/main/java,service/packs/src/main/java,service/profiles/src/main/java,service/profiles-edge/src/main/java,service/missions/src/main/java,service/missions-edge/src/main/java,service/activations/src/main/java,service/web-transport/src/main/java,service/deployable/src/main/java
-            -Dsonar.tests=service/kernel/src/test/java,service/packs/src/test/java,service/profiles/src/test/java,service/profiles-edge/src/test/java,service/missions/src/test/java,service/missions-edge/src/test/java,service/activations/src/test/java,service/web-transport/src/test/java,service/deployable/src/test/java
-            -Dsonar.java.binaries=service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/profiles-edge/build/classes/java/main,service/missions/build/classes/java/main,service/missions-edge/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
-            -Dsonar.java.test.binaries=service/kernel/build/classes/java/test,service/packs/build/classes/java/test,service/profiles/build/classes/java/test,service/profiles-edge/build/classes/java/test,service/missions/build/classes/java/test,service/missions-edge/build/classes/java/test,service/activations/build/classes/java/test,service/web-transport/build/classes/java/test,service/deployable/build/classes/java/test
+            -Dsonar.sources=service/kernel/src/main/java,service/packs/src/main/java,service/profiles/src/main/java,service/profiles-edge/src/main/java,service/missions/src/main/java,service/missions-edge/src/main/java,service/artifacts-edge/src/main/java,service/activations/src/main/java,service/web-transport/src/main/java,service/deployable/src/main/java
+            -Dsonar.tests=service/kernel/src/test/java,service/packs/src/test/java,service/profiles/src/test/java,service/profiles-edge/src/test/java,service/missions/src/test/java,service/missions-edge/src/test/java,service/artifacts-edge/src/test/java,service/activations/src/test/java,service/web-transport/src/test/java,service/deployable/src/test/java
+            -Dsonar.java.binaries=service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/profiles-edge/build/classes/java/main,service/missions/build/classes/java/main,service/missions-edge/build/classes/java/main,service/artifacts-edge/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
+            -Dsonar.java.test.binaries=service/kernel/build/classes/java/test,service/packs/build/classes/java/test,service/profiles/build/classes/java/test,service/profiles-edge/build/classes/java/test,service/missions/build/classes/java/test,service/missions-edge/build/classes/java/test,service/artifacts-edge/build/classes/java/test,service/activations/build/classes/java/test,service/web-transport/build/classes/java/test,service/deployable/build/classes/java/test
             -Dsonar.java.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main
-            -Dsonar.java.test.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main,service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/profiles-edge/build/classes/java/main,service/missions/build/classes/java/main,service/missions-edge/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
+            -Dsonar.java.test.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main,service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/profiles-edge/build/classes/java/main,service/missions/build/classes/java/main,service/missions-edge/build/classes/java/main,service/artifacts-edge/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
             -Dsonar.coverage.jacoco.xmlReportPaths=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
             -Dsonar.java.source=25
             -Dsonar.scm.revision=${{ github.sha }}

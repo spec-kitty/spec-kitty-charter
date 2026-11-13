@@ -249,6 +249,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return load(directory, true, new ArrayList<>()).pack();
     }
 
+    /**
+     * Loads a pack as {@link #load} does, but tolerates an unreadable graph document as a read does: the manifest's
+     * derivation of a stored pack (#110) lists what the pack holds and judges nothing else.
+     *
+     * @param directory the pack directory
+     * @return the aggregate, its layout, the DRG documents that could be read and the unmodelled files
+     */
+    LoadedPack loadTolerant(Path directory) {
+        return load(directory, false, new ArrayList<>()).pack();
+    }
+
     /** What a load read: the pack, and the graph documents that could not be read, when the load did not refuse them. */
     private record Loaded(LoadedPack pack, List<PackElementViolation> graphFaults) {}
 
@@ -288,6 +299,31 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
+        Set<String> modelled = modelledFiles(packDir, read, places, graphs, pack, manifestFile, namedPolicy);
+        List<ExcludedFile> excluded = new ArrayList<>();
+        List<String> unmodelled = unmodelled(packDir, modelled, key, excluded);
+        return new Loaded(
+                new LoadedPack(
+                        pack,
+                        new PackLayout(places),
+                        graphs.documents(),
+                        unmodelled,
+                        manifest,
+                        policy,
+                        warnings,
+                        excluded),
+                List.copyOf(graphFaults));
+    }
+
+    /** Every pack-relative file the loaded pack models, so that what is left over is unmodelled. */
+    private Set<String> modelledFiles(
+            Path packDir,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs,
+            Pack pack,
+            Path manifestFile,
+            Optional<String> namedPolicy) {
         Set<String> modelled = new HashSet<>(places.values());
         modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
@@ -305,19 +341,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             modelled.add(PackFileSet.MANIFEST);
         }
         namedPolicy.ifPresent(modelled::add);
-        List<ExcludedFile> excluded = new ArrayList<>();
-        List<String> unmodelled = unmodelled(packDir, modelled, key, excluded);
-        return new Loaded(
-                new LoadedPack(
-                        pack,
-                        new PackLayout(places),
-                        graphs.documents(),
-                        unmodelled,
-                        manifest,
-                        policy,
-                        warnings,
-                        excluded),
-                List.copyOf(graphFaults));
+        return modelled;
     }
 
     /**
@@ -356,6 +380,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                                     "no pack file kind models this file; a registration holds only modelled files"));
         });
         reservedShard(directory).ifPresent(violations::add);
+        Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
+        if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
+                && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
+            // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
+            violations.add(violationOf(PackFileSet.MANIFEST, "unreadable", "the manifest is not a regular file"));
+        }
+        if (violations.isEmpty()) {
+            // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
+            loaded.manifest()
+                    .ifPresent(listed -> ManifestMembership.mismatch(
+                                    listed, ManifestMembership.derived(loaded.pack(), loaded.layout()))
+                            .forEach(reason -> violations.add(
+                                    violationOf(PackFileSet.MANIFEST, ManifestMembership.VIOLATION_CODE, reason))));
+        }
         if (!violations.isEmpty()) {
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
@@ -460,6 +498,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                         "The staged file " + notHeld.file() + " could not be removed before the commit",
                         e);
             }
+        }
+    }
+
+    /**
+     * Writes the staged tree's manifest with the derived membership and fresh derived fields, creating it when the upload
+     * held none (#110). It touches the staging directory only.
+     */
+    @Override
+    public void stampManifest(StagedPack staged) {
+        try {
+            ManifestMembership.stamp(staged.directory(), this, strategy);
+        } catch (IOException e) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "The staged " + PackFileSet.MANIFEST + " could not be written", e);
         }
     }
 
@@ -994,9 +1046,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                             pack.id(), pack.document().get())),
                     written);
         }
-        if (loaded.manifest().isPresent()) {
-            putManifest(staging, pack, loaded.manifest().get(), written);
-        }
+        // #110: the manifest is always written, its membership derived from the pack written, never carried as read.
+        putManifest(staging, pack, ManifestMembership.derived(pack, loaded.layout()), written);
     }
 
     /**
@@ -1024,7 +1075,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /**
      * Writes the manifest last, every derived field recomputed from the bytes staged (ADR-0042): what was read is never
-     * copied. A listed path the write does not hold refuses the write.
+     * copied. Its lists are the derived ones (#110), so a listed path the write does not hold is a fault of this store,
+     * and refuses the write.
      */
     private void putManifest(Path staging, Pack pack, PackManifestDso manifest, Set<String> written)
             throws IOException {

@@ -1,0 +1,52 @@
+# The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
+schema_version: '1.0'
+manifest_hash: 7a8022d6f739a2ced7bb0d5bca4468fadd9bca475180154952be72addecd9910
+constituents:
+- kind: agent_profile
+  id: qa-defect-triager-dmitri
+  path: agent_profiles/qa-defect-triager-dmitri.agent.yaml
+  content_hash: 588ab434a385d8d9db27dc73e4eb8b2c4582f39cb41fe7a0c041697b3e66bf0b
+- kind: directive
+  id: DIRECTIVE_038
+  path: directives/038-structured-prompt-boundary.directive.yaml
+  content_hash: 0f033bb88038c1fefd5f36d57a27e996368d23f3cbd0824870c6e0de219fb9f1
+- kind: step_enhancement
+  id: spdd-implement
+  path: missions/software-dev/enhancements/spdd-implement.step-enhancement.yaml
+  content_hash: bfb236cc347f206ca2f7cc62b1dab51386e94764fbfd050302ae3f901fcfe77f
+- kind: step_enhancement
+  id: spdd-plan
+  path: missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml
+  content_hash: ae02e7782a8393ad2ef7b4e39d15daa8fd7d5b210dbb11397dbec7a95cedf7af
+- kind: step_enhancement
+  id: spdd-review
+  path: missions/software-dev/enhancements/spdd-review.step-enhancement.yaml
+  content_hash: 8eb59c3b0d4dd7efa530363d4625a27254badac179f1cf7fe29707b381e226f1
+- kind: step_enhancement
+  id: spdd-specify
+  path: missions/software-dev/enhancements/spdd-specify.step-enhancement.yaml
+  content_hash: 5bda512f323561767123ea5d74e8085fa895d1e69c31463e58720d9462e66741
+- kind: step_enhancement
+  id: spdd-tasks
+  path: missions/software-dev/enhancements/spdd-tasks.step-enhancement.yaml
+  content_hash: f3b3ea2ea20b4dd91217d3b234f403e4e07c5325eee25817d914069015335336
+- kind: paradigm
+  id: structured-prompt-driven-development
+  path: paradigms/structured-prompt-driven-development.paradigm.yaml
+  content_hash: 1579ec687ba95901710b248fa9c2680cd7d777f6d4a646b36935d05c7e10227a
+- kind: skill
+  id: issue-triage
+  path: skills/issue-triage.skill.yaml
+  content_hash: b91637de033bd1b469f7a8b27f5a2a599500a9a0434841ebc2b2fbb46635298f
+- kind: skill
+  id: triage-status
+  path: skills/triage-status.skill.yaml
+  content_hash: 8416c76ee4f2bb59ee422c0cc5d2947ff2e0f3810a3e93efad5a6964d31dbad3
+- kind: styleguide
+  id: reasons-canvas-writing
+  path: styleguides/reasons-canvas-writing.styleguide.yaml
+  content_hash: 5b1a9539562f6d64c615d7f7acb078087437e064333964885a6e76f8e31710a0
+presets:
+- id: spdd
+  path: presets/spdd.yaml
+  content_hash: 33de626cc7f4690f1481b199f41370de12c655a74fa6cac0a79bf9b0bb54e524

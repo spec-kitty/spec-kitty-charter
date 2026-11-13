@@ -1103,14 +1103,16 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         private void endUnlessCommitting(Refused refusal) {
-            if (end(refusal, true)) {
-                Future<?> queued = task;
-                if (queued != null) {
-                    queued.cancel(false);
-                    if (queued instanceof Runnable waiting) {
-                        owner.executor.remove(waiting);
-                    }
-                }
+            if (!end(refusal, true)) {
+                return;
+            }
+            Future<?> queued = task;
+            if (queued == null) {
+                return;
+            }
+            queued.cancel(false);
+            if (queued instanceof Runnable waiting) {
+                owner.executor.remove(waiting);
             }
         }
 

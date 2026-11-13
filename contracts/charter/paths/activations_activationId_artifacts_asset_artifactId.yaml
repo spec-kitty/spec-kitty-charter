@@ -1,0 +1,66 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/AssetOrSkillId.yaml
+get:
+  operationId: getEffectiveAsset
+  summary: Read an asset in force under an activation, the copy the layer merge keeps.
+  description: >-
+    One asset under an activation (FR-009, FR-010; research R2, operator ruling DM-01M78S3RNPZ5ZFV5AR6H1X6HV1): the copy
+    the layer merge keeps across the levels of the activation's closure, with the pack and the level that hold it, its
+    policy and, in asset, its descriptor as that pack's sidecar declares it. An asset is in force when a pack of the
+    closure holds it: it is never selected, denied or cascaded to, so the answer carries no state, reason or required,
+    which would be invented, and the activation's document changes nothing here. _links.self is this request,
+    _links.artifact the pack-scoped read of the winning copy (getPackAsset), _links.payload its bytes under this
+    activation (getEffectiveAssetPayload), _links.collection the activation's assets (listEffectiveAssets) and
+    _links.up the activation. The templated effective read (getEffectiveArtifact) never answers an asset: in the
+    service it refuses the kind with kind_not_found and names this path, which the routing prefers over it.
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
+    activation's closure holds as an asset is a 404 artifact_not_found, judged before any If-None-Match, so a name no
+    pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a closure that
+    cannot compose or merge, and a winner's pack that cannot be read are 500, with their code (pack_unreadable also for
+    a layer override that the mutability level forbids); stale_input and internal_error may be retried. The answer is
+    never partial: the winner and its descriptor are read against one source fingerprint, which the answer carries, and
+    inputs that change between the two are stale_input.
+
+    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
+    the activation's closure, and with the asset, and it does not change when a pack outside the closure changes. A
+    matching If-None-Match is a 304 without a body, and a tag of another representation (the payload's included) never
+    matches (RFC 9110 section 13.1.2).
+  tags:
+  - EffectiveAssets
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The asset under the activation.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveAssetRead.yaml
+          examples:
+            project-copy:
+              $ref: ../examples/EffectiveAssetRead.asset.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/EffectiveAssetNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

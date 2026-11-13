@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -158,6 +159,28 @@ public interface PacksSession {
      *     session was verified
      */
     EffectivePrompt prompt(String missionType, String action, InForceQuery query);
+
+    /**
+     * The winners of one kind under the layer merge, whatever the kind (research R2): the version of each artifact of
+     * the kind the merge keeps, with the pack and level that hold it and its policy, and no state. It is how an
+     * activation lists a kind the effective set does not resolve (an asset), which {@link #merged} leaves out, and the
+     * winners of a kind it lists. It answers from this session's read, with no in-force resolution.
+     *
+     * @param kind the artifacts' kind
+     * @return the winners, by id in code-point order; empty for a session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does
+     */
+    List<EffectiveHeldWinner> heldWinners(ArtifactKind kind);
+
+    /**
+     * The winner of one artifact under the layer merge, whatever its kind, as {@link #heldWinners} lists it.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id, exactly as declared
+     * @return the winner; empty when no pack of the closure holds the artifact, and for a session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged} does
+     */
+    Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id);
 
     /**
      * Judges the names of an action context against the merged closure, and nothing else: no in-force resolution and no

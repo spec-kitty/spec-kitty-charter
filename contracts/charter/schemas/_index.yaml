@@ -63,7 +63,10 @@ files:
   - LayerOverrideSide.yaml
   - NodeReference.yaml
   - PackPin.yaml
+  - Preset.yaml
   - PresetApplication.yaml
+  - PresetItem.yaml
+  - PresetList.yaml
   - SelectedArtifacts.yaml
   - SelectionRequest.yaml
   - SharedSkip.yaml
@@ -107,3 +110,15 @@ files:
   - MissionStepDelegationCandidate.yaml
   - MissionStepSummary.yaml
   - MissionType.yaml
+  - Asset.yaml
+  - AssetExecutable.yaml
+  - AssetList.yaml
+  - AssetSummary.yaml
+  - Skill.yaml
+  - SkillExpansion.yaml
+  - SkillInvocation.yaml
+  - SkillList.yaml
+  - SkillParameter.yaml
+  - SkillSummary.yaml
+  - EffectiveAssetRead.yaml
+  - EffectiveSkillRead.yaml

@@ -1,0 +1,34 @@
+title: AssetList
+description: >-
+  The assets of one of two trees, in id order and unpaged, deliberately, because a pack holds few assets (paging it
+  later would be an additive change); a tree with none answers an empty list. In a pack (listPackAssets): every asset
+  the pack holds, and _links holds self. Under an activation (listEffectiveAssets): the asset winners of the
+  activation's closure, the copy of each id the layer merge keeps across the levels (project over org over built-in),
+  and _links holds self and up (the activation).
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The pack's assets, or the closure's asset winners, in id order.
+    items:
+      $ref: AssetSummary.yaml
+    x-derived:
+      rule: >-
+        In a pack, the assets of the pack; under an activation, the layer-merge winner of each asset id the packs of
+        the closure hold. Sorted by id.
+      inputs:
+        - the asset sidecars under the assets/ directory of the pack
+        - under an activation, the activation's closure (listActivationPacks) and its layer merge
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: >-
+    In a pack, the assets the service holds for the pack; under an activation, the asset winners of the closure.
+    Read inside one verified read.
+  inputs:
+    - the asset sidecars under the assets/ directory of the pack
+    - under an activation, the activation's closure (listActivationPacks) and its layer merge

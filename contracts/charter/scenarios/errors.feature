@@ -146,9 +146,10 @@ Feature: Failures outside the charter's refusals
     And the contract says "mission_type_not_in_force" is raised by an operation
     And the contract says "mission_type_not_in_force" is answered with status 409 by the operation "getEffectiveStepPrompt"
 
-  Scenario: preset_not_found is raised by the preset application
+  Scenario: preset_not_found is raised by the preset application and the pack's preset read
     A declaration pin: applying a preset raises the code when the path names a preset no pack of the
-    activation's closure holds, and activation-presets.feature pins the behavior. ReservedRefusalCodesTest
+    activation's closure holds, and activation-presets.feature pins the behavior; getPackPreset raises it when
+    the path names a preset the pack does not hold, and pack-presets.feature pins that. ReservedRefusalCodesTest
     fails when the contract marks it raised and no main class names it. Nothing here calls the service.
     Then the contract declares the refusal code "preset_not_found"
     And the contract says "preset_not_found" is answered with status 404

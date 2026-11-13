@@ -65,7 +65,7 @@ mutationFloors {
 
 // PIT runs the unit tests as `test` does: the timing budgets above stay out of it.
 // ActivationWireTokenParityTest reads the contract schemas through a system property that `tasks.test` sets above; PIT's
-// minion JVM does not inherit it, so without it the nightly mutation run (mutation-nightly.yml) failed on a green suite.
+// minion JVM does not inherit it, so without it the mutation run (mutation-testing.yml, then nightly) failed on a green suite.
 pitest {
     excludedGroups = setOf("timing")
     jvmArgs.add(

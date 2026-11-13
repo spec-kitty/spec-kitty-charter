@@ -33,13 +33,16 @@ public record EffectiveTag(String token) {
 
     /**
      * The domain tag, with the tag's version: it is bumped in any change that alters what the reads answer for the same
-     * inputs (a merge rule change, a new reason), so a strong tag never names two bodies across releases. {@code v2}:
-     * PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer overrides, and the
-     * non-activatable entries the satisfaction no longer counts). {@code v3} (rule E17 as amended, research R10, squad
-     * D1): the action context applies the ownership rule and its items carry {@code appliesThrough}, so it answers more
-     * under an unchanged revision and closure fingerprint; every effective read moves once. The same unreleased slice
-     * makes {@code satisfiedBy} and {@code overriddenBy} name every overrider in force (#439), under the same {@code v3}:
-     * no release served a tag of {@code v3} with the single overrider.
+     * inputs (a merge rule change, a new reason, a new link), so a strong tag never names two bodies across releases.
+     * {@code v2}: PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer
+     * overrides, and the non-activatable entries the satisfaction no longer counts). {@code v3}, one bump for two
+     * unreleased slices: slice A2 (#536) changed the bodies of existing reads for the same inputs ({@code getActivation}
+     * links its writes and effective reads, and a skill item of {@code listEffectiveArtifacts}, {@code getEffectiveGraph},
+     * the action context and an agent profile's governance links {@code artifact} and {@code effective-artifact}); and
+     * slice C (rule E17 as amended, research R10, squad D1) makes the action context apply the ownership rule and its
+     * items carry {@code appliesThrough}, so it answers more under an unchanged revision and closure fingerprint, and
+     * makes {@code satisfiedBy} and {@code overriddenBy} name every overrider in force (#439). No release served a tag
+     * of {@code v3} with either body.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 
@@ -64,6 +67,19 @@ public record EffectiveTag(String token) {
         ARTIFACT,
         /** {@code getEffectiveAgentProfile}: the winner of one agent profile, with its governance. */
         PROFILE,
+        /** {@code listEffectiveSkills}: the skill winners of the closure, each with its summary. */
+        SKILLS,
+        /**
+         * {@code getEffectiveSkill}: the winner of one skill, with the skill as its pack stores it, so it never shares a
+         * tag with the generic read of the same skill.
+         */
+        SKILL,
+        /** {@code listEffectiveAssets}: the asset winners of the closure, each with its summary. */
+        ASSETS,
+        /** {@code getEffectiveAsset}: the winner of one asset, with its descriptor and no state. */
+        ASSET,
+        /** {@code getEffectiveAssetPayload}: the bytes of the winner of one asset. */
+        ASSET_PAYLOAD,
         /**
          * {@code getEffectiveStepPrompt}: the prompt in force of one step with the fragments in force of its slots
          * (research R10). The closure fingerprint digests every loaded file, prompt companions and fragments included,
@@ -286,6 +302,43 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag profile(Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
         return of(Read.PROFILE, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the list of the winners of one kind ({@code listEffectiveSkills}, {@code listEffectiveAssets}): its read
+     * names the kind, and the query repeats it.
+     *
+     * @param read {@link Read#SKILLS} or {@link Read#ASSETS}
+     * @param kind the kind listed
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag
+     * @throws IllegalArgumentException when {@code read} is not a list of winners of one kind
+     */
+    public static EffectiveTag winners(Read read, ArtifactKind kind, Revision revision, ClosureSnapshot closure) {
+        Objects.requireNonNull(kind, "kind");
+        if (read != Read.SKILLS && read != Read.ASSETS) {
+            throw new IllegalArgumentException("The read " + read + " lists no winners of one kind.");
+        }
+        return of(read, revision, closure, "kind=" + kind.token());
+    }
+
+    /**
+     * The tag of the read of one winner at a literal path of its kind ({@code getEffectiveSkill}, {@code getEffectiveAsset},
+     * {@code getEffectiveAssetPayload}): its kind, id and depth.
+     *
+     * @param read {@link Read#SKILL}, {@link Read#ASSET} or {@link Read#ASSET_PAYLOAD}
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the kind, the id and the depth
+     * @return the tag
+     * @throws IllegalArgumentException when {@code read} is not the read of one winner at a literal path
+     */
+    public static EffectiveTag winner(Read read, Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
+        if (read != Read.SKILL && read != Read.ASSET && read != Read.ASSET_PAYLOAD) {
+            throw new IllegalArgumentException("The read " + read + " is no read of one winner at a literal path.");
+        }
+        return of(read, revision, closure, query.normalized());
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {

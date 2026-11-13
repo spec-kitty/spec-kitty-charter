@@ -1,5 +1,6 @@
 summary: >-
-  A stored activation with the minimal document. self is the activation.
+  A stored activation with the minimal document. self is the activation; the links lead to its reads, its held assets and skills, the offering
+  and its writes, each write with its method.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -11,3 +12,39 @@ value:
     artifacts:
       href: /api/v1/activations/a-1/artifacts{?kind,state}
       templated: true
+    offering:
+      href: /api/v1/offering
+    edit:
+      href: /api/v1/activations/a-1
+      method: PUT
+    delete:
+      href: /api/v1/activations/a-1
+      method: DELETE
+    select:
+      href: /api/v1/activations/a-1/selections/{kind}/{artifactId}
+      templated: true
+      method: PUT
+    exclude:
+      href: /api/v1/activations/a-1/exclusions/{kind}/{artifactId}
+      templated: true
+      method: PUT
+    apply-preset:
+      href: /api/v1/activations/a-1/presets/{presetId}
+      templated: true
+      method: PUT
+    packs:
+      href: /api/v1/activations/a-1/packs
+    graph:
+      href: /api/v1/activations/a-1/graph
+    skipped:
+      href: /api/v1/activations/a-1/skipped
+    effective-context:
+      href: /api/v1/activations/a-1/mission-types/{missionType}/actions/{action}/context{?depth}
+      templated: true
+    assets:
+      href: /api/v1/activations/a-1/artifacts/asset
+    asset:
+      href: /api/v1/activations/a-1/artifacts/asset/{artifactId}
+      templated: true
+    skills:
+      href: /api/v1/activations/a-1/artifacts/skill

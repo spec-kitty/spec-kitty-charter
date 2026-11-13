@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Plans
 description: Forward-looking work for the charter service — the bootstrap roadmap, the questions still open and dated engineering notes that feed decisions.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-12T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -34,8 +34,12 @@ Future work for this repository. The target design lives in
   given a milestone after the pack-ecosystem rulings, with the decisions left to the operator.
 - [Re-scope proposals, triage 2026-11-02](/plans/triage-2026-11-02-rescopes/) — the proposed new scope of each
   issue the triage marked for re-scoping, for the operator to approve before any issue body changes.
+- [Re-scopes applied, 2026-11-12](/plans/triage-2026-11-12-rescopes-applied/) — which proposals were written into
+  the issue bodies, what changed from the draft, and the open-packs issue left to file.
 - [Next slices after the 2026-11-11 triage](/plans/next-slices-2026-11-11/) — slice B next, with its two
   rulings first, slice C in parallel, and six quick-win slices, each with its tracking issue.
+- [Next slices after the 2026-11-12 slice review](/plans/next-slices-2026-11-12/) — where slices A to E stand, and
+  the slices that follow C and D (B close-out, A2, F, G) in their approved order.
 - [Charter example packs](/plans/charter-example-packs/) — the plan for ADR-0070: charter-owned example
   packs replace the open-packs corpus in charter's tests.
 - [Engineering notes](/plans/engineering-notes/) — dated, point-in-time assessments that feed decisions and

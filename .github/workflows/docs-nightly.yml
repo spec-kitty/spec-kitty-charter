@@ -9,7 +9,7 @@ name: Docs nightly
 
 on:
   schedule:
-    # Nightly, off the hour, clear of mutation-nightly.yml (43 2 * * *) and timing-nightly.yml (17 4 * * *).
+    # Nightly, off the hour, clear of mutation-testing.yml (43 2 * * 1) and timing-nightly.yml (17 4 * * *).
     - cron: '29 3 * * *'
   workflow_dispatch:
 

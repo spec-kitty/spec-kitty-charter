@@ -282,3 +282,6 @@ unheld
 refspec
 overlayfs
 tmpfs
+# owner-only staging on Windows (#510)
+jimfs
+ntfs

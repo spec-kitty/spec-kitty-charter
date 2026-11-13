@@ -23,6 +23,7 @@ REPO=$(cd "$HERE/../.." && pwd)
 
 OPEN_PACKS=""
 PROFILE="java-jenny"
+PROFILE_PACK="built-in" # the pack holding PROFILE; provision() sets it from the pin (#466), --attach keeps this
 JAR=""
 KEEP=0
 STRICT=0
@@ -449,20 +450,76 @@ start_service() {
     say "   listening on $BASE (pid $SERVER_PID)"
 }
 
+# The configured packs, at the pin (#466): since open-packs split built-in (open-packs #73), built-in aggregates bundles
+# through depends_on and holds no artifact of its own, so the profile and the mission type live in other packs. Prints
+# three lines: the open-packs directories to configure (the depends_on closure of built-in, of the pack holding the
+# profile, of the pack holding the mission type and of every registered pack's dependencies, less the registered packs),
+# then the directory holding the profile, then the one holding the mission type. Reads the pinned commit, never the
+# working tree.
+configured_packs() { # profile mission-type registered-dirs(comma)
+    python3 -I - "$OPEN_PACKS" "$1" "$2" "$3" <<'PY'
+import re, subprocess, sys
+repo, profile, mission_type, registered = sys.argv[1], sys.argv[2], sys.argv[3], [d for d in sys.argv[4].split(",") if d]
+def git(*args):
+    return subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True, text=True).stdout
+files = git("ls-tree", "-r", "--name-only", "HEAD", "packs").splitlines()
+dirs = sorted({f.split("/")[1] for f in files if f.count("/") == 2 and f.endswith("/pack.yaml")})
+ids, deps = {}, {}
+for d in dirs:
+    text = git("show", f"HEAD:packs/{d}/pack.yaml")
+    m = re.search(r"^pack_id:\s*['\"]?([0-9A-Z]+)", text, re.M)
+    if m:
+        ids[m.group(1)] = d
+    block = re.search(r"^depends_on:\s*\n((?:[ \t-].*\n?)*)", text, re.M)
+    deps[d] = re.findall(r"pack_id:\s*['\"]?([0-9A-Z]+)", block.group(1)) if block else []
+def holder(suffix, what):
+    found = sorted({f.split("/")[1] for f in files if f.endswith(suffix)})
+    if len(found) != 1:
+        sys.exit(f"{what}: held by {found or 'no pack'} at the pin, not by exactly one pack")
+    return found[0]
+profile_dir = holder(f"/agent_profiles/{profile}.agent.yaml", f"agent profile {profile}")
+type_dir = holder(f"/missions/{mission_type}/{mission_type}.mission-type.yaml", f"mission type {mission_type}")
+todo = ["built-in", profile_dir, type_dir] + [ids[i] for r in registered for i in deps.get(r, []) if i in ids]
+missing = [i for d in todo + registered for i in deps.get(d, []) if i not in ids]
+if missing:
+    sys.exit(f"depends_on names pack ids no open-packs pack declares: {sorted(set(missing))}")
+seen = []
+while todo:
+    d = todo.pop(0)
+    if d in seen or d in registered:
+        continue
+    seen.append(d)
+    todo += [ids[i] for i in deps[d]]
+print(" ".join(sorted(seen)))
+print(profile_dir)
+print(type_dir)
+PY
+}
+
 provision() {
     SOURCES="$WORK/pack-sources"
     CONFIG="$WORK/config"
     mkdir -p "$SOURCES" "$CONFIG/packs"
     say "== open-packs checkout $OPEN_PACKS at $PIN"
-    git -C "$OPEN_PACKS" archive --format=tar HEAD packs/built-in | tar -x -C "$CONFIG/packs" --strip-components=1 ||
-        die 4 "cannot extract packs/built-in at $PIN"
-    local want have
-    want=$(git -C "$OPEN_PACKS" rev-parse HEAD:packs/built-in)
-    have=$(tree_id_of "$CONFIG/packs/built-in") || die 4 "cannot compute the tree id of the copied built-in"
-    if [[ $want != "$have" ]]; then
-        die 4 "the copied built-in has git tree $have but $PIN holds $want; the copy is not the pinned pack"
-    fi
-    say "   built-in copied into <config-root>/packs/, git tree $have = HEAD:packs/built-in"
+    local plan configured profile_dir type_dir c want have
+    plan=$(configured_packs "$PROFILE" "$MT_ID" "$EXTRA_PACKS") || die 4 "cannot work out the packs to configure at $PIN"
+    configured=$(sed -n 1p <<<"$plan")
+    profile_dir=$(sed -n 2p <<<"$plan")
+    type_dir=$(sed -n 3p <<<"$plan")
+    for c in $configured; do
+        git -C "$OPEN_PACKS" archive --format=tar HEAD "packs/$c" | tar -x -C "$CONFIG/packs" --strip-components=1 ||
+            die 4 "cannot extract packs/$c at $PIN"
+        want=$(git -C "$OPEN_PACKS" rev-parse "HEAD:packs/$c")
+        have=$(tree_id_of "$CONFIG/packs/$c") || die 4 "cannot compute the tree id of the copied $c"
+        if [[ $want != "$have" ]]; then
+            die 4 "the copied $c has git tree $have but $PIN holds $want; the copy is not the pinned pack"
+        fi
+    done
+    say "   configured into <config-root>/packs/, each copy's git tree equal to its HEAD:packs/<dir>: $configured"
+    PROFILE_PACK=$(pack_name "$CONFIG/packs/$profile_dir")
+    MT_PACK=$(pack_name "$CONFIG/packs/$type_dir")
+    [[ -n $PROFILE_PACK && -n $MT_PACK ]] || die 4 "packs/$profile_dir or packs/$type_dir has no name in its pack.yaml"
+    say "   $PROFILE is held by pack '$PROFILE_PACK', mission type $MT_ID by pack '$MT_PACK'"
     local d
     for d in ${EXTRA_PACKS//,/ }; do
         git -C "$OPEN_PACKS" archive --format=tar HEAD "packs/$d" | tar -x -C "$SOURCES" --strip-components=1 ||
@@ -588,8 +645,8 @@ walk_pack_scoped() {
     say "== walk 1: pack-scoped (root -> artifacts -> $PROFILE -> governance)"
     local root="$WORK/root.json"
     cp "$ROOT_BODY" "$root"
-    follow P2 "$root" artifacts "the API root" packId=built-in kind=agent_profile || return 1
-    find_item P3 "$WORK/hop-P2.json" "the agent_profile list of pack built-in" || return 1
+    follow P2 "$root" artifacts "the API root" "packId=$PROFILE_PACK" kind=agent_profile || return 1
+    find_item P3 "$WORK/hop-P2.json" "the agent_profile list of pack $PROFILE_PACK" || return 1
     follow P4 "$WORK/item.json" self "the $PROFILE list item" || return 1
     local read="$WORK/hop-P4.json" read_href=$HREF
     check_body P5 "$read" "the pack-scoped read" || return 1
@@ -681,7 +738,7 @@ walk_activation() {
 # the 2 skeletons steps bind and the 4 skeletons the type lists, pack-scoped and under the activation. Links only.
 
 MT_ID=software-dev
-MT_PACK=built-in
+MT_PACK=built-in # the pack holding MT_ID at the pin; provision() sets it (#466)
 MT_SEQUENCE="discovery specify plan tasks analyze implement review accept"
 MT_ON_DEMAND="charter tasks-finalize tasks-outline tasks-packages retrospect"
 MT_CONTRACTS="implement plan review specify tasks"

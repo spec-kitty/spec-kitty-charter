@@ -53,35 +53,8 @@ class StagingPermissionsTest {
         CountDownLatch held = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         List<Set<PosixFilePermission>> extractModes = new CopyOnWriteArrayList<>();
-        PackArchiveReader reader = (body, format, into) -> {
-            try {
-                extractModes.add(Files.getPosixFilePermissions(into));
-            } catch (IOException unreadable) {
-                throw new IllegalStateException(unreadable);
-            }
-            throw new IllegalStateException("the test reads the mode of the directory, then ends the job");
-        };
-        RegistrationJobs.JobGate gate = new RegistrationJobs.JobGate() {
-            @Override
-            public void beforeRun(String id) {
-                held.countDown();
-                try {
-                    release.await(30, TimeUnit.SECONDS);
-                } catch (InterruptedException interrupted) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
-        try (RegistrationJobs jobs = new RegistrationJobs(new RegistrationJobs.Dependencies(
-                Clock.systemUTC(),
-                mock(PackRegistrationService.class),
-                pack -> {
-                    throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
-                },
-                (AuditLog) entry -> {},
-                gate,
-                RegistrationJobs.StorageRoom.UNBOUNDED,
-                new FileStagingArea(staging)))) {
+        PackArchiveReader reader = readerRecordingTheExtractMode(extractModes);
+        try (RegistrationJobs jobs = jobsStagingIn(staging, gateHeldUntilReleased(held, release))) {
             MockMvc mvc = mvc(jobs, reader);
 
             mvc.perform(put("/api/v1/packs/acme")
@@ -120,6 +93,44 @@ class StagingPermissionsTest {
         } finally {
             release.countDown();
         }
+    }
+
+    private static PackArchiveReader readerRecordingTheExtractMode(List<Set<PosixFilePermission>> extractModes) {
+        return (body, format, into) -> {
+            try {
+                extractModes.add(Files.getPosixFilePermissions(into));
+            } catch (IOException unreadable) {
+                throw new IllegalStateException(unreadable);
+            }
+            throw new IllegalStateException("the test reads the mode of the directory, then ends the job");
+        };
+    }
+
+    private static RegistrationJobs.JobGate gateHeldUntilReleased(CountDownLatch held, CountDownLatch release) {
+        return new RegistrationJobs.JobGate() {
+            @Override
+            public void beforeRun(String id) {
+                held.countDown();
+                try {
+                    release.await(30, TimeUnit.SECONDS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+    }
+
+    private static RegistrationJobs jobsStagingIn(Path staging, RegistrationJobs.JobGate gate) {
+        return new RegistrationJobs(new RegistrationJobs.Dependencies(
+                Clock.systemUTC(),
+                mock(PackRegistrationService.class),
+                pack -> {
+                    throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
+                },
+                (AuditLog) entry -> {},
+                gate,
+                RegistrationJobs.StorageRoom.UNBOUNDED,
+                new FileStagingArea(staging)));
     }
 
     private static MockMvc mvc(RegistrationJobs jobs, PackArchiveReader reader) {

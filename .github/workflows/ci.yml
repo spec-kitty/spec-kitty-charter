@@ -88,13 +88,13 @@ jobs:
           # Mirror the path filters of service.yml, docs-cleanliness.yml and whole-pack.yml exactly; a
           # change to this gate workflow itself re-runs every group (fail-safe). The four native executables are
           # not a concern group: service-native.yml builds them nightly and per release (ADR-0060).
-          # The docs group also runs the unit tests of scripts/ci (the mutation nightly's summary), so it takes those
+          # The docs group also runs the unit tests of scripts/ci (the mutation run's summary), so it takes those
           # scripts and that workflow too; the floors.json fixture under scripts/ci/fixtures is also the service
           # group's, whose build-logic tests hold it to the writer. The wholepack group runs the whole-pack round
           # trip (epic #186) for what :packs reads: every contract, the service and the build.
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|scripts/ci/fixtures/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|scripts/packs/|packs/open-packs\.lock\.yaml$|\.github/workflows/(service|ci|sonar|contract-release|service-release)\.yml$|client-java/|docs/guides/generate-a-client\.md$)'
           wholepack_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|\.github/workflows/(whole-pack|ci)\.yml$)'
-          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|\.github/workflows/(docs-cleanliness|ci|mutation-nightly)\.yml$)'
+          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|\.github/workflows/(docs-cleanliness|ci|mutation-testing)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$wholepack_re"; then echo "wholepack=true"; else echo "wholepack=false"; fi >> "$GITHUB_OUTPUT"
