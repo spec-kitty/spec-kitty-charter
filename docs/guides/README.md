@@ -33,6 +33,8 @@ audience:
 
 - [Generate your own client](/guides/generate-a-client/) — fetch and verify the published contract, and generate a Java
   or Python client with the pinned generator and the options that tolerate additive 0.x changes.
+- [Pin the packs contract](/guides/pin-the-packs-contract/) — fetch a packs contract release, check it against its
+  SHA-256s, record the pin, and run the classifier conformance cases against your own reader.
 
 More consumer how-tos (depending on a contract release, running the service locally) will be added when there is
 something to depend on and run.

@@ -1,0 +1,116 @@
+# Classifier conformance cases of the packs contract (#559).
+#
+# Each case is a pack file path and what an implementation of file-kinds.yaml must make of it. A reader of packs
+# that classifies files (doc-kitty's adapter, open-packs' pack-check, the charter service) runs every case against
+# its own classifier and passes only if each outcome matches. The charter service runs them against its own
+# classifier in CI (ClassifierConformanceTest), and that test also fails when a rule of file-kinds.yaml has no case.
+#
+# A case:
+#   path          the file's path relative to the directory that holds the pack directories, with forward slashes:
+#                 the first segment is the pack's directory name.
+#   expect        one of
+#                   mapped      the file is pack content of a known kind;
+#                   excluded    the file is not pack content (an `exclusions` rule, or the `ignored` fallback): it is
+#                               not held, not served and not refused;
+#                   retired     the file belongs to a layout the service no longer reads: it is refused by name;
+#                   unmodelled  no rule takes it: it is refused as `unmodelled`.
+#   rule          the `match` glob of the rule that decides the case, as file-kinds.yaml writes it; absent for
+#                 `unmodelled`. Rules are consulted in the order `files`, `exclusions`, `retired`, then a root file that
+#                 differs from a `files` or `retired` root rule's file only in letter case (refused as retired under
+#                 that rule), then `payloads`, and last `ignored`, which never takes a path that a `files`, `retired`
+#                 or `payloads` rule takes in another letter case.
+#   kind          for `mapped`: the file's kind, the schema name of a `files` rule or the `kind` of a `payloads` rule.
+#   schema        for `mapped` by a `files` rule: the schema that validates it, relative to contracts/packs/; absent for
+#                 a payload, which has no schema.
+#   content_form  for `mapped`: yaml, markdown or bytes.
+#
+# The cases cover classification of a path alone. A kind's companion claims (a skill's body, a toolguide's guide)
+# are made by the store after classification and are not part of these cases.
+cases:
+  # files: one case per rule.
+  - {path: core/pack.yaml, expect: mapped, rule: "*/pack.yaml", kind: pack-descriptor, schema: schemas/pack-descriptor.schema.json, content_form: yaml}
+  - {path: core/graph/a.graph.yaml, expect: mapped, rule: "**/*.graph.yaml", kind: graph-shard, schema: schemas/graph-shard.schema.json, content_form: yaml}
+  - {path: org/drg/fragment.yaml, expect: mapped, rule: "*/drg/fragment.yaml", kind: org-fragment, schema: schemas/org-fragment.schema.json, content_form: yaml}
+  - {path: core/directives/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
+  - {path: core/tactics/a.tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
+  - {path: core/styleguides/a.styleguide.yaml, expect: mapped, rule: "**/*.styleguide.yaml", kind: styleguide, schema: schemas/styleguide.schema.json, content_form: yaml}
+  - {path: core/toolguides/a.toolguide.yaml, expect: mapped, rule: "**/*.toolguide.yaml", kind: toolguide, schema: schemas/toolguide.schema.json, content_form: yaml}
+  - {path: core/paradigms/a.paradigm.yaml, expect: mapped, rule: "**/*.paradigm.yaml", kind: paradigm, schema: schemas/paradigm.schema.json, content_form: yaml}
+  - {path: core/procedures/a.procedure.yaml, expect: mapped, rule: "**/*.procedure.yaml", kind: procedure, schema: schemas/procedure.schema.json, content_form: yaml}
+  - {path: core/agent-profiles/a.agent.yaml, expect: mapped, rule: "**/*.agent.yaml", kind: agent-profile, schema: schemas/agent-profile.schema.json, content_form: yaml}
+  - {path: core/step-contracts/a.step-contract.yaml, expect: mapped, rule: "**/*.step-contract.yaml", kind: mission-step-contract, schema: schemas/mission-step-contract.schema.json, content_form: yaml}
+  - {path: core/assets/a.asset.yaml, expect: mapped, rule: "**/*.asset.yaml", kind: asset, schema: schemas/asset.schema.json, content_form: yaml}
+  - {path: core/glossary/a.glossary-pack.yaml, expect: mapped, rule: "**/*.glossary-pack.yaml", kind: glossary-pack, schema: schemas/glossary-pack.schema.json, content_form: yaml}
+  - {path: core/skills/a.skill.yaml, expect: mapped, rule: "**/*.skill.yaml", kind: skill, schema: schemas/skill.schema.json, content_form: yaml}
+  - {path: core/presets/minimal.yaml, expect: mapped, rule: "*/presets/*.yaml", kind: preset, schema: schemas/preset.schema.json, content_form: yaml}
+  - {path: core/pack-manifest.yaml, expect: mapped, rule: "*/pack-manifest.yaml", kind: pack-manifest, schema: schemas/pack-manifest.schema.json, content_form: yaml}
+  - {path: core/policy.yaml, expect: mapped, rule: "*/policy.yaml", kind: policy, schema: schemas/policy.schema.json, content_form: yaml}
+  - {path: project/charter.yaml, expect: mapped, rule: "**/charter.yaml", kind: charter, schema: schemas/charter.schema.json, content_form: yaml}
+  - {path: core/toolguides/a.guide.md, expect: mapped, rule: "**/toolguides/*.guide.md", kind: toolguide-guide, schema: schemas/toolguide-guide.schema.json, content_form: markdown}
+  - {path: core/README.md, expect: mapped, rule: "*/README.md", kind: pack-document, schema: schemas/pack-document.schema.json, content_form: markdown}
+  - {path: core/missions/plan/plan.mission-type.yaml, expect: mapped, rule: "**/*.mission-type.yaml", kind: mission-type, schema: schemas/mission-type.schema.json, content_form: yaml}
+  - {path: core/missions/plan/steps/specify.prompt.md, expect: mapped, rule: "*/missions/*/steps/*.prompt.md", kind: mission-step-prompt, schema: schemas/mission-step-prompt.schema.json, content_form: markdown}
+  - {path: core/missions/plan/steps/specify.guidelines.md, expect: mapped, rule: "*/missions/*/steps/*.guidelines.md", kind: mission-step-guidelines, schema: schemas/mission-step-guidelines.schema.json, content_form: markdown}
+  - {path: core/missions/plan/enhancements/spdd.step-enhancement.yaml, expect: mapped, rule: "*/missions/*/enhancements/*.step-enhancement.yaml", kind: step-enhancement, schema: schemas/step-enhancement.schema.json, content_form: yaml}
+  - {path: core/missions/plan/enhancements/spdd.prompt-fragment.md, expect: mapped, rule: "*/missions/*/enhancements/*.prompt-fragment.md", kind: prompt-fragment, schema: schemas/prompt-fragment.schema.json, content_form: markdown}
+  - {path: core/guards/subtasks-complete.guard.yaml, expect: mapped, rule: "**/*.guard.yaml", kind: guard, schema: schemas/guard.schema.json, content_form: yaml}
+  - {path: core/lifecycles/work-package.lifecycle.yaml, expect: mapped, rule: "**/*.lifecycle.yaml", kind: lifecycle, schema: schemas/lifecycle.schema.json, content_form: yaml}
+
+  # files: how globs match. `**/` matches zero or more whole segments, `*` stays within one segment.
+  - {path: core/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
+  - {path: core/x/y/z/a.tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
+  - {path: core/sub/presets/minimal.yaml, expect: unmodelled}
+  - {path: core/sub/pack.yaml, expect: unmodelled}
+  # A files rule takes precedence over a payload rule: a directive under templates/ is a directive.
+  - {path: core/templates/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
+
+  # exclusions: one case per rule.
+  - {path: built-in.source.yaml, expect: excluded, rule: "built-in.source.yaml"}
+  - {path: core/templates/plan-field-declaration.yaml, expect: excluded, rule: "**/templates/plan-field-declaration.yaml"}
+  - {path: core/missions/README.md, expect: excluded, rule: "*/missions/README.md"}
+  - {path: core/missions/plan/README.md, expect: excluded, rule: "*/missions/*/README.md"}
+  - {path: core/missions/plan/templates/README.md, expect: excluded, rule: "*/missions/*/templates/**/README.md"}
+  - {path: core/assets/logos/README.md, expect: excluded, rule: "*/assets/**/README.md"}
+  - {path: core/assets/.DS_Store, expect: excluded, rule: "*/assets/**/.*"}
+  - {path: core/missions/plan/.gitkeep, expect: excluded, rule: "*/missions/*/.*"}
+  - {path: core/missions/plan/steps/.gitkeep, expect: excluded, rule: "*/missions/*/steps/.*"}
+  - {path: core/missions/plan/templates/sub/.gitkeep, expect: excluded, rule: "*/missions/*/templates/**/.*"}
+  - {path: core/templates/.gitkeep, expect: excluded, rule: "*/templates/**/.*"}
+
+  # retired: one case per rule.
+  - {path: core/mission_types/plan.yaml, expect: retired, rule: "*/mission_types/*.yaml"}
+  - {path: core/missions/mission_types/plan.yaml, expect: retired, rule: "*/missions/mission_types/*.yaml"}
+  - {path: core/missions/plan/mission.yaml, expect: retired, rule: "*/missions/*/mission.yaml"}
+  - {path: core/missions/plan/mission-runtime.yaml, expect: retired, rule: "*/missions/*/mission-runtime.yaml"}
+  - {path: core/missions/plan/governance-profile.yaml, expect: retired, rule: "*/missions/*/governance-profile.yaml"}
+  - {path: core/mission_types/plan/governance-profile.yaml, expect: retired, rule: "*/mission_types/*/governance-profile.yaml"}
+  - {path: core/missions/mission_types/plan/governance-profile.yaml, expect: retired, rule: "*/missions/mission_types/*/governance-profile.yaml"}
+  - {path: core/missions/plan/expected-artifacts.yaml, expect: retired, rule: "*/missions/*/expected-artifacts.yaml"}
+  - {path: core/missions/plan/actions/specify/index.yaml, expect: retired, rule: "*/missions/*/actions/*/index.yaml"}
+  - {path: core/mission-steps/plan/specify.md, expect: retired, rule: "*/mission-steps/**/*"}
+  - {path: core/missions/mission-steps/plan/specify.md, expect: retired, rule: "*/missions/mission-steps/**/*"}
+  - {path: core/missions/plan/command-templates/specify.md, expect: retired, rule: "*/missions/*/command-templates/*"}
+  - {path: core/pack.md, expect: retired, rule: "*/pack.md"}
+  - {path: core/PROVENANCE.md, expect: retired, rule: "*/PROVENANCE.md"}
+  - {path: core/org-charter.yaml, expect: retired, rule: "*/org-charter.yaml"}
+
+  # A root file that differs from a root rule's file only in letter case is refused under that rule.
+  - {path: core/Readme.md, expect: retired, rule: "*/README.md"}
+  - {path: core/Pack.md, expect: retired, rule: "*/pack.md"}
+  - {path: core/PACK.yaml, expect: retired, rule: "*/pack.yaml"}
+
+  # payloads: one case per rule. A payload has no schema.
+  - {path: core/assets/logos/logo.png, expect: mapped, rule: "*/assets/**/*", kind: asset-payload, content_form: bytes}
+  - {path: core/templates/spec-template.md, expect: mapped, rule: "*/templates/**/*", kind: template, content_form: bytes}
+  - {path: core/missions/plan/templates/tasks/wp.md, expect: mapped, rule: "*/missions/*/templates/**/*", kind: template, content_form: bytes}
+
+  # ignored: Markdown that no other rule takes is excluded, not refused.
+  - {path: core/docs/notes.md, expect: excluded, rule: "**/*.md"}
+  - {path: CHANGELOG.md, expect: excluded, rule: "**/*.md"}
+  # ...but never a path that a files rule takes in another letter case: that is refused as unmodelled.
+  - {path: core/toolguides/a.guide.MD, expect: unmodelled}
+
+  # unmodelled: no rule takes the file.
+  - {path: core/notes.txt, expect: unmodelled}
+  - {path: core/directives/a.directive.yml, expect: unmodelled}
+  - {path: core/data.json, expect: unmodelled}

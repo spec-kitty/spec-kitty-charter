@@ -25,6 +25,8 @@ and ADR-0066). Where a schema differs from core's behavior, the
 |---|---|
 | `schemas/<kind>.schema.json` | One schema per kind, 27 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), five of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`, `prompt-fragment`; ADR-0043, ADR-0042 decision 8, ADR-0044, ADR-0066) |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, the retired files, the schema-less payloads and the `ignored` fallback |
+| `conformance/classifier-cases.yaml` | The classifier conformance cases (#559): a pack file path and the outcome an implementation of `file-kinds.yaml` must give it, one case for every rule at least |
+| `CHANGELOG.md` | What changed in the packs contract, newest first; its top heading is the packs contract's version |
 
 `file-kinds.yaml` classifies a pack file in five steps, in this order: its `files` rules map a file to the schema
 that validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
@@ -141,3 +143,33 @@ All references are local, so nothing is fetched. The `$id` values are identifier
 Edit the schema in `schemas/` and, when the change touches a node kind, a fragment plural or a file
 rule, `file-kinds.yaml` in the same commit. `VocabularyEqualityTest`, `PackSchemasTest` and the
 open-packs round-trip fail when the schemas, `file-kinds.yaml` and the service disagree.
+
+Every change to a schema, `file-kinds.yaml` or the conformance cases adds a line to the top section of `CHANGELOG.md`
+in the same pull request. A change to a rule of `file-kinds.yaml` also adds or changes its conformance case:
+`ClassifierConformanceTest` runs every case against `PackFileKind.classify` and fails when a rule has no case, or a
+case names a rule the table does not hold.
+
+## The packs contract and its releases (#559)
+
+The schemas, `file-kinds.yaml` and the conformance cases are the **packs contract**: what a reader of packs outside
+the service (doc-kitty's pack pages, open-packs' checks) vendors and holds itself to. It is versioned on its own
+changes, apart from the charter contract: its version is the top heading of `CHANGELOG.md`, with the 0.x rules of
+ADR-0022 (a minor may break while the major is 0, and lists each break under `### Breaking`). A consumer pins and
+checks a release as [Pin the packs contract](../../docs/guides/pin-the-packs-contract.md) shows.
+
+### Releasing the packs contract
+
+1. In a pull request, turn the top heading of `CHANGELOG.md` into the release (`## 0.1.0`), adding `### Breaking` for
+   a new minor while the major is 0.
+2. After the merge, tag `main` at the merge commit, `git tag contract-packs-v0.1.0 <merge commit>`, and push the tag.
+   Only the operator pushes this tag; a tag ruleset on `contract-packs-v*` decides who can (#196).
+3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch).
+
+Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
+the tag with `scripts/release/packs-contract-release-assets.sh` and attaches `packs-contract.tar.gz`,
+`packs-contract.tar.gz.sha256` and `packs-contract.sha256` to a GitHub Release of the tag. It refuses, and publishes
+nothing, unless the tag and the top heading name one released version
+(`./gradlew :contracts:checkPacksReleaseTag -PreleaseTag=<tag>`), the classifier passes the conformance cases, and the
+tagged commit is on `main`; it also refuses a tag that moved while the assets were built. `service.yml` rehearses the whole path on every change
+(`scripts/release/rehearse-packs-contract-release.sh`). To rehearse a real release, run the assets script with the tag
+on the release pull request's branch, or the workflow by hand (workflow_dispatch): neither creates a Release.

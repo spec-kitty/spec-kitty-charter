@@ -584,6 +584,65 @@ class ReleaseGateTest {
         }
     }
 
+    @Nested
+    class PacksContractRelease {
+
+        private static final String RELEASED = "## 0.1.0\n\n### Added\n\n- x\n";
+
+        @Test
+        void aTagThatNamesTheReleasedTopHeadingPasses() {
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", RELEASED)).isEmpty();
+        }
+
+        @Test
+        void aTagThatNamesAnotherVersionIsRefusedNamingThePacksChangelog() {
+            Optional<Decision.Refused> refused = ReleaseGate.packsReleaseRefusal("contract-packs-v0.2.0", RELEASED);
+            assertThat(refused).isPresent();
+            assertThat(refused.get().message())
+                    .contains("contract-packs-v0.2.0 names 0.2.0")
+                    .contains("top heading of contracts/packs/CHANGELOG.md at that commit is 0.1.0");
+        }
+
+        @Test
+        void aSnapshotIsNeverPublished() {
+            String snapshot = "## 0.1.0-SNAPSHOT\n";
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", snapshot))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("is 0.1.0-SNAPSHOT"));
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0-SNAPSHOT", snapshot))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("not a released version"));
+        }
+
+        @Test
+        void aCharterTagOrABareVersionIsNotAPacksTag() {
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-charter-v0.1.0", RELEASED))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("not a packs contract release tag"));
+            assertThat(ReleaseGate.packsReleaseRefusal("0.1.0", RELEASED)).isPresent();
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-vnext", RELEASED)).isPresent();
+        }
+
+        @Test
+        void theOrderAndBreakingRulesHoldOverThePacksChangelog() {
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", "## 0.1.0\n\n## 0.2.0\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("contracts/packs/CHANGELOG.md"));
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.2.0", "## 0.2.0\n\n## 0.1.0\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("of contracts/packs/CHANGELOG.md raises the minor version of 0.x")
+                            .contains("### Breaking"));
+            assertThat(ReleaseGate.packsReleaseRefusal(
+                            "contract-packs-v0.2.0", "## 0.2.0\n\n### Breaking\n\n- x\n\n## 0.1.0\n"))
+                    .isEmpty();
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.1", "## 0.1.1\n\n## 0.1.0\n"))
+                    .isEmpty();
+        }
+
+        @Test
+        void aChangelogWithoutAVersionHeadingIsRefusedByName() {
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", "# Changelog\n"))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .isEqualTo("contracts/packs/CHANGELOG.md has no version heading (## X.Y.Z)."));
+        }
+    }
+
     @Test
     void withoutGitOnlyTheChangelogGatesRun() {
         assertThat(ReleaseGate.decideWithoutGit("1.0.0-SNAPSHOT", SNAPSHOT_ONLY))

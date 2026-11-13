@@ -205,6 +205,8 @@ val unitTestSystemProperties = mapOf(
 fun Task.readsTheUnitTestInputs() {
     mapOf(
         "packSchemaFiles" to "contracts/packs/schemas",
+        // ClassifierConformanceTest runs the packs contract's classifier conformance cases (#559).
+        "packsConformance" to "contracts/packs/conformance",
         // PlantedFilesTest and DivergenceRegisterTest read the register in both forms.
         "conformanceDocs" to "docs/conformance",
         "contractSchemas" to "contracts/charter/schemas",
