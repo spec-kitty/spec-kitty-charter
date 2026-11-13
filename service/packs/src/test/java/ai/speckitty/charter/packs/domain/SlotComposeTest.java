@@ -106,6 +106,11 @@ class SlotComposeTest {
                 .toList();
     }
 
+    /** A pack's version of M, declaring the steps (the facts the step's place is judged by, operator ruling Q3). */
+    private static Map<Urn, List<String>> declaring(String... steps) {
+        return Map.of(u("mission_type:M"), List.of(steps));
+    }
+
     private static List<PromptFacts.Fill> fills(String... slots) {
         return java.util.Arrays.stream(slots)
                 .map(slot -> new PromptFacts.Fill(new SlotId(slot), "Text for " + slot + ".\n"))
@@ -117,7 +122,8 @@ class SlotComposeTest {
         return new Held(
                 pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x"),
                 List.of(enhances("step_enhancement:x", "action:M/s")),
-                new PromptFacts(Map.of(u("action:M/s"), declared), Map.of(u("step_enhancement:x"), xFills)));
+                new PromptFacts(
+                        Map.of(u("action:M/s"), declared), Map.of(u("step_enhancement:x"), xFills), declaring("s")));
     }
 
     /** The project pack proj, which replaces M and its step s with a prompt that declares the slots. */
@@ -125,7 +131,18 @@ class SlotComposeTest {
         return new Held(
                 pack("proj", PackLevel.PROJECT, "mission_type:M", "action:M/s"),
                 List.of(),
-                new PromptFacts(Map.of(u("action:M/s"), declared), Map.of()));
+                new PromptFacts(Map.of(u("action:M/s"), declared), Map.of(), declaring("s")));
+    }
+
+    /**
+     * Probe 1's shape (operator ruling Q3): proj replaces M and declares s with a prompt that declares the slots, and
+     * no graph of proj declares action:M/s, so base holds the action's winner.
+     */
+    private static Held winningVersionOnly(List<PromptFacts.DeclaredSlot> declared) {
+        return new Held(
+                pack("proj", PackLevel.PROJECT, "mission_type:M"),
+                List.of(),
+                new PromptFacts(Map.of(u("action:M/s"), declared), Map.of(), declaring("s")));
     }
 
     private static InForceStates active(String... urns) {
@@ -190,7 +207,7 @@ class SlotComposeTest {
         Held base = new Held(
                 pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x"),
                 List.of(enhances("step_enhancement:x", "action:M/s")),
-                new PromptFacts(Map.of(), Map.of(u("step_enhancement:x"), fills(REASONS))));
+                new PromptFacts(Map.of(), Map.of(u("step_enhancement:x"), fills(REASONS)), declaring("s")));
 
         assertThat(new Fixture().with(base).missing(active("mission_type:M", "step_enhancement:x")))
                 .singleElement()
@@ -208,7 +225,8 @@ class SlotComposeTest {
                 List.of(enhances("step_enhancement:x", "action:M/s"), enhances("step_enhancement:y", "action:M/s")),
                 new PromptFacts(
                         Map.of(u("action:M/s"), slots(REASONS)),
-                        Map.of(u("step_enhancement:x"), fills(REASONS), u("step_enhancement:y"), fills(NOTES))));
+                        Map.of(u("step_enhancement:x"), fills(REASONS), u("step_enhancement:y"), fills(NOTES)),
+                        declaring("s")));
 
         assertThat(new Fixture()
                         .with(base)
@@ -268,11 +286,13 @@ class SlotComposeTest {
     }
 
     @Test
-    void thePromptInForceIsAtTheWinnersPlaceOfTheStepNotTheWinningMissionTypes() {
+    void aStepOnlyAReplacedVersionKeepsHasItsPromptInForceAtTheActionsWinner() {
         // proj replaces M but does not declare s: the step's place is base's version, which keeps it (R8, A7), so the
         // prompt in force is base's, which declares the slot.
         Held replacingType = new Held(
-                pack("proj", PackLevel.PROJECT, "mission_type:M"), List.of(), new PromptFacts(Map.of(), Map.of()));
+                pack("proj", PackLevel.PROJECT, "mission_type:M"),
+                List.of(),
+                new PromptFacts(Map.of(), Map.of(), declaring("t")));
 
         Fixture fixture =
                 new Fixture().with(base(slots(REASONS), fills(REASONS))).with(replacingType);
@@ -287,10 +307,53 @@ class SlotComposeTest {
                 pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x"),
                 List.of(enhances("step_enhancement:x", "action:M/s")),
                 new PromptFacts(
-                        Map.of(u("action:M/s"), slots()), Map.of(u("step_enhancement:x"), fills(REASONS, NOTES))));
+                        Map.of(u("action:M/s"), slots()),
+                        Map.of(u("step_enhancement:x"), fills(REASONS, NOTES)),
+                        declaring("s")));
 
         assertThat(new Fixture().with(base).missing(active("mission_type:M", "step_enhancement:x")))
                 .extracting(found -> found.slot().value())
                 .containsExactly(REASONS, NOTES);
+    }
+
+    // ---- the slot check judges the prompt the read serves: the one place rule (operator ruling Q3) --------------
+
+    @Test
+    void aSlotTheWinningVersionsPromptLacksIsMissingAlthoughTheActionsWinnerDeclaresIt() {
+        // probe 1: base declares action:M/s and its prompt declares the slot; proj's winning M declares s with a prompt
+        // that does not. The prompt in force is proj's, so the slot is missing there.
+        Fixture fixture =
+                new Fixture().with(base(slots(REASONS), fills(REASONS))).with(winningVersionOnly(slots()));
+
+        assertThat(fixture.missing(active("mission_type:M", "step_enhancement:x")))
+                .singleElement()
+                .satisfies(found -> {
+                    assertThat(found.promptPack()).isEqualTo(new PackIdentifier("proj"));
+                    assertThat(found.promptHeld()).isTrue();
+                    assertThat(found.slot()).isEqualTo(new SlotId(REASONS));
+                });
+    }
+
+    @Test
+    void theTwinTheWinningVersionsPromptDeclaresTheSlotAndComposes() {
+        Fixture fixture =
+                new Fixture().with(base(slots(REASONS), fills(REASONS))).with(winningVersionOnly(slots(REASONS)));
+
+        assertThat(fixture.missing(active("mission_type:M", "step_enhancement:x")))
+                .isEmpty();
+    }
+
+    @Test
+    void aStepNoVersionAtEitherPlaceDeclaresHasNoPromptInForceAndIsNotJudged() {
+        Held base = new Held(
+                pack("base", PackLevel.ORG, "mission_type:M", "action:M/s", "step_enhancement:x"),
+                List.of(enhances("step_enhancement:x", "action:M/s")),
+                new PromptFacts(
+                        Map.of(u("action:M/s"), slots()),
+                        Map.of(u("step_enhancement:x"), fills(REASONS)),
+                        declaring("t")));
+
+        assertThat(new Fixture().with(base).missing(active("mission_type:M", "step_enhancement:x")))
+                .isEmpty();
     }
 }

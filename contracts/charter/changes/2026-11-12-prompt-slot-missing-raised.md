@@ -2,8 +2,10 @@
 
 - `prompt_slot_missing` is raised (`CharterRefusalCode`, `raised: true`; ADR-0066 decision 8, phase 2; FR-001, FR-006;
   #438). The compose check C38 refuses a step enhancement in force that fills a slot the prompt in force of its step
-  does not declare: the prompt at the merged winner's place of `action:<type>/<step>`, so a layer override of the
-  mission type whose prompt drops the slot is caught, and only the winning copy of the enhancement is judged. An
+  does not declare: the prompt at the step's place, the one `getEffectiveStepPrompt` serves (the mission type's version
+  in force when it declares the step, else the merged winner of `action:<type>/<step>` whose version does; operator
+  ruling Q3), so a layer override of the mission type whose prompt drops the slot is caught, and only the winning copy
+  of the enhancement is judged. An
   enhancement that is not in force never refuses (OD-1 (B)). Requests that answered before are now refused
   (`step-enhancement-slots.feature`):
   - **Composing reads, `500`**: every read of an activation that puts such an enhancement in force

@@ -507,7 +507,8 @@ public final class DomainRepositoryService
      *   <li>the {@code applies_to_languages} of each artifact it holds that declares any, by bare URN, from the same
      *       assembly ({@link #languagesOf});
      *   <li>the slots each step prompt declares and the fills each step enhancement writes, from the same read, over
-     *       the canonical texts the load rule judges ({@link PromptFacts#of}, research R9).
+     *       the canonical texts the load rule judges ({@link PromptFacts#of}, research R9), and the steps each mission
+     *       type it holds declares, from the same assembly, which place a step's prompt in force (operator ruling Q3).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -540,6 +541,7 @@ public final class DomainRepositoryService
         Set<String> defined = new LinkedHashSet<>();
         Map<String, List<String>> languages = new LinkedHashMap<>();
         Map<String, String> bindings = new LinkedHashMap<>();
+        Map<Urn, List<String>> steps = new LinkedHashMap<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
             if (artifact.urn().kind().authoredInGraphs()) {
@@ -550,6 +552,12 @@ public final class DomainRepositoryService
                 }
                 missionTypeOf(artifact)
                         .ifPresent(missionType -> bindings.put(artifact.urn().toString(), missionType.toString()));
+                if (artifact instanceof MissionType type) {
+                    List<String> declaredSteps = new ArrayList<>();
+                    type.steps().forEach(step -> declaredSteps.add(step.id()));
+                    type.onDemandSteps().forEach(step -> declaredSteps.add(step.id()));
+                    steps.put(artifact.urn(), declaredSteps);
+                }
             }
         }
         defined.addAll(declared);
@@ -562,7 +570,7 @@ public final class DomainRepositoryService
                 typedEdges(graphs.documents(), assembled),
                 languages,
                 bindings,
-                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs)));
+                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps));
     }
 
     /**

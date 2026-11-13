@@ -614,9 +614,15 @@ class ClosureViewTest {
                         Map.of(u("action:M/s"), declaring("spdd:reasons-block")),
                         Map.of(
                                 u("step_enhancement:x"),
-                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n")))));
+                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n"))),
+                        Map.of(u("mission_type:M"), List.of("s"))));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:M", "action:M/s"));
-        prompts("proj", new PromptFacts(Map.of(u("action:M/s"), declaring(slots)), Map.of()));
+        prompts(
+                "proj",
+                new PromptFacts(
+                        Map.of(u("action:M/s"), declaring(slots)),
+                        Map.of(),
+                        Map.of(u("mission_type:M"), List.of("s"))));
     }
 
     @Test
@@ -748,6 +754,8 @@ class ClosureViewTest {
                         .descriptor(descriptors.get(pack))
                         .artifact(type.build())
                         .build());
+        PromptFacts held = facts.get(pack).prompts();
+        prompts(pack, new PromptFacts(held.declared(), held.fills(), Map.of(u("mission_type:md"), List.of(steps))));
     }
 
     /** The view over the fixture, whose winners are read from the stored packs. */
@@ -872,5 +880,67 @@ class ClosureViewTest {
 
         assertThat(prompt.promptPackId()).contains(new PackIdentifier("base"));
         assertThat(new String(prompt.prompt().bytes(), StandardCharsets.UTF_8)).isEqualTo("# s at base\n");
+    }
+
+    // ---- the slot check judges the prompt the read serves: the one place rule (operator ruling Q3) --------------
+
+    /**
+     * Probe 1's shape with an enhancement in force: base declares action:md/s, its prompt declares spdd:reasons-block,
+     * and its enhancement x fills it; proj's winning md declares s with a prompt that declares the given slots.
+     */
+    private ClosureView anEnhancedStepTheWinningVersionDeclaresWith(String... slots) {
+        pack(
+                "base",
+                PackLevel.ORG,
+                List.of(),
+                List.of("mission_type:md", "action:md/s", "step_enhancement:x"),
+                edge("step_enhancement:x", RelationType.ENHANCES, "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "s");
+        prompts(
+                "base",
+                new PromptFacts(
+                        Map.of(u("action:md/s"), declaring("spdd:reasons-block")),
+                        Map.of(
+                                u("step_enhancement:x"),
+                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n"))),
+                        Map.of(u("mission_type:md"), List.of("s"))));
+        prompts(
+                "proj",
+                new PromptFacts(
+                        Map.of(u("action:md/s"), declaring(slots)),
+                        Map.of(),
+                        Map.of(u("mission_type:md"), List.of("s"))));
+        return storedView();
+    }
+
+    @Test
+    void theSlotCheckJudgesThePromptAtTheStepsPlaceNotTheActionsWinner() {
+        ClosureView view = anEnhancedStepTheWinningVersionDeclaresWith();
+
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:md", "step_enhancement:x")));
+
+        assertThatThrownBy(() -> view.requireSlots(states)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PROMPT_SLOT_MISSING);
+            assertThat(refused.getMessage()).contains("`proj`").contains("spdd:reasons-block");
+        });
+    }
+
+    @Test
+    void theTwinTheWinningVersionsPromptDeclaresTheSlotAndTheReadServesItsFragment() {
+        ClosureView view = anEnhancedStepTheWinningVersionDeclaresWith("spdd:reasons-block");
+        storedPrompts.put("proj", "# s at proj\n");
+
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:md", "step_enhancement:x")));
+        view.requireSlots(states);
+        EffectivePromptQuery.EffectivePrompt prompt = view.effectivePrompt("md", "s", states);
+
+        assertThat(prompt.promptPackId()).contains(new PackIdentifier("proj"));
+        assertThat(prompt.slots())
+                .singleElement()
+                .satisfies(slot -> assertThat(slot.fragments())
+                        .extracting(EffectivePromptQuery.Fragment::enhancement)
+                        .containsExactly("x"));
     }
 }

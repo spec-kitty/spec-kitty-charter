@@ -16,22 +16,26 @@ import java.util.TreeMap;
 
 /**
  * What the compose knows of one pack's step prompts and step enhancements (research R9, squad A1): the slots each held
- * step prompt declares and the fills each held step enhancement writes. They are part of {@link PackCompositionFacts},
+ * step prompt declares, the fills each held step enhancement writes, and the steps each held mission type declares,
+ * which place a step's prompt in force ({@link StepHolding#placeOf}, operator ruling Q3). They are part of {@link PackCompositionFacts},
  * so the slot check and the prompt read judge the verified, fingerprint-cached and staged-aware read, and nothing is
  * read again. A prompt's body is not kept: the read takes it from the stored companion.
  *
- * <p>Both maps are in the order of their keys ({@link Urn#compareTo}), whatever order they were given in, so equal
+ * <p>The maps are in the order of their keys ({@link Urn#compareTo}), whatever order they were given in, so equal
  * facts are equal maps in equal order.
  *
  * @param declared per held step, {@code action:<type>/<step>}, the slots its prompt declares, in declaration order; a
  *     step whose prompt declares none maps to an empty list, and a step with no prompt is absent
  * @param fills per held step enhancement, {@code step_enhancement:<id>}, its fills in authored order; an enhancement
  *     with no {@code prompt_fragments} entry maps to an empty list
+ * @param steps per held mission type, {@code mission_type:<type>}, the ids of the steps its version declares: its steps
+ *     in run order, then its on-demand steps
  */
-public record PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<Fill>> fills) {
+public record PromptFacts(
+        Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<Fill>> fills, Map<Urn, List<String>> steps) {
 
-    /** A pack with no step prompt and no step enhancement. */
-    public static final PromptFacts NONE = new PromptFacts(Map.of(), Map.of());
+    /** A pack with no step prompt, no step enhancement and no mission type. */
+    public static final PromptFacts NONE = new PromptFacts(Map.of(), Map.of(), Map.of());
 
     private static final String MISSIONS = "missions/";
     private static final String STEPS = "/steps/";
@@ -42,12 +46,39 @@ public record PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<F
      *
      * @param declared the slots each step prompt declares
      * @param fills the fills each step enhancement writes
-     * @throws IllegalArgumentException when a key of {@code declared} is not an {@code action:} URN, or a key of
-     *     {@code fills} is not a {@code step_enhancement:} URN
+     * @param steps the steps each mission type declares
+     * @throws IllegalArgumentException when a key of {@code declared} is not an {@code action:} URN, a key of
+     *     {@code fills} is not a {@code step_enhancement:} URN, or a key of {@code steps} is not a
+     *     {@code mission_type:} URN
      */
     public PromptFacts {
         declared = sortedCopy(declared, NodeKind.ACTION, "declared");
         fills = sortedCopy(fills, NodeKind.STEP_ENHANCEMENT, "fills");
+        steps = sortedCopy(steps, NodeKind.MISSION_TYPE, "steps");
+    }
+
+    /**
+     * The facts of a pack that holds no mission type.
+     *
+     * @param declared the slots each step prompt declares
+     * @param fills the fills each step enhancement writes
+     */
+    public PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<Fill>> fills) {
+        this(declared, fills, Map.of());
+    }
+
+    /**
+     * Whether this pack's version of the step's mission type declares the step, among its steps or its on-demand steps.
+     *
+     * @param step the step, {@code action:<type>/<step>}
+     * @return {@code true} when the pack holds the mission type and its version declares the step
+     */
+    public boolean declaresStep(Urn step) {
+        Objects.requireNonNull(step, "step");
+        return StepHolding.missionTypeOf(step)
+                .map(steps::get)
+                .filter(ids -> ids.contains(step.id().substring(step.id().indexOf('/') + 1)))
+                .isPresent();
     }
 
     /**
@@ -103,11 +134,16 @@ public record PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<F
      *
      * @param prompts the slot parse of each step prompt, over its canonical text ({@link PackContents#promptSlots()})
      * @param enhancements the step enhancements and their companions' canonical texts
+     * @param steps the ids of the steps each held mission type declares, by {@code mission_type:} URN
      * @return the facts
      */
-    public static PromptFacts of(List<PackContents.PromptSlotFacts> prompts, StepEnhancementFacts enhancements) {
+    public static PromptFacts of(
+            List<PackContents.PromptSlotFacts> prompts,
+            StepEnhancementFacts enhancements,
+            Map<Urn, List<String>> steps) {
         Objects.requireNonNull(prompts, "prompts");
         Objects.requireNonNull(enhancements, "enhancements");
+        Objects.requireNonNull(steps, "steps");
         Map<Urn, List<DeclaredSlot>> declared = new HashMap<>();
         for (PackContents.PromptSlotFacts prompt : prompts) {
             stepOf(prompt.file()).ifPresent(step -> declared.put(step, declaredSlots(prompt.parse())));
@@ -118,12 +154,12 @@ public record PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<F
         for (StepEnhancementFacts.Enhancement enhancement : enhancements.enhancements()) {
             fills.put(new Urn(NodeKind.STEP_ENHANCEMENT, enhancement.id()), fillsOf(enhancement, companions));
         }
-        return new PromptFacts(declared, fills);
+        return new PromptFacts(declared, fills, steps);
     }
 
     /**
-     * The facts once an artifact is removed: a mission type takes its steps' prompts with it, as they are its
-     * companions, and a step enhancement takes its fills; any other artifact changes nothing.
+     * The facts once an artifact is removed: a mission type takes its steps' prompts and its declared steps with it, as
+     * they are its companions, and a step enhancement takes its fills; any other artifact changes nothing.
      *
      * @param artifact the artifact removed
      * @return the facts after the removal; these same facts when nothing changes
@@ -131,15 +167,19 @@ public record PromptFacts(Map<Urn, List<DeclaredSlot>> declared, Map<Urn, List<F
     public PromptFacts without(Urn artifact) {
         Objects.requireNonNull(artifact, "artifact");
         if (artifact.kind() == NodeKind.MISSION_TYPE) {
-            String steps = artifact.id() + "/";
+            String prefix = artifact.id() + "/";
             Map<Urn, List<DeclaredSlot>> kept = new LinkedHashMap<>(declared);
-            kept.keySet().removeIf(action -> action.id().startsWith(steps));
-            return kept.size() == declared.size() ? this : new PromptFacts(kept, fills);
+            kept.keySet().removeIf(action -> action.id().startsWith(prefix));
+            Map<Urn, List<String>> keptSteps = new LinkedHashMap<>(steps);
+            keptSteps.remove(artifact);
+            return kept.size() == declared.size() && keptSteps.size() == steps.size()
+                    ? this
+                    : new PromptFacts(kept, fills, keptSteps);
         }
         if (artifact.kind() == NodeKind.STEP_ENHANCEMENT && fills.containsKey(artifact)) {
             Map<Urn, List<Fill>> kept = new LinkedHashMap<>(fills);
             kept.remove(artifact);
-            return new PromptFacts(declared, kept);
+            return new PromptFacts(declared, kept, steps);
         }
         return this;
     }

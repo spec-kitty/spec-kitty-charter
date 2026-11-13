@@ -89,7 +89,7 @@ public final class EffectiveMissionTypeReadService {
      */
     public StepRead step(String activationId, String missionTypeId, String stepId) {
         EffectiveMissionType winner = activations.missionType(activationId, missionTypeId);
-        if (winner.type().declaresStep(stepId)) {
+        if (winner.type().step(stepId).isPresent()) {
             return new StepRead(
                     MissionTypeReadService.stepOf(
                             holding(activationId, winner), scopeOf(activationId), missionTypeId, stepId),
@@ -143,7 +143,7 @@ public final class EffectiveMissionTypeReadService {
                 winner.contract(),
                 "The read of the step contract " + stepContractId + " under " + scopeOf(activationId));
         boolean stepHeld = winner.missionType()
-                .map(type -> type.declaresStep(contract.action())
+                .map(type -> type.step(contract.action()).isPresent()
                         || placed(activationId, type.localId(), contract.action(), winner.fingerprint()))
                 .orElse(false);
         Set<HeldArtifact> candidates = contract.steps().stream()

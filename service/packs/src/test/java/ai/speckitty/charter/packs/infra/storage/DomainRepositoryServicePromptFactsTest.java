@@ -2,9 +2,12 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
+import ai.speckitty.charter.missions.domain.MissionStep;
+import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,6 +50,22 @@ class DomainRepositoryServicePromptFactsTest {
         DomainRepositoryService store =
                 new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy());
         return store.compositionFacts(new PackIdentifier(location.name())).prompts();
+    }
+
+    /** The steps each mission type of the pack declares, from the whole-pack load: its steps, then its on-demand steps. */
+    private static Map<Urn, List<String>> stepsOf(String name) {
+        DomainRepositoryService store = new DomainRepositoryService(
+                () -> List.of(new PackLocation(name, ExamplePacks.level(name), ExamplePacks.pack(name))),
+                new YamlSerializationStrategy());
+        Map<Urn, List<String>> steps = new LinkedHashMap<>();
+        store.load(new PackIdentifier(name)).artifacts(ArtifactKind.MISSION_TYPE).stream()
+                .map(MissionType.class::cast)
+                .forEach(type -> steps.put(
+                        type.urn(),
+                        Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
+                                .map(MissionStep::id)
+                                .toList()));
+        return steps;
     }
 
     private static PackContents contentsOf(String name) {
@@ -125,6 +145,20 @@ class DomainRepositoryServicePromptFactsTest {
     }
 
     @Test
+    void theFactsCarryTheStepsEachMissionTypeDeclaresWhichPlaceAStepsPrompt() {
+        PromptFacts builtIn = promptsOf(ExamplePacks.BUILT_IN);
+
+        assertThat(builtIn.steps().get(Urn.missionType("software-dev")))
+                .as("software-dev's steps, then its on-demand steps (operator ruling Q3)")
+                .contains("plan", "implement");
+        assertThat(builtIn.declaresStep(Urn.action("software-dev", "plan"))).isTrue();
+        assertThat(builtIn.declaresStep(Urn.action("software-dev", "nope"))).isFalse();
+        assertThat(promptsOf(ExamplePacks.ORG).steps())
+                .as("org-base holds no mission type")
+                .isEmpty();
+    }
+
+    @Test
     void theFactsAgreeWithTheFullReadOfEachExamplePack() {
         for (String name : ExamplePacks.names()) {
             PackContents contents = contentsOf(name);
@@ -148,7 +182,7 @@ class DomainRepositoryServicePromptFactsTest {
             assertThat(declared).as(name).containsExactlyInAnyOrderEntriesOf(parsed);
             assertThat(promptsOf(name))
                     .as("%s: the facts equal the full read's, canonical text included", name)
-                    .isEqualTo(PromptFacts.of(contents.promptSlots(), contents.stepEnhancements()));
+                    .isEqualTo(PromptFacts.of(contents.promptSlots(), contents.stepEnhancements(), stepsOf(name)));
         }
     }
 

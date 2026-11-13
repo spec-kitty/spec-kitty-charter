@@ -23,9 +23,10 @@ import java.util.function.Function;
  *   <li>Only an enhancement in force is judged (OD-1 (B)): one held and not in force never refuses, whatever it names.
  *   <li>Only the winning copy is judged: the fills and the {@code enhances} edge of the version the layer merge keeps,
  *       read from the facts of the pack that holds it. A losing copy of the same id names nothing.
- *   <li>The prompt in force is the one at the merged winner's place of {@code action:M/s} (research R8,
- *       {@link StepHolding}): the winner's pack when the winning mission type declares the step, else the pack of the
- *       version that keeps it, since a step is a URN of its own. A step whose place holds no prompt declares no slot.
+ *   <li>The prompt in force is the one at the step's place ({@link StepHolding#placeOf}; research R8 as amended by
+ *       operator ruling Q3): the winner of the mission type when its version declares the step, else the merged winner
+ *       of {@code action:M/s} when its version does, the prompt the effective prompt read serves. A step whose place
+ *       holds no prompt declares no slot; a step with no place has no prompt in force and is not judged.
  * </ul>
  *
  * <p>The shape judged is the one {@link EnhancementCompose} judges: a {@code step_enhancement} whose {@code enhances}
@@ -44,7 +45,7 @@ public final class SlotCompose {
      * @param enhancingPack the configured pack that holds the winning copy of the enhancement
      * @param step the step it enhances, {@code action:M/s}
      * @param slot the slot it fills
-     * @param promptPack the configured pack at the winner's place of the step, which holds the prompt in force
+     * @param promptPack the configured pack at the step's place, which holds the prompt in force
      * @param promptHeld whether that place holds a prompt for the step; a place with none declares no slot
      */
     public record SlotViolation(
@@ -136,11 +137,11 @@ public final class SlotCompose {
             PackIdentifier enhancingPack,
             EnhancementCompose.StepEnhancement enhancement,
             List<SlotViolation> found) {
-        Optional<MergedClosure.Winner> place = merged.winnerOf(enhancement.target());
+        Optional<PackIdentifier> place = StepHolding.placeOf(enhancement.target(), merged, facts);
         if (place.isEmpty()) {
             return;
         }
-        PackIdentifier promptPack = place.get().packId();
+        PackIdentifier promptPack = place.get();
         Optional<List<PromptFacts.DeclaredSlot>> prompt = Optional.ofNullable(
                 factsOf(facts, promptPack).prompts().declared().get(enhancement.target()));
         Set<SlotId> declared = new HashSet<>();

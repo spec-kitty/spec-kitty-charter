@@ -851,7 +851,9 @@ x-refusal:
         status: 422
     description: >-
       the prompt in force of a step declares no slot that a step enhancement in force names (ADR-0066 decision 8, C38):
-      the prompt at the merged winner's place of the step, judged for the winning copy of the enhancement; an
+      the prompt at the step's place, the one getEffectiveStepPrompt serves (the mission type's version in force when
+      it declares the step, else the merged winner of the action whose version does), judged for the winning copy of
+      the enhancement; a step with no place has no prompt in force and is not judged; an
       enhancement that is not in force never refuses. A composing read of an activation that puts it in force answers
       500. A registration, each impact-checked pack write (judged for every stored activation whose closure the write
       joins, the activation named in the detail) and each activation write (before the document is stored) answer 422.

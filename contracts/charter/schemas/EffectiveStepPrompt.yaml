@@ -72,11 +72,12 @@ properties:
     type: string
     description: >-
       The prompt in force for the step, as it is stored (decision 9: unchanged), slot markers in place: the prompt
-      companion at the merged winner's place of action:{missionType}/{action}, the place the closure holds the step at
-      (the winning mission type's pack when it declares the step, else the pack of the version that keeps it; research
-      R8). Outside the slots it is the base text (decision 7). Empty when the step has no prompt.
+      companion at the step's place (research R8 as amended by operator ruling Q3): the pack of the mission type's
+      version in force when that version declares the step, else the pack that holds the merged winner of
+      action:{missionType}/{action} when its version declares it. Outside the slots it is the base text (decision 7).
+      Empty when the step has no prompt.
     x-derived:
-      rule: The stored prompt companion of step {action} at the merged winner's place of action:{missionType}/{action}.
+      rule: The stored prompt companion of step {action} at the step's place.
       inputs:
       - schemas/ActivationConfig.yaml
   promptPackId:

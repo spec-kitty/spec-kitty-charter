@@ -176,7 +176,8 @@ class ActivationImpactAdapterTest {
                         Map.of(u("action:M/s"), List.of(slot("spdd:reasons-block"))),
                         Map.of(
                                 u("step_enhancement:x"),
-                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n")))),
+                                List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n"))),
+                        Map.of(u("mission_type:M"), List.of("s"))),
                 "mission_type:M",
                 "action:M/s",
                 "step_enhancement:x");
@@ -193,7 +194,8 @@ class ActivationImpactAdapterTest {
                                     java.util.Arrays.stream(projSlots)
                                             .map(ActivationImpactAdapterTest::slot)
                                             .toList()),
-                            Map.of()),
+                            Map.of(),
+                            Map.of(u("mission_type:M"), List.of("s"))),
                     "mission_type:M",
                     "action:M/s");
         }

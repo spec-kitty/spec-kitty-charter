@@ -172,7 +172,8 @@ class PromptFactsTest {
                                 <!-- spdd:reasons-block:end -->
                                 """),
                         prompt("missions/software-dev/steps/specify.prompt.md", "# Specify\n")),
-                StepEnhancementFacts.none());
+                StepEnhancementFacts.none(),
+                Map.of());
 
         assertThat(facts.declared())
                 .containsExactly(
@@ -191,7 +192,8 @@ class PromptFactsTest {
                 List.of(prompt(
                         "missions/software-dev/steps/plan.prompt.md",
                         "<!-- spdd:reasons-block:start -->\nlegacy text\n<!-- spdd:reasons-block:end -->\n")),
-                StepEnhancementFacts.none());
+                StepEnhancementFacts.none(),
+                Map.of());
 
         assertThat(facts.declared().get(action("software-dev", "plan")))
                 .containsExactly(new PromptFacts.DeclaredSlot(REASONS, true));
@@ -203,7 +205,8 @@ class PromptFactsTest {
                 List.of(prompt(
                         "missions/software-dev/steps/hotfix.prompt.md",
                         "<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->\n")),
-                StepEnhancementFacts.none());
+                StepEnhancementFacts.none(),
+                Map.of());
 
         assertThat(facts.declared())
                 .containsExactly(Map.entry(
@@ -222,7 +225,8 @@ class PromptFactsTest {
                         prompt("missions/software-dev/steps/plan.guidelines.md", slotted),
                         prompt("missions/software-dev/steps/.prompt.md", slotted),
                         prompt("missions/software-dev/steps/plan.prompt.md", slotted)),
-                StepEnhancementFacts.none());
+                StepEnhancementFacts.none(),
+                Map.of());
 
         assertThat(facts.declared().keySet())
                 .as("only missions/<type>/steps/<step>.prompt.md is a step prompt; the control is held")
@@ -247,7 +251,7 @@ class PromptFactsTest {
                         companion("software-dev", "reasons-plan.prompt-fragment.md", "Reasons for the plan.\n"),
                         companion("documentation", "reasons-write.prompt-fragment.md", "Reasons for the docs.\n")));
 
-        PromptFacts facts = PromptFacts.of(List.of(), read);
+        PromptFacts facts = PromptFacts.of(List.of(), read, Map.of());
 
         assertThat(facts.declared()).isEmpty();
         assertThat(facts.fills())
@@ -264,8 +268,8 @@ class PromptFactsTest {
 
     @Test
     void anEnhancementWithNoEntryFillsNothingButIsListed() {
-        PromptFacts facts =
-                PromptFacts.of(List.of(), enhancements(List.of(enhancementFile("software-dev", "empty")), List.of()));
+        PromptFacts facts = PromptFacts.of(
+                List.of(), enhancements(List.of(enhancementFile("software-dev", "empty")), List.of()), Map.of());
 
         assertThat(facts.fills()).containsExactly(Map.entry(enhancement("empty"), List.of()));
     }
@@ -285,7 +289,7 @@ class PromptFactsTest {
                         StepEnhancementFacts.Companion.unreadable(
                                 "missions/software-dev/enhancements/unreadable.prompt-fragment.md")));
 
-        PromptFacts facts = PromptFacts.of(List.of(), read);
+        PromptFacts facts = PromptFacts.of(List.of(), read, Map.of());
 
         assertThat(facts.fills())
                 .as("a bad slot id, a missing and an unreadable companion are the load's refusals; the control fills")
@@ -333,5 +337,42 @@ class PromptFactsTest {
 
         assertThat(facts.without(Urn.parse("directive:DIRECTIVE_001").orElseThrow()))
                 .isSameAs(facts);
+    }
+
+    // ---- the steps each mission type declares, which place a step's prompt (operator ruling Q3) ------------------
+
+    @Test
+    void aStepIsDeclaredWhenThePacksVersionOfItsMissionTypeListsIt() {
+        PromptFacts facts = new PromptFacts(
+                Map.of(), Map.of(), Map.of(Urn.missionType("software-dev"), List.of("plan", "retrospect")));
+
+        assertThat(facts.declaresStep(action("software-dev", "plan"))).isTrue();
+        assertThat(facts.declaresStep(action("software-dev", "retrospect"))).isTrue();
+        assertThat(facts.declaresStep(action("software-dev", "review")))
+                .as("the twin: not listed")
+                .isFalse();
+        assertThat(facts.declaresStep(action("research", "plan")))
+                .as("a mission type it does not hold")
+                .isFalse();
+    }
+
+    @Test
+    void aMissionTypeRemovedTakesItsDeclaredStepsWithIt() {
+        PromptFacts facts =
+                new PromptFacts(Map.of(), Map.of(), Map.of(Urn.missionType("software-dev"), List.of("plan")));
+
+        PromptFacts after = facts.without(Urn.missionType("software-dev"));
+
+        assertThat(after.steps()).isEmpty();
+        assertThat(after.declaresStep(action("software-dev", "plan"))).isFalse();
+        assertThat(facts.without(Urn.missionType("research")))
+                .as("another mission type changes nothing")
+                .isSameAs(facts);
+    }
+
+    @Test
+    void aStepsKeyThatIsNoMissionTypeIsRefused() {
+        assertThatThrownBy(() -> new PromptFacts(Map.of(), Map.of(), Map.of(action("software-dev", "plan"), List.of())))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

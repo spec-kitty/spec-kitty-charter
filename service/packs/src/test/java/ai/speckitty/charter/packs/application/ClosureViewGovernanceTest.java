@@ -16,7 +16,6 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.StepBearer;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -30,6 +29,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -330,15 +330,31 @@ class ClosureViewGovernanceTest {
 
     private static final String STORED_PROMPT = "# Step s\r\n\n<!-- spdd:notes:start --><!-- spdd:notes:end -->\n";
 
-    /** builtin holds mission type M and its step s, whose prompt companion is stored as {@link #STORED_PROMPT}. */
+    /**
+     * builtin holds mission type M, whose version declares its step s (the step's place), and s's prompt companion is
+     * stored as {@link #STORED_PROMPT}.
+     */
     private void aStepWithAStoredPrompt() {
         pack("builtin", PackLevel.BUILT_IN, List.of(), List.of(), List.of("mission_type:M", "action:M/s"));
+        PackCompositionFacts held = facts.get("builtin");
+        facts.put(
+                "builtin",
+                new PackCompositionFacts(
+                        held.changed(),
+                        held.defined(),
+                        held.references(),
+                        held.policy(),
+                        held.presets(),
+                        held.edges(),
+                        held.languages(),
+                        held.bindings(),
+                        new PromptFacts(Map.of(), Map.of(), Map.of(Urn.missionType("M"), List.of("s")))));
         stored.put(
                 "builtin",
                 Pack.builder()
                         .id(new PackIdentifier("builtin"))
                         .descriptor(descriptors.get("builtin"))
-                        .artifact(new MissionTypeStub(new PackIdentifier("builtin"), "M", List.of("s")))
+                        .artifact(new MissionTypeStub(new PackIdentifier("builtin"), "M"))
                         .build());
         stepFiles.put(
                 "builtin M",
@@ -521,17 +537,8 @@ class ClosureViewGovernanceTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN));
     }
 
-    /**
-     * A mission type as the packs rings hold it: an artifact of kind {@code mission_type} that bears its steps, which
-     * the step's place is judged by.
-     */
-    private record MissionTypeStub(PackIdentifier packId, String localId, List<String> steps)
-            implements CharterArtifact, StepBearer {
-
-        @Override
-        public boolean declaresStep(String stepId) {
-            return steps.contains(stepId);
-        }
+    /** A mission type as the packs rings hold it: an artifact of kind {@code mission_type}. */
+    private record MissionTypeStub(PackIdentifier packId, String localId) implements CharterArtifact {
 
         @Override
         public ArtifactKind kind() {

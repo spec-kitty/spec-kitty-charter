@@ -792,8 +792,9 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     Operator ruling Q3: every judgement of the prompt in force places it by the one rule, the slot check (C38) too.
     proj's winning software-dev declares specify, and only main's graph declares action:software-dev/specify, so the
     prompt in force is proj's, which declares no spdd:reasons-block; main's, which declares it, is not in force. The
-    enhancement reasons in force fills that slot: the prompt read and an activation write that puts it in force refuse
-    prompt_slot_missing, naming proj, never judging main's prompt. The twin differs only in proj's prompt.
+    enhancement reasons in force fills that slot: the prompt read of a stored activation that puts it in force answers
+    500 prompt_slot_missing, and an activation write that puts it in force 422, naming proj, never judging main's
+    prompt. The twin differs only in proj's prompt (and stores a-3 by its write, which this one refuses).
     Given the org pack "main" with the file "missions/software-dev/steps/specify.prompt.md":
       """
       # Specify at org
@@ -830,9 +831,9 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       """
       # Specify at project
       """
-    And the activation "a-3" holds:
+    And the stored file of the activation "a-3" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
+      {"packs":[{"packId":"main"},{"packId":"proj"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["reasons"]}}
       """
     When I GET "/activations/a-3/mission-types/software-dev/actions/specify/prompt"
     Then the response status is 500
