@@ -9,11 +9,14 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -49,7 +52,10 @@ public final class ClosureQueries {
     private final OfferingReadService offering;
     private final PackCatalogRepository catalog;
     private final ConsistentRead read;
-    private final Optional<PackRepository> packs;
+    private final Optional<Stores> stores;
+
+    /** The ports a view reads a winner's entity and a step's stored prompt through. */
+    private record Stores(PackRepository packs, PackCompanionFiles companions) {}
 
     /**
      * Queries over the offering's compose, whose views read no winner entity.
@@ -63,28 +69,36 @@ public final class ClosureQueries {
     }
 
     /**
-     * Queries over the offering's compose.
+     * Queries over the offering's compose whose views also read the stored prompt of a step
+     * ({@link ClosureView#effectivePrompt}).
      *
      * @param offering the service that composes a closure and maps it to the offering's shape
      * @param catalog the configured packs, the roots are checked against before the compose
      * @param read the verifier that digests the inputs before and after the read
      * @param packs the port a view reads the entity of a winning artifact through ({@link ClosureView#effectiveArtifact})
+     * @param companions the port a view reads the stored prompt of a step through
      */
     @Autowired
     public ClosureQueries(
-            OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read, PackRepository packs) {
-        this(offering, catalog, read, Optional.of(packs));
-    }
-
-    private ClosureQueries(
             OfferingReadService offering,
             PackCatalogRepository catalog,
             ConsistentRead read,
-            Optional<PackRepository> packs) {
+            PackRepository packs,
+            PackCompanionFiles companions) {
+        this(
+                offering,
+                catalog,
+                read,
+                Optional.of(new Stores(
+                        Objects.requireNonNull(packs, "packs"), Objects.requireNonNull(companions, "companions"))));
+    }
+
+    private ClosureQueries(
+            OfferingReadService offering, PackCatalogRepository catalog, ConsistentRead read, Optional<Stores> stores) {
         this.offering = Objects.requireNonNull(offering, "offering");
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.read = Objects.requireNonNull(read, "read");
-        this.packs = Objects.requireNonNull(packs, "packs");
+        this.stores = Objects.requireNonNull(stores, "stores");
     }
 
     /**
@@ -210,21 +224,50 @@ public final class ClosureQueries {
     }
 
     /**
-     * Where a view reads the entity of a winner from: the pack store, each read checked against the digest of the
-     * closure's own packs the view was verified at, so an entity of a pack that moved since is {@code stale_input} and
-     * never part of a mixed answer.
+     * Where a view reads the entity of a winner, and the stored prompt of a step, from: the pack store, each read checked
+     * against the digest of the closure's own packs the view was verified at, so what a pack that moved since holds is
+     * {@code stale_input} and never part of a mixed answer.
      */
     private ClosureView.WinnerSource winnerSource(List<PackUnderResolution> closure, String closureFingerprint) {
-        return packs.<ClosureView.WinnerSource>map(repository -> (pack, kind, id) -> {
-                    Optional<CharterArtifact> found = repository.load(pack).artifacts(kind).stream()
-                            .filter(artifact -> artifact.localId().equals(id))
-                            .findFirst();
-                    if (!closureFingerprint(closure).equals(closureFingerprint)) {
-                        throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
-                    }
-                    return found;
-                })
-                .orElseGet(ClosureView.WinnerSource::none);
+        if (stores.isEmpty()) {
+            return ClosureView.WinnerSource.none();
+        }
+        PackRepository repository = stores.get().packs();
+        PackCompanionFiles companions = stores.get().companions();
+        return new ClosureView.WinnerSource() {
+            @Override
+            public Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id) {
+                Optional<CharterArtifact> found = artifact(repository, pack, kind, id);
+                checkUnchanged(closure, closureFingerprint);
+                return found;
+            }
+
+            @Override
+            public Optional<Payload> stepPrompt(PackIdentifier pack, Urn step) {
+                Optional<Payload> prompt = StepHolding.missionTypeOf(step)
+                        .flatMap(missionType -> artifact(repository, pack, ArtifactKind.MISSION_TYPE, missionType.id())
+                                .map(type -> companions.stepFiles(pack, type))
+                                .map(files -> files.get(
+                                        step.id().substring(missionType.id().length() + 1)))
+                                .flatMap(PackCompanionFiles.StepFiles::prompt));
+                checkUnchanged(closure, closureFingerprint);
+                return prompt;
+            }
+        };
+    }
+
+    private static Optional<CharterArtifact> artifact(
+            PackRepository repository, PackIdentifier pack, ArtifactKind kind, String id) {
+        return repository.load(pack).artifacts(kind).stream()
+                .filter(artifact -> artifact.localId().equals(id))
+                .findFirst();
+    }
+
+    /** Refuses {@code stale_input} when the closure's own packs no longer digest as the view was verified at. */
+    private void checkUnchanged(List<PackUnderResolution> closure, String closureFingerprint) {
+        if (!closureFingerprint(closure).equals(closureFingerprint)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
+        }
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
