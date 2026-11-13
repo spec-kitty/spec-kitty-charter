@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+  "mission_id": "01M7B19KQWNQC12RKE8EQFFTBV",
+  "mission_branch": "kitty/mission-slice-f-kind-taxonomy-01M7B19K",
+  "target_branch": "slice-f-537-kind-taxonomy",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/testFixtures/resources/example-packs/built-in/*.graph.yaml",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/guards/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/lifecycles/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/missions/built_in_step_contracts/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/pack-manifest.yaml",
+        "service/packs/src/testFixtures/resources/example-packs/org-base/**",
+        "service/packs/src/testFixtures/resources/example-packs/project/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/activation-*.feature",
+        "contracts/charter/scenarios/composition.feature",
+        "contracts/charter/scenarios/effective-context-scoping.feature",
+        "contracts/charter/scenarios/effective-graph-and-context.feature",
+        "contracts/charter/scenarios/effective-overriders.feature",
+        "contracts/charter/scenarios/effective-reads.feature",
+        "contracts/charter/scenarios/effective-references.feature",
+        "contracts/charter/scenarios/effective-step-prompt.feature",
+        "contracts/charter/scenarios/layer-merge.feature",
+        "contracts/charter/scenarios/pack-removal.feature",
+        "contracts/charter/scenarios/prompt-slots.feature",
+        "contracts/charter/scenarios/relationships.feature",
+        "contracts/charter/scenarios/step-enhancement*.feature",
+        "service/packs/src/test/resources/load-fixtures/**",
+        "service/packs/src/test/resources/pack-level/**",
+        "service/packs/src/test/resources/pack-order/**",
+        "service/packs/src/test/resources/whole-pack/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointPair.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointRule.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/KindRef.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/kinds/**",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/schemas/Relation.yaml",
+        "contracts/packs/schemas/graph-shard.schema.json",
+        "contracts/packs/schemas/org-fragment.schema.json",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/RelationSetParityTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipMerge.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DrgEdge.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WireTokenParityTest.java",
+        "service/packs/src/test/resources/planted/c12-*/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/override-source-kind.feature",
+        "contracts/charter/scenarios/pack-write-refusals.feature",
+        "contracts/charter/scenarios/prompt-fragment-refusals.feature",
+        "contracts/charter/scenarios/read-refusals.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExampleCoverageTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/OverrideSourceRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackFindingCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/test/resources/planted/r*-edge-*/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/mission-types.feature",
+        "contracts/packs/schemas/charter.schema.json",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepLinkRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionTypeFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java",
+        "service/packs/src/test/resources/planted/charter-valid/**",
+        "service/packs/src/test/resources/planted/r32-*/**",
+        "service/packs/src/test/resources/planted/r33-*/**",
+        "service/packs/src/test/resources/planted/r34-*/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/MissionStep*.yaml",
+        "contracts/charter/schemas/MissionStep.yaml",
+        "contracts/charter/schemas/MissionSubstep*.yaml",
+        "contracts/packs/schemas/mission-type.schema.json",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/infra/api/MissionBodies.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep*.java",
+        "service/missions/src/test/java/ai/speckitty/charter/missions/domain/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SubstepDelegationRule.java",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/missions/software-dev/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-f"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "contracts/charter/paths/activations_activationId_artifacts_mission_step_contract_contractId.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/effective-mission-types.feature",
+        "contracts/charter/scenarios/removed-routes.feature",
+        "contracts/charter/schemas/MissionStepContract*.yaml",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/mission-step-contract.schema.json",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/**/EffectiveStepContractWinner.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/RetiredNamesScanTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/**/*StepContract*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepDelegation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionStepContract*.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-g"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/KindTaxonomy*.yaml",
+        "contracts/charter/examples/Offering*.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/paths/offering_kinds.yaml",
+        "contracts/charter/scenarios/every-operation.feature",
+        "contracts/charter/scenarios/offering.feature",
+        "contracts/charter/scenarios/root.feature",
+        "contracts/charter/scenarios/switch-gate.yaml",
+        "contracts/charter/schemas/EndpointPair.yaml",
+        "contracts/charter/schemas/KindRow.yaml",
+        "contracts/charter/schemas/KindTaxonomy.yaml",
+        "contracts/charter/schemas/Offering.yaml",
+        "contracts/charter/schemas/RelationRow.yaml",
+        "contracts/charter/schemas/ServiceRoot*.yaml",
+        "contracts/lint/ruleset.yaml",
+        "docs/development/rest-resource-conventions.md",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/KindTaxonomyController.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-h"
+      ],
+      "parallel_group": 6
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-*-kind-taxonomy-and-step-authority*.md",
+        "docs/_meta/terminology.yaml",
+        "docs/adr/**",
+        "docs/api/service-contract.md",
+        "docs/architecture/**",
+        "docs/changelog/**",
+        "docs/conformance/**",
+        "docs/context/**",
+        "docs/development/epic-186-sanitized-shape-follow-ups.md",
+        "docs/development/hypermedia-hateoas.md",
+        "docs/glossary/**",
+        "site/.contextive/definitions.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-i"
+      ],
+      "parallel_group": 7
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP11"
+      ],
+      "write_scope": [
+        "kitty-specs/slice-f-kind-taxonomy-01M7B19K/research/closeout-evidence.md",
+        "kitty-specs/slice-f-kind-taxonomy-01M7B19K/research/open-packs-drafts/**"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-j"
+      ],
+      "parallel_group": 8
+    }
+  ],
+  "computed_at": "2026-11-13T20:12:18.551959+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP11"
+  ],
+  "planning_commit_sha": "6d9cf318ef679bac2605095171814098b4741f8b"
+}
