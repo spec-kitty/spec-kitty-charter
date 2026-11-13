@@ -177,6 +177,9 @@ both to the operator, who ruled on each (decisions 9 to 14).
       a well-formed `type/subtype`, and `application/octet-stream` when it is not; the item keeps `mime` as written,
       and validate mode still reports a malformed or mismatched one as a policy finding. This amends ADR-0040 decision
       1 for the payload read only: the store still never chooses a content form by `mime`.
+      The payload read honors `If-None-Match` and answers `304`, while the sibling pack item and list reads offer their
+      `ETag` and take no `If-None-Match`. This divergence is deliberate: only the payload is a body worth not
+      re-sending.
     - `GET …/artifacts/glossary/{contextId}/terms/{termId}`: one term. The path mirrors the term's URN,
       `term:<context-id>/<term-id>`.
 12. **Every artifact read has an activation twin at the same suffix.** The twin is under `/activations/{activationId}`

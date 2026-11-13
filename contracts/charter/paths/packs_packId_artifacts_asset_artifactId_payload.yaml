@@ -42,11 +42,7 @@ get:
         Charter-Source-Fingerprint:
           $ref: ../headers/CharterSourceFingerprint.yaml
         ETag:
-          description: The pack revision the payload was read at, quoted, as getPackAsset answers it.
-          required: true
-          schema:
-            type: string
-            pattern: ^"sha256:[0-9a-f]{64}"$
+          $ref: ../headers/PackRevisionETag.yaml
         X-Content-Type-Options:
           $ref: ../headers/XContentTypeOptions.yaml
         Content-Security-Policy:
