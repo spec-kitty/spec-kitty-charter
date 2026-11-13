@@ -26,7 +26,7 @@
       "last_event_id": "01M79CNCCYXAQWY568DNYTYDFQ",
       "last_transition_at": "2026-11-13T02:44:21.534059+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP01-presets-in-a-pack/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP01-presets-in-a-pack/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP01-presets-in-a-pack/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -43,7 +43,7 @@
       "last_event_id": "01M79CNM6AEGC0K3NB1Q2RZNMA",
       "last_transition_at": "2026-11-13T02:44:29.514079+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP02-kind-gates-and-asset-id/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP02-kind-gates-and-asset-id/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP02-kind-gates-and-asset-id/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -60,7 +60,7 @@
       "last_event_id": "01M79CNGB9A64HGNAM3F8KM4Y7",
       "last_transition_at": "2026-11-13T02:44:25.578033+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP03-artifacts-edge-module/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP03-artifacts-edge-module/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP03-artifacts-edge-module/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -77,7 +77,7 @@
       "last_event_id": "01M79CNVTRAJN3HJJCBC9CN7V7",
       "last_transition_at": "2026-11-13T02:44:37.336620+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP04-asset-reads-in-a-pack/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP04-asset-reads-in-a-pack/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP04-asset-reads-in-a-pack/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -94,7 +94,7 @@
       "last_event_id": "01M79CNZAXQ2KWDVHZCF7P5BQ6",
       "last_transition_at": "2026-11-13T02:44:40.925046+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP05-skill-reads-in-a-pack/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP05-skill-reads-in-a-pack/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP05-skill-reads-in-a-pack/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -111,7 +111,7 @@
       "last_event_id": "01M79CP34CH9Y7FQZKCZVD10P7",
       "last_transition_at": "2026-11-13T02:44:44.812429+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP06-effective-asset-and-skill-reads/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP06-effective-asset-and-skill-reads/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP06-effective-asset-and-skill-reads/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -128,7 +128,7 @@
       "last_event_id": "01M79CP6T5FYM9P3HM62Z81TCM",
       "last_transition_at": "2026-11-13T02:44:48.581558+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP07-references-twin/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP07-references-twin/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP07-references-twin/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -145,7 +145,7 @@
       "last_event_id": "01M79CNR2XNNDFBM9MK0B5FSR0",
       "last_transition_at": "2026-11-13T02:44:33.501081+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP08-activation-links/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP08-activation-links/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP08-activation-links/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
@@ -162,7 +162,7 @@
       "last_event_id": "01M79CPAF9V8VMKGG7V8H7NXSZ",
       "last_transition_at": "2026-11-13T02:44:52.329142+00:00",
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP09-docs-adrs-and-sweep/review-cycle-1.md",
+        "feedback_path": "kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks/WP09-docs-adrs-and-sweep/review-cycle-1.md",
         "reference": "review-cycle://slice-a2-cutover-reads-01M78RJD/WP09-docs-adrs-and-sweep/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"

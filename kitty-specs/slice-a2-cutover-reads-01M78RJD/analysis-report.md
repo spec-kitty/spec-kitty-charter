@@ -8,13 +8,13 @@ generated_at: '2026-11-12T21:47:52.759358+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
-    path: .worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/spec.md
+    path: kitty-specs/slice-a2-cutover-reads-01M78RJD/spec.md
     sha256: ec31fffe5ec9a8aef4633cf0fab95b565f911e9e275e8b17fd29a576cf60e56c
   plan.md:
-    path: .worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/plan.md
+    path: kitty-specs/slice-a2-cutover-reads-01M78RJD/plan.md
     sha256: adbcc52f20dc9d3db6068f6c1d0ce258f50655bc3a0971e3418514752dedb70a
   tasks.md:
-    path: .worktrees/slice-a2-cutover-reads-01M78RJD-coord/kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks.md
+    path: kitty-specs/slice-a2-cutover-reads-01M78RJD/tasks.md
     sha256: eb483db078ed3b0a34e0606e12bd20122ca496f9c37fa3fc11b53c7021c14f41
   charter:
     path: .kittify/charter/charter.yaml
