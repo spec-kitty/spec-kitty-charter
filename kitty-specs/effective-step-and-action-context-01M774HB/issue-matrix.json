@@ -97,7 +97,7 @@
       "wp": "WP10"
     },
     "#447": {
-      "evidence_ref": "Operator ruling 2026-11-12, option 1: WP11",
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-charter/pull/563",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,7 +105,7 @@
       "scope": null,
       "source_file": null,
       "title": null,
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP11"
     },
     "#450": {
