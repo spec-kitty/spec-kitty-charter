@@ -162,7 +162,8 @@
       "last_transition_at": "2026-11-13T00:15:59.903614+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Reviewed: body byte-exact incl. multibyte + no final newline; wrapper without body; envelope links; deployable 1787/0"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
