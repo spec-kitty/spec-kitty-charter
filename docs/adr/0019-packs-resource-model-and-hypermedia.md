@@ -2,7 +2,7 @@
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 decision_status: Accepted; decision 2 (R12) superseded in part by ADR-0049 (2026-11-02); decisions 2 and 5 amended by ADR-0065 (2026-11-07); decision 2 gains /packs/{packId}/doc (2026-11-11, #451); decision 2's asset rows amended by ADR-0074 (2026-11-12)
 decision_date: '2026-10-24'
 type: ADR
@@ -129,7 +129,9 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
    *Amended 2026-11-12 ([ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 2, 9 to 11 and 13):
    the two asset rows are replaced. An asset is an artifact read by its id: listed at `/packs/{packId}/artifacts/asset`,
    read at `/packs/{packId}/artifacts/asset/{artifactId}`, and its bytes at `…/payload`. The presets row stands, with an
-   item read, `GET /packs/{packId}/presets/{presetId}` (decision 1).*
+   item read, `GET /packs/{packId}/presets/{presetId}` (decision 1). Built 2026-11-13 (slice A2,
+   [#536](https://github.com/spec-kitty/spec-kitty-charter/issues/536)): the asset rows' replacements and both preset
+   reads are served.*
 
    `{packId}` is the pack's minted `pack_id` ULID, which `PackSummary.packId` already answers.
    Glossary packs are packs: their terms are artifacts of kind `glossary`, read through
