@@ -4,10 +4,11 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.relations.retired-relations`
 - **Input key:** `retired_relations`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-13T18:15:48.562040+00:00`
+- **Resolved:** `2026-11-13T18:43:26.638176+00:00`
 - **Opened by:** `cli`
-- **Other answer:** `false`
+- **Other answer:** `true`
 
 ## Question
 
@@ -21,7 +22,7 @@ Q6: Retire impacts, replaces and delegates_to in this slice (widens #515), or gi
 
 ## Final answer
 
-_(none)_
+Retire impacts, replaces and delegates_to. Note: replaces was sometimes used to mean overrides; a replaces edge migrates to overrides.
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-13T18:15:48.562040+00:00` - opened
+- `2026-11-13T18:43:26.638176+00:00` - resolved (final_answer="Retire impacts, replaces and delegates_to. Note: replaces was sometimes used to mean overrides; a replaces edge migrates to overrides.")
