@@ -174,7 +174,7 @@ class WholePackRoundTripTest {
                 .as("red files of the org example pack: only the fragment's impacts strength (#477)")
                 .containsOnlyKeys(PackFileSet.FRAGMENT);
         assertThat(red.get(PackFileSet.FRAGMENT))
-                .startsWith("refused: read-back: the written shard does not build")
+                .startsWith("refused: read-back: the written fragment does not build")
                 .contains("place=[edges, 2]", "an impacts edge is missing 'impacts'");
         assertThat(unpaired(temp.resolve(ExamplePacks.ORG), paired))
                 .as("written files no source file pairs with: only the refused fragment's written copy (#477)")
