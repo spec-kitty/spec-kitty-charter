@@ -112,4 +112,6 @@ files:
   - Skill.yaml
   - SkillExpansion.yaml
   - SkillInvocation.yaml
+  - SkillList.yaml
   - SkillParameter.yaml
+  - SkillSummary.yaml

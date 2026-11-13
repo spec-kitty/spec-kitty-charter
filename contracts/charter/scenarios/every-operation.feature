@@ -34,6 +34,8 @@ Feature: The worktree guard answers in front of every operation
       | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
       | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
       | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -95,6 +97,8 @@ Feature: The worktree guard answers in front of every operation
       | listPackAssets                  | GET    | /packs/qa/artifacts/asset                                                                     |
       | getPackAsset                    | GET    | /packs/qa/artifacts/asset/logo                                                                |
       | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
+      | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
+      | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
