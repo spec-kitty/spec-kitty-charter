@@ -11,6 +11,10 @@ description: >-
   or missionTypes, members the document no longer has, is refused with one violation per member, code removed_member,
   at its pointer (/activatedKinds, /missionTypes). One removed_member makes the whole refusal validation_failed, with
   any other violation of the body listed beside it.
+
+  A write that would store a document whose closure puts in force a step enhancement filling a slot the prompt in
+  force of its step does not declare answers 422 prompt_slot_missing (C38, ADR-0066 decision 8), naming the
+  enhancement, its pack, the slot, the step and the pack that holds the prompt in force, before the document is stored.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

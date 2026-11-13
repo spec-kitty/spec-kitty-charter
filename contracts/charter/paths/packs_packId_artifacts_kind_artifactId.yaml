@@ -231,6 +231,9 @@ delete:
         override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
         member naming the root pack of the closure and the packs involved; validation_failed when the pack that would
         result does not revalidate. The composition codes answer 422 here, in place of 500.
+        A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
+        the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
+        named in the detail, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
