@@ -3,18 +3,18 @@ summary: >-
   that holds the winner, with the target the closure holds linked under the activation too.
 value:
   items:
-    - reference: tactic:T
+    - reference: tactic:rehearse
       relation: requires
       holdingPack:
         packId: core
         descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
         name: core-pack
-      urn: tactic:T
+      urn: tactic:rehearse
       _links:
         effective-artifact:
-          href: /api/v1/activations/a-1/artifacts/tactic/T
+          href: /api/v1/activations/a-1/artifacts/tactic/rehearse
         artifact:
-          href: /api/v1/packs/core/artifacts/tactic/T
+          href: /api/v1/packs/core/artifacts/tactic/rehearse
     - reference: template:release-notes
       relation: suggests
       urn: template:release-notes

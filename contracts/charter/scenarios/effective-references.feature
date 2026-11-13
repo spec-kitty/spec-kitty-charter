@@ -3,9 +3,9 @@
 # on each target the activation's closure holds. The 400, 401, 403 and 500 answers are asserted in read-refusals.feature,
 # every-operation.feature and unexpected-failure.feature.
 #
-# Fixture: core (built-in) holds directive D, tactics T and U, agent profile jenny and asset run; its graph document
-# writes D requires T, and jenny requires D and suggests T. Activation a-1 builds on core alone and selects D. The
-# override scenario adds proj (project), whose own D requires its own U, and activation a-2 over both.
+# Fixture: core (built-in) holds directive D, tactics rehearse and drill, agent profile jenny and asset run; its graph document
+# writes D requires rehearse, and jenny requires D and suggests rehearse. Activation a-1 builds on core alone and selects D. The
+# override scenario adds proj (project), whose own D requires its own drill, and activation a-2 over both.
 
 @contract @activations
 Feature: The references of an artifact under an activation are the pack read of the winner's pack
@@ -31,19 +31,19 @@ Feature: The references of an artifact under an activation are the pack read of 
       intent: D at built-in
       enforcement: required
       """
-    And the built-in pack "core" with the file "tactics/T.tactic.yaml":
+    And the built-in pack "core" with the file "tactics/rehearse.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
-      name: T
+      id: rehearse
+      name: Rehearse
       steps:
         - title: Only step
       """
-    And the built-in pack "core" with the file "tactics/U.tactic.yaml":
+    And the built-in pack "core" with the file "tactics/drill.tactic.yaml":
       """
       schema_version: '1.0'
-      id: U
-      name: U
+      id: drill
+      name: Drill
       steps:
         - title: Only step
       """
@@ -73,13 +73,13 @@ Feature: The references of an artifact under an activation are the pack read of 
       nodes: []
       edges:
       - source: directive:D
-        target: tactic:T
+        target: tactic:rehearse
         relation: requires
       - source: agent_profile:jenny
         target: directive:D
         relation: requires
       - source: agent_profile:jenny
-        target: tactic:T
+        target: tactic:rehearse
         relation: suggests
       """
     And the activation "a-1" holds:
@@ -97,13 +97,13 @@ Feature: The references of an artifact under an activation are the pack read of 
       {
         "items": [
           {
-            "reference": "tactic:T",
+            "reference": "tactic:rehearse",
             "relation": "requires",
             "holdingPack": {"packId": "core", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "name": "core-pack"},
-            "urn": "tactic:T",
+            "urn": "tactic:rehearse",
             "_links": {
-              "effective-artifact": {"href": "/api/v1/activations/a-1/artifacts/tactic/T"},
-              "artifact": {"href": "/api/v1/packs/core/artifacts/tactic/T"}
+              "effective-artifact": {"href": "/api/v1/activations/a-1/artifacts/tactic/rehearse"},
+              "artifact": {"href": "/api/v1/packs/core/artifacts/tactic/rehearse"}
             }
           }
         ],
@@ -119,19 +119,19 @@ Feature: The references of an artifact under an activation are the pack read of 
     And following the link "artifact" of every element of "items" answers 200
 
   Scenario: An artifact the activation does not select is answered all the same
-    The tactic U is neither selected nor required by what is, so it is inactive under the activation; its references
-    are answered whatever its state, as its effective read is. U writes none.
-    When I GET "/activations/a-1/artifacts/tactic/U"
+    The tactic drill is neither selected nor required by what is, so it is inactive under the activation; its references
+    are answered whatever its state, as its effective read is. drill writes none.
+    When I GET "/activations/a-1/artifacts/tactic/drill"
     Then the response status is 200
     And the field at "/state" is "inactive"
-    When I GET "/activations/a-1/artifacts/tactic/U/references"
+    When I GET "/activations/a-1/artifacts/tactic/drill/references"
     Then the response status is 200
     And the field at "/items" holds exactly 0 items
-    And the field at "/_links/self/href" is "/api/v1/activations/a-1/artifacts/tactic/U/references"
+    And the field at "/_links/self/href" is "/api/v1/activations/a-1/artifacts/tactic/drill/references"
 
   Scenario: An overridden artifact answers the references its winning copy writes
-    proj (project) holds its own D, whose graph document writes D requires U: the layer merge keeps the project copy, so
-    the references are proj's pack read of D, and core's D requires T is not answered.
+    proj (project) holds its own D, whose graph document writes D requires drill: the layer merge keeps the project copy, so
+    the references are proj's pack read of D, and core's D requires rehearse is not answered.
     Given the project pack "proj" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -148,11 +148,11 @@ Feature: The references of an artifact under an activation are the pack read of 
       intent: D at project
       enforcement: required
       """
-    And the project pack "proj" with the file "tactics/U.tactic.yaml":
+    And the project pack "proj" with the file "tactics/drill.tactic.yaml":
       """
       schema_version: '1.0'
-      id: U
-      name: U at project
+      id: drill
+      name: Drill at project
       steps:
         - title: Only step
       """
@@ -163,7 +163,7 @@ Feature: The references of an artifact under an activation are the pack read of 
       nodes: []
       edges:
       - source: directive:D
-        target: tactic:U
+        target: tactic:drill
         relation: requires
       """
     And the activation "a-2" holds:
@@ -180,13 +180,13 @@ Feature: The references of an artifact under an activation are the pack read of 
       {
         "items": [
           {
-            "reference": "tactic:U",
+            "reference": "tactic:drill",
             "relation": "requires",
             "holdingPack": {"packId": "proj", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943S", "name": "proj-pack"},
-            "urn": "tactic:U",
+            "urn": "tactic:drill",
             "_links": {
-              "effective-artifact": {"href": "/api/v1/activations/a-2/artifacts/tactic/U"},
-              "artifact": {"href": "/api/v1/packs/proj/artifacts/tactic/U"}
+              "effective-artifact": {"href": "/api/v1/activations/a-2/artifacts/tactic/drill"},
+              "artifact": {"href": "/api/v1/packs/proj/artifacts/tactic/drill"}
             }
           }
         ],
