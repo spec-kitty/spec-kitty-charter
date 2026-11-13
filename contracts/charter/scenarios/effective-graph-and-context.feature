@@ -15,19 +15,27 @@
 # - `Then the graph holds exactly the edges:` followed by a doc string, one `<source> <relation> <target>` per line.
 # - `Then the graph holds exactly the layer overrides:` followed by a doc string, one `<artifact> won by <pack>@<level>
 #   over <pack>@<level>` per line.
-# - `Then the context holds exactly the artifacts:` followed by a doc string, one `<kind>:<id> <state>/<reason>` per line,
-#   with ` suggested when "<when>" because "<reason>"` after an entry that carries a suggestion.
+# - `Then the context holds exactly the artifacts:` followed by a doc string, one `<kind>:<id> <state>/<reason>
+#   <appliesThrough>` per line, with ` suggested when "<when>" because "<reason>"` after an entry that carries a suggestion
+#   (appliesThrough added by mission effective-step-and-action-context, WP02, squad R7: each row pins it).
 # - `Then the context holds exactly the enhancements:` followed by a doc string, one `<kind>:<id> is enhanced by
 #   <kind>:<id>[, <kind>:<id>]` per line.
 # - `Then the field at "<pointer>" holds exactly the ids:` is the existing step: an item with an `id` is read as
 #   `<kind>:<id>`, as one with an `artifactId` is.
+#
+# Mission effective-step-and-action-context (WP02, FR-008, squad R3) changed the meaning of three scenarios here: the
+# context now applies the ownership rule (operator ruling of 2026-11-12), so an in-force directive, tactic or paradigm that
+# no action and no mission type scopes is listed project-wide. US5 AS3 now lists the tactic e, US5 AS4 lists O and e, and
+# the #484 case lists DX and t3. US5 AS4 and #484 keep negative twins of kinds that are no root (the styleguide os; px, s3
+# and g3). Each scenario says so.
 
 @contract @activations
 Feature: The effective graph and the effective action context answer what the activation puts in force
   getEffectiveGraph answers the merged closure's edges among the nodes in force (the artifacts in force, and each held
   step whose mission type is in force), resolved through the layer overrides, with the overrides applied.
-  getEffectiveActionContext answers ADR-0018's walk from the action's step over the artifacts in force, with the
-  enhancers in force of each node, the artifacts reached only through suggests as suggestions, and the skipped report.
+  getEffectiveActionContext answers ADR-0018's walk from the action's step over the artifacts in force, widened by the
+  ownership rule (effective-context-scoping.feature), each item with its appliesThrough, with the enhancers in force of
+  each node, the artifacts reached only through suggests as suggestions, and the skipped report.
   Both are conditional reads with an ETag of their own representation (FR-020), and both refuse an unknown activation
   (FR-021); the context also refuses an unknown mission type or action (FR-019).
 
@@ -313,7 +321,9 @@ Feature: The effective graph and the effective action context answer what the ac
     US5 AS3, FR-015, E12: the tactic e enhances the directive T, and both are selected, so the graph has the edge and T is
     enhanced by e. The tactic e2 enhances T2, which is selected, but e2 is not: an enhancer is returned only when it is
     itself in force, so its edge is absent and T2 stays a node. The context of the action that scopes T and T2 carries the
-    same fact from the node's side: T is enhanced by e, and T2 by nothing.
+    same fact from the node's side: T is enhanced by e, and T2 by nothing. Changed meaning (2026-11-12 ownership rule,
+    FR-008): e is selected and in force, and no action and no mission type scopes it, so the context also lists e
+    project-wide; e2 is not in force and is listed nowhere.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -411,8 +421,9 @@ Feature: The effective graph and the effective action context answer what the ac
     Then the response status is 200
     And the context holds exactly the artifacts:
       """
-      directive:T active/selected
-      directive:T2 active/selected
+      directive:T active/selected action
+      directive:T2 active/selected action
+      tactic:e active/selected project
       """
     And the context holds exactly the enhancements:
       """
@@ -424,9 +435,12 @@ Feature: The effective graph and the effective action context answer what the ac
     scopes D and D2, both in force, so both are entries, with D2 listed after D (URN order). D suggests S, which the
     document does not select and nothing else reaches: S is listed as a suggestion, inactive with reason not_selected,
     with the edge's when and reason. D2 suggests R2, which D also requires: R2 is reached through requires too, so it is
-    not a suggestion and, out of force, not in the context at all. O is selected and in force but no step reaches it: the
-    context does not list it. The tactic e enhances D and is in force: D is enhanced by e, and e is not pulled in as an
-    entry. A context with no depth follows no suggests, so the suggestion is read with depth 1.
+    not a suggestion and, out of force, not in the context at all. The tactic e enhances D and is in force: D is enhanced
+    by e. A context with no depth follows no suggests, so the suggestion is read with depth 1. Changed meaning (2026-11-12
+    ownership rule, FR-008): O is selected and in force and no step reaches it, but no action and no mission type scopes
+    it either, so the context lists it project-wide; so is e, which an enhances edge never pulls in but the rule lists as
+    an unscoped tactic in force. The styleguide os is selected, in force and scoped by nothing too: a styleguide is no root
+    of the rule and nothing listed reaches it, so it is the negative twin and stays out.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -494,6 +508,16 @@ Feature: The effective graph and the effective action context answer what the ac
       steps:
         - title: Only step
       """
+    And the org pack "main" with the file "styleguides/os.styleguide.yaml":
+      """
+      schema_version: '1.0'
+      id: os
+      title: os
+      scope: code
+      principles:
+        - name: Keep it small
+          description: Keep it small, in one sentence.
+      """
     And the org pack "main" with the file "edges.graph.yaml":
       """
       schema_version: '1.0'
@@ -528,7 +552,7 @@ Feature: The effective graph and the effective action context answer what the ac
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "D2", "O"], "tactic": ["e"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "D2", "O"], "styleguide": ["os"], "tactic": ["e"]}}
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1"
     Then the response status is 200
@@ -536,28 +560,38 @@ Feature: The effective graph and the effective action context answer what the ac
     And the field at "/action" is "implement"
     And the context holds exactly the artifacts:
       """
-      directive:D active/selected
-      directive:D2 active/selected
-      directive:S inactive/not_selected suggested when "the change touches the schema" because "S covers the schema checks"
+      directive:D active/selected action
+      directive:D2 active/selected action
+      directive:O active/selected project
+      directive:S inactive/not_selected action suggested when "the change touches the schema" because "S covers the schema checks"
+      tactic:e active/selected project
       """
     And the context holds exactly the enhancements:
       """
       directive:D is enhanced by tactic:e
       """
     And the field at "/skipped/missionTypeNotInForce" holds exactly 0 items
+    When I GET "/activations/a-1/artifacts/styleguide/os"
+    Then the response status is 200
+    And the field at "/state" is "active"
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
     Then the response status is 200
     And the context holds exactly the artifacts:
       """
-      directive:D active/selected
-      directive:D2 active/selected
+      directive:D active/selected action
+      directive:D2 active/selected action
+      directive:O active/selected project
+      tactic:e active/selected project
       """
 
-  Scenario: The context holds every kind the action scopes and the activation selects, and nothing else (#484)
+  Scenario: The context holds every kind the action scopes and the activation selects, and the unscoped directive and tactic in force (#484)
     #484: an action scopes a directive, a tactic, a procedure, a styleguide and a toolguide, each selected, so each is an
-    entry, active and selected. Beside each sits both controls the context must not list: DY, t2, py, s2 and g2 are
-    scoped but not selected; DX, t3, px, s3 and g3 are selected but no step scopes them. The answer lists the five in
-    URN order and none of the ten, and the activation reads each unselected one as inactive, not selected.
+    entry, active and selected, through the action. Beside each sits the controls: DY, t2, py, s2 and g2 are scoped but
+    not selected, so the context does not list them; DX, t3, px, s3 and g3 are selected but no step scopes them. Changed
+    meaning (2026-11-12 ownership rule, FR-008): no action and no mission type scopes DX and t3 either, and a directive or
+    a tactic in force is a root of the rule, so the context lists both project-wide. px, s3 and g3 are of kinds that are no
+    root and nothing listed reaches them: they stay out, the negative twins. The answer lists the seven in URN order, and
+    the activation reads each unselected one as inactive, not selected.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -790,17 +824,19 @@ Feature: The effective graph and the effective action context answer what the ac
     And the response header "Charter-Source-Fingerprint" appears once
     And the context holds exactly the artifacts:
       """
-      directive:D active/selected
-      procedure:p active/selected
-      styleguide:s active/selected
-      tactic:t active/selected
-      toolguide:g active/selected
+      directive:D active/selected action
+      directive:DX active/selected project
+      procedure:p active/selected action
+      styleguide:s active/selected action
+      tactic:t active/selected action
+      tactic:t3 active/selected project
+      toolguide:g active/selected action
       """
     And the field at "/enhancements" holds exactly 0 items
-    And the field at "/artifacts/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/procedure/p"
-    And the field at "/artifacts/1/_links/artifact/href" is "/api/v1/packs/main/artifacts/procedure/p"
-    And the field at "/artifacts/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/styleguide/s"
-    And the field at "/artifacts/4/_links/artifact/href" is "/api/v1/packs/main/artifacts/toolguide/g"
+    And the field at "/artifacts/2/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/procedure/p"
+    And the field at "/artifacts/2/_links/artifact/href" is "/api/v1/packs/main/artifacts/procedure/p"
+    And the field at "/artifacts/3/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/styleguide/s"
+    And the field at "/artifacts/6/_links/artifact/href" is "/api/v1/packs/main/artifacts/toolguide/g"
     When I GET "/activations/a-1/graph"
     Then the response status is 200
     And the field at "/nodes/4/urn" is "procedure:p"
@@ -849,7 +885,8 @@ Feature: The effective graph and the effective action context answer what the ac
     US5 AS5, FR-019: research is not selected, so its step gather is not in force and the context of research/gather has no
     artifacts and no enhancements, although the step scopes D, which is selected. The skipped report lists the mission type
     research in missionTypeNotInForce: the reason, read in the same answer. software-dev is selected: the control, whose
-    context lists its own scoped artifact, read in the same scenario.
+    context lists its own scoped artifact, read in the same scenario. D, in force, is not listed there: it is scoped only by
+    another action, research/gather (2026-11-12 ownership rule, FR-008).
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -931,7 +968,7 @@ Feature: The effective graph and the effective action context answer what the ac
     Then the response status is 200
     And the context holds exactly the artifacts:
       """
-      directive:S active/selected
+      directive:S active/selected action
       """
     And the field at "/skipped/missionTypeNotInForce" holds exactly 0 items
 

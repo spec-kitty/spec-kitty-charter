@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ActivationChange;
 import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
@@ -12,6 +13,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.api.model.ActivationWarning;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
+import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.io.IOException;
@@ -79,6 +81,36 @@ class ActivationWireTokenParityTest {
                         tokens(EffectiveSet.Policy.values(), EffectiveSet.Policy::token),
                         values(EffectiveArtifact.PolicyEnum.values(), EffectiveArtifact.PolicyEnum::getValue),
                         EffectiveArtifact.PolicyEnum::fromValue),
+                // EffectiveContextArtifact copies EffectiveArtifact's members, and the generator inlines each enum of
+                // the copy again, so each is a pair of its own; appliesThrough is the copy's own member (FR-009).
+                new Pair(
+                        "EffectiveContextArtifact.state (EffectiveArtifactState)",
+                        tokens(EffectiveSet.State.values(), EffectiveSet.State::token),
+                        values(
+                                EffectiveContextArtifact.StateEnum.values(),
+                                EffectiveContextArtifact.StateEnum::getValue),
+                        EffectiveContextArtifact.StateEnum::fromValue),
+                new Pair(
+                        "EffectiveContextArtifact.reason (EffectiveArtifactReason)",
+                        tokens(EffectiveSet.Reason.values(), EffectiveSet.Reason::token),
+                        values(
+                                EffectiveContextArtifact.ReasonEnum.values(),
+                                EffectiveContextArtifact.ReasonEnum::getValue),
+                        EffectiveContextArtifact.ReasonEnum::fromValue),
+                new Pair(
+                        "EffectiveContextArtifact.policy (ArtifactPolicy)",
+                        tokens(EffectiveSet.Policy.values(), EffectiveSet.Policy::token),
+                        values(
+                                EffectiveContextArtifact.PolicyEnum.values(),
+                                EffectiveContextArtifact.PolicyEnum::getValue),
+                        EffectiveContextArtifact.PolicyEnum::fromValue),
+                new Pair(
+                        "EffectiveContextArtifact.appliesThrough",
+                        tokens(ActionContext.AppliesThrough.values(), ActionContext.AppliesThrough::token),
+                        values(
+                                EffectiveContextArtifact.AppliesThroughEnum.values(),
+                                EffectiveContextArtifact.AppliesThroughEnum::getValue),
+                        EffectiveContextArtifact.AppliesThroughEnum::fromValue),
                 new Pair(
                         "DenyNotApplied.reason",
                         tokens(EffectiveSkippedReport.DenyReason.values(), EffectiveSkippedReport.DenyReason::token),

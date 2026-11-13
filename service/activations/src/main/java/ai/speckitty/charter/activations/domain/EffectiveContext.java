@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.domain;
 
+import ai.speckitty.charter.activations.domain.ActionContext.AppliesThrough;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,16 +10,37 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * What {@code getEffectiveActionContext} answers (IC-11, FR-019, rule E16), assembled from the {@link EffectiveSet} and
- * what the walk reached: the artifacts the action's step names, sorted by URN, each as the effective list gives it; the
- * enhancers in force of each node; and the skipped report.
+ * What {@code getEffectiveActionContext} answers (IC-11, FR-019, rule E16 as amended by FR-008), assembled from the
+ * {@link EffectiveSet} and what the walk reached under the ownership rule: the artifacts that apply to the action, sorted
+ * by URN, each as the effective list gives it with the part of the rule that lists it (FR-009); the enhancers in force of
+ * each node; and the skipped report.
  *
  * @param artifacts the listed artifacts in URN order: those in force, then each suggestion among them by its URN
  * @param enhancements the enhancers in force of the step and of each listed artifact in force
  * @param skipped the skipped report, whose {@code missionTypeNotInForce} is the mission type itself when it is not in force
  */
-public record EffectiveContext(
-        List<EffectiveArtifact> artifacts, List<Enhancement> enhancements, EffectiveSkippedReport skipped) {
+public record EffectiveContext(List<Item> artifacts, List<Enhancement> enhancements, EffectiveSkippedReport skipped) {
+
+    /**
+     * One artifact of the context: the artifact as the effective list gives it, and the part of the ownership rule that
+     * lists it for this action. A suggestion carries its candidate's.
+     *
+     * @param artifact the artifact, as the effective list gives it
+     * @param appliesThrough the part of the rule that lists it
+     */
+    public record Item(EffectiveArtifact artifact, AppliesThrough appliesThrough) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param artifact the artifact
+         * @param appliesThrough the part of the rule that lists it
+         */
+        public Item {
+            Objects.requireNonNull(artifact, "artifact");
+            Objects.requireNonNull(appliesThrough, "appliesThrough");
+        }
+    }
 
     /**
      * A node of the context and the enhancers in force that enhance it.
@@ -73,12 +95,15 @@ public record EffectiveContext(
         }
         Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
         set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
-        List<EffectiveArtifact> artifacts = Stream.concat(
-                        walked.entries().stream().map(entry -> inForce(byRef, entry.ref())),
+        List<Item> artifacts = Stream.concat(
+                        walked.entries().stream()
+                                .map(entry -> new Item(inForce(byRef, entry.ref()), entry.appliesThrough())),
                         walked.suggestionCandidates().stream()
-                                .flatMap(candidate ->
-                                        set.suggested(candidate.ref(), candidate.when(), candidate.reason()).stream()))
-                .sorted(Comparator.comparing(artifact -> artifact.ref().urn(), ActivationDocument.CODE_POINT_ORDER))
+                                .flatMap(candidate -> set
+                                        .suggested(candidate.ref(), candidate.when(), candidate.reason())
+                                        .map(suggestion -> new Item(suggestion, candidate.appliesThrough()))
+                                        .stream()))
+                .sorted(Comparator.comparing(item -> item.artifact().ref().urn(), ActivationDocument.CODE_POINT_ORDER))
                 .toList();
         return new EffectiveContext(
                 artifacts, enhancements(walked, step), set.skipped().withMissionTypeNotInForce(List.of()));
