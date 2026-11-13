@@ -135,7 +135,7 @@ class InForceResolutionPropertyTest {
             if (state.reason() == Reason.REQUIRED) {
                 shapes.add(PUT_IN_FORCE);
             }
-            if (state.satisfiedBy().isPresent()) {
+            if (!state.satisfiedBy().isEmpty()) {
                 shapes.add(SATISFIED);
             }
             if (state.reason() == Reason.MISSION_TYPE_NOT_IN_FORCE
@@ -280,10 +280,10 @@ class InForceResolutionPropertyTest {
     }
 
     private static boolean satisfied(ArtifactState state, Set<Urn> inForce, Map<Urn, Set<Urn>> reach, Urn urn) {
-        return state.satisfiedBy()
-                .filter(by ->
-                        inForce.contains(by) && reach.getOrDefault(by, Set.of()).contains(urn))
-                .isPresent();
+        return !state.satisfiedBy().isEmpty()
+                && state.satisfiedBy().stream()
+                        .allMatch(by -> inForce.contains(by)
+                                && reach.getOrDefault(by, Set.of()).contains(urn));
     }
 
     private static void enhancedAndBound(Case generated, Set<Urn> inForce, Urn urn, String what) {

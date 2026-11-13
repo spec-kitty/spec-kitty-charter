@@ -102,19 +102,11 @@ class EffectiveReadHttpTest {
     private static InForceAnswer answer() {
         Map<ArtifactRef, ArtifactState> states = new LinkedHashMap<>();
         states.put(
-                A,
-                new ArtifactState(
-                        A, State.ACTIVE, Reason.SELECTED, true, Optional.empty(), Optional.empty(), Optional.empty()));
+                A, new ArtifactState(A, State.ACTIVE, Reason.SELECTED, true, List.of(), List.of(), Optional.empty()));
         states.put(
                 B,
                 new ArtifactState(
-                        B,
-                        State.INACTIVE,
-                        Reason.NOT_SELECTED,
-                        false,
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()));
+                        B, State.INACTIVE, Reason.NOT_SELECTED, false, List.of(), List.of(), Optional.empty()));
         states.put(
                 C,
                 new ArtifactState(
@@ -122,8 +114,8 @@ class EffectiveReadHttpTest {
                         State.EXCLUDED,
                         Reason.DEACTIVATED,
                         false,
-                        Optional.empty(),
-                        Optional.empty(),
+                        List.of(),
+                        List.of(),
                         Optional.of(Bucket.DEACTIVATED)));
         return new InForceAnswer(
                 states,
@@ -231,8 +223,8 @@ class EffectiveReadHttpTest {
                                 State.INACTIVE,
                                 Reason.OVERRIDDEN,
                                 false,
-                                Optional.empty(),
-                                Optional.of(A),
+                                List.of(),
+                                List.of(A),
                                 Optional.of(Bucket.OVERRIDDEN))),
                 List.of(),
                 List.of(),

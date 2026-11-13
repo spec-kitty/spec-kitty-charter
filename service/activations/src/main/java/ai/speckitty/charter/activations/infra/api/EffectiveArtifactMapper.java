@@ -67,7 +67,7 @@ public class EffectiveArtifactMapper {
                 EffectiveArtifactRead.PolicyEnum.fromValue(winner.policy().token()),
                 EffectiveArtifactRead.ReasonEnum.fromValue(winner.reason().token()),
                 links(activationId, winner, depth));
-        winner.satisfiedBy().map(ActivationChangeMapper::reference).ifPresent(wire::setSatisfiedBy);
+        EffectiveReadMapper.references(winner.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         winner.suggestion().ifPresent(suggestion -> {
             EffectiveArtifactSuggestion carrier = new EffectiveArtifactSuggestion();
             suggestion.when().ifPresent(carrier::setWhen);

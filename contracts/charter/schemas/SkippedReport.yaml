@@ -106,7 +106,9 @@ properties:
     type: array
     items:
       $ref: OverriddenArtifact.yaml
-    description: The artifacts hidden by an active overrides edge, each with the artifact that overrides it.
+    description: >-
+      The artifacts hidden by an active overrides edge, each once, with every active artifact that overrides it, by
+      level then URN (#439).
     x-derived:
       rule: The targets of the overrides edges from active artifacts, a locked target excepted.
       inputs:
@@ -129,8 +131,8 @@ properties:
     items:
       $ref: OverriddenArtifact.yaml
     description: >-
-      An override of a locked artifact, not applied: the target stays in force and so does the overriding artifact. The
-      item names the locked target and the artifact that tried to override it.
+      An override of a locked artifact, not applied: the target stays in force and so do the overriding artifacts. Each
+      locked target is listed once, with every active artifact that tried to override it, by level then URN (#439).
     x-derived:
       rule: The active overrides edges whose target is locked.
       inputs:

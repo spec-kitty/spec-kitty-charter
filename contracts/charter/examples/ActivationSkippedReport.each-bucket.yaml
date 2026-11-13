@@ -30,8 +30,8 @@ value:
       - kind: directive
         artifactId: DIRECTIVE_010
         overriddenBy:
-          kind: directive
-          artifactId: DIRECTIVE_011
+          - kind: directive
+            artifactId: DIRECTIVE_011
     missionTypeNotInForce:
       - kind: mission_step_contract
         artifactId: research-gather
@@ -39,8 +39,8 @@ value:
       - kind: directive
         artifactId: DIRECTIVE_020
         overriddenBy:
-          kind: directive
-          artifactId: DIRECTIVE_021
+          - kind: directive
+            artifactId: DIRECTIVE_021
     enhancedTargetNotInForce:
       - kind: tactic
         artifactId: review-extra

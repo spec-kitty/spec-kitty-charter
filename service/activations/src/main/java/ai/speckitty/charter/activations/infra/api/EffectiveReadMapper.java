@@ -20,6 +20,7 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.api.model.ActionEnhancement;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
+import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
@@ -342,10 +343,21 @@ public class EffectiveReadMapper {
                         artifact.policy().token()),
                 ai.speckitty.charter.api.model.EffectiveArtifact.ReasonEnum.fromValue(
                         artifact.reason().token()));
-        artifact.satisfiedBy().map(ActivationChangeMapper::reference).ifPresent(wire::setSatisfiedBy);
+        references(artifact.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         suggestion(artifact).ifPresent(wire::setSuggestion);
         itemLinks(id, artifact, served).ifPresent(wire::setLinks);
         return wire;
+    }
+
+    /**
+     * The overriders of a {@code satisfiedBy} as the wire spells them, in the order the resolution gives; absent when
+     * there is none, since the member is absent rather than empty ({@code minItems: 1}).
+     *
+     * @param overriders the artifacts in force that satisfy a requirement
+     * @return their references; empty when there is none
+     */
+    static Optional<List<ArtifactReference>> references(List<ArtifactRef> overriders) {
+        return overriders.isEmpty() ? Optional.empty() : Optional.of(ActivationChangeMapper.references(overriders));
     }
 
     /**
@@ -366,7 +378,7 @@ public class EffectiveReadMapper {
                 EffectiveContextArtifact.ReasonEnum.fromValue(artifact.reason().token()),
                 EffectiveContextArtifact.AppliesThroughEnum.fromValue(
                         item.appliesThrough().token()));
-        artifact.satisfiedBy().map(ActivationChangeMapper::reference).ifPresent(wire::setSatisfiedBy);
+        references(artifact.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         suggestion(artifact).ifPresent(wire::setSuggestion);
         itemLinks(id, artifact, served).ifPresent(wire::setLinks);
         return wire;
@@ -456,10 +468,10 @@ public class EffectiveReadMapper {
         return new NodeReference(NodeReference.KindEnum.fromValue(ref.kind().token()), ref.id());
     }
 
-    private static OverriddenArtifact overridden(ArtifactRef ref, ArtifactRef by) {
+    private static OverriddenArtifact overridden(ArtifactRef ref, List<ArtifactRef> by) {
         return new OverriddenArtifact(
                 OverriddenArtifact.KindEnum.fromValue(ref.kind().token()),
                 ref.id(),
-                ActivationChangeMapper.reference(by));
+                ActivationChangeMapper.references(by));
     }
 }

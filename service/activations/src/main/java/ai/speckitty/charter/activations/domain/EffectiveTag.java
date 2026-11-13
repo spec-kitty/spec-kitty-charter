@@ -37,7 +37,9 @@ public record EffectiveTag(String token) {
      * PR C changed the answers of the PR B reads (the step enhancer binding, node references, layer overrides, and the
      * non-activatable entries the satisfaction no longer counts). {@code v3} (rule E17 as amended, research R10, squad
      * D1): the action context applies the ownership rule and its items carry {@code appliesThrough}, so it answers more
-     * under an unchanged revision and closure fingerprint; every effective read moves once.
+     * under an unchanged revision and closure fingerprint; every effective read moves once. The same unreleased slice
+     * makes {@code satisfiedBy} and {@code overriddenBy} name every overrider in force (#439), under the same {@code v3}:
+     * no release served a tag of {@code v3} with the single overrider.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 

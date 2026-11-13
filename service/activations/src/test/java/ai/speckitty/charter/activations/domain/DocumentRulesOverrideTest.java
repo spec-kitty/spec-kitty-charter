@@ -64,10 +64,10 @@ class DocumentRulesOverrideTest {
         private CharterRefusal refusal;
 
         /**
-         * The requirement of {@code target} is satisfied by {@code overrider}: the target is required and unselected, so
+         * The requirement of {@code target} is satisfied by {@code overriders}: the target is required and unselected, so
          * out of force as not selected, and the resolution names the satisfier in {@code satisfiedBy} only (DIV-225).
          */
-        Facts satisfied(ArtifactRef target, ArtifactRef overrider) {
+        Facts satisfied(ArtifactRef target, ArtifactRef... overriders) {
             states.put(
                     target,
                     new ArtifactState(
@@ -75,8 +75,8 @@ class DocumentRulesOverrideTest {
                             State.INACTIVE,
                             Reason.NOT_SELECTED,
                             true,
-                            Optional.of(overrider),
-                            Optional.empty(),
+                            List.of(overriders),
+                            List.of(),
                             Optional.empty()));
             return this;
         }
@@ -86,13 +86,7 @@ class DocumentRulesOverrideTest {
             states.put(
                     target,
                     new ArtifactState(
-                            target,
-                            State.ACTIVE,
-                            Reason.REQUIRED,
-                            true,
-                            Optional.empty(),
-                            Optional.empty(),
-                            Optional.empty()));
+                            target, State.ACTIVE, Reason.REQUIRED, true, List.of(), List.of(), Optional.empty()));
             return this;
         }
 
@@ -137,6 +131,20 @@ class DocumentRulesOverrideTest {
 
         assertThat(DocumentRules.check(document, CLOSURE, facts)).isEmpty();
         assertThat(facts.asked()).containsExactly(EffectiveSet.queryOf(document));
+    }
+
+    @Test
+    void aRequirementSatisfiedBySeveralOverridersIsSatisfiedAsByOne() {
+        // IC-13 reads the satisfiers as a list (#439): a non-empty list satisfies, whatever its length. The facts are
+        // the resolution's answer; the document needs only to deny T.
+        Facts facts = new Facts().satisfied(T, LK, F);
+        ActivationDocument document = document()
+                .selected(DIRECTIVE, List.of("F"))
+                .deactivated(DIRECTIVE, List.of("T"))
+                .build()
+                .document();
+
+        assertThat(DocumentRules.check(document, CLOSURE, facts)).isEmpty();
     }
 
     @Test
