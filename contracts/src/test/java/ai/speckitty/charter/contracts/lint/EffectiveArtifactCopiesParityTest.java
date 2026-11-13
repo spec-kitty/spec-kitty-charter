@@ -32,8 +32,8 @@ class EffectiveArtifactCopiesParityTest {
 
     private static final Path SCHEMAS = Path.of(System.getProperty("charter.charterSchemas"));
     private static final String ITEM = "EffectiveArtifact";
-    private static final List<String> COPIES =
-            List.of("EffectiveArtifactRead", "EffectiveGovernanceEntry", "EffectiveAgentProfileRead", "EffectiveSkillRead");
+    private static final List<String> COPIES = List.of(
+            "EffectiveArtifactRead", "EffectiveGovernanceEntry", "EffectiveAgentProfileRead", "EffectiveSkillRead");
     private static final List<String> APART = List.of("_links");
     private static final Map<String, List<String>> ABSENT_BY_DESIGN =
             Map.of("EffectiveGovernanceEntry", List.of("suggestion"));
