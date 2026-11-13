@@ -3,15 +3,14 @@ package ai.speckitty.charter.packvalidation;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
-import ai.speckitty.charter.packs.domain.PackVerdict;
 import java.util.Objects;
 
 /**
  * How pack-validation reads a pack: through the packs slice's {@link PackInspector} port, whose file-system adapter is the
  * Spring-free load the service runs, never a second derivation (ADR-0075 decision 3, as amended 2026-11-13; #553). The
- * module names only the port; a composition root plugs the adapter in. The rulesets of later slices read the
- * {@link PackContents} it returns, and {@code pack-check} starts here.
+ * module names only the port; a composition root plugs the adapter in. It is the module's one read: the rulesets of
+ * later slices (#554) read the {@link PackContents} it returns, and {@code pack-check} starts here (#478). Validate
+ * mode's verdict stays {@code PackValidation}'s, in {@code packs.domain}, until #554 replaces it with those rulesets.
  */
 public final class PackLoad {
 
@@ -35,15 +34,5 @@ public final class PackLoad {
      */
     public PackContents contents(PackRoot root) {
         return inspector.inspect(root, PackInspector.Scope.FULL);
-    }
-
-    /**
-     * Judges one pack as the service's validate mode does: the same read, the same rules.
-     *
-     * @param root the pack to judge
-     * @return the classification of every file and every finding; a pack with no finding is valid
-     */
-    public PackVerdict verdict(PackRoot root) {
-        return new PackValidation(inspector).validate(root);
     }
 }

@@ -293,17 +293,20 @@ class HexagonalArchitectureTest {
      * own packages have no rings; a composition root plugs the load's adapter in.
      */
     private static final DescribedPredicate<JavaClass> OUTSIDE_THE_DOMAIN = DescribedPredicate.describe(
-            "belong to a ring other than kernel, profiles, missions and packs.domain", (JavaClass c) -> {
+            "belong to a charter package other than the modules' own, kernel, profiles.domain, missions.domain and"
+                    + " packs.domain",
+            (JavaClass c) -> {
                 String pkg = c.getPackageName();
-                if (!pkg.startsWith(ROOT + ".")) {
-                    return false;
-                }
-                return !pkg.startsWith(ROOT + ".packs.domain")
-                        && (pkg.startsWith(ROOT + ".packs.")
-                                || pkg.startsWith(ROOT + ".activations")
-                                || pkg.startsWith(ROOT + ".deployable")
-                                || pkg.contains(".application")
-                                || pkg.contains(".infra"));
+                return pkg.startsWith(ROOT + ".")
+                        && Stream.of(
+                                        "packvalidation",
+                                        "packcheck",
+                                        "kernel",
+                                        "profiles.domain",
+                                        "missions.domain",
+                                        "packs.domain")
+                                .map(allowed -> ROOT + "." + allowed)
+                                .noneMatch(allowed -> pkg.equals(allowed) || pkg.startsWith(allowed + "."));
             });
 
     /**
@@ -315,10 +318,14 @@ class HexagonalArchitectureTest {
      * direct half allows {@code packs.domain} and no other ring of the slice. The transitive half walks every charter class
      * the module reaches and fails on any that touches the refused set: it holds when a composition root
      * ({@code pack-check}'s main, #478) plugs in the file-system adapter, which shares its package with the slice's Spring
-     * beans, commit stores and locks. A class of the JDK or a library is not
-     * walked into. A lock is caught by its type ({@code java.util.concurrent.locks}, {@code FileLock}); a
-     * {@code FileChannel.lock()} whose result is discarded, a {@code Semaphore} or a {@code synchronized} block is not,
-     * and review checks those.
+     * beans, commit stores and locks. A class of the JDK or a library is not walked into, and nor is a port's
+     * implementation: the walk follows the classes a class names, so the inspector the composition root plugs in is walked
+     * from its own root ({@link #THE_PACKS_LOAD_REACHES_NO_FRAMEWORK}). Until #478 adds its main, {@code pack-check} holds
+     * only its {@code package-info}, so both halves pass over it on that alone. #478 also lets that main, the module's
+     * composition root, name the file-system inspector, in this rule and in {@code ONION_DEPENDS_INWARD}. A lock is caught
+     * by its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
+     * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and the commit stores and locks are a list of
+     * names ({@link #COMMIT_STORES_AND_LOCKS}): review checks a new one.
      *
      * <p>Each half runs once per module's package and fails on an empty selection, so a module missing from this test's
      * classpath fails it rather than passing unchecked.
@@ -426,12 +433,17 @@ class HexagonalArchitectureTest {
                 "java.util.concurrent.locks.ReentrantLock",
                 "java.nio.channels.FileLock",
                 "RegistryWriteLock");
-        assertBites(
-                packModuleReachesNoFramework(PACK_VALIDATION),
-                ROOT + ".packvalidation.badfixture",
-                "ValidationReachesSpringThroughPacks",
-                "WholePackStore",
-                "org.springframework");
+        // Two hops through a class the direct half allows: the fixture names a packs.domain class only, and that class
+        // carries a Spring annotation. The direct half passes it; the transitive half must not.
+        JavaClasses twoHops = new ClassFileImporter()
+                .importClasses(
+                        ai.speckitty.charter.packvalidation.badfixture.ValidationReachesSpringThroughTheDomain.class,
+                        ai.speckitty.charter.packs.domain.badfixture.DomainUsesSpring.class);
+        packModuleIsFrameworkFree(PACK_VALIDATION).check(twoHops);
+        assertThatThrownBy(() -> packModuleReachesNoFramework(PACK_VALIDATION).check(twoHops))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("ValidationReachesSpringThroughTheDomain reaches org.springframework")
+                .hasMessageContaining("through ValidationReachesSpringThroughTheDomain -> DomainUsesSpring");
         assertBites(
                 packModuleIsFrameworkFree(PACK_CHECK),
                 ROOT + ".packcheck.badfixture",

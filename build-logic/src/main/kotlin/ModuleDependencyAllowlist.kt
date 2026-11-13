@@ -8,10 +8,11 @@ import org.gradle.api.artifacts.ProjectDependency
 /**
  * The only dependencies a module may declare (ADR-0075 decision 3): charter projects by path and external modules by
  * `group:name`. `pack-validation` and `pack-check` pin theirs with it, judging every configuration in the hierarchy of
- * the module's main compile and runtime classpaths ([CLASSPATHS]), custom ones they extend from included, so neither a
- * Spring starter nor the packs slice can enter their build, at compile time or riding along at run time. Only the
- * dependencies a module declares are judged: what they bring in transitively is not. `HexagonalArchitectureTest`'s
- * `PACK_VALIDATION_IS_FRAMEWORK_FREE` pins the classes they use.
+ * the module's main compile and runtime classpaths ([CLASSPATHS]), custom ones they extend from included, so a module
+ * cannot declare a Spring starter, or any project or library its list leaves out, at compile time or riding along at
+ * run time. Only the dependencies a module declares are judged: what they bring in transitively is not, so
+ * `pack-validation`'s allowed `:packs` brings Spring onto its classpath. `HexagonalArchitectureTest`'s
+ * `PACK_VALIDATION_IS_FRAMEWORK_FREE` pins, directly and transitively, that the classes the modules use never touch it.
  *
  * @property projects the charter project paths allowed, such as `:kernel`
  * @property modules the external modules allowed, as `group:name`, any version; [CONVENTION_MODULES] are allowed too

@@ -5,7 +5,7 @@
 // It depends on :packs and reads a pack through its public load (PackInspector, FileSystemPackInspector, PackContents,
 // PackPolicy): the packs domain model stays in :packs (operator ruling of 2026-11-13, #553). :packs brings Spring onto
 // the classpath, but nothing this module reaches uses it: HexagonalArchitectureTest's PACK_VALIDATION_IS_FRAMEWORK_FREE
-// pins that transitively, and pack-check leaves Spring off its runtime.
+// pins that transitively. Leaving Spring off pack-check's runtime classpath is #478's, with the jar.
 //
 // Not charter.domain-conventions: that refuses every external dependency. The module pins its own instead, below.
 plugins {
@@ -43,9 +43,10 @@ dependencies {
     testImplementation(testFixtures(project(":packs")))
 }
 
-// The nightly mutation floor (#239): one group for the whole module. Its first run (#553) scored 100 % of 2 mutants;
-// the floor is 85, as for the packs domain and application, below floor5(score - 3) because the module's rulesets land
-// next (#554) and two mutants say little. Raised by PR once the score clears it by 5.
+// The nightly mutation floor (#239; ADR-0062, amendment of 2026-11-13): one group for the whole module. Its first run
+// (#553) killed its one mutant; the floor is 85, as for :activations and the edges, not floor5(score - 3), because the
+// module's rulesets land next (#554) and one mutant says little. The margin is 0 until then. Raised by PR once the
+// score clears it by 5.
 mutationFloors {
     group("pack-validation") {
         packages.add("ai.speckitty.charter.packvalidation")

@@ -2,7 +2,7 @@
 title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -102,6 +102,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
    | missions-edge | `missions-edge` | `missions.application`, `missions.infra`, without the four `*.config` packages | 85 | not yet measured |
    | artifacts-edge | `artifacts-edge` | `artifacts.application`, `artifacts.infra`, without the four `*.config` packages | 85 | not yet measured |
+   | pack-validation | `pack-validation` | `ai.speckitty.charter.packvalidation` | 85 | 0 |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -344,3 +345,19 @@ mutates `ai.speckitty.charter.artifacts.application` and `ai.speckitty.charter.a
 Spring wiring packages (`application.config`, `infra.api.config`, `infra.packs.config`, `infra.activations.config`).
 No other group mutates `ai.speckitty.charter.artifacts`, so the scopes do not overlap. The `others` shard's `pitest`
 already reaches the module, and `mutationModules` lists it. The other floors are unchanged.
+
+## Amendment, 2026-11-13 (#553): the pack-validation module joins the scheduled run
+
+Status: Accepted, as an amendment of this accepted ADR.
+
+`service/pack-validation` (ADR-0075) applies `charter.mutation-conventions` directly, with one whole-module group,
+`pack-validation`, at a floor of 85. The group mutates `ai.speckitty.charter.packvalidation`, and no other group
+mutates that package, so the scopes do not overlap.
+
+- **The first run.** On #553 the module holds one class, `PackLoad`. PIT generated 1 mutant and killed it (100 %).
+- **Why 85, not 95.** The rule of `floor5(score − 3)` would give 95. The floor follows the precedent of `:activations`
+  and the edges instead, 85, because one mutant says little and the module's rulesets land next (#554).
+- **The margin is 0.** With one mutant, a single survivor fails the scheduled run. It widens as #554's code lands, and
+  the floor is raised by pull request once the score clears it by 5.
+
+The `others` shard's `pitest` reaches the module, and `mutationModules` lists it. The other floors are unchanged.
