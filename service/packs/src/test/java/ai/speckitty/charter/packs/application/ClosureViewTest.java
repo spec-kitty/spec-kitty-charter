@@ -30,14 +30,17 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +63,7 @@ class ClosureViewTest {
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
     private final List<String> factsRead = new ArrayList<>();
     private final Map<String, Pack> stored = new HashMap<>();
+    private final Map<String, String> storedPrompts = new HashMap<>();
 
     private static Urn u(String urn) {
         return Urn.parse(urn).orElseThrow();
@@ -768,7 +772,13 @@ class ClosureViewTest {
         PackCatalogRepository catalog = () -> List.copyOf(configured);
         OfferingReadService offering =
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
-        return new ClosureQueries(offering, catalog, read, pack -> stored.get(pack.value()), (pack, type) -> Map.of())
+        PackCompanionFiles companions = (pack, type) -> Optional.ofNullable(storedPrompts.get(pack.value()))
+                .map(text -> Map.of(
+                        "s",
+                        new PackCompanionFiles.StepFiles(
+                                Optional.of(Payload.of(text.getBytes(StandardCharsets.UTF_8))), Optional.empty())))
+                .orElse(Map.of());
+        return new ClosureQueries(offering, catalog, read, pack -> stored.get(pack.value()), companions)
                 .allConfigured();
     }
 
@@ -824,5 +834,43 @@ class ClosureViewTest {
         missionType("proj", "t");
 
         assertThat(storedView().stepPlace("md", "s")).isEmpty();
+    }
+
+    /** The prompt in force of md/s at the step's place (operator ruling Q3, 2026-11-13). */
+    private EffectivePromptQuery.EffectivePrompt promptOfS() {
+        ClosureView view = storedView();
+        return view.effectivePrompt("md", "s", view.inForce(InForceRequest.selecting(urns("mission_type:md"))));
+    }
+
+    @Test
+    void thePromptOfAStepTheWinningVersionDeclaresIsTheWinnersWhicheverPacksGraphDeclaresTheAction() {
+        // probe 1's shape: proj's winning md declares s; only base declares action:md/s.
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "s");
+        storedPrompts.put("base", "# s at base\n");
+        storedPrompts.put("proj", "# s at proj\n");
+
+        EffectivePromptQuery.EffectivePrompt prompt = promptOfS();
+
+        assertThat(prompt.promptPackId()).contains(new PackIdentifier("proj"));
+        assertThat(new String(prompt.prompt().bytes(), StandardCharsets.UTF_8)).isEqualTo("# s at proj\n");
+    }
+
+    @Test
+    void theTwinThePromptOfAStepOnlyAReplacedVersionKeepsIsTheActionsWinners() {
+        // A7: proj's winning md drops s, which base's md declares and base's graph holds.
+        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s");
+        missionType("proj", "t");
+        storedPrompts.put("base", "# s at base\n");
+        storedPrompts.put("proj", "# s at proj\n");
+
+        EffectivePromptQuery.EffectivePrompt prompt = promptOfS();
+
+        assertThat(prompt.promptPackId()).contains(new PackIdentifier("base"));
+        assertThat(new String(prompt.prompt().bytes(), StandardCharsets.UTF_8)).isEqualTo("# s at base\n");
     }
 }

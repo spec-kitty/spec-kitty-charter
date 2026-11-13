@@ -718,10 +718,12 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     Then the response status is 404
     And the problem code is "action_not_found"
 
-  Scenario: WP09 review H1 - a step the winning type declares is placed at the winner, whichever pack's graph declares it
+  Scenario: WP09 review H1, Q3 - a step the winning type declares is placed at the winner, whichever pack's graph declares it
     The step's place is the winner of the mission type when its version declares the step, else the merged winner of the
     action (A7). proj's winning software-dev declares specify; only main's graph declares action:software-dev/specify.
-    The context's effective-artifact and artifact links answer the same step, proj's, and the step read answers it.
+    The context's effective-artifact and artifact links answer the same step, proj's, and the step read answers it. The
+    prompt read follows the same place (operator ruling Q3, 2026-11-13): it answers proj's prompt, and its
+    effective-artifact link answers the same step.
     Given the org pack "main" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'
@@ -743,6 +745,20 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     And I follow the link "artifact"
     Then the response status is 200
     And the field at "/title" is "Specification at project"
+    When I GET "/activations/a-1/mission-types/software-dev/actions/specify/prompt"
+    Then the response status is 200
+    And the field at "/promptPackId" is "proj"
+    And the field at "/prompt" is the lines:
+      """
+      # Specify at project
+      """
+    When I follow the link "effective-artifact"
+    Then the response status is 200
+    And the field at "/title" is "Specification at project"
+    And the field at "/prompt" is the lines:
+      """
+      # Specify at project
+      """
 
   Scenario: WP09 review H1 - the context's artifact link answers a step only the winning type declares, whose action another pack's graph declares
     main's graph declares action:software-dev/implement and main's software-dev does not declare implement; proj's
