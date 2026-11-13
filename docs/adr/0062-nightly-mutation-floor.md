@@ -101,6 +101,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | activations | `activations` | `ai.speckitty.charter.activations` | 85 | 37 |
    | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
    | missions-edge | `missions-edge` | `missions.application`, `missions.infra`, without the four `*.config` packages | 85 | not yet measured |
+   | artifacts-edge | `artifacts-edge` | `artifacts.application`, `artifacts.infra`, without the four `*.config` packages | 85 | not yet measured |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -330,3 +331,16 @@ for survivors and late kills. A squad of three lenses measured this; its levers 
 the shards, three test-design fixes in this change, and two follow-ups (#530, minion JVM tuning; #531, the remaining
 test fixes). Floors and the PIT scope are unchanged. The first sharded run (43209733136) took 48 minutes, the slowest
 shard 47 of its 110, with every group at the score of a whole-module run.
+
+## Amendment, 2026-11-12 (#536): the artifacts-edge module joins the scheduled run
+
+Status: Accepted, as an amendment of this accepted ADR.
+
+`service/artifacts-edge`, the edge of the asset, skill and references reads, applies `charter.mutation-conventions`
+directly, with one whole-module group, `artifacts-edge`, at a floor of 85. The floor follows the precedent of
+`:activations`, `:profiles-edge` and `:missions-edge`: a first floor of 85 until the first score is known, raised by
+pull request once the score clears it by 5. No score has been measured yet, so the table states no margin. The group
+mutates `ai.speckitty.charter.artifacts.application` and `ai.speckitty.charter.artifacts.infra`, without the four
+Spring wiring packages (`application.config`, `infra.api.config`, `infra.packs.config`, `infra.activations.config`).
+No other group mutates `ai.speckitty.charter.artifacts`, so the scopes do not overlap. The `others` shard's `pitest`
+already reaches the module, and `mutationModules` lists it. The other floors are unchanged.
