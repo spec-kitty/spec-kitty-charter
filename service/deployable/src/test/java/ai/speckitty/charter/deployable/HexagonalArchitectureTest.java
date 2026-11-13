@@ -257,52 +257,66 @@ class HexagonalArchitectureTest {
 
     /**
      * PACK_VALIDATION_IS_FRAMEWORK_FREE (ADR-0075 decision 3): neither {@code pack-validation} nor {@code pack-check}
-     * depends on Spring, on HTTP (the JDK client, Jakarta, the generated contract, the web transport or the kernel's
-     * transport vocabulary), on a commit store or on a lock. A commit store and the registry's lock live in the packs
-     * slice and its {@code infra} rings, so the rule refuses the packs and activations slices, every {@code application}
-     * and {@code infra} ring and the composition root outright: the modules depend on {@code kernel}, {@code profiles},
-     * {@code missions} and the parsing libraries only, which their builds pin too. The rule fails on an empty selection,
-     * so a module missing from this test's classpath fails it rather than passing unchecked.
+     * depends on Spring, on HTTP or any other network I/O ({@code java.net} but {@code URI}, the JDK's HTTP client and
+     * server, Jakarta, the generated contract, the web transport or the kernel's transport vocabulary), on a commit store
+     * or on a lock. A commit store and the registry's lock live in the packs slice and its {@code infra} rings, so the
+     * rule refuses the packs and activations slices, every {@code application} and {@code infra} ring (the modules' own
+     * packages included: they have no rings) and the composition root outright. The modules depend on {@code kernel},
+     * {@code profiles}, {@code missions} and the parsing libraries only, which their builds pin too. A lock is caught by
+     * its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
+     * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and review checks those.
+     *
+     * <p>The rule runs once per module's package and fails on an empty selection, so a module missing from this test's
+     * classpath fails it rather than passing unchecked.
      */
-    private static final ArchRule PACK_VALIDATION_IS_FRAMEWORK_FREE = noClasses()
-            .that()
-            .resideInAnyPackage(PACK_VALIDATION, PACK_CHECK)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage(
-                    FRAMEWORK,
-                    "jakarta..",
-                    "java.net.http..",
-                    GENERATED_API,
-                    WEB,
-                    KERNEL_TRANSPORT,
-                    ROOT + ".packs..",
-                    ROOT + ".activations..",
-                    "..application..",
-                    "..infra..",
-                    DEPLOYABLE,
-                    "java.util.concurrent.locks..")
-            .orShould()
-            .dependOnClassesThat()
-            .belongToAnyOf(java.nio.channels.FileLock.class)
-            .as("PACK_VALIDATION_IS_FRAMEWORK_FREE: pack-validation and pack-check use no Spring, HTTP, commit store"
-                    + " or lock");
+    private static ArchRule packModuleIsFrameworkFree(String modulePackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(modulePackage)
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage(
+                        FRAMEWORK,
+                        "jakarta..",
+                        "java.net.http..",
+                        "com.sun.net.httpserver..",
+                        GENERATED_API,
+                        WEB,
+                        KERNEL_TRANSPORT,
+                        ROOT + ".packs..",
+                        ROOT + ".activations..",
+                        "..application..",
+                        "..infra..",
+                        DEPLOYABLE,
+                        "java.util.concurrent.locks..")
+                .orShould()
+                .dependOnClassesThat(DescribedPredicate.describe(
+                        "are java.net types other than URI, or FileLock",
+                        (JavaClass c) -> (c.getPackageName().equals("java.net")
+                                        && !c.getName().equals("java.net.URI")
+                                        && !c.getName().equals("java.net.URISyntaxException"))
+                                || c.getName().equals("java.nio.channels.FileLock")))
+                .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (" + modulePackage + "): no Spring, HTTP, commit store or lock");
+    }
 
     @Test
     @DisplayName("PACK_VALIDATION_IS_FRAMEWORK_FREE")
     void packValidationIsFrameworkFree() {
-        PACK_VALIDATION_IS_FRAMEWORK_FREE.check(classes);
+        packModuleIsFrameworkFree(PACK_VALIDATION).check(classes);
+        packModuleIsFrameworkFree(PACK_CHECK).check(classes);
     }
 
     @Test
     void thePackValidationRuleFailsOnAPlantedSpringHttpCommitStoreOrLockDependency() {
         assertBites(
-                PACK_VALIDATION_IS_FRAMEWORK_FREE,
+                packModuleIsFrameworkFree(PACK_VALIDATION),
                 ROOT + ".packvalidation.badfixture",
                 "ValidationUsesSpring",
                 "org.springframework.stereotype.Component",
                 "ValidationSpeaksHttp",
                 "java.net.http.HttpClient",
+                "ValidationOpensAUrl",
+                "java.net.HttpURLConnection",
                 "ValidationReachesCommitStore",
                 "CommitStorePackWriteStore",
                 "ValidationTakesALock",
@@ -310,7 +324,7 @@ class HexagonalArchitectureTest {
                 "java.nio.channels.FileLock",
                 "RegistryWriteLock");
         assertBites(
-                PACK_VALIDATION_IS_FRAMEWORK_FREE,
+                packModuleIsFrameworkFree(PACK_CHECK),
                 ROOT + ".packcheck.badfixture",
                 "CheckUsesSpring",
                 "org.springframework.stereotype.Component");
