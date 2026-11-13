@@ -1,7 +1,7 @@
 @contract @artifacts
 Feature: A pack's artifacts are read through one generic list and one generic item
   A client lists a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm,
-  toolguide, procedure and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
+  toolguide, procedure, asset, skill and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
   and first/next links (FR-003), and reads one artifact in a closed envelope that holds exactly the
   member its kind names (FR-004). The list is ordered by the served-kind order, then by id in
   code-point order, and its cursor is a position: a page holds the artifacts strictly after it. An
@@ -239,6 +239,97 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the field at "/items/1/id" is "jenny"
     And the field at "/page/hasNextPage" is false
 
+  Scenario: A list filtered by asset lists the pack's assets, each titled by its title or, without one, by its id
+    Given the org pack "qa" with the file "assets/run.py.asset.yaml":
+      """
+      id: run
+      mime: text/x-python
+      path: run.py
+      title: Run the lint
+      executable:
+        runtime: python
+        entry: run.py
+      """
+    And the org pack "qa" with the file "assets/run.py":
+      """
+      print("run")
+      """
+    And the org pack "qa" with the file "assets/logo.png.asset.yaml":
+      """
+      id: logo
+      mime: image/png
+      path: logo.png
+      """
+    And the org pack "qa" with the file "assets/logo.png":
+      """
+      not really a png
+      """
+    When I GET "/packs/qa/artifacts?kind=asset"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the response body is:
+      """
+      {
+        "items": [
+          {"kind": "asset", "id": "logo", "title": "logo", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/asset/logo"}}},
+          {"kind": "asset", "id": "run", "title": "Run the lint", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/asset/run"}}}
+        ],
+        "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
+        "_links": {
+          "self": {"href": "/api/v1/packs/qa/artifacts?kind=asset"},
+          "first": {"href": "/api/v1/packs/qa/artifacts?kind=asset"}
+        }
+      }
+      """
+
+  Scenario: A list filtered by skill lists the pack's skills, each titled by its title
+    Given the org pack "qa" with the file "skills/land-pr.skill.yaml":
+      """
+      schema_version: '1.0'
+      id: land-pr
+      title: Land a PR
+      description: Use when a pull request needs landing.
+      form: prompt
+      body_path: land-pr.skill.md
+      """
+    And the org pack "qa" with the file "skills/land-pr.skill.md":
+      """
+      Goal: land it.
+      """
+    And the org pack "qa" with the file "skills/status.skill.yaml":
+      """
+      schema_version: '1.0'
+      id: status
+      title: Show the status
+      description: Use to see where a mission stands.
+      form: wrapper
+      expands_to:
+        target: cli:spec-kitty status
+      """
+    When I GET "/packs/qa/artifacts?kind=skill"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the response body is:
+      """
+      {
+        "items": [
+          {"kind": "skill", "id": "land-pr", "title": "Land a PR", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/skill/land-pr"}}},
+          {"kind": "skill", "id": "status", "title": "Show the status", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/skill/status"}}}
+        ],
+        "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
+        "_links": {
+          "self": {"href": "/api/v1/packs/qa/artifacts?kind=skill"},
+          "first": {"href": "/api/v1/packs/qa/artifacts?kind=skill"}
+        }
+      }
+      """
+    When I GET "/packs/qa/artifacts?pageSize=50"
+    Then the response status is 200
+    And the field at "/items/4/kind" is "toolguide"
+    And the field at "/items/5/kind" is "skill"
+    And the field at "/items/5/id" is "land-pr"
+    And the field at "/items/6/id" is "status"
+
   Scenario: The references of an agent profile are the edges its pack writes from it, each resolved through the compose
     Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
       """
@@ -287,7 +378,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     When I GET "/packs/qa/artifacts?kind=<kind>"
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, agent_profile, mission_type or mission_step_contract."
+    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, asset, skill, agent_profile, mission_type or mission_step_contract."
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
