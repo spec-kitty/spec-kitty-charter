@@ -426,3 +426,12 @@ Checked after the ruling:
 - No `replaces` edge exists in any corpus.
 
 The census script is `research/edge-census.py`, with its output in `research/edge-census.csv`.
+
+## R15. Post-plan squad, 2026-11-13
+
+Three lenses reviewed the plan and found 4 blockers and 14 majors, all folded. The dispositions are in
+`research/squad-post-plan.md`. Two corrections to this note:
+
+- **R3's delegation count.** It is **80** missing `scope` edges from the step's action, not 72: 72 counted
+  mission-type edges as covering a delegation.
+- **R8's slice C reference.** Slice C is on `main` (PR #566, `cdc62e1cf`), and this branch merged it at `ffb6b4929`.

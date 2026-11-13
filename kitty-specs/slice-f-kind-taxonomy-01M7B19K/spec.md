@@ -225,7 +225,7 @@ in the model: ADR-0028 retired `impacts`, `replaces` is legacy, and no authored 
 | FR-002 | The taxonomy carries no `effective_when_absent`, `selection_overlayable` or `org_requirable` fact, and the read's deferral to the merge minor is removed from the contract documentation. | Approved | [build] | no |
 | FR-003 | A parity test keeps the served taxonomy equal to the domain's kind and relation model, with a skewed positive control. | Approved | [build] | no |
 | FR-004 | A mission-type step may author `substeps`: an ordered, one-level list of `{id, description, command, inputs, delegates_to {kind, candidates}, guidance}`. Substep ids are unique within the step. The step reads in both trees return them in authored order. | Approved | [build] | no |
-| FR-005 | Every candidate of a substep's `delegates_to` must resolve to an artifact of the named kind in the pack's closure, and the step's `action:<type>/<step>` node must have a `scope` edge to it. A pack that breaks either is refused at load and at registration, with a named violation. | Approved | [build] | no |
+| FR-005 | Every candidate of a substep's `delegates_to` must resolve to an artifact of the named kind, and the step's `action:<type>/<step>` node must have a `scope` edge to it. A candidate in the same pack is checked at load. A qualified candidate (`<pack>::<id>`) is checked at compose and at registration. A pack that breaks either rule is refused with a named violation. The delegated kind is a `scope` target from `action`: a guidance kind or agent_profile. | Approved | [build] | no |
 | FR-006 | The `mission_step_contract` kind is retired outright (#514): its kind and node values, operation (`getEffectiveMissionStepContract`), schemas, parameters, responses, examples, refusal code (`mission_step_contract_not_found`), `step-contract` link, preset and activation members, pack schema, file kinds and domain types. A `*.step-contract.yaml` file or `mission_step_contract.graph.yaml` fragment is refused as a retired file kind. | Approved | [build] | no |
 | FR-007 | #533 is closed as moot, with evidence that the literal step-contract read no longer exists. | Approved | [folded] | no |
 | FR-008 | Charter's example packs and fixtures move their step-contract content into step substeps. This covers the 5 files in the `built-in` example pack and the planted and digest fixtures. The `review` gate becomes the foundation lifecycle guard on `in_progress -> for_review` (ADR-0054 decision 12). | Approved | [build] | no |
@@ -240,7 +240,7 @@ in the model: ADR-0028 retired `impacts`, `replaces` is legacy, and no authored 
 | FR-017 | `impacts`, `replaces` and `delegates_to` are retired from the domain, the contract and the pack schemas. An edge that uses one is refused as an unknown relation. | Approved | [build] | no |
 | FR-018 | Charter's example packs, fixtures and contract examples carry only edges the table allows. The `suggests styleguide -> anti_pattern` edge becomes `rejects`. The `impacts` edges and any `replaces` edges are removed or rewritten as `overrides`. Error fixtures are rewritten so each exercises one fault. | Approved | [build] | no |
 | FR-019 | Every breaking change of this mission is recorded in one dated `### Breaking` fragment under `contracts/charter/changes/`. | Approved | [build] | no |
-| FR-020 | Open-packs drafts are written into this mission's research directory with `open-packs#TBD-<slug>` placeholders. They cover: removing the 28 step-contract files and 2 graph fragments, moving their substeps into the mission types, adding the missing `scope` and `requires` edges, moving the gate to the lifecycle guard, retiring the three relations (a `replaces` edge becomes `overrides`), the schema change, and the validator update. | Approved | [build] | no |
+| FR-020 | Open-packs drafts are written into this mission's research directory with `open-packs#TBD-<slug>` placeholders. They cover: removing the 28 step-contract files and 2 graph fragments, moving their substeps into the mission types, adding the missing edges (80 `scope` edges from each step's action, and 26 `requires` edges with their 23 action nodes), authoring foundation's work-package lifecycle and its `spec-kitty-pre-review` guard for the gate, retiring the three relations (a `replaces` edge becomes `overrides`), the schema change, and the validator update. | Approved | [build] | no |
 
 ### Non-Functional Requirements
 
@@ -258,7 +258,7 @@ in the model: ADR-0028 retired `impacts`, `replaces` is legacy, and no authored 
 | --- | --- | --- |
 | C-001 | The charter's model is canonical. No deprecation window and no legacy reader. Tests and examples use only the canonical shape, except error-handling tests (charter.md, 2026-11-10). | Approved |
 | C-002 | No core-first ordering. #514's "behind core #3420/#3419" is not followed. Core aligns through the generated client. | Approved |
-| C-003 | Implementation starts only on top of slice C (#467). It merges first, or this mission rebases onto it, because both change `PackPolicy`, `RelationshipRegistrationService`, `DomainRepositoryService`, `EffectiveReadService`, `MissionBodies` and `RefusalCode`. | Approved |
+| C-003 | Implementation starts only on top of slice C (#467). C landed on `main` (PR #566, `cdc62e1cf`), and this branch merged it at `ffb6b4929`. Implementation still waits for the operator's go. | Approved |
 | C-004 | Until #554 lands, the read-side endpoint check sits where graph documents are bound: `PackPolicy`, and the load path in `DomainRepositoryService`. Whichever of F and #554 lands second rehomes it, and the wire codes do not change (ADR-0075 decision 4). | Approved |
 | C-005 | ADR-0075 decision 2 is amended to drop `MissionStepContractIdentifier`, so #552 drops it from its identifier list. Whichever of F and #551 lands second rebases onto the other's `kernel.validation` API. | Approved |
 | C-006 | Pack content is not written in spec-kitty-open-packs. Drafts go to this mission's research directory, and the orchestrator files them. | Approved |
@@ -277,8 +277,9 @@ in the model: ADR-0028 retired `impacts`, `replaces` is legacy, and no authored 
   rule. For each row, a disallowed combination is refused at read and at write. — [build] · no-op passable: no
 - **SC-004** Charter's example packs load with 0 refusals. Each invalid example pack is refused with exactly its one
   named fault. — [build] · no-op passable: no
-- **SC-005** Against the open-packs drafts, the draft table refuses 0 open-packs edges once the drafts are applied.
-  This is checked by re-running the census script. — [ratchet] · no-op passable: no
+- **SC-005** The census script refuses 0 valid-path edges in charter's example packs, contract scenarios and
+  fixtures. Re-run against open-packs with the drafts applied, it refuses 0 open-packs edges and finds 0 delegation
+  candidates without their `scope` edge. — [ratchet] · no-op passable: no
 - **SC-006** #112, #514, #520, #515, #533 and #350 are closed with evidence. #94 and #537 are ticked. #513 is narrowed
   with a comment. — [build] · no-op passable: no
 
@@ -310,7 +311,7 @@ in the model: ADR-0028 retired `impacts`, `replaces` is legacy, and no authored 
   migration.
 - No `replaces` edge exists in charter's example packs, fixtures or open-packs (checked 2026-11-13). The migration
   rule is recorded for content that appears later.
-- Slice C ships `OverrideSourceRule` and its refusal as on `slice-c/effective-step-context` at `b336e590`. If C
-  changes it before merging, this mission follows C.
+- Slice C's `OverrideSourceRule` is on `main` (`cdc62e1cf`). Its scenario, which allows an `overrides` edge from an
+  activatable kind "whatever its target", is rewritten by the same-kind rule (FR-015).
 - The 28 open-packs step-contract files fold one-for-one into the step of their mission type that they name. Each one
   names a step of its type, including on-demand steps (checked 2026-11-13).

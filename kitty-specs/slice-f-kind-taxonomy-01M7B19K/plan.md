@@ -7,8 +7,9 @@
 the `single_branch` topology. `meta.json` names `slice-f-537-kind-taxonomy` as the target (`target_branch`,
 `create_return_branch`), and that is the landing branch. The pull request runs from it into `main`.
 
-**Implementation gate (operator, 2026-11-13).** No work package starts until slice C (#467) has merged, or this
-branch is rebased onto slice C's rebased branch. Slice C changes the same classes (research R8).
+**Implementation gate (operator, 2026-11-13).** Implementation starts only after slice C (#467) has merged. C
+landed on `main` as PR #566 (`cdc62e1cf`). This branch merged `main` at `ffb6b4929` without a rebase, so nothing
+pushed is force-pushed. This mission still stops before implementation, until the operator starts it.
 
 ## Summary
 
@@ -75,7 +76,7 @@ already bound. The taxonomy read is static.
 | Breaking the contract | It breaks inside 0.x, as ADR-0022 allows. One dated `### Breaking` fragment lists every removal and every new refusal (FR-019). |
 | Canonical model, no legacy | No deprecation window. There is no reader for `*.step-contract.yaml`, which is a retired file kind. Retired relations are unknown relations. |
 | Tests use only canonical shapes | Fixtures and example packs migrate (FR-008, FR-018). Old shapes appear only in invalid packs for their refusal. |
-| Adversarial squad at plan and before merge | A post-plan squad runs on this plan (`research/squad-post-plan.md`), and its findings are folded before tasks. A pre-merge squad runs on the aggregate diff. |
+| Adversarial squad at plan and before merge | The post-plan squad ran three lenses and found 4 blockers and 14 majors, all folded (`research/squad-post-plan.md`). A pre-merge squad runs on the aggregate diff. |
 | Gates before merge | `verifyAll` on Java 25 with the whole-pack round trip, the docs checks, and the switch-gate register. |
 | Issue rules | `Closes #112 #514 #520 #515 #533 #350`, and #94 and #537 are ticked. #513 is narrowed with a comment. #447 is closed by slice C. Squad minors are folded or recorded as "Not done", and never filed. Pack content goes to open-packs as drafts. |
 | Orchestration | Open-packs drafts carry `open-packs#TBD-<slug>`. The ADR number is chosen when the ADR is written, against `main` and the open PRs (0076 is free today). |
@@ -99,10 +100,10 @@ kitty-specs/slice-f-kind-taxonomy-01M7B19K/
 
 ```text
 service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/
-    RelationType.java        # endpoint table, retired values gone; absorbs Relation
-    Relation.java            # removed (merged into RelationType)
-    Relationship.java        # per-relation typed factories
-    NodeRef.java / kinds/    # NodeRef<K>, sealed kind markers and groups (new)
+    RelationType.java        # endpoint table (the single source), retired values gone
+    Relation.java            # removed (0 main callers)
+    Relationship.java        # one typed factory per table rectangle; raw constructor package-private
+    KindRef.java / kinds/    # KindRef<K>, sealed kind markers and groups (new)
     EndpointRule.java        # the checked bridge (new)
     ArtifactKind.java, NodeKind.java, RefusalCode.java
 service/packs/src/main/java/ai/speckitty/charter/packs/
@@ -126,148 +127,233 @@ docs/adr/00NN-kind-taxonomy-and-step-authority.md (new), docs/api/service-contra
 
 ## Implementation Concern Map
 
-The work packages run in this order. Each is test-first, and each leaves `verifyAll` green.
+The work packages run in the order below. **The order was revised after the post-plan squad**
+(`research/squad-post-plan.md`): content moves first, and the relation model and its refusal land together. Each
+work package is test-first, and each must leave `verifyAll` green when it lands.
 
-### IC-01: Kernel relation model (FR-012, FR-013, FR-017)
+Slice C is on `main` (`cdc62e1cf`, PR #566). This branch merged it at `ffb6b4929`. Every reference below is to `main`
+at that commit.
 
-- **Retire the relations.** Remove `IMPACTS`, `REPLACES` and `DELEGATES_TO`.
-  - Merge `kernel.domain.Relation` into `RelationType`: one relation enum, with one source per fact.
-  - Remove the retired values from the contract's `Relation.yaml` and from the graph schemas' relation enums.
-  - The `impacts` strength on `DrgEdge` goes, together with its rule at `PackPolicy.java:846`.
-  - Tension (`Tension`, written `in_tension_with`) stays as it is.
-- **Endpoint table.** Each `RelationType` constant holds its allowed `{source, target}` kind pairs, as data
-  (research R6). `NodeKind` gains no new facts; the kind groups are sets.
-- **Typing (`DM-01M7B3QB…`).**
-  - Sealed marker interfaces, one per kind, plus kind groups as sealed interfaces. For example, `Guidance` permits
-    the six guidance kinds, and `Activatable` permits the activatable kinds.
-  - `NodeRef<K extends Kind>` is a typed node reference.
-  - `Relationship` gains static factories per relation, typed by the allowed source and target groups, for example
-    `requires(NodeRef<? extends RequiresSource>, NodeRef<? extends RequiresTarget>)`.
-  - A relation whose rows are "the same kind" (`overrides`, same-kind `enhances`) uses one type parameter:
-    `<K extends Activatable> overrides(NodeRef<K>, NodeRef<K>)`.
-- **The checked bridge.** `EndpointRule.bind(RelationType, Urn source, Urn target)` returns either a typed
-  `Relationship` or a `Fault` (the code and both kinds). It is the only path from untyped URNs to a relationship, and
-  the readers and writers call it. A test asserts that the bridge and the factories agree on every
-  (relation, source, target) triple. A positive control skews one row and must fail.
-- **Gates.** `DOMAIN_IS_PURE` stays green. A source scan, extending `RetiredMissionFieldNamesTest`'s pattern, keeps
-  the retired relation tokens out of the main sources (NFR-003).
+### IC-00: Content first, valid under today's model
 
-### IC-02: Endpoint refusal at read and write (FR-014, FR-015, FR-016, FR-018)
+Migrate everything the new rules would refuse, while the old rules still accept it. Then each rule that follows
+lands green.
 
-- **Read.**
-  - `PackPolicy.endpoints` calls `EndpointRule.bind`. A fault becomes a blocking finding at the edge's
-    `/edges/<index>`, and `pack_unreadable` on a composing read.
-  - The load path calls it too: `DomainRepositoryService.typedEdge` refuses where it silently dropped an edge before.
-- **Write.** `RelationshipRegistrationService` and `RelationshipWire` answer `422 validation_failed` with the
-  violation `relationship_endpoint_not_allowed` at `/relation`. The message names the relation and both kinds.
-- **Slice C's rule.** `OverrideSourceRule` becomes the `overrides` row's first check and keeps
-  `overrides_source_not_activatable` (FR-015). It is checked before the same-kind check, so the order is
-  deterministic.
-- **Violation code.** `relationship_endpoint_not_allowed` follows slice C's precedent: it is a violation code inside
-  `validation_failed`, not a `RefusalCode`. If the violation-code registry (in slice C's shape) needs an entry, it
-  gets one.
-- **Invalid packs, one per refusal.** One per relation family, plus:
-  - #350 (`procedure -requires-> action`);
-  - `overrides` between two kinds;
-  - a retired relation.
+- **Example packs** (`service/packs/src/testFixtures/resources/example-packs/`):
+  - drop the 2 `impacts` edges;
+  - change `suggests styleguide → anti_pattern` to `rejects`;
+  - add the 8 missing action nodes and their `mission_type -requires-> action` edges (discovery, analyze, accept,
+    charter, tasks-finalize, tasks-outline, tasks-packages, retrospect).
+- **Contract scenarios and test fixtures.**
+  - Rewrite the about 34 inline edges that the table refuses to allowed forms, keeping what each scenario tests:
+    `enhances tactic→directive` ×17, `requires action→directive` ×7, `overrides action→directive` ×4, and the
+    singletons the squad listed.
+  - Give every inline mission type in the about 13 `.feature` files, and in the Java fixtures, its `requires` edges.
+  - Re-run the census over `contracts/charter/scenarios/**` and every test fixture; the work package's acceptance
+    is that 0 valid-path edges are refused.
+- **Review gate in the example pack.**
+  - Add `guards/spec-kitty-pre-review.guard.yaml`, with `implemented_by: builtin:spec-kitty-pre-review` and
+    `on_indeterminate: pass` (this replaces `fail_open`; `provenance` is dropped, per ADR-0054 decision 12).
+  - Add the guard entry on `work-package.lifecycle.yaml`'s `in_progress → for_review` transition, which already
+    exists.
+- **Delegations in the example pack.**
+  - Point the step contracts' 31 unresolved candidates at artifacts the pack holds, or add the artifacts.
+  - Add the `scope` edges from each action to each candidate.
+- **Manifest.** Regenerate the `pack-manifest.yaml` content hashes in every work package that edits example files.
 
-  Scenarios go in `pack-write-refusals.feature` and the read-refusal feature.
-- **Migration.** Charter's example packs drop the 2 `impacts` edges, and `suggests styleguide → anti_pattern`
-  becomes `rejects`. The error fixtures that would gain a second fault are rewritten (research R6).
-- **After #554.** If #554 has landed by then, the read check is one rule in its graph ruleset (C-004).
+### IC-01: Relation model and endpoint refusal (FR-012 to FR-018), one work package
 
-### IC-03: Substeps on the mission step (FR-004, FR-005)
+**Retire the relations.**
+- Retire `IMPACTS`, `REPLACES` and `DELEGATES_TO`.
+- `kernel.domain.Relation` has 0 callers in main code, so it is deleted, not merged. `Relation.yaml`'s `x-source`
+  is repointed to `RelationType`, and gains `implemented_by`.
+- The `impacts` strength goes from `DrgEdge`, `graph-shard.schema.json:46`, `org-fragment.schema.json:46`,
+  `PackPolicy.java:846` and `RelationshipMerge.java:32`.
+- The `shard-impacts-*` and `c12-*impacts*` fixtures are deleted, apart from one retired-relation refusal fixture.
+  Their test classes are updated: `ExamplePacksComposeTest`, `DomainRoundTripTest`, `GraphShardWriterTest`,
+  `PackPolicyGraphTest` and the others the squad listed.
 
-- **Schema.** `mission-type.schema.json` `Step` gains `substeps`: an array (`minItems: 1` when present) of closed
-  objects `{id, description, command?, inputs?, delegates_to?, guidance?}`. Their shapes are carried over from
-  `mission-step-contract.schema.json`'s step, input and delegation definitions. Ids are unique within a step.
-- **Domain.** `MissionStep` gains `List<Substep>`. `Substep` and `SubstepDelegation(ArtifactKind kind, List<id>
-  candidates)` are value objects in `missions.domain`, guarded by the kernel rules.
-- **Codecs.** The mission-type YAML codec and its round trip carry the new field (ADR-0036).
-- **Load rules.** Every candidate resolves to an artifact of `kind` in the closure. The step's
-  `action:<type>/<step>` node has a `scope` edge to it. A pack that breaks either is refused with
-  `substep_delegation_unresolved` or `substep_delegation_unscoped`. Both are `PackFindingCode`s on the existing
-  `drg`/schema path; the names are confirmed by the post-plan squad.
-- **Reads.** `MissionStep.yaml` (the contract) gains `substeps`, with `delegatesTo.candidates` linked to each
-  artifact read. `getPackMissionStep` and `getEffectiveMissionStep` return them.
+**Typing: one factory per rectangle of the table** (squad B1). A row that is a union of rectangles gets one named
+factory per rectangle:
+- `requires`, `requiresAsset` (asset → asset) and `requiresStep` (mission_type → action);
+- `enhancesStep` (step_enhancement → action) and `enhancesSame`.
 
-### IC-04: Retire `mission_step_contract` (FR-006, FR-007, FR-008)
+Overloads would erase to the same signature, so they are not used. Supporting types:
+- `KindRef<K extends Kind>`, named so that it does not clash with `activations.domain.NodeRef`. Its constructor is
+  private; it is built only through per-kind leaf factories such as `KindRef.directive(id)`, which returns
+  `KindRef<Directive>`. So no `KindRef<Guidance>` can exist, and same-kind relations such as
+  `<K extends Activatable> overrides(KindRef<K>, KindRef<K>)` hold by invariance.
+- Each factory maps to its row in the ADR.
 
-- **Model and contract.** Delete the 21 kind-only Java files, and edit the mentioning files (research footprint).
-  - The kind's value goes from `ArtifactKind`, `NodeKind` and the contract's kind enums.
-  - The operation, its six schemas, `StepContractId`, the response, the example, and the refusal code
-    `mission_step_contract_not_found` all go.
-  - So do the `step-contract` link relation, `activatedMissionStepContracts` and the `selected_`/`deactivated_`
-    members.
-  - `ActivationConfig.schema.json` and corpus files 06 and 07 lose the kind.
-- **Pack schemas.** `mission-step-contract.schema.json` is removed. The kind leaves the `graph-shard`,
-  `org-fragment`, `pack-manifest`, `policy`, `preset` and `charter` schemas. `file-kinds.yaml` moves
-  `**/*.step-contract.yaml` and `**/mission_step_contract.graph.yaml` to `retired:`, with a reason.
-- **Migration.**
-  - The `built-in` example pack's 5 contracts become substeps of their steps. The `review` gate becomes the
-    foundation-equivalent lifecycle guard on `in_progress -> for_review`, if the example pack has that lifecycle;
-    otherwise it is dropped, with a note.
-  - The manifest, policy and preset entries go.
-  - The planted and digest fixtures migrate, or become retired-file refusals.
-- **Kind removal.** `WireTokenParityTest` needs no exemption, since the kind leaves both sides. A source scan proves
-  it is gone (NFR-003).
-- **#533.** It closes with the deleted route as evidence.
+**The bridge holds the guarantee** (squad M1).
+- `Relationship`'s raw constructor becomes package-private. `EndpointRule.bind` builds through it after a lookup in
+  the table.
+- The 7 main call sites that build a `Relationship` move to `bind` or to typed factories:
+  - `EdgeIndex:199/422` (a new `withToPack`);
+  - `WholePackStore:693`;
+  - `Guard:144`, through `implementedBy(KindRef<Guard>, KindRef<Asset>)`;
+  - `DomainRepositoryService:633`;
+  - `PackPolicy:776`;
+  - `RelationshipWire:88`.
+- An ArchUnit rule allows only `kernel.domain` to call the constructor.
+- About 32 test files are updated.
 
-### IC-05: Mission-type rules and `template_set` (FR-009, FR-010, FR-011)
+**One source for the table** (squad M2).
+- `RelationType`'s endpoint data is the table.
+- The agreement test reflects over each factory's generic bounds, walking `getPermittedSubclasses()` recursively,
+  and asserts that the union of the factories' products equals each row exactly. A skewed row is the positive
+  control.
 
-- **Complete `requires` edges.** Each step and on-demand step of a mission type needs an authored
-  `mission_type:<t> -requires-> action:<t>/<s>` edge. A missing one is refused at load and at registration with
-  `mission_step_unlinked`, naming the type and the step. Charter's example packs gain any missing edges.
-- **Invalid packs.** One for an authored `action_sequence`, and one for an authored `template_set`, each refused as
-  an unknown field. Plus one `@contract` scenario.
-- **`template_set`.** It is removed from `charter.schema.json` (`CharterCatalog`, `GovernanceCharterConfig`) and
-  from its fixtures (`ProjectCharterYamlSchemaTest`, `planted/charter-valid`).
-- **Wording.** `RelationType.ENHANCES`'s javadoc drops "action sequence".
+**Tension** (squad M9). `EndpointRule` gets a `bindTension` overload for `Tension` (G ↔ G).
 
-### IC-06: R18, the kind taxonomy read (FR-001, FR-002, FR-003)
+**Fault order.** The order is fixed and every rule is tested against it:
+1. `StepEnhancementRules`, which exists today;
+2. `OverrideSourceRule`, from slice C;
+3. the endpoint table.
 
-- **Contract.** `GET /offering/kinds` (`getKindTaxonomy`, tag `Offering`), with the schemas `KindTaxonomy`,
-  `KindRow`, `RelationRow` and `EndpointPair` (draft in `contracts/slice-f.openapi.yaml`). It is a static read:
-  - the `ETag` is the contract version;
-  - it takes `If-None-Match` and answers `304`;
-  - it needs the worktree token, as every operation does;
-  - it carries no fingerprint header, because it reads no pack.
-- **Body.** Built from `NodeKind`, `ArtifactKind` and `RelationType`. A `kinds` row links to
-  `/packs/{packId}/artifacts?kind=` only through templated link guidance, not as a concrete link, because the read
-  names no pack. The post-plan squad confirms this.
-- **Parity.** A case in `WireTokenParityTest` (or `VocabularyEqualityTest`) compares the served table with the enums
-  and with `file-kinds.yaml`, with a skewed positive control.
-- **Docs.** `service-contract.md` rows R18 and "the other reads" move to Decided/Built, and the "deferred to the
-  merge minor" text goes. `resolution-model.md:100-104` points to the read.
+Fixtures are rewritten so that each exercises one fault (`prompt-fragment-refusals.feature`).
 
-### IC-07: Records, changelog and open-packs drafts (FR-019, FR-020)
+**Where the checks run.**
+- Read:
+  - `PackPolicy.endpoints`, with `PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED` mapped through
+    `PackPolicy.violationKind`, as C does;
+  - the load path, `DomainRepositoryService.typedEdge`, which now refuses where it used to drop silently.
+  - The pointer is the graph document, as C's is.
+- Write:
+  - `RelationshipRegistrationService` answers `422 validation_failed`, with the violation at `/type`, the
+    relation's member in `{from, to, type}`. C's fault keeps `/from`.
 
-- **The new ADR**, "Kind taxonomy and step authority" (number chosen when written). It holds:
-  - R18's shape;
-  - substeps on the step and the retired kind;
-  - complete type-to-step edges;
-  - the endpoint table;
-  - the retired relations, including the note that `replaces` was sometimes used to mean `overrides`;
-  - `template_set` dropped.
-- **Short amendment notes** pointing at it: ADR-0044, ADR-0050, ADR-0054 (the gate's move), ADR-0064 (decision 13's
-  table lives in the new ADR), ADR-0074 (decision 12's #533 gap closed), ADR-0075 decision 2
-  (`MissionStepContractIdentifier`), and the other ADRs that name the kind.
-- **Changelog.** One `contracts/charter/changes/<date>-kind-taxonomy-and-step-authority-breaking.md` fragment under
-  `### Breaking`, plus `### Added` for the R18 read. The packs contract change is noted for #559.
-- **Open-packs drafts**, in `research/open-packs-drafts/`, each with an `open-packs#TBD-<slug>` placeholder:
-  1. fold the 28 step contracts into substeps, and remove the files and the 2 graph fragments;
-  2. add the 72 missing `scope` edges, and the missing `requires` edges for steps;
-  3. move the `review` gate to the foundation lifecycle guard;
-  4. retire the three relations (none in use today);
-  5. update `validate_pack_schemas.py` and the docs.
-- **Docs.** The diagrams and pages listed in `research/footprint-mission-step-contract.md`, and the glossary
-  (`substep`).
+**Code registration** (squad contract finding 4). Every new code is registered the way C's is:
+- a `PackFindingCode`;
+- the `violationKind` mapping;
+- a listing in `CharterRefusalCode.yaml`'s `validation_failed` description and its `x-refusal` text.
+
+`ExampleCoverageTest` is extended so that such violation codes need an example. This covers
+`relationship_endpoint_not_allowed`, `substep_delegation_unresolved`, `substep_delegation_unscoped` and
+`mission_step_unlinked`.
+
+**Rewrite C's scenario.** `override-source-kind.feature` says an `overrides` edge from an activatable kind is fine
+"whatever its target". The same-kind rule now contradicts that, so the scenario is rewritten (FR-015).
+
+**Invalid packs.** One per relation family, plus:
+- #350 (`procedure -requires-> action`);
+- `overrides` between two kinds;
+- a retired relation.
+
+**After #554.** If #554 has landed by then, the read check becomes one rule in its graph ruleset (C-004).
+
+### IC-02: Mission-type rules and `template_set` (FR-009, FR-010, FR-011)
+
+- **`mission_step_unlinked`, per pack.** Every step and on-demand step needs its authored `requires` edge. The
+  content was already added in IC-00.
+- **Compose-time check on the winning type** (squad M6). A `requires` edge that `EdgeIndex` repointed to a step the
+  winning type lacks is refused, and so is an edge to a step that does not exist.
+- **Invalid packs** for an authored `action_sequence` and an authored `template_set`, plus a scenario.
+- **`template_set`** goes from `charter.schema.json` and its fixtures.
+- **Javadoc.** `RelationType.ENHANCES` no longer mentions "action sequence".
+
+### IC-03: Substeps on the step, and retire `mission_step_contract` (FR-004 to FR-008), one work package
+
+The two land together. The example migration, the new schema properties and `ExamplePackCoverageTest` must change
+in one go.
+
+**Schema and domain.**
+- `Step.substeps`, as in the data model.
+- `delegates_to.kind` is limited to the `scope` targets from `action`: G or agent_profile (squad M4).
+- Candidates follow the grammar `[<pack>::]<id>`. The kind is given once, by `kind` (squad M8).
+- `PackFindingCode.DUPLICATE_STEP_ID` is retargeted to substep id uniqueness.
+
+**Load rules** (squad M3).
+- `PackPolicy` (`packs.domain`) cannot depend on `missions.domain`. So `PackContents` gains plain-data
+  `MissionTypeFacts`, and the in-pack check (bare candidates and their `scope` edges) runs over those facts.
+- A qualified candidate is checked at compose and registration through the closure (`RelationshipTargetCheck`, and
+  `ClosureWalk` after #556).
+- FR-005's "at load" covers in-pack candidates. A cross-pack candidate is refused at compose.
+
+**Reads.**
+- `MissionStep.yaml` gains `substeps`.
+- The delegation components are kept, renamed `MissionSubstepDelegation` and `MissionSubstepDelegationCandidate`.
+  They keep `id`, `$ref Links.yaml`, and `artifact` / `effective-artifact`, with empty links for an unserved kind.
+  Their `x-source` is repointed (squad contract finding 6).
+
+**Retire the kind.**
+- The removal list is the research footprint plus the squad's additions:
+  - `Problem.yaml:29`, `ArtifactSummary`, `SelectedArtifacts`, `DeactivatedArtifacts`, `ArtifactNotFound`,
+    `parameters/ArtifactKind`;
+  - both `*_kind_artifactId` and `*_references` paths;
+  - `ActivationSkippedReport.each-bucket`, `MissionStep.specify`;
+  - the `step-contract` link relation in `ruleset.yaml` and in the hypermedia table;
+  - the `kind_not_found` prose;
+  - the `file-kinds.yaml` `node_kinds`, `artifact_kinds` and `fragment_kinds` entries;
+  - the scenario files.
+- Slice C's step-contract code on `main` goes too: `ActivationMissionTypes#stepContract`, the
+  `EffectiveReadService` winner and placement code, and the D11 scenarios.
+- `removed-routes.feature` pins each retired route's answer: `404 kind_not_found` on the item routes, and `400` on
+  `?kind=`.
+- The `getEffectiveMissionStepContract` switch-gate key is removed, and the removal is listed as Breaking.
+
+**Scans** (NFR-003, extended). One scan covers the main sources. Another covers `contracts/`, excluding
+`changes/`, `CHANGELOG.md` and the `retired:` block of `file-kinds`.
+
+### IC-04: R18, the kind taxonomy read (FR-001 to FR-003)
+
+**Headers and caching** (squad contract B1 and B2).
+- `GET /offering/kinds` (`getKindTaxonomy`). Its `ETag` is the sha256 of the served body, in the pattern
+  `ContractETag.yaml` sets, and it takes `If-None-Match` and answers `NotModified`.
+- It declares `Charter-Contract-Version` and `Charter-Worktree` on its 200 and 304, as `paths/openapi.yaml:15-57`
+  does.
+- The read has no source fingerprint, so `/offering/kinds` is added to the exceptions of the lint rules
+  `fingerprint-on-verified-reads` and `fingerprint-only-on-verified-reads`, and `rest-resource-conventions.md` is
+  updated to match.
+
+**Links** (squad contract finding 7).
+- `Offering` and the root gain a `kinds` link, and the hypermedia table marks `kinds` as in the contract.
+- Each served kind's row carries a templated `artifacts` link, `/api/v1/packs/{packId}/artifacts?kind=<kind>` with
+  `templated: true`.
+- The 200 has an example.
+
+**Schemas.**
+- `KindRow.kind` references `NodeKind.yaml`, and `RelationRow.relation` references `Relation.yaml`.
+- The tension row is `in_tension_with`, with `heldAs: tension`; every other row is `heldAs: relationship`.
+- Every property has a `description` and an `x-source`.
+- The `Offering` tag's description is widened to cover the model's taxonomy.
+
+**Gates.**
+- A switch-gate entry.
+- 401 and 403 rows in `every-operation.feature`, and the 200 and 304 scenarios.
+- A parity case in `WireTokenParityTest` (or `VocabularyEqualityTest`), with a positive control.
+
+**Docs.** `service-contract.md`, and `resolution-model.md:100-104`.
+
+### IC-05: Records, changelog and open-packs drafts (FR-019, FR-020)
+
+**The new ADR, and notes on the touched ADRs.** As before:
+- the decisions;
+- the note that `replaces` was used to mean `overrides`;
+- the M10 consequence: new `scope` edges put each delegation candidate in force for the step's effective context
+  (`ActionContextWalk`).
+
+**Changelog.** One `### Breaking` fragment, which includes the switch-gate key removal, and `### Added` for the
+read.
+
+**Open-packs drafts** (corrected sizes, squad M6):
+1. Fold the 28 step contracts into substeps, then remove the files and the 2 fragments. Writing's 34 bare
+   candidates, which name foundation artifacts, are written qualified as `foundation::<id>`.
+2. Add 26 `requires` edges and 23 action nodes: cave-dev 8, qa 7, software-dev 8, research 2, documentation 1.
+3. Add 80 `scope` edges (79 distinct) from each step's action.
+4. Author foundation's work-package lifecycle and the `spec-kitty-pre-review` guard, then attach the gate. Open-packs
+   has no lifecycle or guard artifact today.
+5. Update `validate_pack_schemas.py` and the docs.
+
+**Ordering note.** Open-packs can raise its pin only after F is merged and released (ADR-0070).
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| Rebasing onto slice C collides in about 25 shared files | Implement only on top of C (C-003). IC-02 and IC-04 start from C's versions. |
+| Slice C's shared files | C is on `main` and is merged into this branch at `ffb6b4929`. The plan's references are to `main`. |
+| A rule lands before its content and turns `verifyAll` red | IC-00 migrates the content under today's rules. Each later work package re-runs the census over the scenarios and fixtures. |
+| The new `scope` edges change what the effective step context returns (`ActionContextWalk` walks `SCOPE`) | This is a ruled consequence. It is recorded in the ADR and covered by an effective-context scenario. |
 | #554 lands first and moves `PackPolicy`'s graph binding | The bridge (`EndpointRule`) is the single call. #554 calls it from its graph rule (C-004). |
 | The kind markers ripple through the packs and activations modules | Only the factories and the bridge are typed. Existing code that holds a `Relationship` keeps doing so, and only construction changes. |
 | Open-packs breaks until it applies the drafts | The drift watch shows it (#509). Open-packs proves its content against a pinned charter release (ADR-0070), so `main` is not blocked. |
