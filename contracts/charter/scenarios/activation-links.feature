@@ -35,6 +35,19 @@ Feature: An activation is discoverable by links
           title: implement
           role: implementer
       """
+    And the org pack "main" with the file "edges.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges:
+      - source: action:software-dev/implement
+        target: directive:D
+        relation: scope
+      """
 
   Scenario: From the root, a client creates an activation and selects an artifact by links only
     When I GET "/"
