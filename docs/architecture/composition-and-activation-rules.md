@@ -460,8 +460,9 @@ the scenarios of `step-enhancement-compose.feature` on the reads (`pack_referenc
 `pack_reference_pack_missing`), the registration and the relationship write, each with its twin.
 
 **C38 Slot declared, in force only.** For every step enhancement `u ∈ Eff`, the winning copy (C17), whose sole target
-is `action:M/s`, and every slot id `σ` its `prompt_fragments` name: `σ ∈ slots(prompt(win(action:M/s)))`, the slots
-the prompt companion at the merged winner's place of the step declares (F5; a step with no prompt declares none), else
+is `action:M/s`, and every slot id `σ` its `prompt_fragments` name: `σ ∈ slots(prompt(place(M, s)))`, the slots
+the prompt companion at the step's place declares (E16's one place rule, operator ruling Q3; F5; a step with no prompt,
+or with no place, declares none and is not judged), else
 `prompt_slot_missing`, naming the enhancement, its pack, the slot and the pack of the prompt. `u ∉ Eff ⇒` no refusal
 (OD-1 (B)).
 No fragment is ever dropped silently: a prompt override that drops a slot an enhancement in force fills is refused,
@@ -480,7 +481,9 @@ A2, A3. **Built (slice C).** *Pinned by:* `SlotComposeTest` (`aSlotTheBasePrompt
 `aSlotAnOverrideDropsIsMissingNamingTheEnhancementItsPackTheSlotAndThePromptsPack`, `theTwinAnOverrideThatDeclaresTheSlotComposes`,
 `aStepWithNoPromptInForceDeclaresNoSlot`, `ofTwoEnhancementsOnlyTheOneWhoseSlotIsMissingRefuses`,
 `anEnhancementThatIsNotInForceNeverRefuses`, `onlyTheWinningCopyOfASameIdEnhancementIsJudged`,
-`theTwinTheWinningCopyThatNamesAnUndeclaredSlotRefuses`, `thePromptInForceIsAtTheWinnersPlaceOfTheStepNotTheWinningMissionTypes`,
+`theTwinTheWinningCopyThatNamesAnUndeclaredSlotRefuses`, `aSlotTheWinningVersionsPromptLacksIsMissingAlthoughTheActionsWinnerDeclaresIt`,
+`theTwinTheWinningVersionsPromptDeclaresTheSlotAndComposes`, `aStepOnlyAReplacedVersionKeepsHasItsPromptInForceAtTheActionsWinner`,
+`aStepNoVersionAtEitherPlaceDeclaresHasNoPromptInForceAndIsNotJudged`,
 `eachEnhancementIsVisitedOnceAndEachMissingSlotIsNamedOnce`), `ClosureViewTest`
 (`anInForceEnhancementOfASlotTheOverrideDropsIsRefusedPromptSlotMissingWhileInForceStaysPure`,
 `theTwinTheSameEnhancementNotSelectedIsNotJudged`, `theTwinAnOverrideThatDeclaresTheSlotComposes`),
@@ -1246,18 +1249,31 @@ rule for a step.* `place(mt, a)` (`ClosureView.stepPlace`) is the pack of the fi
    (this keeps a step that only a version the winner replaced declares);
 3. otherwise there is no place, and the step read answers `404 action_not_found`.
 
-Whether a version declares a step is the kernel's `StepBearer.declaresStep`. The rule places the step for the step
-read `getEffectiveMissionStep` (read from the place's pack, with its prompt and guidelines; a place step's skeleton
-links name that pack's `getPackMissionSkeleton`), for the action context's `artifact` link (so it and
-`effective-artifact` answer the same step), and for a step contract's `step` link under an activation (offered whenever
-the step has a place). A step only a version the winning mission type replaced keeps answers `200` on the step read and
-on the context. The effective step prompt (F8) is not changed by this rule: it still places the prompt at
-`win(action:mt/a)`; whether it follows the one place rule waits on an operator ruling (Q3).
+The rule is one function, `StepHolding.placeOf`, to which `ClosureView.stepPlace` delegates; whether a version
+declares a step is read from the composition facts (`PromptFacts.steps`: per held mission type, the steps and on-demand
+steps its version declares). *Amended 2026-11-13 (operator ruling Q3): every judgement of the prompt in force follows
+the rule.* It places the step for the step read `getEffectiveMissionStep` (read from the place's pack, with its prompt
+and guidelines; a place step's skeleton links name that pack's `getPackMissionSkeleton`), for the action context's
+`artifact` link (so it and `effective-artifact` answer the same step), for a step contract's `step` link under an
+activation (offered whenever the step has a place), for the effective step prompt (F8) and for the slot check C38 on
+composing reads, registration, the impact-checked writes and the activation writes. So the slot check never judges a
+prompt other than the one the prompt read serves: a closure whose action winner's prompt lacks a slot that the winning
+version's prompt declares now composes, and the reverse is refused. A step only a version the winning mission type
+replaced keeps answers `200` on the step read, the context and the prompt read.
+*Known edge, recorded and not changed:* a step the closure holds (`held(C, mt, a)`) that no version at either place
+declares has no place. The step read answers `404 action_not_found`; the context and the prompt read answer `200`, the
+prompt read with an empty prompt (no `promptPackId`, no slots), and C38 does not judge it. Pinned on the step read by
+`EffectiveReadServiceMissionWinnerTest.aHeldStepNoVersionAtItsPlaceDeclaresIsActionNotFound`, on the place by
+`ClosureViewTest.theTwinAHeldStepNoVersionAtEitherPlaceDeclaresHasNoPlace` and on the slot check by
+`SlotComposeTest.aStepNoVersionAtEitherPlaceDeclaresHasNoPromptInForceAndIsNotJudged`; the prompt read's empty answer
+is stated in the contract's path description, and no test of the prompt read pins it.
 **Built (slice C).** *Pinned by:* the scenarios of `effective-mission-types.feature`
 `WP09, A7 - a step only the replaced version keeps is read from its place, as the context and the prompt read it`,
-`WP09 review H1 - a step the winning type declares is placed at the winner, whichever pack's graph declares it`,
+`WP09 review H1, Q3 - a step the winning type declares is placed at the winner, whichever pack's graph declares it`,
 `WP09 review H1 - the context's artifact link answers a step only the winning type declares, whose action another pack's graph declares`
-and `D11 - a step contract links its mission type when the closure holds it, and its step when the step read answers it`;
+`D11 - a step contract links its mission type when the closure holds it, and its step when the step read answers it`,
+`WP09 Q3 - the slot check judges the prompt at the step's place, the one the prompt read serves` and
+`WP09 Q3 - the twin: proj's prompt at the step's place declares the slot, so the read answers and the write is stored`;
 `ClosureViewTest` (`aStepTheWinningVersionDeclaresIsPlacedAtTheWinnerWhicheverPacksGraphDeclaresTheAction`,
 `aStepOnlyTheWinnerDeclaresIsPlacedAtTheWinnerAlthoughTheActionsWinnerIsAnotherPack`,
 `aStepOnlyAReplacedVersionKeepsIsPlacedAtTheActionsWinner`, `theTwinAHeldStepNoVersionAtEitherPlaceDeclaresHasNoPlace`,
@@ -1269,7 +1285,13 @@ and `D11 - a step contract links its mission type when the closure holds it, and
 `aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`,
 `aStepContractWhoseStepOnlyAReplacedVersionKeepsLinksTheStepTheStepReadAnswers`,
 `theTwinAStepContractWhoseStepNoVersionHoldsLinksNoStep`); `EffectiveMissionTypesControllerTest.aStepOnlyAReplacedVersionKeepsLinksItsSkeletonInThePlacesPack`;
-and `EffectiveReadServiceTest.theContextNamesThePackOfTheStepsPlaceAndNoneWhenTheSetDoesNotListTheMissionType`.
+`EffectiveReadServiceTest.theContextNamesThePackOfTheStepsPlaceAndNoneWhenTheSetDoesNotListTheMissionType`;
+and, for Q3, `ClosureViewTest` (`theSlotCheckJudgesThePromptAtTheStepsPlaceNotTheActionsWinner`,
+`theTwinTheWinningVersionsPromptDeclaresTheSlotAndTheReadServesItsFragment`), the `SlotComposeTest` cases named under
+C38, `PromptFactsTest` (`aStepIsDeclaredWhenThePacksVersionOfItsMissionTypeListsIt`,
+`aMissionTypeRemovedTakesItsDeclaredStepsWithIt`, `aStepsKeyThatIsNoMissionTypeIsRefused`),
+`DomainRepositoryServicePromptFactsTest.theFactsCarryTheStepsEachMissionTypeDeclaresWhichPlaceAStepsPrompt` and
+`EffectiveMissionTypeReadServiceTest.aStepContractPassesARefusalOfThePlaceReadOtherThanActionNotFoundThroughUnchanged`.
 
 **E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
@@ -1645,9 +1667,9 @@ and the activation writes.
 **F8 Effective step prompt.** `getEffectiveStepPrompt(mt, a)`, under an activation `D` with `mission_type:mt ∈ Eff`
 and `held(C, mt, a)`, answers:
 
-- `prompt`: the prompt companion at the place of `win(action:mt/a)` (the place E16 and `StepHolding` give the step,
-  research R8), served as it is stored (ADR-0066 d9: unchanged), and `promptPackId`, that place's pack; a step with no
-  prompt answers an empty prompt, no `promptPackId` and no slots;
+- `prompt`: the prompt companion at the step's place, `StepHolding.placeOf` (E16's one place rule; research R8 as
+  amended by operator ruling Q3, 2026-11-13), served as it is stored (ADR-0066 d9: unchanged), and `promptPackId`, that place's pack; a step with no
+  prompt at its place, or with no place (E16's known edge), answers an empty prompt, no `promptPackId` and no slots;
 - `slots`: every slot the prompt declares (F5), in declaration order, each with `fragments`: the fragments of the step
   enhancements `u ∈ Eff`, winning copies only (C17), whose sole target is `action:mt/a` and that name the slot, ordered
   by `lv` of the enhancing pack (`B ≺ O ≺ R`), then `name` of that pack, then the enhancement id, each by code point
@@ -1657,8 +1679,7 @@ and `held(C, mt, a)`, answers:
 - `diagnostics`: `prompt_slot_not_empty` for a slot that still holds legacy text under an unversioned descriptor; the
   slot is listed with its fragments and no flag (OD-7, OD-8);
 - `_links`: `self`, `effective-context` (the action context of the same action) and `effective-artifact` (the step
-  under the activation, read at the step's place by E16's one place rule, A7, so it answers whenever the step has a
-  place; the prompt itself is still placed at `win(action:mt/a)`, pending operator ruling Q3).
+  under the activation, read at the same place, A7, so it answers whenever the step has a place).
 
 Its refusals and their order are E18's (the `409 mission_type_not_in_force` among them), its tag is E17's read
 `PROMPT`, and it is one verified read (E19). The answer is byte-identical across repeated reads and every order in
@@ -1679,7 +1700,8 @@ FR-007; research R5, R8, R10. **Built (slice C).** *Pinned by:* `EffectivePrompt
 `EffectiveReadMapperTest` (`thePromptIsMappedWithItsSlotsInOrderItsDiagnosticsAndItsThreeLinks`,
 `aStepWithNoPromptLeavesThePromptPackOutAndNamesNoStepWhileMissionTypesAreNotServed`), `ClosureViewTest`
 (`theEffectivePromptOfSoftwareDevPlanServesBothExampleFragmentsBuiltInFirst`,
-`theTwinWithOnlyTheMissionTypeInForceTheSlotIsListedWithNoFragment`), `EffectivePromptDeterminismTest` and the scenarios
+`theTwinWithOnlyTheMissionTypeInForceTheSlotIsListedWithNoFragment`, and for the place, Q3,
+`theTwinTheWinningVersionsPromptDeclaresTheSlotAndTheReadServesItsFragment`), `EffectivePromptDeterminismTest` and the scenarios
 of `effective-step-prompt.feature` (`SC-001 - on charter's example packs, plan's slot holds plan-risk-notes of built-in,
 then spdd-plan of org-base`; `SC-001, squad R1 - the fragments of a slot are ordered by level, then pack name, then
 enhancement id, and in no other order`; `FR-003 - an enhancement held and not in force is absent, a slot nothing fills
