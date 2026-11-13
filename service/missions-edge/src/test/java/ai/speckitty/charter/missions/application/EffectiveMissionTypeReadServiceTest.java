@@ -39,6 +39,7 @@ class EffectiveMissionTypeReadServiceTest {
     private String placePackFingerprint = FINGERPRINT;
     private Optional<RefusalCode> packRefusal = Optional.empty();
     private Optional<RefusalCode> placeRefusal = Optional.empty();
+    private Optional<RefusalCode> placeReadRefusal = Optional.empty();
 
     private EffectiveStepContract stepContract = new EffectiveStepContract(
             new PackIdentifier("main"), new Contract("specify-contract"), Optional.empty(), Set.of(), FINGERPRINT);
@@ -68,6 +69,9 @@ class EffectiveMissionTypeReadServiceTest {
         @Override
         public EffectiveStepPlace stepPlace(String activation, String type, String step) {
             asked.add(activation + " place " + type + "/" + step);
+            placeReadRefusal.ifPresent(code -> {
+                throw new CharterRefusal(code, "the place read: " + code.token());
+            });
             if (!step.equals("review")) {
                 throw new CharterRefusal(
                         RefusalCode.ACTION_NOT_FOUND,
@@ -249,6 +253,20 @@ class EffectiveMissionTypeReadServiceTest {
 
         assertThat(view.missionTypeHeld()).isTrue();
         assertThat(view.stepHeld()).as("the step read answers 404 for deploy").isFalse();
+    }
+
+    @Test
+    void aStepContractPassesARefusalOfThePlaceReadOtherThanActionNotFoundThroughUnchanged() {
+        stepContract = new EffectiveStepContract(
+                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
+        placeReadRefusal = Optional.of(RefusalCode.STALE_INPUT);
+
+        assertThatThrownBy(() -> reads.stepContract("a-1", "review"))
+                .as("only action_not_found means no step; any other refusal of the place read is the answer (L-a)")
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT);
+                    assertThat(refusal.getMessage()).isEqualTo("the place read: stale_input");
+                });
     }
 
     @Test

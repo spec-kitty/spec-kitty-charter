@@ -34,10 +34,11 @@ import java.util.function.Predicate;
  * in force that fill it. A pure function of its inputs: it reads nothing but what it is handed.
  *
  * <ul>
- *   <li>The prompt in force is the stored companion at the merged winner's place of {@code action:M/s} (research R8,
- *       {@link StepHolding}): the winner's pack when the winning mission type declares the step, else the pack of the
- *       version that keeps it. It is served as stored (decision 9); a step with no companion answers no byte, no slot
- *       and no pack.
+ *   <li>The prompt in force is the stored companion at the step's place, which the caller gives
+ *       ({@link ClosureView#stepPlace}; research R8 as amended by operator ruling Q3, 2026-11-13): the winner of the
+ *       mission type when its version declares the step, else the merged winner of {@code action:M/s} when its version
+ *       does, so the prompt read, the step read and the action context name one pack. It is served as stored (decision
+ *       9); a step with no place or no companion answers no byte, no slot and no pack.
  *   <li>Its slots are that pack's prompt facts for the step, in declaration order. A slot that holds text is listed
  *       like any other, with its fragments and no flag (OD-8), and gives a {@code prompt_slot_not_empty} diagnostic
  *       (OD-7).
@@ -160,6 +161,7 @@ public final class EffectivePromptQuery {
      * The effective prompt of a step.
      *
      * @param step the step, {@code action:M/s}
+     * @param place the pack of the step's place ({@link ClosureView#stepPlace}); empty for a step with no place
      * @param merged the layer merge of the closure
      * @param facts the facts each pack of the closure was read with, by configured identifier
      * @param inForce whether an artifact is in force under the request
@@ -169,16 +171,18 @@ public final class EffectivePromptQuery {
      */
     public static EffectivePrompt answer(
             Urn step,
+            Optional<PackIdentifier> place,
             MergedClosure merged,
             Map<String, PackCompositionFacts> facts,
             Predicate<Urn> inForce,
             Function<PackIdentifier, String> packNames,
             Function<PackIdentifier, Optional<Payload>> promptOf) {
-        return answer(step, merged, facts, inForce, packNames, promptOf, Visits.NONE);
+        return answer(step, place, merged, facts, inForce, packNames, promptOf, Visits.NONE);
     }
 
     static EffectivePrompt answer(
             Urn step,
+            Optional<PackIdentifier> place,
             MergedClosure merged,
             Map<String, PackCompositionFacts> facts,
             Predicate<Urn> inForce,
@@ -186,17 +190,17 @@ public final class EffectivePromptQuery {
             Function<PackIdentifier, Optional<Payload>> promptOf,
             Visits visits) {
         Objects.requireNonNull(step, "step");
+        Objects.requireNonNull(place, "place");
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(facts, "facts");
         Objects.requireNonNull(inForce, "inForce");
         Objects.requireNonNull(packNames, "packNames");
         Objects.requireNonNull(promptOf, "promptOf");
         Objects.requireNonNull(visits, "visits");
-        Optional<MergedClosure.Winner> place = merged.winnerOf(step);
         if (place.isEmpty()) {
             return EffectivePrompt.NONE;
         }
-        PackIdentifier promptPack = place.get().packId();
+        PackIdentifier promptPack = place.get();
         Optional<Payload> prompt = promptOf.apply(promptPack);
         if (prompt.isEmpty()) {
             return EffectivePrompt.NONE;

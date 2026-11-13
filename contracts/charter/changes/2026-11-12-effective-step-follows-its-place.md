@@ -11,5 +11,9 @@
 - The `artifact` link of `getEffectiveActionContext` names the pack of the step's place by the same rule, so it and
   `effective-artifact` answer the same step; it named the pack that holds the mission type's version in force, which
   answered `404` for a step a replaced version keeps.
+- `getEffectiveStepPrompt` reads the prompt in force at the step's place by the same rule (operator ruling Q3,
+  2026-11-13), where it read it at the merged winner of `action:<missionType>/<step>`; `promptPackId` names that place.
+  The two differ only when the mission type's version in force declares the step and another pack's graph declares
+  the action: the prompt is now the winning version's, the one the step read answers.
 - `getEffectiveMissionStepContract` links `step` whenever `getEffectiveMissionStep` answers the step, where it did only
   when the winning mission type declares it.

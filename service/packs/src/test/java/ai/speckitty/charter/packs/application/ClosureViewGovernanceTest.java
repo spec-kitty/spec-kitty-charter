@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.StepBearer;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -337,7 +338,7 @@ class ClosureViewGovernanceTest {
                 Pack.builder()
                         .id(new PackIdentifier("builtin"))
                         .descriptor(descriptors.get("builtin"))
-                        .artifact(new MissionTypeStub(new PackIdentifier("builtin"), "M"))
+                        .artifact(new MissionTypeStub(new PackIdentifier("builtin"), "M", List.of("s")))
                         .build());
         stepFiles.put(
                 "builtin M",
@@ -520,8 +521,17 @@ class ClosureViewGovernanceTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN));
     }
 
-    /** A mission type as the packs rings hold it: an artifact of kind {@code mission_type}. */
-    private record MissionTypeStub(PackIdentifier packId, String localId) implements CharterArtifact {
+    /**
+     * A mission type as the packs rings hold it: an artifact of kind {@code mission_type} that bears its steps, which
+     * the step's place is judged by.
+     */
+    private record MissionTypeStub(PackIdentifier packId, String localId, List<String> steps)
+            implements CharterArtifact, StepBearer {
+
+        @Override
+        public boolean declaresStep(String stepId) {
+            return steps.contains(stepId);
+        }
 
         @Override
         public ArtifactKind kind() {

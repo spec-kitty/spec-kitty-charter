@@ -646,11 +646,12 @@ public record ClosureView(
 
     /**
      * The effective prompt of a step over the merged closure (FR-003, FR-005; ADR-0066 decisions 4, 5 and 9; research
-     * R8): the stored prompt companion at the merged winner's place of {@code action:<missionType>/<action>}, every slot
-     * it declares and, per slot, the fragments of the winning copies of the step enhancements in force
-     * ({@link EffectivePromptQuery}). It judges nothing itself: the caller has run {@link #requireAction}, the
-     * mission-type check and {@link #requireSlots} on the same states. The prompt is read from the place's pack against
-     * the closure digest this view was verified at; the slots and fragments come from the facts this view holds.
+     * R8 as amended by operator ruling Q3, 2026-11-13): the stored prompt companion at the step's place
+     * ({@link #stepPlace}, the rule the step read and the action context use), every slot it declares and, per slot, the
+     * fragments of the winning copies of the step enhancements in force ({@link EffectivePromptQuery}). It judges nothing
+     * itself: the caller has run {@link #requireAction}, the mission-type check and {@link #requireSlots} on the same
+     * states. The versions and the prompt are read from the packs against the closure digest this view was verified at;
+     * the slots and fragments come from the facts this view holds.
      *
      * @param missionType the mission type
      * @param action the action
@@ -672,6 +673,7 @@ public record ClosureView(
                         pack.configured().id(), pack.descriptor().name()));
         return EffectivePromptQuery.answer(
                 step,
+                stepPlace(missionType, action),
                 merged().closure(),
                 mergeInputs.facts(),
                 urn -> states.stateOf(urn)

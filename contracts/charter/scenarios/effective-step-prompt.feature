@@ -16,15 +16,16 @@
 @contract @activations
 Feature: The effective prompt of a step is the prompt in force with the fragments in force of each slot
   getEffectiveStepPrompt answers, for one step of a mission type the activation puts in force, the prompt in force as it
-  is stored (ADR-0066 decision 9: unchanged; research R8: at the merged winner's place of the step) and every slot it
-  declares, in declaration order, each with the fragments of the step enhancements in force that fill it (decision 4:
-  nothing pulls an enhancement into force), ordered by pack level, then pack name, then enhancement id, by code point
-  (decision 5), each with its pack and enhancement. A slot nothing fills is listed with no fragments; a slot that still
-  holds legacy text is listed with its fragments and a prompt_slot_not_empty diagnostic (OD-7, OD-8). The refusals come
-  in one order (research R10): 404 activation_not_found, mission_type_not_found, action_not_found (judged on the merged
-  closure), 409 mission_type_not_in_force for a mission type the closure holds and the activation does not put in force
-  (OD-5), then the 500 of a closure that does not compose, prompt_slot_missing included, and only then the ETag and a
-  304. The action context of a mission type in force links the read as prompt.
+  is stored (ADR-0066 decision 9: unchanged; research R8 as amended by operator ruling Q3: at the step's place, as the
+  step read places it) and every slot it declares, in declaration order, each with the fragments of the step
+  enhancements in force that fill it (decision 4: nothing pulls an enhancement into force), ordered by pack level, then
+  pack name, then enhancement id, by code point (decision 5), each with its pack and enhancement. A slot nothing fills
+  is listed with no fragments; a slot that still holds legacy text is listed with its fragments and a
+  prompt_slot_not_empty diagnostic (OD-7, OD-8). The refusals come in one order (research R10): 404
+  activation_not_found; the 500 of a closure that cannot compose or merge, before any name is judged;
+  mission_type_not_found, action_not_found (judged on the merged closure); 409 mission_type_not_in_force for a mission
+  type the closure holds and the activation does not put in force (OD-5); then prompt_slot_missing; and only then the
+  ETag and a 304. The action context of a mission type in force links the read as prompt.
 
   # The fixture of most scenarios: the org pack base holds software-dev, whose step plan declares two slots, implement
   # declares none and review has no prompt, and research, whose step gather has a prompt. Two step enhancements of base

@@ -83,9 +83,13 @@ properties:
     type: string
     minLength: 1
     description: >-
-      The configured identifier of the pack that holds the prompt in force. Absent when the step has no prompt.
+      The configured identifier of the pack that holds the prompt in force, the pack of the step's place. Absent when the
+      step has no prompt.
     x-derived:
-      rule: The pack of the merged winner's place of action:{missionType}/{action}, when it holds a prompt companion.
+      rule: >-
+        The pack of the step's place, when it holds a prompt companion: the pack of the mission type's version in force
+        when that version declares the step, else the pack that holds the merged winner of action:{missionType}/{action}
+        when its version declares it (operator ruling Q3, 2026-11-13).
       inputs:
       - schemas/ActivationConfig.yaml
   slots:

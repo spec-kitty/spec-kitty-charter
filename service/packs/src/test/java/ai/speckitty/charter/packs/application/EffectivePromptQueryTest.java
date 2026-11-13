@@ -131,8 +131,10 @@ class EffectivePromptQueryTest {
     }
 
     private EffectivePromptQuery.EffectivePrompt answer(EffectivePromptQuery.Visits visits) {
+        // The place is the caller's (ClosureView.stepPlace); here the action's winner gives it.
         return EffectivePromptQuery.answer(
                 STEP,
+                merged().winnerOf(STEP).map(MergedClosure.Winner::packId),
                 merged(),
                 facts(),
                 inForce::contains,
@@ -339,7 +341,8 @@ class EffectivePromptQueryTest {
     }
 
     @Test
-    @DisplayName("the prompt is read at the merged winner's place of the step, not the mission type's (A7)")
+    @DisplayName(
+            "the prompt is read at the step's place, not the mission type's winner, when the place is another (A7)")
     void thePromptIsReadAtTheWinnersPlaceOfTheStep() {
         pack("base", "base");
         pack("proj", "proj");
