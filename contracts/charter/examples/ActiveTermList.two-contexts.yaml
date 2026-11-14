@@ -1,0 +1,64 @@
+summary: >-
+  The terms in force under an activation whose closure holds two glossary contexts in force: the project pack's copy
+  of spec-kitty-core, which replaced the built-in copy whole, and the built-in qa. They are ordered by context id, then
+  term id; the deprecated term is listed with its status. Each term links its read and its context's under the
+  activation.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  terms:
+    - urn: term:qa/flaky-test
+      contextId: qa
+      termId: flaky-test
+      name: flaky test
+      definition: A test that passes and fails on the same code.
+      status: active
+      avoid:
+        - random failure
+      packId: core
+      level: built-in
+      _links:
+        effective-term:
+          href: /api/v1/activations/a-1/artifacts/glossary/qa/terms/flaky-test
+        effective-glossary:
+          href: /api/v1/activations/a-1/artifacts/glossary/qa
+    - urn: term:spec-kitty-core/lane
+      contextId: spec-kitty-core
+      termId: lane
+      name: lane
+      definition: The old name of a work package's worktree.
+      status: deprecated
+      packId: proj
+      level: project
+      _links:
+        effective-term:
+          href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core/terms/lane
+        effective-glossary:
+          href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core
+    - urn: term:spec-kitty-core/mission
+      contextId: spec-kitty-core
+      termId: mission
+      name: mission
+      definition: A unit of planned work that runs from a specification to a merge.
+      status: active
+      examples:
+        - Each mission has one specification.
+      aliases:
+        - feature
+      avoid:
+        - epic
+      seeAlso:
+        - term:spec-kitty-core/lane
+      packId: proj
+      level: project
+      _links:
+        effective-term:
+          href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core/terms/mission
+        effective-glossary:
+          href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core
+  _links:
+    self:
+      href: /api/v1/activations/a-1/vocabulary/terms
+    activation:
+      href: /api/v1/activations/a-1

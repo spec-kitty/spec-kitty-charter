@@ -634,7 +634,8 @@ public class EffectiveReadService {
      * {@code listEffectiveAssets} and {@code listEffectiveGlossaryContexts}. Each is the version the layer merge keeps
      * across the levels of the closure, with the pack and level that hold it and its policy, and no state; a skill's and
      * a glossary context's state is its own read's, and an asset has none. The whole set is answered, unpaged, from one
-     * {@link PacksSession}, with no in-force resolution; what each winner's pack stores is the packs slice's to read, against the source fingerprint of the answer.
+     * {@link PacksSession}, with no in-force resolution; what each winner's pack stores is the packs slice's to read,
+     * against the source fingerprint of the answer.
      *
      * @param id the activation's id
      * @param kind {@code skill}, {@code asset} or {@code glossary}

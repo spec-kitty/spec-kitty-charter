@@ -309,6 +309,12 @@ rules:
               - asset
               - skills
               - glossaries
+              - vocabulary-terms
+              - vocabulary-contextive
+              - vocabulary-taboos
+              - activation
+              - effective-term
+              - effective-glossary
               - term
               - mission-type
               - step

@@ -69,6 +69,9 @@ files:
   - EffectiveGlossaryContextList.activation.yaml
   - EffectiveGlossaryContextRead.spec-kitty-core.yaml
   - EffectiveGlossaryTermRead.mission.yaml
+  - ActiveTermList.two-contexts.yaml
+  - Contextive.two-contexts.yaml
+  - TabooList.shared-word.yaml
   - ArtifactReferenceList.activation.yaml
   - EffectiveStepPrompt.three-levels.yaml
   - EffectiveStepPrompt.empty-slot.yaml

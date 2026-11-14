@@ -1,0 +1,36 @@
+title: TabooEntry
+description: >-
+  One word to avoid and the term to use instead (#106, FR-017; ADR-0076 decision 7): an entry of the avoid list of a
+  term in force. A word two terms avoid is two entries.
+type: object
+additionalProperties: false
+required:
+  - word
+  - term
+  - name
+properties:
+  word:
+    type: string
+    minLength: 1
+    description: The word to avoid, as the term's avoid list writes it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.avoid
+  term:
+    type: string
+    pattern: '^term:[a-z][a-z0-9]*(-[a-z0-9]+)*[/][a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The URN of the term that avoids the word, term:<context-id>/<term-id>.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.urn
+  name:
+    type: string
+    minLength: 1
+    description: The name of that term, the form to use instead.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.name
+x-derived:
+  rule: One avoided word of one term in force (ADR-0076 decision 7).
+  inputs:
+    - the glossary files under the glossaries/ directory of each winning pack

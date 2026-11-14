@@ -1,0 +1,34 @@
+summary: >-
+  The Contextive v1 definitions file of an activation with two glossary contexts in force, ordered by id: qa, which
+  declares no paths, and the project pack's spec-kitty-core, which declares two. Each term carries meta.urn and
+  meta.status; a member the term does not have (examples, aliases) is absent.
+value: |
+  contexts:
+  - name: Quality assurance
+    domainVisionStatement: The vocabulary of testing and its reports.
+    terms:
+    - name: flaky test
+      definition: A test that passes and fails on the same code.
+      meta:
+        urn: term:qa/flaky-test
+        status: active
+  - name: Spec Kitty core
+    domainVisionStatement: Canonical Spec Kitty terminology, as this project uses it.
+    paths:
+    - kitty-specs/**
+    - .kittify/**
+    terms:
+    - name: lane
+      definition: The old name of a work package's worktree.
+      meta:
+        urn: term:spec-kitty-core/lane
+        status: deprecated
+    - name: mission
+      definition: A unit of planned work that runs from a specification to a merge.
+      examples:
+      - Each mission has one specification.
+      aliases:
+      - feature
+      meta:
+        urn: term:spec-kitty-core/mission
+        status: active

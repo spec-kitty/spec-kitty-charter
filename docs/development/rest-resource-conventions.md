@@ -106,7 +106,11 @@ A path names a resource, never an action. Every resource is one of four archetyp
 ## Media types
 
 - **Success** is `application/json`; every non-2xx body is `application/problem+json`
-  ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)).
+  ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)). The exceptions answer `application/yaml`
+  ([RFC 9512](https://www.rfc-editor.org/rfc/rfc9512)), described in the contract as a string with an example:
+  - `/openapi.yaml`, the bundled contract;
+  - `…/activations/{activationId}/vocabulary/contextive`, a Contextive definitions file
+    ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) decision 6).
 - A request that accepts no representation an operation has is a 406. The problem is still served
   as `application/problem+json`, as RFC 9457 allows for errors.
 - An operation that takes no body refuses a non-empty one with a 400 (`POST /packs/refresh`).

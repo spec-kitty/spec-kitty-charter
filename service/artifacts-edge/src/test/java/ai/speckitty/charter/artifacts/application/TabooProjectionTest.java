@@ -56,6 +56,29 @@ class TabooProjectionTest {
     }
 
     @Test
+    void wordsAreInCodePointOrderCaseSensitiveAndAPrefixFirst() {
+        // U+1F600 is a surrogate pair in UTF-16, which String.compareTo would put before U+FFFD.
+        String beyondTheBasicPlane = "\uD83D\uDE00";
+        List<Entry> entries = TabooProjection.of(
+                List.of(term("core", "lane", List.of(beyondTheBasicPlane, "\uFFFD", "epics", "epic", "Epic"))));
+
+        assertThat(entries)
+                .extracting(Entry::word)
+                .containsExactly("Epic", "epic", "epics", "\uFFFD", beyondTheBasicPlane);
+    }
+
+    @Test
+    void theCodePointOrderComparesEqualStringsAsEqualAndAPrefixBeforeItsExtension() {
+        assertThat(TabooProjection.byCodePoint("epic", "epic")).isZero();
+        assertThat(TabooProjection.byCodePoint("epic", "epics")).isNegative();
+        assertThat(TabooProjection.byCodePoint("epics", "epic")).isPositive();
+        assertThat(TabooProjection.byCodePoint("\uFFFD", "\uD83D\uDE00")).isNegative();
+        assertThat(TabooProjection.byCodePoint("\uD83D\uDE00", "\uFFFD")).isPositive();
+        assertThat(TabooProjection.byCodePoint("\uD83D\uDE00a", "\uD83D\uDE00b"))
+                .isNegative();
+    }
+
+    @Test
     void termsThatAvoidNothingGiveNoEntry() {
         assertThat(TabooProjection.of(List.of(term("core", "lane", List.of())))).isEmpty();
         assertThat(TabooProjection.of(List.of())).isEmpty();

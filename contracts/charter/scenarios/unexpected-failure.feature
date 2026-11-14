@@ -112,6 +112,9 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getEffectiveMissionSkeleton     | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |
       | getEffectiveMissionStepContract | /activations/a-1/artifacts/mission_step_contract/c          |
       | getActivationSkippedReport      | /activations/a-1/skipped                                    |
+      | getActivationVocabularyTerms    | /activations/a-1/vocabulary/terms                           |
+      | getActivationVocabularyContextive | /activations/a-1/vocabulary/contextive                      |
+      | getActivationVocabularyTaboos   | /activations/a-1/vocabulary/taboos                          |
       | getEffectiveGraph               | /activations/a-1/graph                                      |
       | getEffectiveActionContext       | /activations/a-1/mission-types/m/actions/s/context          |
       | getEffectiveStepPrompt          | /activations/a-1/mission-types/m/actions/s/prompt           |

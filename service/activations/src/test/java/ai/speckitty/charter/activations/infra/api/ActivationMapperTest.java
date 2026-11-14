@@ -131,7 +131,10 @@ class ActivationMapperTest {
                         "assets",
                         "asset",
                         "skills",
-                        "glossaries");
+                        "glossaries",
+                        "vocabulary-terms",
+                        "vocabulary-contextive",
+                        "vocabulary-taboos");
         assertThat(activation.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/A-1");
         assertThat(mapper.self("a b")).isEqualTo("/api/v1/activations/a%20b");
     }

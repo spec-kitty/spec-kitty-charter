@@ -28,6 +28,9 @@ dependencies {
     api(project(":charter-api"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("jackson-databind"))
+    // infra.api: the Contextive document is answered as YAML text (ADR-0076 decision 6). Already in the catalog and
+    // the verification metadata, and on the runtime classpath through :packs, so nothing new is fetched.
+    implementation(catalog.lib("snakeyaml-engine"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
     // The example packs (ADR-0070): SC-001 reads every term of the built-in vocabulary through the real store.

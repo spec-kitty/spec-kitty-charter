@@ -1,0 +1,22 @@
+summary: >-
+  The words to avoid under an activation: epic is avoided by two terms of two contexts and so appears twice, ordered by
+  word and then term URN; each entry names the term to use instead.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  entries:
+    - word: epic
+      term: term:planning/initiative
+      name: initiative
+    - word: epic
+      term: term:spec-kitty-core/mission
+      name: mission
+    - word: random failure
+      term: term:qa/flaky-test
+      name: flaky test
+  _links:
+    self:
+      href: /api/v1/activations/a-1/vocabulary/taboos
+    activation:
+      href: /api/v1/activations/a-1

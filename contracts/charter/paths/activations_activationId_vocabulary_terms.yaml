@@ -1,0 +1,67 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: getActivationVocabularyTerms
+  summary: List the terms in force under an activation.
+  description: >-
+    The vocabulary in force under an activation (#106, FR-014 and FR-016; ADR-0076 decisions 1 to 5 and 8): every term
+    the winning copy of a glossary context in force holds. A context is in force when its effective state is active;
+    one the activation deselects, denies or does not select gives no term. A context overrides across levels whole, so
+    a term only a copy the winner replaced holds is not listed, and nothing is merged per term. Two contexts that define
+    one name give two terms. Every term of a context in force is listed whatever its status, and each carries it: a
+    client filters by status. Each term names the pack and level of its context's winning copy.
+
+    The terms are ordered by context id, then by term id, each in Unicode code point order (case-sensitive, no
+    locale). An activation with no glossary context in force answers 200 with an empty terms list.
+
+    _links holds self and activation. Each term links effective-term, its read under the activation
+    (getEffectiveGlossaryTerm), and effective-glossary, its context's (getEffectiveGlossaryContext).
+
+    The order of the refusals, each judged before any If-None-Match: an unknown activation is a 404
+    activation_not_found, the only reason this read answers 404. A pack of the closure that is no longer configured, a
+    closure that cannot compose or merge (two packs of one level holding one context id are pack_sibling_conflict),
+    and a winner's pack that cannot be read are 500, with their code; stale_input and internal_error may be retried.
+    The answer is never partial: the contexts in force and their copies are read against one source fingerprint, which
+    the answer carries, each winning pack once, and inputs that change between the two are stale_input.
+
+    ETag identifies the representation: it changes with the activation's revision and with any pack of the
+    activation's closure, and it does not change when a pack outside the closure changes. It is not the tag of the
+    Contextive or taboo read. A matching If-None-Match is a 304 without a body, and a tag of another representation
+    never matches (RFC 9110 section 13.1.2).
+  tags:
+  - Vocabulary
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The terms in force under the activation, by context id and then term id.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActiveTermList.yaml
+          examples:
+            two-contexts:
+              $ref: ../examples/ActiveTermList.two-contexts.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
