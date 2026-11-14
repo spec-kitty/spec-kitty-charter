@@ -16,6 +16,9 @@ requirement_refs:
 planning_base_branch: feat/106-glossary-contexts
 merge_target_branch: feat/106-glossary-contexts
 branch_strategy: Planning artifacts for this mission were generated on feat/106-glossary-contexts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/106-glossary-contexts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-glossary-contexts-and-terms-01M7B1PP
+base_commit: 8fe790debb9a151ef5dcd33fdbb90fc598cbfd3f
+created_at: '2026-11-14T09:53:57.757745+00:00'
 subtasks:
 - T019
 - T020
@@ -29,6 +32,27 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
 authoritative_surface: service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/
+create_intent:
+- contracts/charter/paths/packs_packId_artifacts_glossary.yaml
+- contracts/charter/paths/packs_packId_artifacts_glossary_contextId.yaml
+- contracts/charter/paths/packs_packId_artifacts_glossary_contextId_terms_termId.yaml
+- contracts/charter/parameters/ContextId.yaml
+- contracts/charter/parameters/TermId.yaml
+- contracts/charter/schemas/GlossaryContextList.yaml
+- contracts/charter/schemas/GlossaryContextSummary.yaml
+- contracts/charter/schemas/GlossaryContext.yaml
+- contracts/charter/schemas/GlossaryTerm.yaml
+- contracts/charter/scenarios/glossary.feature
+- contracts/charter/changes/2026-11-14-glossary-reads-in-a-pack.md
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryReads.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryView.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossaries.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodies.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossariesController.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossariesControllerTest.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodiesTest.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossariesTest.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java
 execution_mode: code_change
 owned_files:
 - contracts/charter/openapi.yaml
@@ -76,27 +100,6 @@ owned_files:
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossariesTest.java
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/PackArtifactRoutingTest.java
-create_intent:
-- contracts/charter/paths/packs_packId_artifacts_glossary.yaml
-- contracts/charter/paths/packs_packId_artifacts_glossary_contextId.yaml
-- contracts/charter/paths/packs_packId_artifacts_glossary_contextId_terms_termId.yaml
-- contracts/charter/parameters/ContextId.yaml
-- contracts/charter/parameters/TermId.yaml
-- contracts/charter/schemas/GlossaryContextList.yaml
-- contracts/charter/schemas/GlossaryContextSummary.yaml
-- contracts/charter/schemas/GlossaryContext.yaml
-- contracts/charter/schemas/GlossaryTerm.yaml
-- contracts/charter/scenarios/glossary.feature
-- contracts/charter/changes/2026-11-14-glossary-reads-in-a-pack.md
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryReads.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryView.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossaries.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodies.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossariesController.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossariesControllerTest.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodiesTest.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossariesTest.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java
 role: implementer
 tags: []
 tracker_refs: []
