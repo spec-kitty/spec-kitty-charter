@@ -193,3 +193,10 @@ codes, `role_pins` and `lineage`).
     `Relationship.of(...)` factories, enforced by ArchUnit `RELATIONSHIP_IS_BOUND`. G only *reads* relationships
     (lineage, enhancers), so its rebase cost is limited to fixtures that build relationships in tests.
   - F status: WP01 to WP09 approved; WP10, WP11 and landing remain.
+- 2026-11-14, second note from slice F, via the orchestrator:
+  - `Relationship.of` throws IAE on a disallowed endpoint pair, so the rebase uses the typed factories.
+  - `MissionStep` gains a ninth component, `substeps`.
+  - The `step` link relation is gone.
+  - **A substep never delegates to an `agent_profile`** (operator ruling, keeping ADR-0032 d1). This settles WP07's
+    open question: a step's profile comes only from selection by its role.
+  - F is at its pre-merge folds, then accept and consolidate. F may land before #106.
