@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -40,3 +40,9 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Mutation testing no-report research, 2026-11-13](/plans/engineering-notes/mutation-testing-no-report-research-2026-11-13/) —
   why each red mutation run since 2026-11-10 left a module with no report, what main already fixes,
   and the failure class still open: a `test` system property PIT's minion never receives (#461).
+- [Service usability run, 2026-11-14: a mission walk under the charter](/plans/engineering-notes/service-usability-run-2026-11-14/) —
+  after slices C and D: the profile, the mission type and a paradigm in a pack, then this repository's charter as an
+  activation, every `software-dev` step's context and prompt, and the review squad.
+- [Usability walk as a BDD test: research, 2026-11-14](/plans/engineering-notes/usability-walk-as-bdd-research-2026-11-14/) —
+  whether the usability sequence can become a BDD test: a squad's verdict, the draft scenarios, and the operator's
+  ruling that it is a per-PR journey over the example packs, not a nightly.
