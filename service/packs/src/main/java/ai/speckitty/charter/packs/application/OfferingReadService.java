@@ -460,7 +460,8 @@ public final class OfferingReadService {
             if (member.isPresent()) {
                 PackCompositionFacts held = factsOf.apply(pack.id());
                 facts.put(pack.id().value(), held);
-                members.add(new PackUnderResolution(pack, member.get(), held.changed(), held.defined()));
+                members.add(new PackUnderResolution(
+                        pack, member.get(), held.changed(), held.defined(), Set.copyOf(held.terms())));
             }
         }
         return members;

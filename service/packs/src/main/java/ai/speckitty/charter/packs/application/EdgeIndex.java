@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
@@ -224,9 +225,21 @@ public final class EdgeIndex implements ComposeResolver {
         return Objects.requireNonNull(byPack.get(place.pack()), "a place of the closure");
     }
 
-    /** Whether the place holds the version in force of its URN; every place does in an index that is not merged. */
+    /**
+     * Whether the place holds the version in force of its URN; every place does in an index that is not merged. A term
+     * is judged by its glossary context's place: the context overrides whole (ADR-0049), so a losing copy of the context
+     * holds none of its terms.
+     */
     private boolean wins(Place place) {
-        return winners.getOrDefault(place.urn(), place).equals(place);
+        Place judged = judged(place);
+        return winners.getOrDefault(judged.urn(), judged).equals(judged);
+    }
+
+    /** The place whose version in force decides a place's: its glossary context's for a term, else itself. */
+    private static Place judged(Place place) {
+        return GlossaryTerm.contextOf(place.urn())
+                .map(context -> new Place(place.pack(), context))
+                .orElse(place);
     }
 
     /** The edge with its target moved to the winner's place when it ends at a losing place (C20); else as it is. */
@@ -235,7 +248,8 @@ public final class EdgeIndex implements ComposeResolver {
         if (lost.isEmpty()) {
             return edge;
         }
-        Place winner = Objects.requireNonNull(view.winners.get(lost.get().urn()), "a lost place has a winner");
+        Place winner =
+                Objects.requireNonNull(view.winners.get(judged(lost.get()).urn()), "a lost place has a winner");
         return new Relationship(
                 edge.from(),
                 edge.fromPack(),

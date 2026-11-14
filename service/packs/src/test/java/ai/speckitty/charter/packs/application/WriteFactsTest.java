@@ -212,4 +212,37 @@ class WriteFactsTest {
         assertThat(unenhanced.prompts().fills()).isEmpty();
         assertThat(unenhanced.prompts().declared()).isEqualTo(facts.prompts().declared());
     }
+
+    private static PackCompositionFacts withTerms() {
+        PackCompositionFacts facts = withPrompts(List.of());
+        return new PackCompositionFacts(
+                facts.changed(),
+                List.of("glossary_context:g", "glossary_context:h", "directive:A"),
+                facts.references(),
+                facts.policy(),
+                facts.presets(),
+                facts.edges(),
+                facts.languages(),
+                facts.bindings(),
+                facts.prompts(),
+                List.of("term:g/lane", "term:h/lane", "term:g/track"));
+    }
+
+    @Test
+    void aRemovedGlossaryContextTakesItsTermsAndEveryOtherWriteKeepsThem() {
+        PackCompositionFacts facts = withTerms();
+        Relationship overrides = edge("A", "OTHER", RelationType.OVERRIDES, "base");
+
+        assertThat(WriteFacts.withoutArtifact(
+                                facts, Urn.parse("glossary_context:g").orElseThrow(), List.of())
+                        .terms())
+                .containsExactly("term:h/lane");
+        assertThat(WriteFacts.withoutArtifact(facts, directive("A"), List.of()).terms())
+                .as("the control: a removal of another kind keeps every term")
+                .isEqualTo(facts.terms());
+        assertThat(WriteFacts.withArtifact(facts, directive("C")).terms()).isEqualTo(facts.terms());
+        assertThat(WriteFacts.withRegisteredEdges(facts, List.of(), List.of(overrides))
+                        .terms())
+                .isEqualTo(facts.terms());
+    }
 }

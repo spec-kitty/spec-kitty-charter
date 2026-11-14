@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.TermStatus;
@@ -49,7 +50,7 @@ class GlossaryYamlTest {
                 aliases: [red-main]
                 avoid: [broken main, green-washing]
                 status: active
-                see_also: [term:spk-internal/release-readiness, term:qa/baseline, term:spk-internal/release-readiness]
+                see_also: [term:spk-internal/release-readiness, "core::term:qa/baseline", term:spk-internal/release-readiness]
               - id: adversarial-squad
                 name: adversarial squad
                 definition: A bounded set of delegates.
@@ -106,7 +107,7 @@ class GlossaryYamlTest {
                 .extracting(Object::toString)
                 .containsExactly(
                         "term:spk-internal/release-readiness",
-                        "term:qa/baseline",
+                        "core::term:qa/baseline",
                         "term:spk-internal/release-readiness");
     }
 
@@ -134,7 +135,7 @@ class GlossaryYamlTest {
         assertThat(dso.terms().getFirst().seeAlso())
                 .containsExactly(
                         "term:spk-internal/release-readiness",
-                        "term:qa/baseline",
+                        "core::term:qa/baseline",
                         "term:spk-internal/release-readiness");
     }
 
@@ -203,14 +204,14 @@ class GlossaryYamlTest {
                         List.of(),
                         List.of(),
                         "active",
-                        List.of("lane")));
+                        List.of("::term:qa/lane")));
 
         assertThatThrownBy(() -> GlossaryBinding.INSTANCE.toEntity(PACK, badStatus))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("unknown term status 'retired'");
         assertThatThrownBy(() -> GlossaryBinding.INSTANCE.toEntity(PACK, badLink))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("see_also entry 'lane' is not a URN");
+                .hasMessage("A pack-qualified reference names a pack before ::");
         assertThat(GlossaryBinding.INSTANCE.toEntity(PACK, dso).localId()).isEqualTo("qa");
     }
 
@@ -283,7 +284,7 @@ class GlossaryYamlTest {
     }
 
     @Test
-    @DisplayName("a repeated term id is a domain violation of the pack, naming the id")
+    @DisplayName("a repeated term id is a schema violation of the pack at the repeat's id; the context is not loaded")
     void aRepeatedTermIdIsAViolation(@TempDir Path host) throws IOException {
         Path pack = pack(host);
         write(pack.resolve("glossaries/qa.glossary.yaml"), MINIMAL + """
@@ -297,9 +298,42 @@ class GlossaryYamlTest {
 
         assertThat(loaded.artifacts(ArtifactKind.GLOSSARY)).isEmpty();
         assertThat(loaded.violations()).singleElement().satisfies(violation -> {
-            assertThat(violation.kind()).isEqualTo("domain");
-            assertThat(violation.reason()).contains("[boundary-value-analysis]");
+            assertThat(violation.kind()).isEqualTo("schema");
+            assertThat(violation.reason()).isEqualTo("uniqueItems violated at /terms/1/id");
         });
+        assertThat(GlossaryYaml.INSTANCE.rules(map(Yaml.load(MINIMAL)), "glossaries/qa.glossary.yaml"))
+                .as("the control: ids that do not repeat break no rule")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("each repeated term id is reported once, at its first repeat")
+    void eachRepeatedTermIdIsReportedOnceAtItsFirstRepeat() {
+        String text = MINIMAL + """
+                  - id: lane
+                    name: lane
+                    definition: d
+                    status: draft
+                  - id: boundary-value-analysis
+                    name: BVA
+                    definition: Again.
+                    status: draft
+                  - id: lane
+                    name: lane
+                    definition: d
+                    status: draft
+                  - id: boundary-value-analysis
+                    name: BVA
+                    definition: Thrice.
+                    status: draft
+                """;
+
+        assertThat(GlossaryYaml.INSTANCE.rules(map(Yaml.load(text)), "glossaries/qa.glossary.yaml"))
+                .extracting(PackContents.SchemaViolation::pointer, PackContents.SchemaViolation::value)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(
+                                List.of("terms", "2", "id"), Optional.of("boundary-value-analysis")),
+                        org.assertj.core.groups.Tuple.tuple(List.of("terms", "3", "id"), Optional.of("lane")));
     }
 
     @Test

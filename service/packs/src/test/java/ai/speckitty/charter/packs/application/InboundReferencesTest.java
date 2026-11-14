@@ -127,28 +127,30 @@ class InboundReferencesTest {
 
     private static Packs withContexts(String version) {
         return base(version)
-                .file("glossaries/g.glossary.yaml", glossary("g"))
-                .file("glossaries/h.glossary.yaml", glossary("h"));
+                .file("glossaries/g.glossary.yaml", glossary("g", "lane", "track"))
+                .file("glossaries/h.glossary.yaml", glossary("h", "lane"));
     }
 
-    private static String glossary(String id) {
-        return """
+    private static String glossary(String id, String... terms) {
+        StringBuilder text = new StringBuilder("""
                 schema_version: "1.0"
                 id: %s
                 name: %s
                 description: d
                 terms:
-                - id: lane
-                  name: lane
-                  definition: d
-                  status: active
-                """.formatted(id, id);
+                """.formatted(id, id));
+        for (String term : terms) {
+            text.append("- id: ").append(term).append("\n  name: ").append(term);
+            text.append("\n  definition: d\n  status: active\n");
+        }
+        return text.toString();
     }
 
     /**
      * #106: a term is an item of its glossary context, so a vocabulary edge onto {@code term:g/lane} refers to
-     * {@code glossary_context:g} and becomes a broken reference when the replace removes that context. Removing the
-     * context h, which no edge reaches a term of, is the control.
+     * {@code glossary_context:g} and becomes a broken reference when the replace removes that context, or when it keeps
+     * g and drops lane from it. Removing the context h, which no edge reaches a term of, and dropping track from g, which
+     * no edge reaches, are the controls.
      */
     @Test
     void aVocabularyEdgeOntoATermOfARemovedContextRefusesTheReplace(@TempDir Path host) {
@@ -188,6 +190,25 @@ class InboundReferencesTest {
                                 Preconditions.none())
                         .outcome())
                 .as("the control: no edge reaches a term of h")
+                .isEqualTo(Outcome.REPLACED);
+
+        CharterRefusal droppedTerm = refusal(() -> rig.register(
+                "base",
+                rig.stage(withContexts("3.0.0").with("glossaries/g.glossary.yaml", glossary("g", "track"))),
+                Preconditions.none()));
+
+        assertThat(droppedTerm.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(droppedTerm.violations())
+                .extracting(RefusalViolation::detail)
+                .containsExactly(
+                        "directive:D_ONE of the pack derived refers to term:g/lane, which the registration removes.");
+        assertThat(rig.register(
+                                "base",
+                                rig.stage(withContexts("3.0.0")
+                                        .with("glossaries/g.glossary.yaml", glossary("g", "lane"))),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: g keeps lane and drops track, which no edge reaches")
                 .isEqualTo(Outcome.REPLACED);
     }
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.ArrayList;
@@ -21,9 +22,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Glossary term")
 class GlossaryTermTest {
 
-    private static final Urn LANE = Urn.parse("term:spec-kitty-core/lane").orElseThrow();
+    private static final PackQualifiedReference LANE = PackQualifiedReference.parse("term:spec-kitty-core/lane");
 
-    private static GlossaryTerm term(String name, String definition, List<Urn> seeAlso) {
+    private static GlossaryTerm term(String name, String definition, List<PackQualifiedReference> seeAlso) {
         return new GlossaryTerm(
                 new TermIdentifier("mission"),
                 name,
@@ -65,7 +66,8 @@ class GlossaryTermTest {
     @Test
     @DisplayName("a term's context is the glossary_context its address names; any other URN names none")
     void aTermNamesItsContext() {
-        assertThat(GlossaryTerm.contextOf(LANE)).contains(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core"));
+        assertThat(GlossaryTerm.contextOf(LANE.asUrn().orElseThrow()))
+                .contains(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core"));
         assertThat(GlossaryTerm.contextOf(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core")))
                 .as("a context is no term")
                 .isEmpty();
@@ -82,7 +84,7 @@ class GlossaryTermTest {
     @Test
     @DisplayName("the lists are copies of what was given")
     void theListsAreCopies() {
-        List<Urn> seeAlso = new ArrayList<>(List.of(LANE));
+        List<PackQualifiedReference> seeAlso = new ArrayList<>(List.of(LANE));
         GlossaryTerm term = term("mission", "d", seeAlso);
         seeAlso.clear();
 
@@ -112,15 +114,34 @@ class GlossaryTermTest {
         assertThat(term("mission", "d", List.of()).definition()).isEqualTo("d");
     }
 
-    @Test
-    @DisplayName("a see_also entry that is not a term's URN is refused; a term URN is accepted")
-    void aSeeAlsoThatIsNoTermIsRefused() {
-        Urn context = Urn.parse("glossary_context:spec-kitty-core").orElseThrow();
-
-        assertThatThrownBy(() -> term("mission", "d", List.of(LANE, context)))
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "glossary_context:spec-kitty-core",
+                "core::glossary_context:spec-kitty-core",
+                "directive:DIRECTIVE_001",
+                "term:lane",
+                "core::term:lane",
+                "nonsense"
+            })
+    @DisplayName("a see_also entry that does not name a term, bare or qualified, is refused beside a term that builds")
+    void aSeeAlsoThatIsNoTermIsRefused(String entry) {
+        assertThatThrownBy(() -> term("mission", "d", List.of(LANE, PackQualifiedReference.parse(entry))))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("see_also names terms only");
         assertThat(term("mission", "d", List.of(LANE)).seeAlso()).containsExactly(LANE);
+    }
+
+    @Test
+    @DisplayName("a see_also entry is a term reference: bare for the term's own pack, pack-qualified for another's")
+    void aSeeAlsoEntryIsAPackQualifiableTermReference() {
+        PackQualifiedReference qualified = PackQualifiedReference.parse("base::term:g/lane");
+
+        GlossaryTerm term = term("mission", "d", List.of(LANE, qualified));
+
+        assertThat(term.seeAlso()).containsExactly(LANE, qualified);
+        assertThat(term.seeAlso().get(1).packName()).contains("base");
+        assertThat(term.seeAlso().get(1).urn()).isEqualTo("term:g/lane");
     }
 
     @Test

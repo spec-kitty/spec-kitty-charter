@@ -3,14 +3,26 @@
     "FR-003"
   ],
   "configuredLevel": "org",
-  "findings": [],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "glossaries/core.glossary.yaml",
+      "place": [
+        "terms",
+        "2",
+        "id"
+      ]
+    }
+  ],
   "load": {
     "level": "org",
     "loads": false,
     "violations": [
       {
-        "kind": "domain",
-        "says": "Constraint breached: Each term's id must be unique within glossary context core; repeated: [lane]"
+        "file": "glossaries/core.glossary.yaml",
+        "kind": "schema",
+        "says": "uniqueItems violated at /terms/2/id"
       }
     ]
   }

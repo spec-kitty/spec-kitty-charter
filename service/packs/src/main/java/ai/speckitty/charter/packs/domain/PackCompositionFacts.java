@@ -10,7 +10,8 @@ import java.util.Objects;
 /**
  * What the compose needs to know about one pack, read from one assembly of it: the artifacts its graph documents say it
  * changes, the artifacts it holds, the references it writes, the mutability policy it declares, the activation presets
- * it holds, the typed edges it writes and the slots its step prompts declare and its step enhancements fill.
+ * it holds, the typed edges it writes, the slots its step prompts declare and its step enhancements fill, and the terms
+ * its glossary contexts hold.
  *
  * @param changed the distinct targets of its {@code overrides} relations, in first-seen order (an {@code enhances}
  *     relation changes nothing, A14)
@@ -32,6 +33,9 @@ import java.util.Objects;
  *     absent
  * @param prompts the slots each held step prompt declares and the fills each held step enhancement writes, from the
  *     same read (research R9); {@link PromptFacts#NONE} when it holds neither
+ * @param terms the terms its glossary contexts hold, as bare URNs ({@code term:<context-id>/<term-id>}), from the same
+ *     assembly, in authored order. A term is an item of its context, never an artifact, so it is not among
+ *     {@code defined} (ADR-0049 decision 3); empty when the pack holds no glossary context
  */
 public record PackCompositionFacts(
         List<String> changed,
@@ -42,7 +46,8 @@ public record PackCompositionFacts(
         List<Relationship> edges,
         Map<String, List<String>> languages,
         Map<String, String> bindings,
-        PromptFacts prompts) {
+        PromptFacts prompts,
+        List<String> terms) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset, prompt or enhancement. */
     public static final PackCompositionFacts NONE = new PackCompositionFacts(List.of(), List.of(), List.of());
@@ -59,6 +64,7 @@ public record PackCompositionFacts(
      * @param languages the languages each held artifact applies to, by bare URN text
      * @param bindings the mission type each held artifact is bound to, by bare URN text
      * @param prompts the slots its step prompts declare and its step enhancements fill
+     * @param terms the terms its glossary contexts hold, as bare URNs
      */
     public PackCompositionFacts {
         Objects.requireNonNull(changed, "changed");
@@ -70,6 +76,7 @@ public record PackCompositionFacts(
         Objects.requireNonNull(languages, "languages");
         Objects.requireNonNull(bindings, "bindings");
         Objects.requireNonNull(prompts, "prompts");
+        Objects.requireNonNull(terms, "terms");
         changed = List.copyOf(changed);
         defined = List.copyOf(defined);
         references = List.copyOf(references);
@@ -79,6 +86,33 @@ public record PackCompositionFacts(
         languages.forEach((urn, declared) -> copy.put(urn, List.copyOf(declared)));
         languages = Collections.unmodifiableMap(copy);
         bindings = Collections.unmodifiableMap(new LinkedHashMap<>(bindings));
+        terms = List.copyOf(terms);
+    }
+
+    /**
+     * The facts of a pack that holds no glossary context.
+     *
+     * @param changed the artifacts it changes
+     * @param defined the artifacts it holds
+     * @param references the references it writes
+     * @param policy the mutability policy it declares
+     * @param presets the presets it holds
+     * @param edges the typed edges it writes
+     * @param languages the languages each held artifact applies to, by bare URN text
+     * @param bindings the mission type each held artifact is bound to, by bare URN text
+     * @param prompts the slots its step prompts declare and its step enhancements fill
+     */
+    public PackCompositionFacts(
+            List<String> changed,
+            List<String> defined,
+            List<String> references,
+            MutabilityPolicySource policy,
+            List<Preset> presets,
+            List<Relationship> edges,
+            Map<String, List<String>> languages,
+            Map<String, String> bindings,
+            PromptFacts prompts) {
+        this(changed, defined, references, policy, presets, edges, languages, bindings, prompts, List.of());
     }
 
     /**

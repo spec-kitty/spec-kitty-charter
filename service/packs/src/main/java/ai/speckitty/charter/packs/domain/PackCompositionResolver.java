@@ -61,12 +61,18 @@ public final class PackCompositionResolver {
      * @param changedArtifacts the artifacts its graph documents say it changes (an {@code overrides} relation on the
      *     artifact; an {@code enhances} relation is additive and changes nothing, A14); empty when they name none
      * @param definedArtifacts the artifacts the pack itself holds, as bare URNs; empty when it holds none
+     * @param heldTerms the terms the pack's glossary contexts hold, as bare URNs ({@code term:<context-id>/<term-id>});
+     *     empty when it holds none
      */
     public record PackUnderResolution(
             ConfiguredPack configured,
             PackDescriptor descriptor,
             List<String> changedArtifacts,
-            List<String> definedArtifacts) {
+            List<String> definedArtifacts,
+            Set<String> heldTerms) {
+
+        /** The prefix of a term's URN text, which {@link #holds} judges by its context. */
+        private static final String TERM = NodeKind.TERM.token() + ":";
 
         /**
          * Checks the fields.
@@ -75,24 +81,52 @@ public final class PackCompositionResolver {
          * @param descriptor its descriptor
          * @param changedArtifacts the artifacts it changes
          * @param definedArtifacts the artifacts it holds
+         * @param heldTerms the terms it holds
          */
         public PackUnderResolution {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptor, "descriptor");
             Objects.requireNonNull(changedArtifacts, "changedArtifacts");
             Objects.requireNonNull(definedArtifacts, "definedArtifacts");
+            Objects.requireNonNull(heldTerms, "heldTerms");
             changedArtifacts = List.copyOf(changedArtifacts);
             definedArtifacts = List.copyOf(definedArtifacts);
+            heldTerms = Set.copyOf(heldTerms);
         }
 
         /**
-         * Whether the pack holds the artifact a bare URN names: the one answer, from the list the pack was read with.
-         * A reference of a kind the pack holds no artifacts of is held by no pack, so it fails open to nothing.
+         * A pack under resolution whose glossary contexts hold no term.
+         *
+         * @param configured the configured pack
+         * @param descriptor its descriptor
+         * @param changedArtifacts the artifacts it changes
+         * @param definedArtifacts the artifacts it holds
+         */
+        public PackUnderResolution(
+                ConfiguredPack configured,
+                PackDescriptor descriptor,
+                List<String> changedArtifacts,
+                List<String> definedArtifacts) {
+            this(configured, descriptor, changedArtifacts, definedArtifacts, Set.of());
+        }
+
+        /**
+         * Whether the pack holds what a bare URN names: the one answer, from the lists the pack was read with. A term
+         * ({@code term:<context-id>/<term-id>}) is an item of its glossary context, not an artifact (ADR-0049 decision
+         * 3), so the pack holds it when it holds the context and the context holds the term. A reference of a kind the
+         * pack holds no artifacts of is held by no pack, so it fails open to nothing.
          *
          * @param urn the bare URN text, {@code <kind>:<id>}
-         * @return {@code true} when the pack's held artifacts name it
+         * @return {@code true} when the pack's held artifacts, or for a term its held context, name it
          */
         public boolean holds(String urn) {
+            if (urn.startsWith(TERM)) {
+                return heldTerms.contains(urn)
+                        && Urn.parse(urn)
+                                .flatMap(GlossaryTerm::contextOf)
+                                .filter(context -> definedArtifacts.contains(context.toString()))
+                                .isPresent();
+            }
             return definedArtifacts.contains(urn);
         }
 
@@ -478,7 +512,7 @@ public final class PackCompositionResolver {
 
     /**
      * Refuses a pack-qualified reference whose pack the compose does not hold, whose pack lies outside the referring
-     * pack's {@code depends_on} closure, or whose pack does not hold the graph-authored artifact it names.
+     * pack's {@code depends_on} closure, or whose pack does not hold the graph-authored artifact, or the term, it names.
      */
     private static void checkQualifiedReference(
             PackQualifiedReference reference,
@@ -505,7 +539,7 @@ public final class PackCompositionResolver {
         Optional<Urn> urn = reference.asUrn();
         if (urn.isPresent()
                 && urn.get().kind().edgeTarget()
-                && urn.get().kind().artifactKind().isPresent()
+                && (urn.get().kind().artifactKind().isPresent() || urn.get().kind() == NodeKind.TERM)
                 && !target.holds(urn.get().toString())) {
             throw new Refusal(
                     Failure.REFERENCE_ARTIFACT_MISSING,
