@@ -652,11 +652,7 @@ public final class FileSystemPackInspector implements PackInspector {
                     List.of(new SchemaViolation(
                             file, List.of("id"), "const", Optional.empty(), Optional.of(id), Map.of())));
         }
-        Optional<SchemaViolation> misnamed = misnamedArtifact(file, kind, document);
-        if (misnamed.isPresent()) {
-            return new FileRead.Unreadable<>(file, null, List.of(misnamed.get()));
-        }
-        List<SchemaViolation> broken = kindRules(file, kind, document);
+        List<SchemaViolation> broken = artifactRules(file, kind, document);
         if (!broken.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, broken);
         }
@@ -668,6 +664,14 @@ public final class FileSystemPackInspector implements PackInspector {
         }
         // An empty document passes no schema that asks for an object, so a document that passed is a value.
         return new FileRead.Read<>(file, Objects.requireNonNullElse(document, Map.of()));
+    }
+
+    /**
+     * The store's rules of an artifact that its schema cannot state, in the order the store applies them: the stem
+     * rule ({@link #misnamedArtifact}) first, and only when it holds, the rules of the kind ({@link #kindRules}).
+     */
+    private static List<SchemaViolation> artifactRules(String file, String kind, @Nullable Object document) {
+        return misnamedArtifact(file, kind, document).map(List::of).orElseGet(() -> kindRules(file, kind, document));
     }
 
     /**
