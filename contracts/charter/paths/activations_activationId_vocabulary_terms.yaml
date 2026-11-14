@@ -1,7 +1,7 @@
 parameters:
 - $ref: ../parameters/ActivationId.yaml
 get:
-  operationId: getActivationVocabularyTerms
+  operationId: listActivationVocabularyTerms
   summary: List the terms in force under an activation.
   description: >-
     The vocabulary in force under an activation (#106, FR-014 and FR-015; ADR-0076 decisions 1 to 5 and 8): every term

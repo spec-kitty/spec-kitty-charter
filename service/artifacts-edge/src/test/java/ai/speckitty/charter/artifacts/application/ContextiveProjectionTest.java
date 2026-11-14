@@ -37,8 +37,8 @@ class ContextiveProjectionTest {
                 List.of());
     }
 
-    private static ActiveTerm term(String contextId, String id, List<String> examples, List<String> aliases) {
-        return new ActiveTerm(
+    private static VocabularyTerm term(String contextId, String id, List<String> examples, List<String> aliases) {
+        return new VocabularyTerm(
                 "term:" + contextId + "/" + id,
                 contextId,
                 id,

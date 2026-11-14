@@ -80,9 +80,9 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
-      | getActivationVocabularyTerms      | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
+      | listActivationVocabularyTerms     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
       | getActivationVocabularyContextive | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/contextive                                 |
-      | getActivationVocabularyTaboos     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
+      | listActivationVocabularyTaboos    | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
       | getEffectiveGraph                 | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
@@ -159,9 +159,9 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
-      | getActivationVocabularyTerms      | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
+      | listActivationVocabularyTerms     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
       | getActivationVocabularyContextive | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/contextive                                 |
-      | getActivationVocabularyTaboos     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
+      | listActivationVocabularyTaboos    | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
       | getEffectiveGraph                 | GET    | /activations/01ARWG13C000000000000000AC/graph                                                 |
       | getEffectiveActionContext         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/context  |
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |

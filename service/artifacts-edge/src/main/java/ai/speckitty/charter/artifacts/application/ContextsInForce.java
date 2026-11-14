@@ -29,11 +29,11 @@ public record ContextsInForce(Scope scope, List<Held> contexts) {
 
     /** The vocabulary read the contexts are named for: each has a tag of its own (ADR-0076 decision 8). */
     public enum Vocabulary {
-        /** {@code getActivationVocabularyTerms}. */
+        /** {@code listActivationVocabularyTerms}. */
         TERMS,
         /** {@code getActivationVocabularyContextive}. */
         CONTEXTIVE,
-        /** {@code getActivationVocabularyTaboos}. */
+        /** {@code listActivationVocabularyTaboos}. */
         TABOOS
     }
 }

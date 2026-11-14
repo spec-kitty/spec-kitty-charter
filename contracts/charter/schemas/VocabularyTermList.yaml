@@ -1,4 +1,4 @@
-title: ActiveTermList
+title: VocabularyTermList
 description: >-
   The terms in force under an activation (#106, FR-014; ADR-0076 decision 5), unpaged: every term the winning copy of a
   glossary context in force holds, whatever its status, ordered by context id and then term id, each in Unicode code
@@ -46,7 +46,7 @@ properties:
     type: array
     description: The terms in force, by context id and then term id.
     items:
-      $ref: ActiveTerm.yaml
+      $ref: VocabularyTerm.yaml
     x-derived:
       rule: >-
         The terms of the winning copy of each glossary context whose effective state is active, sorted by context id,

@@ -1,13 +1,13 @@
 parameters:
 - $ref: ../parameters/ActivationId.yaml
 get:
-  operationId: getActivationVocabularyTaboos
+  operationId: listActivationVocabularyTaboos
   summary: List the words to avoid under an activation, each with the term to use instead.
   description: >-
     The taboo list of the vocabulary in force under an activation (#106, FR-017; ADR-0076 decisions 7 and 8; ADR-0049
-    decision 15): a projection of the terms getActivationVocabularyTerms answers, the one source of banned vocabulary
-    for a terminology gate. There is one entry per avoided word per term: word (an entry of the term's avoid), term
-    (its URN) and name (its name). A word two terms avoid appears twice: the list states facts and leaves the gate to
+    decision 15): a projection of the terms listActivationVocabularyTerms answers, the one source of taboos for a
+    terminology gate. There is one entry per avoided word per term: word (an entry of the term's avoid), urn (the
+    term's URN) and termName (the term's name, the form to use instead). A word two terms avoid appears twice: the list states facts and leaves the gate to
     decide. A term that avoids nothing gives no entry, and every status is listed, a deprecated term's avoid entries
     included.
 
@@ -15,7 +15,7 @@ get:
     An activation with no glossary context in force, or whose terms avoid nothing, answers 200 with an empty entries
     list. _links holds self and activation.
 
-    The refusals, the fingerprint and the ETag are those of getActivationVocabularyTerms, judged in the same order and
+    The refusals, the fingerprint and the ETag are those of listActivationVocabularyTerms, judged in the same order and
     before any If-None-Match; the ETag is this read's own, not the tag of the terms or the Contextive read.
   tags:
   - Vocabulary

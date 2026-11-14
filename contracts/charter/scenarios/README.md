@@ -168,7 +168,7 @@ Keep it small; add a step only when a scenario cannot be written without it.
   holds `name`, `domainVisionStatement`, `paths` (when present) and `terms`, in that order, each term `name`,
   `definition`, `examples` and `aliases` (when present) and `meta`, in that order, and each `meta` exactly `urn` then
   `status`; a list that is present is a non-empty list of strings. `When I remember the URNs and the avoid entries of
-  the terms` reads a `getActivationVocabularyTerms` answer; `Then the meta.urn values of the Contextive document are the
+  the terms` reads a `listActivationVocabularyTerms` answer; `Then the meta.urn values of the Contextive document are the
   remembered URNs` and `Then the taboo entries are the remembered avoid entries` hold the projections of one activation
   to its terms (SC-004), the taboo entries also in code point order of word, then URN (`vocabulary.feature`, bound in
   `VocabularySteps`).

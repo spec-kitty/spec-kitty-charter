@@ -6,8 +6,8 @@ type: object
 additionalProperties: false
 required:
   - word
-  - term
-  - name
+  - urn
+  - termName
 properties:
   word:
     type: string
@@ -16,17 +16,19 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
       symbol: GlossaryTerm.avoid
-  term:
+  urn:
     type: string
     pattern: '^term:[a-z][a-z0-9]*(-[a-z0-9]+)*[/][a-z][a-z0-9]*(-[a-z0-9]+)*$'
-    description: The URN of the term that avoids the word, term:<context-id>/<term-id>.
+    description: >-
+      The URN of the term that avoids the word, the term to use instead, term:<context-id>/<term-id>: the urn of the
+      same term in VocabularyTerm and GlossaryTerm.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
       symbol: GlossaryTerm.urn
-  name:
+  termName:
     type: string
     minLength: 1
-    description: The name of that term, the form to use instead.
+    description: The name of that term, the form to use instead of the word.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
       symbol: GlossaryTerm.name

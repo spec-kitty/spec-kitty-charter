@@ -669,8 +669,8 @@ public class EffectiveReadService {
 
     /**
      * The glossary contexts in force under an activation (ADR-0076 decisions 1, 2 and 8): the vocabulary reads'
-     * {@code getActivationVocabularyTerms}, {@code getActivationVocabularyContextive} and
-     * {@code getActivationVocabularyTaboos}. Each is the winning copy of a {@code glossary} context whose state in the
+     * {@code listActivationVocabularyTerms}, {@code getActivationVocabularyContextive} and
+     * {@code listActivationVocabularyTaboos}. Each is the winning copy of a {@code glossary} context whose state in the
      * effective set is {@link State#ACTIVE}, with the pack and level that hold it; a context the document deselects,
      * denies or does not select is not listed, and a context overrides across levels whole, so no copy the winner
      * replaced is named. The contexts are filtered from the one effective set the list read builds

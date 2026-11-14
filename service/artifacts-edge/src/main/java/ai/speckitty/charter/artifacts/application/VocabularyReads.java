@@ -49,19 +49,19 @@ public final class VocabularyReads {
     }
 
     /**
-     * {@code getActivationVocabularyTerms}: every term in force, by context id and then term id.
+     * {@code listActivationVocabularyTerms}: every term in force, by context id and then term id.
      *
      * @param activationId the activation's id, exactly as the request names it
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the terms, or that the client holds the current representation
      * @throws CharterRefusal as the activations port refuses, or with {@code stale_input}
      */
-    public Outcome<ActiveTermList> terms(String activationId, @Nullable String ifNoneMatch) {
+    public Outcome<VocabularyTermList> terms(String activationId, @Nullable String ifNoneMatch) {
         return read(
                 activationId,
                 ContextsInForce.Vocabulary.TERMS,
                 ifNoneMatch,
-                inForce -> new ActiveTermList(inForce.scope(), inForce.terms()));
+                inForce -> new VocabularyTermList(inForce.scope(), inForce.terms()));
     }
 
     /**
@@ -82,7 +82,7 @@ public final class VocabularyReads {
     }
 
     /**
-     * {@code getActivationVocabularyTaboos}: the taboo list of the terms in force.
+     * {@code listActivationVocabularyTaboos}: the taboo list of the terms in force.
      *
      * @param activationId the activation's id, exactly as the request names it
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
@@ -112,9 +112,9 @@ public final class VocabularyReads {
     /** The winning copies of the contexts in force, each winning pack read once, and their terms in order. */
     private InForce inForce(ContextsInForce named) {
         Map<String, GlossaryView> copies = WinnerReads.of(() -> packs.read(named));
-        List<ActiveTerm> terms = named.contexts().stream()
-                .flatMap(winner -> copyOf(copies, winner).terms().stream().map(term -> ActiveTerm.of(winner, term)))
-                .sorted(Comparator.comparing(ActiveTerm::contextId).thenComparing(ActiveTerm::termId))
+        List<VocabularyTerm> terms = named.contexts().stream()
+                .flatMap(winner -> copyOf(copies, winner).terms().stream().map(term -> VocabularyTerm.of(winner, term)))
+                .sorted(Comparator.comparing(VocabularyTerm::contextId).thenComparing(VocabularyTerm::id))
                 .toList();
         return new InForce(named.scope(), terms, copies);
     }
@@ -128,7 +128,7 @@ public final class VocabularyReads {
     }
 
     /** The vocabulary of one read: the scope, the terms in order and the winning copies by id. */
-    private record InForce(Scope scope, List<ActiveTerm> terms, Map<String, GlossaryView> contexts) {}
+    private record InForce(Scope scope, List<VocabularyTerm> terms, Map<String, GlossaryView> contexts) {}
 
     /**
      * The port that reads the winning copies of the glossary contexts in force (research R6, NFR-005). The adapter is
@@ -149,12 +149,12 @@ public final class VocabularyReads {
     }
 
     /**
-     * What {@code getActivationVocabularyTerms} answers.
+     * What {@code listActivationVocabularyTerms} answers.
      *
      * @param scope the activation and the read
      * @param terms the terms in force, by context id and then term id
      */
-    public record ActiveTermList(Scope scope, List<ActiveTerm> terms) {
+    public record VocabularyTermList(Scope scope, List<VocabularyTerm> terms) {
 
         /**
          * Checks and copies the fields.
@@ -162,7 +162,7 @@ public final class VocabularyReads {
          * @param scope the scope
          * @param terms the terms
          */
-        public ActiveTermList {
+        public VocabularyTermList {
             Objects.requireNonNull(scope, "scope");
             terms = List.copyOf(Objects.requireNonNull(terms, "terms"));
         }
@@ -189,7 +189,7 @@ public final class VocabularyReads {
     }
 
     /**
-     * What {@code getActivationVocabularyTaboos} answers.
+     * What {@code listActivationVocabularyTaboos} answers.
      *
      * @param scope the activation and the read
      * @param entries the taboo entries, by word and then term URN

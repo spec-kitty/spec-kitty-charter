@@ -5,7 +5,7 @@ get:
   summary: Read the Contextive definitions file of the vocabulary in force under an activation.
   description: >-
     The vocabulary in force under an activation as a Contextive v1 definitions file (#106, FR-016; ADR-0076 decisions 6
-    and 8; ADR-0049 decision 15): a projection of the terms getActivationVocabularyTerms answers, served as
+    and 8; ADR-0049 decision 15): a projection of the terms listActivationVocabularyTerms answers, served as
     application/yaml so that a tool saves it as it is for an editor plug-in. The contract describes the body as a string
     with an example, as it does for /openapi.yaml: it is not a JSON Schema member.
 
@@ -18,13 +18,13 @@ get:
 
     The keys are written in that order, in block style, UTF-8, and one input always answers the same bytes. The ids
     are ordered in Unicode code point order (case-sensitive, no locale). The terms are those of
-    getActivationVocabularyTerms, whatever their status, so the set of meta.urn values is the set of the terms' URNs.
+    listActivationVocabularyTerms, whatever their status, so the set of meta.urn values is the set of the terms' URNs.
     An activation with no glossary context in force answers 200 with an empty contexts list. A Contextive document has
     no links: the answer carries none.
 
     The answer is application/yaml only. A request whose Accept excludes it (application/json, for example) is a 406,
     a Problem with no code, as for any operation (docs/development/rest-resource-conventions.md); it is judged before
-    the activation is read. The refusals, the fingerprint and the ETag are those of getActivationVocabularyTerms,
+    the activation is read. The refusals, the fingerprint and the ETag are those of listActivationVocabularyTerms,
     judged in the same order and before any If-None-Match; the ETag is this read's own, not the tag of the terms or
     the taboo read.
   tags:

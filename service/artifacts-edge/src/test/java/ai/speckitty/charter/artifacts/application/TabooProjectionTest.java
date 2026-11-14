@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
  */
 class TabooProjectionTest {
 
-    private static ActiveTerm term(String contextId, String id, List<String> avoid) {
-        return new ActiveTerm(
+    private static VocabularyTerm term(String contextId, String id, List<String> avoid) {
+        return new VocabularyTerm(
                 "term:" + contextId + "/" + id,
                 contextId,
                 id,
@@ -51,7 +51,7 @@ class TabooProjectionTest {
                 List.of(term("core", "lane", List.of("track")), term("core", "branch", List.of("track"))));
 
         assertThat(entries)
-                .extracting(Entry::word, Entry::term)
+                .extracting(Entry::word, Entry::urn)
                 .containsExactly(tuple("track", "term:core/branch"), tuple("track", "term:core/lane"));
     }
 

@@ -10,7 +10,7 @@ value:
   terms:
     - urn: term:qa/flaky-test
       contextId: qa
-      termId: flaky-test
+      id: flaky-test
       name: flaky test
       definition: A test that passes and fails on the same code.
       status: active
@@ -25,7 +25,7 @@ value:
           href: /api/v1/activations/a-1/artifacts/glossary/qa
     - urn: term:spec-kitty-core/lane
       contextId: spec-kitty-core
-      termId: lane
+      id: lane
       name: lane
       definition: The old name of a work package's worktree.
       status: deprecated
@@ -38,7 +38,7 @@ value:
           href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core
     - urn: term:spec-kitty-core/mission
       contextId: spec-kitty-core
-      termId: mission
+      id: mission
       name: mission
       definition: A unit of planned work that runs from a specification to a merge.
       status: active

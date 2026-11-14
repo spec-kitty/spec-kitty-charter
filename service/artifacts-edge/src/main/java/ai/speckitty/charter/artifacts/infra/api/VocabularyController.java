@@ -1,8 +1,8 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
 import ai.speckitty.charter.api.VocabularyApi;
-import ai.speckitty.charter.api.model.ActiveTermList;
 import ai.speckitty.charter.api.model.TabooList;
+import ai.speckitty.charter.api.model.VocabularyTermList;
 import ai.speckitty.charter.artifacts.application.VocabularyReads;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -46,7 +46,7 @@ public class VocabularyController implements VocabularyApi {
     }
 
     @Override
-    public ResponseEntity<ActiveTermList> getActivationVocabularyTerms(
+    public ResponseEntity<VocabularyTermList> listActivationVocabularyTerms(
             String activationId, @Nullable String ifNoneMatch) {
         return EffectiveAssetsController.answer(
                 vocabulary.terms(activationId, ifNoneMatch),
@@ -71,7 +71,7 @@ public class VocabularyController implements VocabularyApi {
     }
 
     @Override
-    public ResponseEntity<TabooList> getActivationVocabularyTaboos(String activationId, @Nullable String ifNoneMatch) {
+    public ResponseEntity<TabooList> listActivationVocabularyTaboos(String activationId, @Nullable String ifNoneMatch) {
         return EffectiveAssetsController.answer(
                 vocabulary.taboos(activationId, ifNoneMatch),
                 read -> read.scope().sourceFingerprint(),

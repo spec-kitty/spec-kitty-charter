@@ -151,13 +151,13 @@ class VocabularyControllerTest {
                           "revision": "%s",
                           "governanceFingerprint": "%s",
                           "terms": [
-                            {"urn": "term:qa/flaky-test", "contextId": "qa", "termId": "flaky-test",
+                            {"urn": "term:qa/flaky-test", "contextId": "qa", "id": "flaky-test",
                              "name": "flaky test", "definition": "A test that passes and fails on the same code.",
                              "status": "active", "avoid": ["epic"], "packId": "core", "level": "built-in",
                              "_links": {
                                "effective-term": {"href": "/api/v1/activations/a-1/artifacts/glossary/qa/terms/flaky-test"},
                                "effective-glossary": {"href": "/api/v1/activations/a-1/artifacts/glossary/qa"}}},
-                            {"urn": "term:spec-kitty-core/lane", "contextId": "spec-kitty-core", "termId": "lane",
+                            {"urn": "term:spec-kitty-core/lane", "contextId": "spec-kitty-core", "id": "lane",
                              "name": "lane", "definition": "The old name of a worktree.", "status": "deprecated",
                              "avoid": ["track"], "packId": "proj", "level": "project",
                              "_links": {
@@ -165,7 +165,7 @@ class VocabularyControllerTest {
                                  "href": "/api/v1/activations/a-1/artifacts/glossary/spec-kitty-core/terms/lane"},
                                "effective-glossary": {
                                  "href": "/api/v1/activations/a-1/artifacts/glossary/spec-kitty-core"}}},
-                            {"urn": "term:spec-kitty-core/mission", "contextId": "spec-kitty-core", "termId": "mission",
+                            {"urn": "term:spec-kitty-core/mission", "contextId": "spec-kitty-core", "id": "mission",
                              "name": "mission", "definition": "A unit of planned work.", "status": "active",
                              "examples": ["Each mission has one spec."], "aliases": ["feature"], "avoid": ["epic"],
                              "seeAlso": ["term:spec-kitty-core/lane"], "packId": "proj", "level": "project",
@@ -238,9 +238,9 @@ class VocabularyControllerTest {
                           "revision": "%s",
                           "governanceFingerprint": "%s",
                           "entries": [
-                            {"word": "epic", "term": "term:qa/flaky-test", "name": "flaky test"},
-                            {"word": "epic", "term": "term:spec-kitty-core/mission", "name": "mission"},
-                            {"word": "track", "term": "term:spec-kitty-core/lane", "name": "lane"}
+                            {"word": "epic", "urn": "term:qa/flaky-test", "termName": "flaky test"},
+                            {"word": "epic", "urn": "term:spec-kitty-core/mission", "termName": "mission"},
+                            {"word": "track", "urn": "term:spec-kitty-core/lane", "termName": "lane"}
                           ],
                           "_links": {
                             "self": {"href": "/api/v1/activations/a-1/vocabulary/taboos"},

@@ -11,7 +11,7 @@ import java.util.Objects;
  *
  * @param urn the term's URN, {@code term:<context-id>/<term-id>}
  * @param contextId the id of the context that holds it
- * @param termId the term's id
+ * @param id the term's id within its context
  * @param name the name
  * @param definition the definition
  * @param status the status token, served whatever it is
@@ -22,10 +22,10 @@ import java.util.Objects;
  * @param packId the pack that holds the winning copy of the context
  * @param level that pack's level
  */
-public record ActiveTerm(
+public record VocabularyTerm(
         String urn,
         String contextId,
-        String termId,
+        String id,
         String name,
         String definition,
         String status,
@@ -41,7 +41,7 @@ public record ActiveTerm(
      *
      * @param urn the URN
      * @param contextId the context's id
-     * @param termId the term's id
+     * @param id the term's id within its context
      * @param name the name
      * @param definition the definition
      * @param status the status token
@@ -52,10 +52,10 @@ public record ActiveTerm(
      * @param packId the holding pack
      * @param level its level
      */
-    public ActiveTerm {
+    public VocabularyTerm {
         Objects.requireNonNull(urn, "urn");
         Objects.requireNonNull(contextId, "contextId");
-        Objects.requireNonNull(termId, "termId");
+        Objects.requireNonNull(id, "id");
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(definition, "definition");
         Objects.requireNonNull(status, "status");
@@ -72,10 +72,10 @@ public record ActiveTerm(
      *
      * @param winner the winning copy of the context in force
      * @param term one of its terms
-     * @return the active term
+     * @return the term in force
      */
-    static ActiveTerm of(ActivationArtifacts.Held winner, GlossaryView.Term term) {
-        return new ActiveTerm(
+    static VocabularyTerm of(ActivationArtifacts.Held winner, GlossaryView.Term term) {
+        return new VocabularyTerm(
                 term.urn(),
                 winner.id(),
                 term.id(),
