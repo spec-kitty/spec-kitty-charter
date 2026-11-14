@@ -155,7 +155,8 @@ misordered heading, or a 0.x minor bump without `### Breaking`.
 The schemas, `file-kinds.yaml` and the conformance cases are the **packs contract**: what a reader of packs outside
 the service (doc-kitty's pack pages, open-packs' checks) vendors and holds itself to. It is versioned on its own
 changes, apart from the charter contract: its version is the top heading of `CHANGELOG.md`, with the 0.x rules of
-ADR-0022 (a minor may break while the major is 0, and lists each break under `### Breaking`). A consumer pins and
+ADR-0022 (a minor may break while the major is 0, and lists each break under `### Breaking`; the ADR's note of
+2026-11-14 records the packs line). A consumer pins and
 checks a release as [Pin the packs contract](../../docs/guides/pin-the-packs-contract.md) shows.
 
 ### Releasing the packs contract
@@ -163,8 +164,8 @@ checks a release as [Pin the packs contract](../../docs/guides/pin-the-packs-con
 1. In a pull request, turn the top heading of `CHANGELOG.md` into the release (`## 0.1.0`), adding `### Breaking` for
    a new minor while the major is 0.
 2. After the merge, tag `main` at the merge commit, `git tag contract-packs-v0.1.0 <merge commit>`, and push the tag.
-   Only the operator pushes this tag. Until a tag ruleset on `contract-packs-v*` is in place (#196, which covers
-   `contract-charter-v*` today), anyone with write access could; push the first tag only once it is.
+   Only the operator pushes this tag: the tag ruleset of #196 is extended to `contract-packs-v*` (operator ruling,
+   2026-11-14). Push the first tag only once that setting is applied.
 3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch).
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
