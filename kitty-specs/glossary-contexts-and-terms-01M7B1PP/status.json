@@ -2,10 +2,9 @@
   "event_count": 66,
   "last_event_id": "01M7DQJ0NB6KM9APE7JSVTZ5JK",
   "materialized_at": "2026-11-14T19:11:43.275361+00:00",
-  "mission_number": "25",
+  "mission_number": "",
   "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
-  "mission_type": "software-dev",
-  "schema_version": 2,
+  "mission_type": "",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -20,276 +19,139 @@
   "work_packages": {
     "WP01": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHAD8H3F45BQSQNR7CRPD",
       "last_transition_at": "2026-11-14T19:11:20.488124+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Explicit NodeKind table + declarableInGraphs/edgeTarget split + URN->artifact-kind mapping (behaviour-preserving); module tests green; verifyAll green with -PcontractBaseline=none (shallow clone blocks checkContractCompatibility)",
-        "Review passed: NodeKind is an explicit table (token, artifact kind, plural, declarable, edge target); authoredInGraphs() replaced per call-site meaning; URN kind mapped via artifactKind(); contracts diff empty; no assertion weakened; module tests and Checkstyle green. LOW folds: unreachable null check in of(); byArtifactKind() does not refuse a duplicate mapping."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP01-nodekind-explicit-table/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP01-nodekind-explicit-table/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 26614,
-      "shell_pid_created_at": "1794644281.88",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done"
-      }
+      "shell_pid": 7676,
+      "shell_pid_created_at": "1794641998.28"
     },
     "WP02": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHDSA0SA77H5PYAZ5R1G6",
       "last_transition_at": "2026-11-14T19:11:23.946396+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "WP02 done in 4 signed commits (4b248d25 NodeKind review folds; 3a918d57 atomic glossary kind replacing glossary_pack; 42f15f85 usability script; 03f430b4 change fragment). Old-shape files refused by a retired rule **/*.glossary-pack.yaml in file-kinds.yaml (load, validate mode, registration; GlossaryOldShapeRefusalTest). Re-records named in 3a918d57: PackDigestFixtureTest fingerprint 0003f96f->f7ba6e48; built-in manifest_hash 3c74e9a4->f10d1b8e, glossary content_hash 3d43ef49->342abf2c, presets/default 075e14a6->48a86c32. 139 term ids minted from surface forms, all distinct; map in the commit's review report. NFR-002 sweep: remaining hits only in CHANGELOG/change fragments, file-kinds retired rule, usability script left side, refusal tests (GlossaryOldShapeRefusalTest, ProjectCharterYamlSchemaTest, RetiredFileFixture) and planted core-verdicts.json. verifyAll -PcontractBaseline=none: BUILD SUCCESSFUL; :packs:wholePackRoundTrip green; check_docs all ok. Mutation testing not run locally (not in verifyAll).",
-        "Review passed (reviewer-renata): glossary_pack replaced outright, no reader/alias/upgrade; NFR-002 sweep only occurrence-map exceptions (refusal tests, change fragments/CHANGELOG, file-kinds retired rule, usability left key, core-verdicts core message). glossary.schema.json matches data-model (closed, Slug pattern+maxLength 64, status enum, term: URN see_also, minItems/uniqueItems); domain invariants each refused with controls. NodeKind GLOSSARY_CONTEXT/TERM consistent across NodeKind.java, NodeKind.yaml, file-kinds, graph-shard; ArtifactKindToken/Artifact untouched. Fixture: 139 terms, ids per R4 minting, field moves verified by script; added content traced to definitions. Pins re-verified by sha256 (content hashes) and named in 3a918d57. Old shape refused at classify/validate/load/registration (GlossaryOldShapeRefusalTest). .kittify untouched. Commits signed, no trailers. Tests re-run (--rerun) kernel/packs/activations/profiles-edge/artifacts-edge, wholePackRoundTrip, contracts:check (-PcontractBaseline=none, shallow clone) green; check_docs all ok. LOW (fold later): PolicyYaml glossary kind_defaults mapping lacks a direct PolicyYamlTest case; GlossaryContextTest blank name/description display names claim an inline positive control; explicit-null refusal covers context fields only; GlossaryContext.term/GlossaryTerm.urn/AppliesTo.isEmpty await production callers (WP04). Shared lane-b with WP03: WP03 builds on this tip."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP02-glossary-kind-replaces-glossary-pack/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP02-glossary-kind-replaces-glossary-pack/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 6273,
-      "shell_pid_created_at": "1794649260.98",
-      "subtasks": {
-        "T005": "done",
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done",
-        "T010": "done",
-        "T011": "done",
-        "T012": "done",
-        "T013": "done",
-        "T014": "done"
-      }
+      "shell_pid": 7375,
+      "shell_pid_created_at": "1794644723.51"
     },
     "WP03": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHGYVZ0HCAJ4DSHZ0XP1C",
       "last_transition_at": "2026-11-14T19:11:27.195320+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: planted glossary refusals, identifier rows, stored/write glossary_pack refusals, glossary round-trip proof, term-target inbound reference; open risks in report",
-        "Cycle 2: term holding via PackCompositionFacts.terms / PackUnderResolution.heldTerms (holds = context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing); see_also is a List<PackQualifiedReference> per the 2026-11-14 ruling, deriving one vocabulary relationship per entry from the context (bare cross-pack refused pack_reference_unqualified, unresolved reported held:false); dropping a term while keeping its context refused artifact_referenced; repeated term id is a uniqueItems schema violation at terms/<n>/id in load and validate mode. Commit 09d463da. verifyAll exit 0; packs 5249 tests green.",
-        "Review passed (cycle 2): HIGH 1 fixed (PackCompositionFacts.terms + PackUnderResolution.heldTerms; holds(term)=context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing; terms not in defined()). HIGH 2 fixed per operator ruling (see_also = List<PackQualifiedReference>, schema admits <pack>::, GlossaryContext derives vocabulary relationships; bare cross-pack refused pack_reference_unqualified; unresolved held:false). MEDIUM fixed (dropped term with kept context refused artifact_referenced). LOWs folded (validate-mode uniqueItems at terms/<n>/id; two-fault note). Targeted tests + checkstyle green; scoped PIT on changed lines 29/32 killed, 3 survivors are defensive conjuncts (LOW). Cross-lane: lane-c PacksGlossaries.java:126 must map PackQualifiedReference::toString and GlossaryTerm.yaml/GlossaryContextTerm.yaml seeAlso patterns need the optional <pack>:: prefix."
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP03-model-refusals-and-round-trip/review-cycle-2.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP03-model-refusals-and-round-trip/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 32706,
-      "shell_pid_created_at": "1794662868.78",
-      "subtasks": {
-        "T015": "done",
-        "T016": "done",
-        "T017": "done",
-        "T018": "done"
-      }
+      "shell_pid": 5410,
+      "shell_pid_created_at": "1794659235.23"
     },
     "WP04": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHM3597F7KJWHHV803W63",
       "last_transition_at": "2026-11-14T19:11:30.405825+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Glossary reads in a pack: listPackGlossaryContexts, getPackGlossaryContext, getPackGlossaryTerm (tag Glossaries), all ready in the switch gate; context/term 404 artifact_not_found with segment details; GLOSSARY in SERVED/LISTED/LITERAL_ITEM_KINDS, not ITEM_KINDS/REMOVABLE; SC-001 reads all 139 example terms. verifyAll -PcontractBaseline=none green; check_docs all ok; artifacts-edge pitest 87.5 (floor 85). Out-of-map: CharterRefusalCode raised map, GlossaryContextTerm/GlossaryAppliesTo schemas, breaking fragment, artifacts-edge testFixtures dep, GlossaryJson.",
-        "Review passed: 3 pack glossary reads (list/context/term) wired live (GlossariesController->GlossaryReads->PacksGlossaries over ForeignArtifactRead); refusal order pack->context->term with exact detail texts; links self/collection/templated term/up; ETag = pack revision; literal paths precede /{kind}/{artifactId}; GLOSSARY in SERVED/LISTED/LITERAL_ITEM_KINDS, not ITEM_KINDS or REMOVABLE; SC-001 reads 139 terms via production path with file-count positive control; out-of-map edits justified (GlossaryContextTerm/AppliesTo schemas, GlossaryJson mix-in per precedent, testFixtures dep, breaking fragment, refusal-code description). Interim generic getEffectiveArtifact for glossary is contract-valid and WP05 scope. No MEDIUM+ findings."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP04-glossary-reads-in-a-pack/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP04-glossary-reads-in-a-pack/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 9448,
-      "shell_pid_created_at": "1794653841.78",
-      "subtasks": {
-        "T019": "done",
-        "T020": "done",
-        "T021": "done",
-        "T022": "done",
-        "T023": "done",
-        "T024": "done"
-      }
+      "shell_pid": 19800,
+      "shell_pid_created_at": "1794650028.13"
     },
     "WP05": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHQ7M5CSJ9NRBP0CVD21H",
       "last_transition_at": "2026-11-14T19:11:33.620885+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review",
-        "Review passed: three activation twins (list/context/term) ready in the switch gate; refusal order activation->kind->context->term before If-None-Match; whole-context override with positive control; term carries context state; distinct EffectiveTag reads; links + relation table/lint enum; parity test excludes nothing new. Verified: targeted activations/artifacts-edge/packs/contracts tests, full CharterContractSuite (switch gate green), HexagonalArchitectureTest, checkstyle. LOW fold-ins: refusal detail text in 3 places (pinned by scenarios), activations full-module PIT floor not re-run (verify at landing), over-long javadoc lines."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP05-glossary-activation-twins/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP05-glossary-activation-twins/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 30938,
-      "shell_pid_created_at": "1794668557.63",
-      "subtasks": {
-        "T025": "done",
-        "T026": "done",
-        "T027": "done",
-        "T028": "done",
-        "T029": "done"
-      }
+      "shell_pid": 6433,
+      "shell_pid_created_at": "1794664111.86"
     },
     "WP06": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHTE1Q13Y3XVQQ4RZ0BT0",
       "last_transition_at": "2026-11-14T19:11:36.897727+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review",
-        "Review passed: contexts in force from one session's effective set (ACTIVE glossary winners, whole-context override with positive control); PacksVocabulary reads each winning pack once against the source fingerprint (stale_input on mismatch/vanished winner), counted on the production adapter; terms ordered context/term id, every status served, seeAlso as written; Contextive tree matches ADR-0076 d6 with optional members empty; taboos one entry per avoid word per term, word then URN; SC-004 cross-checks; three distinct vocabulary tags; refusals (activation_not_found, pack_sibling_conflict) judged before 304 per d8, and no pack read on 304; VocabularyReads/PacksVocabulary live beans (wiring test). Departures 1-5 accepted. Verified: targeted activations/artifacts-edge tests, checkstyle main+test, spotless, HexagonalArchitectureTest; PIT artifacts-edge 90% (new classes 100%), activations narrowed 98%. LOW fold-ins: NFR-005 proven piecewise not end-to-end over the 139-term pack (WP07 scenario can pin it); over-long javadoc lines; string collation of ordering unstated; ActivationsArtifacts package PIT low (pre-existing)."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP06-vocabulary-read-path-and-projections/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP06-vocabulary-read-path-and-projections/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 27560,
-      "shell_pid_created_at": "1794673458.09",
-      "subtasks": {
-        "T030": "done",
-        "T031": "done",
-        "T032": "done",
-        "T033": "done",
-        "T034": "done"
-      }
+      "shell_pid": 4590,
+      "shell_pid_created_at": "1794669890.32"
     },
     "WP07": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQHXJN7TWRGFYAJA4JJMFA",
       "last_transition_at": "2026-11-14T19:11:40.117250+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review",
-        "Review passed: Contextive v1 YAML conforms to ADR-0076 d6 (keys/order/omitted optionals) and is pinned byte-for-byte plus parse-back; 406 via Spring produces negotiation proven at unit and @contract level; application/yaml without charset is correct per RFC 9512 and Boot's converter writes UTF-8 (pinned by OpenApiDocumentEncodingTest on the same pattern); 'activation' relation is ADR-0076 d5/d7 verbatim; refusals before 304, per-read ETag, fingerprint header proven; NFR-005 on real store with 139-term positive control; switch-gate ready x3; vocabulary.feature + activation-links.feature re-run green; checkstyle and :contracts:check green; mutation 91.5/92.6 >= 85. LOW fold-ins: swapped FR labels in contextive/terms path descriptions (FR-017->FR-016; FR-016->FR-015); contract Contextive example not mechanically tied to the renderer; no non-ASCII term in vocabulary.feature."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP07-vocabulary-contract-and-endpoints/review-cycle-1.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP07-vocabulary-contract-and-endpoints/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 28087,
-      "shell_pid_created_at": "1794678414.56",
-      "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done"
-      }
+      "shell_pid": 32443,
+      "shell_pid_created_at": "1794674118.0"
     },
     "WP08": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M7DQJ0NB6KM9APE7JSVTZ5JK",
       "last_transition_at": "2026-11-14T19:11:43.275361+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "- 2026-11-14T18:11:21Z – claude – shell_pid=355 – Blocked: move to for_review refused IMPLEMENTATION_MISSING; WP08 work is committed on the mission branch (coord worktree, e2e319af) as instructed, but the planning-lane gate looks for owned_files changes on feat/106-glossary-contexts (406e936b..). Orchestrator to decide: force the move or land the commit on the target branch.",
-        "Ready for review (feat/106 realigned to the mission branch)",
-        "Cycle 2: architecture pages follow the glossary kind",
-        "Review passed (cycle 2): MEDIUM-1 resolved. descriptors.md, logical-model.md, descriptor-schemas.md, pack-registration-distribution.md and descriptor-mission-skill-glossary.puml/.svg describe the built glossary kind accurately against lane-f (layout, glossary_context:<id>, term:<ctx>/<term>, see_also bare or <pack>:: deriving vocabulary edges, whole-context override per ADR-0076 d1, retired file refused). LOW fold-ins W17 and vocabulary entry done; activated_<kind> entry unchanged. SVG passes plantuml --strict-svg; check_docs all green. Remaining LOWs only (stale README content_hash stamp; 'glossary_pack:<id> refused by name' slightly overstates an unknown-kind refusal)."
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP08-records-docs-and-closeout/review-cycle-2.md",
         "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP08-records-docs-and-closeout/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 15389,
-      "shell_pid_created_at": "1794680668.48",
-      "subtasks": {
-        "T040": "done",
-        "T041": "done",
-        "T042": "done",
-        "T043": "done",
-        "T044": "done"
-      }
+      "shell_pid": 9348,
+      "shell_pid_created_at": "1794680241.86"
     }
   }
 }
