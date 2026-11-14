@@ -1,6 +1,7 @@
 package ai.speckitty.charter.kernel.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Arrays;
 import java.util.List;
@@ -93,6 +94,34 @@ class NodeKindTest {
         for (ArtifactKind kind : ArtifactKind.values()) {
             assertThat(NodeKind.of(kind).artifactKind()).as(kind.token()).contains(kind);
         }
+    }
+
+    @Test
+    void theIndexOfTheTableIsTheIndexOfEveryArtifactKind() {
+        // Positive control for the two refusals below: the declared table indexes cleanly, one node kind per kind.
+        assertThat(NodeKind.byArtifactKind(List.of(NodeKind.values()), NodeKind::artifactKind))
+                .hasSize(ArtifactKind.values().length)
+                .containsEntry(ArtifactKind.DIRECTIVE, NodeKind.DIRECTIVE)
+                .doesNotContainValue(NodeKind.ACTION);
+    }
+
+    @Test
+    void twoNodeKindsStandingForOneArtifactKindAreRefused() {
+        // ACTION made to stand for the directive kind as well: of(DIRECTIVE) would have two answers.
+        assertThatThrownBy(() -> NodeKind.byArtifactKind(
+                        List.of(NodeKind.values()),
+                        kind -> kind == NodeKind.ACTION ? Optional.of(ArtifactKind.DIRECTIVE) : kind.artifactKind()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("the node kinds directive and action both stand for the artifact kind directive");
+    }
+
+    @Test
+    void anArtifactKindNoNodeKindStandsForIsRefused() {
+        assertThatThrownBy(() -> NodeKind.byArtifactKind(
+                        List.of(NodeKind.values()),
+                        kind -> kind == NodeKind.SKILL ? Optional.empty() : kind.artifactKind()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("no node kind stands for the artifact kind skill");
     }
 
     @Test

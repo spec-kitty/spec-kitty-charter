@@ -2,8 +2,11 @@ package ai.speckitty.charter.kernel.domain;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -58,8 +61,12 @@ public enum NodeKind {
     /** A node of the artifact kind {@link ArtifactKind#STEP_ENHANCEMENT}. */
     STEP_ENHANCEMENT("step_enhancement", ArtifactKind.STEP_ENHANCEMENT, "step_enhancements", true, true);
 
-    /** The node kind of each artifact kind, built once; {@link #of(ArtifactKind)} is total over it. */
-    private static final Map<ArtifactKind, NodeKind> BY_ARTIFACT_KIND = byArtifactKind();
+    /**
+     * The node kind of each artifact kind, built once and checked then: it is total and one to one, so
+     * {@link #of(ArtifactKind)} has no branch of its own.
+     */
+    private static final Map<ArtifactKind, NodeKind> BY_ARTIFACT_KIND =
+            byArtifactKind(List.of(values()), NodeKind::artifactKind);
 
     private final String token;
     private final @Nullable ArtifactKind artifactKind;
@@ -80,12 +87,27 @@ public enum NodeKind {
         this.edgeTarget = edgeTarget;
     }
 
-    private static Map<ArtifactKind, NodeKind> byArtifactKind() {
+    /**
+     * Indexes node kinds by the artifact kind each stands for, refusing a table that is not one to one: two node kinds
+     * that stand for one artifact kind, or an artifact kind no node kind stands for. Run once, when the class
+     * initializes, so a bad table fails at once rather than answering one of two kinds.
+     *
+     * @param kinds the node kinds, in declaration order
+     * @param standsFor the artifact kind a node kind stands for, if any
+     * @return the node kind of every artifact kind
+     * @throws IllegalStateException when two node kinds stand for one artifact kind, or an artifact kind has none
+     */
+    static Map<ArtifactKind, NodeKind> byArtifactKind(
+            List<NodeKind> kinds, Function<NodeKind, Optional<ArtifactKind>> standsFor) {
         Map<ArtifactKind, NodeKind> map = new EnumMap<>(ArtifactKind.class);
-        for (NodeKind kind : values()) {
-            if (kind.artifactKind != null) {
-                map.put(kind.artifactKind, kind);
-            }
+        for (NodeKind kind : kinds) {
+            standsFor.apply(kind).ifPresent(artifactKind -> {
+                NodeKind earlier = map.putIfAbsent(artifactKind, kind);
+                if (earlier != null) {
+                    throw new IllegalStateException("the node kinds " + earlier.token + " and " + kind.token
+                            + " both stand for the artifact kind " + artifactKind.token());
+                }
+            });
         }
         for (ArtifactKind kind : ArtifactKind.values()) {
             if (!map.containsKey(kind)) {
@@ -149,11 +171,7 @@ public enum NodeKind {
      * @return the node kind that stands for it
      */
     public static NodeKind of(ArtifactKind kind) {
-        NodeKind nodeKind = BY_ARTIFACT_KIND.get(kind);
-        if (nodeKind == null) {
-            throw new IllegalStateException("no node kind stands for the artifact kind " + kind.token());
-        }
-        return nodeKind;
+        return Objects.requireNonNull(BY_ARTIFACT_KIND.get(kind), "the index is total");
     }
 
     /**
