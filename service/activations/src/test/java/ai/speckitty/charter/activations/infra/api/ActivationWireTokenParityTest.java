@@ -63,6 +63,12 @@ class ActivationWireTokenParityTest {
             .toList();
 
     private static List<Pair> pairs() {
+        return Stream.of(effectiveArtifactPairs(), contextArtifactPairs(), skippedAndWarningPairs())
+                .flatMap(List::stream)
+                .toList();
+    }
+
+    private static List<Pair> effectiveArtifactPairs() {
         return List.of(
                 // No Java enum stands behind CascadeKind: it is ArtifactKind.activatable plus CascadeScope.ALL_TOKEN.
                 new Pair("CascadeKind", ACTIVATABLE_AND_ALL, CASCADE_KINDS, token -> member(CASCADE_KINDS, token)),
@@ -80,7 +86,11 @@ class ActivationWireTokenParityTest {
                         "ArtifactPolicy",
                         tokens(EffectiveSet.Policy.values(), EffectiveSet.Policy::token),
                         values(EffectiveArtifact.PolicyEnum.values(), EffectiveArtifact.PolicyEnum::getValue),
-                        EffectiveArtifact.PolicyEnum::fromValue),
+                        EffectiveArtifact.PolicyEnum::fromValue));
+    }
+
+    private static List<Pair> contextArtifactPairs() {
+        return List.of(
                 // EffectiveContextArtifact copies EffectiveArtifact's members, and the generator inlines each enum of
                 // the copy again, so each is a pair of its own; appliesThrough is the copy's own member (FR-009).
                 new Pair(
@@ -110,7 +120,11 @@ class ActivationWireTokenParityTest {
                         values(
                                 EffectiveContextArtifact.AppliesThroughEnum.values(),
                                 EffectiveContextArtifact.AppliesThroughEnum::getValue),
-                        EffectiveContextArtifact.AppliesThroughEnum::fromValue),
+                        EffectiveContextArtifact.AppliesThroughEnum::fromValue));
+    }
+
+    private static List<Pair> skippedAndWarningPairs() {
+        return List.of(
                 new Pair(
                         "DenyNotApplied.reason",
                         tokens(EffectiveSkippedReport.DenyReason.values(), EffectiveSkippedReport.DenyReason::token),

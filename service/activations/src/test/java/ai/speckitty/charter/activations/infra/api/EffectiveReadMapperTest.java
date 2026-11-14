@@ -722,32 +722,7 @@ class EffectiveReadMapperTest {
 
     @Test
     void theContextIsMappedWithItsArtifactsSuggestionEnhancementsAndSkippedReport() {
-        EffectiveContext context = new EffectiveContext(
-                List.of(
-                        new EffectiveContext.Item(
-                                new EffectiveArtifact(
-                                        A,
-                                        "main",
-                                        PackLevel.ORG,
-                                        State.ACTIVE,
-                                        false,
-                                        List.of(),
-                                        Policy.OPEN,
-                                        Reason.SELECTED,
-                                        Optional.empty()),
-                                AppliesThrough.MISSION_TYPE),
-                        new EffectiveContext.Item(
-                                item(
-                                        T,
-                                        List.of(B, A),
-                                        Optional.of(new Suggestion(Optional.of("when"), Optional.of("why")))),
-                                AppliesThrough.PROJECT)),
-                List.of(
-                        new EffectiveContext.Enhancement(
-                                new NodeRef(NodeKind.ACTION, "software-dev/implement"),
-                                List.of(new ArtifactRef(ArtifactKind.STEP_ENHANCEMENT, "x"))),
-                        new EffectiveContext.Enhancement(NodeRef.of(A), List.of(B))),
-                EffectiveSkippedReport.empty());
+        EffectiveContext context = contextWithTwoItemsAndTwoEnhancements();
 
         EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
 
@@ -788,6 +763,36 @@ class EffectiveReadMapperTest {
         assertThat(wire.getEnhancements().get(1).getTarget())
                 .isEqualTo(new NodeReference(NodeReference.KindEnum.DIRECTIVE, "A"));
         assertThat(wire.getSkipped().getMissionTypeNotInForce()).isEmpty();
+    }
+
+    /** An active directive through the mission type, an inactive suggested tactic two directives satisfy, two enhancements. */
+    private static EffectiveContext contextWithTwoItemsAndTwoEnhancements() {
+        return new EffectiveContext(
+                List.of(
+                        new EffectiveContext.Item(
+                                new EffectiveArtifact(
+                                        A,
+                                        "main",
+                                        PackLevel.ORG,
+                                        State.ACTIVE,
+                                        false,
+                                        List.of(),
+                                        Policy.OPEN,
+                                        Reason.SELECTED,
+                                        Optional.empty()),
+                                AppliesThrough.MISSION_TYPE),
+                        new EffectiveContext.Item(
+                                item(
+                                        T,
+                                        List.of(B, A),
+                                        Optional.of(new Suggestion(Optional.of("when"), Optional.of("why")))),
+                                AppliesThrough.PROJECT)),
+                List.of(
+                        new EffectiveContext.Enhancement(
+                                new NodeRef(NodeKind.ACTION, "software-dev/implement"),
+                                List.of(new ArtifactRef(ArtifactKind.STEP_ENHANCEMENT, "x"))),
+                        new EffectiveContext.Enhancement(NodeRef.of(A), List.of(B))),
+                EffectiveSkippedReport.empty());
     }
 
     @Test
