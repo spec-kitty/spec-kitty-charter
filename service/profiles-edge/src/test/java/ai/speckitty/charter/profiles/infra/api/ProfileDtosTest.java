@@ -3,12 +3,14 @@ package ai.speckitty.charter.profiles.infra.api;
 import static ai.speckitty.charter.profiles.application.ProfileFixtures.leanProfile;
 import static ai.speckitty.charter.profiles.application.ProfileFixtures.urn;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileRead;
@@ -31,7 +33,11 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
@@ -627,12 +633,42 @@ class ProfileDtosTest {
 
     @Test
     void theKindsOfAnEntryAreTheNodeKindsTheContractAuthors() {
+        // PackGovernanceEntry.kind is the contract's NodeKind: the kinds a graph declares or an edge names.
         Set<String> authored = Arrays.stream(NodeKind.values())
-                .filter(NodeKind::authoredInGraphs)
+                .filter(kind -> kind.declarableInGraphs() || kind.edgeTarget())
                 .map(NodeKind::token)
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(tokens(PackGovernanceEntry.KindEnum.values(), PackGovernanceEntry.KindEnum::getValue))
                 .isEqualTo(authored);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = NodeKind.class, names = "ACTION", mode = EnumSource.Mode.EXCLUDE)
+    void anArtifactLinkNamesTheArtifactKindTheUrnsNodeKindStandsFor(NodeKind kind) {
+        // ProfileDtos.entry's artifact link and every kind EffectiveProfileDtos writes take this mapping.
+        ArtifactKind artifactKind = kind.artifactKind().orElseThrow();
+
+        assertThat(ProfileDtos.artifactKindToken(new Urn(kind, "x"))).isEqualTo(artifactKind.token());
+    }
+
+    @Test
+    void anActionUrnNamesNoArtifactKind() {
+        Urn action = Urn.action("software-dev", "plan");
+        assertThat(action.kind().artifactKind()).isEmpty();
+
+        assertThatThrownBy(() -> ProfileDtos.artifactKindToken(action)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("activatableKinds")
+    void anEffectiveSatisfiedByReferenceNamesTheArtifactKindOfItsUrn(ArtifactKind kind) {
+        Urn urn = new Urn(NodeKind.of(kind), "x");
+
+        assertThat(EffectiveProfileDtos.reference(urn).getKind().getValue()).isEqualTo(kind.token());
+    }
+
+    private static Stream<ArtifactKind> activatableKinds() {
+        return Arrays.stream(ArtifactKind.values()).filter(ArtifactKind::activatable);
     }
 }

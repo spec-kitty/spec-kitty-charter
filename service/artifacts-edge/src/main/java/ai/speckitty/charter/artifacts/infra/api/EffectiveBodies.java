@@ -254,9 +254,23 @@ public class EffectiveBodies {
         return links;
     }
 
-    private static ArtifactReference reference(Urn urn) {
-        return new ArtifactReference(
-                ArtifactReference.KindEnum.fromValue(urn.kind().token()), urn.id());
+    /**
+     * The reference of the artifact a URN names; its kind is the URN's node kind mapped through
+     * {@link ai.speckitty.charter.kernel.domain.NodeKind#artifactKind()}, never the URN's own token (ADR-0053 decision
+     * 13).
+     *
+     * @param urn the URN of an artifact
+     * @return the contract's {@code ArtifactReference}
+     * @throws IllegalArgumentException when the URN's kind stands for no artifact kind ({@code action}), as an
+     *     {@code ActivatableKind} refuses it
+     */
+    static ArtifactReference reference(Urn urn) {
+        String kind = urn.kind()
+                .artifactKind()
+                .map(ArtifactKind::token)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "the node kind " + urn.kind().token() + " stands for no artifact kind: " + urn));
+        return new ArtifactReference(ArtifactReference.KindEnum.fromValue(kind), urn.id());
     }
 
     private static EffectiveArtifactSuggestion suggestion(ActivationArtifacts.Words words) {

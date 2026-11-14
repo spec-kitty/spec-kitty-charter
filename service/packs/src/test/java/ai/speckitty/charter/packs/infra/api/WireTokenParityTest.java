@@ -93,13 +93,14 @@ class WireTokenParityTest {
     private static final List<String> DIAGNOSTIC_CODES = contractEnum("DiagnosticCode.yaml");
 
     /**
-     * The node kinds a graph document or relationship registration may name. The contract's {@code NodeKind} lists
-     * these and no more: {@code guard} and {@code lifecycle} are in the domain but are not authored in graphs and stay
-     * out of the contract until their contract set lands (operator ruling of 2026-11-02, #156), so the domain side is
-     * filtered by {@link NodeKind#authoredInGraphs()}.
+     * The wire's set of URN kinds: the node kinds a graph document may declare or an edge may name. The contract's
+     * {@code NodeKind} lists these and no more: {@code guard} and {@code lifecycle} are in the domain but are neither
+     * declared in graphs nor edge endpoints, and stay out of the contract until their contract set lands (operator
+     * ruling of 2026-11-02, #156), so the domain side is filtered by {@link NodeKind#declarableInGraphs()} or
+     * {@link NodeKind#edgeTarget()}.
      */
-    private static final List<String> AUTHORED_NODE_KINDS = Arrays.stream(NodeKind.values())
-            .filter(NodeKind::authoredInGraphs)
+    private static final List<String> WIRE_NODE_KINDS = Arrays.stream(NodeKind.values())
+            .filter(kind -> kind.declarableInGraphs() || kind.edgeTarget())
             .map(NodeKind::token)
             .toList();
 
@@ -184,7 +185,7 @@ class WireTokenParityTest {
                 // target in force are the one place it reaches the wire before the graph is served.
                 new Pair(
                         "NodeReference.kind (NodeKind)",
-                        AUTHORED_NODE_KINDS,
+                        WIRE_NODE_KINDS,
                         values(NodeReference.KindEnum.values(), NodeReference.KindEnum::getValue),
                         NodeReference.KindEnum::fromValue),
                 new Pair(
@@ -213,12 +214,11 @@ class WireTokenParityTest {
         return List.of(
                 // NodeKind reaches the wire through EffectiveGraphNode.kind (the effective graph, served since PR C)
                 // and
-                // NodeReference.kind (below); the domain side is the kinds authored in graphs (see AUTHORED_NODE_KINDS
-                // for
-                // why guard and lifecycle are not among them).
+                // NodeReference.kind (below); the domain side is the kinds a graph declares or an edge names (see
+                // WIRE_NODE_KINDS for why guard and lifecycle are not among them).
                 new Pair(
                         "NodeKind",
-                        AUTHORED_NODE_KINDS,
+                        WIRE_NODE_KINDS,
                         values(EffectiveGraphNode.KindEnum.values(), EffectiveGraphNode.KindEnum::getValue),
                         EffectiveGraphNode.KindEnum::fromValue),
                 // DiagnosticCode against Diagnostic.Code, less the retired value the contract keeps.
@@ -370,11 +370,11 @@ class WireTokenParityTest {
 
     @Test
     void onlyGuardAndLifecycleAreLeftOutOfTheNodeKindRow() {
-        // The NodeKind row compares only the kinds authored in graphs. A new kind the filter leaves out must be a
-        // deliberate choice made here, not a gap the row cannot see.
+        // The NodeKind row compares only the kinds declared in graphs or named by edges. A new kind the filter
+        // leaves out must be a deliberate choice made here, not a gap the row cannot see.
         assertThat(Arrays.stream(NodeKind.values())
                         .map(NodeKind::token)
-                        .filter(token -> !AUTHORED_NODE_KINDS.contains(token))
+                        .filter(token -> !WIRE_NODE_KINDS.contains(token))
                         .toList())
                 .containsExactlyInAnyOrder("guard", "lifecycle");
     }

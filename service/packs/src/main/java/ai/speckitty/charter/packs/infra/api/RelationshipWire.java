@@ -75,7 +75,7 @@ final class RelationshipWire {
         Urn toUrn =
                 toReference.asUrn().orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
         for (Urn endpoint : List.of(fromUrn, toUrn)) {
-            if (!endpoint.kind().authoredInGraphs()) {
+            if (!endpoint.kind().edgeTarget()) {
                 throw new IllegalArgumentException(PackPolicy.NOT_AUTHORED + endpoint);
             }
         }

@@ -544,7 +544,7 @@ public final class DomainRepositoryService
         Map<Urn, List<String>> steps = new LinkedHashMap<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
-            if (artifact.urn().kind().authoredInGraphs()) {
+            if (artifact.urn().kind().declarableInGraphs()) {
                 defined.add(artifact.urn().toString());
                 List<String> declaredLanguages = languagesOf(artifact);
                 if (!declaredLanguages.isEmpty()) {

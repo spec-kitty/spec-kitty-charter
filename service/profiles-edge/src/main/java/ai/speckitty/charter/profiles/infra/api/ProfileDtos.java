@@ -112,7 +112,7 @@ public class ProfileDtos {
                             PACKS,
                             entry.holder().orElseThrow().value(),
                             ARTIFACTS,
-                            entry.urn().kind().token(),
+                            artifactKindToken(entry.urn()),
                             entry.urn().id())));
         }
         PackGovernanceEntry wire = new PackGovernanceEntry(
@@ -128,6 +128,24 @@ public class ProfileDtos {
                 entry.held(),
                 links);
         return wire;
+    }
+
+    /**
+     * The artifact kind token of the artifact a URN names, the kind segment of an artifact route and the value of an
+     * {@code ActivatableKind}: the URN's node kind mapped through {@link
+     * ai.speckitty.charter.kernel.domain.NodeKind#artifactKind()}, never the URN's own token (ADR-0053 decision 13).
+     *
+     * @param urn the URN of an artifact
+     * @return the artifact kind token, for example {@code agent_profile}
+     * @throws IllegalArgumentException when the URN's kind stands for no artifact kind ({@code action}), as an
+     *     {@code ActivatableKind} refuses it
+     */
+    static String artifactKindToken(ai.speckitty.charter.kernel.domain.Urn urn) {
+        return urn.kind()
+                .artifactKind()
+                .map(ArtifactKind::token)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "the node kind " + urn.kind().token() + " stands for no artifact kind: " + urn));
     }
 
     /**
