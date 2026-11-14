@@ -30,5 +30,13 @@ The first packs contract version, not yet released (#559).
 
 ### Changed
 
+- The artifact kind `glossary_pack` is replaced by `glossary` (#106; ADR-0049, ADR-0076): `glossary.schema.json`
+  replaces `glossary-pack.schema.json`, and a glossary context lives at `glossaries/<id>.glossary.yaml`. A
+  `*.glossary-pack.yaml` file is refused by name as retired. `file-kinds.yaml` gains the node kinds
+  `glossary_context` and `term`, the artifact kind `glossary` and the fragment plural `glossaries`; the graph-shard,
+  org-fragment, preset (`activated_glossaries`), charter (`selected_glossaries`, `activated_glossaries`),
+  pack-manifest, policy and mission-step-contract schemas follow. The classifier cases map
+  `core/glossaries/a.glossary.yaml` and refuse `core/glossary/a.glossary-pack.yaml` as retired. There is no reader
+  of the old shape.
 - The "Matching" header of `file-kinds.yaml` states the order the sections are consulted in, and
   that a file no rule takes is refused as `unmodelled`; it said such a file was left unclassified.
