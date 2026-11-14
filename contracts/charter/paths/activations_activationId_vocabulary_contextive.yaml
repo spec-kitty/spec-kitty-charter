@@ -4,7 +4,7 @@ get:
   operationId: getActivationVocabularyContextive
   summary: Read the Contextive definitions file of the vocabulary in force under an activation.
   description: >-
-    The vocabulary in force under an activation as a Contextive v1 definitions file (#106, FR-017; ADR-0076 decisions 6
+    The vocabulary in force under an activation as a Contextive v1 definitions file (#106, FR-016; ADR-0076 decisions 6
     and 8; ADR-0049 decision 15): a projection of the terms getActivationVocabularyTerms answers, served as
     application/yaml so that a tool saves it as it is for an editor plug-in. The contract describes the body as a string
     with an example, as it does for /openapi.yaml: it is not a JSON Schema member.
