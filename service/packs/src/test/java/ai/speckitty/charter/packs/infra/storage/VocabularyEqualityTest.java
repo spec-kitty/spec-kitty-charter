@@ -63,10 +63,18 @@ class VocabularyEqualityTest {
         return new TreeSet<>(Arrays.asList(m.group(1).split("\\|")));
     }
 
-    /** The node kinds a graph document admits: guard and lifecycle wait for their contract set (#156). */
-    private static Set<String> nodeKindTokens() {
+    /** The node kinds a graph document may declare: guard and lifecycle wait for their contract set (#156). */
+    private static Set<String> declarableTokens() {
         return new TreeSet<>(Arrays.stream(NodeKind.values())
-                .filter(NodeKind::authoredInGraphs)
+                .filter(NodeKind::declarableInGraphs)
+                .map(NodeKind::token)
+                .toList());
+    }
+
+    /** The node kinds an edge may name as source or target: guard and lifecycle wait for their contract set (#156). */
+    private static Set<String> edgeTargetTokens() {
+        return new TreeSet<>(Arrays.stream(NodeKind.values())
+                .filter(NodeKind::edgeTarget)
                 .map(NodeKind::token)
                 .toList());
     }
@@ -77,7 +85,8 @@ class VocabularyEqualityTest {
     void theShardsNodeKindsAreTheDomainsAndTheFileKindTablesInEveryPlaceTheSchemaListsThem() throws IOException {
         JsonNode defs = schema("graph-shard").get("$defs");
         JsonNode node = defs.get("DRGNode").get("properties");
-        Set<String> domain = nodeKindTokens();
+        Set<String> domain = declarableTokens();
+        Set<String> edgeTargets = edgeTargetTokens();
 
         assertThat(new TreeSet<>(texts(node.get("kind").get("enum"))))
                 .as("DRGNode.kind enum")
@@ -88,10 +97,10 @@ class VocabularyEqualityTest {
         JsonNode edge = defs.get("DRGEdge").get("properties");
         assertThat(alternation(edge.get("source").get("pattern").asString()))
                 .as("edge source")
-                .isEqualTo(domain);
+                .isEqualTo(edgeTargets);
         assertThat(alternation(edge.get("target").get("pattern").asString()))
                 .as("edge target")
-                .isEqualTo(domain);
+                .isEqualTo(edgeTargets);
         Set<String> branches = new TreeSet<>();
         defs.get("DRGNode").get("allOf").forEach(branch -> {
             String constant =
@@ -127,7 +136,7 @@ class VocabularyEqualityTest {
         assertThat(enumValues).as("the schema's kind enum").isEqualTo(new TreeSet<>(table.keySet()));
         Set<String> domain = new TreeSet<>();
         for (NodeKind kind : NodeKind.values()) {
-            if (!kind.authoredInGraphs()) {
+            if (!kind.declarableInGraphs()) {
                 continue;
             }
             String plural = kind.artifactKind().map(ArtifactKind::plural).orElse(kind.token() + "s");
@@ -141,7 +150,7 @@ class VocabularyEqualityTest {
                 .contains(token));
         assertThat(new TreeSet<>(table.values()))
                 .as("each node kind has one plural")
-                .isEqualTo(nodeKindTokens());
+                .isEqualTo(declarableTokens());
     }
 
     // ---- artifact kinds ----------------------------------------------------------------------------

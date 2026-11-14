@@ -743,7 +743,7 @@ public final class PackPolicy {
 
     private static Optional<DrgNode> shardNode(RawNode node) {
         return Urn.parse(node.ref())
-                .filter(urn -> urn.kind().authoredInGraphs())
+                .filter(urn -> urn.kind().declarableInGraphs())
                 .map(urn -> boundNode(urn, node));
     }
 
@@ -757,7 +757,7 @@ public final class PackPolicy {
             return Optional.empty();
         }
         return NodeKind.fromPlural(node.kind())
-                .filter(NodeKind::authoredInGraphs)
+                .filter(NodeKind::declarableInGraphs)
                 .map(kind -> boundNode(new Urn(kind, node.ref()), node));
     }
 
@@ -852,7 +852,7 @@ public final class PackPolicy {
             return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
-            if (!endpoint.kind().authoredInGraphs()) {
+            if (!endpoint.kind().edgeTarget()) {
                 return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
             }
         }

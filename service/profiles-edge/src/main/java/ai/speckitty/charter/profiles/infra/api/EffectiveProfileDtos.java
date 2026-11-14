@@ -67,7 +67,7 @@ public class EffectiveProfileDtos {
                 read.activationId(),
                 read.revision(),
                 read.governanceFingerprint(),
-                EffectiveAgentProfileRead.KindEnum.fromValue(winner.urn().kind().token()),
+                EffectiveAgentProfileRead.KindEnum.fromValue(ProfileDtos.artifactKindToken(winner.urn())),
                 winner.urn().id(),
                 winner.pack().value(),
                 EffectiveAgentProfileRead.LevelEnum.fromValue(winner.level().token()),
@@ -103,7 +103,7 @@ public class EffectiveProfileDtos {
                             ACTIVATIONS,
                             read.activationId(),
                             ARTIFACTS,
-                            facts.urn().kind().token(),
+                            ProfileDtos.artifactKindToken(facts.urn()),
                             facts.urn().id())));
             links.put(
                     "artifact",
@@ -111,11 +111,11 @@ public class EffectiveProfileDtos {
                             PACKS,
                             facts.pack().value(),
                             ARTIFACTS,
-                            facts.urn().kind().token(),
+                            ProfileDtos.artifactKindToken(facts.urn()),
                             facts.urn().id())));
         }
         EffectiveGovernanceEntry wire = new EffectiveGovernanceEntry(
-                EffectiveGovernanceEntry.KindEnum.fromValue(facts.urn().kind().token()),
+                EffectiveGovernanceEntry.KindEnum.fromValue(ProfileDtos.artifactKindToken(facts.urn())),
                 facts.urn().id(),
                 facts.pack().value(),
                 EffectiveGovernanceEntry.LevelEnum.fromValue(facts.level().token()),
@@ -143,9 +143,9 @@ public class EffectiveProfileDtos {
                 : Optional.of(urns.stream().map(EffectiveProfileDtos::reference).toList());
     }
 
-    private static ArtifactReference reference(ai.speckitty.charter.kernel.domain.Urn urn) {
+    static ArtifactReference reference(ai.speckitty.charter.kernel.domain.Urn urn) {
         return new ArtifactReference(
-                ArtifactReference.KindEnum.fromValue(urn.kind().token()), urn.id());
+                ArtifactReference.KindEnum.fromValue(ProfileDtos.artifactKindToken(urn)), urn.id());
     }
 
     private static EffectiveArtifactSuggestion suggestion(

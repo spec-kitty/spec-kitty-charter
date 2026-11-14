@@ -36,7 +36,7 @@ public record NodeRef(NodeKind kind, String id) implements Comparable<NodeRef> {
     public NodeRef {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
-        if (!kind.authoredInGraphs()) {
+        if (!named(kind)) {
             throw new IllegalArgumentException("A node reference names an authored kind, not " + kind.token() + ".");
         }
     }
@@ -48,7 +48,15 @@ public record NodeRef(NodeKind kind, String id) implements Comparable<NodeRef> {
      * @return the node; empty for a kind no graph authors (a guard or a lifecycle)
      */
     public static Optional<NodeRef> of(Urn urn) {
-        return urn.kind().authoredInGraphs() ? Optional.of(new NodeRef(urn.kind(), urn.id())) : Optional.empty();
+        return named(urn.kind()) ? Optional.of(new NodeRef(urn.kind(), urn.id())) : Optional.empty();
+    }
+
+    /**
+     * Whether a node reference may name the kind: a node a graph declares or an edge names, so every kind the contract's
+     * {@code NodeKind} lists. A guard and a lifecycle are neither (#156).
+     */
+    private static boolean named(NodeKind kind) {
+        return kind.declarableInGraphs() || kind.edgeTarget();
     }
 
     /**

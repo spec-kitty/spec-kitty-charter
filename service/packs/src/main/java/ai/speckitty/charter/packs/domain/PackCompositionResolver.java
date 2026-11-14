@@ -504,7 +504,7 @@ public final class PackCompositionResolver {
         }
         Optional<Urn> urn = reference.asUrn();
         if (urn.isPresent()
-                && urn.get().kind().authoredInGraphs()
+                && urn.get().kind().edgeTarget()
                 && urn.get().kind().artifactKind().isPresent()
                 && !target.holds(urn.get().toString())) {
             throw new Refusal(

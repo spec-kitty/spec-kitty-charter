@@ -2,16 +2,28 @@ package ai.speckitty.charter.kernel.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class NodeKindPluralTest {
 
+    private static Stream<NodeKind> kindsWithAPlural() {
+        return Arrays.stream(NodeKind.values()).filter(NodeKind::hasPlural);
+    }
+
     @ParameterizedTest
-    @EnumSource(NodeKind.class)
+    @MethodSource("kindsWithAPlural")
     void thePluralOfEveryNodeKindReadsBackAsThatKind(NodeKind kind) {
         assertThat(NodeKind.fromPlural(kind.plural())).contains(kind);
+    }
+
+    @Test
+    void everyNodeKindHasAPluralSoFar() {
+        assertThat(kindsWithAPlural().toList()).containsExactly(NodeKind.values());
     }
 
     @ParameterizedTest
