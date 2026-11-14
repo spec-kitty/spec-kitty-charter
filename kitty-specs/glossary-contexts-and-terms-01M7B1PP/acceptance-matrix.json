@@ -48,10 +48,10 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "GlossaryOldShapeRefusalTest, planted glossary-pack-old-shape, corpus ActivationConfig/invalid/19, activation-glossary-pack-refused.feature (WP02/WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:28:38.060716+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
