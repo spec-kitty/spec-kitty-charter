@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -80,7 +80,7 @@ That section still links them. They were decided in [ADR-0018](/adr/0018-action-
 | DIV-103 | a load error refused (500, pack code) | an empty answer with a warning | `unreadable-pack` |
 | DIV-104 | withdrawn, see below | | |
 | DIV-105 | an ordered answer with `relation`, `via`, `hops` and `diagnostics` | unordered sets | every case (mapping) |
-| DIV-106 | vocabulary targets as entries with relation `vocabulary`; the seam drops them from delivery | computes `glossary_scopes` and discards it | `vocabulary-walk` |
+| DIV-106 | vocabulary targets as entries with relation `vocabulary`, a `glossary_context:` or `term:` URN since #106; the seam drops them from delivery. The vocabulary in force is its own read of the activation, the terms of the glossary contexts in force and their Contextive and taboo projections ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/)), ordered by Unicode code point. A context overrides across levels whole, and the load warning of ADR-0049 decision 13 is retired (ADR-0076 decision 2) | computes `glossary_scopes` and discards it; the charter retires those scopes (ADR-0049 decision 11): a context's scope is its pack level | `vocabulary-walk` |
 | DIV-107 | the offering's walk only; activation, selection roots, the language filter and the directive allowlist are the effective-context operation's (R9, #103) | one filtered, selected answer | `activated-project`, `selected-roots`, `language-filtered`, `directive-allowlist` |
 | DIV-108 | no tension annotation until the creed set (#16, #77) | an annotation over `in_tension_with` pairs | `tension-pair` |
 | DIV-109 | every walked kind, including paradigm, template and agent profile | delivery slots exclude those kinds (seam-side) | `undelivered-kind` |
@@ -250,7 +250,7 @@ ruling, its status and the evidence.
   - Core: `activation/org_charter.py:217-235` (`schema_version` "1" to an integer)
   - Core: pydantic lax mode, no strict config (a quoted number to an integer)
   - Charter: `contracts/packs/schemas/agent-profile.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`; `org-charter.schema.json`, which dropped them too, is deleted with the retired file (#431, [DIV-303](#div-303-org-charteryaml-and-the-packyaml-key-active_charter))
-  - Charter: `contracts/packs/schemas/glossary-pack.schema.json and skill.schema.json (#192): a quoted confidence or a quoted boolean, which core's pydantic models convert, is refused (ADR-0039)`
+  - Charter: `contracts/packs/schemas/skill.schema.json (#192): a quoted boolean, which core's pydantic models convert, is refused (ADR-0039); glossary.schema.json replaced glossary-pack.schema.json on 2026-11-14 (#106, ADR-0049): it has no confidence, the field a quoted number was converted for, and a quoted value in it is judged as written`
 
 ### DIV-011: Org-fragment node kinds
 
@@ -267,14 +267,16 @@ ruling, its status and the evidence.
 ### DIV-012: URN node kinds
 
 - **Core:** Also accepts the kinds glossary and glossary_scope, both NodeKind members (offering/drg/models.py:61-66).
-- **Service:** The 15 node kinds the service models. glossary and glossary_scope are refused.
-- **Rationale:** The service has no node of those kinds, and the URN pattern is generated from the kinds it models.
+- **Service:** The node kinds the service models (`node_kinds` in `file-kinds.yaml`). Core's glossary and glossary_scope are refused. Since #106 (2026-11-14) the kinds include glossary_context, a glossary context's URN token (`glossary_context:<id>`), and term (`term:<context-id>/<term-id>`), an edge target that is never a declared node.
+- **Rationale:** The service has no node of core's two kinds, and the URN pattern is generated from the kinds it models. A context's URN token differs from its kind token `glossary` on purpose (ADR-0053 decision 13), so core's `glossary:<id>` stays refused.
 - **Ruling:** R15 (2026-10-19)
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:61-66`
   - Charter: `contracts/packs/schemas/graph-shard.schema.json: the URN pattern and one prefix-equals-kind branch per node kind (import changes C3 and C4; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
   - Charter: `contracts/packs/file-kinds.yaml`
+  - Charter: `contracts/charter/schemas/NodeKind.yaml: glossary_context and term replace glossary_pack (#106)`
+  - Charter: `planted cases r15-glossary-urn-as-an-edge-endpoint and r15-glossary-urn-in-a-shard: core's glossary: URN is refused`
 
 ### DIV-013: Nested sections of an agent profile and of charter.yaml
 
@@ -520,7 +522,7 @@ by level then URN (rule E9). Core has no counterpart for either member, so this 
 | DIV-207 | The write cascade walks `enhances` as one of its relations, from the enhancer to what it enhances: a cascading select of an enhancer selects its target, a select of the target selects no enhancer, and a cascading deactivate of an enhancer unselects its target unless another active artifact needs it (`skippedShared`). There is no `enhances` pull, at write or at read | Does not follow `enhances` in its cascade | ADR-0059 D2 as amended on 2026-11-06 (A4) | `cascade-enhances-relation` |
 | DIV-209 | `replaceActivation` drops an id of the body that the closure no longer holds and that the replaced document named, and lists it in `dropped`; an unknown id the replaced document did not name is still `422`. A replace, the four per-artifact writes and `applyActivationPreset` drop a version pin no pack of the closure holds and list it in `droppedPins`, where they answered `422 version_not_held`; `createActivation` keeps that `422` for a pin in its own body. A replace judges the floor only on the deny entries it adds, so a GET then PUT of one body is never refused without a pack change | No stored document to replace: its seam drops a stale deny entry at export and keeps no pack version pin | ADR-0059 amendment of 2026-11-07 (ruleset A4 and B1); decisions `DM-01M6RA7XC5HC8915GZT2R3H83W`, `DM-01M6RA9BKJY7X9BFV93QW1KM1T`, `DM-01M6RN5Y406SB4KA13QYMQ2P8J` | `replace-drops-stale` |
 | DIV-210 | A mission type id is read in any spelling (the declared id, its full URN or another case) in a path and in a document, and stored as the declared id. A document that names one the closure does not hold is `422 unknown_artifact` at `/selected/mission_type/<i>`; `unknown_mission_type` is gone | A mission type is not an artifact kind (DIV-501), so its id is matched as the mission-tier path spells it | ADR-0020 D4 note of 2026-11-06; decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC` | `mission-type-id-spellings` |
-| DIV-211 | A preset carrying `activated_kinds` refuses the pack as `500 pack_unreadable`, as the preset item id grammar does; a `422` on registration is planned for PR A. A preset may name any kind, `skill` and `glossary_pack` included (`activated_skills`, `activated_glossary_packs`), and `activated_mission_types` is a plain member list applied as `selected.mission_type` | A preset may carry `activated_kinds`, the kind gate, and its member lists exclude skill and glossary pack | Decisions `DM-01M6RCY40CQQTHC130RWF43W0D` (Q3), `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; ADR-0042 D2 note of 2026-11-07 | `preset-any-kind` |
+| DIV-211 | A preset carrying `activated_kinds` refuses the pack as `500 pack_unreadable`, as the preset item id grammar does; a `422` on registration is planned for PR A. A preset may name any kind, `skill` and `glossary` included (`activated_skills`, `activated_glossaries`; `activated_glossary_packs` until #106, which a preset may no longer carry), and `activated_mission_types` is a plain member list applied as `selected.mission_type` | A preset may carry `activated_kinds`, the kind gate, and its member lists exclude skill and glossary pack | Decisions `DM-01M6RCY40CQQTHC130RWF43W0D` (Q3), `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; ADR-0042 D2 note of 2026-11-07 | `preset-any-kind` |
 | DIV-212 | Core's `activated_kinds` narrowing is not honoured: nothing is in force because its kind is activated, a select brings its artifact into force, and `activatedKinds` is refused on a create or replace. A core project that narrows it sees a larger effective set | A project narrows `activated_kinds`, and only the kinds it lists are in force | Decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (A7), `DM-01M6RCY8MYNGNPJ247M2Y4880N` (Q4) | `activated-kinds-narrowing` |
 | DIV-213 | A document stored at `schemaVersion` 1 is answered as its version 2 upgrade (`missionTypes` become `selected.mission_type`, every selection is kept, `activatedKinds` is discarded). A read upgrades in memory; the next write stores version 2, so every `ETag` changes once | No stored document of this shape and no version to upgrade | Decisions `DM-01M6RMJHDKNTXAM055Q8WR6SDN`, `DM-01M6RFGMDH859CJP3RHHF9YC3H` | `v1-upgraded-on-read` |
 | DIV-214 | A mission type is selected under `selected.mission_type` and denied under `deactivated.mission_type` unless it is required or locked (`409 artifact_required`, `artifact_locked`). Selecting one with a cascade crosses to its steps like `requires` and selects what they reach (W20); a cascading deactivate unselects what only it kept (W23) | Mission types are a plain `mission_type_activations` list with no deny list (ADR-0020 D4 table); selecting one does not put what its steps reach into `activated_<plural>` | Decisions `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (Q1), `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC` (Q2); #410 | `mission-type-selected-like-any-kind` |
