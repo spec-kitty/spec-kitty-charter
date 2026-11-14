@@ -198,10 +198,10 @@
       "criterion_id": "FR-020",
       "description": "Verify FR-020 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "research/term-id-map.md (139 rows); WholePackRoundTripTest; WP02 commit 3a918d57",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:30:12.978019+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
