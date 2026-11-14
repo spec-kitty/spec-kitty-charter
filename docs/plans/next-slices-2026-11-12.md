@@ -104,7 +104,7 @@ Slice C and slice D run first. After them, in this order:
 - **Why now:** these are cutover reads core makes today, decided but not served. Presets are P1, and a guard
   names its implementation as `asset:<id>`, so a client that runs a guard needs the asset read.
 - **Depends on:** nothing open. Open-packs follows the `glossary` shape once #106 lands
-  (`open-packs#TBD-glossary-contexts`).
+  (the draft issue is [in the Mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md)).
 - **State:** delivered. PR #546 delivered all but #106, and #106's own Mission (operator ruling at specify,
   2026-11-12), `glossary-contexts-and-terms-01M7B1PP`, delivered the glossary contexts and terms on 2026-11-14:
   the reads in a pack and under an activation, and the activation's vocabulary in force.

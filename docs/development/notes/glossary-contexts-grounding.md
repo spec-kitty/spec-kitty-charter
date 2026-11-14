@@ -51,7 +51,7 @@ ruling at specify, 2026-11-12). It closes slice A2's last box (#536).
   - Epic #549 slice #551 adds `IdentifierGrammar.letterFirstSlug(max)` and renames `Constraints.isNotBlank()` to
     `notBlank()`. Whichever lands second rebases.
 - **Out of scope.** Core's glossary consumers (#332 to #335, #518) are post-cutover. The open-packs glossaries
-  migrate in `spec-kitty-open-packs` (a draft issue, `open-packs#TBD-glossary-contexts`).
+  migrate in `spec-kitty-open-packs` (a draft issue, [in the Mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md)).
 
 ## The rename surface
 
