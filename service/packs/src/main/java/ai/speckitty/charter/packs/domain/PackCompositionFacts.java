@@ -1,6 +1,9 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -221,5 +224,37 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts(List<String> changed, List<String> defined, List<String> references) {
         this(changed, defined, references, MutabilityPolicySource.empty());
+    }
+
+    /**
+     * Whether the pack holds what a bare URN names: the one answer the compose and the inbound scan share. A term
+     * ({@code term:<context-id>/<term-id>}) is an item of its glossary context, not an artifact (ADR-0049 decision 3),
+     * so the pack holds it when it holds the context and the context holds the term.
+     *
+     * @param urn the bare URN
+     * @return {@code true} when {@code defined}, or for a term {@code terms} and its held context, name it
+     */
+    public boolean holds(Urn urn) {
+        return holds(defined, terms, urn);
+    }
+
+    /**
+     * The rule of {@link #holds(Urn)} over a pack's held artifacts and terms, for a reader that holds the two lists
+     * apart from the facts ({@link PackCompositionResolver.PackUnderResolution#holds}).
+     *
+     * @param defined the artifacts the pack holds, as bare URN texts
+     * @param terms the terms its glossary contexts hold, as bare URN texts
+     * @param urn the bare URN
+     * @return {@code true} when the pack holds it
+     */
+    public static boolean holds(Collection<String> defined, Collection<String> terms, Urn urn) {
+        Objects.requireNonNull(urn, "urn");
+        if (urn.kind() == NodeKind.TERM) {
+            return terms.contains(urn.toString())
+                    && GlossaryTerm.contextOf(urn)
+                            .filter(context -> defined.contains(context.toString()))
+                            .isPresent();
+        }
+        return defined.contains(urn.toString());
     }
 }

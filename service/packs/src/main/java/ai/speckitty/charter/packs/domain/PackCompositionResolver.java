@@ -71,9 +71,6 @@ public final class PackCompositionResolver {
             List<String> definedArtifacts,
             Set<String> heldTerms) {
 
-        /** The prefix of a term's URN text, which {@link #holds} judges by its context. */
-        private static final String TERM = NodeKind.TERM.token() + ":";
-
         /**
          * Checks the fields.
          *
@@ -120,14 +117,9 @@ public final class PackCompositionResolver {
          * @return {@code true} when the pack's held artifacts, or for a term its held context, name it
          */
         public boolean holds(String urn) {
-            if (urn.startsWith(TERM)) {
-                return heldTerms.contains(urn)
-                        && Urn.parse(urn)
-                                .flatMap(GlossaryTerm::contextOf)
-                                .filter(context -> definedArtifacts.contains(context.toString()))
-                                .isPresent();
-            }
-            return definedArtifacts.contains(urn);
+            return Urn.parse(urn)
+                    .map(parsed -> PackCompositionFacts.holds(definedArtifacts, heldTerms, parsed))
+                    .orElseGet(() -> definedArtifacts.contains(urn));
         }
 
         /**
