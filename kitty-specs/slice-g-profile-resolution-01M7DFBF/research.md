@@ -94,13 +94,16 @@ and a sibling fallback conflict.
   and action-context reads link to it.
 - **D2. "Fits the context".**
   - (a) No context in G: rank by lineage depth, then `routing-priority`.
-  - (b) Optional `language` and `framework` query parameters. A profile fits when every descriptor dimension it
-    declares contains the asked value, and a profile that declares none fits any context. So with no context asked,
-    only undescribed profiles fit.
+  - (b) Optional `language` and `framework` query parameters, with three rules:
+    1. A profile that declares an asked dimension must contain the asked value.
+    2. A specialization (one with an in-force `specializes_from` ancestor) that declares descriptors fits only when
+       an asked dimension matches one it declares.
+    3. A lineage root, or a specialization with no descriptors (a pure refinement), fits any context.
   - (c) As (b), with all six descriptor lists.
 
-  *Recommend (b)*. Without it, `implementer` with no context would tie `java-jenny` and `python-pedro` over
-  `implementer-ivan`.
+  *Recommend (b)*. With no context, `implementer` answers `implementer-ivan`; with `language=java`, `java-jenny`;
+  with `language=go`, `implementer-ivan`. Under (a), `implementer` with no context would tie `java-jenny` and
+  `python-pedro`. The example packs already tie `reviewer-renata` with `project-reviewer`, which is the tie fixture.
 - **D3. The pin's shape.** `policy.yaml` gains `role_pins: {<role>: <profile-id>}`. The pin in force is the most
   derived declaring pack's, as for the fallback. Refusals, judged at registration over the closure:
   - `role_pin_unknown` (422): the id resolves to no profile in the closure.
