@@ -140,3 +140,16 @@ and a sibling fallback conflict.
 
 One new ADR (0078) records D1 to D6 and amends ADR-0030 (pin shape) and ADR-0068 d6 (unchanged marks; `operator`'s
 rule). One `### Breaking` CHANGELOG fragment covers `sentinel` → `performer` and the effective profile's new meaning.
+
+## 7. Coordination log
+
+- 2026-11-14, from slice F, via the orchestrator:
+  - F takes ADR-0077 (`0077-kind-taxonomy-and-step-authority.md`); G keeps 0078.
+  - `MissionStep.role` is untouched.
+  - F's step changes:
+    - `substeps` is added, optional in the pack schema and required on the `MissionStep` wire schema;
+    - the `step-contract` link, `stepContractId` and the `step` link relation are removed from the step read.
+  - `Relationship` constructors become package-private. Relationships are built only through the checked
+    `Relationship.of(...)` factories, enforced by ArchUnit `RELATIONSHIP_IS_BOUND`. G only *reads* relationships
+    (lineage, enhancers), so its rebase cost is limited to fixtures that build relationships in tests.
+  - F status: WP01 to WP09 approved; WP10, WP11 and landing remain.
