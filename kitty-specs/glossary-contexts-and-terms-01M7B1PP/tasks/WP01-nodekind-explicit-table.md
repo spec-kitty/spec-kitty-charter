@@ -7,6 +7,9 @@ requirement_refs:
 planning_base_branch: feat/106-glossary-contexts
 merge_target_branch: feat/106-glossary-contexts
 branch_strategy: Planning artifacts for this mission were generated on feat/106-glossary-contexts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/106-glossary-contexts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-glossary-contexts-and-terms-01M7B1PP
+base_commit: 0b17970e3ec1f9282a3cf6f4a90a5d666e767619
+created_at: '2026-11-14T07:40:05.722282+00:00'
 subtasks:
 - T001
 - T002
