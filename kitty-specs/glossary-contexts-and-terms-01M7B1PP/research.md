@@ -159,7 +159,7 @@ Status words below:
   - The `ActivationArtifacts` port gains `contextsInForce(activationId)`: the winning `glossary` contexts with state
     in force, their packs, and the closure fingerprint. `ActivationsArtifacts` and `EffectiveReadService` implement
     it.
-  - A `PacksGlossaries` adapter reads each winning pack's contexts once, checked against that fingerprint.
+  - A `PacksVocabulary` adapter reads each winning pack's contexts once, checked against that fingerprint.
   - NFR-005 is measured as one activation session plus at most one read per winning pack, counted by a test.
 - **Rationale**:
   - The site's Contextive file already uses `meta.status`.

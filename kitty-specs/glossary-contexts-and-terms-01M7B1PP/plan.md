@@ -247,7 +247,7 @@ None. No charter gate is violated.
 - **Purpose**: `getActivationVocabularyTerms`, `getActivationVocabularyContextive` (`application/yaml`) and
   `getActivationVocabularyTaboos`, per ADR-0076 decisions 4 to 9 and research R6.
 - **Read path**: the `ActivationArtifacts.contextsInForce` port method, its `ActivationsArtifacts` and
-  `EffectiveReadService` implementation, and a `PacksGlossaries` adapter.
+  `EffectiveReadService` implementation, and a `PacksVocabulary` adapter.
 - **Pure functions**: the projections, in `artifacts-edge.application`.
 - **Proof**:
   - `vocabulary.feature`:
