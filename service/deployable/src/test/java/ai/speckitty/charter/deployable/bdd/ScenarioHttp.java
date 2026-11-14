@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable.bdd;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -225,13 +226,15 @@ public class ScenarioHttp {
     }
 
     /**
-     * The body of the scenario's last response.
+     * The body of the scenario's last response, decoded as UTF-8: the service writes every body in UTF-8, and a media
+     * type that defines no {@code charset} (application/yaml, RFC 9512) is not decoded as the servlet default,
+     * ISO-8859-1.
      *
      * @return the body as text
      * @throws Exception when the body cannot be read
      */
     public String body() throws Exception {
-        return response().getContentAsString();
+        return response().getContentAsString(StandardCharsets.UTF_8);
     }
 
     /**
