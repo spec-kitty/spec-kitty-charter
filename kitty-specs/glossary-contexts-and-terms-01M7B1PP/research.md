@@ -66,7 +66,9 @@ Status words below:
   - No upgrade. `schemaVersion` stays `2`. A stored document that holds `selected.glossary_pack` or
     `deactivated.glossary_pack` fails the closed objects, and the store refuses it as it refuses any invalid stored
     document (`ActivationStorageException`).
-  - A write that sends either member is `422 validation_failed` with `unknown_member`.
+  - A write that sends either member is `422 activation_invalid` with an `unknown_member` violation at the member's
+    pointer, as `activation-register.feature` already answers any undeclared member. (Corrected 2026-11-14 in WP03:
+    this note first said `validation_failed`.)
 - **Rationale**:
   - The charter's model rule allows no reader of the old shape.
   - No deployment holds stored state.
