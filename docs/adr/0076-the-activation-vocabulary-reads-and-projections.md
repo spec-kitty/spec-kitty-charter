@@ -2,9 +2,9 @@
 title: "ADR-0076: The activation's vocabulary reads and projections"
 description: How a client reads the terms in force under an activation, and the Contextive file and taboo list projected from them, and how a glossary context overrides across levels.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted
-decision_date: '2026-11-13'
+decision_date: '2026-11-14'
 type: ADR
 kind: ADR
 related:
@@ -15,7 +15,7 @@ related:
   - adr/0029-charter-glossary-is-owned-here
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this before you build or change the vocabulary reads of an activation, or the Contextive and avoid projections.
+    guidance_text: Read this before you build or change the vocabulary reads of an activation, or the Contextive and taboos projections.
   - profile: core-maintainer
     guidance_text: Read this for the reads a terminology gate or an editor plug-in uses instead of its own vocabulary list.
 ---
@@ -53,7 +53,7 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
 - ADR-0074 decisions 9 to 14 give a glossary context and a term their reads, in a pack and under an activation. They do
   not say how a client reads the whole vocabulary in force, nor a projection of it.
 - An activation already resolves, per artifact id, one winning copy across its closure (project over org over
-  built-in) and its state: selected, deselected, denied or not selected.
+  built-in) and its state, `active`, `inactive` or `excluded`, with the reason (`deactivated` or `not_selected`, say).
 - A path under `…/artifacts/glossary/` would collide with a context id: `terms` is a valid id.
 
 ## Decision
@@ -89,7 +89,7 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
    `self` and `activation`.
 
    Each active term carries:
-   - its `urn` (`term:<context-id>/<term-id>`), `contextId` and `termId`;
+   - its `urn` (`term:<context-id>/<term-id>`), `contextId` and `id`;
    - its fields: `name`, `definition`, `status`, and `examples`, `aliases`, `avoid` and `seeAlso` when present;
    - the `packId` and `level` of its context's winning copy;
    - `_links` with `effective-term` (the activation's term read) and `effective-glossary` (its context).
@@ -108,19 +108,19 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
    `application/yaml` is a 406, as the conventions say for any operation.
 7. **`taboos` answers JSON**: `activationId`, `revision`, `governanceFingerprint`, `entries` and `_links` (`self` and
    `activation`).
-   - There is one entry per avoided word per term: `word`, `term` (the URN) and `name` (the term's name).
+   - There is one entry per avoided word per term: `word`, `urn` (the term's URN) and `termName` (the term's name).
    - Entries are ordered by word, then URN.
    - A word avoided by two terms appears twice: the list states facts and leaves the gate to decide.
 8. **Each of the three reads is cached by the activation, as the other effective reads are.**
    - It answers its own `ETag` and the `Charter-Source-Fingerprint` header, and honors `If-None-Match` with `304`.
    - Refusals are judged before the `304`: `404 activation_not_found`, and the closure's `500` refusals such as
      `pack_sibling_conflict`.
-   - An activation with no glossary in force answers empty lists and an empty `contexts`, never an error.
+   - An activation with no glossary context in force answers empty lists and an empty `contexts`, never an error.
 9. **Links.**
    - An activation's `_links` gains these relations:
      - `glossaries`: the activation's glossary context list;
      - `vocabulary-terms`, `vocabulary-contextive` and `vocabulary-taboos`.
-   - A context item links `terms` as a templated relation `term`.
+   - A glossary context's read links its terms through one templated relation, `term`.
    - The relation table in the hypermedia conventions lists each one.
 <!-- markdownlint-enable MD029 -->
 
