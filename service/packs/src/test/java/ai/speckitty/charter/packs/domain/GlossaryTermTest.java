@@ -122,9 +122,14 @@ class GlossaryTermTest {
                 "directive:DIRECTIVE_001",
                 "term:lane",
                 "core::term:lane",
-                "nonsense"
+                "nonsense",
+                "term:Core/lane",
+                "term:core/lane/extra",
+                "term:core/9lane",
+                "core::term:core/lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll"
             })
-    @DisplayName("a see_also entry that does not name a term, bare or qualified, is refused beside a term that builds")
+    @DisplayName("a see_also entry that does not name a term, bare or qualified, or whose ids are no letter-first slugs"
+            + " of at most 64 characters, is refused beside a term that builds")
     void aSeeAlsoThatIsNoTermIsRefused(String entry) {
         assertThatThrownBy(() -> term("mission", "d", List.of(LANE, PackQualifiedReference.parse(entry))))
                 .isInstanceOf(ConstraintBreachException.class)

@@ -64,7 +64,7 @@ A term:
 | `aliases` | Optional. Accepted alternative forms. |
 | `avoid` | Optional. Forms not to use; the one source of words to avoid. |
 | `status` | `draft`, `active` or `deprecated`. |
-| `see_also` | Optional. At least one term reference. |
+| `see_also` | Optional. At least one term reference, whose context id and term id are each a letter-first kebab slug of at most 64 characters. |
 
 A `see_also` entry is a reference like any other (operator ruling, 2026-11-14). A bare
 `term:<context-id>/<term-id>` names a term of the same pack. `<pack>::term:<context-id>/<term-id>` names a term

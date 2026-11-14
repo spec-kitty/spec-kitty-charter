@@ -71,7 +71,7 @@
         },
         "avoid": {
           "$ref": "#/$defs/TextList",
-          "description": "Forms not to use: the one source of banned vocabulary (ADR-0049 decisions 5 and 15)."
+          "description": "Forms not to use: the one source of taboos (ADR-0049 decisions 5 and 15)."
         },
         "status": {
           "description": "The term's status (ADR-0053 decision 14).",
@@ -83,9 +83,9 @@
           "title": "Status"
         },
         "see_also": {
-          "description": "Related terms, each a term reference: term:<context-id>/<term-id> for a term of this pack, or <pack>::term:<context-id>/<term-id> for a term another pack holds (the pack-qualified reference grammar). A bare entry that only another pack holds is refused as an unqualified reference; one that no held context resolves is a broken reference.",
+          "description": "Related terms, each a term reference whose two ids are Slugs: term:<context-id>/<term-id> for a term of this pack, or <pack>::term:<context-id>/<term-id> for a term another pack holds (the pack-qualified reference grammar). A bare entry that only another pack holds is refused as an unqualified reference; one that no held context resolves is a broken reference.",
           "items": {
-            "pattern": "^([a-z0-9][a-z0-9_-]*::)?term:[a-z][a-z0-9]*(-[a-z0-9]+)*/[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "pattern": "^(?!.*\\n)([a-z0-9][a-z0-9_-]*::)?term:(?=[a-z0-9-]{1,64}/)[a-z][a-z0-9]*(-[a-z0-9]+)*/(?=[a-z0-9-]{1,64}$)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
             "type": "string"
           },
           "minItems": 1,
