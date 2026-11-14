@@ -24,19 +24,30 @@ CLI-written commits that were unsigned before (operator ruling; research R16).
 
 ### Not done
 
-Squad and review minors recorded rather than folded (issue-tracker Rule 1). The orchestrator fixes the first five at
-consolidation.
+Squad and review minors recorded rather than folded (issue-tracker Rule 1).
 
-- The refusal detail texts (``glossary context `<id>` is not held``, ``term `<t>` is not held in glossary context
-  `<c>` ``) are written in three places, not one shared kernel text (WP05 review). The scenarios pin them.
-- Two path descriptions carry swapped FR labels: `getActivationVocabularyContextive` says FR-017 (it is FR-016), and
-  `getActivationVocabularyTerms` says FR-016 (WP07 review).
-- The contract's Contextive example (`Contextive.two-contexts.yaml`) is not mechanically tied to the renderer; a
-  drift test would pin it (WP07 review).
-- `vocabulary.feature` has no term with a non-ASCII name, so the code point ordering and the UTF-8 body are proven by
-  unit tests only (WP07 review).
-- The Gherkin of the glossary scenarios needs an alignment pass, raised in review; the orchestrator does it at
-  consolidation.
+The five minors the orchestrator took at consolidation are done: the swapped FR labels of two path descriptions
+(`96de6cf7`), the Contextive example tied to the renderer (`1b8337d8`), a non-ASCII definition through the Contextive
+body (`f8712c4d`), the Gherkin alignment (`3febcf3f`, and the tables the pre-merge renames widened in `8b3b5782`), and
+the refusal detail texts. Those were still written twice when the pre-merge squad looked; they are now one kernel text,
+`TermHolder.contextNotHeld` and `TermHolder.termNotHeld`, which the pack read and the read under an activation both
+answer (`d005279d`). The scenarios pin the words.
+
+Known gaps the pre-merge squad left (`squad-pre-merge.md`), each below MEDIUM and not filed:
+
+- A stored pack that is unreadable and only partly salvaged (`PackRegistrationService`, `Before.of(Remains)`) has no
+  terms in its diff, so dropping one term while keeping its context skips the inbound scan. The javadoc says so; the
+  next compose refuses the broken reference (reviewer-renata).
+- The references read lists a `see_also` term target with no `artifact` link, because a term has no artifact kind;
+  the term's own route exists but is not linked (reviewer-renata).
+- `site/.contextive/definitions.yaml` has no entries for "term in force", "vocabulary" or "taboo list", and its "Term"
+  calls a term an "entry", which collides with the taboo list's `entries`: a proposal for curator-carla
+  (lexical-larry).
+- The generated pack README's `content_hash` stamp (raised at the squad's close).
+- `InboundReferences.removedTarget` now judges a term removed with its context by the term; no test plants the
+  same-id context in another pack, since the reference rule refuses the bare reference that case needs at upload.
+- The contract's `seeAlso` patterns cannot bound each id to 64 characters: the contract's OpenAPI validator (RE2)
+  refuses a lookahead. `glossary.schema.json` and the domain bound them; the contract's descriptions say so.
 - `PolicyYaml`'s glossary `kind_defaults` mapping has no direct `PolicyYamlTest` case, and two `GlossaryContextTest`
   display names claim an inline positive control they do not hold (WP02 review).
 - `NodeKind.of()` has an unreachable null check, and `byArtifactKind()` does not refuse a duplicate mapping (WP01
@@ -54,7 +65,7 @@ consolidation.
 | FR-006 | `NodeKind` `GLOSSARY_CONTEXT` (`glossary_context:<id>`) and `TERM` (`term:<context>/<term>`), an explicit table (WP01) | `NodeKindTest`, `WireTokenParityTest`, planted `r15-glossary-urn-*` |
 | FR-007 to FR-010, FR-012 | `listPackGlossaryContexts`, `getPackGlossaryContext`, `getPackGlossaryTerm` | `glossary.feature` |
 | FR-011, FR-013 | `listEffectiveGlossaryContexts`, `getEffectiveGlossaryContext`, `getEffectiveGlossaryTerm`; `getActivation` links `glossaries` and the three vocabulary relations | `effective-glossary.feature`, `activation-links.feature` |
-| FR-014 to FR-017 | `getActivationVocabularyTerms`, `getActivationVocabularyContextive` (`application/yaml`), `getActivationVocabularyTaboos` | `vocabulary.feature` |
+| FR-014 to FR-017 | `listActivationVocabularyTerms`, `getActivationVocabularyContextive` (`application/yaml`), `listActivationVocabularyTaboos` | `vocabulary.feature` |
 | FR-018 | ADR-0076, Accepted 2026-11-14, after the squad and the operator | `docs/adr/0076-the-activation-vocabulary-reads-and-projections.md` |
 | FR-019 | Every new operation has `@contract` scenarios, an example and a `ready` switch-gate row | `CharterContractSuite` |
 | FR-020 | Charter's example packs and fixtures carry only the new shape; 139 term ids minted | `term-id-map.md`; WP02 commit `3a918d57` names each re-recorded pin |
@@ -83,6 +94,10 @@ Operator rulings, each a Decision Moment unless dated:
 | `DM-01M7CEZ19K8QRA3KX68KRWX22G` | `ProjectCharterYamlSchemaTest` stops validating this repository's core-written charter file |
 | Operator, 2026-11-14 | A `see_also` entry is a term reference that may carry a pack qualifier: bare for the same pack, `<pack>::term:…` for another; ADR-0049 carries the annotation |
 | Operator, 2026-11-14 | `main` is integrated by rebase; every commit re-signed (R16) |
+| Operator, 2026-11-14, ruling A (pre-merge squad) | The collection reads are `listActivationVocabularyTerms` and `listActivationVocabularyTaboos`; `ActiveTerm` and `ActiveTermList` are `VocabularyTerm` and `VocabularyTermList`, whose term id is `id`; `TabooEntry` is `{word, urn, termName}`; `TermCopiesParityTest` pins the term members of the three term schemas (`a57f9aa7`) |
+| Operator, 2026-11-14, ruling B (pre-merge squad) | A `term` is an edge endpoint only as the target of a `vocabulary` edge, in `PackPolicy`, the registration wire and the edge schemas, with planted refusal cases (`62e58ae6`) |
+| Operator, 2026-11-14, ruling C (pre-merge squad) | A profile's `vocabulary` edge onto a term lists it under an activation while its context's winning copy is in force and holds it; `EffectiveGovernanceEntry` gains `termId` (`68739262`) |
+| Operator, 2026-11-14, ruling D (pre-merge squad) | The change fragment cites no open-packs placeholder; the docs point to the Mission's draft (`56c0be5c`) |
 
 Other calls recorded in the records:
 
@@ -139,22 +154,25 @@ module. The orchestrator verifies both floors at landing.
 - **The pack schema page.** `docs/architecture/pack-schemas/glossary.md` replaces `glossary-pack.md` and names
   `schemas/glossary.schema.json`. The site's `stage-docs-inputs` check passes only once the lanes are consolidated;
   `lane-f` alone still has the old page, which names a schema it deleted.
-- **The open-packs placeholder** `open-packs#TBD-glossary-contexts` is in the draft, the change fragment
-  `2026-11-14-glossary-replaces-glossary-pack.md`, the work breakdown (P5) and the roadmap's A2 row.
+- **The open-packs placeholder** `open-packs#TBD-glossary-contexts` is in the draft alone (ruling D, `56c0be5c`).
+  The change fragment no longer cites it, and the plans, the work breakdown (P5), the roadmap's A2 row and the
+  grounding note link the draft instead.
 
 ## For the orchestrator
 
 1. Tick #106 in #536, and close #536 with the PR (its last box).
 2. Tick R12 in #94.
-3. File `open-packs-draft-glossary-contexts.md` in `spec-kitty/spec-kitty-open-packs`, and replace the placeholder
-   everywhere it is listed above.
-4. Comment on #518:
+3. File `open-packs-draft-glossary-contexts.md` in `spec-kitty/spec-kitty-open-packs`, and put the issue number in
+   the draft in place of its placeholder. Nothing else cites the placeholder (ruling D).
+4. Rebase onto `main` before landing (the pre-merge squad found the branch behind it); this session did not rebase.
+5. Mirror the ADR-0076, ADR-0049 and ADR-0064 edits of `166761ee` and `a57f9aa7` to PR #576.
+6. Comment on #518:
 
    > Charter #106 replaced `glossary_pack` with glossary contexts (ADR-0049, ADR-0076). The fields this issue names,
    > `banned_synonyms` and `synonyms_to_avoid`, are gone: each term has one list of words not to use, `avoid`. A
    > glossary evaluator does not keep its own list. It reads the taboo list of the vocabulary in force,
-   > `GET /activations/{activationId}/vocabulary/taboos`: one entry per avoided word per term, with the URN and name
-   > of the term to use instead. The terms themselves are `GET /activations/{activationId}/vocabulary/terms`. This
+   > `GET /activations/{activationId}/vocabulary/taboos`: one entry per avoided word per term, with the `urn` and the
+   > `termName` of the term to use instead. The terms themselves are `GET /activations/{activationId}/vocabulary/terms`. This
    > issue stays a core consumer, post-cutover.
 
 ## Evidence per issue
