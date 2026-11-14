@@ -1,6 +1,6 @@
 ---
 work_package_id: WP07
-title: 'The activation''s vocabulary: contract and endpoints'
+title: "The activation's vocabulary: contract and endpoints"
 dependencies:
 - WP06
 requirement_refs:
@@ -14,6 +14,9 @@ requirement_refs:
 planning_base_branch: feat/106-glossary-contexts
 merge_target_branch: feat/106-glossary-contexts
 branch_strategy: Planning artifacts for this mission were generated on feat/106-glossary-contexts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/106-glossary-contexts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-glossary-contexts-and-terms-01M7B1PP
+base_commit: 4d4127a3df7cdd64998825fa17efa29b719c3e31
+created_at: '2026-11-14T16:35:26.663766+00:00'
 subtasks:
 - T035
 - T036
@@ -26,6 +29,22 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
 authoritative_surface: service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/
+create_intent:
+- contracts/charter/paths/activations_activationId_vocabulary_terms.yaml
+- contracts/charter/paths/activations_activationId_vocabulary_contextive.yaml
+- contracts/charter/paths/activations_activationId_vocabulary_taboos.yaml
+- contracts/charter/schemas/ActiveTermList.yaml
+- contracts/charter/schemas/ActiveTerm.yaml
+- contracts/charter/schemas/TabooList.yaml
+- contracts/charter/schemas/TabooEntry.yaml
+- contracts/charter/scenarios/vocabulary.feature
+- contracts/charter/changes/2026-11-14-activation-vocabulary.md
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyController.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyBodies.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYaml.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/VocabularyControllerTest.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYamlTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/VocabularySteps.java
 execution_mode: code_change
 owned_files:
 - contracts/charter/paths/activations_activationId_vocabulary_terms.yaml
@@ -48,22 +67,6 @@ owned_files:
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYamlTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/VocabularySteps.java
 - docs/development/rest-resource-conventions.md
-create_intent:
-- contracts/charter/paths/activations_activationId_vocabulary_terms.yaml
-- contracts/charter/paths/activations_activationId_vocabulary_contextive.yaml
-- contracts/charter/paths/activations_activationId_vocabulary_taboos.yaml
-- contracts/charter/schemas/ActiveTermList.yaml
-- contracts/charter/schemas/ActiveTerm.yaml
-- contracts/charter/schemas/TabooList.yaml
-- contracts/charter/schemas/TabooEntry.yaml
-- contracts/charter/scenarios/vocabulary.feature
-- contracts/charter/changes/2026-11-14-activation-vocabulary.md
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyController.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyBodies.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYaml.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/VocabularyControllerTest.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYamlTest.java
-- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/VocabularySteps.java
 role: implementer
 tags: []
 tracker_refs: []

@@ -1,21 +1,21 @@
 {
-  "event_count": 31,
-  "last_event_id": "01M7D3TGRQFTFAE66E9Z9QMTW8",
-  "materialized_at": "2026-11-14T13:26:50.391082+00:00",
+  "event_count": 50,
+  "last_event_id": "01M7DKF6DC2EQG2CAYHTR4BDP0",
+  "materialized_at": "2026-11-14T18:00:16.361386+00:00",
   "mission_number": "",
   "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 3,
+    "approved": 7,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
-    "in_progress": 0,
+    "for_review": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -89,31 +89,32 @@
       }
     },
     "WP03": {
-      "actor": "user",
-      "agent": null,
-      "agent_profile": "java-jenny",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M7D3TGRQFTFAE66E9Z9QMTW8",
-      "last_transition_at": "2026-11-14T13:26:50.391082+00:00",
+      "lane": "approved",
+      "last_event_id": "01M7D511BT1RRY2FGM4VVQ681W",
+      "last_transition_at": "2026-11-14T13:47:52.570702+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: planted glossary refusals, identifier rows, stored/write glossary_pack refusals, glossary round-trip proof, term-target inbound reference; open risks in report",
-        "Cycle 2: term holding via PackCompositionFacts.terms / PackUnderResolution.heldTerms (holds = context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing); see_also is a List<PackQualifiedReference> per the 2026-11-14 ruling, deriving one vocabulary relationship per entry from the context (bare cross-pack refused pack_reference_unqualified, unresolved reported held:false); dropping a term while keeping its context refused artifact_referenced; repeated term id is a uniqueItems schema violation at terms/<n>/id in load and validate mode. Commit 09d463da. verifyAll exit 0; packs 5249 tests green."
+        "Cycle 2: term holding via PackCompositionFacts.terms / PackUnderResolution.heldTerms (holds = context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing); see_also is a List<PackQualifiedReference> per the 2026-11-14 ruling, deriving one vocabulary relationship per entry from the context (bare cross-pack refused pack_reference_unqualified, unresolved reported held:false); dropping a term while keeping its context refused artifact_referenced; repeated term id is a uniqueItems schema violation at terms/<n>/id in load and validate mode. Commit 09d463da. verifyAll exit 0; packs 5249 tests green.",
+        "Review passed (cycle 2): HIGH 1 fixed (PackCompositionFacts.terms + PackUnderResolution.heldTerms; holds(term)=context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing; terms not in defined()). HIGH 2 fixed per operator ruling (see_also = List<PackQualifiedReference>, schema admits <pack>::, GlossaryContext derives vocabulary relationships; bare cross-pack refused pack_reference_unqualified; unresolved held:false). MEDIUM fixed (dropped term with kept context refused artifact_referenced). LOWs folded (validate-mode uniqueItems at terms/<n>/id; two-fault note). Targeted tests + checkstyle green; scoped PIT on changed lines 29/32 killed, 3 survivors are defensive conjuncts (LOW). Cross-lane: lane-c PacksGlossaries.java:126 must map PackQualifiedReference::toString and GlossaryTerm.yaml/GlossaryContextTerm.yaml seeAlso patterns need the optional <pack>:: prefix."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP03-model-refusals-and-round-trip/review-cycle-1.md",
-        "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP03-model-refusals-and-round-trip/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP03-model-refusals-and-round-trip/review-cycle-2.md",
+        "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP03-model-refusals-and-round-trip/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 32706,
+      "shell_pid_created_at": "1794662868.78",
       "subtasks": {
         "T015": "done",
         "T016": "done",
@@ -156,32 +157,119 @@
       }
     },
     "WP05": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7CFS3BW5P99666FRFZ2E8J9",
-      "last_transition_at": "2026-11-14T07:36:32.380594+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7DAHQECT1626Z2MRPMN0FXK",
+      "last_transition_at": "2026-11-14T15:24:22.348820+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed: three activation twins (list/context/term) ready in the switch gate; refusal order activation->kind->context->term before If-None-Match; whole-context override with positive control; term carries context state; distinct EffectiveTag reads; links + relation table/lint enum; parity test excludes nothing new. Verified: targeted activations/artifacts-edge/packs/contracts tests, full CharterContractSuite (switch gate green), HexagonalArchitectureTest, checkstyle. LOW fold-ins: refusal detail text in 3 places (pinned by scenarios), activations full-module PIT floor not re-run (verify at landing), over-long javadoc lines."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP05-glossary-activation-twins/review-cycle-1.md",
+        "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP05-glossary-activation-twins/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 30938,
+      "shell_pid_created_at": "1794668557.63",
+      "subtasks": {
+        "T025": "done",
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done"
+      }
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7CFS5KGXPAW0ER8J9786EWD",
-      "last_transition_at": "2026-11-14T07:36:34.672814+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7DEJM7QX8Z52ZX6KW82MS3C",
+      "last_transition_at": "2026-11-14T16:34:46.135487+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed: contexts in force from one session's effective set (ACTIVE glossary winners, whole-context override with positive control); PacksVocabulary reads each winning pack once against the source fingerprint (stale_input on mismatch/vanished winner), counted on the production adapter; terms ordered context/term id, every status served, seeAlso as written; Contextive tree matches ADR-0076 d6 with optional members empty; taboos one entry per avoid word per term, word then URN; SC-004 cross-checks; three distinct vocabulary tags; refusals (activation_not_found, pack_sibling_conflict) judged before 304 per d8, and no pack read on 304; VocabularyReads/PacksVocabulary live beans (wiring test). Departures 1-5 accepted. Verified: targeted activations/artifacts-edge tests, checkstyle main+test, spotless, HexagonalArchitectureTest; PIT artifacts-edge 90% (new classes 100%), activations narrowed 98%. LOW fold-ins: NFR-005 proven piecewise not end-to-end over the 139-term pack (WP07 scenario can pin it); over-long javadoc lines; string collation of ordering unstated; ActivationsArtifacts package PIT low (pre-existing)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP06-vocabulary-read-path-and-projections/review-cycle-1.md",
+        "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP06-vocabulary-read-path-and-projections/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 27560,
+      "shell_pid_created_at": "1794673458.09",
+      "subtasks": {
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
+      }
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7CFS7T4G1ZAKJMHGD7PMGN4",
-      "last_transition_at": "2026-11-14T07:36:36.932956+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7DKDTB6VPNW6CFPH1N887TQ",
+      "last_transition_at": "2026-11-14T17:59:31.430233+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed: Contextive v1 YAML conforms to ADR-0076 d6 (keys/order/omitted optionals) and is pinned byte-for-byte plus parse-back; 406 via Spring produces negotiation proven at unit and @contract level; application/yaml without charset is correct per RFC 9512 and Boot's converter writes UTF-8 (pinned by OpenApiDocumentEncodingTest on the same pattern); 'activation' relation is ADR-0076 d5/d7 verbatim; refusals before 304, per-read ETag, fingerprint header proven; NFR-005 on real store with 139-term positive control; switch-gate ready x3; vocabulary.feature + activation-links.feature re-run green; checkstyle and :contracts:check green; mutation 91.5/92.6 >= 85. LOW fold-ins: swapped FR labels in contextive/terms path descriptions (FR-017->FR-016; FR-016->FR-015); contract Contextive example not mechanically tied to the renderer; no non-ASCII term in vocabulary.feature."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks/WP07-vocabulary-contract-and-endpoints/review-cycle-1.md",
+        "reference": "review-cycle://glossary-contexts-and-terms-01M7B1PP/WP07-vocabulary-contract-and-endpoints/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 28087,
+      "shell_pid_created_at": "1794678414.56",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done"
+      }
     },
     "WP08": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "scribe-sally",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7CFSA1J58EACXY1DXZ06659",
-      "last_transition_at": "2026-11-14T07:36:39.218839+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M7DKF6DC2EQG2CAYHTR4BDP0",
+      "last_transition_at": "2026-11-14T18:00:16.361386+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 355,
+      "shell_pid_created_at": "1794679208.8"
     }
   }
 }
