@@ -1,6 +1,6 @@
 ---
 work_package_id: WP06
-title: 'The activation''s vocabulary: read path and projections'
+title: "The activation's vocabulary: read path and projections"
 dependencies:
 - WP05
 requirement_refs:
@@ -13,6 +13,9 @@ requirement_refs:
 planning_base_branch: feat/106-glossary-contexts
 merge_target_branch: feat/106-glossary-contexts
 branch_strategy: Planning artifacts for this mission were generated on feat/106-glossary-contexts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/106-glossary-contexts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-glossary-contexts-and-terms-01M7B1PP
+base_commit: 35d5f2c66f61fdc3a8dfc5efd82cf6f03c598d6d
+created_at: '2026-11-14T15:24:58.797212+00:00'
 subtasks:
 - T030
 - T031
@@ -25,8 +28,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
 authoritative_surface: service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/
-execution_mode: code_change
-owned_files:
+create_intent:
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/VocabularyReads.java
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ActiveTerm.java
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ContextsInForce.java
@@ -38,7 +40,8 @@ owned_files:
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/TabooProjectionTest.java
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksVocabularyTest.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceContextsInForceTest.java
-create_intent:
+execution_mode: code_change
+owned_files:
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/VocabularyReads.java
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ActiveTerm.java
 - service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ContextsInForce.java

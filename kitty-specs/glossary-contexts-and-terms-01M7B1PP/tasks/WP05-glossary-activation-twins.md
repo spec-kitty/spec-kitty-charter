@@ -13,6 +13,9 @@ requirement_refs:
 planning_base_branch: feat/106-glossary-contexts
 merge_target_branch: feat/106-glossary-contexts
 branch_strategy: Planning artifacts for this mission were generated on feat/106-glossary-contexts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/106-glossary-contexts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-glossary-contexts-and-terms-01M7B1PP
+base_commit: 865e50a955f4701ea192a0e20307d5e624cb1c46
+created_at: '2026-11-14T13:48:39.405261+00:00'
 subtasks:
 - T025
 - T026
@@ -25,6 +28,20 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
 authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/activations/
+create_intent:
+- contracts/charter/paths/activations_activationId_artifacts_glossary.yaml
+- contracts/charter/paths/activations_activationId_artifacts_glossary_contextId.yaml
+- contracts/charter/paths/activations_activationId_artifacts_glossary_contextId_terms_termId.yaml
+- contracts/charter/schemas/EffectiveGlossaryContextRead.yaml
+- contracts/charter/schemas/EffectiveGlossaryTermRead.yaml
+- contracts/charter/scenarios/effective-glossary.feature
+- contracts/charter/changes/2026-11-14-glossary-activation-twins.md
+- service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceGlossaryTest.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReads.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesController.java
+- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossaryBodies.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReadsTest.java
+- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesControllerTest.java
 execution_mode: code_change
 owned_files:
 - contracts/charter/paths/activations_activationId_artifacts_glossary.yaml
@@ -51,20 +68,6 @@ owned_files:
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReadsTest.java
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesControllerTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRoutingTest.java
-create_intent:
-- contracts/charter/paths/activations_activationId_artifacts_glossary.yaml
-- contracts/charter/paths/activations_activationId_artifacts_glossary_contextId.yaml
-- contracts/charter/paths/activations_activationId_artifacts_glossary_contextId_terms_termId.yaml
-- contracts/charter/schemas/EffectiveGlossaryContextRead.yaml
-- contracts/charter/schemas/EffectiveGlossaryTermRead.yaml
-- contracts/charter/scenarios/effective-glossary.feature
-- contracts/charter/changes/2026-11-14-glossary-activation-twins.md
-- service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceGlossaryTest.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReads.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesController.java
-- service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossaryBodies.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReadsTest.java
-- service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesControllerTest.java
 role: implementer
 tags: []
 tracker_refs: []
