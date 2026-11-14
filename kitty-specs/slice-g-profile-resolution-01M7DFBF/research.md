@@ -85,61 +85,101 @@ and a sibling fallback conflict.
 
 ## 6. Open rulings, with a recommendation each
 
+Revised after the post-plan squad ([squad-post-plan.md](research/squad-post-plan.md)). The first wording sent to the
+operator is superseded.
+
 - **D1. The selection read.**
-  - (a) Keyed by role under an activation: `GET /activations/{id}/roles/{role}/profile-selection`.
-  - (b) Keyed by step: `.../mission-types/{type}/actions/{action}/profile-selection`.
+  - (a) Keyed by role under an activation: `GET /activations/{activationId}/roles/{role}/profile-selection`.
+  - (b) Keyed by step: `.../mission-types/{missionType}/actions/{action}/profile-selection`.
   - (c) Both.
 
-  *Recommend (c)*. Build (a) now. (b) is F-dependent; it reads the step's role and answers as (a) would, and the step
-  and action-context reads link to it.
-- **D2. "Fits the context".**
-  - (a) No context in G: rank by lineage depth, then `routing-priority`.
-  - (b) Optional `language` and `framework` query parameters, with three rules:
-    1. A profile that declares an asked dimension must contain the asked value.
-    2. A specialization (one with an in-force `specializes_from` ancestor) that declares descriptors fits only when
-       an asked dimension matches one it declares.
-    3. A lineage root, or a specialization with no descriptors (a pure refinement), fits any context.
-  - (c) As (b), with all six descriptor lists.
+  *Recommend (c)*: build (a) now, and (b) after F, as the same answer for the step's role.
+- **D2. Order, context fit and depth.**
+  - **Order.** First filter: the pin, then the performer rule, then context fit. Then take the best role-fit tier
+    left, then the greatest depth, then the highest `routing-priority` (50 when absent). Then the tie rule, then the
+    fallback.
+  - **Context.** Optional `language` and `framework`. Only a *specialization* (a profile with an in-force
+    `specializes_from` ancestor) that declares `languages` or `frameworks` is filtered. It fits when every asked
+    dimension it declares contains the asked value, and at least one does. A root, or a specialization declaring
+    neither, fits any context.
+  - **Depth** is the longest in-force `specializes_from` chain. Several parents are allowed. A cycle is refused at
+    registration with `specialization_cycle` (new, 422).
+  - Results on the example packs:
 
-  *Recommend (b)*. With no context, `implementer` answers `implementer-ivan`; with `language=java`, `java-jenny`;
-  with `language=go`, `implementer-ivan`. Under (a), `implementer` with no context would tie `java-jenny` and
-  `python-pedro`. The example packs already tie `reviewer-renata` with `project-reviewer`, which is the tie fixture.
-- **D3. The pin's shape.** `policy.yaml` gains `role_pins: {<role>: <profile-id>}`. The pin in force is the most
-  derived declaring pack's, as for the fallback. Refusals, judged at registration over the closure:
-  - `role_pin_unknown` (422): the id resolves to no profile in the closure.
-  - `role_pin_not_fitting` (422): the profile neither has the role nor lists it in `alt-roles`, and is not a
-    human-performed profile.
-  - `role_pin_conflict` (422): two packs of one closure, neither derived from the other, declare different pins.
+    | Ask | Answer |
+    | --- | --- |
+    | `implementer` | `implementer-ivan` |
+    | `implementer`, `language=java` | `java-jenny` |
+    | `implementer`, `language=kotlin` | `implementer-ivan` |
+    | `reviewer` in org-base | a marked tie |
+  - Under this order a pinned profile is never tied: its specializations are deeper. ADR-0032 d9's tie-break is
+    therefore unreachable, and ADR-0078 says so.
 
-  The pinned profile is a candidate whatever the context; its specializations are filtered by the context.
-  *Recommend as stated.* The ADR leaves "no pinned candidate fits" uncovered; this closes it.
-- **D4. The performer.** `sentinel` is replaced by `performer: agent | human`: optional in the file, absent meaning
-  `agent`, and always answered on the wire.
-  - `operator` becomes a reserved role. Its candidates are human-performed profiles only, it never uses the fallback,
-    and with no candidate it answers `no_profile_matched`.
-  - A human-performed profile is a candidate for `operator`, or for any role pinned to it.
+  *Recommend as stated.* Alternatives:
+  - (a) no context in G;
+  - (c) all six descriptor lists.
+- **D3. The role pin.**
+  - **Shape.** `policy.yaml` gains `role_pins: {<role>: <profile-id>}`.
+  - **Registration refusals** (422), judged over the closure:
+    - `role_pin_unknown`: the id resolves to no profile in the closure;
+    - `role_pin_not_fitting`: the profile neither has the role nor lists it in `alt-roles`, with no human exemption;
+    - `role_pin_conflict`: two packs neither derived from the other declare different pins.
+  - **At selection.** `role_pin_conflict` is also raised (422), since unrelated packs can meet in one activation.
+    The pinned profile passes the context filter.
+  - **Sub-question (ii): which pin wins along a lineage.**
+    - (ii-a) The most derived pack's pin wins, so a project may re-pin an org's role.
+    - (ii-b) A pin is tighten-only (ADR-0012), so a derived pack's different pin is `role_pin_conflict`.
 
-  *Recommend as stated*, over a separate 200 "served by a human" answer with no profile, which would widen ADR-0068
-  d6's three marks.
-- **D5. #380, "drops a field".**
-  - (a) A drop is an explicit removal: an enhancer's `excluding` that names base content. This leaves d22 intact.
-  - (b) A drop is an omission. This would contradict d22, since an enhancer holds only its additions.
+  *Recommend (ii-b)*: an org that pins `reviewer` to a human means it.
+- **D4. The performer.**
+  - **Shape.** `sentinel` is replaced by `performer: agent | human`. It is optional in the file, and on the wire it
+    is omitted when the file is silent, since the read invents no default. Selection reads absent as `agent`.
+  - **`operator` is reserved for human performers.**
+    - A profile with `role: operator` or `operator` in `alt-roles` that is not `performer: human` is refused with
+      `operator_role_not_human` (new, 422).
+    - Selection for `operator` never uses the fallback; with no candidate it answers `404 no_profile_matched`.
+  - **Human profiles elsewhere.** A human-performed profile is a candidate for any other role only through a pin,
+    and the pin must fit (D3).
+  - **Fallback.** A fallback profile that is `performer: human` is refused with `fallback_profile_not_agent`
+    (new, 422).
 
-  The profile merge is add-only, as for steps: lists are appended and duplicates kept once, and an absent field is
-  set. Replacing a scalar the base sets is refused too, since it loses the base value.
-  - Code: `profile_enhancement_drops_field`, naming the enhancing pack and the field.
-  - Status: 422 at registration (impact check) and 500 at read, for content stored before the rule, as the
-    placeholder states.
+  This amends ADR-0032 d5 ("a role like any other") and ADR-0069 d4.5 (no fallback for `operator`). *Recommend as
+  stated*, over a 200 "served by a human" answer with no profile.
+- **D5. #380: the profile enhancement merge, and what "drops a field" means.**
+  Profiles keep their field-merge meaning (`profiles.feature:5-6`); ADR-0053 d22's add-only rule is for steps. An
+  enhancer is a complete profile. Its identity fields are its own and never merged: `profile-id`, `name`,
+  `purpose`, `role`, `alt-roles`, `performer`, `routing-priority`.
+  - (a) **Field replacement with loss refused (recommended).** For each other top-level field the enhancer
+    declares, its value replaces the base value. The replacement is refused when it loses base content: a list item
+    missing, an object sub-field missing, or a scalar changed. The approved scenario stands as written: an enhancer
+    whose `specialization` leaves out the base's is refused, naming the pack and `specialization`.
+  - (b) **Add-only recursive merge.** Lists are unioned and objects merged; an omission is never a drop, and only
+    a changed scalar is refused. This needs PR-CHARTER-REFUSAL-001 rewritten (decision 01M6NE62 amended).
 
-  *Recommend (a)*, with the scalar rule.
-- **D6. R8 (#102): a contract operation.** `getEffectiveAgentProfile` answers the **effective** profile: the leaf
-  body with its in-force enhancers merged (D5), plus `lineage`, the ordered `specializes_from` ancestors with their
-  depth. Fields are not inherited along `specializes_from`: every profile is complete under the closed schema, and
-  core's root-to-leaf merge is not copied (operator steer 2026-10-19). The pack read keeps answering the stored body.
-  *Recommend as stated.* It is Breaking only in meaning; `sentinel`'s removal is the Breaking schema change.
+  Either way:
+  - the code is `profile_enhancement_drops_field`, naming the enhancing pack first and the field;
+  - it answers 422 at registration, and 500 at read for content stored before the rule;
+  - enhancers are never selection candidates and never in `lineage`.
+- **D6. R8 (#102) is a contract operation.**
+  - `getEffectiveAgentProfile` answers the effective profile: the leaf with its in-force enhancers merged (D5), and
+    `lineage`, the ordered `specializes_from` ancestors with pack and depth.
+  - Nothing is inherited along `specializes_from`.
+  - An enhancer's own effective read answers its body plus an `enhances` link.
+  - The pack read keeps the stored body.
 
-One new ADR (0078) records D1 to D6 and amends ADR-0030 (pin shape) and ADR-0068 d6 (unchanged marks; `operator`'s
-rule). One `### Breaking` CHANGELOG fragment covers `sentinel` → `performer` and the effective profile's new meaning.
+  *Recommend as stated.*
+- **D7. `excluding` (new, from the squad).** Under D5, what does `excluding` do?
+  - (a) On an enhancer, it is a declared drop and is refused with `profile_enhancement_drops_field`. On a
+    non-enhancer it stays as authored.
+  - (b) Remove `excluding` from the profile schema outright, since nothing resolves it.
+
+  *Recommend (a)* for G, with (b) left for a later model pass. Removing a field nobody has ruled on widens this
+  slice.
+
+ADR-0078 records D1 to D7. It amends ADR-0030 (the pin's shape), ADR-0032 d5 and d9 (reachability), ADR-0069 d4.5,
+and ADR-0053 d22 (profiles keep field-merge). Two CHANGELOG fragments go in `contracts/charter/changes/`: one
+Breaking (`sentinel` to `performer`, the effective profile's meaning) and one Added (the selection read, the new
+codes, `role_pins` and `lineage`).
 
 ## 7. Coordination log
 
