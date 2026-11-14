@@ -2,7 +2,7 @@
 title: Pack ecosystem work breakdown
 description: "Ordered, sized work for epic #142 after ADR-0048 to ADR-0052: charter schema and service work, the open-packs split and curation, and the core follow-ups."
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -39,7 +39,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 1 | ~~Operator rulings on the open decisions~~ (done 2026-11-02, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) and [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; "Gate" deprecated for "Guard" by ADR-0054) | all | S | none | #142 |
 | 2 | ~~`depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar~~ (done 2026-11-03: the closed `depends_on` and `overrides` items are in the pack-descriptor schema, a declared dependency forces `pack_level`, `kernel.domain.Pep440Range` decides the PEP 440 range satisfaction, and an unresolvable `parent_pack` is refused) | 0048 | M | 1 | #145, #146 |
 | 3 | ~~The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading~~ (done 2026-11-03: `PackCompositionResolver` orders one closure — dependencies first, a shared dependency once, merge order across levels kept — and the offering read refuses a broken compose with the eleven new refusal codes, the unsettled sibling conflict included; ranges on one pack that share no version are refused. The pack-qualified `<pack-name>::<urn>` form is accepted in graph edge endpoints and in every typed-reference id, and the compose refuses a bare cross-pack reference and a qualified reference outside the referring pack's own `depends_on` closure, from both carriers. The offering response carries what the compose resolved, each declared edge with its satisfying version, and each pack's descriptor `pack_id`. Open: the pack pin does not answer its mirror of those facts yet; the activation reads it waited on (#125) are built) | 0048 | L | 2 | #145 |
-| 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
+| 4 | ~~The `glossary` kind: schema, binding, migration of four glossaries, the two context reads~~ (done 2026-11-14 by the Mission `glossary-contexts-and-terms-01M7B1PP` and [ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/): `glossary` replaces `glossary_pack` outright; the context and term reads in a pack and under an activation, and the activation's vocabulary in force with its Contextive and taboo projections. Charter's example packs are migrated; the four open-packs glossaries migrate in P5) | 0049, 0076 | L | 1 | #106 |
 | 5 | The `anti_pattern` kind and `rejects`; drop inline `anti_patterns` from procedure and styleguide | 0052 | M | 1 | #154 |
 | 6 | ~~The authoring checklist for the tightened procedure definition~~ (done 2026-11-02, [Author a procedure](/guides/author-a-procedure/); applied by review. The closed schema has no output field and refuses any undeclared key and `type: action`, but not an `action:` URN as a reference id: #350) | 0052 | S | 1 | #150, #350 |
 | 7 | The `event_registry` kind and the shared `emit` entry shape | 0051 | M | 2 (resolution uses the closure) | proposed: "event registry kind" |
@@ -48,7 +48,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 10 | Step enhancements and `overrides` checks, with the drift warning | 0050 | M | 3, 9 | #148 |
 | 11 | Mission type as an ordinary activatable kind (presets, deny list) | 0050 | M | 9 | #148 |
 | 12 | `applies_to_stacks` beside `applies_to_languages` | notes | S | 1 | #163 |
-| 13 | Contract sets for the new reads and registrations (glossary, anti-pattern, event registry, guard, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind |
+| 13 | Contract sets for the new reads and registrations (~~glossary~~, done 2026-11-14 with item 4; anti-pattern, event registry, guard, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind; #106 for the glossary |
 | 14 | ~~Close #153 (not planned), #161 (moot)~~ (done 2026-11-02); close #147 (into #146); ~~document the single daemon per worktree (#183)~~ (done 2026-11-02, [one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); a fail-fast guard is #349) | notes | S | 1 | #153, #161, #183, #349 |
 
 Items 4 to 8 are independent of each other once item 1 is done, and can run in parallel as long as only one of them
@@ -64,7 +64,7 @@ Sibling-repository work; draft issues use `open-packs#TBD-<slug>` until the orch
 | P2 | `missions/` to `mission_types/<type>/`, step contracts into the bundles (`open-packs#TBD-mission-types-bundle`) | M | charter 9, with P1 |
 | P3 | Stack packs `java`, `python`, `drupal`, `javascript` as opt-in packs (`open-packs#TBD-stack-packs`) | M | P1 |
 | P4 | Procedure re-homing and anti-pattern migration with dedupe (`open-packs#TBD-curation-pass`) | L | charter 5, 6, 8 |
-| P5 | Glossary migration to contexts; term ids; deprecated terms (`open-packs#TBD-glossary-contexts`) | M | charter 4 |
+| P5 | Glossary migration to contexts; term ids; deprecated terms (`open-packs#TBD-glossary-contexts`; the draft, with the term-id rule and map, is [in the Mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md)) | M | charter 4 (done) |
 | P6 | The shipped work-package lifecycle from core's lane table, and an `ai.spec-kitty` event registry (`open-packs#TBD-lifecycle-and-registry`) | M | charter 7, 8 |
 | P7 | Fix the internal glossary stem (open-packs#47) | S | none |
 
@@ -142,7 +142,8 @@ E4), and agreement there on who owns the lane names (ADR-0050 decision 21).
 
 ## Proposed issues (not filed)
 
-1. **Glossary contexts and terms** (charter, child of #142): kind rename, schema, migration, the two reads. ADR-0049.
+1. ~~**Glossary contexts and terms** (charter, child of #142): kind rename, schema, migration, the two reads. ADR-0049.~~
+   Delivered by #106 (2026-11-14), with ADR-0076 for the vocabulary reads.
 2. **Event registry kind** (charter, child of #142): ADR-0051.
 3. **Lifecycle kind** (charter, child of #142, beside #156): ADR-0050 decisions 17 to 21.
 4. **Step enhancements and overrides** (charter, child of #148): ADR-0050 decisions 22 to 25.

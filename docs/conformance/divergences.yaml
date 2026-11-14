@@ -185,7 +185,7 @@
     - "core: activation/org_charter.py:217-235 (schema_version \"1\" to an integer)"
     - "core: pydantic lax mode, no strict config (a quoted number to an integer)"
     - "charter: contracts/packs/schemas/agent-profile.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16); org-charter.schema.json, which dropped them too, is deleted with the retired file (#431, DIV-303)"
-    - "charter: contracts/packs/schemas/glossary-pack.schema.json and skill.schema.json (#192): a quoted confidence or a quoted boolean, which core's pydantic models convert, is refused (ADR-0039)"
+    - "charter: contracts/packs/schemas/skill.schema.json (#192): a quoted boolean, which core's pydantic models convert, is refused (ADR-0039); glossary.schema.json replaced glossary-pack.schema.json on 2026-11-14 (#106, ADR-0049): it has no confidence, the field a quoted number was converted for, and a quoted value in it is judged as written"
 
 - id: DIV-011
   surface: Org-fragment node kinds
@@ -209,8 +209,15 @@
 - id: DIV-012
   surface: URN node kinds
   core: Also accepts the kinds glossary and glossary_scope, both NodeKind members (offering/drg/models.py:61-66).
-  service: The 15 node kinds the service models. glossary and glossary_scope are refused.
-  rationale: The service has no node of those kinds, and the URN pattern is generated from the kinds it models.
+  service: >-
+    The node kinds the service models (node_kinds in file-kinds.yaml). Core's glossary and
+    glossary_scope are refused. Since #106 (2026-11-14) the kinds include glossary_context, a
+    glossary context's URN token (glossary_context:<id>), and term (term:<context-id>/<term-id>),
+    an edge target that is never a declared node.
+  rationale: >-
+    The service has no node of core's two kinds, and the URN pattern is generated from the kinds it
+    models. A context's URN token differs from its kind token glossary on purpose (ADR-0053
+    decision 13), so core's glossary:<id> stays refused.
   ruling: R15 (2026-10-19)
   status: open
   since: 2026-10-19
@@ -218,6 +225,8 @@
     - "core: offering/drg/models.py:61-66"
     - "charter: contracts/packs/schemas/graph-shard.schema.json: the URN pattern and one prefix-equals-kind branch per node kind (import changes C3 and C4; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
     - "charter: contracts/packs/file-kinds.yaml"
+    - "charter: contracts/charter/schemas/NodeKind.yaml: glossary_context and term replace glossary_pack (#106)"
+    - "charter: planted cases r15-glossary-urn-as-an-edge-endpoint and r15-glossary-urn-in-a-shard: core's glossary: URN is refused"
 
 - id: DIV-013
   surface: Nested sections of an agent profile and of charter.yaml
@@ -497,16 +506,23 @@
 
 - id: DIV-106
   surface: Vocabulary targets, in the action-context answer
-  core: Computes glossary_scopes and discards it.
+  core: >-
+    Computes glossary_scopes and discards it. The charter retires those scopes (ADR-0049
+    decision 11): a context's scope is its pack level.
   service: >-
-    Lists vocabulary targets as entries with relation vocabulary; the seam drops them from
-    delivery.
-  rationale: Decided in ADR-0018.
-  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+    Lists vocabulary targets as entries with relation vocabulary, a glossary_context: or term:
+    URN since #106; the seam drops them from delivery. The vocabulary in force is its own read of
+    the activation, the terms of the glossary contexts in force and their Contextive and taboo
+    projections (ADR-0076), ordered by Unicode code point. A context overrides across levels
+    whole, and the load warning of ADR-0049 decision 13 is retired (ADR-0076 decision 2).
+  rationale: >-
+    Decided in ADR-0018. The vocabulary reads are ADR-0076's, after ADR-0049 decisions 10 and 15.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19); ADR-0076 (2026-11-14)
   status: open
   since: 2026-10-19
   evidence:
     - "corpus case: vocabulary-walk"
+    - "charter: contracts/charter/scenarios/vocabulary.feature"
 
 - id: DIV-107
   surface: Activation, selection roots, the language filter and the directive allowlist
@@ -825,7 +841,8 @@
     glossary_pack; mission types are named under mission_type_activations.
   service: >-
     A preset carrying activated_kinds refuses the pack as 500 pack_unreadable, as the preset item id grammar does; a 422 on registration is planned for PR A. A preset may name
-    any kind: it gains activated_skills and activated_glossary_packs, and activated_mission_types is
+    any kind: it gains activated_skills and activated_glossaries (activated_glossary_packs until
+    #106, which a preset may no longer carry), and activated_mission_types is
     a plain member list applied as selected.mission_type. applyActivationPreset applies every kind
     the preset lists and sets no kind gate.
   rationale: >-

@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Next slices after the 2026-11-12 slice review
 description: Where slices A to E stand after slice B and ADR-0074, and the slices that follow C and D (B close-out, A2, F, G) in their approved order.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -99,13 +99,15 @@ Slice C and slice D run first. After them, in this order:
 | #107 | R13: `skill` as a served kind; its body is the `text` companion |
 | #532 | The references read gets its activation twin (ADR-0074 decision 12) |
 | #409 | Activations are discoverable by links |
-| #106 | R12: `glossary` in ADR-0049's shape, replacing `glossary-pack` outright (last) |
+| #106 | R12: `glossary` in ADR-0049's shape, replacing `glossary-pack` outright (last). Delivered 2026-11-14 by its own Mission, with [ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) |
 
 - **Why now:** these are cutover reads core makes today, decided but not served. Presets are P1, and a guard
   names its implementation as `asset:<id>`, so a client that runs a guard needs the asset read.
-- **Depends on:** nothing open. Open-packs follows the `glossary` shape once #106 lands.
-- **State:** delivered by PR #546 except #106. The glossary read is now its own Mission (operator ruling at
-  specify, 2026-11-12), so A2 does not wait for it.
+- **Depends on:** nothing open. Open-packs follows the `glossary` shape once #106 lands
+  (`open-packs#TBD-glossary-contexts`).
+- **State:** delivered. PR #546 delivered all but #106, and #106's own Mission (operator ruling at specify,
+  2026-11-12), `glossary-contexts-and-terms-01M7B1PP`, delivered the glossary contexts and terms on 2026-11-14:
+  the reads in a pack and under an activation, and the activation's vocabulary in force.
 - **Size:** L: six item operations in two trees, plus the payload and term reads.
 - **Risks:** #106 is a model change of its own, so it became its own Mission. The
   operations widen the contract; that is allowed in a 0.x minor.
@@ -123,8 +125,8 @@ Slice C and slice D run first. After them, in this order:
 - **Why now:** R18 is one of the last undecided reads in epic #94, and core's scope migration moved these
   model rulings here. They change one model (which kinds exist, and how steps are authored), so they land
   together.
-- **Depends on:** A2's kinds (delivered), so the taxonomy includes `asset` and `skill`; `glossary` joins it when
-  #106's Mission lands. Open-packs follows the schema; the drift watch shows when it has.
+- **Depends on:** A2's kinds (delivered), so the taxonomy includes `asset`, `skill` and `glossary`, which joined it
+  when #106's Mission landed. Open-packs follows the schema; the drift watch shows when it has.
 - **Size:** M to L. **Risks:** #515 sets each relation's endpoint kinds, and open-packs edges that break them
   are refused, which the drift watch will show. Retiring a kind removes contract
   operations, which is a `### Breaking` CHANGELOG entry in a 0.x minor.

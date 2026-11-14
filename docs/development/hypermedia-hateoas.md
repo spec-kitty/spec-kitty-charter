@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Hypermedia (HATEOAS)
 description: How charter API responses link to what a client can do next, through one closed Links component and documented relation names.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -116,7 +116,9 @@ and [HATEOAS](https://restfulapi.net/hateoas/):
 Use an [IANA registered relation](https://www.iana.org/assignments/link-relations/link-relations.xhtml)
 when one fits: `self`, `collection`, `item`, `up`, `first`, `prev`, `next`, `last`, `edit`.
 Otherwise use a charter relation: lowercase, hyphenated, documented in this table before it is
-used.
+used. A read that is not a child of the resource it hangs off names that resource with its own relation instead
+of `up`: the vocabulary reads of an activation link `activation`, as
+[ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) decisions 5 and 7 rule.
 
 | Relation | Points to | Method | On | Status |
 |---|---|---|---|---|
