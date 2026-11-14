@@ -85,7 +85,7 @@ unfilled slot rather than failing (ADR-0066 decision 9).
 
 ## Findings
 
-### 1. Seven of the thirteen steps cannot be run: their action has no node (content gap, slice F interaction)
+### 1. Seven of the thirteen steps cannot be run: their action has no node (content gap; slice F fixes it)
 
 `foundation/action.graph.yaml` at the pin declares action nodes for six `software-dev` steps only: `implement`,
 `plan`, `retrospect`, `review`, `specify` and `tasks`. Open-packs `main` (`fd7d644`) still has the same six. The other
@@ -93,9 +93,12 @@ seven steps are served as steps, but their action context and prompt answer `404
 says for an action the closure does not hold. A client that drives the mission gets no governance for `discovery`,
 `analyze` or `accept`, which are in the sequence.
 
-Slice F's plan (draft PR #567) makes `mission_type -requires-> action` authored and complete, and refuses a pack that
-misses one at load. When slice F lands, `foundation` will be refused unless open-packs adds the seven actions first,
-or slice F scopes the rule. **This needs a decision before slice F's implementation starts.**
+Slice F already plans the fix (draft PR #567, FR-011 and FR-020): every step, on-demand steps included, gets an
+authored `mission_type -requires-> action` edge, and a pack that misses one is refused at load and at registration.
+The plan adds the 8 missing action nodes to charter's example packs, which have the same gap (13 steps, 5 action
+nodes), and drafts the open-packs change that adds 23 action nodes, `software-dev`'s among them. **The order matters:**
+once slice F is released, `foundation` registers only after that open-packs change lands, so the open-packs pin bump
+and slice F's release travel together.
 
 ### 2. The review squad resolves only through a client-side hop (slice G)
 
