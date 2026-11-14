@@ -2,8 +2,8 @@
 
 **Mission Branch**: `kitty/mission-slice-g-profile-resolution-01M7DFBF` (target `slice-g-538-profile-resolution`)
 **Created**: 2026-11-14
-**Status**: Draft, revised after the post-plan squad. Rulings D1 to D7 are with the operator. This spec follows the
-recommendations, and marks a scenario *provisional* where a ruling is open.
+**Status**: Draft, revised after the post-plan squad. Rulings D1 to D7 are ruled (operator interview, 2026-11-14;
+`research.md` §6a). Scenarios name the ruling they follow.
 **Input**: Slice G (#538): #102 (R8), #42, #512, #380. Grounding: [research.md](research.md).
 
 ## Intent Summary
@@ -81,7 +81,7 @@ way to settle a tie except `routing-priority`.
    specialization is answered: a pin narrows, it does not freeze.
 3. **Given** a pin naming an unknown profile, a profile that does not fit the role, or two packs pinning
    differently, **When** the pack is registered, **Then** it is refused with `role_pin_unknown`,
-   `role_pin_not_fitting` or `role_pin_conflict`, and nothing is stored. *(Provisional: D3.)*
+   `role_pin_not_fitting` or `role_pin_conflict`, and nothing is stored. *(Ruled: D3.)*
 4. **Given** two unrelated packs that pin differently meet in one activation, **When** I select, **Then** `422
    role_pin_conflict`.
 
@@ -132,8 +132,9 @@ enhancers merged, and its `specializes_from` ancestors in order with their depth
    reference, **When** I read the effective `reviewer-renata`, **Then** the base content and the addition are
    answered. The enhancer's own `name` and `purpose` are not merged.
 2. **Given** `java-jenny` specializes `implementer-ivan`, **When** I read the effective `java-jenny`, **Then**
-   `lineage` is `[{implementer-ivan, depth 1}]`. Its fields are its own: nothing is inherited from the ancestor.
-   *(Provisional: D6.)*
+   `lineage` is `[{implementer-ivan, depth 1}]`. Every top-level field `java-jenny` declares is its own: its
+   `languages` stay `[java]`. Every field it leaves absent is inherited from `implementer-ivan`. Identity fields are
+   never inherited (D6, ruled).
 3. **Given** the enhancing pack's enhancer is out of force, **When** I read, **Then** its additions are absent.
 
 ---
@@ -142,7 +143,7 @@ enhancers merged, and its `specializes_from` ancestors in order with their depth
 
 **Why this priority**: promise `PR-CHARTER-REFUSAL-001` (#380) is the last `@WIP` profile scenario.
 
-**Acceptance Scenarios** *(provisional: D5, D7)*. Profiles keep their field-merge meaning: a top-level field the
+**Acceptance Scenarios** *(ruled: D5, D7)*. Profiles keep their field-merge meaning: a top-level field the
 enhancer declares replaces the base's, and a replacement that loses base content is a drop.
 
 1. **Given** an enhancer whose `specialization` leaves out the base's (the approved scenario of
@@ -176,7 +177,7 @@ role answers the fallback, since any role may act.
   The depth is the longest chain. A `specializes_from` cycle is refused at registration (`specialization_cycle`).
 - `routing-priority` absent: 50, the schema default.
 - A pin whose profile is out of force under the activation: the pin narrows to its in-force specializations, or to
-  nothing. With nothing left, the fallback answers for a non-`operator` role. *(Provisional: D3.)*
+  nothing. With nothing left, the fallback answers for a non-`operator` role. *(Ruled: D3.)*
 - A conditional ETag on the selection read: `304` when unchanged, as for the other effective reads.
 
 ## Requirements *(mandatory)*
@@ -193,7 +194,7 @@ role answers the fallback, since any role may act.
 | FR-006 | `policy.yaml` accepts `role_pins`, validated at registration and judged for conflict at selection (D3). It round-trips. `specialization_cycle` is refused at registration | #42 | No |
 | FR-007 | `sentinel` is removed everywhere, and `performer: agent \| human` replaces it. The read omits `performer` when the file is silent | #512 | No |
 | FR-008 | `operator` is reserved for human-performed profiles (`operator_role_not_human`), and never uses the fallback. A human-performed profile is a candidate only for `operator` or through a fitting pin. A fallback profile must be agent-performed (`fallback_profile_not_agent`) | #512 | No |
-| FR-009 | `getEffectiveAgentProfile` answers the leaf merged with its in-force enhancers (add-only), and `lineage` | #102, #380 | No |
+| FR-009 | `getEffectiveAgentProfile` answers the effective profile: each profile on the chain is merged with its in-force enhancers (D5), then the chain is folded root to leaf by per-field replacement (D6), and `lineage` is answered. Selection reads declared fields, never inherited ones | #102, #380 | No |
 | FR-010 | An enhancement whose replacement loses base content (D5a), or that declares `excluding` (D7a), is refused: 422 at registration, 500 at read. Identity fields are not merged | #380 | No |
 | FR-011 | `docs/api/service-contract.md` records R8's decision, the operations, scenarios and corpus cases | #102 | No |
 | FR-012 | The step-keyed selection read, and links from the effective step and action-context reads | #42 | **Yes** |
