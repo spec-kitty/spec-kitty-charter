@@ -288,7 +288,9 @@ class VocabularyReadsTest {
                 .hasSize(4);
     }
 
-    /** The activations port: answers one outcome, or throws one refusal, to the contexts in force, and records each ask. */
+    /**
+     * The activations port: answers one outcome, or throws one refusal, to the contexts in force, and records each ask.
+     */
     private final class Activation implements ActivationArtifacts {
 
         private final @Nullable Outcome<ContextsInForce> answer;

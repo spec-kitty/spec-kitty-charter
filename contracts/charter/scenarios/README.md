@@ -164,6 +164,14 @@ Keep it small; add a step only when a scenario cannot be written without it.
   the team walks every step of the mission type "<type>"`, then `Then every step has an action context that links each
   item in force to its body` and `Then every step has a prompt that fills each slot it declares or lists the slot as
   empty`, which name every failing step, not only the first.
+- `Then the response body is a Contextive v1 document` — the YAML body is a mapping of `contexts` alone; each context
+  holds `name`, `domainVisionStatement`, `paths` (when present) and `terms`, in that order, each term `name`,
+  `definition`, `examples` and `aliases` (when present) and `meta`, in that order, and each `meta` exactly `urn` then
+  `status`; a list that is present is a non-empty list of strings. `When I remember the URNs and the avoid entries of
+  the terms` reads a `getActivationVocabularyTerms` answer; `Then the meta.urn values of the Contextive document are the
+  remembered URNs` and `Then the taboo entries are the remembered avoid entries` hold the projections of one activation
+  to its terms (SC-004), the taboo entries also in code point order of word, then URN (`vocabulary.feature`, bound in
+  `VocabularySteps`).
 - `Then the field at "<json-pointer>" is null` — the member is there and is JSON `null`, as a required nullable member is
   written; a member the answer leaves out is `is absent` (agent-profile-reads.feature, bound in `ProfileSteps`).
 - `Then the governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of the last

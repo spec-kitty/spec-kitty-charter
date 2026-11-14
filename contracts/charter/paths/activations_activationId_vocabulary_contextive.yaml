@@ -1,0 +1,82 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: getActivationVocabularyContextive
+  summary: Read the Contextive definitions file of the vocabulary in force under an activation.
+  description: >-
+    The vocabulary in force under an activation as a Contextive v1 definitions file (#106, FR-017; ADR-0076 decisions 6
+    and 8; ADR-0049 decision 15): a projection of the terms getActivationVocabularyTerms answers, served as
+    application/yaml so that a tool saves it as it is for an editor plug-in. The contract describes the body as a string
+    with an example, as it does for /openapi.yaml: it is not a JSON Schema member.
+
+    The field mapping (ADR-0076 decision 6):
+
+    - contexts: one per glossary context in force, ordered by context id. Each has name (the context's name),
+      domainVisionStatement (its description), paths (its applies_to.paths, absent when it declares none) and terms.
+    - terms: the context's terms in force, ordered by term id. Each has name, definition, examples and aliases (each
+      absent when the term has none) and meta: {urn, status}, the term's URN (term:<context-id>/<term-id>) and status.
+
+    The keys are written in that order, in block style, UTF-8, and one input always answers the same bytes. The ids
+    are ordered in Unicode code point order (case-sensitive, no locale). The terms are those of
+    getActivationVocabularyTerms, whatever their status, so the set of meta.urn values is the set of the terms' URNs.
+    An activation with no glossary context in force answers 200 with an empty contexts list. A Contextive document has
+    no links: the answer carries none.
+
+    The answer is application/yaml only. A request whose Accept excludes it (application/json, for example) is a 406,
+    a Problem with no code, as for any operation (docs/development/rest-resource-conventions.md); it is judged before
+    the activation is read. The refusals, the fingerprint and the ETag are those of getActivationVocabularyTerms,
+    judged in the same order and before any If-None-Match; the ETag is this read's own, not the tag of the terms or
+    the taboo read.
+  tags:
+  - Vocabulary
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The Contextive definitions file of the vocabulary in force under the activation.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/yaml:
+          schema:
+            description: >-
+              A Contextive v1 definitions document as YAML text (RFC 9512), UTF-8, with the field mapping the operation
+              states.
+            type: string
+          examples:
+            two-contexts:
+              $ref: ../examples/Contextive.two-contexts.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '406':
+      description: >-
+        The Accept header excludes application/yaml (it names neither it nor a range that covers it): 406, a Problem
+        with no code, with the shared headers.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../_shared/schemas/Problem.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

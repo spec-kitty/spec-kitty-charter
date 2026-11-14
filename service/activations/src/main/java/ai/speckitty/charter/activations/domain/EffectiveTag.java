@@ -16,8 +16,9 @@ import java.util.regex.Pattern;
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
  * {@code getActivation}, the read of one artifact and the effective prompt; the graph, the context and the prompt each
  * name their own read, the context its mission type, action and depth, and the prompt its mission type and action.
- * The read of one artifact names its kind, id and depth, and an agent profile's names a read of its own ({@link Read#PROFILE}), because what it answers is not what the generic read
- * answers. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
+ * The read of one artifact names its kind, id and depth, and an agent profile's names a read of its own
+ * ({@link Read#PROFILE}), because what it answers is not what the generic read answers. It is {@code sha256:} over a
+ * domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
  * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
  * closure changes and never names two representations (another page, kind, state or read). A configured pack outside
@@ -42,8 +43,9 @@ public record EffectiveTag(String token) {
      * slice C (rule E17 as amended, research R10, squad D1) makes the action context apply the ownership rule and its
      * items carry {@code appliesThrough}, so it answers more under an unchanged revision and closure fingerprint, and
      * makes {@code satisfiedBy} and {@code overriddenBy} name every overrider in force (#439). No release served a tag
-     * of {@code v3} with either body. The glossary reads (#106) join {@code v3} unreleased too: {@code getActivation}
-     * links {@code glossaries}, and no release served a tag of {@code v3} without it.
+     * of {@code v3} with either body. The glossary and vocabulary reads (#106) join {@code v3} unreleased too:
+     * {@code getActivation} links {@code glossaries}, {@code vocabulary-terms}, {@code vocabulary-contextive} and
+     * {@code vocabulary-taboos}, and no release served a tag of {@code v3} without them.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 

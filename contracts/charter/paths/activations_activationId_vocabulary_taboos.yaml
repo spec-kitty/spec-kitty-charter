@@ -1,0 +1,56 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: getActivationVocabularyTaboos
+  summary: List the words to avoid under an activation, each with the term to use instead.
+  description: >-
+    The taboo list of the vocabulary in force under an activation (#106, FR-017; ADR-0076 decisions 7 and 8; ADR-0049
+    decision 15): a projection of the terms getActivationVocabularyTerms answers, the one source of banned vocabulary
+    for a terminology gate. There is one entry per avoided word per term: word (an entry of the term's avoid), term
+    (its URN) and name (its name). A word two terms avoid appears twice: the list states facts and leaves the gate to
+    decide. A term that avoids nothing gives no entry, and every status is listed, a deprecated term's avoid entries
+    included.
+
+    The entries are ordered by word, then by term URN, each in Unicode code point order (case-sensitive, no locale).
+    An activation with no glossary context in force, or whose terms avoid nothing, answers 200 with an empty entries
+    list. _links holds self and activation.
+
+    The refusals, the fingerprint and the ETag are those of getActivationVocabularyTerms, judged in the same order and
+    before any If-None-Match; the ETag is this read's own, not the tag of the terms or the Contextive read.
+  tags:
+  - Vocabulary
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The taboo entries under the activation, by word and then term URN.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/TabooList.yaml
+          examples:
+            shared-word:
+              $ref: ../examples/TabooList.shared-word.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

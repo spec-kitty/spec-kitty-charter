@@ -1,0 +1,63 @@
+title: ActiveTermList
+description: >-
+  The terms in force under an activation (#106, FR-014; ADR-0076 decision 5), unpaged: every term the winning copy of a
+  glossary context in force holds, whatever its status, ordered by context id and then term id, each in Unicode code
+  point order (case-sensitive, no locale). An activation with no glossary context in force answers an empty terms
+  list. _links holds self and activation.
+type: object
+additionalProperties: false
+required:
+  - activationId
+  - revision
+  - governanceFingerprint
+  - terms
+  - _links
+properties:
+  activationId:
+    allOf:
+      - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+        - parameters/ActivationId.yaml
+  revision:
+    allOf:
+      - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+        - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+      - $ref: Sha256Digest.yaml
+    description: >-
+      The charter-closure/v1 digest of the packs of the activation's closure alone, taken in the same consistent read as
+      the answer. It is not the Charter-Source-Fingerprint header, which digests the whole source.
+    x-derived:
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
+      inputs:
+        - schemas/ActivationConfig.yaml
+  terms:
+    type: array
+    description: The terms in force, by context id and then term id.
+    items:
+      $ref: ActiveTerm.yaml
+    x-derived:
+      rule: >-
+        The terms of the winning copy of each glossary context whose effective state is active, sorted by context id,
+        then term id, in Unicode code point order.
+      inputs:
+        - schemas/ActivationConfig.yaml
+        - the glossary files under the glossaries/ directory of each winning pack
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The terms in force under the activation, read inside one verified read.
+  inputs:
+    - schemas/ActivationConfig.yaml
+    - the glossary files under the glossaries/ directory of each winning pack

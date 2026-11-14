@@ -93,6 +93,13 @@ tags:
       answers every winner, unpaged and unfiltered; a client that wants the contexts by state, or paged, reads
       listEffectiveArtifacts with ?kind=glossary (and ?state=). Its own tag, so that the :artifacts-edge module
       implements it in a controller of its own beside the pack-scoped reads.
+  - name: Vocabulary
+    description: >-
+      The vocabulary in force under an activation (#106, ADR-0076): the terms of the glossary contexts in force, each
+      context the copy the layer merge keeps, whole, and every term whatever its status; the Contextive definitions
+      file projected from them, answered as application/yaml; and the taboo list, every avoided word with the term to
+      use instead. They are reads of the activation, not of an artifact, so they live under vocabulary, not under the
+      artifact tree. Its own tag, so that the :artifacts-edge module implements it in a controller of its own.
   - name: EffectiveReferences
     description: >-
       The references of an artifact under an activation: the references the version in force writes, which are the
@@ -229,6 +236,12 @@ paths:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}/references:
     $ref: paths/activations_activationId_artifacts_kind_artifactId_references.yaml
+  /activations/{activationId}/vocabulary/terms:
+    $ref: paths/activations_activationId_vocabulary_terms.yaml
+  /activations/{activationId}/vocabulary/contextive:
+    $ref: paths/activations_activationId_vocabulary_contextive.yaml
+  /activations/{activationId}/vocabulary/taboos:
+    $ref: paths/activations_activationId_vocabulary_taboos.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
   /activations/{activationId}/graph:
