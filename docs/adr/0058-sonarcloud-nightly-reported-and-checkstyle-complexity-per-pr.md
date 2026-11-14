@@ -2,7 +2,7 @@
 title: "ADR-0058: SonarCloud runs nightly and report-only; complexity is gated per pull request by Checkstyle"
 description: "Static analysis beyond correctness: a nightly, never-required SonarCloud scan with new-code coverage, and Checkstyle complexity rules in the per-PR gate."
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted; the description of mutation-nightly amended by ADR-0062 (2026-11-06)
 decision_date: '2026-11-03'
 type: ADR
@@ -31,8 +31,8 @@ per PR CheckStyle", with new-code coverage reported through SonarCloud instead o
 threshold.
 
 This ADR records that ruling. The mission `ci-sonar-nightly-checkstyle-complexity` (#368) delivers
-the nightly SonarCloud workflow. #367 refactored the methods over the complexity limits, and #371
-turned the limits on (2026-11-12).
+the nightly SonarCloud workflow. #367 refactors the methods over the complexity limits, and #371
+turns the limits on with the pull request that lands it (2026-11-14).
 
 ## Context
 

@@ -480,7 +480,8 @@ not run Checkstyle and does not ask whether an entry is still needed; an empty r
 
 The four complexity limits decided in
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are Checkstyle rules in
-`config/checkstyle/checkstyle.xml`, on main, test, test-fixture and drift-test sources alike:
+`config/checkstyle/checkstyle.xml`, on main, test, test-fixture and drift-test sources alike (the generated client and the
+AOT sources are generated code, outside every Checkstyle rule):
 
 | Checkstyle module | Limit |
 | --- | --- |
