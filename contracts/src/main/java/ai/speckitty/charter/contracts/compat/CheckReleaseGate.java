@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -70,21 +71,9 @@ public final class CheckReleaseGate {
     }
 
     static int run(List<String> args, PrintStream out) {
-        if (args.size() == 4 && "--previous-breaking".equals(args.get(0))) {
-            return previousBreaking(args, out);
-        }
-        if ((args.size() == 4 || args.size() == 5) && "--release".equals(args.get(0))) {
-            @Nullable Path changes = args.size() == 5 ? Path.of(args.get(4)) : null;
-            return release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), changes, out);
-        }
-        if (args.size() == 2 && "--packs-changelog".equals(args.get(0))) {
-            return packsChangelog(Path.of(args.get(1)), out);
-        }
-        if (args.size() == 3 && "--packs-release".equals(args.get(0))) {
-            return packsRelease(Path.of(args.get(1)), args.get(2), out);
-        }
-        if (args.size() == 3 && "--baseline".equals(args.get(0))) {
-            return baseline(Path.of(args.get(1)), args.get(2), out);
+        OptionalInt flagged = flagMode(args, out);
+        if (flagged.isPresent()) {
+            return flagged.getAsInt();
         }
         boolean noGit = args.size() == 3 && "--no-git".equals(args.get(2));
         boolean tags = args.size() == 5 && "--git".equals(args.get(2));
@@ -93,6 +82,27 @@ public final class CheckReleaseGate {
             return 2;
         }
         return compare(args, tags, out);
+    }
+
+    /** The modes named by a leading flag; empty when the arguments name none, which leaves the default mode. */
+    private static OptionalInt flagMode(List<String> args, PrintStream out) {
+        if (args.size() == 4 && "--previous-breaking".equals(args.get(0))) {
+            return OptionalInt.of(previousBreaking(args, out));
+        }
+        if ((args.size() == 4 || args.size() == 5) && "--release".equals(args.get(0))) {
+            @Nullable Path changes = args.size() == 5 ? Path.of(args.get(4)) : null;
+            return OptionalInt.of(release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), changes, out));
+        }
+        if (args.size() == 2 && "--packs-changelog".equals(args.get(0))) {
+            return OptionalInt.of(packsChangelog(Path.of(args.get(1)), out));
+        }
+        if (args.size() == 3 && "--packs-release".equals(args.get(0))) {
+            return OptionalInt.of(packsRelease(Path.of(args.get(1)), args.get(2), out));
+        }
+        if (args.size() == 3 && "--baseline".equals(args.get(0))) {
+            return OptionalInt.of(baseline(Path.of(args.get(1)), args.get(2), out));
+        }
+        return OptionalInt.empty();
     }
 
     /** The default mode: which tag to compare against, from the files and, with {@code --git}, the tag lists. */
