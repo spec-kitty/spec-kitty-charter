@@ -5,11 +5,12 @@ parameters:
   required: true
   description: >-
     The kind of the artifact, as its token: one of the kinds the pack-scoped artifact list serves (tactic, directive,
-    styleguide, paradigm, toolguide, procedure, asset, skill, agent_profile, mission_type and mission_step_contract),
-    the kinds listArtifactReferences reads. No literal path of the activation ends in /references, so every listed
-    kind is answered here, an asset and a skill included. The parameter is a slug, not an enum: a value that is not a
-    slug (Tactic, -tactic) is a 400 Problem without a code, before the activation is judged, and a slug that names no
-    listed kind is answered 404 kind_not_found by the service, after the activation is found.
+    styleguide, paradigm, toolguide, procedure, asset, skill, glossary, agent_profile, mission_type and
+    mission_step_contract), the kinds listArtifactReferences reads. No literal path of the activation ends in
+    /references, so every listed kind is answered here, an asset, a skill and a glossary context included. The
+    parameter is a slug, not an enum: a value that is not a slug (Tactic, -tactic) is a 400 Problem without a code,
+    before the activation is judged, and a slug that names no listed kind is answered 404 kind_not_found by the
+    service, after the activation is found.
   schema:
     $ref: ../schemas/Slug.yaml
 - $ref: ../parameters/ArtifactId.yaml

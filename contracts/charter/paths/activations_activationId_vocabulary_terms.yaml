@@ -4,7 +4,7 @@ get:
   operationId: getActivationVocabularyTerms
   summary: List the terms in force under an activation.
   description: >-
-    The vocabulary in force under an activation (#106, FR-014 and FR-016; ADR-0076 decisions 1 to 5 and 8): every term
+    The vocabulary in force under an activation (#106, FR-014 and FR-015; ADR-0076 decisions 1 to 5 and 8): every term
     the winning copy of a glossary context in force holds. A context is in force when its effective state is active;
     one the activation deselects, denies or does not select gives no term. A context overrides across levels whole, so
     a term only a copy the winner replaced holds is not listed, and nothing is merged per term. Two contexts that define
