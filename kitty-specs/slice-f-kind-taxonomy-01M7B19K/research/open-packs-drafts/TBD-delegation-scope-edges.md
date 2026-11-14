@@ -49,7 +49,7 @@ a qualified source).
 `apply-drafts.py --drafts 3` in this directory adds exactly these on a copy of the repository. Then restamp the
 digests and regenerate the pack pages.
 
-Each edge is allowed by the endpoint table (`scope`: action → a guidance kind or agent_profile). The edges are valid
+Each edge is allowed by the endpoint table (`scope`: action → a guidance kind; a substep never delegates to an agent_profile, ruling DM-01M7DTN8JWR4G1P35NXGCMS65M). The edges are valid
 under the current charter pin too, so this draft can land before the pin moves.
 
 **Depends on [TBD-step-requires-edges](TBD-step-requires-edges.md): land with it or after it.** 18 of these edges
