@@ -188,10 +188,10 @@
       "criterion_id": "FR-019",
       "description": "Verify FR-019 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "CharterContractSuite switch-gate: all nine glossary/vocabulary operations ready (WP04/WP05/WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:30:06.525135+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
