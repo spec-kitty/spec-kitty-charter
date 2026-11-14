@@ -10,10 +10,9 @@ import ai.speckitty.charter.artifacts.application.GlossaryReads;
 import ai.speckitty.charter.artifacts.application.GlossaryView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -48,7 +47,9 @@ class PacksGlossariesTest {
             List.of("feature"),
             List.of("epic"),
             TermStatus.ACTIVE,
-            List.of(new Urn(NodeKind.TERM, "core/lane")));
+            List.of(
+                    PackQualifiedReference.parse("term:core/lane"),
+                    PackQualifiedReference.parse("writing::term:style/voice")));
     private static final GlossaryTerm LANE = new GlossaryTerm(
             new TermIdentifier("lane"),
             "lane",
@@ -133,7 +134,7 @@ class PacksGlossariesTest {
                                         List.of("The mission ships it."),
                                         List.of("feature"),
                                         List.of("epic"),
-                                        List.of("term:core/lane"),
+                                        List.of("term:core/lane", "writing::term:style/voice"),
                                         "term:core/mission"),
                                 new GlossaryView.Term(
                                         "lane",
@@ -170,7 +171,7 @@ class PacksGlossariesTest {
         assertThat(read.term().id()).isEqualTo("mission");
         assertThat(read.term().name()).isEqualTo("mission");
         assertThat(read.term().urn()).isEqualTo("term:core/mission");
-        assertThat(read.term().seeAlso()).containsExactly("term:core/lane");
+        assertThat(read.term().seeAlso()).containsExactly("term:core/lane", "writing::term:style/voice");
         assertThat(read.contextId()).isEqualTo("core");
         assertThat(read.packId()).isEqualTo(QA);
         assertThat(read.revision()).isEqualTo(REVISION.token());

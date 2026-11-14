@@ -69,7 +69,7 @@ public record GlossaryView(
      * @param examples the example uses, in authored order
      * @param aliases the accepted alternative forms, in authored order
      * @param avoid the forms not to use, in authored order
-     * @param seeAlso the related terms' URNs, in authored order
+     * @param seeAlso the related terms, term references, bare or pack-qualified, in authored order
      * @param urn the term's own URN, {@code term:<context-id>/<term-id>}
      */
     public record Term(
