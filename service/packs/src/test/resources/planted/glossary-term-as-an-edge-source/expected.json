@@ -1,0 +1,23 @@
+{
+  "covers": [
+    "FR-006"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/fragment.yaml",
+      "place": [
+        "edges",
+        "0",
+        "source"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false,
+    "graphRefusal": "drg/fragment.yaml: pattern violated at /edges/0/source"
+  }
+}

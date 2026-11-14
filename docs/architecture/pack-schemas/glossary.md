@@ -35,8 +35,9 @@ makes its pack unreadable. A preset names contexts under `activated_glossaries`,
 - A context's URN is `glossary_context:<id>`. Its URN token differs from the kind token `glossary` on purpose
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 13), so core's `glossary:<id>`
   is refused.
-- A term is an item of its context, not an artifact. Its URN is `term:<context-id>/<term-id>`. A `term:` URN can be
-  the target of a `vocabulary` edge, but a graph document never declares it as a node.
+- A term is an item of its context, not an artifact. Its URN is `term:<context-id>/<term-id>`. A `term:` URN is an
+  edge endpoint only as the target of a `vocabulary` edge, and a graph document never declares it as a node. An edge
+  from a term, or of any other relation onto a term, is refused (operator ruling, 2026-11-14).
 
 ## Shape
 

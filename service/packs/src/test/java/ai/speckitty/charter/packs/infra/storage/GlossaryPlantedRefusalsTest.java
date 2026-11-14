@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
@@ -47,12 +48,19 @@ import tools.jackson.databind.ObjectMapper;
  * {@code core.glossary.yaml}, which breaks the id pattern and differs from the file stem. A schema violation makes
  * the file unreadable before the stem rule runs, so the pattern is reported alone, which is the one finding that plant
  * expects; the stem rule has its own plant, {@code glossary-context-id-not-the-stem}.
+ *
+ * <p>The control's fragment holds one {@code vocabulary} edge onto a term, so a term as a vocabulary target loads; the
+ * two {@code glossary-term-as-*} plants turn that edge around, or give it another relation, and are refused (ADR-0049
+ * decision 4; operator ruling of 2026-11-14).
  */
 @DisplayName("the planted glossary cases fail or load exactly as their expected.json says (ADR-0049)")
 class GlossaryPlantedRefusalsTest {
 
     private static final String PLANTED = "/planted";
     private static final String CONTROL = "glossary-context-valid";
+    /** The fault a load refuses a whole pack with when one of its graph documents breaks its schema. */
+    private static final String GRAPH_REFUSAL = "graphRefusal";
+
     private static final ObjectMapper JSON = new ObjectMapper();
 
     /** Every planted glossary case, by directory name. */
@@ -75,7 +83,7 @@ class GlossaryPlantedRefusalsTest {
     }
 
     @Test
-    @DisplayName("the corpus holds the control and the seven refusal cases")
+    @DisplayName("the corpus holds the control and the nine refusal cases")
     void theCorpusIsComplete() {
         assertThat(cases())
                 .containsExactlyInAnyOrder(
@@ -86,7 +94,9 @@ class GlossaryPlantedRefusalsTest {
                         "glossary-term-id-digit-first",
                         "glossary-term-id-duplicate",
                         "glossary-see-also-not-a-urn",
-                        "glossary-context-id-not-the-stem");
+                        "glossary-context-id-not-the-stem",
+                        "glossary-term-as-an-edge-source",
+                        "glossary-term-as-a-non-vocabulary-target");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -111,13 +121,21 @@ class GlossaryPlantedRefusalsTest {
     void theLoadRefusesIt(String plant, @TempDir Path host) {
         JsonNode load = expected(plant).get("load");
         Path pack = copy(plant, host);
+        assertThat(load.get("loads").asBoolean()).as(plant).isFalse();
+        if (load.has(GRAPH_REFUSAL)) {
+            // A graph document that breaks its schema cannot be read, so the whole load is refused with its fault.
+            assertThatThrownBy(() -> new WholePackStore(new YamlSerializationStrategy()).load(pack))
+                    .as(plant)
+                    .isInstanceOf(CharterRefusal.class)
+                    .hasMessageEndingWith(load.get(GRAPH_REFUSAL).asString());
+            return;
+        }
 
         List<PackElementViolation> violations = new WholePackStore(new YamlSerializationStrategy())
                 .load(pack)
                 .pack()
                 .violations();
 
-        assertThat(load.get("loads").asBoolean()).as(plant).isFalse();
         assertThat(violations).as(plant).hasSameSizeAs(load.get("violations"));
         for (int i = 0; i < violations.size(); i++) {
             JsonNode want = load.get("violations").get(i);
@@ -142,6 +160,15 @@ class GlossaryPlantedRefusalsTest {
                 .as(plant)
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    if (load.has(GRAPH_REFUSAL)) {
+                        String fault = load.get(GRAPH_REFUSAL).asString();
+                        assertThat(refusal.getMessage()).as(plant).contains(fault.substring(0, fault.indexOf(':')));
+                        assertThat(refusal.violations())
+                                .as(plant)
+                                .anySatisfy(violation -> assertThat(violation.detail())
+                                        .endsWith(fault.substring(fault.indexOf(':') + 2)));
+                        return;
+                    }
                     for (JsonNode want : load.get("violations")) {
                         assertThat(refusal.violations()).as(plant).anySatisfy(violation -> {
                             assertThat(violation.code())
@@ -158,7 +185,8 @@ class GlossaryPlantedRefusalsTest {
     }
 
     @Test
-    @DisplayName("positive control: glossary-context-valid validates clean, loads and registers its context and terms")
+    @DisplayName("positive control: glossary-context-valid validates clean, loads and registers its context, terms and"
+            + " its vocabulary edge onto a term")
     void theControlLoads(@TempDir Path host) {
         JsonNode expected = expected(CONTROL);
         Path pack = copy(CONTROL, host);
@@ -166,13 +194,17 @@ class GlossaryPlantedRefusalsTest {
 
         assertThat(expected.get("load").get("loads").asBoolean()).isTrue();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().artifacts(ArtifactKind.GLOSSARY))
+        WholePackWriteStore.Contents staged = store.loadStaged(new StagedPack(pack));
+        assertThat(staged.pack().artifacts(ArtifactKind.GLOSSARY))
                 .singleElement()
                 .isInstanceOfSatisfying(
                         GlossaryContext.class,
                         context -> assertThat(context.terms())
                                 .extracting(term -> term.id().value())
                                 .containsExactly("lane", "mission", "work-package"));
+        assertThat(staged.facts().edges())
+                .extracting(edge -> edge.from() + " " + edge.type().token() + " " + edge.to())
+                .contains("glossary_context:core vocabulary term:core/lane");
     }
 
     private static String row(PackFinding finding) {

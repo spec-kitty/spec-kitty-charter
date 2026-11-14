@@ -9,8 +9,9 @@
     becomes `Preset.activatedGlossaries`. `schemaVersion` stays `2`.
   - `NodeKind` replaces `glossary_pack` with two URN kinds: `glossary_context`, the URN token of a context
     (`glossary_context:<id>`), which differs from the kind token `glossary` on purpose (ADR-0053 decision 13), and
-    `term` (`term:<context-id>/<term-id>`), an edge target that is never a declared node. The `vocabulary` relation
-    targets both.
+    `term` (`term:<context-id>/<term-id>`), an edge endpoint only as the target of a `vocabulary` edge, never a declared node
+    (operator ruling 2026-11-14): a graph shard, an org fragment or a registered relationship that names a term as a
+    source, or as the target of any other relation, is refused. The `vocabulary` relation targets both.
   - The packs contract: `glossary.schema.json` replaces `glossary-pack.schema.json`, closed at every level
     (`schema_version`, `id`, `name`, `description`, `tags?`, `applies_to?`, `terms`; a term is `id`, `name`,
     `definition`, `examples?`, `aliases?`, `avoid?`, `status`, `see_also?`). Context and term ids are letter-first

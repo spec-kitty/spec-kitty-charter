@@ -1,2 +1,5 @@
 nodes: []
-edges: []
+edges:
+- source: glossary_context:core
+  target: term:core/lane
+  relation: vocabulary

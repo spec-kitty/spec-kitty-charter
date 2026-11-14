@@ -35,7 +35,9 @@ The first packs contract version, not yet released (#559).
   `*.glossary-pack.yaml` file is refused by name as retired. `file-kinds.yaml` gains the node kinds
   `glossary_context` and `term`, the artifact kind `glossary` and the fragment plural `glossaries`; the graph-shard,
   org-fragment, preset (`activated_glossaries`), charter (`selected_glossaries`, `activated_glossaries`),
-  pack-manifest, policy and mission-step-contract schemas follow. The classifier cases map
+  pack-manifest, policy and mission-step-contract schemas follow. A term is an edge endpoint only as the target of a
+  `vocabulary` edge: the graph-shard and org-fragment edge schemas refuse it as a source and as the target of any
+  other relation. The classifier cases map
   `core/glossaries/a.glossary.yaml` and refuse `core/glossary/a.glossary-pack.yaml` as retired. There is no reader
   of the old shape.
 - The "Matching" header of `file-kinds.yaml` states the order the sections are consulted in, and

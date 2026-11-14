@@ -91,6 +91,42 @@ class NodeKindTest {
     }
 
     @Test
+    void aTermIsAnEdgeEndpointOnlyAsTheTargetOfAVocabularyEdge() {
+        assertThat(NodeKind.TERM.edgeSource()).as("term as a source").isFalse();
+        assertThat(NodeKind.TERM.edgeTargetOf(Optional.of(RelationType.VOCABULARY)))
+                .as("term as a vocabulary target")
+                .isTrue();
+        for (RelationType relation : RelationType.values()) {
+            if (relation != RelationType.VOCABULARY) {
+                assertThat(NodeKind.TERM.edgeTargetOf(Optional.of(relation)))
+                        .as("term as a %s target", relation.token())
+                        .isFalse();
+            }
+        }
+        assertThat(NodeKind.TERM.edgeTargetOf(Optional.empty()))
+                .as("term in a tension")
+                .isFalse();
+    }
+
+    @Test
+    void everyOtherEndpointKindIsASourceAndATargetOfEveryRelationAndANonEndpointIsNeither() {
+        for (NodeKind kind : NodeKind.values()) {
+            if (kind == NodeKind.TERM) {
+                continue;
+            }
+            assertThat(kind.edgeSource()).as("%s as a source", kind.token()).isEqualTo(kind.edgeTarget());
+            assertThat(kind.edgeTargetOf(Optional.empty()))
+                    .as("%s in a tension", kind.token())
+                    .isEqualTo(kind.edgeTarget());
+            for (RelationType relation : RelationType.values()) {
+                assertThat(kind.edgeTargetOf(Optional.of(relation)))
+                        .as("%s as a %s target", kind.token(), relation.token())
+                        .isEqualTo(kind.edgeTarget());
+            }
+        }
+    }
+
+    @Test
     void theTableHasOneRowPerConstantInDeclarationOrder() {
         assertThat(table().stream().map(row -> row.get()[0]).toList()).containsExactly((Object[]) NodeKind.values());
     }

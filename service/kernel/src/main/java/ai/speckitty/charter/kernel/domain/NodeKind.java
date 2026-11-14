@@ -41,9 +41,10 @@ public enum NodeKind {
     /**
      * One term of a glossary context, {@code term:<context-id>/<term-id>} (ADR-0049 decision 4): an item of its
      * context, not an artifact, so it stands for no artifact kind. It has no file and no fragment plural and is never
-     * declared in a graph; it is derived from its context, and a {@code vocabulary} edge may target it.
+     * declared in a graph; it is derived from its context, and it is an edge endpoint only as the target of a
+     * {@code vocabulary} edge (operator ruling of 2026-11-14).
      */
-    TERM("term", null, null, false, true),
+    TERM("term", RelationType.VOCABULARY),
     /** A node of the artifact kind {@link ArtifactKind#SKILL}. */
     SKILL("skill", ArtifactKind.SKILL, "skills", true, true),
     /** A node of the artifact kind {@link ArtifactKind#ANTI_PATTERN}. */
@@ -83,6 +84,7 @@ public enum NodeKind {
     private final @Nullable String plural;
     private final boolean declarable;
     private final boolean edgeTarget;
+    private final @Nullable RelationType onlyTargetOf;
 
     NodeKind(
             String token,
@@ -95,6 +97,17 @@ public enum NodeKind {
         this.plural = plural;
         this.declarable = declarable;
         this.edgeTarget = edgeTarget;
+        this.onlyTargetOf = null;
+    }
+
+    /** A kind that is an edge endpoint only as the target of one relation, and nothing else: no artifact, no plural. */
+    NodeKind(String token, RelationType onlyTargetOf) {
+        this.token = token;
+        this.artifactKind = null;
+        this.plural = null;
+        this.declarable = false;
+        this.edgeTarget = true;
+        this.onlyTargetOf = onlyTargetOf;
     }
 
     /**
@@ -147,13 +160,36 @@ public enum NodeKind {
     }
 
     /**
-     * Whether an edge, authored in a graph document or registered as a relationship, may name this kind as its source
-     * or target.
+     * Whether an edge, authored in a graph document or registered as a relationship, may name this kind at all, at one
+     * end or the other. Which end, and of which relation, is {@link #edgeSource()} and {@link #edgeTargetOf}.
      *
      * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE}, which wait for their contract set (#156)
      */
     public boolean edgeTarget() {
         return edgeTarget;
+    }
+
+    /**
+     * Whether an authored or registered edge, a tension included, may name this kind as its source.
+     *
+     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE} (#156), and for {@link #TERM}, which is only
+     *     ever a {@code vocabulary} target
+     */
+    public boolean edgeSource() {
+        return edgeTarget && onlyTargetOf == null;
+    }
+
+    /**
+     * Whether an authored or registered edge of the relation may name this kind as its target.
+     *
+     * @param relation the edge's relation type; empty for a tension, which has none
+     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE} (#156), and for {@link #TERM} unless the
+     *     relation is {@code vocabulary}
+     */
+    public boolean edgeTargetOf(Optional<RelationType> relation) {
+        return edgeTarget
+                && (onlyTargetOf == null
+                        || relation.filter(onlyTargetOf::equals).isPresent());
     }
 
     /**
