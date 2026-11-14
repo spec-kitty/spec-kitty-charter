@@ -38,9 +38,9 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *
  * <p>For each code marked {@code raised: false}, no main class may name the constant except the enum that declares it
  * and the status and title mapping of {@code RefusalHandler}. The exclusion is by name pattern, not by simple name:
- * javac compiles the {@code switch} over the enum in {@code RefusalHandler} into a synthetic class
- * {@code RefusalHandler$1} (a {@code $SwitchMap} table) that reads the field, and the enum's own constants initializer
- * is part of the enum class. Each code marked {@code raised: true} must, the other way round, be named by some main
+ * the status table is the nested class {@code RefusalHandler$StatusByCode}, whose initializer reads the fields (as a
+ * {@code switch} over the enum compiles to a synthetic {@code RefusalHandler$1} that does), and the enum's own constants
+ * initializer is part of the enum class. Each code marked {@code raised: true} must, the other way round, be named by some main
  * class outside those two; this says only that the code can raise it, not that a request of this version provokes it.
  *
  * <p>One class names an unraised code off the wire, and is allowed to name exactly that code ({@link #OFF_WIRE}):
@@ -235,7 +235,7 @@ class ReservedRefusalCodesTest {
     @Test
     void everyCodeMarkedRaisedIsNamedByAMainClassButTheEnumAndTheMappings() {
         // RefusalHandler raises internal_error itself (the refusal of an unexpected failure), so only its mappings
-        // and the synthetic switch-map classes are left out, not the whole handler.
+        // and its nested classes (the StatusByCode table) are left out, not the whole handler.
         Set<String> named = MAIN.stream()
                 .flatMap(type -> type.getFieldAccessesFromSelf().stream())
                 .filter(access -> access.getTargetOwner().isEquivalentTo(RefusalCode.class))

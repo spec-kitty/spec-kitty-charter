@@ -354,7 +354,9 @@ public class RefusalHandler {
 
     /**
      * Each refusal code's status when its operation declares none; every code has exactly one, checked when the class
-     * loads. A class of its own, as a mapping: the reserved-code guard leaves the handler's mappings out.
+     * loads. A new code without a status no longer fails the compile, as the exhaustive switch did:
+     * {@code RefusalHandlerTest.everyCodeHasAMapping} is the guard that replaced the compiler. A class of its own, as a
+     * mapping: the reserved-code guard leaves the handler's mappings out.
      */
     private static final class StatusByCode {
 
@@ -442,7 +444,8 @@ public class RefusalHandler {
             family(statuses, HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_CODES);
             family(statuses, HttpStatus.GATEWAY_TIMEOUT, TIMED_OUT_CODES);
             family(statuses, HttpStatus.INTERNAL_SERVER_ERROR, SERVER_ERROR_CODES);
-            Set<RefusalCode> unmapped = EnumSet.complementOf(EnumSet.copyOf(statuses.keySet()));
+            Set<RefusalCode> unmapped = EnumSet.allOf(RefusalCode.class);
+            unmapped.removeAll(statuses.keySet());
             if (!unmapped.isEmpty()) {
                 throw new IllegalStateException("refusal codes with no HTTP status: " + unmapped);
             }
