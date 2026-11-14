@@ -37,7 +37,7 @@ enum RefKind {
   directive, tactic, styleguide, toolguide,
   paradigm, procedure, agent_profile,
   mission_step_contract, template, asset,
-  glossary_pack, anti_pattern, skill
+  glossary, anti_pattern, skill
 }
 
 class RejectsRef <<rejects entry (ADR-0052 d9)>> {
