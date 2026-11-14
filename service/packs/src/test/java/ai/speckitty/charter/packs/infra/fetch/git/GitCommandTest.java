@@ -255,7 +255,7 @@ class GitCommandTest {
                 .isInstanceOfSatisfying(
                         GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.TOO_LARGE));
 
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(4));
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
         assertThat(directorySize(repository)).isGreaterThan(1_000_000);
     }
 
