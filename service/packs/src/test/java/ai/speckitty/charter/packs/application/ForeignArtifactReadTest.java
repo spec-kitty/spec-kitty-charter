@@ -20,6 +20,9 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.GlossaryContext;
+import ai.speckitty.charter.packs.domain.GlossaryContextIdentifier;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -27,6 +30,8 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.domain.TermIdentifier;
+import ai.speckitty.charter.packs.domain.TermStatus;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -381,6 +386,86 @@ class ForeignArtifactReadTest {
         CharterArtifact artifact = read.artifact();
         assertThat(artifact.kind()).isEqualTo(ArtifactKind.DIRECTIVE);
         assertThat(read.governance()).isEmpty();
+    }
+
+    /** built-in holds the glossary contexts spec-kitty-core and qa beside the directive D (#106). */
+    private void builtInWithGlossaries() {
+        pack("builtin", PackLevel.BUILT_IN, List.of(), List.of(), List.of("D"));
+        Pack.Builder pack = Pack.builder()
+                .id(new PackIdentifier("builtin"))
+                .descriptor(descriptors.get("builtin"))
+                .artifact(directive("builtin", "D"))
+                .artifact(glossary("spec-kitty-core", "mission", "lane"))
+                .artifact(glossary("qa", "flaky-test"));
+        stored.put("builtin", pack.build());
+    }
+
+    private static GlossaryContext glossary(String id, String... terms) {
+        GlossaryContext.Builder context = GlossaryContext.builder()
+                .id(new GlossaryContextIdentifier(id))
+                .packId(new PackIdentifier("builtin"))
+                .name("Name of " + id)
+                .description("Where " + id + " applies.");
+        for (String term : terms) {
+            context.term(new GlossaryTerm(
+                    new TermIdentifier(term),
+                    term,
+                    "Definition of " + term,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    TermStatus.ACTIVE,
+                    List.of()));
+        }
+        return context.build();
+    }
+
+    @Test
+    void aGlossaryContextIsReadThroughTheGenericPathWithItsRevisionAndNoGovernance() {
+        builtInWithGlossaries();
+        ForeignArtifactRead service = service();
+
+        ConsistentRead.Verified<ForeignArtifactRead.Foreign> verified =
+                service.read(new PackIdentifier("builtin"), ArtifactKind.GLOSSARY, "spec-kitty-core", 0);
+
+        assertThat(verified.value().artifact()).isInstanceOfSatisfying(GlossaryContext.class, context -> {
+            assertThat(context.localId()).isEqualTo("spec-kitty-core");
+            assertThat(context.terms()).extracting(term -> term.id().value()).containsExactly("mission", "lane");
+        });
+        assertThat(verified.value().governance()).isEmpty();
+        assertThat(verified.value().revision()).isEqualTo(PackRevision.compute(List.of("builtin", "1")));
+        assertThat(verified.fingerprint()).isEqualTo("sha256:" + "1".repeat(64));
+    }
+
+    @Test
+    void theGlossaryContextsOfAPackAreHeldInOneVerifiedRead() {
+        builtInWithGlossaries();
+        ForeignArtifactRead service = service();
+
+        ConsistentRead.Verified<ForeignArtifactRead.Held> verified =
+                service.held(new PackIdentifier("builtin"), ArtifactKind.GLOSSARY);
+
+        assertThat(verified.value().artifacts())
+                .extracting(CharterArtifact::localId)
+                .containsExactlyInAnyOrder("spec-kitty-core", "qa");
+        assertThat(verified.value().revision()).isEqualTo(PackRevision.compute(List.of("builtin", "1")));
+        assertThat(whole).as("one verified read: two whole-source digests").hasValue(2);
+    }
+
+    @Test
+    void aGlossaryContextThePackDoesNotHoldIsArtifactNotFoundNamingTheContext() {
+        builtInWithGlossaries();
+        ForeignArtifactRead service = service();
+
+        assertThatThrownBy(() -> service.read(new PackIdentifier("builtin"), ArtifactKind.GLOSSARY, "nope", 0))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+                    assertThat(refusal.getMessage()).isEqualTo("glossary context `nope` is not held");
+                });
+        assertThatThrownBy(() -> service.read(new PackIdentifier("nope"), ArtifactKind.GLOSSARY, "nope", 0))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
 
     private static Throwable catchThrowable(Runnable run) {

@@ -1,0 +1,37 @@
+title: GlossaryAppliesTo
+description: >-
+  Where a glossary context applies (ADR-0049 decision 14): path globs, languages and stacks. It is advisory: no read
+  filters by it. Each list is absent when the file states none, and holds at least one entry when present.
+type: object
+additionalProperties: false
+properties:
+  paths:
+    type: array
+    minItems: 1
+    description: The path globs the context applies to, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AppliesTo.java
+      symbol: AppliesTo.paths
+  languages:
+    type: array
+    minItems: 1
+    description: The languages the context applies to, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AppliesTo.java
+      symbol: AppliesTo.languages
+  stacks:
+    type: array
+    minItems: 1
+    description: The stacks the context applies to, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AppliesTo.java
+      symbol: AppliesTo.stacks
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/AppliesTo.java
+  symbol: AppliesTo

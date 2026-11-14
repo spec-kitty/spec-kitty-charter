@@ -1,0 +1,83 @@
+get:
+  operationId: getPackGlossaryContext
+  summary: Get one glossary context of a Charter Pack, with every term.
+  description: >-
+    One glossary context of one pack in the Artifact envelope (#106, ADR-0049, ADR-0074 decisions 3 and 10): kind
+    glossary, id, packId, _links and, in member glossary, the context as its file declares it, in camel case, with every
+    term in authored order. The link collection leads to the pack's glossary contexts (listPackGlossaryContexts), and
+    the templated link term to the read of one of its terms (getPackGlossaryTerm), which a client expands with the
+    term's id. The generic artifact item read (getPackArtifact) never renders a glossary context: this literal path is
+    the read of the kind.
+
+    The pack is judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a 404
+    pack_not_found. Then a context the pack does not hold is a 404 artifact_not_found whose detail names the context.
+    A configured pack without a readable pack.yaml, or a pack holding a file the fingerprint covers that cannot be read,
+    is a 500 pack_unreadable. The answer is verified against the source fingerprint and carries it; inputs that change
+    while it is read are stale_input.
+
+    The ETag is the pack revision the context was read at, quoted, as a skill's read answers it. The read takes no
+    If-None-Match and never answers 304.
+  tags:
+    - Glossaries
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ContextId.yaml
+  responses:
+    '200':
+      description: The glossary context, with every term.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/PackRevisionETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            glossary-context:
+              $ref: ../examples/Artifact.glossary.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack or the glossary context the path names is not there, refused with 404. The pack is judged first: an
+        identifier that matches no configured pack (by name or by declared pack_id) is pack_not_found. Then a context
+        the pack does not hold is artifact_not_found, whose detail is glossary context `<contextId>` is not held. A
+        client error: the request named something that is not there.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            context-not-held:
+              summary: The pack holds no glossary context with the asked identity.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: glossary context `nothing` is not held
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

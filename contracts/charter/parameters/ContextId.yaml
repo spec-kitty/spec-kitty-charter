@@ -1,0 +1,12 @@
+name: contextId
+in: path
+required: true
+description: >-
+  The identity of a glossary context within its pack (ADR-0049, ADR-0074 decision 10): one lowercase kebab-case segment
+  of at most 64 characters that starts with a letter, the grammar the glossary schema declares and the context's file
+  stem. Any other spelling is a 400 without a code; a well-formed id that the pack does not hold is a 404.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 64
+  pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'

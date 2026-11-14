@@ -1,0 +1,13 @@
+name: termId
+in: path
+required: true
+description: >-
+  The identity of a term within its glossary context (ADR-0049 decision 3, ADR-0074 decision 11): one lowercase
+  kebab-case segment of at most 64 characters that starts with a letter, the second segment of the term's URN
+  term:<context-id>/<term-id>. Any other spelling is a 400 without a code; a well-formed id that the context does not
+  hold is a 404.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 64
+  pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'

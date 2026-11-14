@@ -374,6 +374,12 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
+    description: >-
+      an artifact the path names that the pack, or the activation's closure, does not hold. Of the glossary reads of a
+      pack (#106), listPackGlossaryContexts raises only pack_not_found; getPackGlossaryContext and getPackGlossaryTerm
+      raise artifact_not_found after it, for a glossary context the pack does not hold, with the detail glossary
+      context `<contextId>` is not held, and then, by getPackGlossaryTerm, for a term the context does not hold, with
+      the detail term `<termId>` is not held in glossary context `<contextId>`
   preset_not_found:
     status: 404
     retryable: false

@@ -1,0 +1,89 @@
+title: GlossaryContextTerm
+description: >-
+  One term as its glossary context holds it (ADR-0049 decision 3), the fields of the pack file in camel case: an item of
+  the context, not an artifact of its own, addressed term:<context-id>/<term-id> and read alone by getPackGlossaryTerm,
+  which the context's templated link term leads to. A member the file does not state is absent.
+type: object
+additionalProperties: false
+required:
+  - id
+  - name
+  - definition
+  - status
+properties:
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The term's identity within its context, the second segment of its URN.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.id
+  name:
+    type: string
+    minLength: 1
+    description: The canonical surface form of the term.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.name
+  definition:
+    type: string
+    minLength: 1
+    description: What the term means.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.definition
+  status:
+    type: string
+    enum:
+      - draft
+      - active
+      - deprecated
+    description: The term's status (ADR-0053 decision 14), draft, active or deprecated.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TermStatus.java
+      symbol: TermStatus.token
+  examples:
+    type: array
+    minItems: 1
+    description: Example uses, in authored order; absent when the file states none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.examples
+  aliases:
+    type: array
+    minItems: 1
+    description: Accepted alternative forms, in authored order; absent when the file states none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.aliases
+  avoid:
+    type: array
+    minItems: 1
+    description: >-
+      Forms not to use, in authored order: the one source of banned vocabulary (ADR-0049 decisions 5 and 15); absent
+      when the file states none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.avoid
+  seeAlso:
+    type: array
+    minItems: 1
+    description: >-
+      Related terms, each a term:<context-id>/<term-id> URN, in authored order; absent when the file states none. A URN
+      that no held context resolves is answered as written.
+    items:
+      type: string
+      pattern: '^term:[a-z][a-z0-9]*(-[a-z0-9]+)*[/][a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+      symbol: GlossaryTerm.seeAlso
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
+  symbol: GlossaryTerm

@@ -274,14 +274,16 @@ public final class ForeignArtifactRead {
                         new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml"));
     }
 
-    /** The pack's own artifact of a kind with an id; an artifact the pack does not hold is not found. */
+    /**
+     * The pack's own artifact of a kind with an id; an artifact the pack does not hold is not found, with the detail the
+     * generic read gives it ({@link ArtifactReadService#notHeldDetail}).
+     */
     private static CharterArtifact held(Pack loaded, PackIdentifier pack, ArtifactKind kind, String id) {
         return loaded.artifacts(kind).stream()
                 .filter(candidate -> candidate.localId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.ARTIFACT_NOT_FOUND,
-                        "Pack " + pack.value() + " has no " + kind.token() + " " + id + "."));
+                        RefusalCode.ARTIFACT_NOT_FOUND, ArtifactReadService.notHeldDetail(pack, kind, id)));
     }
 
     /**

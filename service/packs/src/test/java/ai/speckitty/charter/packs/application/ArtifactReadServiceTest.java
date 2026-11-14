@@ -23,6 +23,9 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.GlossaryContext;
+import ai.speckitty.charter.packs.domain.GlossaryContextIdentifier;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
@@ -55,6 +58,8 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
 import ai.speckitty.charter.packs.domain.TacticStep;
+import ai.speckitty.charter.packs.domain.TermIdentifier;
+import ai.speckitty.charter.packs.domain.TermStatus;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
@@ -93,7 +98,9 @@ class ArtifactReadServiceTest {
     private static final PackIdentifier SIBLING = new PackIdentifier("pack-b");
     // The pack of the mission kinds' fixture (missionFixture): two mission types and three step contracts.
     private static final PackIdentifier MISSIONS = new PackIdentifier("missions");
-    // The pack of the literal kinds' fixture (#105, #107): two assets, one without a title, and a skill.
+    // The pack of the literal kinds' fixture (#105, #106, #107): two assets, one without a title, a skill and a
+    // glossary
+    // context.
     private static final PackIdentifier HOLDER = new PackIdentifier("holder");
     private static final String D1 = "sha256:" + "1".repeat(64);
     private static final String D2 = "sha256:" + "2".repeat(64);
@@ -123,6 +130,7 @@ class ArtifactReadServiceTest {
                     .id(HOLDER)
                     .descriptor(descriptor(HOLDER))
                     .artifact(skill("land-pr"))
+                    .artifact(glossary("spec-kitty-core"))
                     .artifact(asset("run", "run.py", "Run the lint"))
                     .artifact(asset("logo", "logo.png", null))
                     .assetFile(new AssetFile("run.py", Payload.of(new byte[] {'1'})))
@@ -563,7 +571,7 @@ class ArtifactReadServiceTest {
     // ---- the served kinds -------------------------------------------------------------------------------------
 
     @Test
-    void theServedKindsAreTheFiveThenTheAssetAndTheSkillThenTheAgentProfileInTheirOrder() {
+    void theServedKindsAreTheFiveThenTheAssetTheSkillAndTheGlossaryThenTheAgentProfileInTheirOrder() {
         assertThat(ArtifactReadService.SERVED)
                 .containsExactly(
                         ArtifactKind.TACTIC,
@@ -574,12 +582,15 @@ class ArtifactReadServiceTest {
                         ArtifactKind.PROCEDURE,
                         ArtifactKind.ASSET,
                         ArtifactKind.SKILL,
+                        ArtifactKind.GLOSSARY,
                         ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
         assertThat(ArtifactReadService.listedKind("agent_profile")).contains(ArtifactKind.AGENT_PROFILE);
         assertThat(ArtifactReadService.listedKind("procedure")).contains(ArtifactKind.PROCEDURE);
         assertThat(ArtifactReadService.listedKind("asset")).contains(ArtifactKind.ASSET);
         assertThat(ArtifactReadService.listedKind("skill")).contains(ArtifactKind.SKILL);
+        assertThat(ArtifactReadService.listedKind("glossary")).contains(ArtifactKind.GLOSSARY);
+        assertThat(ArtifactReadService.listedKind("glossary_pack")).isEmpty();
         assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("TACTIC")).isEmpty();
     }
@@ -614,10 +625,15 @@ class ArtifactReadServiceTest {
                         ArtifactKind.PROCEDURE,
                         ArtifactKind.MISSION_STEP_CONTRACT)
                 .doesNotContain(
-                        ArtifactKind.MISSION_TYPE, ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL);
+                        ArtifactKind.MISSION_TYPE,
+                        ArtifactKind.AGENT_PROFILE,
+                        ArtifactKind.ASSET,
+                        ArtifactKind.SKILL,
+                        ArtifactKind.GLOSSARY);
         assertThat(ArtifactReadService.LISTED).containsAll(ArtifactReadService.ITEM_KINDS);
         assertThat(ArtifactReadService.LITERAL_ITEM_KINDS)
-                .containsExactly(ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL);
+                .containsExactly(
+                        ArtifactKind.AGENT_PROFILE, ArtifactKind.ASSET, ArtifactKind.SKILL, ArtifactKind.GLOSSARY);
         assertThat(ArtifactReadService.SERVED)
                 .as("every served kind is rendered by the templated item read or at its literal path, never both")
                 .allSatisfy(kind -> assertThat(ArtifactReadService.ITEM_KINDS.contains(kind))
@@ -630,8 +646,8 @@ class ArtifactReadServiceTest {
     @Test
     void eachListedKindHasItsNotFoundCode() {
         // The five older kinds and the two mission kinds keep their own codes; the kinds served after them, the agent
-        // profile, the procedure, the asset and the skill, answer artifact_not_found (procedures.feature pins it end to
-        // end).
+        // profile, the procedure, the asset, the skill and the glossary, answer artifact_not_found (procedures.feature
+        // pins it end to end).
         Map<ArtifactKind, RefusalCode> expected = Map.ofEntries(
                 Map.entry(ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND),
                 Map.entry(ArtifactKind.DIRECTIVE, RefusalCode.DIRECTIVE_NOT_FOUND),
@@ -643,7 +659,8 @@ class ArtifactReadServiceTest {
                 Map.entry(ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.ASSET, RefusalCode.ARTIFACT_NOT_FOUND),
-                Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND));
+                Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND),
+                Map.entry(ArtifactKind.GLOSSARY, RefusalCode.ARTIFACT_NOT_FOUND));
 
         assertThat(expected.keySet())
                 .as("the map names every listed kind, so a newly listed kind needs its row")
@@ -838,7 +855,7 @@ class ArtifactReadServiceTest {
     // ---- the asset and the skill: listed, answered at their literal paths (#105, #107) --------------------------
 
     @Test
-    void assetsAreListedBeforeSkillsAnAssetTitledByItsTitleOrItsId() {
+    void assetsAreListedBeforeSkillsAndSkillsBeforeGlossariesEachTitledByItsLabel() {
         assertThat(service.list(HOLDER, Optional.empty(), Optional.empty(), 50)
                         .value()
                         .items())
@@ -846,7 +863,8 @@ class ArtifactReadServiceTest {
                 .containsExactly(
                         tuple(position(ArtifactKind.ASSET, "logo"), "logo"),
                         tuple(position(ArtifactKind.ASSET, "run"), "Run the lint"),
-                        tuple(position(ArtifactKind.SKILL, "land-pr"), "Land a PR"));
+                        tuple(position(ArtifactKind.SKILL, "land-pr"), "Land a PR"),
+                        tuple(position(ArtifactKind.GLOSSARY, "spec-kitty-core"), "Spec Kitty core"));
     }
 
     @Test
@@ -861,10 +879,22 @@ class ArtifactReadServiceTest {
                         .items())
                 .extracting(ArtifactReadService.Summary::position)
                 .containsExactly(position(ArtifactKind.SKILL, "land-pr"));
+        assertThat(service.list(HOLDER, Optional.of(ArtifactKind.GLOSSARY), Optional.empty(), 50)
+                        .value()
+                        .items())
+                .extracting(ArtifactReadService.Summary::position)
+                .containsExactly(position(ArtifactKind.GLOSSARY, "spec-kitty-core"));
     }
 
     @ParameterizedTest
-    @CsvSource({"asset, run", "skill, land-pr", "asset, ghost", "skill, ghost"})
+    @CsvSource({
+        "asset, run",
+        "skill, land-pr",
+        "glossary, spec-kitty-core",
+        "asset, ghost",
+        "skill, ghost",
+        "glossary, ghost"
+    })
     void anAssetOrASkillIsNotRenderedByTheTemplatedItemReadAndIsKindNotFoundNamingItsLiteralPath(
             String kind, String id) {
         assertThatThrownBy(() -> service.item(HOLDER, kind, id))
@@ -885,6 +915,21 @@ class ArtifactReadServiceTest {
                 .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
         assertThat(codeOf(() -> withEdges.references(PACK, "skill", "ghost")))
                 .isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+    }
+
+    @Test
+    void aGlossaryContextThePackDoesNotHoldIsArtifactNotFoundNamingTheContext() {
+        assertThat(ArtifactReadService.absentCode(ArtifactKind.GLOSSARY)).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+        assertThat(ArtifactReadService.notHeldDetail(PACK, ArtifactKind.GLOSSARY, "ghost"))
+                .isEqualTo("glossary context `ghost` is not held");
+        assertThat(ArtifactReadService.notHeldDetail(PACK, ArtifactKind.SKILL, "ghost"))
+                .isEqualTo("Pack pack-a has no skill ghost.");
+        ArtifactReadService withEdges = referenceFixture(() -> D1);
+        assertThatThrownBy(() -> withEdges.references(PACK, "glossary", "ghost"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND);
+                    assertThat(refused.getMessage()).isEqualTo("glossary context `ghost` is not held");
+                });
     }
 
     @Test
@@ -1173,6 +1218,24 @@ class ArtifactReadServiceTest {
                 .form(SkillForm.PROMPT)
                 .bodyPath(Optional.of(id + ".skill.md"))
                 .body(Optional.of("Goal: land it.\n"))
+                .build();
+    }
+
+    private static GlossaryContext glossary(String id) {
+        return GlossaryContext.builder()
+                .id(new GlossaryContextIdentifier(id))
+                .packId(HOLDER)
+                .name("Spec Kitty core")
+                .description("The core vocabulary.")
+                .term(new GlossaryTerm(
+                        new TermIdentifier("mission"),
+                        "mission",
+                        "A unit of work.",
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        TermStatus.ACTIVE,
+                        List.of()))
                 .build();
     }
 

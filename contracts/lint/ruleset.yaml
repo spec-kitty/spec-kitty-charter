@@ -308,6 +308,7 @@ rules:
               - assets
               - asset
               - skills
+              - term
               - mission-type
               - step
               - step-contract

@@ -59,24 +59,27 @@ Feature: An unexpected failure is refused with internal_error on every operation
     And the problem code is "internal_error"
 
     Examples:
-      | operation              | path                                                 |
-      | getServiceInfo         | /info                                                |
-      | getOffering            | /offering                                            |
-      | getPack                | /packs/qa                                            |
-      | listPackArtifacts      | /packs/qa/artifacts                                  |
-      | getPackArtifact        | /packs/qa/artifacts/directive/D                      |
-      | listArtifactReferences | /packs/qa/artifacts/directive/D/references           |
-      | getPackAgentProfile    | /packs/qa/artifacts/agent_profile/p                  |
-      | listPackAssets         | /packs/qa/artifacts/asset                            |
-      | getPackAsset           | /packs/qa/artifacts/asset/a                          |
-      | getPackAssetPayload    | /packs/qa/artifacts/asset/a/payload                  |
-      | listPackSkills         | /packs/qa/artifacts/skill                            |
-      | getPackSkill           | /packs/qa/artifacts/skill/s                          |
-      | getPackMissionType     | /packs/qa/artifacts/mission_type/m                   |
-      | getPackMissionStep     | /packs/qa/artifacts/mission_type/m/steps/s           |
-      | getPackMissionSkeleton | /packs/qa/artifacts/mission_type/m/skeletons/spec.md |
-      | listPackPresets        | /packs/qa/presets                                    |
-      | getPackPreset          | /packs/qa/presets/team                               |
+      | operation                | path                                                 |
+      | getServiceInfo           | /info                                                |
+      | getOffering              | /offering                                            |
+      | getPack                  | /packs/qa                                            |
+      | listPackArtifacts        | /packs/qa/artifacts                                  |
+      | getPackArtifact          | /packs/qa/artifacts/directive/D                      |
+      | listArtifactReferences   | /packs/qa/artifacts/directive/D/references           |
+      | getPackAgentProfile      | /packs/qa/artifacts/agent_profile/p                  |
+      | listPackAssets           | /packs/qa/artifacts/asset                            |
+      | getPackAsset             | /packs/qa/artifacts/asset/a                          |
+      | getPackAssetPayload      | /packs/qa/artifacts/asset/a/payload                  |
+      | listPackSkills           | /packs/qa/artifacts/skill                            |
+      | getPackSkill             | /packs/qa/artifacts/skill/s                          |
+      | listPackGlossaryContexts | /packs/qa/artifacts/glossary                         |
+      | getPackGlossaryContext   | /packs/qa/artifacts/glossary/g                       |
+      | getPackGlossaryTerm      | /packs/qa/artifacts/glossary/g/terms/t               |
+      | getPackMissionType       | /packs/qa/artifacts/mission_type/m                   |
+      | getPackMissionStep       | /packs/qa/artifacts/mission_type/m/steps/s           |
+      | getPackMissionSkeleton   | /packs/qa/artifacts/mission_type/m/skeletons/spec.md |
+      | listPackPresets          | /packs/qa/presets                                    |
+      | getPackPreset            | /packs/qa/presets/team                               |
 
   Scenario Outline: <operation> of a stored activation that fails unexpectedly is 500 internal_error
     Given the activation "a-1" holds:

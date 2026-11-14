@@ -114,6 +114,12 @@ files:
   - AssetExecutable.yaml
   - AssetList.yaml
   - AssetSummary.yaml
+  - GlossaryAppliesTo.yaml
+  - GlossaryContext.yaml
+  - GlossaryContextList.yaml
+  - GlossaryContextSummary.yaml
+  - GlossaryContextTerm.yaml
+  - GlossaryTerm.yaml
   - Skill.yaml
   - SkillExpansion.yaml
   - SkillInvocation.yaml

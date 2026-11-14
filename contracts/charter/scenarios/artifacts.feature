@@ -1,7 +1,7 @@
 @contract @artifacts
 Feature: A pack's artifacts are read through one generic list and one generic item
   A client lists a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm,
-  toolguide, procedure, asset, skill and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
+  toolguide, procedure, asset, skill, glossary and agent_profile) as summaries, filtered by an optional kind and paged with the shared page information
   and first/next links (FR-003), and reads one artifact in a closed envelope that holds exactly the
   member its kind names (FR-004). The list is ordered by the served-kind order, then by id in
   code-point order, and its cursor is a position: a page holds the artifacts strictly after it. An
@@ -330,6 +330,58 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the field at "/items/5/id" is "land-pr"
     And the field at "/items/6/id" is "status"
 
+  Scenario: A list filtered by glossary lists the pack's glossary contexts after its skills, each titled by its name
+    Given the org pack "qa" with the file "glossaries/spec-kitty-core.glossary.yaml":
+      """
+      schema_version: '1.0'
+      id: spec-kitty-core
+      name: Spec Kitty core
+      description: Canonical Spec Kitty terminology.
+      terms:
+        - id: mission
+          name: mission
+          definition: A unit of planned work.
+          status: active
+      """
+    And the org pack "qa" with the file "skills/status.skill.yaml":
+      """
+      schema_version: '1.0'
+      id: status
+      title: Show the status
+      description: Use to see where a mission stands.
+      form: wrapper
+      expands_to:
+        target: cli:spec-kitty status
+      """
+    When I GET "/packs/qa/artifacts?kind=glossary"
+    Then the response status is 200
+    And the response header "Charter-Source-Fingerprint" appears once
+    And the response body is:
+      """
+      {
+        "items": [
+          {"kind": "glossary", "id": "spec-kitty-core", "title": "Spec Kitty core", "_links": {"self": {"href": "/api/v1/packs/qa/artifacts/glossary/spec-kitty-core"}}}
+        ],
+        "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
+        "_links": {
+          "self": {"href": "/api/v1/packs/qa/artifacts?kind=glossary"},
+          "first": {"href": "/api/v1/packs/qa/artifacts?kind=glossary"}
+        }
+      }
+      """
+    And following the link "self" of every element of "items" answers 200
+    When I GET "/packs/qa/artifacts?pageSize=50"
+    Then the response status is 200
+    And the field at "/items/5/kind" is "skill"
+    And the field at "/items/6/kind" is "glossary"
+    And the field at "/items/6/id" is "spec-kitty-core"
+    When I GET "/packs/qa/artifacts/glossary/spec-kitty-core/references"
+    Then the response status is 200
+    When I GET "/packs/qa/artifacts/glossary/nothing/references"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    And the field at "/detail" is "glossary context `nothing` is not held"
+
   Scenario: The references of an agent profile are the edges its pack writes from it, each resolved through the compose
     Given the org pack "qa" with the file "agent_profiles/jenny.agent.yaml":
       """
@@ -378,7 +430,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     When I GET "/packs/qa/artifacts?kind=<kind>"
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, asset, skill, agent_profile, mission_type or mission_step_contract."
+    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, asset, skill, glossary, agent_profile, mission_type or mission_step_contract."
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:

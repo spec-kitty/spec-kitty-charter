@@ -1,0 +1,67 @@
+title: GlossaryContext
+description: >-
+  One glossary context of a Charter Pack (glossaries/<id>.glossary.yaml, URN glossary_context:<id>; ADR-0049 decisions
+  1 to 6), as the pack declares it, in camel case, with every term in authored order. It is answered in the Artifact
+  envelope's member glossary by its own literal read (getPackGlossaryContext), never by the templated item read. One
+  term is read alone at …/glossary/{contextId}/terms/{termId} (getPackGlossaryTerm), which the envelope's templated link
+  term leads to.
+type: object
+additionalProperties: false
+required:
+  - schemaVersion
+  - id
+  - name
+  - description
+  - terms
+properties:
+  schemaVersion:
+    type: string
+    description: The schema version the glossary file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.schemaVersion
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The context's identity within its pack, the file stem.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.id
+  name:
+    type: string
+    minLength: 1
+    description: The context's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.name
+  description:
+    type: string
+    minLength: 1
+    description: Where the context applies, which becomes Contextive's domain vision statement.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.description
+  tags:
+    type: array
+    minItems: 1
+    description: The context's tags, in authored order; absent when the file states none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.tags
+  appliesTo:
+    $ref: GlossaryAppliesTo.yaml
+  terms:
+    type: array
+    minItems: 1
+    description: Every term of the context, in authored order.
+    items:
+      $ref: GlossaryContextTerm.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.terms
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+  symbol: GlossaryContext

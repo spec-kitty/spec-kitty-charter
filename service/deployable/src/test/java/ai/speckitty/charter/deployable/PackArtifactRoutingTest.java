@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.artifacts.infra.api.AssetsController;
+import ai.speckitty.charter.artifacts.infra.api.GlossariesController;
 import ai.speckitty.charter.artifacts.infra.api.SkillsController;
 import ai.speckitty.charter.packs.infra.api.ArtifactController;
 import ai.speckitty.charter.packs.infra.api.PackRegistrationController;
@@ -19,21 +20,24 @@ import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * The routing of the pack tree's literal asset and skill paths beside the templated artifact paths, through the whole
- * service (slice A2, ADR-0074 decisions 10 and 11). The contract maps the literal {@code …/artifacts/asset},
- * {@code …/asset/{artifactId}}, {@code …/asset/{artifactId}/payload}, {@code …/artifacts/skill} and
- * {@code …/skill/{artifactId}} (GETs of the artifacts edge) over URLs the templated {@code …/{kind}/{artifactId}} and
+ * The routing of the pack tree's literal asset, skill and glossary paths beside the templated artifact paths, through
+ * the whole service (slice A2 and #106, ADR-0074 decisions 10 and 11). The contract maps the literal
+ * {@code …/artifacts/asset}, {@code …/asset/{artifactId}}, {@code …/asset/{artifactId}/payload},
+ * {@code …/artifacts/skill}, {@code …/skill/{artifactId}}, {@code …/artifacts/glossary}, {@code …/glossary/{contextId}}
+ * and {@code …/glossary/{contextId}/terms/{termId}} (GETs of the artifacts edge) over URLs the templated
+ * {@code …/{kind}/{artifactId}} and
  * {@code …/{kind}/{artifactId}/references} of the packs slice also match. Spring prefers the literal pattern for the
  * method it maps, so:
  *
  * <ul>
- *   <li>a GET on an asset or a skill reaches its literal read, never the templated {@code getPackArtifact}, which
- *       refuses both kinds;
+ *   <li>a GET on an asset, a skill or a glossary context reaches its literal read, never the templated
+ *       {@code getPackArtifact}, which refuses the three kinds;
  *   <li>the {@code /references} of every kind, an asset and a skill included, stays on {@code listArtifactReferences}:
  *       no literal path ends in {@code /references};
  *   <li>a payload and a references read are told apart by their last segment, so an asset whose id is
  *       {@code payload} or {@code references} is read like any other;
- *   <li>a DELETE on an asset or a skill stays on the generic removal, which keeps its own kind set (research R14).
+ *   <li>a DELETE on an asset, a skill or a glossary context stays on the generic removal, which keeps its own kind set
+ *       (research R14).
  * </ul>
  *
  * <p>The handler is asked of the request mapping, so no filter, interceptor or pack content answers first. The
@@ -87,6 +91,25 @@ class PackArtifactRoutingTest {
     }
 
     @Test
+    void aGetOnAGlossaryContextOrATermReachesItsLiteralReadAndNotTheGenericRead() throws Exception {
+        assertRoutes(
+                "GET",
+                List.of(
+                        new Route("glossary", GlossariesController.class, "listPackGlossaryContexts"),
+                        new Route("glossary/spec-kitty-core", GlossariesController.class, "getPackGlossaryContext"),
+                        new Route(
+                                "glossary/spec-kitty-core/terms/mission",
+                                GlossariesController.class,
+                                "getPackGlossaryTerm"),
+                        new Route("glossary/references", GlossariesController.class, "getPackGlossaryContext"),
+                        new Route("glossary/terms", GlossariesController.class, "getPackGlossaryContext"),
+                        new Route(
+                                "glossary/spec-kitty-core/references",
+                                ArtifactController.class,
+                                "listArtifactReferences")));
+    }
+
+    @Test
     void aGetOnAnotherKindStillReachesTheGenericRead() throws Exception {
         assertRoutes(
                 "GET",
@@ -128,11 +151,12 @@ class PackArtifactRoutingTest {
     }
 
     @Test
-    void aDeleteOnAnAssetOrASkillStaysOnTheGenericRemoval() throws Exception {
+    void aDeleteOnAnAssetASkillOrAGlossaryContextStaysOnTheGenericRemoval() throws Exception {
         assertRoutes(
                 "DELETE",
                 List.of(
                         new Route("asset/run", PackRegistrationController.class, "deletePackArtifact"),
-                        new Route("skill/land-pr", PackRegistrationController.class, "deletePackArtifact")));
+                        new Route("skill/land-pr", PackRegistrationController.class, "deletePackArtifact"),
+                        new Route("glossary/spec-kitty-core", PackRegistrationController.class, "deletePackArtifact")));
     }
 }
