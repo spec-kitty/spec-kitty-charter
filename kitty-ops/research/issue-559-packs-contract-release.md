@@ -15,8 +15,11 @@ code, schema, contract operation or production behavior.
 Asked before any workflow was built, through the orchestrator: the tag name (`contract-packs-v*` beside
 `contract-charter-v*`, recommended), the version start (0.1.0 under ADR-0022 by analogy, recommended), the tag
 protection (#196's ruleset widened to `contract-packs-v*`, recommended), and a minimal gate (the tag and the CHANGELOG
-top heading agree; no schema-diff gate). The answer is recorded in the PR body. The build follows the recommendation
-and is one constant (`ReleaseGate.PACKS_TAG_PREFIX`) plus the workflow's tag filter if the answer differs.
+top heading agree; no schema-diff gate).
+
+**Ruling (operator, 2026-11-14):** A1 `contract-packs-v*`; B1 start at 0.1.0 under ADR-0022, recorded as a note in the
+ADR; C1 #196's tag ruleset extended to `contract-packs-v*` (the operator applies the setting); D minimal gate, no
+schema-diff gate now. The build matched the recommendation, so no code changed.
 
 ## Grounding
 

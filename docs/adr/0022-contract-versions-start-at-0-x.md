@@ -2,7 +2,7 @@
 title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable"
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-24'
 type: ADR
@@ -142,6 +142,17 @@ cutover milestone.
 The prefix names the API generation that 1.0.0 will stabilize, not the release number, so it does
 not change at 1.0.0. Rejected: `/api/v0` for 0.x, which would make 1.0.0 break every path for no
 change in behavior.
+
+### Note, 2026-11-14 (operator ruling on #559): the packs contract is a second 0.x line
+
+The packs contract (`contracts/packs/`: `file-kinds.yaml`, the pack schemas and the classifier conformance cases) is
+released on its own line, tagged `contract-packs-v<version>` beside `contract-charter-v<version>`. It follows D1 and D2
+by analogy: its first release is 0.1.0, and while its major is 0 a minor may break, with a `### Breaking` subsection,
+and a patch may not. Its version is the top heading of `contracts/packs/CHANGELOG.md`, its only carrier. Its gate is
+minimal: the tag and that heading name one released version, and the heading, order and Breaking rules hold (the
+release gate's rule 12). It has no schema-diff check yet. A tag ruleset on `contract-packs-v*` limits who can publish,
+as #196 does for `contract-charter-v*`. The release procedure is in `contracts/packs/README.md`, and how a consumer
+pins it is in [Pin the packs contract](/guides/pin-the-packs-contract/).
 
 ## Consequences
 
