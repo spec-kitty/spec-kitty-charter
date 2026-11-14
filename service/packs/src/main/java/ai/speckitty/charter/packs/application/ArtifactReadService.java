@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
@@ -188,7 +189,7 @@ public final class ArtifactReadService {
      */
     public static String notHeldDetail(PackIdentifier pack, ArtifactKind kind, String id) {
         if (kind == ArtifactKind.GLOSSARY) {
-            return "glossary context `" + id + "` is not held";
+            return TermHolder.contextNotHeld(id);
         }
         return "Pack " + pack.value() + " has no " + kind.token() + " " + id + ".";
     }

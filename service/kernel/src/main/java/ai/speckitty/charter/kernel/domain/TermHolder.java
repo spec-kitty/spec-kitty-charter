@@ -15,4 +15,27 @@ public interface TermHolder {
      * @return {@code true} when it holds a term of that id
      */
     boolean holdsTerm(String termId);
+
+    /**
+     * The detail of the refusal of a glossary context no pack, or no merge, holds: one text for the pack read and the
+     * read under an activation (ruling {@code DM-01M7B1Q4BPQB95EVQBRWN4Q4F8}), naming only the id the request sent.
+     *
+     * @param contextId the context's id, as the request names it
+     * @return {@code glossary context `<contextId>` is not held}
+     */
+    static String contextNotHeld(String contextId) {
+        return "glossary context `" + contextId + "` is not held";
+    }
+
+    /**
+     * The detail of the refusal of a term its context does not hold: one text for the pack read and the read under an
+     * activation (ruling {@code DM-01M7B1Q4BPQB95EVQBRWN4Q4F8}), naming only the ids the request sent.
+     *
+     * @param contextId the context's id, as the request names it
+     * @param termId the term's id, as the request names it
+     * @return {@code term `<termId>` is not held in glossary context `<contextId>`}
+     */
+    static String termNotHeld(String contextId, String termId) {
+        return "term `" + termId + "` is not held in glossary context `" + contextId + "`";
+    }
 }

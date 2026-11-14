@@ -1027,7 +1027,7 @@ public class EffectiveReadService {
             throw new IllegalStateException(asked + ": the winner " + ref.urn() + " holds no terms.");
         }
         if (!context.holdsTerm(termId)) {
-            throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, termNotHeld(contextId, termId));
+            throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, TermHolder.termNotHeld(contextId, termId));
         }
         String etag = EffectiveTag.term(
                         stored.revision(), session.snapshot(), new EffectiveTag.TermQuery(contextId, termId))
@@ -1103,17 +1103,11 @@ public class EffectiveReadService {
      */
     private static CharterRefusal notHeld(ArtifactKind kind, String artifactId) {
         if (kind == ArtifactKind.GLOSSARY) {
-            return new CharterRefusal(
-                    RefusalCode.ARTIFACT_NOT_FOUND, "glossary context `" + artifactId + "` is not held");
+            return new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, TermHolder.contextNotHeld(artifactId));
         }
         return new CharterRefusal(
                 RefusalCode.ARTIFACT_NOT_FOUND,
                 "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
-    }
-
-    /** The detail of a term the winning context does not hold, as the pack read names it (the same ruling). */
-    private static String termNotHeld(String contextId, String termId) {
-        return "term `" + termId + "` is not held in glossary context `" + contextId + "`";
     }
 
     private static CharterRefusal notServed(String kindToken) {

@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>The pack and the context are judged by the packs slice, in that order, with its refusals unchanged. The term is
  * looked up in the verified context ({@link GlossaryContext#term}), so it is of the same inputs; a term the context
- * does not hold is {@code artifact_not_found} with {@link GlossaryReads#termNotHeld}'s detail.
+ * does not hold is {@code artifact_not_found} with {@link TermHolder#termNotHeld}'s detail.
  */
 @Component
 public final class PacksGlossaries implements GlossaryReads {
@@ -87,8 +88,8 @@ public final class PacksGlossaries implements GlossaryReads {
         ConsistentRead.Verified<ForeignArtifactRead.Foreign> verified = verifiedContext(pack, contextId);
         GlossaryContext context = GlossaryContext.class.cast(verified.value().artifact());
         GlossaryTerm term = heldTerm(context, termId)
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.ARTIFACT_NOT_FOUND, GlossaryReads.termNotHeld(contextId, termId)));
+                .orElseThrow(() ->
+                        new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, TermHolder.termNotHeld(contextId, termId)));
         return new TermRead(
                 termOf(context, term),
                 context.localId(),
