@@ -607,7 +607,8 @@ public class EffectiveReadService {
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winner, or {@code NotModified} when the header matches the tag of this representation
      * @throws CharterRefusal with {@code activation_not_found}; {@code kind_not_found} when the packs slice does not list
-     *     the kind, or lists one the activation does not resolve (an asset), naming its literal read; {@code pack_unreadable} when a pack the activation names is no longer configured, or the winner's
+     *     the kind, or lists one the activation does not resolve (an asset), naming its literal read;
+     *     {@code pack_unreadable} when a pack the activation names is no longer configured, or the winner's
      *     pack cannot read the artifact, or as the merge refuses; {@code artifact_not_found} when no pack of the closure
      *     holds the artifact; {@code stale_input} when the packs changed since the session was verified
      */
@@ -632,8 +633,8 @@ public class EffectiveReadService {
      * The winners of one kind under an activation, in id order (research R2, R3): {@code listEffectiveSkills},
      * {@code listEffectiveAssets} and {@code listEffectiveGlossaryContexts}. Each is the version the layer merge keeps
      * across the levels of the closure, with the pack and level that hold it and its policy, and no state; a skill's and
-     * a glossary context's state is its own read's, and an asset has none. The whole set is answered, unpaged, from one {@link PacksSession}, with no in-force resolution; what each
-     * winner's pack stores is the packs slice's to read, against the source fingerprint of the answer.
+     * a glossary context's state is its own read's, and an asset has none. The whole set is answered, unpaged, from one
+     * {@link PacksSession}, with no in-force resolution; what each winner's pack stores is the packs slice's to read, against the source fingerprint of the answer.
      *
      * @param id the activation's id
      * @param kind {@code skill}, {@code asset} or {@code glossary}
@@ -663,6 +664,46 @@ public class EffectiveReadService {
         return new Read.Found<>(
                 new HeldWinners(stored, closure.fingerprint(), closure.closureFingerprint(), session.heldWinners(kind)),
                 etag);
+    }
+
+    /**
+     * The glossary contexts in force under an activation (ADR-0076 decisions 1, 2 and 8): the vocabulary reads'
+     * {@code getActivationVocabularyTerms}, {@code getActivationVocabularyContextive} and
+     * {@code getActivationVocabularyTaboos}. Each is the winning copy of a {@code glossary} context whose state in the
+     * effective set is {@link State#ACTIVE}, with the pack and level that hold it; a context the document deselects,
+     * denies or does not select is not listed, and a context overrides across levels whole, so no copy the winner
+     * replaced is named. The contexts are filtered from the one effective set the list read builds
+     * ({@link #list}), in id order, from one {@link PacksSession}; what each winner's pack stores is the packs slice's
+     * to read, against the source fingerprint of the answer.
+     *
+     * <p>The effective set is built before {@code If-None-Match} is compared, so the closure's refusals (such as
+     * {@code pack_sibling_conflict}) are the answer whatever the header says (decision 8).
+     *
+     * @param id the activation's id
+     * @param read {@link EffectiveTag.Read#VOCABULARY_TERMS}, {@link EffectiveTag.Read#VOCABULARY_CONTEXTIVE} or
+     *     {@link EffectiveTag.Read#VOCABULARY_TABOOS}: the read whose tag the answer carries
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the contexts in force, or {@code NotModified} when the header matches the tag of the read
+     * @throws IllegalArgumentException when {@code read} is not a vocabulary read
+     * @throws CharterRefusal with {@code activation_not_found}, or as {@link #list} does
+     */
+    public Read<HeldWinners> contextsInForce(ActivationId id, EffectiveTag.Read read, @Nullable String ifNoneMatch) {
+        Objects.requireNonNull(read, "read");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        EffectiveSet set = effectiveSet(stored, session);
+        String etag = EffectiveTag.vocabulary(read, stored.revision(), closure).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        List<EffectiveHeldWinner> inForce = set.artifacts().stream()
+                .filter(artifact -> artifact.kind() == ArtifactKind.GLOSSARY && artifact.state() == State.ACTIVE)
+                .map(artifact ->
+                        new EffectiveHeldWinner(artifact.ref(), artifact.packId(), artifact.level(), artifact.policy()))
+                .toList();
+        return new Read.Found<>(
+                new HeldWinners(stored, closure.fingerprint(), closure.closureFingerprint(), inForce), etag);
     }
 
     /**

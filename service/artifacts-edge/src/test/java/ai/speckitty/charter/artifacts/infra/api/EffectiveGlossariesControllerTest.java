@@ -13,6 +13,7 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Held;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Outcome;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Scope;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Words;
+import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.artifacts.application.EffectiveGlossaryReads;
 import ai.speckitty.charter.artifacts.application.GlossaryReads;
 import ai.speckitty.charter.artifacts.application.GlossaryView;
@@ -92,6 +93,12 @@ class EffectiveGlossariesControllerTest {
             public Outcome<GlossaryWinner> glossary(
                     String activationId, String contextId, @Nullable String ifNoneMatch) {
                 return outcome(ifNoneMatch, new GlossaryWinner(SCOPE, facts, entity(contextId)));
+            }
+
+            @Override
+            public Outcome<ContextsInForce> contextsInForce(
+                    String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no vocabulary is read here");
             }
 
             @Override

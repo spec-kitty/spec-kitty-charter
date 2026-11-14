@@ -13,6 +13,7 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Outcome;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Scope;
 import ai.speckitty.charter.artifacts.application.AssetReads;
 import ai.speckitty.charter.artifacts.application.AssetView;
+import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.artifacts.application.EffectiveAssetReads;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -104,6 +105,12 @@ class EffectiveAssetsControllerTest {
             public Outcome<GlossaryWinner> glossary(
                     String activationId, String contextId, @Nullable String ifNoneMatch) {
                 throw new UnsupportedOperationException("no glossary is read here");
+            }
+
+            @Override
+            public Outcome<ContextsInForce> contextsInForce(
+                    String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no vocabulary is read here");
             }
 
             @Override

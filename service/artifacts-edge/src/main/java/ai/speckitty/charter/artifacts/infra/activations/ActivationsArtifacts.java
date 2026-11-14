@@ -7,8 +7,10 @@ import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
+import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -88,6 +90,21 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
         return outcome(
                 effective.glossaryTerm(new ActivationId(activationId), contextId, termId, ifNoneMatch),
                 ActivationsArtifacts::glossaryWinner);
+    }
+
+    @Override
+    public Outcome<ContextsInForce> contextsInForce(
+            String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch) {
+        EffectiveTag.Read read = switch (vocabulary) {
+            case TERMS -> EffectiveTag.Read.VOCABULARY_TERMS;
+            case CONTEXTIVE -> EffectiveTag.Read.VOCABULARY_CONTEXTIVE;
+            case TABOOS -> EffectiveTag.Read.VOCABULARY_TABOOS;
+        };
+        return outcome(
+                effective.contextsInForce(new ActivationId(activationId), read, ifNoneMatch),
+                held -> new ContextsInForce(
+                        scope(held.stored(), held.governanceFingerprint(), held.sourceFingerprint()),
+                        held.winners().stream().map(ActivationsArtifacts::held).toList()));
     }
 
     @Override

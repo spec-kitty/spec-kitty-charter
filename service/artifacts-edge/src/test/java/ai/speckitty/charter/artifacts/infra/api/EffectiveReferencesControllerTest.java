@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Held;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Scope;
+import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.artifacts.application.EffectiveReferenceReads;
 import ai.speckitty.charter.artifacts.application.ReferenceReads;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -105,6 +106,12 @@ class EffectiveReferencesControllerTest {
         @Override
         public Outcome<GlossaryWinner> glossary(String activationId, String contextId, @Nullable String ifNoneMatch) {
             throw new UnsupportedOperationException("no glossary is read here");
+        }
+
+        @Override
+        public Outcome<ContextsInForce> contextsInForce(
+                String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch) {
+            throw new UnsupportedOperationException("no vocabulary is read here");
         }
 
         @Override

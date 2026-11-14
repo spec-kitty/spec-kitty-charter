@@ -249,6 +249,12 @@ class EffectiveGlossaryReadsTest {
         }
 
         @Override
+        public Outcome<ContextsInForce> contextsInForce(
+                String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch) {
+            throw new UnsupportedOperationException("no vocabulary is read here");
+        }
+
+        @Override
         public Outcome<GlossaryWinner> glossaryTerm(
                 String activationId, String contextId, String termId, @Nullable String ifNoneMatch) {
             asked.add("term " + activationId + " " + contextId + " " + termId + " " + ifNoneMatch);
