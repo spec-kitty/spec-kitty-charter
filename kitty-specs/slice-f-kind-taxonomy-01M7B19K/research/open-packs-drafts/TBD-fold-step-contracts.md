@@ -51,7 +51,9 @@ in the same pack. All 28 do (checked against `1692a3b`). Append the contract's `
      foundation at `1692a3b` (the charter's example pack reclassified both as paradigms; open-packs has not, and this
      draft does not).
 6. **Every candidate needs a `scope` edge** from the step's `action:<type>/<step>` node. 80 candidate uses lack one;
-   draft [TBD-delegation-scope-edges](TBD-delegation-scope-edges.md) adds them. Land both together, or that draft first.
+   draft [TBD-delegation-scope-edges](TBD-delegation-scope-edges.md) adds them, and it needs the action nodes of draft
+   [TBD-step-requires-edges](TBD-step-requires-edges.md). **This draft depends on both: they must be in the tree by
+   its pull request, which also moves the pin with draft TBD-validator-and-docs.**
 7. **The one gate is not a substep.** The `review` contract's `gates[]` entry (`in_progress->for_review`,
    `spec-kitty-pre-review`, `fail_open: true`) becomes the guard of draft
    [TBD-pre-review-guard](TBD-pre-review-guard.md). Fold the review contract's `steps[]` only.

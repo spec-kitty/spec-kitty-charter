@@ -27,7 +27,14 @@ later.
 meanwhile; the drift watch shows the gap (#509).
 
 - **Before the pin moves:** drafts TBD-step-requires-edges, TBD-delegation-scope-edges and TBD-pre-review-guard are
-  additive and valid under the current pin (`17ce3f9`). They may land first, in any order.
+  additive and valid under the current pin (`17ce3f9`), so they may land first, with one dependency:
+  - **TBD-delegation-scope-edges lands with or after TBD-step-requires-edges.** 18 of its edges start from
+    `action:qa/<step>` nodes, and only TBD-step-requires-edges adds them. Alone, it fails `validate-packs.sh`
+    (`--cross-pack`: the source resolves to no node).
+  - **TBD-pre-review-guard is independent** and may land at any time.
+- **By the pin move, TBD-step-requires-edges and TBD-delegation-scope-edges must be in the tree** (or in the same
+  pull request): the new pin refuses an unlinked step (`mission_step_unlinked`) and an unscoped candidate
+  (`substep_delegation_unscoped`).
 - **With the pin move, in one pull request:** TBD-fold-step-contracts and TBD-validator-and-docs. The current pin's
   `mission-type.schema.json` refuses `substeps`, and the new pin refuses every step-contract file, so neither half
   passes CI alone.
@@ -45,7 +52,8 @@ not touched):
 - `census-check.py` judged that census and the tree against the slice F model: **0 refused edges, 0 unlinked steps,
   0 unresolved candidates, 0 unscoped candidates, 0 retired files**, and 0 schema violations of the 6 mission types,
   the graph shards and the fragments against the build's `mission-type`, `graph-shard` and `org-fragment` schemas.
-  On the untouched checkout the same check reports 26 unlinked steps and 30 retired files; on a copy with one scope
+  On the untouched checkout the same check reports 26 unlinked steps, 30 retired files and 42 schema violations
+  (foundation 28, writing 14: the nodes of the 2 `mission_step_contract.graph.yaml` fragments); on a copy with one scope
   edge removed and a `procedure -requires-> action` edge added it reports 1 unscoped candidate and 1 refused edge.
 - Open-packs' own `scripts/ci/validate-packs.sh` and `--cross-pack` passed against the build's `contracts/packs`.
 

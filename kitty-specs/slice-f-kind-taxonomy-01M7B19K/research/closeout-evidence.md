@@ -11,7 +11,12 @@ Every `.feature` path is under `contracts/charter/scenarios/`, every planted pac
 ## The pull request body
 
 ```text
-Closes #112, #514, #520, #515, #533, #350.
+Closes #112
+Closes #514
+Closes #520
+Closes #515
+Closes #533
+Closes #350
 Refs #513 (narrowed, stays open), #94, #537, #49, #154, #337, #355, #417, #433, #447, #559.
 ```
 
@@ -87,8 +92,8 @@ Tick each child of slice F, and close #537 when the pull request merges, since e
 - [x] #515 each relation's endpoint kinds
 - [x] #533 the step-contract read, closed as moot
 - [x] #350 refuse a procedure edge to `action:` (included by ruling `DM-01M7B1Z30AV54T9WM2WR61EK30`)
-- [ ] open-packs follow-up, not a charter child: open-packs#TBD-fold-step-contracts, #TBD-step-requires-edges,
-  #TBD-delegation-scope-edges, #TBD-pre-review-guard and #TBD-validator-and-docs (drafts in
+- [ ] open-packs follow-up, not a charter child: open-packs#TBD-fold-step-contracts, open-packs#TBD-step-requires-edges,
+  open-packs#TBD-delegation-scope-edges, open-packs#TBD-pre-review-guard and open-packs#TBD-validator-and-docs (drafts in
   `research/open-packs-drafts/`), which the orchestrator files in `spec-kitty/spec-kitty-open-packs`
 
 ## Open-packs follow-up and its proof
