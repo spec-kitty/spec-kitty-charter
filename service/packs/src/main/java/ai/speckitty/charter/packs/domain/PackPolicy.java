@@ -77,6 +77,12 @@ public final class PackPolicy {
             "a guard or a lifecycle is not an authored edge endpoint until its contract set lands: ";
 
     /**
+     * The finding text of an authored or registered edge that names a term anywhere but as the target of a
+     * {@code vocabulary} edge (ADR-0049 decision 4; operator ruling of 2026-11-14), before the edge.
+     */
+    public static final String TERM_ENDPOINT = "a term is an edge endpoint only as the target of a vocabulary edge: ";
+
+    /**
      * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
      * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
      * a tension back with it.
@@ -802,7 +808,7 @@ public final class PackPolicy {
         if (strengthProblem.isPresent()) {
             return origin + ": " + strengthProblem.get();
         }
-        Object endpoints = endpoints(raw, origin);
+        Object endpoints = endpoints(raw, origin, relation);
         return endpoints instanceof Endpoints bound
                 ? new Relationship(
                         bound.from(),
@@ -823,7 +829,7 @@ public final class PackPolicy {
         if (raw.impacts().isPresent()) {
             return origin + ": an " + TENSION + " edge has no 'impacts'";
         }
-        Object endpoints = endpoints(raw, origin);
+        Object endpoints = endpoints(raw, origin, Optional.empty());
         return endpoints instanceof Endpoints bound
                 ? new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())
                 : endpoints;
@@ -832,8 +838,12 @@ public final class PackPolicy {
     /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */
     private record Endpoints(Urn from, Optional<String> fromPack, Urn to, Optional<String> toPack) {}
 
-    /** The endpoints of an edge, or the finding text for the first that does not bind. */
-    private static Object endpoints(RawEdge raw, String origin) {
+    /**
+     * The endpoints of an edge, or the finding text for the first that does not bind.
+     *
+     * @param relation the edge's relation type; empty for a tension
+     */
+    private static Object endpoints(RawEdge raw, String origin, Optional<RelationType> relation) {
         Optional<PackQualifiedReference> source = reference(raw.source());
         Optional<Urn> sourceUrn = source.flatMap(PackQualifiedReference::asUrn);
         if (sourceUrn.isEmpty()) {
@@ -855,6 +865,10 @@ public final class PackPolicy {
             if (!endpoint.kind().edgeTarget()) {
                 return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
             }
+        }
+        if (!sourceUrn.get().kind().edgeSource() || !targetUrn.get().kind().edgeTargetOf(relation)) {
+            return origin + ": " + TERM_ENDPOINT + "'" + raw.source() + "' " + raw.relation() + " '" + raw.target()
+                    + "'";
         }
         return new Endpoints(
                 sourceUrn.get(),

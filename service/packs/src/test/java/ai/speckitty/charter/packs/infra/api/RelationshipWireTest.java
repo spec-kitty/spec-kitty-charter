@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -47,5 +48,29 @@ class RelationshipWireTest {
                     assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refused.getMessage()).isEqualTo("to is longer than 255 characters.");
                 });
+    }
+
+    @Test
+    void aTermIsRegisteredOnlyAsTheTargetOfAVocabularyEdge() {
+        // Positive control: a term as the target of a vocabulary relationship is mapped, bare or pack-qualified.
+        Relationship valid = RelationshipWire.fromWire(
+                new RelationshipRegistration("agent_profile:p", "core::term:spec-kitty-core/mission", "vocabulary"));
+        assertThat(valid.to().toString()).isEqualTo("term:spec-kitty-core/mission");
+        assertThat(valid.toPack()).contains("core");
+
+        for (String[] refused : new String[][] {
+            {"term:g/t", "directive:D1", "requires"},
+            {"term:g/t", "glossary_context:g", "vocabulary"},
+            {"directive:D1", "term:g/t", "overrides"},
+            {"directive:D1", "core::term:g/t", "enhances"}
+        }) {
+            assertThatThrownBy(() ->
+                            RelationshipWire.fromWire(new RelationshipRegistration(refused[0], refused[1], refused[2])))
+                    .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                        assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                        assertThat(refusal.getMessage())
+                                .isEqualTo(PackPolicy.TERM_ENDPOINT + refused[0] + " " + refused[2] + " " + refused[1]);
+                    });
+        }
     }
 }

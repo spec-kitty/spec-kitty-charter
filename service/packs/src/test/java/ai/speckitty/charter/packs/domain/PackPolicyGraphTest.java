@@ -241,6 +241,36 @@ class PackPolicyGraphTest {
     }
 
     @Test
+    void aTermIsAnEdgeEndpointOnlyAsTheTargetOfAVocabularyEdge() {
+        // Positive control: a term as the target of a vocabulary edge binds, bare or pack-qualified.
+        GraphBuild valid = build(List.of(
+                edge("agent_profile:p", "term:spec-kitty-core/mission", "vocabulary", null),
+                edge("tactic:a", "rival::term:spec-kitty-core/mission", "vocabulary", null)));
+        assertThat(details(valid)).isEmpty();
+        assertThat(valid.graph().relationships())
+                .extracting(relationship -> relationship.to().toString())
+                .containsExactly("term:spec-kitty-core/mission", "term:spec-kitty-core/mission");
+
+        // A term as a source, or as the target of any other relation or of a tension, is a finding (ADR-0049 d4).
+        GraphBuild build = build(List.of(
+                edge("term:g/t", "directive:b", "requires", null),
+                edge("term:g/t", "glossary_context:g", "vocabulary", null),
+                edge("directive:b", "term:g/t", "overrides", null),
+                edge("tactic:a", "rival::term:g/t", "enhances", null),
+                edge("tactic:a", "term:g/t", "in_tension_with", null)));
+        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(build.graph().tensions()).isEmpty();
+        assertThat(details(build))
+                .containsExactly(
+                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'term:g/t' requires 'directive:b'",
+                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT
+                                + "'term:g/t' vocabulary 'glossary_context:g'",
+                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'directive:b' overrides 'term:g/t'",
+                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' enhances 'rival::term:g/t'",
+                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' in_tension_with 'term:g/t'");
+    }
+
+    @Test
     void aDerivedRelationAuthoredAsAnEdgeIsAFinding() {
         // implemented_by is derived from a guard's own field (ADR-0054 decision 3), never authored as an edge.
         GraphBuild build = build(List.of(edge("tactic:a", "asset:b", "implemented_by", null)));

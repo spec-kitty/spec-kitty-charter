@@ -26,6 +26,8 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -42,6 +44,8 @@ class VocabularyEqualityTest {
     private static final String TENSION_SPELLING = "in_tension_with";
     private static final Pattern ALTERNATION =
             Pattern.compile("^\\^(?:\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?)?\\(([a-z_|]+)\\):");
+    private static final Pattern TARGET_ONLY_PREFIX =
+            Pattern.compile("\\^\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?([a-z_]+):");
 
     private static JsonNode schema(String kind) throws IOException {
         try (InputStream in =
@@ -71,10 +75,18 @@ class VocabularyEqualityTest {
                 .toList());
     }
 
-    /** The node kinds an edge may name as source or target: guard and lifecycle wait for their contract set (#156). */
+    /** The node kinds an edge may name as target: guard and lifecycle wait for their contract set (#156). */
     private static Set<String> edgeTargetTokens() {
         return new TreeSet<>(Arrays.stream(NodeKind.values())
                 .filter(NodeKind::edgeTarget)
+                .map(NodeKind::token)
+                .toList());
+    }
+
+    /** The node kinds an edge may name as source: the edge targets less {@code term}, only ever a vocabulary target. */
+    private static Set<String> edgeSourceTokens() {
+        return new TreeSet<>(Arrays.stream(NodeKind.values())
+                .filter(NodeKind::edgeSource)
                 .map(NodeKind::token)
                 .toList());
     }
@@ -97,7 +109,7 @@ class VocabularyEqualityTest {
         JsonNode edge = defs.get("DRGEdge").get("properties");
         assertThat(alternation(edge.get("source").get("pattern").asString()))
                 .as("edge source")
-                .isEqualTo(edgeTargets);
+                .isEqualTo(edgeSourceTokens());
         assertThat(alternation(edge.get("target").get("pattern").asString()))
                 .as("edge target")
                 .isEqualTo(edgeTargets);
@@ -119,6 +131,50 @@ class VocabularyEqualityTest {
                 .as("file-kinds.yaml node_kinds, in the order of NodeKind")
                 .containsExactlyElementsOf(
                         Arrays.stream(NodeKind.values()).map(NodeKind::token).toList());
+    }
+
+    /**
+     * A kind an edge may name only as a target, {@code term}, is a target of {@code vocabulary} alone in both edge
+     * schemas, as in {@link NodeKind#edgeTargetOf}: the source alternation leaves it out, and one {@code if}/{@code
+     * then} branch per such kind binds its relation to {@code vocabulary}.
+     */
+    @ParameterizedTest
+    @CsvSource({"graph-shard,DRGEdge", "org-fragment,_OrgDRGEdge"})
+    void aTargetOnlyKindIsTheTargetOfAVocabularyEdgeAloneInEveryEdgeSchema(String kind, String def) throws IOException {
+        JsonNode edge = schema(kind).get("$defs").get(def);
+        Set<String> targetOnly = new TreeSet<>(edgeTargetTokens());
+        targetOnly.removeAll(edgeSourceTokens());
+
+        assertThat(targetOnly).as("the target-only kinds").containsExactly("term");
+        assertThat(alternation(
+                        edge.get("properties").get("source").get("pattern").asString()))
+                .as("edge source")
+                .isEqualTo(edgeSourceTokens());
+        assertThat(alternation(
+                        edge.get("properties").get("target").get("pattern").asString()))
+                .as("edge target")
+                .isEqualTo(edgeTargetTokens());
+        Set<String> branches = new TreeSet<>();
+        edge.get("allOf").forEach(branch -> {
+            String prefix = branch.get("if")
+                    .get("properties")
+                    .get("target")
+                    .get("pattern")
+                    .asString();
+            assertThat(branch.get("then")
+                            .get("properties")
+                            .get("relation")
+                            .get("const")
+                            .asString())
+                    .as("the relation of %s", prefix)
+                    .isEqualTo("vocabulary");
+            Matcher m = TARGET_ONLY_PREFIX.matcher(prefix);
+            assertThat(m.matches()).as("a kind prefix: %s", prefix).isTrue();
+            branches.add(m.group(1));
+        });
+        assertThat(branches)
+                .as("one vocabulary-only branch per target-only kind")
+                .isEqualTo(targetOnly);
     }
 
     // ---- fragment kinds ----------------------------------------------------------------------------

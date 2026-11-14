@@ -9,7 +9,7 @@
         "source": {
           "title": "Source",
           "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_context|term|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_context|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
         },
         "target": {
           "title": "Target",
@@ -53,6 +53,28 @@
         "source",
         "target",
         "relation"
+      ],
+      "allOf": [
+        {
+          "description": "A term is an edge endpoint only as the target of a vocabulary edge (ADR-0049 decision 4).",
+          "if": {
+            "properties": {
+              "target": {
+                "pattern": "^([a-z0-9][a-z0-9_-]*::)?term:"
+              }
+            },
+            "required": [
+              "target"
+            ]
+          },
+          "then": {
+            "properties": {
+              "relation": {
+                "const": "vocabulary"
+              }
+            }
+          }
+        }
       ],
       "title": "DRGEdge",
       "type": "object"
