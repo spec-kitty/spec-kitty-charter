@@ -1,0 +1,125 @@
+# Draft of slice F's contract shapes (planning artifact, not the served contract).
+# WP06 writes the real files under contracts/charter/; WP03 extends MissionStep; WP04 removes the step-contract shapes.
+openapi: 3.1.0
+info:
+  title: Slice F draft shapes
+  version: 0.0.0-draft
+paths:
+  /offering/kinds:
+    get:
+      operationId: getKindTaxonomy
+      summary: Read the kind taxonomy, every kind and every relation with the kinds it may connect.
+      description: >-
+        Static model data (R18, #112): the same answer whatever packs are configured. The ETag is the sha256 of
+        the served body (ContractETag pattern); If-None-Match answers NotModified. It reads no pack, so it carries
+        no source fingerprint (listed as an exception in the fingerprint lint rules). Charter-Contract-Version and
+        Charter-Worktree are declared on 200 and 304. Kinds are in NodeKind order, relations in RelationType order;
+        the tension row is in_tension_with with heldAs tension. Linked from the root and from Offering as kinds.
+      tags: [Offering]
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          schema: {type: string}
+      responses:
+        '200':
+          description: The kind taxonomy.
+          headers:
+            ETag: {schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/KindTaxonomy'}
+        '304': {description: Not modified.}
+        '401': {description: Unauthorized (common response).}
+        '403': {description: Forbidden (common response).}
+components:
+  schemas:
+    KindTaxonomy:
+      type: object
+      additionalProperties: false
+      required: [kinds, relations, _links]
+      properties:
+        kinds:
+          type: array
+          items: {$ref: '#/components/schemas/KindRow'}
+        relations:
+          type: array
+          items: {$ref: '#/components/schemas/RelationRow'}
+        _links:
+          type: object
+          description: self, offering.
+    KindRow:
+      type: object
+      additionalProperties: false
+      required: [kind, plural, artifact, activatable, authoredInGraphs]
+      properties:
+        artifacts: {type: object, description: 'Templated link /api/v1/packs/{packId}/artifacts?kind=<kind> for a served kind (Link, templated: true).'}
+        kind: {type: string, description: 'NodeKind token (ref NodeKind.yaml in the real contract).', x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java, symbol: NodeKind.token}}
+        plural: {type: string, x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java, symbol: NodeKind.plural}}
+        artifact: {type: boolean, description: 'False only for action, a node with no artifact.', x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java, symbol: NodeKind.artifactKind}}
+        activatable: {type: boolean, x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java, symbol: ArtifactKind.activatable}}
+        authoredInGraphs: {type: boolean, x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java, symbol: NodeKind.authoredInGraphs}}
+    RelationRow:
+      type: object
+      additionalProperties: false
+      required: [relation, directed, derived, endpoints]
+      properties:
+        heldAs: {type: string, enum: [relationship, tension], description: 'tension only for in_tension_with (ADR-0028).'}
+        relation: {type: string, description: 'Relation token (ref Relation.yaml in the real contract).', x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java, symbol: RelationType.token}}
+        directed: {type: boolean, x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java, symbol: RelationType.directionality}}
+        derived: {type: boolean, description: 'True for implemented_by: never authored.', x-source: {path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java, symbol: RelationType.derived}}
+        endpoints:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/EndpointPair'}
+    EndpointPair:
+      type: object
+      additionalProperties: false
+      required: [source, target]
+      properties:
+        source: {type: string, description: A kind token.}
+        target: {type: string, description: A kind token.}
+    # IC-03: added to the existing MissionStep read shape. The delegation components are the existing
+    # MissionStepDelegation / MissionStepDelegationCandidate, renamed MissionSubstepDelegation /
+    # MissionSubstepDelegationCandidate (keep id, $ref Links.yaml, artifact and effective-artifact links).
+    MissionSubstep:
+      type: object
+      additionalProperties: false
+      required: [id, description]
+      properties:
+        id: {type: string}
+        description: {type: string}
+        command: {type: string}
+        inputs:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [flag, source]
+            properties:
+              flag: {type: string}
+              source: {type: string}
+              optional: {type: boolean}
+        delegatesTo:
+          type: object
+          additionalProperties: false
+          required: [kind, candidates]
+          properties:
+            kind: {type: string, description: An activatable artifact kind token.}
+            candidates:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required: [id, _links]
+                properties:
+                  id: {type: string, description: 'The candidate, written [<pack>::]<id>; its kind is delegatesTo.kind.'}
+                  _links: {type: object, description: '$ref Links.yaml: artifact, and effective-artifact under an activation; empty for an unserved kind.'}
+        guidance: {type: string}
+# Removed by IC-03: getEffectiveMissionStepContract; schemas MissionStepContract, MissionStepContractGate,
+# MissionStepContractInput, MissionStepContractStep, MissionStepDelegation, MissionStepDelegationCandidate;
+# parameter StepContractId; response ActivationMissionStepContractNotFound; refusal mission_step_contract_not_found;
+# link relation step-contract; enum value mission_step_contract in ArtifactKindToken, ActivatableKind, CascadeKind,
+# NodeKind; Artifact.missionStepContract; Preset.activatedMissionStepContracts.
+# Removed by IC-01: Relation values impacts, replaces, delegates_to.
