@@ -6,6 +6,9 @@ import ai.speckitty.charter.artifacts.application.ContextiveProjection.Context;
 import ai.speckitty.charter.artifacts.application.ContextiveProjection.Document;
 import ai.speckitty.charter.artifacts.application.ContextiveProjection.Meta;
 import ai.speckitty.charter.artifacts.application.ContextiveProjection.Term;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +19,12 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
 /**
  * The YAML text of a Contextive document (ADR-0076 decision 6): pinned byte for byte, in block style with the keys in
  * the decision's order and an absent member omitted, and read back as the same tree. A long definition is not folded,
- * and a value YAML would read as another type or that holds a colon is quoted, so it reads back as written.
+ * and a value YAML would read as another type or that holds a colon is quoted, so it reads back as written. The
+ * contract's example, {@code Contextive.two-contexts.yaml}, is the rendered text of the same document, so it cannot
+ * drift from what the service answers.
+ *
+ * <p>The contract directory is {@code charter.contractsDir} when set, else {@code contracts/charter} of the nearest
+ * enclosing directory that holds one. Nothing here skips.
  */
 class ContextiveYamlTest {
 
@@ -88,9 +96,31 @@ class ContextiveYamlTest {
         return new Load(LoadSettings.builder().build()).loadFromString(yaml);
     }
 
+    private static Path contracts() {
+        String set = System.getProperty("charter.contractsDir");
+        if (set != null) {
+            return Path.of(set);
+        }
+        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
+            if (Files.isDirectory(dir.resolve("contracts/charter/examples"))) {
+                return dir.resolve("contracts/charter");
+            }
+        }
+        throw new IllegalStateException(
+                "no contracts/charter/examples above " + Path.of("").toAbsolutePath());
+    }
+
     @Test
     void theDocumentIsPinnedByteForByteInBlockStyleWithTheKeysInTheDecisionsOrder() {
         assertThat(ContextiveYaml.render(TWO_CONTEXTS)).isEqualTo(TWO_CONTEXTS_YAML);
+    }
+
+    @Test
+    void theContractsExampleIsTheRenderedTextOfTheSameDocument() throws IOException {
+        Object example = load(Files.readString(contracts().resolve("examples/Contextive.two-contexts.yaml")));
+
+        assertThat(example).isInstanceOf(Map.class);
+        assertThat(((Map<?, ?>) example).get("value")).isEqualTo(ContextiveYaml.render(TWO_CONTEXTS));
     }
 
     @Test

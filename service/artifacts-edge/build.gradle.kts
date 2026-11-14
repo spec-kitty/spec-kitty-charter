@@ -37,6 +37,15 @@ dependencies {
     testImplementation(testFixtures(project(":packs")))
 }
 
+// ContextiveYamlTest checks the contract's Contextive example against the rendered text (#106): the contract directory
+// is a declared input, handed over as charter.contractsDir, so the test never searches for it.
+tasks.test {
+    val contracts = rootProject.layout.projectDirectory.dir("contracts/charter")
+    inputs.dir(contracts.dir("examples")).withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("contractExamples")
+    systemProperty("charter.contractsDir", contracts.asFile.absolutePath)
+}
+
 // The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85) until the first
 // score is known; raised by PR once the score clears it by 5.
 mutationFloors {
