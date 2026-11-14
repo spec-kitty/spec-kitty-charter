@@ -10,7 +10,7 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The kind of a CRG node: every artifact kind plus {@code action}. Each constant states its facts in one table row, its
+ * The kind of a CRG node: one per artifact kind, plus {@code action} and {@code term}. Each constant states its facts in one table row, its
  * URN token, the artifact kind it stands for, its fragment plural and its two graph flags, and nothing is derived from
  * the constant's name: a URN token may differ from its artifact kind's token (ADR-0053 decision 13).
  */
@@ -32,8 +32,18 @@ public enum NodeKind {
     /** A node of the artifact kind {@link ArtifactKind#MISSION_STEP_CONTRACT}. */
     MISSION_STEP_CONTRACT(
             "mission_step_contract", ArtifactKind.MISSION_STEP_CONTRACT, "mission_step_contracts", true, true),
-    /** A node of the artifact kind {@link ArtifactKind#GLOSSARY_PACK}. */
-    GLOSSARY_PACK("glossary_pack", ArtifactKind.GLOSSARY_PACK, "glossary_packs", true, true),
+    /**
+     * A glossary context, the artifact of the kind {@link ArtifactKind#GLOSSARY}, for example
+     * {@code glossary_context:spec-kitty-core}. Its URN token is not its kind's token {@code glossary} on purpose
+     * (ADR-0053 decision 13): it keeps clear of core's retiring {@code glossary} node kind, whose meaning differs.
+     */
+    GLOSSARY_CONTEXT("glossary_context", ArtifactKind.GLOSSARY, "glossaries", true, true),
+    /**
+     * One term of a glossary context, {@code term:<context-id>/<term-id>} (ADR-0049 decision 4): an item of its
+     * context, not an artifact, so it stands for no artifact kind. It has no file and no fragment plural and is never
+     * declared in a graph; it is derived from its context, and a {@code vocabulary} edge may target it.
+     */
+    TERM("term", null, null, false, true),
     /** A node of the artifact kind {@link ArtifactKind#SKILL}. */
     SKILL("skill", ArtifactKind.SKILL, "skills", true, true),
     /** A node of the artifact kind {@link ArtifactKind#ANTI_PATTERN}. */
@@ -129,7 +139,8 @@ public enum NodeKind {
     /**
      * Whether a graph document or a fragment may declare a node of this kind.
      *
-     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE}, which wait for their contract set (#156)
+     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE}, which wait for their contract set (#156), and
+     *     for {@link #TERM}, which is derived from its glossary context
      */
     public boolean declarableInGraphs() {
         return declarable;
@@ -148,7 +159,7 @@ public enum NodeKind {
     /**
      * The artifact kind this node kind stands for.
      *
-     * @return the artifact kind; empty for {@link #ACTION}
+     * @return the artifact kind; empty for {@link #ACTION} and {@link #TERM}
      */
     public Optional<ArtifactKind> artifactKind() {
         return Optional.ofNullable(artifactKind);

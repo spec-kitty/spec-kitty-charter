@@ -272,7 +272,7 @@ class PackManifestRoundTripTest {
                 "0".repeat(64),
                 List.of(
                         new PackManifestDso.Constituent("agent_profile", "a", "agents/a.agent.yaml", "0".repeat(64)),
-                        new PackManifestDso.Constituent("glossary_pack", "g", "g/g.glossary.yaml", "0".repeat(64)),
+                        new PackManifestDso.Constituent("glossary", "g", "g/g.glossary.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent(
                                 "mission_step_contract", "m", "m/m.step-contract.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent("procedure", "p", "p.procedure.yaml", "0".repeat(64)),
@@ -284,7 +284,7 @@ class PackManifestRoundTripTest {
                         new PackManifestDso.PresetEntry("q", "presets/q.yaml", "0".repeat(64))));
         Map<String, String> written = Map.of(
                 "agent-profile/a", "a.agent.yaml",
-                "glossary-pack/g", "g.glossary.yaml",
+                "glossary/g", "g.glossary.yaml",
                 "mission-step-contract/m", "m.step-contract.yaml");
 
         assertThat(DomainRoundTrip.pairing(manifest, target, written))

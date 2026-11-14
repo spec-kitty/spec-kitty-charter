@@ -644,7 +644,10 @@ class ProfileDtosTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = NodeKind.class, names = "ACTION", mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(
+            value = NodeKind.class,
+            names = {"ACTION", "TERM"},
+            mode = EnumSource.Mode.EXCLUDE)
     void anArtifactLinkNamesTheArtifactKindTheUrnsNodeKindStandsFor(NodeKind kind) {
         // ProfileDtos.entry's artifact link and every kind EffectiveProfileDtos writes take this mapping.
         ArtifactKind artifactKind = kind.artifactKind().orElseThrow();
@@ -658,6 +661,18 @@ class ProfileDtosTest {
         assertThat(action.kind().artifactKind()).isEmpty();
 
         assertThatThrownBy(() -> ProfileDtos.artifactKindToken(action)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aTermUrnNamesNoArtifactKind() {
+        // A term is an item of its glossary context, not an artifact (ADR-0049 decision 3).
+        Urn term = Urn.parse("term:spec-kitty-core/lane").orElseThrow();
+        assertThat(term.kind().artifactKind()).isEmpty();
+
+        assertThatThrownBy(() -> ProfileDtos.artifactKindToken(term)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(ProfileDtos.artifactKindToken(
+                        Urn.parse("glossary_context:spec-kitty-core").orElseThrow()))
+                .isEqualTo("glossary");
     }
 
     @ParameterizedTest

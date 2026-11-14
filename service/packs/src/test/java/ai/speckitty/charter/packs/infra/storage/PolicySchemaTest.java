@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,9 +96,15 @@ class PolicySchemaTest {
         assertThat(((Map<?, ?>) kindDefaults.get("properties"))
                         .keySet().stream().map(String::valueOf).toList())
                 .containsExactlyElementsOf(tokens);
+        // An artifacts key is a bare URN, so it spells each kind by its node kind's URN token: the glossary kind's is
+        // glossary_context (ADR-0053 decision 13).
+        List<String> urnTokens = Arrays.stream(ArtifactKind.values())
+                .map(kind -> NodeKind.of(kind).token())
+                .toList();
+        assertThat(urnTokens).contains("glossary_context").doesNotContain("glossary");
         assertThat(((Map<?, ?>) artifacts.get("patternProperties"))
                         .keySet().stream().map(String::valueOf).toList())
-                .containsExactly("^(" + String.join("|", tokens) + "):[A-Za-z0-9_/.-]+$");
+                .containsExactly("^(" + String.join("|", urnTokens) + "):[A-Za-z0-9_/.-]+$");
     }
 
     @Test

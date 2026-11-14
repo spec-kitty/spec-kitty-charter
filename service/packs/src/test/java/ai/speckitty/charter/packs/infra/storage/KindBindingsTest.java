@@ -179,8 +179,14 @@ class KindBindingsTest {
     @DisplayName("each binding's entity type is the kind's entity")
     void entityTypesMatchTheKinds() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
+            // The one entity not named by its kind's token: an artifact of the glossary kind is a glossary context
+            // (ADR-0049 decision 1).
+            String expected = binding.kind() == ArtifactKind.GLOSSARY
+                    ? "glossarycontext"
+                    : binding.kind().token().replace("_", "");
             assertThat(binding.entityType().getSimpleName().toLowerCase(Locale.ROOT))
-                    .isEqualTo(binding.kind().token().replace("_", ""));
+                    .as(binding.kind().token())
+                    .isEqualTo(expected);
         }
     }
 

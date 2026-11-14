@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * sanitized shape of ADR-0042. A preset is a pack-level value, not an artifact: core gives it no URN, and the pack holds
  * it beside its artifacts ({@link Pack#presets()}).
  *
- * <p>A preset may name artifacts of any activatable kind, skills, glossary packs and mission types included (one kind
+ * <p>A preset may name artifacts of any activatable kind, skills, glossary contexts and mission types included (one kind
  * model, IC-20, FR-041). Each item may be must-have. The must-have items are the preset's {@linkplain #required()
  * required set}, derived and never declared a second time (ADR-0031 decisions 1 and 2), and a preset with any must-have
  * item is {@linkplain #governing() governing}; one without is a convenience preset. There is no kind gate. A kind the

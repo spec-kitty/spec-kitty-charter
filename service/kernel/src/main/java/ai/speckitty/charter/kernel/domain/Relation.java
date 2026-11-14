@@ -13,7 +13,10 @@ public enum Relation {
     APPLIES,
     /** Governance scope: the target is in force within the source's scope. */
     SCOPE,
-    /** Links to the glossary that supplies a node's terms. */
+    /**
+     * Links a node to the vocabulary it relies on: a glossary context ({@code glossary_context:<id>}) or one of its
+     * terms ({@code term:<context-id>/<term-id>}, ADR-0049 decision 4).
+     */
     VOCABULARY,
     /** A node instantiates a template. */
     INSTANTIATES,

@@ -22,8 +22,11 @@ class NodeKindPluralTest {
     }
 
     @Test
-    void everyNodeKindHasAPluralSoFar() {
-        assertThat(kindsWithAPlural().toList()).containsExactly(NodeKind.values());
+    void everyNodeKindButTheTermHasAPlural() {
+        // A term is derived from its glossary context and never declared in a fragment, so it has no plural.
+        assertThat(Arrays.stream(NodeKind.values()).filter(kind -> !kind.hasPlural()))
+                .containsExactly(NodeKind.TERM);
+        assertThat(kindsWithAPlural()).hasSize(NodeKind.values().length - 1);
     }
 
     @ParameterizedTest

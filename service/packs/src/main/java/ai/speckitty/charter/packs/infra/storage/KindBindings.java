@@ -24,7 +24,7 @@ final class KindBindings {
             ParadigmBinding.INSTANCE,
             AgentProfileBinding.INSTANCE,
             MissionStepContractBinding.INSTANCE,
-            GlossaryPackBinding.INSTANCE,
+            GlossaryBinding.INSTANCE,
             SkillBinding.INSTANCE,
             AssetBinding.INSTANCE,
             ProcedureBinding.INSTANCE,

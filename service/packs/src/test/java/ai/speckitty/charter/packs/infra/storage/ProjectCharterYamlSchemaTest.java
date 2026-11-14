@@ -4,9 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -17,19 +16,23 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * The {@code charter} schema against the project's own {@code .kittify/charter/charter.yaml} (#131), and the shape of
- * the activation keys core's activation writer puts at the root of {@code charter.yaml} that the schema declared late:
- * {@code activated_glossary_packs} (#131), {@code activated_skills} and {@code activated_anti_patterns} (#283). Like
- * every other {@code activated_*} key each is three-state: absent or {@code null}, {@code []} (none) or a list of ids.
+ * The {@code charter} schema against a canonical example {@code charter.yaml} (#131), and the shape of the activation
+ * keys at the root of {@code charter.yaml} that the schema declared late: {@code activated_glossaries} (#131, ADR-0049),
+ * {@code activated_skills} and {@code activated_anti_patterns} (#283). Like every other {@code activated_*} key each is
+ * three-state: absent or {@code null}, {@code []} (none) or a list of ids.
+ *
+ * <p>The example is a test resource, not this repository's {@code .kittify/charter/charter.yaml}: that file is core's
+ * format, written and read by the spec-kitty CLI, and the charter keeps no compatibility with it
+ * (DM-01M7CEZ19K8QRA3KX68KRWX22G).
  */
-@DisplayName("The project charter.yaml and the charter schema (#131, #283)")
+@DisplayName("A canonical charter.yaml and the charter schema (#131, #283)")
 class ProjectCharterYamlSchemaTest {
 
     private static final String CHARTER = "charter";
 
     /** The activation keys this test pins, each declared in the shape of the other {@code activated_*} keys. */
     private static final List<String> KEYS =
-            List.of("activated_glossary_packs", "activated_skills", "activated_anti_patterns");
+            List.of("activated_glossaries", "activated_skills", "activated_anti_patterns");
 
     /** The smallest charter.yaml the schema accepts: {@code catalog} is its one required key. */
     private static final String MINIMAL = """
@@ -46,15 +49,20 @@ class ProjectCharterYamlSchemaTest {
         return validate("charter.yaml", yaml);
     }
 
-    @Test
-    @DisplayName("this repository's .kittify/charter/charter.yaml validates with no finding")
-    void theRepositoryCharterYamlValidates() throws IOException {
-        String root = System.getProperty("charter.repositoryRoot");
-        assertThat(root).as("system property charter.repositoryRoot").isNotNull();
-        Path charterYaml = Path.of(root, ".kittify", "charter", "charter.yaml");
-        String text = Files.readString(charterYaml, StandardCharsets.UTF_8);
+    /** The canonical example: a whole charter.yaml, every section filled, in the charter's own keys. */
+    private static final String EXAMPLE = "/project-charter/charter.yaml";
 
-        assertThat(validate(".kittify/charter/charter.yaml", text)).isEmpty();
+    @Test
+    @DisplayName("the canonical example charter.yaml validates with no finding")
+    void theExampleCharterYamlValidates() throws IOException {
+        String text;
+        try (InputStream in = ProjectCharterYamlSchemaTest.class.getResourceAsStream(EXAMPLE)) {
+            assertThat(in).as(EXAMPLE).isNotNull();
+            text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        assertThat(text).contains("\nactivated_glossaries:\n", "\n    selected_glossaries: []\n");
+        assertThat(validate("charter.yaml", text)).isEmpty();
     }
 
     @Test
@@ -79,7 +87,7 @@ class ProjectCharterYamlSchemaTest {
     @DisplayName("all three keys together are accepted")
     void allThreeKeysTogetherAreAccepted() {
         assertThat(validate(MINIMAL + """
-                        activated_glossary_packs: [spec-kitty-core]
+                        activated_glossaries: [spec-kitty-core]
                         activated_skills: []
                         activated_anti_patterns: [crud-affordance-echo]
                         """)).isEmpty();
@@ -105,9 +113,9 @@ class ProjectCharterYamlSchemaTest {
     }
 
     /**
-     * Every key of core's flat activation vocabulary, {@code ACTIVATION_YAML_KEYS} ({@code
-     * src/charter/activation/pack_manager.py:205} at core {@code 512567ee}), is declared: the closed root would refuse
-     * an undeclared one as an unknown key.
+     * Every key of the flat activation vocabulary is declared, as the charter's model names it (core's {@code
+     * ACTIVATION_YAML_KEYS} at core {@code 512567ee}, with its glossary key renamed {@code activated_glossaries},
+     * ADR-0049): the closed root would refuse an undeclared one as an unknown key.
      */
     @ParameterizedTest(name = "{0} is declared")
     @ValueSource(
@@ -121,7 +129,7 @@ class ProjectCharterYamlSchemaTest {
                 "activated_procedures",
                 "activated_agent_profiles",
                 "activated_mission_step_contracts",
-                "activated_glossary_packs",
+                "activated_glossaries",
                 "activated_skills",
                 "mission_type_activations",
                 "activated_anti_patterns",
@@ -131,9 +139,21 @@ class ProjectCharterYamlSchemaTest {
     }
 
     @ParameterizedTest(name = "{0} is not a declared key")
-    @ValueSource(strings = {"activated_glossary_pack", "activated_skill", "activated_antipatterns", "activation"})
+    @ValueSource(strings = {"activated_glossary", "activated_skill", "activated_antipatterns", "activation"})
     void aMisspelledKeyIsStillRefused(String key) {
         assertThat(at(validate(MINIMAL + key + ": []\n"))).containsExactly("additionalProperties at / [" + key + "]");
+    }
+
+    /**
+     * The glossary_pack keys are replaced outright by the glossary ones (ADR-0049), with no reader of the old shape: a
+     * charter.yaml that still carries one is refused as an unknown key, at the root and in the governance selection.
+     */
+    @Test
+    @DisplayName("the replaced glossary_pack keys are refused as unknown keys")
+    void theReplacedGlossaryPackKeysAreRefused() {
+        assertThat(at(validate(MINIMAL + "activated_glossary_packs: []\n")))
+                .containsExactly("additionalProperties at / [activated_glossary_packs]");
+        assertThat(validate(MINIMAL + "activated_glossaries: []\n")).isEmpty();
     }
 
     /** Each violation as {@code <keyword> at /<pointer>}, with {@code [<property>]} when it names one. */

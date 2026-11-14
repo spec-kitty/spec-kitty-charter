@@ -28,7 +28,7 @@ class ArtifactKindTest {
                         "procedure",
                         "agent_profile",
                         "mission_step_contract",
-                        "glossary_pack",
+                        "glossary",
                         "skill",
                         "anti_pattern",
                         "mission_type",

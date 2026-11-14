@@ -112,11 +112,11 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
       symbol: Preset.artifacts
-  activatedGlossaryPacks:
+  activatedGlossaries:
     type: array
     minItems: 1
     description: >-
-      The glossary packs applying the preset selects, in the order the file lists them (activated_glossary_packs). Left out when the
+      The glossary contexts applying the preset selects, in the order the file lists them (activated_glossaries). Left out when the
       preset lists none.
     items:
       $ref: PresetItem.yaml

@@ -173,8 +173,8 @@ class InForceResolutionTest {
     @Test
     void everyKindIsACandidateWithNoKindGate() {
         InForceStates states = new Closure()
-                .open("mission_type:M", "skill:S", "glossary_pack:G", "directive:D")
-                .select("mission_type:M", "skill:S", "glossary_pack:G", "directive:D");
+                .open("mission_type:M", "skill:S", "glossary_context:G", "directive:D")
+                .select("mission_type:M", "skill:S", "glossary_context:G", "directive:D");
 
         states.states()
                 .values()

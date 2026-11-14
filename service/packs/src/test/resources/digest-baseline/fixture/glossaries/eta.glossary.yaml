@@ -1,0 +1,9 @@
+schema_version: '1.0'
+id: eta
+name: Eta
+description: The fixture's glossary context.
+terms:
+- id: fixture
+  name: fixture
+  definition: A small pack that pins a digest.
+  status: active

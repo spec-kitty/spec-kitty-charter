@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/glossary.schema.json",
+  "$defs": {
+    "Slug": {
+      "description": "A letter-first kebab-case slug of at most 64 characters: lowercase letters and digits joined by single hyphens, starting with a letter (the kernel's IdentifierGrammar, as skill.schema.json pins it).",
+      "maxLength": 64,
+      "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "title": "Slug",
+      "type": "string"
+    },
+    "Text": {
+      "description": "Text that is not blank.",
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Text",
+      "type": "string"
+    },
+    "TextList": {
+      "description": "At least one non-blank string, in authored order.",
+      "items": {
+        "$ref": "#/$defs/Text"
+      },
+      "minItems": 1,
+      "title": "TextList",
+      "type": "array"
+    },
+    "AppliesTo": {
+      "additionalProperties": false,
+      "description": "Where the context applies (ADR-0049 decision 14: advisory; nothing filters by it). Each list holds at least one entry when present.",
+      "properties": {
+        "paths": {
+          "$ref": "#/$defs/TextList",
+          "description": "Path globs."
+        },
+        "languages": {
+          "$ref": "#/$defs/TextList",
+          "description": "Language tokens."
+        },
+        "stacks": {
+          "$ref": "#/$defs/TextList",
+          "description": "Stack tokens."
+        }
+      },
+      "title": "AppliesTo",
+      "type": "object"
+    },
+    "Term": {
+      "additionalProperties": false,
+      "description": "One term of a glossary context (ADR-0049 decision 3): an item of the context, not an artifact of its own, addressed term:<context-id>/<term-id>. Its id is unique within the context; JSON Schema cannot express that, so it is the domain's invariant.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Slug",
+          "description": "The term's id, unique within its context."
+        },
+        "name": {
+          "$ref": "#/$defs/Text",
+          "description": "The canonical surface form."
+        },
+        "definition": {
+          "$ref": "#/$defs/Text",
+          "description": "What the term means."
+        },
+        "examples": {
+          "$ref": "#/$defs/TextList",
+          "description": "Example uses."
+        },
+        "aliases": {
+          "$ref": "#/$defs/TextList",
+          "description": "Accepted alternative forms."
+        },
+        "avoid": {
+          "$ref": "#/$defs/TextList",
+          "description": "Forms not to use: the one source of banned vocabulary (ADR-0049 decisions 5 and 15)."
+        },
+        "status": {
+          "description": "The term's status (ADR-0053 decision 14).",
+          "enum": [
+            "draft",
+            "active",
+            "deprecated"
+          ],
+          "title": "Status"
+        },
+        "see_also": {
+          "description": "Related terms, each a term:<context-id>/<term-id> URN. One that no held context resolves is a broken reference.",
+          "items": {
+            "pattern": "^term:[a-z][a-z0-9]*(-[a-z0-9]+)*/[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "See Also",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "definition",
+        "status"
+      ],
+      "title": "Term",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A glossary context (ADR-0049 decisions 1 to 6, ADR-0053 decisions 11 to 14): a ubiquitous-language bounded context with its terms, one per file at glossaries/<id>.glossary.yaml. The artifact kind is glossary; the context's URN is glossary_context:<id> and a term's is term:<context-id>/<term-id>. Closed at every level.\n\nThe id equals the file stem, and term ids are unique within the context; JSON Schema cannot express either, so both are the domain's invariants.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "id": {
+      "$ref": "#/$defs/Slug",
+      "description": "The context's id: its file stem."
+    },
+    "name": {
+      "$ref": "#/$defs/Text",
+      "description": "The context's name."
+    },
+    "description": {
+      "$ref": "#/$defs/Text",
+      "description": "The context's applicability, Contextive's domain vision statement."
+    },
+    "tags": {
+      "description": "Tags, at least one, without duplicates.",
+      "items": {
+        "$ref": "#/$defs/Text"
+      },
+      "minItems": 1,
+      "title": "Tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "applies_to": {
+      "$ref": "#/$defs/AppliesTo"
+    },
+    "terms": {
+      "description": "The terms, in authored order; at least one.",
+      "items": {
+        "$ref": "#/$defs/Term"
+      },
+      "minItems": 1,
+      "title": "Terms",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "description",
+    "terms"
+  ],
+  "title": "Glossary context",
+  "type": "object"
+}

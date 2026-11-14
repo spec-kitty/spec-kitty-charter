@@ -47,7 +47,7 @@ class PresetYamlTest {
 
         assertThat(PresetYaml.LIST_KEYS).containsExactlyElementsOf(fromRegistry);
         assertThat(PresetYaml.LIST_KEYS)
-                .contains("activated_skills", "activated_glossary_packs", "activated_mission_types");
+                .contains("activated_skills", "activated_glossaries", "activated_mission_types");
     }
 
     @Test

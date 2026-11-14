@@ -143,10 +143,10 @@ class GovernanceWalkTest {
     @Test
     void theProfilesOwnVocabularyEdgeIsListedAndSoIsTheVocabularyOfWhatTheWalkListed() {
         Closure closure = closure(
-                List.of(P, "directive:D", "glossary_pack:G1", "glossary_pack:G2"),
-                edge(P, RelationType.VOCABULARY, "glossary_pack:G1"),
+                List.of(P, "directive:D", "glossary_context:G1", "glossary_context:G2"),
+                edge(P, RelationType.VOCABULARY, "glossary_context:G1"),
                 edge(P, RelationType.REQUIRES, "directive:D"),
-                edge("directive:D", RelationType.VOCABULARY, "glossary_pack:G2"));
+                edge("directive:D", RelationType.VOCABULARY, "glossary_context:G2"));
 
         Result result = walk(closure, 0, GovernanceWalkTest::everything);
 
@@ -154,8 +154,8 @@ class GovernanceWalkTest {
                 .extracting(Entry::urn, Entry::step, Entry::via, Entry::hops)
                 .containsExactly(
                         tuple(urn("directive:D"), Step.REQUIRES, urn(P), 1),
-                        tuple(urn("glossary_pack:G1"), Step.VOCABULARY, urn(P), 1),
-                        tuple(urn("glossary_pack:G2"), Step.VOCABULARY, urn("directive:D"), 2));
+                        tuple(urn("glossary_context:G1"), Step.VOCABULARY, urn(P), 1),
+                        tuple(urn("glossary_context:G2"), Step.VOCABULARY, urn("directive:D"), 2));
     }
 
     private static Relationship worded(String from, RelationType type, String to, String when, String reason) {
@@ -172,12 +172,12 @@ class GovernanceWalkTest {
     @Test
     void everyEntryCarriesTheWordsOfTheEdgeThatReachedItWhateverItsRelation() {
         Closure closure = closure(
-                List.of(P, Q, "tactic:S", "tactic:SR", "directive:D", "directive:V", "glossary_pack:G"),
+                List.of(P, Q, "tactic:S", "tactic:SR", "directive:D", "directive:V", "glossary_context:G"),
                 worded(P, RelationType.SPECIALIZES_FROM, Q, null, "the profile builds on Q"),
                 worded(P, RelationType.SUGGESTS, "tactic:S", "the task touches the schema", "migrations need it"),
                 worded("tactic:S", RelationType.REQUIRES, "tactic:SR", "always", null),
                 worded(P, RelationType.REQUIRES, "directive:D", "always", "the charter says so"),
-                worded(P, RelationType.VOCABULARY, "glossary_pack:G", null, "its words are used"),
+                worded(P, RelationType.VOCABULARY, "glossary_context:G", null, "its words are used"),
                 edge(P, RelationType.SUGGESTS, "directive:V"));
 
         Result result = walk(closure, 2, GovernanceWalkTest::everything);
@@ -194,7 +194,7 @@ class GovernanceWalkTest {
         assertThat(entry(result, "directive:D"))
                 .extracting(Entry::step, Entry::when, Entry::reason)
                 .containsExactly(Step.REQUIRES, Optional.of("always"), Optional.of("the charter says so"));
-        assertThat(entry(result, "glossary_pack:G"))
+        assertThat(entry(result, "glossary_context:G"))
                 .extracting(Entry::when, Entry::reason)
                 .containsExactly(Optional.empty(), Optional.of("its words are used"));
         assertThat(entry(result, "directive:V"))
@@ -332,11 +332,16 @@ class GovernanceWalkTest {
                 .pack(
                         "builtin",
                         List.of(),
-                        List.of("agent_profile:Base", "directive:D", "tactic:T", "directive:DofT", "glossary_pack:G"),
+                        List.of(
+                                "agent_profile:Base",
+                                "directive:D",
+                                "tactic:T",
+                                "directive:DofT",
+                                "glossary_context:G"),
                         edge("agent_profile:Base", RelationType.REQUIRES, "directive:D"),
                         edge("agent_profile:Base", RelationType.SUGGESTS, "tactic:T"),
                         edge("tactic:T", RelationType.REQUIRES, "directive:DofT"),
-                        edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_pack:G"))
+                        edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_context:G"))
                 .pack(
                         "qa",
                         List.of("builtin"),
@@ -416,10 +421,10 @@ class GovernanceWalkTest {
                 .pack(
                         "builtin",
                         List.of(),
-                        List.of("directive:D", "tactic:Below", "tactic:Suggested", "glossary_pack:G"),
+                        List.of("directive:D", "tactic:Below", "tactic:Suggested", "glossary_context:G"),
                         edge("directive:D", RelationType.REQUIRES, "tactic:Below"),
                         edge("directive:D", RelationType.SUGGESTS, "tactic:Suggested"),
-                        edge("directive:D", RelationType.VOCABULARY, "glossary_pack:G"))
+                        edge("directive:D", RelationType.VOCABULARY, "glossary_context:G"))
                 .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "directive:D"));
 
         assertThat(GovernanceWalk.overWritten(closure.merged())

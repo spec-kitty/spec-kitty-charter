@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Every glossary pack and every skill of the example packs round-trips by meaning (ADR-0036), a skill with
+ * Every glossary context and every skill of the example packs round-trips by meaning (ADR-0036), a skill with
  * its prompt body byte for byte (ADR-0039). Each file is read through the store, so a skill's body is read as its
  * companion, mapped to the domain and back, written with its companion into a fresh pack, read again, and compared
  * with its source. It covers the org example pack's skill, which the #187 built-in gate does
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
  */
-@DisplayName("Every example glossary pack and skill round-trips by meaning, a skill with its body (#192)")
-class GlossaryPackAndSkillCorpusTest {
+@DisplayName("Every example glossary context and skill round-trips by meaning, a skill with its body (#192)")
+class GlossaryAndSkillCorpusTest {
 
     private static final PackIdentifier PROBE = new PackIdentifier("probe");
 
@@ -39,21 +39,21 @@ class GlossaryPackAndSkillCorpusTest {
     Path host;
 
     @Test
-    @DisplayName("every example glossary pack reads, writes and reads back with its meaning unchanged")
-    void everyGlossaryPackRoundTrips() throws IOException {
-        List<Path> files = files(".glossary-pack.yaml");
+    @DisplayName("every example glossary context reads, writes and reads back with its meaning unchanged")
+    void everyGlossaryContextRoundTrips() throws IOException {
+        List<Path> files = files(".glossary.yaml");
         List<String> problems = new ArrayList<>();
         for (Path file : files) {
             String source = Files.readString(file, StandardCharsets.UTF_8);
             String written = glossary(file, UnaryOperator.identity());
             MeaningComparator.adr0036()
-                    .compareTexts("glossary-pack", source, written)
+                    .compareTexts("glossary", source, written)
                     .ifPresent(difference -> problems.add(file + ": " + difference));
         }
 
-        assertThat(problems).as("glossary packs that do not round-trip").isEmpty();
-        assertThat(files).as("glossary packs in the example packs").isNotEmpty();
-        PackFiles.assertEachPackHolds("glossary pack", files, ExamplePacks.BUILT_IN);
+        assertThat(problems).as("glossary contexts that do not round-trip").isEmpty();
+        assertThat(files).as("glossary contexts in the example packs").isNotEmpty();
+        PackFiles.assertEachPackHolds("glossary context", files, ExamplePacks.BUILT_IN);
     }
 
     @Test
@@ -88,20 +88,28 @@ class GlossaryPackAndSkillCorpusTest {
     }
 
     @Test
-    @DisplayName("the corpus exercises every optional term field, multi-line definitions and skill side effects")
+    @DisplayName("the corpus exercises every optional field, every status, multi-line definitions and skill side"
+            + " effects")
     void theCorpusCoversTheSchemas() throws IOException {
         int seeAlso = 0;
-        int synonyms = 0;
-        int introduced = 0;
+        int avoid = 0;
+        int examples = 0;
         int aliases = 0;
         int multiLine = 0;
-        for (Path file : files(".glossary-pack.yaml")) {
-            for (GlossaryPackDso.Term term : glossary(file).terms()) {
+        int tags = 0;
+        int appliesTo = 0;
+        java.util.Set<String> statuses = new java.util.TreeSet<>();
+        for (Path file : files(".glossary.yaml")) {
+            GlossaryDso context = glossary(file);
+            tags += context.tags().isEmpty() ? 0 : 1;
+            appliesTo += context.appliesTo().paths().isEmpty() ? 0 : 1;
+            for (GlossaryDso.Term term : context.terms()) {
                 seeAlso += term.seeAlso().isEmpty() ? 0 : 1;
-                synonyms += term.synonymsToAvoid().isEmpty() ? 0 : 1;
-                introduced += term.introducedInMission().isPresent() ? 1 : 0;
+                avoid += term.avoid().isEmpty() ? 0 : 1;
+                examples += term.examples().isEmpty() ? 0 : 1;
                 aliases += term.aliases().isEmpty() ? 0 : 1;
                 multiLine += term.definition().contains("\n") ? 1 : 0;
+                statuses.add(term.status());
             }
         }
         List<SkillDso> skills = new ArrayList<>();
@@ -110,10 +118,13 @@ class GlossaryPackAndSkillCorpusTest {
         }
 
         assertThat(seeAlso).as("terms with see_also").isPositive();
-        assertThat(synonyms).as("terms with synonyms_to_avoid").isPositive();
-        assertThat(introduced).as("terms with introduced_in_mission").isPositive();
+        assertThat(avoid).as("terms with avoid").isPositive();
+        assertThat(examples).as("terms with examples").isPositive();
         assertThat(aliases).as("terms with aliases").isPositive();
         assertThat(multiLine).as("multi-line definitions").isPositive();
+        assertThat(tags).as("contexts with tags").isPositive();
+        assertThat(appliesTo).as("contexts with applies_to paths").isPositive();
+        assertThat(statuses).as("term statuses").containsExactly("active", "deprecated", "draft");
         assertThat(skills).allSatisfy(skill -> {
             if (skill.bodyPath().isPresent()) {
                 assertThat(skill.body()).as("%s has its body", skill.id()).isPresent();
@@ -143,14 +154,13 @@ class GlossaryPackAndSkillCorpusTest {
     void aLossyWriterIsCaught() throws IOException {
         List<Difference> differences = new ArrayList<>();
         int seeAlso = 0;
-        for (Path file : files(".glossary-pack.yaml")) {
+        for (Path file : files(".glossary.yaml")) {
             String source = Files.readString(file, StandardCharsets.UTF_8);
             seeAlso += (int) glossary(file).terms().stream()
                     .filter(term -> !term.seeAlso().isEmpty())
                     .count();
             differences.addAll(MeaningComparator.adr0036()
-                    .differencesOfTexts(
-                            "glossary-pack", source, glossary(file, GlossaryPackAndSkillCorpusTest::dropSeeAlso)));
+                    .differencesOfTexts("glossary", source, glossary(file, GlossaryAndSkillCorpusTest::dropSeeAlso)));
         }
 
         assertThat(differences)
@@ -181,9 +191,9 @@ class GlossaryPackAndSkillCorpusTest {
         return Files.mismatch(file.resolveSibling(bodyPath), pack.resolve(bodyPath)) == -1;
     }
 
-    private String glossary(Path file, UnaryOperator<GlossaryPackDso> writer) throws IOException {
-        GlossaryPackBinding binding = GlossaryPackBinding.INSTANCE;
-        GlossaryPackDso back = binding.toDso(binding.toEntity(PROBE, glossary(file)));
+    private String glossary(Path file, UnaryOperator<GlossaryDso> writer) throws IOException {
+        GlossaryBinding binding = GlossaryBinding.INSTANCE;
+        GlossaryDso back = binding.toDso(binding.toEntity(PROBE, glossary(file)));
         String written = yaml.write(binding, writer.apply(back));
         assertThat(yaml.read(binding, written, file.toString()))
                 .as("%s: the written form reads", file)
@@ -191,11 +201,11 @@ class GlossaryPackAndSkillCorpusTest {
         return written;
     }
 
-    private GlossaryPackDso glossary(Path file) throws IOException {
-        FileRead<GlossaryPackDso> read = yaml.read(
-                GlossaryPackBinding.INSTANCE, Files.readString(file, StandardCharsets.UTF_8), file.toString());
+    private GlossaryDso glossary(Path file) throws IOException {
+        FileRead<GlossaryDso> read =
+                yaml.read(GlossaryBinding.INSTANCE, Files.readString(file, StandardCharsets.UTF_8), file.toString());
         assertThat(read).as("%s reads", file).isInstanceOf(FileRead.Read.class);
-        return ((FileRead.Read<GlossaryPackDso>) read).value();
+        return ((FileRead.Read<GlossaryDso>) read).value();
     }
 
     /** The skill read through the store, its body filled in as its companion. */
@@ -221,22 +231,24 @@ class GlossaryPackAndSkillCorpusTest {
         return new FilesystemPackStore(pack.getParent(), yaml);
     }
 
-    private static GlossaryPackDso dropSeeAlso(GlossaryPackDso dso) {
-        return new GlossaryPackDso(
+    private static GlossaryDso dropSeeAlso(GlossaryDso dso) {
+        return new GlossaryDso(
+                dso.schemaVersion(),
                 dso.id(),
-                dso.provenance(),
+                dso.name(),
                 dso.description(),
+                dso.tags(),
+                dso.appliesTo(),
                 dso.terms().stream()
-                        .map(term -> new GlossaryPackDso.Term(
-                                term.surface(),
+                        .map(term -> new GlossaryDso.Term(
+                                term.id(),
+                                term.name(),
                                 term.definition(),
-                                term.confidence(),
-                                term.status(),
-                                List.of(),
-                                term.introducedInMission(),
-                                term.synonymsToAvoid(),
+                                term.examples(),
                                 term.aliases(),
-                                term.bannedSynonyms()))
+                                term.avoid(),
+                                term.status(),
+                                List.of()))
                         .toList());
     }
 

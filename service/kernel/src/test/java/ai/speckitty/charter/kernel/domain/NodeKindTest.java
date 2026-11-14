@@ -36,7 +36,8 @@ class NodeKindTest {
                         "mission_step_contracts",
                         true,
                         true),
-                row(NodeKind.GLOSSARY_PACK, "glossary_pack", "glossary_pack", "glossary_packs", true, true),
+                row(NodeKind.GLOSSARY_CONTEXT, "glossary_context", "glossary", "glossaries", true, true),
+                row(NodeKind.TERM, "term", null, null, false, true),
                 row(NodeKind.SKILL, "skill", "skill", "skills", true, true),
                 row(NodeKind.ANTI_PATTERN, "anti_pattern", "anti_pattern", "anti_patterns", true, true),
                 row(NodeKind.ASSET, "asset", "asset", "assets", true, true),
@@ -58,10 +59,11 @@ class NodeKindTest {
             NodeKind kind,
             String token,
             @Nullable String artifactKind,
-            String plural,
+            @Nullable String plural,
             boolean declarable,
             boolean edgeTarget) {
-        return Arguments.of(kind, token, Optional.ofNullable(artifactKind), plural, declarable, edgeTarget);
+        return Arguments.of(
+                kind, token, Optional.ofNullable(artifactKind), Optional.ofNullable(plural), declarable, edgeTarget);
     }
 
     @ParameterizedTest
@@ -70,16 +72,20 @@ class NodeKindTest {
             NodeKind kind,
             String token,
             Optional<String> artifactKind,
-            String plural,
+            Optional<String> plural,
             boolean declarable,
             boolean edgeTarget) {
-        assertThat(kind.hasPlural()).as("has a plural").isTrue();
+        assertThat(kind.hasPlural()).as("has a plural").isEqualTo(plural.isPresent());
 
         assertThat(kind.token()).as("token").isEqualTo(token);
         assertThat(kind.artifactKind().map(ArtifactKind::token))
                 .as("artifact kind")
                 .isEqualTo(artifactKind);
-        assertThat(kind.plural()).as("plural").isEqualTo(plural);
+        plural.ifPresentOrElse(
+                expected -> assertThat(kind.plural()).as("plural").isEqualTo(expected),
+                () -> assertThatThrownBy(kind::plural)
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("the node kind " + token + " has no fragment plural"));
         assertThat(kind.declarableInGraphs()).as("declarable in graphs").isEqualTo(declarable);
         assertThat(kind.edgeTarget()).as("edge target").isEqualTo(edgeTarget);
     }
@@ -160,17 +166,34 @@ class NodeKindTest {
     }
 
     @Test
-    void theFifteenPluralsCoverEveryNodeKindExactlyOnce() {
-        long named = java.util.Arrays.stream(NodeKind.values())
-                .filter(k -> NodeKind.fromPlural(pluralOf(k)).isPresent())
-                .count();
-        assertThat(named).isEqualTo(NodeKind.values().length);
+    void thePluralsCoverEveryNodeKindButTheTermExactlyOnce() {
+        List<NodeKind> named = java.util.Arrays.stream(NodeKind.values())
+                .filter(k -> pluralOf(k)
+                        .flatMap(NodeKind::fromPlural)
+                        .filter(k::equals)
+                        .isPresent())
+                .toList();
+        assertThat(named)
+                .containsExactly(java.util.Arrays.stream(NodeKind.values())
+                        .filter(k -> k != NodeKind.TERM)
+                        .toArray(NodeKind[]::new));
+        assertThat(NodeKind.fromPlural("terms")).isEmpty();
     }
 
-    private static String pluralOf(NodeKind kind) {
-        return switch (kind) {
-            case ACTION -> "actions";
-            default -> kind.artifactKind().orElseThrow().plural();
-        };
+    @Test
+    void theGlossaryContextsUrnTokenIsNotItsArtifactKindsToken() {
+        // ADR-0053 decision 13: the kind token is glossary, the URN token glossary_context; each looks up only its own.
+        assertThat(NodeKind.of(ArtifactKind.GLOSSARY)).isEqualTo(NodeKind.GLOSSARY_CONTEXT);
+        assertThat(NodeKind.fromToken("glossary_context")).contains(NodeKind.GLOSSARY_CONTEXT);
+        assertThat(NodeKind.fromToken("glossary")).isEmpty();
+        assertThat(ArtifactKind.fromToken("glossary_context")).isEmpty();
+        assertThat(NodeKind.fromPlural("glossaries")).contains(NodeKind.GLOSSARY_CONTEXT);
+    }
+
+    /** The plural a fragment would name the kind by, as the artifact kind or the action states it; none for a term. */
+    private static Optional<String> pluralOf(NodeKind kind) {
+        return kind == NodeKind.ACTION
+                ? Optional.of("actions")
+                : kind.artifactKind().map(ArtifactKind::plural);
     }
 }

@@ -85,7 +85,7 @@ class PresetTest {
         Map<ArtifactKind, List<PresetItem>> artifacts =
                 new LinkedHashMap<>(houseRules().artifacts());
         artifacts.put(ArtifactKind.SKILL, List.of(PresetItem.mustHave("pr-review")));
-        artifacts.put(ArtifactKind.GLOSSARY_PACK, List.of(PresetItem.of("core-terms")));
+        artifacts.put(ArtifactKind.GLOSSARY, List.of(PresetItem.of("core-terms")));
 
         Set<Urn> held = Set.of(
                 new Urn(NodeKind.DIRECTIVE, "GUARD"),
@@ -102,7 +102,7 @@ class PresetTest {
                         Urn.missionType("software-dev"));
         assertThat(floor.requiringPacks(Urn.missionType("software-dev"))).containsExactly("org");
         assertThat(floor.isRequired(Urn.missionType("research"))).isFalse();
-        assertThat(floor.isRequired(new Urn(NodeKind.GLOSSARY_PACK, "core-terms")))
+        assertThat(floor.isRequired(new Urn(NodeKind.GLOSSARY_CONTEXT, "core-terms")))
                 .isFalse();
     }
 
@@ -184,12 +184,13 @@ class PresetTest {
     }
 
     @Test
-    @DisplayName("a preset may name any activatable kind, skills, glossary packs and mission types included (FR-041)")
+    @DisplayName(
+            "a preset may name any activatable kind, skills, glossary contexts and mission types included (FR-041)")
     void everyActivatableKindIsAccepted() {
         assertThat(Preset.ACTIVATION_KINDS)
                 .isEqualTo(EnumSet.complementOf(EnumSet.of(
                         ArtifactKind.ASSET, ArtifactKind.TEMPLATE, ArtifactKind.GUARD, ArtifactKind.LIFECYCLE)))
-                .contains(ArtifactKind.SKILL, ArtifactKind.GLOSSARY_PACK, ArtifactKind.MISSION_TYPE)
+                .contains(ArtifactKind.SKILL, ArtifactKind.GLOSSARY, ArtifactKind.MISSION_TYPE)
                 .allMatch(ArtifactKind::activatable);
         for (ArtifactKind kind : Preset.ACTIVATION_KINDS) {
             assertThatCode(() -> preset("p", lists(kind, PresetItem.of("x")))).doesNotThrowAnyException();

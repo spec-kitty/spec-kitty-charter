@@ -26,7 +26,7 @@ final class PresetYaml {
 
     /**
      * The activation-list keys, {@code activated_<plural>} of every kind a preset may name, in the kernel registry's
-     * order (one kind model, IC-20): skills, glossary packs and mission types are lists like any other.
+     * order (one kind model, IC-20): skills, glossary contexts and mission types are lists like any other.
      */
     static final List<String> LIST_KEYS =
             Preset.ACTIVATION_KINDS.stream().map(PresetYaml::keyOf).toList();

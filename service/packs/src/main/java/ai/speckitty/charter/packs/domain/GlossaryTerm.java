@@ -1,71 +1,93 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
- * One canonical term of a {@link GlossaryPack}. The lists keep their authored order and duplicates; an empty list
- * stands for an absent one, as ADR-0036 decision 2 reads them alike.
+ * One term of a {@link GlossaryContext} (ADR-0049 decision 3): an item of its context, not an artifact, addressed
+ * {@code term:<context-id>/<term-id>}. The lists keep their authored order; an empty list stands for an absent one, as
+ * ADR-0036 decision 2 reads them alike.
  *
- * @param surface the term as written; unique within its glossary pack
+ * @param id the term's id, unique within its context
+ * @param name the canonical surface form
  * @param definition what the term means
- * @param confidence how settled the definition is, a number as written
- * @param status the term's status, as text (core has no fixed vocabulary)
- * @param seeAlso the surfaces of related terms
- * @param introducedInMission the mission that introduced the term, when stated
- * @param synonymsToAvoid words not to use for the term
- * @param aliases other accepted spellings of the term
- * @param bannedSynonyms words refused for the term
+ * @param examples example uses
+ * @param aliases accepted alternative forms
+ * @param avoid forms not to use: the one source of banned vocabulary (ADR-0049 decisions 5 and 15)
+ * @param status the term's status
+ * @param seeAlso related terms, each a {@code term:} URN
  */
 public record GlossaryTerm(
-        String surface,
+        TermIdentifier id,
+        String name,
         String definition,
-        double confidence,
-        String status,
-        List<String> seeAlso,
-        Optional<String> introducedInMission,
-        List<String> synonymsToAvoid,
+        List<String> examples,
         List<String> aliases,
-        List<String> bannedSynonyms) {
+        List<String> avoid,
+        TermStatus status,
+        List<Urn> seeAlso) {
 
-    private static final ModularRuleset<String> SURFACE_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A glossary term needs a surface that is not blank.", text -> !text.isBlank()));
+    private static final ModularRuleset<String> NAME_RULES = ModularRuleset.<String>emptyRules()
+            .must(Constraints.of("A term needs a name that is not blank.", text -> !text.isBlank()));
 
-    private static final ModularRuleset<String> STATUS_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A glossary term needs a status that is not blank.", text -> !text.isBlank()));
+    private static final ModularRuleset<String> DEFINITION_RULES = ModularRuleset.<String>emptyRules()
+            .must(Constraints.of("A term needs a definition that is not blank.", text -> !text.isBlank()));
 
-    private static final ModularRuleset<Double> CONFIDENCE_RULES = ModularRuleset.<Double>emptyRules()
-            .must(Constraints.of("A glossary term's confidence must be a finite number.", Double::isFinite));
+    private static final ModularRuleset<List<Urn>> SEE_ALSO_RULES = ModularRuleset.<List<Urn>>emptyRules()
+            .must(Constraints.of(
+                    "A term's see_also names terms only: each entry is a term:<context-id>/<term-id> URN.",
+                    urns -> urns.stream().allMatch(urn -> urn.kind() == NodeKind.TERM)));
 
     /**
      * Checks the fields and copies the lists.
      *
-     * @param surface the surface
+     * @param id the id
+     * @param name the name
      * @param definition the definition
-     * @param confidence the confidence
-     * @param status the status
-     * @param seeAlso the related surfaces
-     * @param introducedInMission the introducing mission, possibly empty
-     * @param synonymsToAvoid the synonyms to avoid
+     * @param examples the examples
      * @param aliases the aliases
-     * @param bannedSynonyms the banned synonyms
-     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the surface or status is blank or
-     *     the confidence is not finite
+     * @param avoid the forms to avoid
+     * @param status the status
+     * @param seeAlso the related terms
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the name or the definition is
+     *     blank, or a {@code see_also} entry is not a term's URN
      */
     public GlossaryTerm {
-        Objects.requireNonNull(surface, "surface");
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(name, "name");
         Objects.requireNonNull(definition, "definition");
         Objects.requireNonNull(status, "status");
-        Objects.requireNonNull(introducedInMission, "introducedInMission");
-        seeAlso = List.copyOf(seeAlso);
-        synonymsToAvoid = List.copyOf(synonymsToAvoid);
+        examples = List.copyOf(examples);
         aliases = List.copyOf(aliases);
-        bannedSynonyms = List.copyOf(bannedSynonyms);
-        SURFACE_RULES.guard(surface);
-        STATUS_RULES.guard(status);
-        CONFIDENCE_RULES.guard(confidence);
+        avoid = List.copyOf(avoid);
+        seeAlso = List.copyOf(seeAlso);
+        NAME_RULES.guard(name);
+        DEFINITION_RULES.guard(definition);
+        SEE_ALSO_RULES.guard(seeAlso);
+    }
+
+    /**
+     * The term's address in its context.
+     *
+     * @param context the context that holds the term
+     * @return {@code term:<context-id>/<term-id>}
+     */
+    public Urn urn(GlossaryContextIdentifier context) {
+        return termUrn(context, id);
+    }
+
+    /**
+     * The address of a term in a context.
+     *
+     * @param context the context's id
+     * @param term the term's id
+     * @return {@code term:<context-id>/<term-id>}
+     */
+    public static Urn termUrn(GlossaryContextIdentifier context, TermIdentifier term) {
+        return new Urn(NodeKind.TERM, context.value() + "/" + term.value());
     }
 }

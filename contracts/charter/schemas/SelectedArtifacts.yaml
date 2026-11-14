@@ -64,13 +64,13 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/SelectedArtifacts/properties/mission_step_contract'
-  glossary_pack:
+  glossary:
     allOf:
     - $ref: ArtifactIdList.yaml
-    description: The glossary_pack ids. Absent means none of the kind; [] means none; a list means exactly those.
+    description: The glossary context ids. Absent means none of the kind; [] means none; a list means exactly those.
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
-      symbol: '#/$defs/SelectedArtifacts/properties/glossary_pack'
+      symbol: '#/$defs/SelectedArtifacts/properties/glossary'
   skill:
     allOf:
     - $ref: ArtifactIdList.yaml

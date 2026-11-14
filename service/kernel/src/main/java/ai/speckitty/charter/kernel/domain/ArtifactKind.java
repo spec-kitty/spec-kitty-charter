@@ -26,8 +26,13 @@ public enum ArtifactKind {
     AGENT_PROFILE("agent_profile", "agent_profiles", true),
     /** A mission step contract: the structural sub-steps of one mission step and what each delegates to. */
     MISSION_STEP_CONTRACT("mission_step_contract", "mission_step_contracts", true),
-    /** A glossary pack: terms contributed to the project's vocabulary. */
-    GLOSSARY_PACK("glossary_pack", "glossary_packs", true),
+    /**
+     * A glossary context: a ubiquitous-language bounded context and its terms, one per
+     * {@code glossaries/<id>.glossary.yaml} (ADR-0049). Its kind token is {@code glossary}, while the URN of a context
+     * is {@code glossary_context:<id>} ({@link NodeKind#GLOSSARY_CONTEXT}, ADR-0053 decision 13); a term is an item of
+     * a context, not an artifact.
+     */
+    GLOSSARY("glossary", "glossaries", true),
     /** A pack skill: an agent capability a pack ships. */
     SKILL("skill", "skills", true),
     /** An anti-pattern: a re-kinded node inside another kind's graph fragment, never a standalone file. */

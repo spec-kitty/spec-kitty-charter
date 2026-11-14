@@ -66,8 +66,8 @@ class PresetRoundTripTest {
                 .containsEntry(ArtifactKind.AGENT_PROFILE, List.of("implementer"))
                 .containsEntry(ArtifactKind.SKILL, List.of("pr-review"))
                 .containsEntry(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
-                .doesNotContainKey(ArtifactKind.GLOSSARY_PACK);
-        assertThat(governing.artifacts().get(ArtifactKind.GLOSSARY_PACK))
+                .doesNotContainKey(ArtifactKind.GLOSSARY);
+        assertThat(governing.artifacts().get(ArtifactKind.GLOSSARY))
                 .extracting(PresetItem::id)
                 .containsExactly("core-terms");
 

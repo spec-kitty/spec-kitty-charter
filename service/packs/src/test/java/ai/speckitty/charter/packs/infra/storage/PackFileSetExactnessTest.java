@@ -359,7 +359,7 @@ class PackFileSetExactnessTest {
         typed.put(
                 Kind.MISSION_STEP_CONTRACT,
                 ids(read.dsos(MissionStepContractBinding.INSTANCE), MissionStepContractDso::id));
-        typed.put(Kind.GLOSSARY_PACK, ids(read.dsos(GlossaryPackBinding.INSTANCE), GlossaryPackDso::id));
+        typed.put(Kind.GLOSSARY, ids(read.dsos(GlossaryBinding.INSTANCE), GlossaryDso::id));
         typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
         typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));
         typed.put(Kind.MISSION_TYPE, ids(read.dsos(MissionTypeBinding.INSTANCE), MissionTypeDso::id));

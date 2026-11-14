@@ -17,10 +17,14 @@ final class RetiredFileFixture {
 
     /**
      * The retired families, glob to reason, in table order: the ADR-0044 decision 6 families first, then the pack-level
-     * files #451 retires ({@code pack.md}, {@code PROVENANCE.md}), then the org charter #431 retires. A later
+     * files #451 retires ({@code pack.md}, {@code PROVENANCE.md}), then the org charter #431 retires, then the
+     * glossary_pack file the glossary kind replaces (ADR-0049). A later
      * retirement is appended after these, so the order the table is read in stays the order of this list.
      */
     static final SequencedMap<String, String> RULES = rules();
+
+    /** The rule that refuses a file of the replaced glossary_pack kind by name, wherever the old rule read one. */
+    static final String GLOSSARY_PACK = "**/*.glossary-pack.yaml";
 
     /**
      * One retired file of every family at the layout the qa and cave-kitty packs held, the mission tier at the pack
@@ -35,7 +39,8 @@ final class RetiredFileFixture {
             "missions/qa/command-templates/review.md", "*/missions/*/command-templates/*",
             "pack.md", "*/pack.md",
             "PROVENANCE.md", "*/PROVENANCE.md",
-            "org-charter.yaml", "*/org-charter.yaml");
+            "org-charter.yaml", "*/org-charter.yaml",
+            "glossary_packs/core.glossary-pack.yaml", GLOSSARY_PACK);
 
     /** One retired file of every family at the layout the built-in pack held, under {@code missions/}. */
     static final SequencedMap<String, String> MISSIONS_LAYOUT = paths(
@@ -48,7 +53,8 @@ final class RetiredFileFixture {
             "missions/plan/actions/specify/index.yaml", "*/missions/*/actions/*/index.yaml",
             "missions/mission-steps/plan/specify/step.yaml", "*/missions/mission-steps/**/*",
             "missions/mission-steps/plan/specify/prompt.md", "*/missions/mission-steps/**/*",
-            "missions/mission-steps/plan/specify/guidelines.md", "*/missions/mission-steps/**/*");
+            "missions/mission-steps/plan/specify/guidelines.md", "*/missions/mission-steps/**/*",
+            "glossaries/old.glossary-pack.yaml", GLOSSARY_PACK);
 
     /**
      * Payloads elsewhere in a pack that only share a name with a retired family: an anchored rule never retires one.
@@ -145,6 +151,9 @@ final class RetiredFileFixture {
         out.put(
                 "*/org-charter.yaml",
                 "org enforcement is an activation preset with must-have items plus policy.yaml levels (#431)");
+        out.put(
+                "**/*.glossary-pack.yaml",
+                "the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)");
         return out;
     }
 

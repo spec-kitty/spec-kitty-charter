@@ -325,18 +325,21 @@ class WireTokenParityTest {
     @Test
     void aResponseKindIsAnOpenSlugSoAClientToleratesAKindItDoesNotKnow() throws NoSuchMethodException {
         // ArtifactSummary.kind and Artifact.kind are open slugs, not ArtifactKindToken: a kind a later version serves
-        // (glossary, procedure) must not break a client generated from this one.
+        // (lexicon, procedure) must not break a client generated from this one. The example is a token no kind uses.
         for (Class<?> model : List.of(ArtifactSummary.class, Artifact.class)) {
             assertThat(model.getMethod("getKind").getReturnType())
                     .as(model.getSimpleName() + ".kind")
                     .isEqualTo(String.class);
             Pattern pattern = model.getMethod("getKind").getAnnotation(Pattern.class);
             assertThat(pattern).as(model.getSimpleName() + ".kind's @Pattern").isNotNull();
-            assertThat("glossary").matches(pattern.regexp());
+            assertThat("lexicon").matches(pattern.regexp());
             assertThat("Tactic").doesNotMatch(pattern.regexp());
         }
-        assertThat(new ArtifactSummary("glossary", "g", "G", Map.<String, Link>of()).getKind())
-                .isEqualTo("glossary");
+        assertThat(ArtifactKind.fromToken("lexicon"))
+                .as("no kind uses the example token")
+                .isEmpty();
+        assertThat(new ArtifactSummary("lexicon", "g", "G", Map.<String, Link>of()).getKind())
+                .isEqualTo("lexicon");
     }
 
     @Test
