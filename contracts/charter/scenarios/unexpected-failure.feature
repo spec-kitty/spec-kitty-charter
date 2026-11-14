@@ -92,32 +92,32 @@ Feature: An unexpected failure is refused with internal_error on every operation
     And the problem code is "internal_error"
 
     Examples:
-      | operation                       | path                                                        |
-      | getActivation                   | /activations/a-1                                            |
-      | listActivationPacks             | /activations/a-1/packs                                      |
-      | listEffectiveArtifacts          | /activations/a-1/artifacts                                  |
-      | getEffectiveArtifact            | /activations/a-1/artifacts/directive/D                      |
-      | listEffectiveArtifactReferences | /activations/a-1/artifacts/directive/D/references           |
-      | getEffectiveAgentProfile        | /activations/a-1/artifacts/agent_profile/p                  |
-      | listEffectiveAssets             | /activations/a-1/artifacts/asset                            |
-      | getEffectiveAsset               | /activations/a-1/artifacts/asset/a                          |
-      | getEffectiveAssetPayload        | /activations/a-1/artifacts/asset/a/payload                  |
-      | listEffectiveSkills             | /activations/a-1/artifacts/skill                            |
-      | getEffectiveSkill               | /activations/a-1/artifacts/skill/s                          |
-      | listEffectiveGlossaryContexts   | /activations/a-1/artifacts/glossary                         |
-      | getEffectiveGlossaryContext     | /activations/a-1/artifacts/glossary/g                       |
-      | getEffectiveGlossaryTerm        | /activations/a-1/artifacts/glossary/g/terms/t               |
-      | getEffectiveMissionType         | /activations/a-1/artifacts/mission_type/m                   |
-      | getEffectiveMissionStep         | /activations/a-1/artifacts/mission_type/m/steps/s           |
-      | getEffectiveMissionSkeleton     | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |
-      | getEffectiveMissionStepContract | /activations/a-1/artifacts/mission_step_contract/c          |
-      | getActivationSkippedReport      | /activations/a-1/skipped                                    |
-      | getActivationVocabularyTerms    | /activations/a-1/vocabulary/terms                           |
+      | operation                         | path                                                        |
+      | getActivation                     | /activations/a-1                                            |
+      | listActivationPacks               | /activations/a-1/packs                                      |
+      | listEffectiveArtifacts            | /activations/a-1/artifacts                                  |
+      | getEffectiveArtifact              | /activations/a-1/artifacts/directive/D                      |
+      | listEffectiveArtifactReferences   | /activations/a-1/artifacts/directive/D/references           |
+      | getEffectiveAgentProfile          | /activations/a-1/artifacts/agent_profile/p                  |
+      | listEffectiveAssets               | /activations/a-1/artifacts/asset                            |
+      | getEffectiveAsset                 | /activations/a-1/artifacts/asset/a                          |
+      | getEffectiveAssetPayload          | /activations/a-1/artifacts/asset/a/payload                  |
+      | listEffectiveSkills               | /activations/a-1/artifacts/skill                            |
+      | getEffectiveSkill                 | /activations/a-1/artifacts/skill/s                          |
+      | listEffectiveGlossaryContexts     | /activations/a-1/artifacts/glossary                         |
+      | getEffectiveGlossaryContext       | /activations/a-1/artifacts/glossary/g                       |
+      | getEffectiveGlossaryTerm          | /activations/a-1/artifacts/glossary/g/terms/t               |
+      | getEffectiveMissionType           | /activations/a-1/artifacts/mission_type/m                   |
+      | getEffectiveMissionStep           | /activations/a-1/artifacts/mission_type/m/steps/s           |
+      | getEffectiveMissionSkeleton       | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |
+      | getEffectiveMissionStepContract   | /activations/a-1/artifacts/mission_step_contract/c          |
+      | getActivationSkippedReport        | /activations/a-1/skipped                                    |
+      | getActivationVocabularyTerms      | /activations/a-1/vocabulary/terms                           |
       | getActivationVocabularyContextive | /activations/a-1/vocabulary/contextive                      |
-      | getActivationVocabularyTaboos   | /activations/a-1/vocabulary/taboos                          |
-      | getEffectiveGraph               | /activations/a-1/graph                                      |
-      | getEffectiveActionContext       | /activations/a-1/mission-types/m/actions/s/context          |
-      | getEffectiveStepPrompt          | /activations/a-1/mission-types/m/actions/s/prompt           |
+      | getActivationVocabularyTaboos     | /activations/a-1/vocabulary/taboos                          |
+      | getEffectiveGraph                 | /activations/a-1/graph                                      |
+      | getEffectiveActionContext         | /activations/a-1/mission-types/m/actions/s/context          |
+      | getEffectiveStepPrompt            | /activations/a-1/mission-types/m/actions/s/prompt           |
 
   Scenario: createActivation that fails unexpectedly is 500 internal_error
     Given the service fails unexpectedly while it reads the packs
