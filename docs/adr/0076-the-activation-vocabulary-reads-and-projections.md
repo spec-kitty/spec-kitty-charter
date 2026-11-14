@@ -1,6 +1,6 @@
 ---
 title: "ADR-0076: The activation's vocabulary reads and projections"
-description: How a client reads the terms in force under an activation, and the Contextive file and avoid list projected from them, and how a glossary context overrides across levels.
+description: How a client reads the terms in force under an activation, and the Contextive file and taboo list projected from them, and how a glossary context overrides across levels.
 doc_status: draft
 updated: 2026-11-13T00:00:00Z
 decision_status: Proposed
@@ -24,9 +24,9 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-13, by Mission `glossary-contexts-and-terms-01M7B1PP` (#106). It awaits the plan-point squad
-and the operator's acceptance. The operator ruled its main points in the Mission's interviews on 2026-11-13, each a
-Decision Moment of that Mission:
+**Proposed**, 2026-11-13, by Mission `glossary-contexts-and-terms-01M7B1PP` (#106). It awaits the operator's
+acceptance. The plan-point squad has reviewed it, and its findings are folded in. The operator ruled its main points
+in the Mission's interviews on 2026-11-13 and 2026-11-14, each a Decision Moment of that Mission:
 
 | Decision Moment | Ruling |
 | --- | --- |
@@ -36,12 +36,15 @@ Decision Moment of that Mission:
 | `DM-01M7B8570B11V5ZNYA65Y1GVS1` | The reads live under `vocabulary`. |
 | `DM-01M7B85ADQMWP9ZEG99MXFGJKF` | A context overrides whole. |
 | `DM-01M7B85D68EEHK3TTE0DCTA8RT` | Contextive answers YAML; the other reads answer JSON. |
+| `DM-01M7CEZ6V0F8XD95NP8Q5E88KV` | The load warning of ADR-0049 decision 13 is retired. |
+| `DM-01M7CEZC44PK37ZHTR82P9N1VV` | The words-to-avoid projection is `taboos`. |
 
 It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
 
 - decision 10: the active-terms read, which ADR-0049 left to "the contract set that adds it";
 - decision 15: the projections;
-- decision 13: it states how that decision reads once a context overrides across levels as every artifact does.
+- decision 13: it states how that decision reads once a context overrides across levels as every artifact does, and
+  it retires that decision's load warning.
 
 ## Context
 
@@ -59,13 +62,17 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
 <!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### What is in force
 
-1. **A glossary context overrides across levels whole**, as every artifact does. Same-level siblings are refused at
-   compose unless settled (ADR-0048 decision 9). Terms are not merged across copies of a context.
+1. **A glossary context overrides across levels whole**, as every artifact does. Two copies at one level are a
+   sibling conflict, refused `pack_sibling_conflict` unless settled ([composition rules](/architecture/composition-and-activation-rules/)
+   C14 and C15). Terms are not merged across copies of a context.
 2. **A term is in force exactly when the winning copy of its context is in force and holds it.** A term has no state
    of its own. The two clash cases of ADR-0049 decision 13 read as follows:
    - A clash "on the same `term:` URN" across levels can only arise between two copies of one context, and decision 1
      settles it.
    - Two contexts that define one name are two terms (ADR-0049 decision 12).
+
+   ADR-0049 decision 13's load warning is retired. An override is reported by the effective reads (`overridden`), as
+   for every kind, and no glossary-specific warning is raised.
 3. **Every term of a context in force is served, whatever its `status`**, and each answer carries the status. A client
    filters by status, as `applies_to` stays advisory (ADR-0049 decision 14).
 
@@ -74,30 +81,47 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
 4. **The vocabulary is a read of the activation, not of an artifact**:
    - `GET /activations/{activationId}/vocabulary/terms`;
    - `GET /activations/{activationId}/vocabulary/contextive`;
-   - `GET /activations/{activationId}/vocabulary/avoid`.
+   - `GET /activations/{activationId}/vocabulary/taboos`.
 
-   Each has no pack twin. A pack's own vocabulary is its contexts, read by ADR-0074's paths.
-5. **`terms` answers JSON**: `activationId`, `revision`, `governanceFingerprint` and `terms`. Each active term carries:
+   These are activation reads, not artifact reads, so ADR-0074 decision 12's twin rule does not apply to them. A
+   pack's own vocabulary is its contexts, read by ADR-0074's paths.
+5. **`terms` answers JSON**: `activationId`, `revision`, `governanceFingerprint`, `terms` and `_links`. The links are
+   `self` and `activation`.
+
+   Each active term carries:
    - its `urn` (`term:<context-id>/<term-id>`), `contextId` and `termId`;
    - its fields: `name`, `definition`, `status`, and `examples`, `aliases`, `avoid` and `seeAlso` when present;
-   - the `packId` and `level` of its context's winning copy.
+   - the `packId` and `level` of its context's winning copy;
+   - `_links` with `effective-term` (the activation's term read) and `effective-glossary` (its context).
 
    Terms are ordered by context id, then term id.
 6. **`contextive` answers `application/yaml`**, a Contextive v1 definitions document:
-   - `contexts`, one per context in force, ordered by id. Each has `name` (the context's name) and
-     `domainVisionStatement` (its description).
+   - `contexts`, one per context in force, ordered by id. Each has `name` (the context's name),
+     `domainVisionStatement` (its description) and `paths` (its `applies_to.paths`, when present).
    - `terms`, in term id order. Each has `name`, `definition`, `examples` and `aliases` when present, and
      `meta: {urn, status}`.
 
-   The contract describes the body by prose and an example, not by a JSON Schema member.
-7. **`avoid` answers JSON**: `activationId`, `revision`, `governanceFingerprint` and `entries`. There is one entry per
-   avoided word per term: `word`, `term` (the URN) and `name` (the term's name). Entries are ordered by word, then URN.
-   A word avoided by two terms appears twice: the list states facts and leaves the gate to decide.
-8. **Each read is cached by the activation**: it answers an `ETag` of its own and honors `If-None-Match` with `304`, as
-   the other effective reads do. An activation with no glossary in force answers empty lists and an empty `contexts`,
-   never an error. An unknown activation is `404 activation_not_found`.
-9. **The activation links them**: an activation's `_links` gains `vocabulary-terms`, `vocabulary-contextive` and
-   `vocabulary-avoid`.
+   The contract describes the body as a string with an example, as it does for `/openapi.yaml`. It is not a JSON
+   Schema member.
+
+   The REST conventions' "success is `application/json`" gains this exception. A request whose `Accept` excludes
+   `application/yaml` is a 406, as the conventions say for any operation.
+7. **`taboos` answers JSON**: `activationId`, `revision`, `governanceFingerprint`, `entries` and `_links` (`self` and
+   `activation`).
+   - There is one entry per avoided word per term: `word`, `term` (the URN) and `name` (the term's name).
+   - Entries are ordered by word, then URN.
+   - A word avoided by two terms appears twice: the list states facts and leaves the gate to decide.
+8. **Each of the three reads is cached by the activation, as the other effective reads are.**
+   - It answers its own `ETag` and the `Charter-Source-Fingerprint` header, and honors `If-None-Match` with `304`.
+   - Refusals are judged before the `304`: `404 activation_not_found`, and the closure's `500` refusals such as
+     `pack_sibling_conflict`.
+   - An activation with no glossary in force answers empty lists and an empty `contexts`, never an error.
+9. **Links.**
+   - An activation's `_links` gains these relations:
+     - `glossaries`: the activation's glossary context list;
+     - `vocabulary-terms`, `vocabulary-contextive` and `vocabulary-taboos`.
+   - A context item links `terms` as a templated relation `term`.
+   - The relation table in the hypermedia conventions lists each one.
 <!-- markdownlint-enable MD029 -->
 
 ## Consequences
@@ -107,14 +131,15 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
 - A terminology gate and an editor plug-in read one source, which ADR-0049 decision 15 asked for, and no hand-kept list
   can drift from it.
 - No reserved context id is needed, and the artifact tree keeps one meaning: artifacts and their parts.
-- Override needs no new merge rule: a context behaves as every other artifact does.
+- Override needs no new merge rule and no new warning: a context behaves as every other artifact does.
 
 ### Negative
 
-- Three operations with no pack twin. That is an exception to ADR-0074 decision 12's twin rule, justified because they
-  read the activation's composition, which a pack does not have.
-- One YAML response body in a JSON contract. The contract checks that assume JSON must accept it, or be taught to.
+- One more YAML response body in a JSON contract, after `/openapi.yaml`. The lint and link checks already skip
+  non-JSON bodies, so the proof is a structural scenario of its own.
 - A project that wants to add one term to a built-in context copies the whole context.
+- The term refusal shares `artifact_not_found` with the context refusal (operator ruling). A client tells them apart by
+  the detail.
 
 ### Risks
 
@@ -130,6 +155,7 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
   negotiation doubles the scenarios for no consumer.
 - **Filter out deprecated terms.** Rejected: a gate needs a deprecated term's `avoid` entries, and a reader decides
   what to show.
+- **`avoid` as the leaf.** Rejected by the operator: a final verb segment reads as a controller (REST conventions).
 
 ## References
 

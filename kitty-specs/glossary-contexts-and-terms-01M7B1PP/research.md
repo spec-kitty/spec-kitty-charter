@@ -18,8 +18,28 @@ Status words below:
   - `NodeKind.GLOSSARY_PACK` becomes two node kinds:
     - `GLOSSARY_CONTEXT`, URN token `glossary_context`, standing for `ArtifactKind.GLOSSARY` (ADR-0053 decision 13);
     - `TERM`, URN token `term`, node-only like `ACTION`.
-  - `NodeKind` stops deriving its token and its artifact kind from the constant name. Each constant declares its token
-    and its artifact kind (empty for `ACTION` and `TERM`), and `NodeKind.of(ArtifactKind)` maps through them.
+  - `NodeKind` stops deriving its facts from the constant name. Each constant declares:
+    - its token;
+    - its artifact kind (empty for `ACTION` and `TERM`);
+    - its fragment plural (none for `TERM`);
+    - whether a graph document may declare it as a node;
+    - whether an edge may target it.
+  - `NodeKind.of(ArtifactKind)`, `plural()` and `fromPlural()` map through that table.
+  - `TERM` is on the wire (`NodeKind.yaml`) and is an edge target of `vocabulary`. It is never declared as a node and
+    has no fragment plural.
+  - The single `authoredInGraphs()` predicate splits into the two flags.
+  - `WireTokenParityTest` and `VocabularyEqualityTest` check each flag against its own contract surface. That changes
+    what they check; it is not a weakening.
+  - A `term:` edge target that no held context resolves is a broken reference (squad, Java lens H2 and H3; architect
+    lens M2).
+- **Every place that turns a URN's kind token into an artifact kind maps through `NodeKind.artifactKind()`**, never
+  `token()`. Today `glossary_pack` is spelled the same in both, which hides the conflation. The places:
+  - `EffectiveProfileDtos` (lines 106, 114, 118 and 148);
+  - `ProfileDtos` (115);
+  - `EffectiveBodies` (259);
+  - the `linksArtifact` paths of the profile reads.
+
+  A governance test with a `vocabulary` edge proves it (squad, Java lens H1).
 - **Rationale**:
   - ADR-0053 decision 13 splits the URN token from the kind token on purpose.
   - Name-derived mapping (`valueOf(kind.name())`, `fromToken(token())`) cannot express that split.
@@ -35,8 +55,9 @@ Status words below:
   - `node_kinds` gains `glossary_context` and `term`, and `artifact_kinds` gains `glossary`.
   - `node_kinds` stops equalling `artifact_kinds` plus `action`. `VocabularyEqualityTest` checks the explicit table
     instead.
-  - The fragment plural is `glossary_contexts: glossary_context`. A term is never declared in a fragment: it is
-    derived from its context file, so `term` has no fragment key.
+  - The fragment plural is `glossaries: glossary_context`, the artifact kind's plural, so no new plural mechanism is
+    needed (squad, architect lens M1). A term is never declared in a fragment: it is derived from its context file, so
+    `term` has no fragment key.
   - The file rule is `**/*.glossary.yaml` → schema `glossary`.
 
 ## R2. Stored activations (ruled, `DM-01M7B1Q1HW2KDEEW3MKCK2A2PT`)
@@ -85,33 +106,61 @@ Status words below:
   - A term is in force when its context's winning copy holds it. There is no per-term merge.
   - ADR-0049 decision 13's "clash on the same `term:` URN" can therefore only arise between two copies of one context,
     and the context's override settles it.
-- **Record**: ADR-0076 states this reading of ADR-0049 decision 13, and ADR-0049 carries a dated annotation.
+- **Warning** (ruled, `DM-01M7CEZ6V0F8XD95NP8Q5E88KV`): ADR-0049 decision 13's "the load warns" is retired. An
+  override is reported by the effective reads as for every kind, with no new notice code.
+- **Record**: ADR-0076 decisions 1 and 2 state this reading of ADR-0049 decision 13, and ADR-0049 carries a dated
+  annotation.
 
 ## R6. The activation's vocabulary reads (ruled: paths, media; shaped in ADR-0076)
 
 - **Paths** (`DM-01M7B8570B11V5ZNYA65Y1GVS1`):
   - `GET /activations/{activationId}/vocabulary/terms`;
   - `GET …/vocabulary/contextive`;
-  - `GET …/vocabulary/avoid`.
+  - `GET …/vocabulary/taboos` (leaf ruled `DM-01M7CEZC44PK37ZHTR82P9N1VV`, a noun).
 
   They are reads of the activation, not of an artifact (ADR-0049 decision 10), so they do not collide with
   `{contextId}`.
 - **Media** (`DM-01M7B85D68EEHK3TTE0DCTA8RT`): `contextive` answers `application/yaml` in the Contextive v1 file
-  format. `terms` and `avoid` answer JSON.
+  format. `terms` and `taboos` answer JSON.
+  - The YAML body follows the `/openapi.yaml` precedent: `InfoController` answers a string as `application/yaml`, and
+    the contract's `paths/openapi.yaml` describes it as `type: string`. The lint and `LinkChecks` already skip non-JSON
+    bodies.
+  - A structural step in `vocabulary.feature` proves the Contextive field set.
+  - An `Accept` that excludes YAML is a 406.
+  - The edge renders YAML with `snakeyaml-engine`. It is already in the version catalog and the verification
+    metadata, so it becomes a dependency of `:artifacts-edge`, not a new artifact (squad, Java lens M2; DIRECTIVE_051:
+    nothing new is fetched).
 - **What is in force**: the winning copy of each `glossary` context whose effective state is in force. A context that is
   deselected, denied or not selected contributes nothing. Every term of a context in force is listed, whatever its
   `status`, and each answer carries the status.
   - Plan call: filtering by status is left to the client, as ADR-0049 decision 14 leaves `applies_to` advisory.
-- **Bodies** (plan call; ADR-0076 pins them):
-  - `terms`: `{activationId, revision, governanceFingerprint, terms: [ActiveTerm]}`. An `ActiveTerm` is `urn`,
-    `contextId`, `termId`, `name`, `definition`, `status`, `examples?`, `aliases?`, `avoid?`, `seeAlso?`, `packId` and
-    `level`. It is ordered by context id, then term id.
-  - `avoid`: `{activationId, revision, governanceFingerprint, entries: [{word, term, name}]}`. `term` is the URN. There
-    is one entry per avoided word per term, ordered by word, then URN.
-  - `contextive`: `contexts[] → {name, domainVisionStatement, terms[] → {name, definition, examples?, aliases?, meta:
-    {urn, status}}}`, with `domainVisionStatement` taken from the context's `description`, ordered as in `terms`.
-- **Caching**: each read gets an `EffectiveTag.Read` value and answers `ETag`, `If-None-Match` and `304`, as the other
-  effective reads do.
+- **Bodies** (plan call; ADR-0076 decisions 5 to 7 pin them):
+  - `terms`: `{activationId, revision, governanceFingerprint, terms: [ActiveTerm], _links}`. An `ActiveTerm` is:
+    - `urn`, `contextId`, `termId`, `name`, `definition`, `status`;
+    - `examples?`, `aliases?`, `avoid?`, `seeAlso?`;
+    - `packId` and `level`;
+    - `_links` (`effective-term`, `effective-glossary`).
+
+    Terms are ordered by context id, then term id.
+  - `taboos`: `{activationId, revision, governanceFingerprint, entries: [{word, term, name}], _links}`. `term` is the
+    URN. There is one entry per avoided word per term, ordered by word, then URN.
+  - `contextive`: `contexts[] → {name, domainVisionStatement, paths?, terms[] → {name, definition, examples?,
+    aliases?, meta: {urn, status}}}`.
+    - `domainVisionStatement` comes from the context's `description`, and `paths` from its `applies_to.paths`
+      (squad, architect lens L3).
+    - It is ordered as `terms` is.
+
+  `_links` on every JSON success answer follows the lint rules `success-schemas-carry-links` and
+  `success-responses-have-link-examples` (squad, architect lens H1).
+- **Caching**: each read gets an `EffectiveTag.Read` value, with the `winner`/`winners` guards of `EffectiveTag`
+  taking it. Each answers `ETag` and `Charter-Source-Fingerprint`, and honors `If-None-Match` with `304`. Refusals are
+  judged first, including the closure's `500 pack_sibling_conflict` (squad, architect lens M4).
+- **The read path** (squad, Java lens M1):
+  - The `ActivationArtifacts` port gains `contextsInForce(activationId)`: the winning `glossary` contexts with state
+    in force, their packs, and the closure fingerprint. `ActivationsArtifacts` and `EffectiveReadService` implement
+    it.
+  - A `PacksGlossaries` adapter reads each winning pack's contexts once, checked against that fingerprint.
+  - NFR-005 is measured as one activation session plus at most one read per winning pack, counted by a test.
 - **Rationale**:
   - The site's Contextive file already uses `meta.status`.
   - The URN in `meta` lets a tool link back.
@@ -189,9 +238,32 @@ Status words below:
 | #551 and #552 (epic #549) | `kernel.validation` and the identifier types. | R9. |
 | #547 | The whole-pack gate skips unmodelled file kinds. | The proof checks that `glossaries/*.glossary.yaml` is round-tripped, not skipped. |
 
+## R14. This repository's charter file (ruled, `DM-01M7CEZ19K8QRA3KX68KRWX22G`)
+
+- **Fact**: `.kittify/charter/charter.yaml` holds `selected_glossary_packs` and `activated_glossary_packs`. The
+  spec-kitty CLI writes and reads them, and `ProjectCharterYamlSchemaTest` validates the file against charter's closed
+  `charter.schema.json` (squad, Java lens H5).
+- **Decision**: the test stops validating this repository's core-written file. It is core's format, and the charter
+  keeps no compatibility with core's formats. The file is not edited, so the CLI keeps working. Any `charter.schema.json`
+  coverage the test gave moves to a canonical example charter file in the test resources.
+
+## R15. Gates on new code (squad, Java lens M3)
+
+- Slice D's close-out (PR #569) adds an ADR-0058 complexity gate: Checkstyle `CyclomaticComplexity` 15,
+  `NPathComplexity` 1000, `MethodLength` 60 and `NestedIfDepth` 1, with no suppressions.
+- The new decode, the route switches and the projections are written to it from the start.
+- Mutation floors: kernel 75; packs, activations and artifacts-edge 85. No floor is lowered.
+
 ## R13. ADR number
 
 ADR-0076 was free on `main` and in the open PRs on 2026-11-13, and is announced to the orchestrator.
+
+## R16. Integration by rebase (operator, 2026-11-14)
+
+- `main` is integrated by rebase, never by merge. Force-push is allowed only for a rebase of this Mission's own branch,
+  with a lease.
+- On 2026-11-14 the branch was rebased onto `main` `d71e79bb`. Every commit was re-signed, including the two
+  CLI-written ones that were unsigned.
 
 ## Squad dispositions
 

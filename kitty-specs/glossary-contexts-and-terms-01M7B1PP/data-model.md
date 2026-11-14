@@ -51,7 +51,9 @@ A `see_also` URN that no held context resolves is a broken reference, reported a
 - **`ArtifactKind.GLOSSARY`**: token `glossary`, plural `glossaries`, activatable.
 - **`NodeKind.GLOSSARY_CONTEXT`**: token `glossary_context`, artifact kind `GLOSSARY`.
 - **`NodeKind.TERM`**: token `term`, no artifact kind.
-- `NodeKind` declares its token and its artifact kind per constant (research R1).
+- `NodeKind` declares, per constant, its token, artifact kind, fragment plural, whether a graph may declare it as a
+  node, and whether an edge may target it (research R1). `GLOSSARY_CONTEXT`'s plural is `glossaries`. `TERM` has no
+  plural, is never declared, and is a `vocabulary` edge target. A dangling `term:` target is a broken reference.
 - **`Relation.VOCABULARY`**: its targets are `glossary_context` and `term`.
 
 ## Contract read models (`contracts/charter/schemas`)
@@ -63,15 +65,15 @@ A `see_also` URN that no held context resolves is a broken reference, reported a
 | `GlossaryContext` | `Artifact` member `glossary`: the pack-file fields in camel case (`schemaVersion`, `appliesTo`), terms included |
 | `GlossaryTerm` | `{id, name, definition, status, examples?, aliases?, avoid?, seeAlso?, urn, contextId, _links}` |
 | `EffectiveGlossaryContextRead`, `EffectiveGlossaryTermRead` | The effective envelope used by the skill read: `activationId`, `revision`, `governanceFingerprint`, `kind`, `artifactId`, `packId`, `level`, `policy`, `state`, `reason`, then the context or term, then `_links` |
-| `ActiveTermList` | `{activationId, revision, governanceFingerprint, terms: [ActiveTerm]}` |
-| `ActiveTerm` | `GlossaryTerm`'s fields, plus `packId` and `level` |
-| `AvoidList` | `{activationId, revision, governanceFingerprint, entries: [{word, term, name}]}` |
-| Contextive document | `application/yaml`, described in prose and by an example. It is not a JSON Schema member (ADR-0076). |
+| `ActiveTermList` | `{activationId, revision, governanceFingerprint, terms: [ActiveTerm], _links}` |
+| `ActiveTerm` | `GlossaryTerm`'s fields, plus `packId`, `level` and `_links` (`effective-term`, `effective-glossary`) |
+| `TabooList` | `{activationId, revision, governanceFingerprint, entries: [{word, term, name}], _links}` |
+| Contextive document | `application/yaml`: `contexts[] → {name, domainVisionStatement, paths?, terms[] → {name, definition, examples?, aliases?, meta: {urn, status}}}`. The contract describes it as a string with an example, as for `/openapi.yaml` (ADR-0076 decision 6). |
 
 ## State and precedence (an activation)
 
-- **Context**: one winning copy per id across the closure. A higher level overrides a lower one whole. Same-level
-  siblings are refused at compose unless settled. The effective state is selected, deselected, denied or not
+- **Context**: one winning copy per id across the closure. A higher level overrides a lower one whole, with no warning
+  of its own. Same-level siblings are refused `pack_sibling_conflict` unless settled (C14, C15). The effective state is selected, deselected, denied or not
   selected, as for any activatable kind.
 - **Term**: in force exactly when its context's winning copy is in force and holds it. A term has no state of its own.
 - **Stored activation**: `selected.glossary` and `deactivated.glossary` hold context ids. `glossary_pack` is no longer
