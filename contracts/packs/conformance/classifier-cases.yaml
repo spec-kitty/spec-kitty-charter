@@ -49,7 +49,7 @@ cases:
   - {path: core/agent-profiles/a.agent.yaml, expect: mapped, rule: "**/*.agent.yaml", kind: agent-profile, schema: schemas/agent-profile.schema.json, content_form: yaml}
   - {path: core/step-contracts/a.step-contract.yaml, expect: mapped, rule: "**/*.step-contract.yaml", kind: mission-step-contract, schema: schemas/mission-step-contract.schema.json, content_form: yaml}
   - {path: core/assets/a.asset.yaml, expect: mapped, rule: "**/*.asset.yaml", kind: asset, schema: schemas/asset.schema.json, content_form: yaml}
-  - {path: core/glossary/a.glossary-pack.yaml, expect: mapped, rule: "**/*.glossary-pack.yaml", kind: glossary-pack, schema: schemas/glossary-pack.schema.json, content_form: yaml}
+  - {path: core/glossaries/a.glossary.yaml, expect: mapped, rule: "**/*.glossary.yaml", kind: glossary, schema: schemas/glossary.schema.json, content_form: yaml}
   - {path: core/skills/a.skill.yaml, expect: mapped, rule: "**/*.skill.yaml", kind: skill, schema: schemas/skill.schema.json, content_form: yaml}
   - {path: core/presets/minimal.yaml, expect: mapped, rule: "*/presets/*.yaml", kind: preset, schema: schemas/preset.schema.json, content_form: yaml}
   - {path: core/pack-manifest.yaml, expect: mapped, rule: "*/pack-manifest.yaml", kind: pack-manifest, schema: schemas/pack-manifest.schema.json, content_form: yaml}
@@ -92,6 +92,7 @@ cases:
   - {path: core/mission_types/plan.yaml, expect: retired, rule: "*/mission_types/*.yaml"}
   - {path: core/missions/mission_types/plan.yaml, expect: retired, rule: "*/missions/mission_types/*.yaml"}
   - {path: core/missions/plan/mission.yaml, expect: retired, rule: "*/missions/*/mission.yaml"}
+  - {path: core/glossary/a.glossary-pack.yaml, expect: retired, rule: "**/*.glossary-pack.yaml"}
   - {path: core/missions/plan/mission-runtime.yaml, expect: retired, rule: "*/missions/*/mission-runtime.yaml"}
   - {path: core/missions/plan/governance-profile.yaml, expect: retired, rule: "*/missions/*/governance-profile.yaml"}
   - {path: core/mission_types/plan/governance-profile.yaml, expect: retired, rule: "*/mission_types/*/governance-profile.yaml"}
