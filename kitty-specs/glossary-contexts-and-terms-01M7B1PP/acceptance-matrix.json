@@ -167,11 +167,11 @@
     {
       "criterion_id": "FR-017",
       "description": "Verify FR-017 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "contract_scenario",
+      "evidence": "vocabulary.feature; VocabularyReadsTest, ExampleVocabularyInForceTest (WP06/WP07)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:29:54.494002+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
