@@ -208,7 +208,7 @@ such pair. Several later records kept their reference fields "until #189 rules o
     | skill `enhances` and `overrides` | the skill's own install and replacement data |
     | pack `depends_on` | a pack-level dependency, not an artifact edge ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) |
     | `activated_*` and `selected_*` | a preset's or charter's selection |
-    | glossary `see_also` | a cross-reference between terms; *since the operator ruling of 2026-11-14 (#106), each entry is a pack-qualifiable term reference whose `vocabulary` relation from its context is derived, as `implemented_by` is* |
+    | glossary `see_also` | a cross-reference between terms; *since the operator ruling of 2026-11-14 (#106), each entry is a term reference that may name its pack whose `vocabulary` relation from its context is derived, as `implemented_by` is* |
     | mission-step-contract delegations | a runtime handoff |
     | lifecycle guards | a transition's guard |
     | per-value `impacts` | the artifact's value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)) |

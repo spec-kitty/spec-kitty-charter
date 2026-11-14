@@ -3,7 +3,7 @@ title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
 doc_status: active
 updated: 2026-11-14T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decision 7 amended, decision 8 extended by ADR-0074 (2026-11-12); decisions 10 and 15 extended, decision 13 read and its load warning retired by ADR-0076 (2026-11-14); decision 3 see_also ruled a pack-qualifiable term reference (operator, 2026-11-14)'
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decision 7 amended, decision 8 extended by ADR-0074 (2026-11-12); decisions 10 and 15 extended, decision 13 read and its load warning retired by ADR-0076 (2026-11-14); decision 3 see_also ruled a term reference that may name its pack (operator, 2026-11-14)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -111,7 +111,7 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
    | `status` | yes | `draft`, `active` or `deprecated` (the three values the shipped terms use) |
    | `see_also` | no | term URNs |
 
-   *Ruled 2026-11-14 (operator, #106): a `see_also` entry is a pack-qualifiable term reference in the
+   *Ruled 2026-11-14 (operator, #106): a `see_also` entry is a term reference that may name its pack, in the
    `PackQualifiedReference` grammar. A bare `term:<context-id>/<term-id>` resolves in the term's own pack, and
    `<pack>::term:<context-id>/<term-id>` names a term another pack holds. A bare entry that only another pack holds is
    refused `pack_reference_unqualified`, as every other unqualified reference is, with no exemption; one that no held context
