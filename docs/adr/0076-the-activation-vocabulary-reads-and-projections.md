@@ -1,9 +1,9 @@
 ---
 title: "ADR-0076: The activation's vocabulary reads and projections"
 description: How a client reads the terms in force under an activation, and the Contextive file and taboo list projected from them, and how a glossary context overrides across levels.
-doc_status: draft
+doc_status: active
 updated: 2026-11-13T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -24,8 +24,8 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-13, by Mission `glossary-contexts-and-terms-01M7B1PP` (#106). It awaits the operator's
-acceptance. The plan-point squad has reviewed it, and its findings are folded in. The operator ruled its main points
+**Accepted**, 2026-11-14. Decider: Stijn Dejongh (operator). Proposed on 2026-11-13 by Mission
+`glossary-contexts-and-terms-01M7B1PP` (#106). The plan-point squad reviewed it, and its findings are folded in. The operator ruled its main points
 in the Mission's interviews on 2026-11-13 and 2026-11-14, each a Decision Moment of that Mission:
 
 | Decision Moment | Ruling |
