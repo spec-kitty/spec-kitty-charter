@@ -55,7 +55,7 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
       terms:
         - id: mission
           name: Mission
-          definition: A milestone of a roadmap.
+          definition: A milestone of a roadmap, its étape.
           avoid: [epic]
           status: draft
       """
@@ -171,7 +171,7 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
         - docs/plans/**
         terms:
         - name: Mission
-          definition: A milestone of a roadmap.
+          definition: A milestone of a roadmap, its étape.
           meta:
             urn: term:planning/mission
             status: draft
