@@ -1,6 +1,6 @@
 ---
 title: User journeys
-description: Eleven journeys through the charter, one per persona goal, each with its steps, the service operations it needs, how core does it today, and its scenarios.
+description: Twelve journeys through the charter, one per persona goal, each with its steps, the service operations it needs, how core does it today, and its scenarios.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
 type: Context
@@ -47,3 +47,4 @@ chain is: concept, then journey, then scenario, then contract.
 | [09 Upgrade packs](/context/user-journeys/09-upgrade-packs/) | [Core maintainer](/context/audience/core-maintainer/), [Individual developer](/context/audience/individual-developer/) | Register a new pack version and let a project opt in |
 | [10 Host centrally](/context/user-journeys/10-host-centrally/) | [Governance lead](/context/audience/governance-lead/) | Host the service for a team, with local and hosted options |
 | [11 Human reviews](/context/user-journeys/11-human-reviews/) | [Governance lead](/context/audience/governance-lead/) | Have every review done by a human, through a role pin |
+| [12 A mission walk under one activation](/context/user-journeys/12-a-mission-walk-under-one-activation/) | [Contract consumer](/context/audience/contract-consumer/) | Walk every step of a mission, with its governance and prompt, and find the review squad, by links from the root |
