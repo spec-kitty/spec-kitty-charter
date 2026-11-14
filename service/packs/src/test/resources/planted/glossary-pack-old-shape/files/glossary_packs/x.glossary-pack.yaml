@@ -1,0 +1,7 @@
+id: x
+provenance: built-in
+terms:
+- surface: lane
+  definition: A sequence of work packages.
+  confidence: 0.9
+  status: active

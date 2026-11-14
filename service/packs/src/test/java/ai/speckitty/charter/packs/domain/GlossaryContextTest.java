@@ -14,8 +14,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * The glossary context entity (ADR-0049 decisions 1 to 3): each rule is refused on the same valid fixture, which builds
- * as its positive control.
+ * The glossary context entity (ADR-0049 decisions 1 to 3): each rule is refused on the same valid fixture, and {@link
+ * #positiveControlTheValidFixtureBuilds} is the positive control that the fixture itself builds.
  */
 @DisplayName("Glossary context entity")
 class GlossaryContextTest {
@@ -145,9 +145,20 @@ class GlossaryContextTest {
         assertThat(valid("g").term(other).build().terms()).hasSize(2);
     }
 
+    @Test
+    @DisplayName("positive control: the valid fixture every refusal below starts from builds")
+    void positiveControlTheValidFixtureBuilds() {
+        GlossaryContext context = valid("g").build();
+
+        assertThat(context.name()).isEqualTo("Spec Kitty core");
+        assertThat(context.description()).contains("The core vocabulary.");
+        assertThat(context.tags()).isEmpty();
+        assertThat(context.terms()).containsExactly(term("mission"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"", " ", "\t"})
-    @DisplayName("a blank name is refused; the fixture's name builds")
+    @DisplayName("a blank name is refused (positive control: positiveControlTheValidFixtureBuilds)")
     void aBlankNameIsRefused(String name) {
         assertThatThrownBy(() -> valid("g").name(name).build())
                 .isInstanceOf(ConstraintBreachException.class)
@@ -156,7 +167,7 @@ class GlossaryContextTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", " ", "\n"})
-    @DisplayName("a blank description is refused; the fixture's description builds")
+    @DisplayName("a blank description is refused (positive control: positiveControlTheValidFixtureBuilds)")
     void aBlankDescriptionIsRefused(String description) {
         assertThatThrownBy(() -> valid("g").description(description).build())
                 .isInstanceOf(ConstraintBreachException.class)

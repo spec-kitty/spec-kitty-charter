@@ -267,6 +267,46 @@ class GlossaryAndSkillSchemaTest {
         });
     }
 
+    @ParameterizedTest(name = "a term without {0} is refused at terms/0")
+    @CsvSource({"id", "name", "definition", "status"})
+    @DisplayName("a term missing a required member is refused; the minimal context with every member validates")
+    void aTermWithoutARequiredMemberIsRefused(String member) {
+        String full = "{id: s, name: s, definition: d, status: active}";
+        String without = full.replace(member + ": " + memberValue(member) + ", ", "")
+                .replace(", " + member + ": " + memberValue(member), "");
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY)).as("positive control").isEmpty();
+        assertThat(without).as("the member was removed").doesNotContain(member + ":");
+
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY.replace(full, without)))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("required");
+                    assertThat(v.pointer()).containsExactly("terms", "0");
+                    assertThat(v.property()).contains(member);
+                });
+    }
+
+    @ParameterizedTest(name = "a term whose {0} is an explicit null is refused at terms/0/{0}")
+    @CsvSource({"id", "name", "definition", "status"})
+    @DisplayName("a term's required member refuses an explicit null")
+    void aTermWithANullRequiredMemberIsRefused(String member) {
+        String full = "{id: s, name: s, definition: d, status: active}";
+        String nulled = full.replace(member + ": " + memberValue(member), member + ": null");
+        assertThat(nulled).as("the member was nulled").contains(member + ": null");
+
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY.replace(full, nulled)))
+                .isNotEmpty()
+                .allSatisfy(v -> assertThat(v.pointer()).containsExactly("terms", "0", member));
+    }
+
+    private static String memberValue(String member) {
+        return switch (member) {
+            case "definition" -> "d";
+            case "status" -> "active";
+            default -> "s";
+        };
+    }
+
     @Test
     @DisplayName("a glossary context with no terms is refused")
     void noTermsIsRefused() {

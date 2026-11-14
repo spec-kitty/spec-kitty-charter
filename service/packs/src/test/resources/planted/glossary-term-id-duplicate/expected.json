@@ -1,0 +1,17 @@
+{
+  "covers": [
+    "FR-003"
+  ],
+  "configuredLevel": "org",
+  "findings": [],
+  "load": {
+    "level": "org",
+    "loads": false,
+    "violations": [
+      {
+        "kind": "domain",
+        "says": "Constraint breached: Each term's id must be unique within glossary context core; repeated: [lane]"
+      }
+    ]
+  }
+}

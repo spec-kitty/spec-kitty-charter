@@ -37,6 +37,8 @@ class IdentifierBoundsTest {
                 Arguments.of("ProcedureIdentifier", (Consumer<String>) ProcedureIdentifier::new),
                 Arguments.of("ToolguideIdentifier", (Consumer<String>) ToolguideIdentifier::new),
                 Arguments.of("SkillIdentifier", (Consumer<String>) SkillIdentifier::new),
+                Arguments.of("GlossaryContextIdentifier", (Consumer<String>) GlossaryContextIdentifier::new),
+                Arguments.of("TermIdentifier", (Consumer<String>) TermIdentifier::new),
                 Arguments.of("Preset id", (Consumer<String>) IdentifierBoundsTest::newPreset));
     }
 
@@ -98,7 +100,13 @@ class IdentifierBoundsTest {
     static Stream<Arguments> kebabVerdicts() {
         // The grammar's own verdicts are IdentifierGrammarTest's; these say which grammar each type delegates to.
         return Stream.of(
-                Arguments.of("a-b", true, true), Arguments.of("1a", true, false), Arguments.of("a--b", false, false));
+                Arguments.of("a-b", true, true),
+                Arguments.of("1a", true, false),
+                Arguments.of("a--b", false, false),
+                Arguments.of("Ab", false, false),
+                Arguments.of("a-", false, false),
+                Arguments.of("", false, false),
+                Arguments.of(" ", false, false));
     }
 
     @ParameterizedTest(name = "\"{0}\": digit-first kinds {1}, letter-first kinds {2}")
@@ -109,6 +117,8 @@ class IdentifierBoundsTest {
         assertVerdict(ProcedureIdentifier::new, id, digitFirstValid);
         assertVerdict(ToolguideIdentifier::new, id, letterFirstValid);
         assertVerdict(SkillIdentifier::new, id, letterFirstValid);
+        assertVerdict(GlossaryContextIdentifier::new, id, letterFirstValid);
+        assertVerdict(TermIdentifier::new, id, letterFirstValid);
         if (!id.isEmpty()) {
             assertVerdict(IdentifierBoundsTest::newPreset, id, letterFirstValid);
         }

@@ -63,6 +63,23 @@ class GlossaryTermTest {
     }
 
     @Test
+    @DisplayName("a term's context is the glossary_context its address names; any other URN names none")
+    void aTermNamesItsContext() {
+        assertThat(GlossaryTerm.contextOf(LANE)).contains(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core"));
+        assertThat(GlossaryTerm.contextOf(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core")))
+                .as("a context is no term")
+                .isEmpty();
+        assertThat(GlossaryTerm.contextOf(new Urn(NodeKind.ACTION, "software-dev/implement")))
+                .as("an action node has two segments too, and is no term")
+                .isEmpty();
+        for (String id : new String[] {"lane", "/lane", "core/"}) {
+            assertThat(GlossaryTerm.contextOf(new Urn(NodeKind.TERM, id)))
+                    .as(id)
+                    .isEmpty();
+        }
+    }
+
+    @Test
     @DisplayName("the lists are copies of what was given")
     void theListsAreCopies() {
         List<Urn> seeAlso = new ArrayList<>(List.of(LANE));

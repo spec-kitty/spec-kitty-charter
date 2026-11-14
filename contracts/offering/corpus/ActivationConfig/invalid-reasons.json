@@ -53,5 +53,8 @@
   ],
   "18-mission-types-left-out.json": [
     { "keyword": "additionalProperties", "at": "", "member": "missionTypes" }
+  ],
+  "19-glossary-pack-member.json": [
+    { "keyword": "additionalProperties", "at": "/selected", "member": "glossary_pack" }
   ]
 }

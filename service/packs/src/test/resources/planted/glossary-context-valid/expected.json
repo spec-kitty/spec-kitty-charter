@@ -1,0 +1,12 @@
+{
+  "covers": [
+    "FR-003",
+    "C-001"
+  ],
+  "configuredLevel": "org",
+  "findings": [],
+  "load": {
+    "level": "org",
+    "loads": true
+  }
+}

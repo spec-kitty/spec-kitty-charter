@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** {@code policy.yaml} read into the domain's {@link MutabilityPolicySource} (ADR-0063, FR-022). */
@@ -62,6 +63,29 @@ class PolicyYamlTest {
         assertThat(PolicyYaml.write(MutabilityPolicySource.empty()))
                 .as("the empty policy is its version alone")
                 .isEqualTo("schema_version: 1\n");
+    }
+
+    @Test
+    void theGlossaryKindDefaultMapsThroughItsArtifactKindToTheGlossaryContextNodeKind() {
+        MutabilityPolicySource source = PolicyYaml.read("""
+                schema_version: 1
+                kind_defaults:
+                  glossary: locked
+                """);
+
+        assertThat(source.kindDefaults())
+                .as("the key is the artifact kind token glossary; its node kind is glossary_context (ADR-0053)")
+                .containsExactly(Map.entry(NodeKind.GLOSSARY_CONTEXT, MutabilityLevel.LOCKED));
+        assertThat(source.levelOf(new Urn(NodeKind.GLOSSARY_CONTEXT, "spec-kitty-core")))
+                .isEqualTo(MutabilityLevel.LOCKED);
+        assertThat(PolicyYaml.write(source))
+                .as("written back under the artifact kind token, never the URN token")
+                .isEqualTo("schema_version: 1\nkind_defaults:\n  glossary: locked\n");
+        assertThatThrownBy(() -> PolicyYaml.read("schema_version: 1\nkind_defaults: {glossary_context: locked}\n"))
+                .as("the URN token is no kind_defaults key")
+                .isInstanceOfSatisfying(
+                        PolicyYaml.Unreadable.class,
+                        failure -> assertThat(failure.getMessage()).contains("glossary_context"));
     }
 
     @Test

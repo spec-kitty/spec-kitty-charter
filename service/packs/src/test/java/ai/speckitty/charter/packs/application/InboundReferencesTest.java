@@ -125,6 +125,72 @@ class InboundReferencesTest {
         assertRemovalOfAIsRefusedAndOfBIsNot(rig, "overrides:directive:A_ONE");
     }
 
+    private static Packs withContexts(String version) {
+        return base(version)
+                .file("glossaries/g.glossary.yaml", glossary("g"))
+                .file("glossaries/h.glossary.yaml", glossary("h"));
+    }
+
+    private static String glossary(String id) {
+        return """
+                schema_version: "1.0"
+                id: %s
+                name: %s
+                description: d
+                terms:
+                - id: lane
+                  name: lane
+                  definition: d
+                  status: active
+                """.formatted(id, id);
+    }
+
+    /**
+     * #106: a term is an item of its glossary context, so a vocabulary edge onto {@code term:g/lane} refers to
+     * {@code glossary_context:g} and becomes a broken reference when the replace removes that context. Removing the
+     * context h, which no edge reaches a term of, is the control.
+     */
+    @Test
+    void aVocabularyEdgeOntoATermOfARemovedContextRefusesTheReplace(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs withContexts = withContexts("1.0.0");
+        assertThat(rig.register("base", rig.stage(withContexts), Preconditions.none())
+                        .outcome())
+                .isEqualTo(Outcome.CREATED);
+        Packs dependent = derived("1.0.0", "").file("refs.graph.yaml", """
+                                schema_version: '1.0'
+                                generated_at: STATIC
+                                nodes: []
+                                edges:
+                                - source: directive:D_ONE
+                                  target: base::term:g/lane
+                                  relation: vocabulary
+                                """);
+        assertThat(rig.register("derived", rig.stage(dependent), Preconditions.none())
+                        .outcome())
+                .as("the dependent pack, whose edge resolves, is a sound upload")
+                .isEqualTo(Outcome.CREATED);
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "base",
+                rig.stage(withContexts("2.0.0").with("glossaries/g.glossary.yaml", null)),
+                Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::detail)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(
+                        "derived/directive:D_ONE",
+                        "directive:D_ONE of the pack derived refers to term:g/lane, which the registration removes."));
+        assertThat(rig.register(
+                                "base",
+                                rig.stage(withContexts("2.0.0").with("glossaries/h.glossary.yaml", null)),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: no edge reaches a term of h")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
     @Test
     void aReferrerTheSameRequestRemovesDoesNotBlockButOneItKeepsDoes(@TempDir Path host) {
         Rig rig = new Rig(host);
