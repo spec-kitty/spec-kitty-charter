@@ -1,0 +1,8 @@
+{
+  "event": "completed",
+  "invocation_id": "01M7B88K7A7RQWJFECBFT4FFPT",
+  "completed_at": "2026-11-14T08:09:19.485690+00:00",
+  "outcome": "done",
+  "closed_by": "agent",
+  "evidence_ref": "kitty-ops/research/slice-d-367-371-closeout.md"
+}
