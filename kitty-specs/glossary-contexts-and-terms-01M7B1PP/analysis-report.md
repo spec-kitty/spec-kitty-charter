@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: glossary-contexts-and-terms-01M7B1PP
 mission_id: 01M7B1PPNHGRAM8VH9ARMK3TVD
-generated_at: '2026-11-14T07:39:11.305504+00:00'
+generated_at: '2026-11-14T07:39:31.148152+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -12,7 +12,7 @@ input_artifacts:
     sha256: 33317ca91429a1e047c9e8620db875961c2743d112bd7985f587a1175e22b7af
   plan.md:
     path: .worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/plan.md
-    sha256: efab22cbef3abcf512924880a1175b2fa8c53e7ccbe7c87eadbd0170c4cf15e4
+    sha256: 6ca44da2c35e7ed730703ad178918f34807cdd7665d5d31428b41b9fdd269108
   tasks.md:
     path: .worktrees/glossary-contexts-and-terms-01M7B1PP-coord/kitty-specs/glossary-contexts-and-terms-01M7B1PP/tasks.md
     sha256: 5be58a7b61958adfeda448c82287eb69d7d3eea9b2984bc84c7b890c212c798c
@@ -21,16 +21,12 @@ input_artifacts:
     sha256: 5d4cdfea00b2bef238ca366dfaa85d221f449e62930f61f1106ca9894d74716a
 verdict: ready
 issue_counts:
-  high: 0
-  medium: 2
-  critical: 0
   low: 3
+  medium: 1
+  critical: 0
+  high: 0
   info: 0
 findings:
-- id: I1
-  severity: medium
-  category: inconsistency
-  summary: quickstart.md:28, contracts/glossary-reads.openapi.yaml:21-22 and plan.md:106 still name the words-to-avoid projection `avoid`/`AvoidList`; the ruling (DM-01M7CEZC44PK37ZHTR82P9N1VV) and ADR-0076 say `taboos`/`TabooList`.
 - id: U1
   severity: medium
   category: underspecification
@@ -53,7 +49,6 @@ findings:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| I1 | Inconsistency | MEDIUM | quickstart.md:28; contracts/glossary-reads.openapi.yaml:21-22; plan.md:106 | `avoid`/`AvoidList` naming survives in three places, against the `taboos` ruling. | Rename to `taboos`/`TabooList`/`getActivationVocabularyTaboos` in the three places. WP07's prompt and ADR-0076 are already right. |
 | U1 | Underspecification | MEDIUM | tasks/WP02 T008; spec FR-005, story 1 sc. 2 | The refusal of `glossary_packs/*.glossary-pack.yaml` needs a mechanism. Today an unmatched file is unclassified, and ADR-0075's `file_not_held` is a warning. | The WP02 implementer picks the mechanism, coordinates with epic #549 through the orchestrator, and states it in the review notes. WP03 T015 pins the outcome. |
 | C1 | Charter | LOW | plan.md:72 | The pre-merge squad is not a WP subtask. | Run it at landing, on the aggregate diff, before the PR is marked ready. |
 | E1 | Coverage | LOW | tasks WP02 frontmatter | NFR-004 is tracked on one WP. | Accept: every WP's Definition of Done names its floor. |
@@ -102,5 +97,5 @@ findings:
 ### Next Actions
 
 - No CRITICAL or HIGH findings, so implementation may proceed.
-- I1 is a three-line doc fix, worth folding before WP07 so the sketch and quickstart do not mislead.
+- I1 (stale  naming) was folded in commit b48776a0 before this report was recorded.
 - U1 is resolved inside WP02 by design.
