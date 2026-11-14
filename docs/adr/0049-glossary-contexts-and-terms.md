@@ -114,10 +114,11 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
    *Ruled 2026-11-14 (operator, #106): a `see_also` entry is a pack-qualifiable term reference in the
    `PackQualifiedReference` grammar. A bare `term:<context-id>/<term-id>` resolves in the term's own pack, and
    `<pack>::term:<context-id>/<term-id>` names a term another pack holds. A bare entry that only another pack holds is
-   refused `REFERENCE_UNQUALIFIED`, as every other unqualified reference is, with no exemption; one that no held context
+   refused `pack_reference_unqualified`, as every other unqualified reference is, with no exemption; one that no held context
    resolves is a broken reference. Each entry derives a `vocabulary` relationship from its context, so the one reference
    rule judges it (ADR-0064's derived relationships, as a guard's `implemented_by`). Why: an unqualified cross-pack
-   `see_also` would be the one bare reference that resolves by load order, which FR-014 and FR-015 forbid elsewhere.*
+   `see_also` would be the one bare reference that resolves by load order, which ADR-0053 decision 7 (FR-014 and FR-015
+   of Mission `pack-composition-depends-on-and-the-dependency-resolver-01M6F541`) forbids elsewhere.*
 
 4. **A term's URN is `term:<context-id>/<term-id>`**, so its link to its context is structural. `glossary:<id>` is
    the context's URN. Both join the CRG's URN kind set; `term` is a node-only kind, like `action`, with no file of
