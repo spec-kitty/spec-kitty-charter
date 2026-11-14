@@ -36,7 +36,23 @@ class EffectiveSkillReadsTest {
 
     @Test
     void theItemMapsTheKernelArtifactTheActivationReadThroughThePacksPort() {
-        CharterArtifact entity = new CharterArtifact() {
+        CharterArtifact entity = landPrSkill();
+        ActivationArtifacts.Facts facts = landPrFacts();
+        SkillView view = landPrView();
+        ActivationArtifacts activation = activationHolding(facts, entity);
+        SkillReads skills = skillsViewing(view);
+
+        EffectiveSkillReads.Read read =
+                found(new EffectiveSkillReads(activation, skills).skill("a-1", "land-pr", null));
+
+        assertThat(read.facts()).isEqualTo(facts);
+        assertThat(read.skill()).isEqualTo(view);
+        assertThat(asked).containsExactly("view land-pr for The read of the skill land-pr under activation a-1");
+    }
+
+    /** The kernel artifact the activation holds: the core pack's {@code land-pr} skill. */
+    private static CharterArtifact landPrSkill() {
+        return new CharterArtifact() {
             @Override
             public ArtifactKind kind() {
                 return ArtifactKind.SKILL;
@@ -67,14 +83,22 @@ class EffectiveSkillReadsTest {
                 return Optional.empty();
             }
         };
-        ActivationArtifacts.Facts facts = new ActivationArtifacts.Facts(
+    }
+
+    /** The activation's facts of the skill: built in, inactive, not selected. */
+    private static ActivationArtifacts.Facts landPrFacts() {
+        return new ActivationArtifacts.Facts(
                 new Held("land-pr", CORE, PackLevel.BUILT_IN, "open"),
                 "inactive",
                 false,
                 "not_selected",
                 List.of(),
                 Optional.empty());
-        SkillView view = new SkillView(
+    }
+
+    /** The view the packs port answers for the skill. */
+    private static SkillView landPrView() {
+        return new SkillView(
                 "land-pr",
                 CORE,
                 "1.0",
@@ -89,7 +113,11 @@ class EffectiveSkillReadsTest {
                 Optional.empty(),
                 List.of(),
                 Optional.of("body"));
-        ActivationArtifacts activation = new ActivationArtifacts() {
+    }
+
+    /** The activations port: it answers the skill with the facts and the entity, and refuses every other read. */
+    private static ActivationArtifacts activationHolding(ActivationArtifacts.Facts facts, CharterArtifact entity) {
+        return new ActivationArtifacts() {
             @Override
             public Outcome<Winners> winners(String activationId, ArtifactKind kind, @Nullable String ifNoneMatch) {
                 throw new UnsupportedOperationException();
@@ -116,7 +144,11 @@ class EffectiveSkillReadsTest {
                 return new Outcome.Found<>(new SkillWinner(SCOPE, facts, entity), ETAG);
             }
         };
-        SkillReads skills = new SkillReads() {
+    }
+
+    /** The packs port: it maps the kernel artifact to the view, records the ask, and reads no pack. */
+    private SkillReads skillsViewing(SkillView view) {
+        return new SkillReads() {
             @Override
             public Listed list(PackIdentifier pack) {
                 throw new UnsupportedOperationException();
@@ -138,12 +170,5 @@ class EffectiveSkillReadsTest {
                 return view;
             }
         };
-
-        EffectiveSkillReads.Read read =
-                found(new EffectiveSkillReads(activation, skills).skill("a-1", "land-pr", null));
-
-        assertThat(read.facts()).isEqualTo(facts);
-        assertThat(read.skill()).isEqualTo(view);
-        assertThat(asked).containsExactly("view land-pr for The read of the skill land-pr under activation a-1");
     }
 }
