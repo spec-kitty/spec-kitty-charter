@@ -40,4 +40,4 @@
     and `TERM` in place of `GLOSSARY_PACK`. A client that selects glossary packs selects glossary contexts by id under
     `selected.glossary`.
   - Pack content follows in `spec-kitty-open-packs`, which migrates its glossaries to contexts with the minted term
-    ids (draft issue `open-packs#TBD-glossary-contexts`). Until then a pack in the old shape is refused.
+    ids. Until then a pack in the old shape is refused.

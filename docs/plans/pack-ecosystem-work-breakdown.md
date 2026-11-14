@@ -64,7 +64,7 @@ Sibling-repository work; draft issues use `open-packs#TBD-<slug>` until the orch
 | P2 | `missions/` to `mission_types/<type>/`, step contracts into the bundles (`open-packs#TBD-mission-types-bundle`) | M | charter 9, with P1 |
 | P3 | Stack packs `java`, `python`, `drupal`, `javascript` as opt-in packs (`open-packs#TBD-stack-packs`) | M | P1 |
 | P4 | Procedure re-homing and anti-pattern migration with dedupe (`open-packs#TBD-curation-pass`) | L | charter 5, 6, 8 |
-| P5 | Glossary migration to contexts; term ids; deprecated terms (`open-packs#TBD-glossary-contexts`; the draft, with the term-id rule and map, is [in the Mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md)) | M | charter 4 (done) |
+| P5 | Glossary migration to contexts; term ids; deprecated terms (the draft issue, with the term-id rule and map, is [in the Mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md)) | M | charter 4 (done) |
 | P6 | The shipped work-package lifecycle from core's lane table, and an `ai.spec-kitty` event registry (`open-packs#TBD-lifecycle-and-registry`) | M | charter 7, 8 |
 | P7 | Fix the internal glossary stem (open-packs#47) | S | none |
 
