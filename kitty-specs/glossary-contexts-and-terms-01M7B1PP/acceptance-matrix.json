@@ -97,11 +97,11 @@
     {
       "criterion_id": "FR-010",
       "description": "Verify FR-010 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "contract_scenario",
+      "evidence": "contracts/charter/scenarios/glossary.feature; ExampleVocabularyReadTest (WP04)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:29:08.813078+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
