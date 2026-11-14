@@ -67,7 +67,7 @@ class EdgeIndexTest {
         }
 
         /** A pack at a level whose glossary contexts hold the terms, as bare URNs. */
-        Closure glossaryPack(
+        Closure glossaryHolder(
                 String name, PackLevel level, List<String> held, List<String> terms, Relationship... edges) {
             return pack(name, level, List.of(), held, terms, edges);
         }
@@ -511,15 +511,15 @@ class EdgeIndexTest {
     void aMergedIndexHoldsATermOnlyWhenTheWinningCopyOfItsContextHoldsIt() {
         Relationship onto = edge("directive:D", RelationType.VOCABULARY, "term:g/lane");
         Closure overridden = new Closure()
-                .glossaryPack(
+                .glossaryHolder(
                         "org",
                         PackLevel.ORG,
                         List.of("directive:D", "glossary_context:g"),
                         List.of("term:g/lane"),
                         onto)
-                .glossaryPack("project", PackLevel.PROJECT, List.of("glossary_context:g"), List.of("term:g/other"));
+                .glossaryHolder("project", PackLevel.PROJECT, List.of("glossary_context:g"), List.of("term:g/other"));
         Closure alone = new Closure()
-                .glossaryPack(
+                .glossaryHolder(
                         "org",
                         PackLevel.ORG,
                         List.of("directive:D", "glossary_context:g"),

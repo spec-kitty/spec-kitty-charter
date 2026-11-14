@@ -117,9 +117,9 @@ public final class InboundReferences {
     /** One pack as the scan reads it: how it is configured, its descriptor, and what it holds and writes. */
     private record Member(PackIdentifier id, PackDescriptor descriptor, PackCompositionFacts facts, boolean staged) {
 
-        /** Whether the pack holds the artifact, or the term, a URN names. */
+        /** Whether the pack holds the artifact, or the term, a URN names ({@link PackCompositionFacts#holds}). */
         boolean defines(Urn urn) {
-            return facts.defined().contains(urn.toString()) || facts.terms().contains(urn.toString());
+            return facts.holds(urn);
         }
 
         /** The descriptor {@code pack_id}s the pack builds on: its {@code parent_pack} and its {@code depends_on}. */
@@ -269,11 +269,15 @@ public final class InboundReferences {
         if (owner.isEmpty()) {
             return Optional.empty();
         }
+        // A term removed with its context is judged by the term: another pack that holds a context of the same id but
+        // not the term does not resolve it, so the reference still dangles.
+        Urn judged =
+                urn.flatMap(GlossaryTerm::contextOf).filter(owner.get()::equals).isPresent() ? urn.get() : owner.get();
         boolean resolvesToStaged = target.qualified()
                 ? target.packName()
                         .filter(name -> namesStagedPack(name, staged))
                         .isPresent()
-                : bareResolvesToStaged(owner.get(), closure);
+                : bareResolvesToStaged(judged, closure);
         return resolvesToStaged ? urn : Optional.empty();
     }
 
