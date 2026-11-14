@@ -46,8 +46,8 @@ All 31 Checkstyle tasks, `--continue`, `--max-workers=1`. Only Checkstyle tasks 
 | 7 | `activations/.../EffectiveReadMapperTest.java:723` | `theContextIsMappedWithItsArtifactsSuggestionEnhancementsAndSkippedReport` | 66 lines | **no** |
 | 8 | `artifacts-edge/.../EffectiveSkillReadsTest.java:37` | `theItemMapsTheKernelArtifactTheActivationReadThroughThePacksPort` | 96 lines | **no** |
 
-Rows 6 to 8 entered `main` on 2026-11-13 (#439, #532 and the effective-step mission squash), after
-#541 measured `17ce3f9`. They are outside #367's list, so they are reported to the operator before
+Rows 6 to 8 entered `main` on 2026-11-13 (#439, #532 and the effective-step mission squash),
+after PR #541 measured `17ce3f9`. They are outside #367's list, so they are reported to the operator before
 any change (no silent widening).
 
 ## Similar surfaces
@@ -60,13 +60,13 @@ any change (no silent widening).
 ## Tracked issues
 
 | Issue | Relation | Disposition |
-|---|---|---|
+| --- | --- | --- |
 | #367 | the methods | Closes with this PR for the methods; its class-split criterion (`FilesystemPackStore`, `PackPolicy`) is not in this Op's brief and goes to the operator |
 | #371 | the gate | Closes with this PR |
 | #468 | parent epic | Tick #367 and #371 |
 | — | open issues on checkstyle/complexity | none besides the three above |
 
-## Refactor plan (behaviour-preserving, DIRECTIVE_025)
+## Refactor plan (behavior-preserving, DIRECTIVE_025)
 
 Move code first, then adjust callers; no logic edits while moving; tests unchanged.
 
@@ -122,7 +122,7 @@ All three returned **AMEND**. Synthesis, adjudicated from the source:
   correctness, data or security risk (issue-tracker Rule 1).
 
 | Finding | Disposition |
-|---|---|
+| --- | --- |
 | Architect HIGH: ADR-0075 / #554 already decide the split | Accepted: the reason cites them, with no new note |
 | Architect MEDIUM / researcher HIGH: slice F touches `PackPolicy`, not the store's code | Accepted: a separate reason for each class |
 | Researcher HIGH: sizes grew | Accepted: current sizes in the closing comment |
