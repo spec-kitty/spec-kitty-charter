@@ -1,4 +1,6 @@
 {
+  "change_mode": "bulk_edit",
+  "coordination_branch": "kitty/mission-glossary-contexts-and-terms-01M7B1PP",
   "create_return_branch": "feat/106-glossary-contexts",
   "created_at": "2026-11-13T18:11:20.239452+00:00",
   "flattened": false,
@@ -14,11 +16,18 @@
   "purpose_context": "Core reads a pack's vocabulary today, and the charter does not serve it. ADR-0049 ruled a new shape: a glossary context of terms, each term addressable as term:<context>/<term>. ADR-0074 ruled the reads. This mission replaces the old glossary_pack shape outright, as the charter's model rule requires, and serves the contexts and terms so slice A2 (#536) closes.",
   "purpose_tldr": "Replace the glossary_pack kind with ADR-0049's glossary contexts and terms, and serve them by ADR-0074's paths in a pack and under an activation.",
   "slug": "glossary-contexts-and-terms-01M7B1PP",
+  "source_description": "#106 (R12) glossary contexts and terms; closes slice A2 #536. Operator interview 2026-11-13.",
   "target_branch": "feat/106-glossary-contexts",
-  "topology": "single_branch",
-  "topology_settled": false,
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 6,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 8
+  },
+  "topology_settled": true,
   "topology_source": "default",
-  "change_mode": "bulk_edit",
-  "vcs": "git",
-  "source_description": "#106 (R12) glossary contexts and terms; closes slice A2 #536. Operator interview 2026-11-13."
+  "vcs": "git"
 }

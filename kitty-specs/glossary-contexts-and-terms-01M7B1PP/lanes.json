@@ -1,0 +1,317 @@
+{
+  "version": 1,
+  "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
+  "mission_id": "01M7B1PPNHGRAM8VH9ARMK3TVD",
+  "mission_branch": "kitty/mission-glossary-contexts-and-terms-01M7B1PP",
+  "target_branch": "feat/106-glossary-contexts",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/NodeRef.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveBodies.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/NodeKindPluralTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/NodeKindTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WireTokenParityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java",
+        "service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileDtos.java",
+        "service/profiles-edge/src/test/java/ai/speckitty/charter/profiles/infra/api/ProfileDtosTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-14-glossary-replaces-glossary-pack.md",
+        "contracts/charter/paths/activations_activationId_presets_presetId.yaml",
+        "contracts/charter/scenarios/activation-glossary-pack-refused.feature",
+        "contracts/charter/scenarios/effective-reads.feature",
+        "contracts/charter/schemas/ActivatableKind.yaml",
+        "contracts/charter/schemas/CascadeKind.yaml",
+        "contracts/charter/schemas/DeactivatedArtifacts.yaml",
+        "contracts/charter/schemas/NodeKind.yaml",
+        "contracts/charter/schemas/Preset.yaml",
+        "contracts/charter/schemas/SelectedArtifacts.yaml",
+        "contracts/offering/corpus/ActivationConfig/invalid/19-glossary-pack-member.json",
+        "contracts/offering/corpus/ActivationConfig/valid/06-every-selected-kind.json",
+        "contracts/offering/corpus/ActivationConfig/valid/07-every-deactivated-kind.json",
+        "contracts/offering/schemas/ActivationConfig.schema.json",
+        "contracts/packs/README.md",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/charter.schema.json",
+        "contracts/packs/schemas/glossary-pack.schema.json",
+        "contracts/packs/schemas/glossary.schema.json",
+        "contracts/packs/schemas/graph-shard.schema.json",
+        "contracts/packs/schemas/mission-step-contract.schema.json",
+        "contracts/packs/schemas/org-fragment.schema.json",
+        "contracts/packs/schemas/pack-manifest.schema.json",
+        "contracts/packs/schemas/policy.schema.json",
+        "contracts/packs/schemas/preset.schema.json",
+        "scripts/usability/charter-to-activation.py",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationGlossaryPackRefusalTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relation.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/ArtifactKindTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AppliesTo.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Glossary*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TermIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TermStatus.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PresetMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Glossary*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/Glossary*Test.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/IdentifierBoundsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/Glossary*Test.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPlantedRefusalsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProjectCharterYamlSchemaTest.java",
+        "service/packs/src/test/resources/digest-baseline/**",
+        "service/packs/src/test/resources/pack-level/presets-pack/**",
+        "service/packs/src/test/resources/planted/glossary-*/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-14-glossary-reads-in-a-pack.md",
+        "contracts/charter/examples/Artifact.glossary*.yaml",
+        "contracts/charter/examples/GlossaryContextList*.yaml",
+        "contracts/charter/examples/GlossaryTerm*.yaml",
+        "contracts/charter/examples/_index.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/parameters/ArtifactKind.yaml",
+        "contracts/charter/parameters/ContextId.yaml",
+        "contracts/charter/parameters/TermId.yaml",
+        "contracts/charter/parameters/_index.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_glossary.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_glossary_contextId.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_glossary_contextId_terms_termId.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/every-operation.feature",
+        "contracts/charter/scenarios/glossary.feature",
+        "contracts/charter/scenarios/read-refusals.feature",
+        "contracts/charter/scenarios/switch-gate.yaml",
+        "contracts/charter/scenarios/unexpected-failure.feature",
+        "contracts/charter/schemas/Artifact.yaml",
+        "contracts/charter/schemas/ArtifactKindToken.yaml",
+        "contracts/charter/schemas/GlossaryContext.yaml",
+        "contracts/charter/schemas/GlossaryContextList.yaml",
+        "contracts/charter/schemas/GlossaryContextSummary.yaml",
+        "contracts/charter/schemas/GlossaryTerm.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "contracts/lint/ruleset.yaml",
+        "docs/development/hypermedia-hateoas.md",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryReads.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/GlossaryView.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/config/ArtifactsApplicationConfiguration.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossariesController.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodies.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/config/ArtifactsApiConfiguration.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossaries.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/config/ArtifactsPacksConfiguration.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossariesControllerTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/GlossaryBodiesTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksGlossariesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/PackArtifactRoutingTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ForeignArtifactRead.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ForeignArtifactReadTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-14-glossary-activation-twins.md",
+        "contracts/charter/examples/EffectiveGlossary*.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_glossary.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_glossary_contextId.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_glossary_contextId_terms_termId.yaml",
+        "contracts/charter/scenarios/activation-links.feature",
+        "contracts/charter/scenarios/effective-glossary.feature",
+        "contracts/charter/schemas/Activation.yaml",
+        "contracts/charter/schemas/EffectiveGlossaryContextRead.yaml",
+        "contracts/charter/schemas/EffectiveGlossaryTermRead.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceGlossaryTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveTagTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationMapperTest.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ActivationArtifacts.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReads.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/activations/ActivationsArtifacts.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesController.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossaryBodies.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/EffectiveGlossaryReadsTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/EffectiveGlossariesControllerTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRoutingTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceContextsInForceTest.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ActiveTerm.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ContextiveProjection.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ContextsInForce.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/TabooProjection.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/VocabularyReads.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/PacksVocabulary.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/ContextiveProjectionTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/TabooProjectionTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/application/VocabularyReadsTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/PacksVocabularyTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-14-activation-vocabulary.md",
+        "contracts/charter/examples/ActiveTermList*.yaml",
+        "contracts/charter/examples/Contextive*.yaml",
+        "contracts/charter/examples/TabooList*.yaml",
+        "contracts/charter/paths/activations_activationId_vocabulary_contextive.yaml",
+        "contracts/charter/paths/activations_activationId_vocabulary_taboos.yaml",
+        "contracts/charter/paths/activations_activationId_vocabulary_terms.yaml",
+        "contracts/charter/scenarios/vocabulary.feature",
+        "contracts/charter/schemas/ActiveTerm.yaml",
+        "contracts/charter/schemas/ActiveTermList.yaml",
+        "contracts/charter/schemas/TabooEntry.yaml",
+        "contracts/charter/schemas/TabooList.yaml",
+        "docs/development/rest-resource-conventions.md",
+        "service/artifacts-edge/build.gradle.kts",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYaml.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyBodies.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/VocabularyController.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/ContextiveYamlTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/api/VocabularyControllerTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/VocabularySteps.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "docs/api/service-contract.md",
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/divergences.yaml",
+        "docs/plans/next-slices-2026-11-12.md",
+        "docs/plans/pack-ecosystem-work-breakdown.md",
+        "docs/plans/roadmap.md",
+        "kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/closeout.md",
+        "kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/open-packs-draft-glossary-contexts.md",
+        "kitty-specs/glossary-contexts-and-terms-01M7B1PP/research/term-id-map.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-f"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-14T07:36:40.292558+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP08"
+  ],
+  "planning_commit_sha": "406e936b026a13d60207f8bbb0a2f4733ac4e794",
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP02",
+        "wp_b": "WP03",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/Glossary*Test.java' vs 'service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPlantedRefusalsTest.java'; WP03 depends on WP02"
+      }
+    ],
+    "total_merges": 1,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "write_scope_overlap": 1
+    }
+  }
+}
