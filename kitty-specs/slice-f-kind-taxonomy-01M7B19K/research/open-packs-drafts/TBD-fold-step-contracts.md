@@ -45,7 +45,7 @@ in the same pack. All 28 do (checked against `1692a3b`). Append the contract's `
    - A candidate held by another pack of the closure is qualified with that pack's name. Writing's 34 candidates are
      all foundation artifacts, so they become `foundation::<id>` (for example `foundation::DIRECTIVE_029`). This
      reverses the "candidates stay bare" note of open-packs ADR `2026-11-11-1` (draft TBD-validator-and-docs amends it).
-   - `delegates_to.kind` must be a `scope` target of an action: a guidance kind or `agent_profile`. All 144 are
+   - `delegates_to.kind` must be a `scope` target of an action: a guidance kind, never `agent_profile` (ADR-0032 decision 1; ruling DM-01M7DTN8JWR4G1P35NXGCMS65M). All 144 are
      (86 directive, 50 tactic, 6 procedure, 1 toolguide, 1 paradigm).
    - The kinds stay as open-packs holds them: `execution-lanes` is a **toolguide** and `git-flow` a **procedure** in
      foundation at `1692a3b` (the charter's example pack reclassified both as paradigms; open-packs has not, and this
