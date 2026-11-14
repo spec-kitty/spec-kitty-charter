@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: The complexity limits gate every pull request
 description: Checkstyle now fails a method over cyclomatic complexity 15, NPath 1000, 60 non-empty lines or a nested-if depth of 1, in main and test sources.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
@@ -14,7 +14,7 @@ audience:
     guidance_text: Read this for the four complexity limits a pull request must now keep, and what to do when a method goes over one.
 ---
 
-# 2026-11-12 — The complexity limits gate every pull request
+# 2026-11-14 — The complexity limits gate every pull request
 
 The four Checkstyle limits of
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are on
