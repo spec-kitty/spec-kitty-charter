@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -778,7 +778,7 @@ included): `sel'(k) = π[k] ∖ ⟦deny(k)⟧` without `force`, `= π[k]` with `
 A preset replaces each kind list it names, any kind included; `force` clears only the deny entries of its members. A
 preset no longer sets a kind gate or a separate mission-type list.
 *Source:* ADR-0059 D6; ADR-0020 D6; activation mission FR-016, open review item 4; `PresetRules.apply`; A7, decisions
-`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built (PR A0)** in the uniform form: every kind a preset names, `skill`, `glossary_pack` and `mission_type`
+`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built (PR A0)** in the uniform form: every kind a preset names, `skill`, `glossary_pack` (`glossary` since #106) and `mission_type`
 included; the kind gate (`kinds' = π.kinds`) and `mts' = π.mts` are gone.
 
 **W18 A preset walks nothing and denies nothing.** The preset write's `skipped` is empty, and `Den(D') ⊆ Den(D₀)`.

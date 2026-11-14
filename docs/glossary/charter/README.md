@@ -89,7 +89,7 @@ A charter artifact ID referenced by a charter selection (e.g. `selected_directiv
 
 ## charter
 
-The governance document synthesizing a project's purpose, constraints, team norms, and the body of project-specific governance artifacts (directives, tactics, and styleguides) into a durable reference artifact, produced by the charter interview workflow. This is the canonical governing term (glossary authority 1/2/3: `.kittify/glossaries/spec_kitty_core.yaml`, the built-in glossary pack, this entry).
+The governance document synthesizing a project's purpose, constraints, team norms, and the body of project-specific governance artifacts (directives, tactics, and styleguides) into a durable reference artifact, produced by the charter interview workflow. This is the canonical governing term (glossary authority 1/2/3: `.kittify/glossaries/spec_kitty_core.yaml`, the built-in pack's glossary, this entry).
 
 {#charter-bundle}
 
@@ -329,7 +329,7 @@ A ubiquitous-language bounded context authored as a pack artifact of kind `gloss
 
 ## Glossary Vocabulary — `vocabulary` (CRG Relation)
 
-A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`. Decided, not built yet: ADR-0049 retargets it at `glossary` and `term` instead of `glossary_pack`.
+A directional Three-layer CRG relation from a node to the vocabulary it relies on: a glossary context (`glossary_context:<id>`) or one of its terms (`term:<context-id>/<term-id>`), per ADR-0049 decision 4. A graph document authors it like any other edge; a glossary context also derives one to each term its terms' `see_also` entries name, bare for a term of the same pack or `<pack>::` qualified for a term another pack holds. A `term:` URN is a valid target but is never declared as a node. An effective profile's governance entry follows one hop of it from the profile and from everything the earlier steps list. Glossary scopes are retired (ADR-0049 decision 11), and `glossary_pack` is no target. In core, the relation is described by `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`.
 
 {#governance-scope-scope-crg-relation}
 

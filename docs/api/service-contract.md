@@ -110,7 +110,7 @@ its `DELETE` answers `404 kind_not_found`, as before.
 
 **Glossary contexts and terms** ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106), R12; [ADR-0049](/adr/0049-glossary-contexts-and-terms/), [ADR-0074](/adr/0074-the-remaining-cutover-reads-and-their-paths/) decisions 3 and 9 to 14, [ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/)). The kind `glossary` replaced `glossary_pack` outright, with no reader of the old shape: a pack file is a
 glossary context at `glossaries/<id>.glossary.yaml`, its URN is `glossary_context:<id>`, and a term inside it is
-`term:<context-id>/<term-id>`. The [glossary pack schema](/architecture/pack-schemas/glossary/) has the shape.
+`term:<context-id>/<term-id>`. The [glossary context schema](/architecture/pack-schemas/glossary/) has the shape.
 `glossary` is listed and filtered by `listPackArtifacts` and `listEffectiveArtifacts`, and each item is read by the
 literal operations above: the templated `getPackArtifact` refuses it `404 kind_not_found`, naming the literal path,
 and a glossary context is not removed through the service. The path parameters `contextId` and `termId` take a

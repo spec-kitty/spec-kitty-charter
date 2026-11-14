@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -88,7 +88,7 @@ the required floor of the projects whose closure holds the pack; core's org char
 the service (#431, [Enforce presets on an organization's projects](/guides/enforce-org-presets/)).
 
 > **Decided design:** this diagram draws the kinds as decided in ADR-0048 to ADR-0052: `glossary` for
-> `glossary_pack`, an `AntiPattern` kind, `lifecycle`, an ordinary `MissionType` and an event registry
+> `glossary_pack` (built in this service since [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)), an `AntiPattern` kind, `lifecycle`, an ordinary `MissionType` and an event registry
 > (activation pending ADR-0051 OQ1). Today's code and schemas still have the old shape; the sources for that
 > shape are `src/charter/offering/artifact_kinds.py` and `src/charter/offering/drg/models.py` in core.
 
@@ -113,17 +113,22 @@ Example instance (`packs/built-in/directives/018-doctrine-versioning-requirement
 
 Source: `src/charter/offering/schemas/agent-profile.schema.yaml` (schema-version 2).
 
-## Mission-step contract, pack skill, glossary pack
+## Mission-step contract, pack skill, glossary context
 
-![Mission-step contract, skill and glossary pack schemas](diagrams/descriptor-mission-skill-glossary.svg)
+![Mission-step contract, skill and glossary context schemas](diagrams/descriptor-mission-skill-glossary.svg)
 
-> **Decided design:** the diagram above draws [ADR-0049](/adr/0049-glossary-contexts-and-terms/) and
-> [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/): `glossary_pack` becomes
-> `glossary`, a glossary context that holds terms. Today's code and schemas still have the old shape. In
-> core, the mission-step contract and the glossary pack have no JSON Schema file; their Pydantic models
-> (`src/charter/offering/missions/step_contracts.py`, `src/charter/offering/glossary_packs/models.py`) are
-> the schema, and the skill schema is `src/charter/offering/schemas/skill.schema.yaml`. This repository
-> holds a closed JSON Schema for each (`contracts/packs/schemas/`).
+> **Built:** the glossary context is the service's shape. The kind `glossary` replaced `glossary_pack` outright
+> ([ADR-0049](/adr/0049-glossary-contexts-and-terms/),
+> [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); its schema is
+> `contracts/packs/schemas/glossary.schema.json`, described on the
+> [Glossary context](/architecture/pack-schemas/glossary/) page.
+>
+> **Decided design:** the mission-step contract half draws
+> [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/). Today's code and schemas still
+> have the old shape. In core, the mission-step contract has no JSON Schema file; its Pydantic model
+> (`src/charter/offering/missions/step_contracts.py`) is the schema, and the skill schema is
+> `src/charter/offering/schemas/skill.schema.yaml`. This repository holds a closed JSON Schema for each
+> (`contracts/packs/schemas/`).
 
 ## Mission type
 
