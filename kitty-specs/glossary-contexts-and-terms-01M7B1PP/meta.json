@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-14T18:30:36.681793+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "b2b6e42414f212ead96ca8ac18c95ca65fcb6e2b"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-14T18:30:36.681793+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "b2b6e42414f212ead96ca8ac18c95ca65fcb6e2b",
   "change_mode": "bulk_edit",
   "coordination_branch": "kitty/mission-glossary-contexts-and-terms-01M7B1PP",
   "create_return_branch": "feat/106-glossary-contexts",
