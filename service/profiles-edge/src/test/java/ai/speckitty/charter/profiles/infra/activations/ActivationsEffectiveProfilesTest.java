@@ -351,4 +351,36 @@ class ActivationsEffectiveProfilesTest {
     void theServiceIsRequired() {
         assertThatThrownBy(() -> new ActivationsEffectiveProfiles(null)).isInstanceOf(NullPointerException.class);
     }
+
+    /**
+     * A term entry (operator ruling of 2026-11-14) carries its glossary context's facts under the term's own address,
+     * term:<context-id>/<term-id>, and sorts by it among the artifacts.
+     */
+    @Test
+    void aTermEntryHasItsContextsFactsUnderTheTermsAddress() {
+        ArtifactRef context = new ArtifactRef(ArtifactKind.GLOSSARY, "g");
+        EffectiveArtifactAnswer.Governance governance = new EffectiveArtifactAnswer.Governance(
+                List.of(
+                        new EffectiveArtifactAnswer.Entry(
+                                active(context),
+                                GovernanceFacts.Step.VOCABULARY,
+                                RelationType.VOCABULARY,
+                                P,
+                                1,
+                                EffectiveArtifactAnswer.EdgeWords.NONE,
+                                Optional.of("lane")),
+                        entry(active(S), GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1)),
+                List.of());
+        answers(answer(active(P), leanProfile("main", "P"), Optional.of(governance)), "t");
+
+        EffectiveProfileRead read = found("\"x\"");
+
+        assertThat(read.governance())
+                .extracting(
+                        entry -> entry.facts().urn().toString(),
+                        entry -> entry.facts().state())
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("styleguide:S", "active"),
+                        org.assertj.core.groups.Tuple.tuple("term:g/lane", "active"));
+    }
 }

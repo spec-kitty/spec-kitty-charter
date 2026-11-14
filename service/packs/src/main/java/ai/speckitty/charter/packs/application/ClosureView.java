@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceResolution;
 import ai.speckitty.charter.packs.domain.InForceStates;
@@ -746,7 +747,8 @@ public record ClosureView(
      */
     public ProfileGovernance.Governance governance(Urn profile, int depth, InForceStates states) {
         MergedView view = merged();
-        GovernanceWalk.Result walked = GovernanceWalk.over(view.edges()).walk(profile, depth, effective(states));
+        GovernanceWalk.Result walked =
+                GovernanceWalk.over(view.edges()).walk(profile, depth, effectiveOrTermInForce(states));
         return ProfileGovernance.Governance.of(walked, urn -> winnerOf(view, urn));
     }
 
@@ -908,6 +910,17 @@ public record ClosureView(
                         && states.stateOf(urn)
                                 .filter(InForceStates.ArtifactState::active)
                                 .isPresent();
+    }
+
+    /**
+     * The effective set as a predicate over URNs, with the terms in force (operator ruling of 2026-11-14): a term is in
+     * force while its glossary context is. The merged index links a term only where the context's winning copy holds it
+     * (a losing copy holds none of its terms, {@link EdgeIndex}), so a term the winner does not hold is never reached.
+     * Only the profile walk lists terms: the action walk and the graph projection keep {@link #effective}.
+     */
+    private static Predicate<Urn> effectiveOrTermInForce(InForceStates states) {
+        Predicate<Urn> effective = effective(states);
+        return urn -> effective.test(GlossaryTerm.contextOf(urn).orElse(urn));
     }
 
     /**

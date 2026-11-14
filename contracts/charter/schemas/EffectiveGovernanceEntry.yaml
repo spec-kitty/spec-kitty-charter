@@ -29,6 +29,13 @@ description: >-
   profile's own read for an agent_profile), and artifact, the pack-scoped read of the entry in the pack that holds the
   version in force (the packId of the entry), both for a kind the pack-scoped artifact routes serve, and is an empty object
   otherwise.
+
+  A term a vocabulary edge targets (term:<context-id>/<term-id>) is listed while its glossary context's winning copy is
+  in force (state active) and holds it, and is dropped otherwise, as any artifact out of force is (operator ruling of
+  2026-11-14; ADR-0049 decision 4). Its entry has kind glossary, the context's id as artifactId and the term's id as
+  termId; packId, level, state, required, policy and reason are those of the context's winning copy, since a term has no
+  state of its own, and it sorts by its own urn. Its _links holds effective-term, the term's read under the same
+  activation (getEffectiveGlossaryTerm), and nothing else.
 type: object
 additionalProperties: false
 required:
@@ -61,6 +68,17 @@ properties:
     description: The artifact's declared id.
     x-derived:
       rule: The declared id of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  termId:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      Present only on an entry that lists a term: the term's id within the glossary context artifactId names, the
+      second segment of its URN. Absent on every other entry.
+    x-derived:
+      rule: The term segment of the vocabulary edge's target, term:<context-id>/<term-id>.
       inputs:
       - schemas/ActivationConfig.yaml
   packId:

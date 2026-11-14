@@ -68,7 +68,7 @@ public record EffectiveProfileRead(
     /**
      * The facts an activation gives an artifact: the winner of the layer merge, and the state it has.
      *
-     * @param urn the artifact
+     * @param urn the artifact; for a governance entry that lists a term, the term's address, with its context's facts
      * @param pack the configured identifier of the pack that holds the version in force
      * @param level that pack's level
      * @param state in force ({@code active}), out of force ({@code inactive}) or denied ({@code excluded}), in the
@@ -115,6 +115,17 @@ public record EffectiveProfileRead(
             Objects.requireNonNull(reason, "reason");
             satisfiedBy = List.copyOf(Objects.requireNonNull(satisfiedBy, "satisfiedBy"));
             Objects.requireNonNull(suggestion, "suggestion");
+        }
+
+        /**
+         * The same facts for another URN: a term listed with the facts of its glossary context, whose state it has
+         * (operator ruling of 2026-11-14).
+         *
+         * @param other the URN, {@code term:<context-id>/<term-id>}
+         * @return the facts with {@code urn} replaced
+         */
+        public Facts of(Urn other) {
+            return new Facts(other, pack, level, state, required, policy, reason, satisfiedBy, suggestion);
         }
     }
 

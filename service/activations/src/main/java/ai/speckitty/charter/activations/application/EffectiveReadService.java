@@ -1075,7 +1075,8 @@ public class EffectiveReadService {
                         entry.relation(),
                         entry.via(),
                         entry.hops(),
-                        new EffectiveArtifactAnswer.EdgeWords(entry.when(), entry.reason())))
+                        new EffectiveArtifactAnswer.EdgeWords(entry.when(), entry.reason()),
+                        entry.termId()))
                 .toList();
         List<EffectiveArtifactAnswer.Suggested> suggested = governance.suggestionCandidates().stream()
                 .flatMap(candidate -> set.suggested(candidate.ref(), candidate.when(), candidate.reason()).stream()

@@ -85,8 +85,11 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
     private static List<EffectiveProfileRead.Entry> entries(EffectiveArtifactAnswer.Governance governance) {
         List<EffectiveProfileRead.Entry> entries = new ArrayList<>();
         for (EffectiveArtifactAnswer.Entry entry : governance.entries()) {
+            EffectiveProfileRead.Facts facts = facts(entry.artifact(), Optional.empty());
             entries.add(new EffectiveProfileRead.Entry(
-                    facts(entry.artifact(), Optional.empty()),
+                    entry.termId()
+                            .map(termId -> facts.of(termUrn(entry.artifact().ref(), termId)))
+                            .orElse(facts),
                     step(entry.step()),
                     urn(entry.via()),
                     entry.hops(),
@@ -129,6 +132,11 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
                         .map(ActivationsEffectiveProfiles::urn)
                         .toList(),
                 suggestion.map(words -> new EdgeWords(words.when(), words.reason())));
+    }
+
+    /** The address of a term of the glossary context {@code context}: {@code term:<context-id>/<term-id>}. */
+    private static Urn termUrn(ArtifactRef context, String termId) {
+        return new Urn(NodeKind.TERM, context.id() + "/" + termId);
     }
 
     private static Urn urn(ArtifactRef ref) {

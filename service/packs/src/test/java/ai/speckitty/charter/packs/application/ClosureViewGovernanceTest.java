@@ -124,6 +124,55 @@ class ClosureViewGovernanceTest {
         stored.put(name, pack.build());
     }
 
+    /** A pack like {@link #pack} whose glossary contexts (among {@code others}) hold the terms, as bare URNs. */
+    private void termHolder(
+            String name,
+            PackLevel level,
+            List<String> dependsOn,
+            List<String> profiles,
+            List<String> others,
+            List<String> terms,
+            Relationship... edges) {
+        pack(name, level, dependsOn, profiles, others, edges);
+        PackCompositionFacts plain = facts.get(name);
+        facts.put(
+                name,
+                new PackCompositionFacts(
+                        plain.changed(),
+                        plain.defined(),
+                        plain.references(),
+                        plain.policy(),
+                        plain.presets(),
+                        plain.edges(),
+                        Map.of(),
+                        Map.of(),
+                        PromptFacts.NONE,
+                        terms));
+    }
+
+    /**
+     * builtin holds P and the glossary context g with lane and mission, and P's vocabulary names both terms; project
+     * holds its own copy of g, which wins and holds lane alone.
+     */
+    private void aProfileWhoseVocabularyNamesTwoTermsOfAnOverriddenContext() {
+        termHolder(
+                "builtin",
+                PackLevel.BUILT_IN,
+                List.of(),
+                List.of("P"),
+                List.of("glossary_context:g"),
+                List.of("term:g/lane", "term:g/mission"),
+                edge("agent_profile:P", RelationType.VOCABULARY, "term:g/lane"),
+                edge("agent_profile:P", RelationType.VOCABULARY, "term:g/mission"));
+        termHolder(
+                "project",
+                PackLevel.PROJECT,
+                List.of("builtin"),
+                List.of(),
+                List.of("glossary_context:g"),
+                List.of("term:g/lane"));
+    }
+
     /** The inputs' digest, which tests move; each whole-source digest is counted, a closure's own is not. */
     private PackSources sources() {
         return new PackSources() {
@@ -416,6 +465,27 @@ class ClosureViewGovernanceTest {
         assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("without a pack store");
+    }
+
+    /**
+     * Operator ruling of 2026-11-14: a profile's vocabulary edge onto a term lists the term while its glossary
+     * context's winning copy is in force and holds it. mission, which only the replaced builtin copy holds, is not
+     * listed; with g out of force, neither term is.
+     */
+    @Test
+    void aTermIsListedUnderAnActivationWhileItsContextsWinningCopyIsInForceAndHoldsIt() {
+        aProfileWhoseVocabularyNamesTwoTermsOfAnOverriddenContext();
+        ClosureView view = queries().allConfigured();
+        Urn context = urn("glossary_context:g");
+
+        ProfileGovernance.Governance inForce = view.governance(P, 1, selecting(view, P, context));
+
+        assertThat(inForce.entries())
+                .extracting(ProfileGovernance.Entry::urn, ProfileGovernance.Entry::step, ProfileGovernance.Entry::via)
+                .containsExactly(tuple(urn("term:g/lane"), GovernanceWalk.Step.VOCABULARY, P));
+        assertThat(listed(view.governance(P, 1, selecting(view, P))))
+                .as("the control: g is not selected, so no term of it is in force")
+                .isEmpty();
     }
 
     // ---- pack-scoped -----------------------------------------------------------------------------------------------

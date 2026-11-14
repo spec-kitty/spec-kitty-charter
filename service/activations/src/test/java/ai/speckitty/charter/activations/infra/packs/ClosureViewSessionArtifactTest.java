@@ -157,6 +157,57 @@ class ClosureViewSessionArtifactTest {
                 .containsExactly(new GovernanceFacts.Candidate(S_REF, P_REF, 1, Optional.empty(), Optional.empty()));
     }
 
+    /**
+     * A term the walk lists (a vocabulary target, in force with its context's winning copy; operator ruling of
+     * 2026-11-14) is kept as its glossary context with its term id, so the effective set gives it the context's state.
+     */
+    @Test
+    void aTermTheWalkListsIsKeptAsItsGlossaryContextWithItsTermId() {
+        Urn profile = Urn.parse("agent_profile:P").orElseThrow();
+        ProfileGovernance.Governance walked = new ProfileGovernance.Governance(
+                profile,
+                List.of(
+                        new ProfileGovernance.Entry(
+                                Urn.parse("directive:D").orElseThrow(),
+                                GovernanceWalk.Step.REQUIRES,
+                                profile,
+                                1,
+                                Optional.empty(),
+                                Optional.empty(),
+                                true,
+                                Optional.empty()),
+                        new ProfileGovernance.Entry(
+                                Urn.parse("term:g/lane").orElseThrow(),
+                                GovernanceWalk.Step.VOCABULARY,
+                                profile,
+                                1,
+                                Optional.empty(),
+                                Optional.of("its words"),
+                                true,
+                                Optional.empty())),
+                List.of());
+
+        assertThat(ClosureViewSession.governanceOf(walked).entries())
+                .containsExactly(
+                        new GovernanceFacts.Entry(
+                                D_REF,
+                                GovernanceFacts.Step.REQUIRES,
+                                RelationType.REQUIRES,
+                                P_REF,
+                                1,
+                                Optional.empty(),
+                                Optional.empty()),
+                        new GovernanceFacts.Entry(
+                                ref("glossary_context:g"),
+                                GovernanceFacts.Step.VOCABULARY,
+                                RelationType.VOCABULARY,
+                                P_REF,
+                                1,
+                                Optional.empty(),
+                                Optional.of("its words"),
+                                Optional.of("lane")));
+    }
+
     @Test
     void aProfileOutOfForceIsStillWalkedAndAnArtifactOutOfForceIsNotAnEntry() {
         PacksSession session = profile().session();
