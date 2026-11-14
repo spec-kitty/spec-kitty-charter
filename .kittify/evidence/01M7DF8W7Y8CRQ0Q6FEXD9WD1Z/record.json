@@ -1,0 +1,8 @@
+{
+  "event": "completed",
+  "invocation_id": "01M7DF8W7Y8CRQ0Q6FEXD9WD1Z",
+  "completed_at": "2026-11-14T17:19:36.780608+00:00",
+  "outcome": "done",
+  "closed_by": "agent",
+  "evidence_ref": "kitty-ops/research/issue-571-contract-rehearsal-release-pr.md"
+}
