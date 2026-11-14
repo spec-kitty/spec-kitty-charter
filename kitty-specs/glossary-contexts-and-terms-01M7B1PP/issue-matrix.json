@@ -1,7 +1,7 @@
 {
   "rows": {
     "#106": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by this mission: WP02-WP07 (model, pack reads, twins, vocabulary)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,11 +9,35 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
+      "wp": "WP07"
+    },
+    "#142": {
+      "evidence_ref": "Epic cited for context; work-breakdown item 4 marked delivered at closeout (Refs)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#164": {
+      "evidence_ref": "Unblocked by term URNs, not delivered here (Refs)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#332": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Core consumer, out of scope (C-004, post-cutover)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,11 +45,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#335": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Core consumer, out of scope (C-004, post-cutover)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,11 +57,23 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#361": {
+      "evidence_ref": "Core epic, post-cutover; Refs only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#467": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Slice C gate (C-002), merged as PR #566 before implement",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,11 +81,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#518": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Core glossary evaluator, out of scope (C-004); closeout comment points it at avoid",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,11 +93,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#536": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Slice A2's last box (#106); its glossary clause delivered by WP04-WP05",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,7 +105,31 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
+      "wp": "WP05"
+    },
+    "#537": {
+      "evidence_ref": "Slice F; coordinated, lands separately (Refs)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#547": {
+      "evidence_ref": "Gate risk checked by WP03 T018; the issue itself is not fixed here",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#549": {
@@ -85,7 +145,7 @@
       "wp": null
     },
     "#551": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Epic #549 coordination: the grammar constants on main are used; no work owed",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,11 +153,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#552": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Epic #549 coordination: this mission owns only its own IdentifierBoundsTest rows",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,11 +165,23 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#559": {
+      "evidence_ref": "Packs-contract release sequencing; a packs CHANGELOG entry is added only if it lands first",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#94": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Parent epic, cited for context; R12 is ticked at closeout",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -117,7 +189,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     }
   },
