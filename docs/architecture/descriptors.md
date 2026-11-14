@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, pack document, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -349,17 +349,20 @@ expected artifacts live on the mission step in its mission-type file, not here
   `description` and either a `command` or a `delegates_to` block (`kind` plus `candidates`).
 - **CRG:** `mission_step_contract:<id>`, tied to `action:<mission>/<action>`.
 
-### Glossary pack — `*.glossary-pack.yaml`
+### Glossary context — `glossaries/<id>.glossary.yaml`
 
-Terms a pack contributes.
+One ubiquitous-language bounded context and its terms, the artifact of the kind `glossary`
+([ADR-0049](/adr/0049-glossary-contexts-and-terms/)). Schema: `glossary.schema.json`; the
+[Glossary context](/architecture/pack-schemas/glossary/) page gives the full shape and its rules.
 
-- **Fields:** `id`, `description`, `provenance`, `terms[]` (each with `surface`,
-  `definition`, `status`, `confidence`).
-- **CRG:** `glossary_pack:<id>`.
-
-> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames the kind `glossary`. Its
-> artifact becomes a glossary context that holds terms addressed as `term:<context>/<term>`, and the file layout is
-> still an open question there. Today's `*.glossary-pack.yaml` and `glossary_pack:<id>` stay until then. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-pack) draws the decided shape.
+- **Fields:** `schema_version` (`"1.0"`), `id` (the file stem), `name`, `description`, optional `tags` and
+  `applies_to`, and `terms[]`. Each term has `id`, `name`, `definition`, `status` (`draft`, `active` or
+  `deprecated`) and optional `examples`, `aliases`, `avoid` and `see_also`.
+- **CRG:** `glossary_context:<id>`. A term is an item of its context, addressed as `term:<context-id>/<term-id>`;
+  a `vocabulary` edge may target it, but no graph document declares it as a node. Each `see_also` entry, bare or
+  `<pack>::` qualified, derives a `vocabulary` edge from the context to the term it names.
+- **Retired:** `glossary_packs/*.glossary-pack.yaml` and `glossary_pack:<id>` are refused by name; there is no
+  reader of the old shape. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-context) draws the built shape.
 
 ### Pack skill — `*.skill.yaml` plus body
 

@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -302,6 +302,9 @@ facts; it does not restate them.
 | `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
 | `step_enhancement` (service only) | `step-enhancement` | no | yes | no | no | none |
 
+In the service, the kind `glossary` (a glossary context, `glossaries/<id>.glossary.yaml`) replaced `glossary_pack`
+outright ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); the `glossary_pack` row is core's.
+
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
 - **Org-requirable**: core's column: an org pack may declare `required_<plural>` for the kind in core's
@@ -339,7 +342,7 @@ The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-an
 
 | Change | Record | Operator token |
 |---|---|---|
-| `glossary_pack` is renamed `glossary`; its artifact is a glossary context (`glossary_context:<id>`) holding terms (`term:<context>/<term>`) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/), ADR-0053 | `glossary` |
+| `glossary_pack` is renamed `glossary`; its artifact is a glossary context (`glossary_context:<id>`) holding terms (`term:<context>/<term>`). **Built** in the service (#106): `glossaries/<id>.glossary.yaml`, served by the activation's vocabulary reads ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/)) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/), ADR-0053 | `glossary` |
 | `mission_type` becomes an ordinary activatable kind; `CHARTER_KIND_TOKENS`' special path goes | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) | `mission-type` |
 | `lifecycle`: a reusable state machine, today's work-package lanes. **Stored and checked** (#156): `lifecycles/<id>.lifecycle.yaml`, in force with its pack (not activatable); action points come with the event registry | ADR-0050 | `lifecycle` |
 | `guard`: an enforced check on a transition, `implemented_by` an executable asset or a closed `builtin:` id, run to the guard/1 interface, failing closed (replaces the proposed `gate` kind). **Stored and checked** (#156): `guards/<id>.guard.yaml`, in force with its pack (not activatable); not served until its contract set lands | [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) | `guard` |
@@ -368,6 +371,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
 | `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
 | `step_enhancement` | `step_enhancement:spdd-specify` | Add-only contributions joined to a step by `enhances`; prompt fragments address slots in the step's prompt (ADR-0066). |
+| `glossary_context` / `term` (service only, #106) | `glossary_context:spec-kitty-core`, `term:spec-kitty-core/mission` | A glossary context is the node of the `glossary` kind (its token differs from the kind's on purpose, ADR-0053 d13). A term is an item of its context: a `vocabulary` edge may target it, but no graph document declares it. |
 | `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations
@@ -659,7 +663,7 @@ A reference across packs is written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-o
 - **Values, project creed and profile ethos** are concepts now; their representation follows the
   creed contract set (#16, #77) and stays gated by experiment #2538 for the numeric layer.
 
-## Skills, glossary packs, assets and templates
+## Skills, glossary contexts, assets and templates
 
 **What this means:** [Rules and resources](/context/conceptual-model/#rules-and-resources):
 these are resources, used rather than followed.
@@ -668,12 +672,15 @@ these are resources, used rather than followed.
   (`skill:<id>`). It renders as `<skill_namespace>-<id>/SKILL.md` into each configured
   tool's project skill root. In core, a non-built-in skill needs a `skill_namespace`; the service has no
   `skill_namespace`, which lived in the retired `org-charter.yaml` (#431, #381).
-- A **glossary pack** contributes terms to the project's vocabulary. Accepted, not built yet
-  ([ADR-0049](/adr/0049-glossary-contexts-and-terms/)): the kind becomes `glossary`, whose artifact is a
-  **glossary context** (a ubiquitous-language bounded context, close to Contextive's) holding terms addressed as
-  `term:<context-id>/<term-id>`. Scope comes from the pack level, only a clash on the same `term:` URN is a
-  conflict, and the pack glossary becomes the only authored source of vocabulary; the terminology gates' banned
-  lists and Contextive files become projections of it.
+- A **glossary context** contributes terms to the project's vocabulary. Built
+  ([ADR-0049](/adr/0049-glossary-contexts-and-terms/), [ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/),
+  [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)): it is the artifact of the kind `glossary`, a
+  ubiquitous-language bounded context close to Contextive's, one per `glossaries/<id>.glossary.yaml`, addressed as
+  `glossary_context:<id>` and holding terms addressed as `term:<context-id>/<term-id>`. A context overrides whole
+  across levels, project over org over built-in; a term has no state of its own and is in force with the winning
+  copy of its context. The pack glossary is the only authored source of vocabulary: the activation's vocabulary
+  reads project the contexts in force as a term list, a Contextive definitions file and a taboo list
+  ([Glossary context](/architecture/pack-schemas/glossary/)).
 - An **asset** is a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`, optional
   `executable`) and the **asset payload** it names: a file under the pack's `assets/`, with `path` relative to
   that directory. The payload (script, document, font, image) is held as its exact bytes. A

@@ -2,7 +2,7 @@
 title: Pack registration and distribution
 description: "How the charter service registers, stores, verifies and distributes packs of every level: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -126,7 +126,7 @@ be.sddevelopment.charter
 │
 ├── artifacts                      # Gradle module: other charter artifacts (directives, tactics,
 │   ├── domain · application{read,write}   #   styleguides, toolguides, paradigms, procedures, step
-│   └── infra { api.rest · (api.graphql) · storage }   #   contracts, glossary packs, skills, assets, templates)
+│   └── infra { api.rest · (api.graphql) · storage }   #   contracts, glossary contexts, skills, assets, templates)
 │
 └── bootstrap                      # Gradle module: Spring Boot wiring, config, loopback binding,
                                    # credential checks (the only module that knows every slice;
@@ -191,15 +191,14 @@ Repository ports (domain-owned, impl in storage ring):
 
 ### 3.4 Other charter artifacts (`artifacts.domain`)
 
-- `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary_pack, skill, anti_pattern, asset, template, mission_step_contract).
+- `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary, skill, anti_pattern, asset, template, mission_step_contract).
 - `ActiveGraph`, `LayerMerge`, `Activation {activated_<kind>, activated_kinds, mission_type_activations}`; a requirement is the must-have items of a governing preset (`Preset`, `RequiredFloor`), since `org-charter.yaml` is retired (#431).
 - `ArtifactService`, `GraphQueryService`, `ActivationService` (plan → commit).
 - Ports: `ArtifactRepository`, `ActiveGraphRepository`.
 
 > This slice reproduces the [Resolution model](/architecture/resolution-model/) pipeline (load → merge → activate → answer) and inherits its fail-loud rules. It is adjacent to, not part of, registration: registration *delivers verified packs*; artifacts *merge and answer from them*.
 >
-> **Decided, not built yet:** the kinds table changes. [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames
-> `glossary_pack` to `glossary`,
+> **Decided, not built yet:** the kinds table changes.
 > [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes `anti_pattern` an
 > authored file, and [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
 > `mission_type` an ordinary activatable kind and adds the `lifecycle` kind, and a `guard` kind implemented by

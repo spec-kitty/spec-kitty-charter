@@ -2,13 +2,13 @@
 ' Sources:
 '   src/charter/offering/missions/step_contracts.py   (MissionStepContract; no JSON schema file)
 '   src/charter/offering/schemas/skill.schema.yaml + pack_skills/models.py (PackSkill)
-'   ADR-0049 (GlossaryContext, Term); today's glossary_packs/models.py (GlossaryPack) is superseded
+'   contracts/packs/schemas/glossary.schema.json (GlossaryContext, Term; ADR-0049, built in #106)
 ' Notation: + required, - optional (Pydantic default shown after =).
-' Decided design: ADR-0049 (glossary contexts and terms) and ADR-0050 (step contract moves into the mission-type
-' bundle, loses gates), accepted 2026-11-02; not built yet. PackSkill is unchanged.
-' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
+' Built: the glossary context (ADR-0049, ADR-0053 d11 to d14); the kind glossary replaced glossary_pack outright (#106).
+' Decided design: ADR-0050 (step contract moves into the mission-type bundle, loses gates), accepted 2026-11-02;
+' not built yet. PackSkill is unchanged.
 !include _style.iuml
-title Mission-step contract, pack skill and glossary descriptor schemas — decided design (ADR-0049, ADR-0050)
+title Mission-step contract, pack skill and glossary context descriptor schemas — glossary built (ADR-0049), step contract decided (ADR-0050)
 
 class MissionStepContract <<step_contracts.py>> {
   + id : string
@@ -83,34 +83,34 @@ PackSkill *-- "0..1" SkillInvocation
 
 class GlossaryContext <<glossary.schema.json (ADR-0049 d1, d2)>> {
   + schema_version : "1.0"
-  + id : string (kebab-case, the file stem)
+  + id : string [<=64] (kebab-case, the file stem)
   + name : string
   + description : string (its applicability)
   - tags : string[1..]
-  - applies_to : AppliesTo <color:#8A6D00>[pending ADR-0049 OQ2: advisory]</color>
+  - applies_to : AppliesTo (advisory, ADR-0049 d14)
   + terms : Term[1..]
   --
-  file: glossaries/<context-id>.glossary.yaml <color:#8A6D00>[pending ADR-0049 OQ1]</color>
-  URN glossary:<id> <color:#8A6D00>[pending ADR-0049 OQ3]</color>
+  file: glossaries/<context-id>.glossary.yaml (ADR-0053 d11)
+  kind glossary; URN glossary_context:<id> (ADR-0053 d13)
 }
 class AppliesTo {
-  - paths : string[] (globs)
-  - languages : string[]
-  - stacks : string[] (once #163 lands)
+  - paths : string[1..] (globs)
+  - languages : string[1..]
+  - stacks : string[1..]
 }
 class Term <<an item inside a context, not an artifact (d3)>> {
-  + id : string (kebab-case, unique in the context)
+  + id : string [<=64] (kebab-case, unique in the context)
   + name : string (canonical surface form)
   + definition : string
   - examples : string[]
   - aliases : string[]
   - avoid : string[]
-  + status : TermStatus <color:#8A6D00>[pending ADR-0049 OQ4]</color>
-  - see_also : string[] (term URNs)
+  + status : TermStatus (ADR-0053 d14)
+  - see_also : string[1..] (term references, bare or <pack>::)
   --
   URN term:<context-id>/<term-id> (d4)
 }
-enum TermStatus <<pending>> {
+enum TermStatus {
   draft
   active
   deprecated
@@ -118,12 +118,13 @@ enum TermStatus <<pending>> {
 GlossaryContext *-- "1..*" Term
 GlossaryContext *-- "0..1" AppliesTo
 Term --> TermStatus
-Term ..> Term : see_also
+Term ..> Term : see_also (derives a vocabulary edge\nfrom the context)
 note bottom of Term
   Dropped (d5): confidence, introduced_in_mission, provenance.
   surface becomes name; synonyms_to_avoid becomes avoid;
   banned_synonyms folds into avoid.
-  Only a clash on the same term: URN is a conflict (d12, d13).
+  A context overrides whole across levels (ADR-0076 d1).
+  Retired: glossary_packs/*.glossary-pack.yaml, refused by name.
 end note
 note right of PackSkill
   id pattern (skill.schema.yaml:21):
@@ -131,7 +132,7 @@ note right of PackSkill
 end note
 legend right
   + required, - optional.
-  Yellow <<pending>> / [pending …]: decided in the cited ADR,
-  but the cited open question is not ruled.
+  MissionStepContract: decided design (ADR-0050), not built yet.
+  GlossaryContext and Term: built (#106).
 endlegend
 @enduml
