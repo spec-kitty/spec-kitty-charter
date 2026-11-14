@@ -1,1 +1,4 @@
 {"event": "started", "invocation_id": "01M7B88SWG4XRDADEN97ZRFEEA", "profile_id": "java-jenny", "action": "generate", "request_text": "Deliver #559 on spec-kitty/spec-kitty-charter: publish the packs contract as a versioned release", "actor": "claude", "mode_of_work": "task_execution", "governance_context_hash": "7e12b890a55cbca6", "governance_context_available": true, "started_at": "2026-11-13T20:06:07.130225+00:00"}
+{"event": "completed", "invocation_id": "01M7B88SWG4XRDADEN97ZRFEEA", "completed_at": "2026-11-14T07:43:51.920319+00:00", "outcome": "done", "closed_by": "agent"}
+{"event": "artifact_link", "invocation_id": "01M7B88SWG4XRDADEN97ZRFEEA", "at": "2026-11-14T07:43:51.927065+00:00", "kind": "artifact", "ref": "kitty-ops/research/issue-559-packs-contract-release.md"}
+{"event": "commit_link", "invocation_id": "01M7B88SWG4XRDADEN97ZRFEEA", "at": "2026-11-14T07:43:51.928143+00:00", "sha": "bb00826867f07d7296fa9dcd3a0e22ec4bcf56b3"}
