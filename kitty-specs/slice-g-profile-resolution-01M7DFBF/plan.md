@@ -23,7 +23,8 @@ Only the step-keyed read waits for slice F.
 - Implement and review the F-independent work packages now. Leave the F-dependent ones planned.
 - Do not accept or consolidate until the F-dependent WP is done after F lands. The slice ships as one PR, held until
   F lands (operator, 2026-11-14; P3).
-- Rulings D1 to D7 are open. A WP that a ruling touches is implemented only once that ruling is in.
+- Rulings D1 to D7 were ruled in the operator interview of 2026-11-14 (`research.md` §6a). D6 is merged plus
+  inheritance.
 
 ## Technical Context
 
@@ -160,7 +161,12 @@ last.
   - a scalar changed.
 - **`excluding`** on an enhancer is a declared drop and is refused (D7a).
 
-The same merge runs in `RegistrationImpact` (422). The read raises 500 for content stored before the rule.
+**Inheritance (D6, ruled).** After each profile on the `specializes_from` chain is merged with its own enhancers,
+the chain is folded root to leaf. A top-level field the descendant declares replaces the ancestor's, and an absent
+field is inherited. Identity fields are never inherited. With several parents, the parents are folded in closure
+order before the child; ADR-0078 records this. Selection (P1) reads declared fields only.
+
+The same enhancer merge runs in `RegistrationImpact` (422). The read raises 500 for content stored before the rule.
 `lineage` comes from the `GovernanceWalk` lineage step, extended once to yield the ordered chain with the longest
 depth (C-002). Enhancers are excluded from `Candidates` and from `lineage`.
 
@@ -214,6 +220,9 @@ One code lane runs WP01 to WP05 in order, so each WP restamps the manifests once
 Alt-only answer: the test pack asks for `implementer` with only `project-reviewer`.
 
 ## Risks
+
+- **D6 inheritance with several `specializes_from` parents.** The fold order (closure order) is derived, not ruled.
+  It is flagged in ADR-0078 for review.
 
 - **A ruling differs from the recommendation.** Only the WPs in its column re-plan. D5(b) changes WP04's merge and
   rewrites PR-CHARTER-REFUSAL-001. D3(ii-a) changes `ClosureRoleFacts` only.

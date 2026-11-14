@@ -181,6 +181,28 @@ and ADR-0053 d22 (profiles keep field-merge). Two CHANGELOG fragments go in `con
 Breaking (`sentinel` to `performer`, the effective profile's meaning) and one Added (the selection read, the new
 codes, `role_pins` and `lineage`).
 
+## 6a. Rulings (operator interview, 2026-11-14)
+
+| Ruling | Decision |
+| --- | --- |
+| D1 | Both reads: role-keyed now, step-keyed after F |
+| D2 | As recommended: filter first (pin, performer, role fit, context), then tier, longest depth, `routing-priority`. Only specializations that declare `languages` or `frameworks` are context-filtered. A `specializes_from` cycle is refused (`specialization_cycle`). ADR-0032 d9's tie-break is unreachable, and ADR-0078 records that |
+| D3 | Tighten-only pins in `policy.yaml` `role_pins`: a differing pin anywhere in the closure is `role_pin_conflict`. Also refused: `role_pin_unknown` and `role_pin_not_fitting` (no human exemption) |
+| D4 | `performer: agent \| human`, optional and omitted on the wire when absent; selection reads absent as `agent`. `operator` is human-only (`operator_role_not_human`) and never falls back. A fallback profile must be agent-performed (`fallback_profile_not_agent`) |
+| D5 | Field replacement with loss refused (`profile_enhancement_drops_field`: 422 at registration, 500 at read). Identity fields are never merged. PR-CHARTER-REFUSAL-001 stands as written |
+| D6 | **Differs from the recommendation: merged plus inheritance.** The effective profile inherits along `specializes_from`, root to leaf, with **per-field replacement**: a top-level field the descendant declares replaces the ancestor's, and a field it leaves absent is inherited. Identity fields are never inherited. `lineage` is still answered. **Selection judges each candidate by its own declared fields**, not inherited ones, so D2's descriptor-free refinement still fits any context |
+| D7 | `excluding` on an enhancer is refused as a declared drop. On other profiles it stays as authored |
+
+Derived, not asked (flagged for review):
+
+- **Order of composition.** Each profile on the chain is first merged with its own in-force enhancers (D5), then the
+  chain is folded root to leaf (D6). An ancestor's enhancement therefore reaches its descendants unless they
+  redeclare that field.
+- **Required fields** (`name`, `purpose`, `specialization`) are always the descendant's own, since the closed schema
+  requires them on every profile.
+- **D6 versus the operator steer of 2026-10-19** ("design on its own merits, not as a copy of core's call"): this
+  ruling supersedes it for profile inheritance.
+
 ## 7. Coordination log
 
 - 2026-11-14, from slice F, via the orchestrator:
