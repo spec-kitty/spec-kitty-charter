@@ -28,9 +28,9 @@ The object is closed (`additionalProperties: false`), at every level.
 | `aliases` | no | At least one non-blank string: accepted alternative forms |
 | `avoid` | no | At least one non-blank string: forms not to use |
 | `status` | yes | `draft`, `active` or `deprecated` |
-| `see_also` | no | At least one `term:<context-id>/<term-id>` URN |
+| `see_also` | no | At least one term reference: `term:<context-id>/<term-id>`, or `<pack>::term:<context-id>/<term-id>` for a term another pack holds (the `PackQualifiedReference` grammar) |
 
-A `see_also` URN that no held context resolves is a broken reference, reported as other unresolved references are.
+A `see_also` entry is a reference like any other (operator, 2026-11-14): a bare `term:` URN resolves in the term's own pack, and a term in another pack is named with the pack qualifier `<pack>::`. A bare entry that only another pack holds is refused `REFERENCE_UNQUALIFIED`, as any other unqualified reference is; no exemption. An entry that no held context resolves (the context is missing, or the context does not hold the term) is a broken reference, reported as other unresolved references are.
 
 ## Domain (`:packs`)
 
@@ -40,7 +40,7 @@ A `see_also` URN that no held context resolves is a broken reference, reported a
   - `label()` returns `name`, `urn()` returns `glossary_context:<id>`, and `term(TermIdentifier)` returns an
     `Optional<GlossaryTerm>`.
 - **`GlossaryTerm`** (reshaped): `id: TermIdentifier`, `name`, `definition`, `examples`, `aliases`, `avoid`,
-  `status: TermStatus`, `seeAlso: List<Urn>`. `urn(contextId)` returns `term:<context>/<id>`.
+  `status: TermStatus`, `seeAlso: List<PackQualifiedReference>` (each targets kind `term`). `urn(contextId)` returns `term:<context>/<id>`.
 - **`GlossaryContextIdentifier`** and **`TermIdentifier`**: value types checked by
   `IdentifierGrammar.isLetterFirstSlug`.
 - **`TermStatus`**: an enum of `DRAFT`, `ACTIVE` and `DEPRECATED`.
