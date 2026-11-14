@@ -151,6 +151,19 @@ Keep it small; add a step only when a scenario cannot be written without it.
   followed by a doc string reads an effective prompt's `slots`, in the answer's order: one line per fragment, `<slot>
   <level> <packId> "<packName>" <enhancement>`, and `<slot> (empty)` for a slot no fragment fills
   (`effective-step-prompt.feature`, bound in `CharterSteps` and `EffectiveGraphSteps`).
+- The mission walk of journey 12 (`journeys/journey-12-a-mission-walk-under-one-activation.feature`, #572, bound in
+  `MissionWalkSteps`), business-language steps whose reads follow links from the API root:
+  `Given the example pack "<name>" is registered from the filesystem source` copies an example pack under the filesystem
+  source root as `packs/<name>` and registers it through `POST /packs`, which must succeed; `When the project activates
+  its charter:` followed by the activation document creates it through the root's `activations` link; `Then every
+  selection of the charter is in force and nothing is refused`; `When the team reads the <agent profile|mission
+  type|procedure> "<id>" under the activation` (the activation's artifacts of that kind, then the item's
+  `effective-artifact`) and `When the team reads the step "<step>" of the mission type "<type>" under the activation`;
+  `Then its steps are, in order:` with a `step | runs` table (`in sequence` or `on demand`); `Then the step names the
+  role "<role>"`; `Then it is in force`; `Then its governance requires the <kind> "<id>", which is in force`; and `When
+  the team walks every step of the mission type "<type>"`, then `Then every step has an action context that links each
+  item in force to its body` and `Then every step has a prompt that fills each slot it declares or lists the slot as
+  empty`, which name every failing step, not only the first.
 - `Then the field at "<json-pointer>" is null` — the member is there and is JSON `null`, as a required nullable member is
   written; a member the answer leaves out is `is absent` (agent-profile-reads.feature, bound in `ProfileSteps`).
 - `Then the governance holds exactly the entries:` followed by a doc string, one entry of the `governance` list of the last
@@ -358,7 +371,9 @@ from ready to held, is a breaking change of the contract.
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the
   resolver's order with each entry's resolved dependencies, and the eleven pack-composition refusals, each with a
   negative control (ADR-0048, ADR-0053).
-- `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
+- `journeys/journey-NN-<slug>.feature`: the user journeys, each a mix of runnable and `@WIP` scenarios, and
+  journey 12, the usability walk of 2026-11-14 (#572): one mission walked under one activation over charter's example
+  packs, by links from the root.
 - `registration/whole-pack-registration.feature`: whole-pack registration (ADR-0065, FR-001 to FR-004, FR-024,
   FR-025): `PUT /packs/{packId}` and `POST /packs`, the status resource, the version rule, the preconditions, the
   impact check and the load's refusals, each refusal with a control. The file is `@contract` and each scenario is

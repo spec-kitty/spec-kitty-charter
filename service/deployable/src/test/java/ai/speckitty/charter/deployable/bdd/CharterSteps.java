@@ -715,7 +715,7 @@ public class CharterSteps {
     }
 
     /** The RFC 6570 expansion of the simple and the form-style query expressions of {@code template}. */
-    private static String expand(String template, Map<String, String> values) {
+    static String expand(String template, Map<String, String> values) {
         Matcher expression = EXPRESSION.matcher(template);
         StringBuilder expanded = new StringBuilder();
         while (expression.find()) {

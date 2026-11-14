@@ -8,6 +8,14 @@ expects and the answer lacks fails that hop, and the line names the hop and the
 relation. It proves FR-011, SC-001 to SC-003 and NFR-003 of the `agent-profile-reads` mission and, with its mission type
 walk, SC-001 of the `mission-type-reads` mission.
 
+The script stays a manual tool against the open-packs pin, for usability runs (operator ruling, 2026-11-14). It is
+not a test and runs in no workflow: the live charter selects artifacts the packs do not hold, and the script's
+`unheld-selections` workaround drops them and still passes. The walk is proven per pull request by journey 12,
+`contracts/charter/scenarios/journeys/journey-12-a-mission-walk-under-one-activation.feature` (#572), over charter's
+own example packs with an activation written for them, so a refused selection fails it. Its walk of every step's
+action context and prompt is `@WIP` until slice F (#537) adds the example packs' missing action nodes. The proof over
+real open-packs content belongs to spec-kitty-open-packs (ADR-0070).
+
 ## Run it
 
 ```bash
