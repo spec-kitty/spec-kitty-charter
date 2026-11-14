@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -19,7 +20,7 @@ import java.util.Optional;
  * @param definition what the term means
  * @param examples example uses
  * @param aliases accepted alternative forms
- * @param avoid forms not to use: the one source of banned vocabulary (ADR-0049 decisions 5 and 15)
+ * @param avoid forms not to use: the one source of taboos (ADR-0049 decisions 5 and 15)
  * @param status the term's status
  * @param seeAlso related terms, each a reference to a term: bare ({@code term:<context-id>/<term-id>}), a term of the
  *     term's own pack, or pack-qualified ({@code <pack>::term:<context-id>/<term-id>}), a term another pack holds. A
@@ -46,7 +47,8 @@ public record GlossaryTerm(
             ModularRuleset.<List<PackQualifiedReference>>emptyRules()
                     .must(Constraints.of(
                             "A term's see_also names terms only: each entry is a term:<context-id>/<term-id> URN,"
-                                    + " bare or pack-qualified.",
+                                    + " bare or pack-qualified, each id a letter-first kebab slug of at most 64"
+                                    + " characters.",
                             references -> references.stream().allMatch(GlossaryTerm::namesATerm)));
 
     /**
@@ -98,9 +100,25 @@ public record GlossaryTerm(
         return new Urn(NodeKind.TERM, context.value() + "/" + term.value());
     }
 
-    /** Whether a reference's URN part is a term's address, {@code term:<context-id>/<term-id>}. */
+    /**
+     * Whether a reference's URN part is a term's address, {@code term:<context-id>/<term-id>}, each id a letter-first
+     * kebab slug of at most 64 characters ({@link IdentifierGrammar#isLetterFirstSlug}), as the schema's pattern says.
+     */
     private static boolean namesATerm(PackQualifiedReference reference) {
-        return reference.asUrn().flatMap(GlossaryTerm::contextOf).isPresent();
+        return reference
+                .asUrn()
+                .filter(urn -> urn.kind() == NodeKind.TERM)
+                .map(Urn::id)
+                .filter(GlossaryTerm::isTermAddress)
+                .isPresent();
+    }
+
+    /** Whether a URN id is {@code <context-id>/<term-id>}, each segment a letter-first slug. */
+    private static boolean isTermAddress(String id) {
+        int slash = id.indexOf('/');
+        return slash > 0
+                && IdentifierGrammar.isLetterFirstSlug(id.substring(0, slash))
+                && IdentifierGrammar.isLetterFirstSlug(id.substring(slash + 1));
     }
 
     /**
