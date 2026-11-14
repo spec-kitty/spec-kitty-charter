@@ -57,3 +57,9 @@ exceptions:
   - path: "scripts/usability/**"
     action: manual_review
     reason: "The usability converter maps core's charter.yaml; its glossary key mapping moves to the new kind"
+  - path: "contracts/charter/scenarios/effective-reads.feature"
+    action: manual_review
+    reason: "A 400 detail lists every activatable kind token verbatim; glossary_pack becomes glossary there (WP02 T009)"
+  - path: "service/packs/build.gradle.kts"
+    action: manual_review
+    reason: "ProjectCharterYamlSchemaTest's wiring moves from .kittify/charter/charter.yaml to a canonical example charter (DM-01M7CEZ19K8QRA3KX68KRWX22G)"
