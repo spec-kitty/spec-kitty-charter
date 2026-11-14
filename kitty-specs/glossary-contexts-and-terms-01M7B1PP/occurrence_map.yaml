@@ -1,6 +1,7 @@
 # Bulk-edit classification for mission glossary-contexts-and-terms-01M7B1PP (DIRECTIVE_035).
 # glossary_pack is replaced by glossary (kind token) and glossary_context / term (URN node kinds), and the
 # shape changes too (ADR-0049). It is not a pure string rename: each hit is reviewed, and no alias is kept.
+# The same classification covers the spellings glossary-pack, glossary_packs and GlossaryPack (NFR-002).
 target:
   term: "glossary_pack"
   replacement: "glossary"
@@ -42,11 +43,17 @@ exceptions:
     action: manual_review
     reason: "r15-glossary-urn-* refuse core's glossary: URN and keep doing so; a new planted case refuses the old glossary_pack shape"
   - path: "site/.contextive/**"
-    action: manual_review
-    reason: "This repository's own docs glossary (ADR-0029): only its activated_<kind> definition text names the old plural"
+    action: do_not_change
+    reason: "This repository's own docs glossary stays hand-authored (ADR-0029; DM-01M7B80ENN0EZH860D9MFC4FYM); its activated_<kind> definition describes core's CLI"
   - path: ".kittify/**"
+    action: do_not_change
+    reason: "Core's CLI writes and reads it; ProjectCharterYamlSchemaTest stops validating it (DM-01M7CEZ19K8QRA3KX68KRWX22G)"
+  - path: "service/**/src/test/**"
     action: manual_review
-    reason: "The spec-kitty CLI's own charter config; it follows the CLI's vocabulary, not the service's"
+    reason: "Refusal tests of the old shape (a planted pack, a stored activation, a 422 write body) keep the old token on purpose; every other test moves"
+  - path: "contracts/offering/corpus/ActivationConfig/invalid/**"
+    action: manual_review
+    reason: "An invalid corpus case pins the refusal of the old selected.glossary_pack member"
   - path: "scripts/usability/**"
     action: manual_review
     reason: "The usability converter maps core's charter.yaml; its glossary key mapping moves to the new kind"
