@@ -23,7 +23,7 @@
   "mission_base_sha": "406e936b026a13d60207f8bbb0a2f4733ac4e794",
   "mission_branch": "kitty/mission-glossary-contexts-and-terms-01M7B1PP",
   "mission_id": "01M7B1PPNHGRAM8VH9ARMK3TVD",
-  "mission_number": null,
+  "mission_number": 25,
   "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
   "mission_type": "software-dev",
   "pr_bound": true,
