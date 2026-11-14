@@ -25,7 +25,7 @@ How to see the Mission working once it is built. Run these from the repository r
    curl -s "$BASE/activations/$ID/artifacts/glossary/spec-kitty-core"                  # the winning copy, with state
    curl -s "$BASE/activations/$ID/vocabulary/terms"                                    # every term in force
    curl -s -H 'Accept: application/yaml' "$BASE/activations/$ID/vocabulary/contextive" # a Contextive v1 file
-   curl -s "$BASE/activations/$ID/vocabulary/avoid"                                    # avoided words, with their terms
+   curl -s "$BASE/activations/$ID/vocabulary/taboos"                                   # avoided words, with their terms
    ```
 
 4. Check that the old shape is refused: register a pack that holds `glossary_packs/x.glossary-pack.yaml`. It is
