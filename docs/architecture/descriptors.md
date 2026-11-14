@@ -361,8 +361,8 @@ One ubiquitous-language bounded context and its terms, the artifact of the kind 
 - **CRG:** `glossary_context:<id>`. A term is an item of its context, addressed as `term:<context-id>/<term-id>`;
   a `vocabulary` edge may target it, but no graph document declares it as a node. Each `see_also` entry, bare or
   `<pack>::` qualified, derives a `vocabulary` edge from the context to the term it names.
-- **Retired:** `glossary_packs/*.glossary-pack.yaml` and `glossary_pack:<id>` are refused by name; there is no
-  reader of the old shape. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-context) draws the built shape.
+- **Retired:** the old file is refused by name, by the rule `**/*.glossary-pack.yaml`, wherever it lies in the pack
+  (`glossary_packs/` included); there is no reader of the old shape. `glossary_pack:<id>` is not a node kind any more. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-context) draws the built shape.
 
 ### Pack skill — `*.skill.yaml` plus body
 
