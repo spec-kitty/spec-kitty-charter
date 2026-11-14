@@ -57,7 +57,8 @@ git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all 
 fi
 
 echo "== The release $version is assembled"
-git tag "$tag"
+# -f: a checkout of the tagged release commit carries the tag already, and the clone has no remote to push it to.
+git tag -f "$tag" > /dev/null
 scripts/release/packs-contract-release-assets.sh "$tag" "$work/assets"
 for asset in packs-contract.tar.gz packs-contract.tar.gz.sha256 packs-contract.sha256; do
   if [[ ! -s "$work/assets/$asset" ]]; then
