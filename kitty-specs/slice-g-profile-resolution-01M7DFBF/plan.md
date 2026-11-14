@@ -194,7 +194,7 @@ One code lane runs WP01 to WP05 in order, so each WP restamps the manifests once
 | WP04 | Lineage chain, enhancement merge and drop refusal (P5), in the domain and at registration. Example: an org-base enhancer of `reviewer-renata` that keeps every base field and adds one | #380, #102 | D5, D6, D7 | **independent** (rebase test fixtures onto F's factories) | WP02 |
 | WP05 | Contract and edge (P4): `selectAgentProfile`, the effective profile with `lineage`, `service/activations` `Candidates` and `EffectiveTag.SelectionQuery`, raised codes, `@contract` scenarios, `profiles.feature` out of `@WIP`. Example: org-base `reviewer-rita` (the org-base tie) | #42, #102, #380 | D1, D6 | **independent** | WP03, WP04 |
 | WP06 | Records (P6) | #102 | all | **independent** | WP05 |
-| WP07 | Step-keyed read and the `profile-selection` links. Rule how F's substep `delegates_to` agent_profile candidates relate to ADR-0032 d1 | #42 | D1 | **dependent: after F (#567) lands** | WP05, slice F |
+| WP07 | Step-keyed read and the `profile-selection` links. A substep never delegates to an `agent_profile` (F, operator ruling), so the step's role is the only source | #42 | D1 | **dependent: after F (#567) lands** | WP05, slice F |
 
 ## Example packs (charter's own, ADR-0070)
 
