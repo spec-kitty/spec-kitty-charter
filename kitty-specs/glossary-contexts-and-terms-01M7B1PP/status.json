@@ -1,7 +1,7 @@
 {
-  "event_count": 28,
-  "last_event_id": "01M7D09AXK83683MRCFSWQ61EW",
-  "materialized_at": "2026-11-14T12:25:01.619404+00:00",
+  "event_count": 31,
+  "last_event_id": "01M7D3TGRQFTFAE66E9Z9QMTW8",
+  "materialized_at": "2026-11-14T13:26:50.391082+00:00",
   "mission_number": "",
   "mission_slug": "glossary-contexts-and-terms-01M7B1PP",
   "mission_type": "software-dev",
@@ -12,10 +12,10 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
+    "for_review": 1,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -89,18 +89,19 @@
       }
     },
     "WP03": {
-      "actor": "claude",
+      "actor": "user",
       "agent": null,
-      "agent_profile": "reviewer-renata",
+      "agent_profile": "java-jenny",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "planned",
-      "last_event_id": "01M7D09AXK83683MRCFSWQ61EW",
-      "last_transition_at": "2026-11-14T12:25:01.619404+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M7D3TGRQFTFAE66E9Z9QMTW8",
+      "last_transition_at": "2026-11-14T13:26:50.391082+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: planted glossary refusals, identifier rows, stored/write glossary_pack refusals, glossary round-trip proof, term-target inbound reference; open risks in report"
+        "Ready for review: planted glossary refusals, identifier rows, stored/write glossary_pack refusals, glossary round-trip proof, term-target inbound reference; open risks in report",
+        "Cycle 2: term holding via PackCompositionFacts.terms / PackUnderResolution.heldTerms (holds = context held AND term held; EdgeIndex judges a term by its context's place; qualified missing term refused pack_reference_artifact_missing); see_also is a List<PackQualifiedReference> per the 2026-11-14 ruling, deriving one vocabulary relationship per entry from the context (bare cross-pack refused pack_reference_unqualified, unresolved reported held:false); dropping a term while keeping its context refused artifact_referenced; repeated term id is a uniqueItems schema violation at terms/<n>/id in load and validate mode. Commit 09d463da. verifyAll exit 0; packs 5249 tests green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -110,14 +111,14 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T015": "planned",
-        "T016": "planned",
-        "T017": "planned",
-        "T018": "planned"
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done"
       }
     },
     "WP04": {
