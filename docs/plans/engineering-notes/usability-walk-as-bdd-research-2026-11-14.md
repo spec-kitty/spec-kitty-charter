@@ -133,3 +133,6 @@ wanted later, extending the release smoke with a few link hops is cheaper than b
 
 **Operator, 2026-11-14:** the test is a **per-PR `@contract` journey** over charter's example packs, with a
 hand-written activation, as proposed above. Not a nightly. The real-content proof stays with open-packs.
+
+The journey is filed as #572. Like every `@contract` scenario, it will also run in the nightly gating pass that #15
+adds, so the operator's wish to have the walk in the nightly is met without a second suite.
