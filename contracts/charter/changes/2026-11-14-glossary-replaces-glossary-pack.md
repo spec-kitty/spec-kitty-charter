@@ -2,7 +2,7 @@
 
 - The kind `glossary_pack` is replaced outright by `glossary`, in the shape of ADR-0049 (decisions 1 to 6, amended by
   ADR-0053 decisions 11 to 14; #106). There is no alias, no reader of the old shape and no upgrade (the charter's model
-  is canonical, C-001). Allowed on the 0.x line (ADR-0022).
+  is canonical). Allowed on the 0.x line (ADR-0022).
   - Renamed members and values: `ActivatableKind` and `CascadeKind` replace `glossary_pack` with `glossary`;
     `SelectedArtifacts` and `DeactivatedArtifacts` replace the member `glossary_pack` with `glossary` (glossary context
     ids), and `ActivationConfig.schema.json` and its corpus (`valid/06`, `valid/07`) follow; `Preset.activatedGlossaryPacks`
@@ -20,8 +20,8 @@
     (`<pack>::term:<context-id>/<term-id>`, a term another pack holds), judged by the one reference rule: a bare entry
     that only another pack holds is `pack_reference_unqualified`, and a qualified one the named pack does not hold is
     `pack_reference_artifact_missing` (operator ruling 2026-11-14).
-    `confidence`, `introduced_in_mission`, `provenance` and `surface` are gone, and `synonyms_to_avoid` and
-    `banned_synonyms` fold into `avoid`. The file family is `glossaries/<id>.glossary.yaml` (fragment plural
+    `confidence`, `introduced_in_mission` and `provenance` are gone, `surface` is renamed `name`, and
+    `synonyms_to_avoid` and `banned_synonyms` fold into `avoid`. The file family is `glossaries/<id>.glossary.yaml` (fragment plural
     `glossaries`), the id is the file stem, and a context elsewhere is refused by placement. `file-kinds.yaml`, the
     graph shard and org fragment URN alternations, and the `preset` (`activated_glossaries`), `charter`
     (`selected_glossaries`, `activated_glossaries`), `pack-manifest`, `policy` (`kind_defaults.glossary`; an

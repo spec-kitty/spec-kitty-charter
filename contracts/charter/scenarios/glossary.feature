@@ -232,16 +232,16 @@ Feature: A pack's glossary contexts are listed and read, and each term is read b
     When I GET "/packs/qa/artifacts/glossary/qa/terms/flaky-test"
     Then the response header "ETag" is the remembered header
 
-  Scenario Outline: <operation> of a pack no configured pack answers to is 404 pack_not_found, whatever the rest names
+  Scenario Outline: <operation> of a pack no configured pack matches is 404 pack_not_found, whatever the rest names
     When I GET "<path>"
     Then the response status is 404
     And the problem code is "pack_not_found"
 
     Examples:
-      | operation                | path                                                    |
-      | listPackGlossaryContexts | /packs/nope/artifacts/glossary                          |
-      | getPackGlossaryContext   | /packs/nope/artifacts/glossary/spec-kitty-core          |
-      | getPackGlossaryTerm      | /packs/nope/artifacts/glossary/nothing/terms/nothing    |
+      | operation                | path                                                 |
+      | listPackGlossaryContexts | /packs/nope/artifacts/glossary                       |
+      | getPackGlossaryContext   | /packs/nope/artifacts/glossary/spec-kitty-core       |
+      | getPackGlossaryTerm      | /packs/nope/artifacts/glossary/nothing/terms/nothing |
 
   Scenario Outline: <operation> of a context the pack does not hold is 404 artifact_not_found naming the context
     When I GET "<path>"
@@ -250,8 +250,8 @@ Feature: A pack's glossary contexts are listed and read, and each term is read b
     And the field at "/detail" is "glossary context `nothing` is not held"
 
     Examples:
-      | operation              | path                                           |
-      | getPackGlossaryContext | /packs/qa/artifacts/glossary/nothing           |
+      | operation              | path                                               |
+      | getPackGlossaryContext | /packs/qa/artifacts/glossary/nothing               |
       | getPackGlossaryTerm    | /packs/qa/artifacts/glossary/nothing/terms/mission |
 
   Scenario: getPackGlossaryTerm of a term the context does not hold is 404 artifact_not_found naming the term and its context
@@ -268,7 +268,7 @@ Feature: A pack's glossary contexts are listed and read, and each term is read b
     And the problem has no code
 
     Examples:
-      | operation              | path                                                |
-      | getPackGlossaryContext | /packs/nope/artifacts/glossary/Core                 |
+      | operation              | path                                                    |
+      | getPackGlossaryContext | /packs/nope/artifacts/glossary/Core                     |
       | getPackGlossaryTerm    | /packs/qa/artifacts/glossary/spec-kitty-core/terms/Core |
-      | getPackGlossaryTerm    | /packs/qa/artifacts/glossary/1core/terms/mission    |
+      | getPackGlossaryTerm    | /packs/qa/artifacts/glossary/1core/terms/mission        |

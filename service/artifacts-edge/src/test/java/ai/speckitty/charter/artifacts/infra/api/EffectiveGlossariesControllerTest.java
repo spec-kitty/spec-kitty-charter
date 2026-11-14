@@ -65,7 +65,7 @@ class EffectiveGlossariesControllerTest {
             List.of(),
             List.of("feature"),
             List.of(),
-            List.of("built-in::term:spec-kitty-core/work-package"),
+            List.of("built-in::term:qa/flaky-test"),
             "term:spec-kitty-core/mission");
     private static final GlossaryView CONTEXT = new GlossaryView(
             "spec-kitty-core",
@@ -241,7 +241,7 @@ class EffectiveGlossariesControllerTest {
                             "terms": [
                               {"id": "mission", "name": "mission", "definition": "A unit of planned work.",
                                "status": "active", "aliases": ["feature"],
-                               "seeAlso": ["built-in::term:spec-kitty-core/work-package"]}
+                               "seeAlso": ["built-in::term:qa/flaky-test"]}
                             ]
                           },
                           "_links": {
@@ -284,7 +284,7 @@ class EffectiveGlossariesControllerTest {
                           "term": {
                             "id": "mission", "name": "mission", "definition": "A unit of planned work.",
                             "status": "active", "aliases": ["feature"],
-                            "seeAlso": ["built-in::term:spec-kitty-core/work-package"]
+                            "seeAlso": ["built-in::term:qa/flaky-test"]
                           },
                           "_links": {
                             "self": {

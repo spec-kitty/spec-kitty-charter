@@ -89,8 +89,9 @@ the service (#431, [Enforce presets on an organization's projects](/guides/enfor
 
 > **Decided design:** this diagram draws the kinds as decided in ADR-0048 to ADR-0052: `glossary` for
 > `glossary_pack` (built in this service since [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)), an `AntiPattern` kind, `lifecycle`, an ordinary `MissionType` and an event registry
-> (activation pending ADR-0051 OQ1). Today's code and schemas still have the old shape; the sources for that
-> shape are `src/charter/offering/artifact_kinds.py` and `src/charter/offering/drg/models.py` in core.
+> (activation pending ADR-0051 OQ1). For the kinds not built yet, today's code and schemas still have the old shape;
+> the sources for that shape are `src/charter/offering/artifact_kinds.py` and `src/charter/offering/drg/models.py` in
+> core.
 
 ## Charter kinds
 
