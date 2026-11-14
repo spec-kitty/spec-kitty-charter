@@ -38,7 +38,7 @@ properties:
   description:
     type: string
     minLength: 1
-    description: Where the context applies, which becomes Contextive's domain vision statement.
+    description: What the context covers, which becomes Contextive's domain vision statement.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
       symbol: GlossaryContext.description

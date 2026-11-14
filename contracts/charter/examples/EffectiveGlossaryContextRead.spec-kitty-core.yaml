@@ -32,7 +32,7 @@ value:
         avoid:
           - epic
         seeAlso:
-          - built-in::term:spec-kitty-core/work-package
+          - built-in::term:qa/flaky-test
   _links:
     self:
       href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core

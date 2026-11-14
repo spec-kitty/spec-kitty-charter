@@ -30,7 +30,7 @@ The first packs contract version, not yet released (#559).
 
 ### Changed
 
-- The artifact kind `glossary_pack` is replaced by `glossary` (#106; ADR-0049, ADR-0076): `glossary.schema.json`
+- The artifact kind `glossary_pack` is replaced by `glossary` (#106; ADR-0049, ADR-0053): `glossary.schema.json`
   replaces `glossary-pack.schema.json`, and a glossary context lives at `glossaries/<id>.glossary.yaml`. A
   `*.glossary-pack.yaml` file is refused by name as retired. `file-kinds.yaml` gains the node kinds
   `glossary_context` and `term`, the artifact kind `glossary` and the fragment plural `glossaries`; the graph-shard,

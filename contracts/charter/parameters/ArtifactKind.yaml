@@ -11,7 +11,7 @@ description: >-
   kind_not_found, as a kind it does not remove. A mission_step_contract is
   served by the generic item read; the item of a mission_type is answered by getPackMissionType, whose
   literal path the service prefers, and its references read and its removal (deletePackArtifact, which
-  removes the listed kinds but the asset, the skill and the glossary, mission_type and mission_step_contract included) take this parameter like
+  removes the listed kinds but an asset, a skill and a glossary context, mission_type and mission_step_contract included) take this parameter like
   any other kind. The
   parameter is a slug, not an enum: a value that is not a slug (Tactic, -tactic) is a 400 Problem
   without a code, before the pack is judged, and a slug that names no served kind is answered 404

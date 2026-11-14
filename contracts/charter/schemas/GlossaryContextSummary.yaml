@@ -1,7 +1,7 @@
 title: GlossaryContextSummary
 description: >-
   One glossary context as a GlossaryContextList lists it (ADR-0049 decision 7, ADR-0074 decision 9): its id, its name,
-  where it applies (description), its tags and how many terms it holds. In a pack, _links holds self, the context's own
+  what it covers (description), its tags and how many terms it holds. In a pack, _links holds self, the context's own
   read (getPackGlossaryContext), which answers the whole context with every term. Under an activation
   (listEffectiveGlossaryContexts) it is the copy the layer merge keeps, and _links holds effective-artifact, its read
   under the activation (getEffectiveGlossaryContext), and artifact, the winning copy's read in its pack
@@ -33,7 +33,7 @@ properties:
   description:
     type: string
     minLength: 1
-    description: Where the context applies, as GlossaryContext.description.
+    description: What the context covers, as GlossaryContext.description.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
       symbol: GlossaryContext.description

@@ -6,7 +6,7 @@ get:
   description: >-
     The vocabulary in force under an activation (#106, FR-014 and FR-015; ADR-0076 decisions 1 to 5 and 8): every term
     the winning copy of a glossary context in force holds. A context is in force when its effective state is active;
-    one the activation deselects, denies or does not select gives no term. A context overrides across levels whole, so
+    one out of force (state inactive or excluded, for a reason such as deactivated or not_selected) gives no term. A context overrides across levels whole, so
     a term only a copy the winner replaced holds is not listed, and nothing is merged per term. Two contexts that define
     one name give two terms. Every term of a context in force is listed whatever its status, and each carries it: a
     client filters by status. Each term names the pack and level of its context's winning copy.
@@ -47,10 +47,10 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../schemas/ActiveTermList.yaml
+            $ref: ../schemas/VocabularyTermList.yaml
           examples:
             two-contexts:
-              $ref: ../examples/ActiveTermList.two-contexts.yaml
+              $ref: ../examples/VocabularyTermList.two-contexts.yaml
     '304':
       $ref: ../responses/NotModified.yaml
     '400':

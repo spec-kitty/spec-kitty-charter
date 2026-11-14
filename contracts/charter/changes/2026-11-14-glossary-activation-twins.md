@@ -6,7 +6,7 @@
   …/glossary/{contextId}/terms/{termId}`), tag `EffectiveGlossaries`. Each answers the copy of a context the layer
   merge keeps across the levels of the closure, whole: a term only a copy the winner replaced holds is not in force.
   The list answers `GlossaryContextList` of the closure's context winners, whatever their state, in id order and
-  unpaged, with no `packId` (each winner names its own pack): `GlossaryContextList` serves both trees, and its
+  unpaged, with no `packId` (each item's `artifact` link leads to its pack's copy): `GlossaryContextList` serves both trees, and its
   `packId` is present in a pack and absent under an activation. A list item links `effective-artifact` and `artifact`.
   The context answers `EffectiveGlossaryContextRead`, the members of `EffectiveArtifactRead` (`state`, `reason`,
   `policy`, `required`, `satisfiedBy?`, `suggestion?`) plus `glossary` (`GlossaryContext`), whatever its state, and
