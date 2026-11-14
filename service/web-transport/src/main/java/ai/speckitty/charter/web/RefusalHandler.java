@@ -9,8 +9,13 @@ import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.kernel.transport.RetryLaterException;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -347,71 +352,119 @@ public class RefusalHandler {
         return declared != null ? declared : statusOf(code);
     }
 
+    /**
+     * Each refusal code's status when its operation declares none; every code has exactly one, checked when the class
+     * loads. A class of its own, as a mapping: the reserved-code guard leaves the handler's mappings out.
+     */
+    private static final class StatusByCode {
+
+        private static final Set<RefusalCode> NOT_FOUND_CODES = EnumSet.of(
+                RefusalCode.MISSION_TYPE_NOT_FOUND,
+                RefusalCode.ACTION_NOT_FOUND,
+                RefusalCode.PACK_NOT_FOUND,
+                RefusalCode.PACK_DOCUMENT_NOT_FOUND,
+                RefusalCode.TACTIC_NOT_FOUND,
+                RefusalCode.DIRECTIVE_NOT_FOUND,
+                RefusalCode.STYLEGUIDE_NOT_FOUND,
+                RefusalCode.PARADIGM_NOT_FOUND,
+                RefusalCode.TOOLGUIDE_NOT_FOUND,
+                RefusalCode.KIND_NOT_FOUND,
+                RefusalCode.ACTIVATION_NOT_FOUND,
+                RefusalCode.ARTIFACT_NOT_FOUND,
+                RefusalCode.PRESET_NOT_FOUND,
+                RefusalCode.RELATIONSHIP_NOT_FOUND,
+                RefusalCode.REGISTRATION_NOT_FOUND,
+                RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
+                RefusalCode.SKELETON_NOT_FOUND,
+                RefusalCode.NO_PROFILE_MATCHED);
+
+        private static final Set<RefusalCode> UNPROCESSABLE_CODES = EnumSet.of(
+                RefusalCode.VALIDATION_FAILED,
+                RefusalCode.ACTIVATION_INVALID,
+                RefusalCode.PACK_SOURCE_REFUSED,
+                RefusalCode.OVERRIDE_NOT_PERMITTED,
+                RefusalCode.ENHANCES_CYCLE,
+                RefusalCode.CONFLICTING_RELATIONS,
+                RefusalCode.SELF_OVERRIDE,
+                RefusalCode.OVERRIDE_CYCLE,
+                RefusalCode.FALLBACK_PROFILE_UNKNOWN,
+                RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
+                RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                RefusalCode.FALLBACK_PROFILE_MISSING,
+                RefusalCode.FALLBACK_PROFILE_CONFLICT);
+
+        private static final Set<RefusalCode> CONFLICT_CODES = EnumSet.of(
+                RefusalCode.REGISTRATION_CONFLICT,
+                RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                RefusalCode.ARTIFACT_REQUIRED,
+                RefusalCode.ARTIFACT_LOCKED,
+                RefusalCode.PACK_VERSION_CONFLICT,
+                RefusalCode.ARTIFACT_REFERENCED,
+                RefusalCode.RELATIONSHIP_NOT_REGISTERED,
+                RefusalCode.MISSION_TYPE_NOT_IN_FORCE);
+
+        private static final Set<RefusalCode> UNAVAILABLE_CODES =
+                EnumSet.of(RefusalCode.PACK_SOURCE_UNAVAILABLE, RefusalCode.PACK_STORAGE_FULL);
+
+        private static final Set<RefusalCode> TIMED_OUT_CODES = EnumSet.of(RefusalCode.REGISTRATION_TIMED_OUT);
+
+        private static final Set<RefusalCode> SERVER_ERROR_CODES = EnumSet.of(
+                RefusalCode.PACK_LEVEL_MISMATCH,
+                RefusalCode.PACK_UNREADABLE,
+                RefusalCode.DRG_SCHEMA_ERROR,
+                RefusalCode.UNRESOLVED_EDGE_ENDPOINT,
+                RefusalCode.PACK_DEPENDENCY_CYCLE,
+                RefusalCode.PACK_DEPENDENCY_UNKNOWN,
+                RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE,
+                RefusalCode.PACK_PARENT_UNRESOLVED,
+                RefusalCode.PACK_LEVEL_VIOLATION,
+                RefusalCode.PACK_NAME_CONFLICT,
+                RefusalCode.PACK_DUPLICATE_ID,
+                RefusalCode.PACK_SIBLING_CONFLICT,
+                RefusalCode.PACK_REFERENCE_UNQUALIFIED,
+                RefusalCode.PACK_REFERENCE_PACK_MISSING,
+                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
+                RefusalCode.PROMPT_SLOT_MALFORMED,
+                RefusalCode.PROMPT_SLOT_NOT_EMPTY,
+                RefusalCode.PROMPT_FRAGMENT_INVALID,
+                RefusalCode.PROMPT_SLOT_MISSING,
+                RefusalCode.INTERNAL_ERROR,
+                RefusalCode.STALE_INPUT);
+
+        /** Each refusal code's status when its operation declares none; every code has exactly one, checked at load. */
+        private static final Map<RefusalCode, HttpStatus> STATUS_BY_CODE = statusByCode();
+
+        private static Map<RefusalCode, HttpStatus> statusByCode() {
+            Map<RefusalCode, HttpStatus> statuses = new EnumMap<>(RefusalCode.class);
+            family(statuses, HttpStatus.NOT_FOUND, NOT_FOUND_CODES);
+            family(statuses, HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_CODES);
+            family(statuses, HttpStatus.CONFLICT, CONFLICT_CODES);
+            family(statuses, HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_CODES);
+            family(statuses, HttpStatus.GATEWAY_TIMEOUT, TIMED_OUT_CODES);
+            family(statuses, HttpStatus.INTERNAL_SERVER_ERROR, SERVER_ERROR_CODES);
+            Set<RefusalCode> unmapped = EnumSet.complementOf(EnumSet.copyOf(statuses.keySet()));
+            if (!unmapped.isEmpty()) {
+                throw new IllegalStateException("refusal codes with no HTTP status: " + unmapped);
+            }
+            return Collections.unmodifiableMap(statuses);
+        }
+
+        private static void family(Map<RefusalCode, HttpStatus> statuses, HttpStatus status, Set<RefusalCode> codes) {
+            for (RefusalCode code : codes) {
+                HttpStatus earlier = statuses.put(code, status);
+                if (earlier != null) {
+                    throw new IllegalStateException(code + " has two HTTP statuses: " + earlier + " and " + status);
+                }
+            }
+        }
+
+        static HttpStatus of(RefusalCode code) {
+            return Objects.requireNonNull(STATUS_BY_CODE.get(code), code::name);
+        }
+    }
+
     private static HttpStatus statusOf(RefusalCode code) {
-        return switch (code) {
-            case MISSION_TYPE_NOT_FOUND,
-                    ACTION_NOT_FOUND,
-                    PACK_NOT_FOUND,
-                    PACK_DOCUMENT_NOT_FOUND,
-                    TACTIC_NOT_FOUND,
-                    DIRECTIVE_NOT_FOUND,
-                    STYLEGUIDE_NOT_FOUND,
-                    PARADIGM_NOT_FOUND,
-                    TOOLGUIDE_NOT_FOUND,
-                    KIND_NOT_FOUND,
-                    ACTIVATION_NOT_FOUND,
-                    ARTIFACT_NOT_FOUND,
-                    PRESET_NOT_FOUND,
-                    RELATIONSHIP_NOT_FOUND,
-                    REGISTRATION_NOT_FOUND,
-                    MISSION_STEP_CONTRACT_NOT_FOUND,
-                    SKELETON_NOT_FOUND,
-                    NO_PROFILE_MATCHED -> HttpStatus.NOT_FOUND;
-            case VALIDATION_FAILED,
-                    ACTIVATION_INVALID,
-                    PACK_SOURCE_REFUSED,
-                    OVERRIDE_NOT_PERMITTED,
-                    ENHANCES_CYCLE,
-                    CONFLICTING_RELATIONS,
-                    SELF_OVERRIDE,
-                    OVERRIDE_CYCLE,
-                    FALLBACK_PROFILE_UNKNOWN,
-                    FALLBACK_PROFILE_NOT_LOCKED,
-                    FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
-                    FALLBACK_PROFILE_MISSING,
-                    FALLBACK_PROFILE_CONFLICT -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case REGISTRATION_CONFLICT,
-                    GOVERNANCE_POLICY_VIOLATION,
-                    ARTIFACT_REQUIRED,
-                    ARTIFACT_LOCKED,
-                    PACK_VERSION_CONFLICT,
-                    ARTIFACT_REFERENCED,
-                    RELATIONSHIP_NOT_REGISTERED,
-                    MISSION_TYPE_NOT_IN_FORCE -> HttpStatus.CONFLICT;
-            case PACK_SOURCE_UNAVAILABLE, PACK_STORAGE_FULL -> HttpStatus.SERVICE_UNAVAILABLE;
-            case REGISTRATION_TIMED_OUT -> HttpStatus.GATEWAY_TIMEOUT;
-            case PACK_LEVEL_MISMATCH,
-                    PACK_UNREADABLE,
-                    DRG_SCHEMA_ERROR,
-                    UNRESOLVED_EDGE_ENDPOINT,
-                    PACK_DEPENDENCY_CYCLE,
-                    PACK_DEPENDENCY_UNKNOWN,
-                    PACK_DEPENDENCY_OUT_OF_RANGE,
-                    PACK_PARENT_UNRESOLVED,
-                    PACK_LEVEL_VIOLATION,
-                    PACK_NAME_CONFLICT,
-                    PACK_DUPLICATE_ID,
-                    PACK_SIBLING_CONFLICT,
-                    PACK_REFERENCE_UNQUALIFIED,
-                    PACK_REFERENCE_PACK_MISSING,
-                    PACK_REFERENCE_ARTIFACT_MISSING,
-                    PROMPT_SLOT_MALFORMED,
-                    PROMPT_SLOT_NOT_EMPTY,
-                    PROMPT_FRAGMENT_INVALID,
-                    PROMPT_SLOT_MISSING,
-                    INTERNAL_ERROR,
-                    STALE_INPUT -> HttpStatus.INTERNAL_SERVER_ERROR;
-        };
+        return StatusByCode.of(code);
     }
 
     /**
