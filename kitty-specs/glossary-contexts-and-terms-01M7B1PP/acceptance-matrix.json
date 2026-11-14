@@ -107,11 +107,11 @@
     {
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "contract_scenario",
+      "evidence": "effective-glossary.feature, activation-links.feature (WP05)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:29:21.831938+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
