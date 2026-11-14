@@ -18,5 +18,5 @@ paths:
     get: { operationId: getActivationVocabularyTerms, tags: [Vocabulary], responses: { '200': { description: ActiveTermList (JSON) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
   /activations/{activationId}/vocabulary/contextive:
     get: { operationId: getActivationVocabularyContextive, tags: [Vocabulary], responses: { '200': { description: Contextive v1 document (application/yaml) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
-  /activations/{activationId}/vocabulary/avoid:
-    get: { operationId: getActivationVocabularyAvoid, tags: [Vocabulary], responses: { '200': { description: AvoidList (JSON) }, '304': { description: not modified }, '404': { description: activation_not_found } } }
+  /activations/{activationId}/vocabulary/taboos:
+    get: { operationId: getActivationVocabularyTaboos, tags: [Vocabulary], responses: { '200': { description: TabooList (JSON) }, '304': { description: not modified }, '404': { description: activation_not_found } } }

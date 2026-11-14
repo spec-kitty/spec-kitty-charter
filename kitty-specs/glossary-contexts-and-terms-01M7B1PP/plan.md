@@ -103,7 +103,7 @@ contracts/charter/
 │   activations_activationId_vocabulary_{terms,contextive,avoid}.yaml
 ├── parameters/ContextId.yaml, TermId.yaml, ArtifactKind.yaml (prose)
 ├── schemas/NodeKind, ActivatableKind, CascadeKind, SelectedArtifacts, DeactivatedArtifacts, Preset, ArtifactKindToken,
-│   Artifact; new GlossaryContext*, GlossaryTerm, EffectiveGlossary*Read, ActiveTerm*, AvoidList, Activation (links)
+│   Artifact; new GlossaryContext*, GlossaryTerm, EffectiveGlossary*Read, ActiveTerm*, TabooList, Activation (links)
 ├── examples/, scenarios/glossary.feature, effective-glossary.feature, vocabulary.feature, every-operation.feature,
 │   read-refusals.feature, activation-links.feature, effective-reads.feature (400 detail), switch-gate.yaml
 └── changes/2026-11-1x-glossary-contexts-and-terms.md
