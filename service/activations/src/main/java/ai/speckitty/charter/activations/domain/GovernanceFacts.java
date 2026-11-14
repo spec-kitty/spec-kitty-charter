@@ -56,6 +56,9 @@ public record GovernanceFacts(ArtifactRef profile, List<Entry> entries, List<Can
      * @param hops the length of the path from the profile
      * @param when the {@code when} of the edge that reached it, whatever its relation; empty when the edge states none
      * @param reason the {@code reason} of that edge; empty likewise
+     * @param termId the id of the term the entry lists, a {@code vocabulary} target {@code term:<context>/<term>}:
+     *     {@code ref} is then its glossary context, whose state the term has (operator ruling of 2026-11-14); empty
+     *     for an entry that lists an artifact
      */
     public record Entry(
             ArtifactRef ref,
@@ -64,10 +67,33 @@ public record GovernanceFacts(ArtifactRef profile, List<Entry> entries, List<Can
             ArtifactRef via,
             int hops,
             Optional<String> when,
-            Optional<String> reason) {
+            Optional<String> reason,
+            Optional<String> termId) {
 
         /**
          * Checks the fields.
+         *
+         * @param ref the artifact, or the glossary context of the term the entry lists
+         * @param step the step
+         * @param relation the relation
+         * @param via the parent
+         * @param hops the path length
+         * @param when the edge's condition
+         * @param reason the edge's reason
+         * @param termId the term's id, for an entry that lists a term
+         */
+        public Entry {
+            Objects.requireNonNull(ref, "ref");
+            Objects.requireNonNull(step, "step");
+            Objects.requireNonNull(relation, "relation");
+            Objects.requireNonNull(via, "via");
+            Objects.requireNonNull(when, "when");
+            Objects.requireNonNull(reason, "reason");
+            Objects.requireNonNull(termId, "termId");
+        }
+
+        /**
+         * An entry that lists an artifact.
          *
          * @param ref the artifact
          * @param step the step
@@ -77,13 +103,15 @@ public record GovernanceFacts(ArtifactRef profile, List<Entry> entries, List<Can
          * @param when the edge's condition
          * @param reason the edge's reason
          */
-        public Entry {
-            Objects.requireNonNull(ref, "ref");
-            Objects.requireNonNull(step, "step");
-            Objects.requireNonNull(relation, "relation");
-            Objects.requireNonNull(via, "via");
-            Objects.requireNonNull(when, "when");
-            Objects.requireNonNull(reason, "reason");
+        public Entry(
+                ArtifactRef ref,
+                Step step,
+                RelationType relation,
+                ArtifactRef via,
+                int hops,
+                Optional<String> when,
+                Optional<String> reason) {
+            this(ref, step, relation, via, hops, when, reason, Optional.empty());
         }
     }
 

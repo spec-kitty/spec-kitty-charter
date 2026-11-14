@@ -198,6 +198,38 @@ class EffectiveProfileDtosTest {
         assertThat(entry.getLinks()).isEmpty();
     }
 
+    /**
+     * A term the governance lists (operator ruling of 2026-11-14): kind glossary, the context as artifactId, the term in
+     * termId, the facts of the context's winning copy, and one link, effective-term. The entry of an artifact has no
+     * termId.
+     */
+    @Test
+    void aTermEntryNamesItsContextAndItsTermAndLinksTheTermsReadUnderTheActivation() throws Exception {
+        EffectiveProfileRead.Entry term = new EffectiveProfileRead.Entry(
+                active("term:spec-kitty-core/lane", "proj"),
+                GovernanceEntry.Step.VOCABULARY,
+                urn("agent_profile:P"),
+                1,
+                EdgeWords.NONE);
+        EffectiveAgentProfileRead wire =
+                dtos.read(effectiveRead(effectiveRequires("directive:D", "main"), term), OptionalInt.empty());
+
+        EffectiveGovernanceEntry entry = wire.getGovernance().get(1);
+        assertThat(entry.getKind()).isEqualTo(EffectiveGovernanceEntry.KindEnum.GLOSSARY);
+        assertThat(entry.getArtifactId()).isEqualTo("spec-kitty-core");
+        assertThat(entry.getTermId()).isEqualTo("lane");
+        assertThat(entry.getPackId()).isEqualTo("proj");
+        assertThat(entry.getRelation()).isEqualTo(EffectiveGovernanceEntry.RelationEnum.VOCABULARY);
+        assertThat(entry.getLinks().keySet()).containsExactly("effective-term");
+        assertThat(entry.getLinks().get("effective-term").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/glossary/spec-kitty-core/terms/lane");
+        JsonNode written = JSON.valueToTree(wire);
+        assertThat(written.at("/governance/1/termId").asString()).isEqualTo("lane");
+        assertThat(written.at("/governance/0").has("termId"))
+                .as("the control: an artifact's entry has no termId")
+                .isFalse();
+    }
+
     /** An org directive the profile P suggests, not selected, with the words of the edge. */
     private static EffectiveProfileRead.Entry suggestedOfP(String directive, EdgeWords words) {
         return new EffectiveProfileRead.Entry(

@@ -92,6 +92,8 @@ public record EffectiveArtifactAnswer(
      * @param hops the length of the path from the profile
      * @param edge the words of the edge that listed it, whatever its relation and whether the artifact is in force or
      *     not; {@link EdgeWords#NONE} when that edge states neither
+     * @param termId the id of the term the entry lists, whose glossary context {@code artifact} is; empty for an entry
+     *     that lists an artifact
      */
     public record Entry(
             EffectiveArtifact artifact,
@@ -99,10 +101,31 @@ public record EffectiveArtifactAnswer(
             RelationType relation,
             ArtifactRef via,
             int hops,
-            EdgeWords edge) {
+            EdgeWords edge,
+            Optional<String> termId) {
 
         /**
          * Checks the fields.
+         *
+         * @param artifact the artifact, or the glossary context of the term the entry lists
+         * @param step the step
+         * @param relation the relation
+         * @param via the parent
+         * @param hops the path length
+         * @param edge the listing edge's words
+         * @param termId the term's id, for an entry that lists a term
+         */
+        public Entry {
+            Objects.requireNonNull(artifact, "artifact");
+            Objects.requireNonNull(step, "step");
+            Objects.requireNonNull(relation, "relation");
+            Objects.requireNonNull(via, "via");
+            Objects.requireNonNull(edge, "edge");
+            Objects.requireNonNull(termId, "termId");
+        }
+
+        /**
+         * An entry that lists an artifact.
          *
          * @param artifact the artifact
          * @param step the step
@@ -111,12 +134,14 @@ public record EffectiveArtifactAnswer(
          * @param hops the path length
          * @param edge the listing edge's words
          */
-        public Entry {
-            Objects.requireNonNull(artifact, "artifact");
-            Objects.requireNonNull(step, "step");
-            Objects.requireNonNull(relation, "relation");
-            Objects.requireNonNull(via, "via");
-            Objects.requireNonNull(edge, "edge");
+        public Entry(
+                EffectiveArtifact artifact,
+                GovernanceFacts.Step step,
+                RelationType relation,
+                ArtifactRef via,
+                int hops,
+                EdgeWords edge) {
+            this(artifact, step, relation, via, hops, edge, Optional.empty());
         }
     }
 

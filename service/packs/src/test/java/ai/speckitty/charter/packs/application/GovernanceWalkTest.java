@@ -589,4 +589,38 @@ class GovernanceWalkTest {
                 .extracting(Entry::when, Entry::reason)
                 .containsExactly(Optional.of("a"), Optional.of("y"));
     }
+
+    /**
+     * The pack-scoped read lists a {@code term:} vocabulary target of the profile (operator ruling of 2026-11-14): held
+     * while the winning copy of its glossary context holds the term, and listed not held, with nothing below it, when
+     * the winning copy does not (a later level's copy of {@code g} without {@code mission} replaces the copy that had it).
+     */
+    @Test
+    void aTermTheProfilesVocabularyNamesIsListedHeldOnlyWhileTheWinningCopyOfItsContextHoldsIt() {
+        Closure closure = new Closure()
+                .glossaryHolder(
+                        "org",
+                        ai.speckitty.charter.kernel.domain.PackLevel.ORG,
+                        List.of(P, "glossary_context:g"),
+                        List.of("term:g/lane", "term:g/mission"),
+                        edge(P, RelationType.VOCABULARY, "term:g/lane"),
+                        edge(P, RelationType.VOCABULARY, "term:g/mission"))
+                .glossaryHolder(
+                        "project",
+                        ai.speckitty.charter.kernel.domain.PackLevel.PROJECT,
+                        List.of("glossary_context:g"),
+                        List.of("term:g/lane"));
+
+        Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 1, GovernanceWalkTest::everything);
+
+        assertThat(written.entries())
+                .extracting(Entry::urn, Entry::step, Entry::via, Entry::held)
+                .containsExactly(
+                        tuple(urn("term:g/lane"), Step.VOCABULARY, urn(P), true),
+                        tuple(urn("term:g/mission"), Step.VOCABULARY, urn(P), false));
+        assertThat(entry(written, "term:g/lane").relation()).isEqualTo(RelationType.VOCABULARY);
+        assertThat(listed(walk(closure, 1, GovernanceWalkTest::everything)))
+                .as("over the held links only, the term the winning copy does not hold is not reached")
+                .containsExactly("term:g/lane");
+    }
 }

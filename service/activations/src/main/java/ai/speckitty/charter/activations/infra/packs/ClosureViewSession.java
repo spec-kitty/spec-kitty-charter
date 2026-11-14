@@ -32,6 +32,7 @@ import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
@@ -349,7 +350,9 @@ final class ClosureViewSession implements PacksSession {
      * the step, relation, via and hops it reached them by (which {@link #contextOf} drops for an action), and the
      * candidates for a suggestion. The predicate of an activation admits only artifacts of an activatable kind, so an
      * entry that is none is dropped as every other part of the answer drops what is no artifact; a via is the profile or
-     * an entry, so one that is no artifact is a fault.
+     * an entry, so one that is no artifact is a fault. A term the walk lists (a {@code vocabulary} target, in force
+     * while its glossary context's winning copy is in force and holds it) is kept as its context with its term id
+     * (operator ruling of 2026-11-14).
      *
      * @param governance the walk's answer, with holders
      * @return the governance, as values
@@ -358,7 +361,9 @@ final class ClosureViewSession implements PacksSession {
     static GovernanceFacts governanceOf(ProfileGovernance.Governance governance) {
         List<GovernanceFacts.Entry> entries = new ArrayList<>();
         for (ProfileGovernance.Entry entry : governance.entries()) {
-            activatable(entry.urn())
+            Optional<Urn> context = GlossaryTerm.contextOf(entry.urn());
+            Optional<String> termId = context.map(held -> termIdOf(entry.urn()));
+            activatable(context.orElse(entry.urn()))
                     .ifPresent(ref -> entries.add(new GovernanceFacts.Entry(
                             ref,
                             stepOf(entry.step()),
@@ -366,7 +371,8 @@ final class ClosureViewSession implements PacksSession {
                             viaOf(entry.via()),
                             entry.hops(),
                             entry.when(),
-                            entry.reason())));
+                            entry.reason(),
+                            termId)));
         }
         List<GovernanceFacts.Candidate> candidates = new ArrayList<>();
         for (ActionContextWalk.SuggestionCandidate candidate : governance.suggestionCandidates()) {
@@ -375,6 +381,11 @@ final class ClosureViewSession implements PacksSession {
                             ref, viaOf(candidate.via()), candidate.hops(), candidate.when(), candidate.reason())));
         }
         return new GovernanceFacts(viaOf(governance.profile()), entries, candidates);
+    }
+
+    /** The term id of a term's address, {@code term:<context-id>/<term-id>}: the segment after the slash. */
+    private static String termIdOf(Urn term) {
+        return term.id().substring(term.id().indexOf('/') + 1);
     }
 
     /** The activations slice's step for the packs slice's, by an exhaustive switch and never by name. */

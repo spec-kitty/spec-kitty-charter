@@ -6,6 +6,7 @@ import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.profiles.application.EffectiveProfileRead;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -95,6 +96,9 @@ public class EffectiveProfileDtos {
 
     private EffectiveGovernanceEntry entry(EffectiveProfileRead.Entry entry, EffectiveProfileRead read) {
         EffectiveProfileRead.Facts facts = entry.facts();
+        if (facts.urn().kind() == NodeKind.TERM) {
+            return termEntry(entry, read);
+        }
         Map<String, Link> links = new LinkedHashMap<>();
         if (read.linksArtifact(entry)) {
             links.put(
@@ -129,6 +133,47 @@ public class EffectiveProfileDtos {
                 entry.hops(),
                 ProfileDtos.edge(entry.edge()),
                 links);
+        references(facts.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
+        return wire;
+    }
+
+    /**
+     * A term the governance lists (operator ruling of 2026-11-14): kind {@code glossary} and the id of its context, the
+     * term's id in {@code termId}, the facts of the context's winning copy, and a link to the term's read under the
+     * activation ({@code effective-term}).
+     */
+    private EffectiveGovernanceEntry termEntry(EffectiveProfileRead.Entry entry, EffectiveProfileRead read) {
+        EffectiveProfileRead.Facts facts = entry.facts();
+        String address = facts.urn().id();
+        String contextId = address.substring(0, address.indexOf('/'));
+        String termId = address.substring(address.indexOf('/') + 1);
+        Map<String, Link> links = new LinkedHashMap<>();
+        links.put(
+                "effective-term",
+                new Link(href(
+                        ACTIVATIONS,
+                        read.activationId(),
+                        ARTIFACTS,
+                        ArtifactKind.GLOSSARY.token(),
+                        contextId,
+                        "terms",
+                        termId)));
+        EffectiveGovernanceEntry wire = new EffectiveGovernanceEntry(
+                EffectiveGovernanceEntry.KindEnum.fromValue(ArtifactKind.GLOSSARY.token()),
+                contextId,
+                facts.pack().value(),
+                EffectiveGovernanceEntry.LevelEnum.fromValue(facts.level().token()),
+                EffectiveGovernanceEntry.StateEnum.fromValue(facts.state()),
+                facts.required(),
+                EffectiveGovernanceEntry.PolicyEnum.fromValue(facts.policy()),
+                EffectiveGovernanceEntry.ReasonEnum.fromValue(facts.reason()),
+                EffectiveGovernanceEntry.StepEnum.fromValue(entry.step().token()),
+                EffectiveGovernanceEntry.RelationEnum.fromValue(entry.relation().token()),
+                entry.via().toString(),
+                entry.hops(),
+                ProfileDtos.edge(entry.edge()),
+                links);
+        wire.setTermId(termId);
         references(facts.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
         return wire;
     }

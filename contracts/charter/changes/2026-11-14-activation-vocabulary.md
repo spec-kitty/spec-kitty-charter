@@ -23,3 +23,7 @@
   `VocabularyTerm` hold the term members (`id`, `name`, `definition`, `status`, `examples?`, `aliases?`, `avoid?`,
   `seeAlso?`) with identical schemas, and a contract test pins them. A `seeAlso` entry's two ids are letter-first kebab
   slugs of at most 64 characters, in the contract schemas as in `glossary.schema.json`.
+- A profile's governance under an activation lists a term (#106; operator ruling 2026-11-14): a `vocabulary` edge
+  onto `term:<context-id>/<term-id>` gives an `EffectiveGovernanceEntry` while the context's winning copy is in force
+  (state `active`) and holds the term, and none otherwise. The entry has kind `glossary`, the context's id as
+  `artifactId`, the new optional member `termId`, the facts of the context's winning copy, and links `effective-term`.
