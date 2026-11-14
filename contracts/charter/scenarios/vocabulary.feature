@@ -379,3 +379,77 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
       | vocabulary-terms      | terms      |
       | vocabulary-contextive | contextive |
       | vocabulary-taboos     | taboos     |
+
+  Scenario Outline: After its glossary context is edited, <operation> answers 200 with a new ETag to the old tag
+    The tag covers the packs of the activation's closure: acme's context g is edited and acme 1.1.0 is registered over
+    1.0.0, so the tag taken before no longer matches. The 304 with the old tag before the re-registration is the control
+    that the tag matched until then.
+    Given registration is switched on
+    And the archive "acme-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943W
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v1" holds the file "glossaries/g.glossary.yaml":
+      """
+      schema_version: '1.0'
+      id: g
+      name: G
+      description: The context the edit changes.
+      terms:
+        - id: word
+          name: word
+          definition: The word, at version 1.
+          avoid: [term]
+          status: active
+      """
+    And the archive "acme-v2" is a copy of the archive "acme-v1"
+    And the archive "acme-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943W
+      pack_version: 1.1.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v2" holds the file "glossaries/g.glossary.yaml":
+      """
+      schema_version: '1.0'
+      id: g
+      name: G
+      description: The context the edit changes.
+      terms:
+        - id: word
+          name: word
+          definition: The word, at version 2.
+          avoid: [term]
+          status: active
+      """
+    When I PUT "/packs/acme" with the archive "acme-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-5" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"glossary": ["g"]}}
+      """
+    Then the response status is 201
+    When I GET "<path>"
+    Then the response status is 200
+    When I remember the header "ETag"
+    And I GET "<path>" with If-None-Match the remembered header "ETag"
+    Then the response status is 304
+    When I PUT "/packs/acme" with the archive "acme-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I GET "<path>" with If-None-Match the remembered header "ETag"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+
+    Examples:
+      | operation                         | path                                             |
+      | listActivationVocabularyTerms     | /activations/a-5/vocabulary/terms                |
+      | getActivationVocabularyContextive | /activations/a-5/vocabulary/contextive           |
+      | getEffectiveGlossaryTerm          | /activations/a-5/artifacts/glossary/g/terms/word |
