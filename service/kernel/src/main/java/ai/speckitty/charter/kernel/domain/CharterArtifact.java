@@ -53,12 +53,13 @@ public interface CharterArtifact {
     Optional<String> description();
 
     /**
-     * The relationships this artefact derives from its own runtime data: never authored, refused on write, and never
-     * compared by the round trip. No artifact field authors a relationship: a pack's relationships are authored only
-     * in its graph documents (ADR-0064). Today only a guard derives one, {@code implemented_by} its in-pack asset; every
-     * returned relation is {@linkplain RelationType#derived() derived}.
+     * The relationships this artefact derives from its own runtime data: never authored as edges, and never compared by
+     * the round trip. No artifact field authors a relationship: a pack's relationships are authored only in its graph
+     * documents (ADR-0064). Two kinds derive one: a guard, {@code implemented_by} its in-pack asset, a relation that is
+     * {@linkplain RelationType#derived() only ever derived} and so refused on write; and a glossary context,
+     * {@code vocabulary} to each term its terms' {@code see_also} names (operator ruling 2026-11-14).
      *
-     * @return the derived relationships; empty for every kind but a guard
+     * @return the derived relationships; empty for every kind but a guard and a glossary context
      */
     default List<Relationship> derivedRelationships() {
         return List.of();

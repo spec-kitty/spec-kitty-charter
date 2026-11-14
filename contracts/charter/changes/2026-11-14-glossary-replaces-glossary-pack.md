@@ -14,7 +14,11 @@
   - The packs contract: `glossary.schema.json` replaces `glossary-pack.schema.json`, closed at every level
     (`schema_version`, `id`, `name`, `description`, `tags?`, `applies_to?`, `terms`; a term is `id`, `name`,
     `definition`, `examples?`, `aliases?`, `avoid?`, `status`, `see_also?`). Context and term ids are letter-first
-    kebab slugs of at most 64 characters; `status` is `draft`, `active` or `deprecated`; `see_also` holds `term:` URNs.
+    kebab slugs of at most 64 characters; `status` is `draft`, `active` or `deprecated`; a `see_also` entry is a term reference, bare
+    (`term:<context-id>/<term-id>`, a term of the same pack) or pack-qualified
+    (`<pack>::term:<context-id>/<term-id>`, a term another pack holds), judged by the one reference rule: a bare entry
+    that only another pack holds is `pack_reference_unqualified`, and a qualified one the named pack does not hold is
+    `pack_reference_artifact_missing` (operator ruling 2026-11-14).
     `confidence`, `introduced_in_mission`, `provenance` and `surface` are gone, and `synonyms_to_avoid` and
     `banned_synonyms` fold into `avoid`. The file family is `glossaries/<id>.glossary.yaml` (fragment plural
     `glossaries`), the id is the file stem, and a context elsewhere is refused by placement. `file-kinds.yaml`, the
@@ -22,7 +26,8 @@
     (`selected_glossaries`, `activated_glossaries`), `pack-manifest`, `policy` (`kind_defaults.glossary`; an
     `artifacts` key is `glossary_context:<id>`) and `mission-step-contract` schemas follow.
   - A write (`createActivation`, `replaceActivation`) that sends `selected.glossary_pack` or
-    `deactivated.glossary_pack` is `422 validation_failed` with an `unknown_member` violation at its pointer.
+    `deactivated.glossary_pack` is `422 activation_invalid` with an `unknown_member` violation at its pointer, as for
+    any undeclared member.
   - A stored activation that holds `selected.glossary_pack` or `deactivated.glossary_pack` is refused as an invalid
     stored document, with no upgrade (ruling `DM-01M7B1Q1HW2KDEEW3MKCK2A2PT`).
   - A pack file in the old shape (`*.glossary-pack.yaml`) is refused by name as a retired file, in the load, in

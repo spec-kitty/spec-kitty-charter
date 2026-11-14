@@ -117,8 +117,9 @@ public final class InboundReferences {
     /** One pack as the scan reads it: how it is configured, its descriptor, and what it holds and writes. */
     private record Member(PackIdentifier id, PackDescriptor descriptor, PackCompositionFacts facts, boolean staged) {
 
+        /** Whether the pack holds the artifact, or the term, a URN names. */
         boolean defines(Urn urn) {
-            return facts.defined().contains(urn.toString());
+            return facts.defined().contains(urn.toString()) || facts.terms().contains(urn.toString());
         }
 
         /** The descriptor {@code pack_id}s the pack builds on: its {@code parent_pack} and its {@code depends_on}. */
@@ -256,7 +257,8 @@ public final class InboundReferences {
     /**
      * The removed artifact a reference resolves to, when it resolves to one of the staged pack's. An action node is
      * removed with its mission type, and resolves where the type does; a term ({@code term:<context-id>/<term-id>}) is
-     * removed with its glossary context, and resolves where the context does.
+     * removed on its own, when the staged pack keeps its context without it, or with its glossary context, and resolves
+     * where the context does.
      */
     private static Optional<Urn> removedTarget(
             PackQualifiedReference target, List<Member> closure, StagedTree staged, Set<Urn> removed) {

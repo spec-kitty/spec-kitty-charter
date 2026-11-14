@@ -2,7 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.domain.AppliesTo;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.GlossaryContextIdentifier;
@@ -60,7 +60,7 @@ enum GlossaryBinding implements KindBinding<GlossaryDso, GlossaryContext> {
      * {@inheritDoc}
      *
      * @throws IllegalArgumentException also when a term's {@code status} is not a status the domain knows, or a
-     *     {@code see_also} entry is not a URN
+     *     {@code see_also} entry's pack qualifier is malformed
      */
     @Override
     public GlossaryContext toEntity(PackIdentifier pack, GlossaryDso dso) {
@@ -83,7 +83,7 @@ enum GlossaryBinding implements KindBinding<GlossaryDso, GlossaryContext> {
                     term.aliases(),
                     term.avoid(),
                     TermStatus.fromToken(term.status()),
-                    term.seeAlso().stream().map(GlossaryBinding::urn).toList()));
+                    term.seeAlso().stream().map(PackQualifiedReference::parse).toList()));
         }
         return builder.build();
     }
@@ -107,12 +107,9 @@ enum GlossaryBinding implements KindBinding<GlossaryDso, GlossaryContext> {
                                 term.aliases(),
                                 term.avoid(),
                                 term.status().token(),
-                                term.seeAlso().stream().map(Urn::toString).toList()))
+                                term.seeAlso().stream()
+                                        .map(PackQualifiedReference::toString)
+                                        .toList()))
                         .toList());
-    }
-
-    private static Urn urn(String text) {
-        return Urn.parse(text)
-                .orElseThrow(() -> new IllegalArgumentException("see_also entry '" + text + "' is not a URN"));
     }
 }

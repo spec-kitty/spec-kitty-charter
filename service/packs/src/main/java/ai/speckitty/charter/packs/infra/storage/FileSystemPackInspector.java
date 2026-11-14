@@ -656,6 +656,10 @@ public final class FileSystemPackInspector implements PackInspector {
         if (misnamed.isPresent()) {
             return new FileRead.Unreadable<>(file, null, List.of(misnamed.get()));
         }
+        List<SchemaViolation> broken = kindRules(file, kind, document);
+        if (!broken.isEmpty()) {
+            return new FileRead.Unreadable<>(file, null, broken);
+        }
         if (PackManifestYaml.SCHEMA.equals(kind) && document instanceof Map<?, ?> manifest) {
             List<SchemaViolation> misplaced = misplacedPresetEntries(file, manifest);
             if (!misplaced.isEmpty()) {
@@ -681,6 +685,19 @@ public final class FileSystemPackInspector implements PackInspector {
         }
         return Optional.of(new SchemaViolation(
                 file, List.of(binding.get().idKey()), "const", Optional.empty(), Optional.of(id), Map.of()));
+    }
+
+    /**
+     * The rules of an artifact's kind that its schema cannot state ({@link YamlFormat#rules}: a repeated principle name,
+     * a repeated term id), which the store's read applies, checked here too so validate mode and the load refuse the
+     * same files at the same pointer.
+     */
+    private static List<SchemaViolation> kindRules(String file, String kind, @Nullable Object document) {
+        Optional<KindBinding<?, ?>> binding = KindBindings.bySchema(kind);
+        if (binding.isEmpty() || !(document instanceof Map<?, ?> artifact)) {
+            return List.of();
+        }
+        return YamlFormats.of(binding.get()).rules(artifact, file);
     }
 
     /**

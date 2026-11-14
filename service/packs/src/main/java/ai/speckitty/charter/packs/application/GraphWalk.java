@@ -27,7 +27,8 @@ import java.util.Set;
  *
  * <p><strong>It does not walk authored edges.</strong> Since ADR-0064 a relationship is authored only in a pack's graph
  * documents, read through {@link ai.speckitty.charter.packs.domain.PackEdgeRepository}; the derived relationships it
- * follows are a guard's {@code implemented_by} alone. Over a stored artifact it walks almost nothing. The activation
+ * follows are a guard's {@code implemented_by} and a glossary context's {@code see_also} {@code vocabulary}. Over a
+ * stored artifact it walks almost nothing. The activation
  * cascade ({@link Reachability}) walks it over an {@link EdgeIndex}, whose nodes answer the closure's graph-document
  * edges as their relationships; any other caller must do the same, or wait for #397 to retire or rebase the walk.
  */

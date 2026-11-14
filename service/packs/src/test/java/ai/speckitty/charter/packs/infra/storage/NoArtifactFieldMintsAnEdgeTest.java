@@ -46,15 +46,20 @@ class NoArtifactFieldMintsAnEdgeTest {
         assertThat(KindBindings.kinds()).contains(ArtifactKind.DIRECTIVE, ArtifactKind.PARADIGM, ArtifactKind.GUARD);
     }
 
+    /**
+     * A guard derives its {@code implemented_by}, a relation only ever derived; a glossary context derives a
+     * {@code vocabulary} relation to each term its terms' {@code see_also} names (operator ruling 2026-11-14, #106), so
+     * that a {@code see_also} entry is judged as a reference like any other. No other kind derives one.
+     */
     @Test
-    @DisplayName("only a guard derives a relationship, and it derives a derived relation (implemented_by)")
-    void onlyAGuardDerivesARelationship() {
+    @DisplayName("only a guard and a glossary context derive a relationship, each from its own field")
+    void onlyAGuardAndAGlossaryContextDeriveARelationship() {
         List<String> deriving = entityTypes().stream()
                 .filter(type -> declares(type, "derivedRelationships"))
                 .map(Class::getSimpleName)
                 .toList();
 
-        assertThat(deriving).containsExactly("Guard");
+        assertThat(deriving).containsExactlyInAnyOrder("Guard", "GlossaryContext");
         assertThat(RelationType.IMPLEMENTED_BY.derived()).isTrue();
     }
 

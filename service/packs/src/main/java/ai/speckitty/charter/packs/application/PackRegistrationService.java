@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
@@ -448,28 +449,40 @@ public final class PackRegistrationService {
     // ---- steps 7 and 8: the diff, the write gate and the inbound scan --------------------------------------------
 
     /**
-     * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each and the edges
-     * it wrote. A stored pack that cannot be read whole is diffed by what can still be read of it
-     * ({@link WholePackWriteStore.Loader#salvageStored}): the gate and the inbound scan never switch off for a pack
-     * that is unreadable, and a pack whose artifacts cannot be told at all is refused.
+     * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each, the edges it
+     * wrote and the terms its glossary contexts held. A stored pack that cannot be read whole is diffed by what can
+     * still be read of it ({@link WholePackWriteStore.Loader#salvageStored}): the gate and the inbound scan never switch
+     * off for a pack that is unreadable, and a pack whose artifacts cannot be told at all is refused. Its terms cannot
+     * be told, so none are held: a term it drops is found with its context, when the upload drops the context.
      *
      * @param defined the artifacts held, as bare URNs
      * @param digests the digest of each file-backed artifact
      * @param edges the typed edges written, by their key
+     * @param loose the stored graph entries that cannot be typed, by their pair
+     * @param terms the terms held, as bare URNs
      */
     private record Before(
-            Set<String> defined, Map<Urn, String> digests, Map<String, Relationship> edges, Map<String, Urn> loose) {
+            Set<String> defined,
+            Map<Urn, String> digests,
+            Map<String, Relationship> edges,
+            Map<String, Urn> loose,
+            Set<String> terms) {
 
-        static final Before NOTHING = new Before(Set.of(), Map.of(), Map.of(), Map.of());
+        static final Before NOTHING = new Before(Set.of(), Map.of(), Map.of(), Map.of(), Set.of());
 
         static Before of(WholePackWriteStore.Contents contents) {
-            return new Before(heldBy(contents), contents.digests(), edgesOf(contents), Map.of());
+            return new Before(
+                    heldBy(contents),
+                    contents.digests(),
+                    edgesOf(contents),
+                    Map.of(),
+                    Set.copyOf(contents.facts().terms()));
         }
 
         static Before of(WholePackWriteStore.Remains remains) {
             Map<String, Relationship> edges = new LinkedHashMap<>();
             remains.edges().forEach(edge -> edges.putIfAbsent(edgeKey(edge), edge));
-            return new Before(remains.defined(), remains.digests(), edges, remains.looseEdges());
+            return new Before(remains.defined(), remains.digests(), edges, remains.looseEdges(), Set.of());
         }
     }
 
@@ -569,6 +582,15 @@ public final class PackRegistrationService {
         before.defined().stream()
                 .filter(urn -> !now.contains(urn))
                 .forEach(urn -> Urn.parse(urn).ifPresent(removed::add));
+        // A term the upload drops from a context it keeps: a context it drops takes its terms with it already.
+        Set<String> termsNow = Set.copyOf(upload.contents().facts().terms());
+        before.terms().stream()
+                .filter(term -> !termsNow.contains(term))
+                .flatMap(term -> Urn.parse(term).stream())
+                .filter(term -> GlossaryTerm.contextOf(term)
+                        .filter(context -> now.contains(context.toString()))
+                        .isPresent())
+                .forEach(removed::add);
         List<InboundReferences.Referrer> referrers = inbound.scan(
                 view,
                 new InboundReferences.StagedTree(

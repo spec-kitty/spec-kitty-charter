@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -62,6 +63,22 @@ class EdgeIndexTest {
         }
 
         Closure pack(String name, PackLevel level, List<String> dependsOn, List<String> held, Relationship... edges) {
+            return pack(name, level, dependsOn, held, List.of(), edges);
+        }
+
+        /** A pack at a level whose glossary contexts hold the terms, as bare URNs. */
+        Closure glossaryPack(
+                String name, PackLevel level, List<String> held, List<String> terms, Relationship... edges) {
+            return pack(name, level, List.of(), held, terms, edges);
+        }
+
+        private Closure pack(
+                String name,
+                PackLevel level,
+                List<String> dependsOn,
+                List<String> held,
+                List<String> terms,
+                Relationship... edges) {
             List<PackDependency> dependencies = dependsOn.stream()
                     .map(other -> new PackDependency(packId(other), ">=0"))
                     .toList();
@@ -75,7 +92,11 @@ class EdgeIndexTest {
                     PackPaths.none(),
                     dependencies);
             packs.add(new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), held));
+                    new ConfiguredPack(new PackIdentifier(name), level),
+                    descriptor,
+                    List.of(),
+                    held,
+                    Set.copyOf(terms)));
             facts.put(
                     name,
                     new PackCompositionFacts(
@@ -479,6 +500,45 @@ class EdgeIndexTest {
         assertThat(index.writtenLinks())
                 .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
                 .containsExactly(org.assertj.core.api.Assertions.tuple(urn("directive:D"), true));
+    }
+
+    /**
+     * A glossary context overrides whole (ADR-0049; spec story 4, scenario 3): a later level's copy of {@code g} that
+     * lacks {@code lane} takes {@code term:g/lane} away with the copy it replaces, so the edge onto it is not held. The
+     * closure without the overriding pack, the control, holds it.
+     */
+    @Test
+    void aMergedIndexHoldsATermOnlyWhenTheWinningCopyOfItsContextHoldsIt() {
+        Relationship onto = edge("directive:D", RelationType.VOCABULARY, "term:g/lane");
+        Closure overridden = new Closure()
+                .glossaryPack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("directive:D", "glossary_context:g"),
+                        List.of("term:g/lane"),
+                        onto)
+                .glossaryPack("project", PackLevel.PROJECT, List.of("glossary_context:g"), List.of("term:g/other"));
+        Closure alone = new Closure()
+                .glossaryPack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("directive:D", "glossary_context:g"),
+                        List.of("term:g/lane"),
+                        onto);
+
+        assertThat(overridden.merged().writtenLinks())
+                .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(urn("term:g/lane"), false));
+        assertThat(overridden.merged().placesOf(urn("term:g/other")))
+                .containsExactly(new EdgeIndex.Place(pack("project"), urn("term:g/other")));
+        assertThat(overridden.index().writtenLinks())
+                .as("unmerged, every place holds what its pack holds")
+                .extracting(EdgeIndex.Link::held)
+                .containsExactly(true);
+        assertThat(alone.merged().writtenLinks())
+                .as("the control: no later level replaces g")
+                .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(urn("term:g/lane"), true));
     }
 
     @Test

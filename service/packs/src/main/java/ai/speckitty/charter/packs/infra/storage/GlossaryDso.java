@@ -79,7 +79,7 @@ record GlossaryDso(
      * @param aliases the {@code aliases}, in authored order
      * @param avoid the {@code avoid}, in authored order
      * @param status the {@code status}
-     * @param seeAlso the {@code see_also} URNs, in authored order
+     * @param seeAlso the {@code see_also} term references, bare or pack-qualified, in authored order
      */
     record Term(
             String id,
@@ -100,7 +100,7 @@ record GlossaryDso(
          * @param aliases the aliases
          * @param avoid the forms to avoid
          * @param status the status
-         * @param seeAlso the related term URNs
+         * @param seeAlso the related terms' references
          */
         Term {
             Objects.requireNonNull(id, "id");

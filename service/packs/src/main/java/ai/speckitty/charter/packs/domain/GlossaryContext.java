@@ -3,6 +3,9 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -182,6 +185,32 @@ public final class GlossaryContext implements CharterArtifact {
      */
     public Optional<GlossaryTerm> term(TermIdentifier termId) {
         return terms.stream().filter(term -> term.id().equals(termId)).findFirst();
+    }
+
+    /**
+     * The relationships the context derives from its terms' {@code see_also}: one {@code vocabulary} relationship from
+     * the context to each distinct entry, bare or pack-qualified as written, in term order (operator ruling 2026-11-14).
+     * A {@code see_also} entry is a reference like any other, so the compose's reference check, the reference reads and
+     * the inbound scan judge it as they judge a graph-document edge. It is derived runtime data, never authored: the
+     * round trip never compares it (ADR-0064), as a guard's {@code implemented_by}.
+     *
+     * @return the derived relationships; empty when no term names another
+     */
+    @Override
+    public List<Relationship> derivedRelationships() {
+        Urn source = urn();
+        return terms.stream()
+                .flatMap(term -> term.seeAlso().stream())
+                .distinct()
+                .map(reference -> new Relationship(
+                        source,
+                        Optional.empty(),
+                        reference.asUrn().orElseThrow(),
+                        reference.packName(),
+                        RelationType.VOCABULARY,
+                        Optional.empty(),
+                        Optional.empty()))
+                .toList();
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */

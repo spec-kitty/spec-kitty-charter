@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
+import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MissionTypeSteps;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
@@ -81,6 +82,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -508,7 +510,9 @@ public final class DomainRepositoryService
      *       assembly ({@link #languagesOf});
      *   <li>the slots each step prompt declares and the fills each step enhancement writes, from the same read, over
      *       the canonical texts the load rule judges ({@link PromptFacts#of}, research R9), and the steps each mission
-     *       type it holds declares, from the same assembly, which place a step's prompt in force (operator ruling Q3).
+     *       type it holds declares, from the same assembly, which place a step's prompt in force (operator ruling Q3);
+     *   <li>the terms its glossary contexts hold, as bare URNs, from the same assembly: items of their contexts, so not
+     *       among the artifacts it holds (ADR-0049 decision 3).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -542,8 +546,10 @@ public final class DomainRepositoryService
         Map<String, List<String>> languages = new LinkedHashMap<>();
         Map<String, String> bindings = new LinkedHashMap<>();
         Map<Urn, List<String>> steps = new LinkedHashMap<>();
+        List<String> terms = new ArrayList<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
+            termsOf(artifact).forEach(terms::add);
             if (artifact.urn().kind().declarableInGraphs()) {
                 defined.add(artifact.urn().toString());
                 List<String> declaredLanguages = languagesOf(artifact);
@@ -570,7 +576,15 @@ public final class DomainRepositoryService
                 typedEdges(graphs.documents(), assembled),
                 languages,
                 bindings,
-                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps));
+                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps),
+                terms);
+    }
+
+    /** The terms a glossary context holds, as bare URNs, in authored order; every other kind holds none. */
+    private static Stream<String> termsOf(CharterArtifact artifact) {
+        return artifact instanceof GlossaryContext context
+                ? context.terms().stream().map(term -> term.urn(context.id()).toString())
+                : Stream.empty();
     }
 
     /**

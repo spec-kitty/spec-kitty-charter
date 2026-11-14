@@ -39,9 +39,14 @@ import tools.jackson.databind.ObjectMapper;
  * nothing would load them all and fail every refusal row, and a loader that refused everything would fail the control.
  * The old {@code glossary_pack} shape appears here only as a refusal case.
  *
- * <p>A repeated term id is the domain's invariant, which no schema can state, so validate mode reports nothing for it
- * and only the load refuses it. The store places a domain violation at the artifact's id, not its file, so that plant's
- * expected violation names no file.
+ * <p>A repeated term id is a rule no schema can state; the glossary format reports it as a {@code uniqueItems} violation
+ * at the repeat's id ({@code GlossaryYaml#rules}), as a repeated principle name and a repeated step id are reported, so
+ * validate mode and the load refuse the same file with the same pointer. The domain keeps the invariant as well.
+ *
+ * <p>One plant carries two faults: {@code glossary-context-id-not-kebab} declares {@code id: Core} in
+ * {@code core.glossary.yaml}, which breaks the id pattern and differs from the file stem. A schema violation makes
+ * the file unreadable before the stem rule runs, so the pattern is reported alone, which is the one finding that plant
+ * expects; the stem rule has its own plant, {@code glossary-context-id-not-the-stem}.
  */
 @DisplayName("the planted glossary cases fail or load exactly as their expected.json says (ADR-0049)")
 class GlossaryPlantedRefusalsTest {

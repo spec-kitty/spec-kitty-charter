@@ -2,12 +2,17 @@ package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,8 +72,53 @@ class GlossaryContextTest {
         assertThat(context.appliesTo().paths()).containsExactly("src/**");
         assertThat(context.appliesTo().languages()).containsExactly("java");
         assertThat(context.terms()).extracting(t -> t.id().value()).containsExactly("mission", "lane");
-        assertThat(context.derivedRelationships()).isEmpty();
+        assertThat(context.derivedRelationships())
+                .as("no term names another, so the context derives nothing")
+                .isEmpty();
+        assertThat(context.writtenReferences()).isEmpty();
         assertThat(context).hasToString("GlossaryContext[spec-kitty-core of pack 01PACK]");
+    }
+
+    private static GlossaryTerm seeing(String id, String... seeAlso) {
+        return new GlossaryTerm(
+                new TermIdentifier(id),
+                id,
+                "Definition of " + id,
+                List.of(),
+                List.of(),
+                List.of(),
+                TermStatus.ACTIVE,
+                Stream.of(seeAlso).map(PackQualifiedReference::parse).toList());
+    }
+
+    @Test
+    @DisplayName("each distinct see_also entry derives one vocabulary relationship from the context, in term order")
+    void itsTermsSeeAlsoDeriveVocabularyRelationships() {
+        GlossaryContext context = GlossaryContext.builder()
+                .id(new GlossaryContextIdentifier("core"))
+                .packId(PACK)
+                .name("Core")
+                .description("d")
+                .term(seeing("lane", "term:core/mission", "base::term:g/lane"))
+                .term(seeing("mission", "term:core/lane", "term:core/mission"))
+                .term(seeing("wp", "base::term:g/lane"))
+                .build();
+
+        assertThat(context.derivedRelationships())
+                .extracting(
+                        edge -> edge.from().toString(),
+                        Relationship::type,
+                        edge -> edge.toReference().toString())
+                .containsExactly(
+                        tuple("glossary_context:core", RelationType.VOCABULARY, "term:core/mission"),
+                        tuple("glossary_context:core", RelationType.VOCABULARY, "base::term:g/lane"),
+                        tuple("glossary_context:core", RelationType.VOCABULARY, "term:core/lane"));
+        assertThat(context.derivedRelationships())
+                .allSatisfy(edge -> assertThat(edge.fromPack()).isEmpty());
+        assertThat(context.writtenReferences())
+                .extracting(PackQualifiedReference::toString)
+                .as("the compose's reference check reads what it writes")
+                .containsExactly("term:core/mission", "base::term:g/lane", "term:core/lane");
     }
 
     @Test

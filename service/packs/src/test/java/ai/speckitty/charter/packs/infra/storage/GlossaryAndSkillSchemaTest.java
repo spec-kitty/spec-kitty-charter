@@ -171,6 +171,17 @@ class GlossaryAndSkillSchemaTest {
         assertThat(validate(SKILL, VALID_WRAPPER_SKILL)).isEmpty();
     }
 
+    @Test
+    @DisplayName("a see_also entry is a term reference: bare, or pack-qualified for a term another pack holds")
+    void aSeeAlsoEntryMayBePackQualified() {
+        String qualified = VALID_GLOSSARY.replace(
+                "see_also: [\"term:demo-glossary/mission\"]",
+                "see_also: [\"term:demo-glossary/mission\", \"spec-kitty-core::term:spec-kitty-core/lane\"]");
+
+        assertThat(qualified).isNotEqualTo(VALID_GLOSSARY);
+        assertThat(validate(GLOSSARY, qualified)).isEmpty();
+    }
+
     @ParameterizedTest(name = "an explicit null at {0} is refused")
     @CsvSource({"tags", "applies_to"})
     @DisplayName("an optional context field refuses an explicit null: the shape is closed and typed")
@@ -220,6 +231,12 @@ class GlossaryAndSkillSchemaTest {
                 "see_also: [\"term:demo-glossary/mission\"]|see_also: [\"glossary_context:demo-glossary\"]"
                         + "|terms/0/see_also/0|pattern",
                 "see_also: [\"term:demo-glossary/mission\"]|see_also: []|terms/0/see_also|minItems",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: [\"core::directive:DIRECTIVE_001\"]"
+                        + "|terms/0/see_also/0|pattern",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: [\"Core::term:demo-glossary/mission\"]"
+                        + "|terms/0/see_also/0|pattern",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: [\"::term:demo-glossary/mission\"]"
+                        + "|terms/0/see_also/0|pattern",
                 "tags: [demo]|tags: []|tags|minItems",
                 "tags: [demo]|tags: [demo, demo]|tags|uniqueItems",
                 "name: Demo|name: \" \"|name|pattern",

@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
@@ -54,7 +55,8 @@ public final class WriteFacts {
                 facts.edges(),
                 facts.languages(),
                 facts.bindings(),
-                facts.prompts());
+                facts.prompts(),
+                facts.terms());
     }
 
     /**
@@ -80,7 +82,7 @@ public final class WriteFacts {
 
     /**
      * The facts without an artifact: it is no longer held, the registered edges that start at it are gone, and so are
-     * the preset items that name it. A mission type takes its steps' prompts with it and a step enhancement its fills
+     * the preset items that name it. A glossary context takes its terms with it. A mission type takes its steps' prompts with it and a step enhancement its fills
      * ({@link ai.speckitty.charter.packs.domain.PromptFacts#without}).
      *
      * @param facts the facts of the stored pack
@@ -105,7 +107,13 @@ public final class WriteFacts {
                 edgeless.edges(),
                 languagesWithout(edgeless.languages(), artifact),
                 bindingsWithout(edgeless.bindings(), artifact),
-                edgeless.prompts().without(artifact));
+                edgeless.prompts().without(artifact),
+                edgeless.terms().stream()
+                        .filter(term -> !Urn.parse(term)
+                                .flatMap(GlossaryTerm::contextOf)
+                                .filter(artifact::equals)
+                                .isPresent())
+                        .toList());
     }
 
     /**
@@ -173,7 +181,8 @@ public final class WriteFacts {
                 remaining,
                 facts.languages(),
                 facts.bindings(),
-                facts.prompts());
+                facts.prompts(),
+                facts.terms());
     }
 
     /** The {@code overrides} targets: those of the dropped edges go unless another edge still overrides them. */
