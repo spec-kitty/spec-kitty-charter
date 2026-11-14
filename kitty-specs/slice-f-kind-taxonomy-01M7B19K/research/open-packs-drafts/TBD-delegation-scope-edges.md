@@ -34,7 +34,8 @@ Add one edge per row of the table below, in the graph document of the pack that 
 The target is written as the candidate is written in the folded substep (draft
 [TBD-fold-step-contracts](TBD-fold-step-contracts.md)): bare for an artifact of the same pack, and
 `<pack>::<kind>:<id>` for another pack's. All 14 of writing's new edges target `foundation::`, the form writing's
-`action.graph.yaml` already uses for its 20 existing ones.
+`action.graph.yaml` already uses: 32 of its 41 edges have a qualified target (34 edges are qualified, counting 2 with
+a qualified source).
 
 ```yaml
 - source: action:software-dev/implement
@@ -49,7 +50,12 @@ The target is written as the candidate is written in the folded substep (draft
 digests and regenerate the pack pages.
 
 Each edge is allowed by the endpoint table (`scope`: action → a guidance kind or agent_profile). The edges are valid
-under the current charter pin too, so this draft can land before the pin moves; it is independent of the fold.
+under the current charter pin too, so this draft can land before the pin moves.
+
+**Depends on [TBD-step-requires-edges](TBD-step-requires-edges.md): land with it or after it.** 18 of these edges
+start from `action:qa/<step>` nodes, and only that draft adds them; with this draft alone, `validate-packs.sh` fails
+(`--cross-pack`: the source resolves to no node). Both must be in the tree by the pin-move pull request, which carries
+the fold (draft [TBD-fold-step-contracts](TBD-fold-step-contracts.md)).
 
 ## Acceptance
 

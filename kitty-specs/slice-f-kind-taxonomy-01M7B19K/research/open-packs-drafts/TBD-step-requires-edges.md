@@ -60,7 +60,9 @@ qa 7, software-dev 7, research 1). Three steps already have their node and lack 
 `research/retrospect`, `software-dev/retrospect` and `documentation/retrospect`.
 
 This draft is additive and valid under the current charter pin: it can land before the pin moves (see
-[README.md](README.md)).
+[README.md](README.md)). It depends on no other draft. Draft [TBD-delegation-scope-edges](TBD-delegation-scope-edges.md)
+depends on it (its qa edges start from the action nodes added here), and both must be in the tree by the pin-move
+pull request.
 
 ## Acceptance
 
