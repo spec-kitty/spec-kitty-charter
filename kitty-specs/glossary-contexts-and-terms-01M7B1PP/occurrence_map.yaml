@@ -46,8 +46,8 @@ exceptions:
     action: manual_review
     reason: "r15-glossary-urn-* refuse core's glossary: URN and keep doing so; a new planted case refuses the old glossary_pack shape"
   - path: "site/.contextive/**"
-    action: do_not_change
-    reason: "This repository's own docs glossary stays hand-authored (ADR-0029; DM-01M7B80ENN0EZH860D9MFC4FYM); its activated_<kind> definition describes core's CLI"
+    action: manual_review
+    reason: "This repository's own docs glossary stays hand-authored (ADR-0029; DM-01M7B80ENN0EZH860D9MFC4FYM): never generated from the service, and its activated_<kind> definition describes core's CLI and stays. Hand corrections to charter-facing entries (the vocabulary relation, WP08 cycle 2) are allowed"
   - path: ".kittify/**"
     action: do_not_change
     reason: "Core's CLI writes and reads it; ProjectCharterYamlSchemaTest stops validating it (DM-01M7CEZ19K8QRA3KX68KRWX22G)"
