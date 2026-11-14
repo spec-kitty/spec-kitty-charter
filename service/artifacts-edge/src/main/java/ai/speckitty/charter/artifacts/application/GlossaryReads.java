@@ -1,5 +1,6 @@
 package ai.speckitty.charter.artifacts.application;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
@@ -37,6 +38,30 @@ public interface GlossaryReads {
      * @throws CharterRefusal as the packs slice refuses
      */
     Listed list(PackIdentifier pack);
+
+    /**
+     * The glossary contexts a pack holds, read against the source fingerprint a caller already holds (research R15 of
+     * slice A2): the read of the pack that holds the context winners an activation named.
+     *
+     * @param pack the configured identifier of the pack
+     * @param expectedFingerprint the whole-source fingerprint of the caller's own verified read
+     * @return the contexts, the pack revision and that fingerprint
+     * @throws CharterRefusal as {@link #list(PackIdentifier)} refuses, and with {@code stale_input} when this read
+     *     verified another fingerprint
+     */
+    Listed list(PackIdentifier pack, String expectedFingerprint);
+
+    /**
+     * The view of a glossary context another read already holds as a kernel artifact (the winner an activation read):
+     * the same mapping as {@link #context}, with nothing read.
+     *
+     * @param context the context, as its pack stores it
+     * @param read the read that holds it, named by the fault when it is no glossary context
+     * @return the view
+     * @throws IllegalStateException when the artifact is no glossary context of the packs slice: a broken invariant of
+     *     the read
+     */
+    GlossaryView view(CharterArtifact context, String read);
 
     /**
      * One glossary context, with every term.

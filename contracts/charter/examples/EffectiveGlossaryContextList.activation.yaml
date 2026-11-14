@@ -1,0 +1,31 @@
+summary: >-
+  The glossary contexts of an activation's closure, in id order, each the copy the layer merge keeps, whatever its
+  state: the project pack's spec-kitty-core over the built-in copy, and the org pack's qa. Each links its read under
+  the activation and the pack-scoped read of the winning copy; the list names no pack.
+value:
+  items:
+    - id: qa
+      name: Quality assurance
+      description: The vocabulary of testing and its reports.
+      termCount: 2
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/glossary/qa
+        artifact:
+          href: /api/v1/packs/org-base/artifacts/glossary/qa
+    - id: spec-kitty-core
+      name: Spec Kitty core
+      description: Canonical Spec Kitty terminology, as this project uses it.
+      tags:
+        - spec-kitty
+      termCount: 1
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core
+        artifact:
+          href: /api/v1/packs/project/artifacts/glossary/spec-kitty-core
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/glossary
+    up:
+      href: /api/v1/activations/a-1

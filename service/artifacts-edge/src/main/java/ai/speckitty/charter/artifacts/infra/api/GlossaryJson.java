@@ -2,6 +2,7 @@ package ai.speckitty.charter.artifacts.infra.api;
 
 import ai.speckitty.charter.api.model.GlossaryAppliesTo;
 import ai.speckitty.charter.api.model.GlossaryContext;
+import ai.speckitty.charter.api.model.GlossaryContextList;
 import ai.speckitty.charter.api.model.GlossaryContextSummary;
 import ai.speckitty.charter.api.model.GlossaryContextTerm;
 import ai.speckitty.charter.api.model.GlossaryTerm;
@@ -16,9 +17,10 @@ import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
- * How the glossary reads serialize (#106): an optional member they leave {@code null} (a context's tags or
- * {@code appliesTo}, one list of an {@code appliesTo}, a term's examples, aliases, forms to avoid or related terms) is
- * omitted, never written as {@code null}, by the contract rule {@code NullOmissionTest} checks against the schemas.
+ * How the glossary reads serialize (#106): an optional member they leave {@code null} (a list's {@code packId} under an
+ * activation, a context's tags or {@code appliesTo}, one list of an {@code appliesTo}, a term's examples, aliases, forms
+ * to avoid or related terms) is omitted, never written as {@code null}, by the contract rule {@code NullOmissionTest}
+ * checks against the schemas.
  * None of the glossary schemas has a nullable member. The {@code Artifact} envelope is mixed in by the packs slice's
  * {@code ArtifactJson}; the rule reaches the generated DTOs only through the mix-in.
  */
@@ -38,6 +40,7 @@ public class GlossaryJson {
     @Bean
     public JacksonModule glossaryJsonModule() {
         return new SimpleModule("charter-glossary-json")
+                .setMixInAnnotation(GlossaryContextList.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(GlossaryContextSummary.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(GlossaryContext.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(GlossaryAppliesTo.class, OmitAbsentMembers.class)

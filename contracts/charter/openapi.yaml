@@ -85,6 +85,14 @@ tags:
       answers every winner, unpaged and unfiltered; a client that wants the skills by state, or paged, reads
       listEffectiveArtifacts with ?kind=skill (and ?state=), the stateful, paged list of the same winners. Its own tag,
       so that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveGlossaries
+    description: >-
+      The glossary contexts of an activation (#106, ADR-0074 decision 12): the contexts the activation's closure holds,
+      each the copy the layer merge keeps, whole; the read of one with its state and the context as the winning pack
+      declares it, whatever its state; and the read of one of its terms, which carries its context's state. The list
+      answers every winner, unpaged and unfiltered; a client that wants the contexts by state, or paged, reads
+      listEffectiveArtifacts with ?kind=glossary (and ?state=). Its own tag, so that the :artifacts-edge module
+      implements it in a controller of its own beside the pack-scoped reads.
   - name: EffectiveReferences
     description: >-
       The references of an artifact under an activation: the references the version in force writes, which are the
@@ -203,6 +211,12 @@ paths:
     $ref: paths/activations_activationId_artifacts_skill.yaml
   /activations/{activationId}/artifacts/skill/{artifactId}:
     $ref: paths/activations_activationId_artifacts_skill_artifactId.yaml
+  /activations/{activationId}/artifacts/glossary:
+    $ref: paths/activations_activationId_artifacts_glossary.yaml
+  /activations/{activationId}/artifacts/glossary/{contextId}:
+    $ref: paths/activations_activationId_artifacts_glossary_contextId.yaml
+  /activations/{activationId}/artifacts/glossary/{contextId}/terms/{termId}:
+    $ref: paths/activations_activationId_artifacts_glossary_contextId_terms_termId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}:
     $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId.yaml
   /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}:

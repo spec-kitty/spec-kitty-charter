@@ -3,8 +3,8 @@ package ai.speckitty.charter.artifacts.infra.packs;
 import ai.speckitty.charter.artifacts.application.GlossaryReads;
 import ai.speckitty.charter.artifacts.application.GlossaryView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -58,6 +58,22 @@ public final class PacksGlossaries implements GlossaryReads {
     }
 
     @Override
+    public Listed list(PackIdentifier pack, String expectedFingerprint) {
+        Listed listed = list(pack);
+        Fingerprints.require(listed.sourceFingerprint(), expectedFingerprint);
+        return listed;
+    }
+
+    @Override
+    public GlossaryView view(CharterArtifact context, String read) {
+        if (!(context instanceof GlossaryContext held)) {
+            throw new IllegalStateException(read + " holds " + context.kind().token() + " " + context.localId()
+                    + ", which is no glossary context of the packs slice.");
+        }
+        return viewOf(held);
+    }
+
+    @Override
     public Read context(PackIdentifier pack, String contextId) {
         ConsistentRead.Verified<ForeignArtifactRead.Foreign> verified = verifiedContext(pack, contextId);
         return new Read(
@@ -88,10 +104,7 @@ public final class PacksGlossaries implements GlossaryReads {
 
     /** The context's term of an id; an id outside the term grammar names no term, so it is not held, never a fault. */
     private static Optional<GlossaryTerm> heldTerm(GlossaryContext context, String termId) {
-        if (!IdentifierGrammar.isLetterFirstSlug(termId)) {
-            return Optional.empty();
-        }
-        return context.term(new TermIdentifier(termId));
+        return context.holdsTerm(termId) ? context.term(new TermIdentifier(termId)) : Optional.empty();
     }
 
     /**

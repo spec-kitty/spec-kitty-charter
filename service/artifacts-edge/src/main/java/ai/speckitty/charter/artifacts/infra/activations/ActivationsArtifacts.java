@@ -1,6 +1,7 @@
 package ai.speckitty.charter.artifacts.infra.activations;
 
 import ai.speckitty.charter.activations.application.ActivationService.Read;
+import ai.speckitty.charter.activations.application.EffectiveArtifactAnswer;
 import ai.speckitty.charter.activations.application.EffectiveHeldWinner;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
@@ -75,6 +76,21 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
     }
 
     @Override
+    public Outcome<GlossaryWinner> glossary(String activationId, String contextId, @Nullable String ifNoneMatch) {
+        return outcome(
+                effective.artifact(new ActivationId(activationId), ArtifactKind.GLOSSARY, contextId, 0, ifNoneMatch),
+                ActivationsArtifacts::glossaryWinner);
+    }
+
+    @Override
+    public Outcome<GlossaryWinner> glossaryTerm(
+            String activationId, String contextId, String termId, @Nullable String ifNoneMatch) {
+        return outcome(
+                effective.glossaryTerm(new ActivationId(activationId), contextId, termId, ifNoneMatch),
+                ActivationsArtifacts::glossaryWinner);
+    }
+
+    @Override
     public Referrer referrer(String activationId, String kindToken, String artifactId) {
         EffectiveReadService.ListedWinner listed =
                 effective.listedWinner(new ActivationId(activationId), kindToken, artifactId);
@@ -91,6 +107,13 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
             case Read.NotModified<T> notModified -> new Outcome.NotModified<>(notModified.etag());
             case Read.Found<T> answered -> new Outcome.Found<>(found.apply(answered.value()), answered.etag());
         };
+    }
+
+    private static GlossaryWinner glossaryWinner(EffectiveArtifactAnswer answer) {
+        return new GlossaryWinner(
+                scope(answer.stored(), answer.governanceFingerprint(), answer.sourceFingerprint()),
+                facts(answer.winner()),
+                answer.artifact());
     }
 
     private static Winner winner(EffectiveReadService.HeldAnswer answer) {

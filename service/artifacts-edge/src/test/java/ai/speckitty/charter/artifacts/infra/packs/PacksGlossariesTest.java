@@ -204,6 +204,41 @@ class PacksGlossariesTest {
     }
 
     @Test
+    void theTwinMapsTheContextTheActivationReadAndRefusesAnotherKindAsAFault() {
+        PacksGlossaries adapter = new PacksGlossaries(packs);
+
+        assertThat(adapter.view(core(), "the read")).isEqualTo(PacksGlossaries.viewOf(core()));
+        assertThatThrownBy(() -> adapter.view(
+                        ai.speckitty.charter.packs.domain.Asset.builder()
+                                .id(new ai.speckitty.charter.packs.domain.AssetIdentifier("logo"))
+                                .packId(QA)
+                                .mime("image/png")
+                                .path("logo.png")
+                                .build(),
+                        "The read of the glossary context logo"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("The read of the glossary context logo holds asset logo, which is no glossary context of"
+                        + " the packs slice.");
+        verifyNoMoreInteractions(packs);
+    }
+
+    @Test
+    void theTwinsListReadAtAnotherFingerprintIsStaleInput() {
+        when(packs.held(QA, ArtifactKind.GLOSSARY))
+                .thenReturn(new ConsistentRead.Verified<>(
+                        new ForeignArtifactRead.Held(List.of(core()), REVISION), FINGERPRINT));
+        PacksGlossaries adapter = new PacksGlossaries(packs);
+
+        assertThat(adapter.list(QA, FINGERPRINT).contexts())
+                .extracting(GlossaryView::id)
+                .containsExactly("core");
+        assertThatThrownBy(() -> adapter.list(QA, "sha256:" + "0".repeat(64)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
     void theTermDetailNamesTheTermThenTheContext() {
         assertThat(GlossaryReads.termNotHeld("core", "mission"))
                 .isEqualTo("term `mission` is not held in glossary context `core`");

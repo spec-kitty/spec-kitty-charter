@@ -70,6 +70,9 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
       | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
       | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
+      | listEffectiveGlossaryContexts   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary                                    |
+      | getEffectiveGlossaryContext     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core                    |
+      | getEffectiveGlossaryTerm        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core/terms/mission      |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
@@ -143,6 +146,9 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveAssetPayload        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
       | listEffectiveSkills             | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
       | getEffectiveSkill               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
+      | listEffectiveGlossaryContexts   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary                                    |
+      | getEffectiveGlossaryContext     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core                    |
+      | getEffectiveGlossaryTerm        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core/terms/mission      |
       | getEffectiveMissionType         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep         | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |

@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.speckitty.charter.artifacts.application.GlossaryReads;
 import ai.speckitty.charter.artifacts.application.GlossaryView;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -89,6 +90,16 @@ class GlossariesControllerTest {
             public TermRead term(PackIdentifier pack, String contextId, String termId) {
                 asked.add("term " + pack.value() + "/" + contextId + "/" + termId);
                 return new TermRead(MISSION, contextId, pack, REVISION, FINGERPRINT);
+            }
+
+            @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack reads read no winner's pack");
+            }
+
+            @Override
+            public GlossaryView view(CharterArtifact context, String read) {
+                throw new UnsupportedOperationException("the pack reads map no activation's read");
             }
         };
     }
@@ -200,6 +211,16 @@ class GlossariesControllerTest {
             @Override
             public TermRead term(PackIdentifier pack, String contextId, String termId) {
                 throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, GlossaryReads.termNotHeld(contextId, termId));
+            }
+
+            @Override
+            public Listed list(PackIdentifier pack, String expectedFingerprint) {
+                throw new UnsupportedOperationException("the pack reads read no winner's pack");
+            }
+
+            @Override
+            public GlossaryView view(CharterArtifact context, String read) {
+                throw new UnsupportedOperationException("the pack reads map no activation's read");
             }
         };
         MockMvc mvc = mvc(refusing);

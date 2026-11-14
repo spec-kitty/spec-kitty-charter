@@ -102,6 +102,18 @@ class EffectiveSkillsControllerTest {
                 return outcome(ifNoneMatch, new SkillWinner(SCOPE, facts, entity(skillId)));
             }
 
+            @Override
+            public Outcome<GlossaryWinner> glossary(
+                    String activationId, String contextId, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no glossary is read here");
+            }
+
+            @Override
+            public Outcome<GlossaryWinner> glossaryTerm(
+                    String activationId, String contextId, String termId, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no glossary is read here");
+            }
+
             private <T> Outcome<T> outcome(@Nullable String ifNoneMatch, T value) {
                 return EntityTags.noneMatch(ifNoneMatch, TAG)
                         ? new Outcome.NotModified<>(TAG)

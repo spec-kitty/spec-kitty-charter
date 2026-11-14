@@ -104,6 +104,9 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getEffectiveAssetPayload        | /activations/a-1/artifacts/asset/a/payload                  |
       | listEffectiveSkills             | /activations/a-1/artifacts/skill                            |
       | getEffectiveSkill               | /activations/a-1/artifacts/skill/s                          |
+      | listEffectiveGlossaryContexts   | /activations/a-1/artifacts/glossary                         |
+      | getEffectiveGlossaryContext     | /activations/a-1/artifacts/glossary/g                       |
+      | getEffectiveGlossaryTerm        | /activations/a-1/artifacts/glossary/g/terms/t               |
       | getEffectiveMissionType         | /activations/a-1/artifacts/mission_type/m                   |
       | getEffectiveMissionStep         | /activations/a-1/artifacts/mission_type/m/steps/s           |
       | getEffectiveMissionSkeleton     | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |

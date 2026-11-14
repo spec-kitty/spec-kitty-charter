@@ -101,6 +101,17 @@ class EffectiveReferencesControllerTest {
         public Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public Outcome<GlossaryWinner> glossary(String activationId, String contextId, @Nullable String ifNoneMatch) {
+            throw new UnsupportedOperationException("no glossary is read here");
+        }
+
+        @Override
+        public Outcome<GlossaryWinner> glossaryTerm(
+                String activationId, String contextId, String termId, @Nullable String ifNoneMatch) {
+            throw new UnsupportedOperationException("no glossary is read here");
+        }
     };
 
     private final ReferenceReads packs = (pack, kind, id, expectedFingerprint) -> {

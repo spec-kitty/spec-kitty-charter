@@ -25,7 +25,8 @@ import org.springframework.web.util.UriUtils;
 
 /**
  * The wire form of a glossary context and its terms (#106): the one mapper of a context to the {@code GlossaryContext}
- * member, its list summary, a term's read and the links of the pack-scoped reads.
+ * member, its list summary, a term's read and the links of the pack-scoped reads. The reads under an activation map the
+ * context, its summary and a term through it ({@link EffectiveGlossaryBodies}).
  *
  * <p>The context's read answers the {@code Artifact} envelope with {@code self}, {@code collection} (the pack's context
  * list) and {@code term}, templated by the term's id; a list item links {@code self}, the list links {@code self}, and a
@@ -64,18 +65,31 @@ public class GlossaryBodies {
      */
     public GlossaryContextList list(String pack, List<GlossaryView> contexts) {
         List<GlossaryContextSummary> items = contexts.stream()
-                .map(context -> {
-                    GlossaryContextSummary summary = new GlossaryContextSummary(
-                            context.id(),
-                            context.name(),
-                            context.description(),
-                            context.terms().size(),
-                            links(SELF, item(context.packId().value(), context.id())));
-                    summary.setTags(present(context.tags()));
-                    return summary;
-                })
+                .map(context ->
+                        summary(context, links(SELF, item(context.packId().value(), context.id()))))
                 .toList();
-        return new GlossaryContextList(pack, items, links(SELF, collection(pack)));
+        GlossaryContextList list = new GlossaryContextList(items, links(SELF, collection(pack)));
+        list.setPackId(pack);
+        return list;
+    }
+
+    /**
+     * One context as a list answers it, in a pack or under an activation: its id, name, description, tags and term
+     * count, with the links of its tree.
+     *
+     * @param context the context
+     * @param links the item's links
+     * @return the {@code GlossaryContextSummary}
+     */
+    static GlossaryContextSummary summary(GlossaryView context, Map<String, Link> links) {
+        GlossaryContextSummary summary = new GlossaryContextSummary(
+                context.id(),
+                context.name(),
+                context.description(),
+                context.terms().size(),
+                links);
+        summary.setTags(present(context.tags()));
+        return summary;
     }
 
     /**
@@ -142,7 +156,14 @@ public class GlossaryBodies {
         return wire;
     }
 
-    private static GlossaryContextTerm contextTerm(GlossaryView.Term term) {
+    /**
+     * One term as its context declares it, field by field: the {@code GlossaryContextTerm} of a context's terms and of a
+     * term's read under an activation.
+     *
+     * @param term the term
+     * @return the member
+     */
+    static GlossaryContextTerm contextTerm(GlossaryView.Term term) {
         GlossaryContextTerm wire = new GlossaryContextTerm(
                 term.id(), term.name(), term.definition(), GlossaryContextTerm.StatusEnum.fromValue(term.status()));
         wire.setExamples(present(term.examples()));

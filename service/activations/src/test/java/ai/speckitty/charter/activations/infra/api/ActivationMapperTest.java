@@ -130,7 +130,8 @@ class ActivationMapperTest {
                         "effective-context",
                         "assets",
                         "asset",
-                        "skills");
+                        "skills",
+                        "glossaries");
         assertThat(activation.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/A-1");
         assertThat(mapper.self("a b")).isEqualTo("/api/v1/activations/a%20b");
     }

@@ -66,6 +66,9 @@ files:
   - EffectiveAssetRead.asset.yaml
   - SkillList.activation.yaml
   - EffectiveSkillRead.skill.yaml
+  - EffectiveGlossaryContextList.activation.yaml
+  - EffectiveGlossaryContextRead.spec-kitty-core.yaml
+  - EffectiveGlossaryTermRead.mission.yaml
   - ArtifactReferenceList.activation.yaml
   - EffectiveStepPrompt.three-levels.yaml
   - EffectiveStepPrompt.empty-slot.yaml

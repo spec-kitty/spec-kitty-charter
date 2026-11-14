@@ -143,6 +143,18 @@ class EffectiveSkillReadsTest {
             public Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch) {
                 return new Outcome.Found<>(new SkillWinner(SCOPE, facts, entity), ETAG);
             }
+
+            @Override
+            public Outcome<GlossaryWinner> glossary(
+                    String activationId, String contextId, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no glossary is read here");
+            }
+
+            @Override
+            public Outcome<GlossaryWinner> glossaryTerm(
+                    String activationId, String contextId, String termId, @Nullable String ifNoneMatch) {
+                throw new UnsupportedOperationException("no glossary is read here");
+            }
         };
     }
 

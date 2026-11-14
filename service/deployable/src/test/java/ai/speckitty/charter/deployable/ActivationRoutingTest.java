@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveAssetsController;
+import ai.speckitty.charter.artifacts.infra.api.EffectiveGlossariesController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveReferencesController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveSkillsController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
@@ -122,6 +123,30 @@ class ActivationRoutingTest {
             assertThat(routed.getBeanType().getName()).as(route[0]).isEqualTo(route[1]);
             assertThat(routed.getMethod().getName()).as(route[0]).isEqualTo(route[2]);
         }
+    }
+
+    /**
+     * The glossary twins (#106, WP05): the list, a context and a term each reach the glossary controller, never the
+     * generic read, and a term's path, which has one segment more than the references template, is never a references
+     * read; the references of a context are the references twin's.
+     */
+    @Test
+    void aGetOnAGlossaryContextOrTermReachesItsLiteralReadAndNotTheGenericRead() throws Exception {
+        String[][] routes = {
+            {"glossary", "listEffectiveGlossaryContexts"},
+            {"glossary/spec-kitty-core", "getEffectiveGlossaryContext"},
+            {"glossary/spec-kitty-core/terms/mission", "getEffectiveGlossaryTerm"},
+            {"glossary/terms", "getEffectiveGlossaryContext"},
+            {"glossary/references/terms/references", "getEffectiveGlossaryTerm"}
+        };
+        for (String[] route : routes) {
+            HandlerMethod routed = handler("GET", READ + route[0]);
+
+            assertThat(routed.getBeanType()).as(route[0]).isEqualTo(EffectiveGlossariesController.class);
+            assertThat(routed.getMethod().getName()).as(route[0]).isEqualTo(route[1]);
+        }
+        HandlerMethod references = handler("GET", READ + "glossary/spec-kitty-core/references");
+        assertThat(references.getBeanType()).isEqualTo(EffectiveReferencesController.class);
     }
 
     /**
