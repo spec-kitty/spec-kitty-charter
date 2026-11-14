@@ -15,8 +15,8 @@ import java.util.regex.Pattern;
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
  * {@code getActivation}, the read of one artifact and the effective prompt; the graph, the context and the prompt each
- * name their own read, the context its mission type, action and depth, and the prompt its mission type and action. The read of one artifact names its kind, id and depth, and an agent
- * profile's names a read of its own ({@link Read#PROFILE}), because what it answers is not what the generic read
+ * name their own read, the context its mission type, action and depth, and the prompt its mission type and action.
+ * The read of one artifact names its kind, id and depth, and an agent profile's names a read of its own ({@link Read#PROFILE}), because what it answers is not what the generic read
  * answers. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
  * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
@@ -93,6 +93,12 @@ public record EffectiveTag(String token) {
          * query names the context and the term ({@link TermQuery}).
          */
         GLOSSARY_TERM,
+        /** {@code getActivationVocabularyTerms}: every term of the glossary contexts in force (ADR-0076 decision 5). */
+        VOCABULARY_TERMS,
+        /** {@code getActivationVocabularyContextive}: the Contextive document of the contexts in force (decision 6). */
+        VOCABULARY_CONTEXTIVE,
+        /** {@code getActivationVocabularyTaboos}: the avoided words of the terms in force (decision 7). */
+        VOCABULARY_TABOOS,
         /**
          * {@code getEffectiveStepPrompt}: the prompt in force of one step with the fragments in force of its slots
          * (research R10). The closure fingerprint digests every loaded file, prompt companions and fragments included,
@@ -390,6 +396,23 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag term(Revision revision, ClosureSnapshot closure, TermQuery query) {
         return of(Read.GLOSSARY_TERM, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of one vocabulary read of an activation (ADR-0076 decision 8): the terms, the Contextive document or the
+     * taboo list, each a representation of its own over the glossary contexts in force, with no query.
+     *
+     * @param read {@link Read#VOCABULARY_TERMS}, {@link Read#VOCABULARY_CONTEXTIVE} or {@link Read#VOCABULARY_TABOOS}
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag
+     * @throws IllegalArgumentException when {@code read} is not a vocabulary read
+     */
+    public static EffectiveTag vocabulary(Read read, Revision revision, ClosureSnapshot closure) {
+        if (read != Read.VOCABULARY_TERMS && read != Read.VOCABULARY_CONTEXTIVE && read != Read.VOCABULARY_TABOOS) {
+            throw new IllegalArgumentException("The read " + read + " is no vocabulary read of an activation.");
+        }
+        return of(read, revision, closure, NO_QUERY);
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {

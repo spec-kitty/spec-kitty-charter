@@ -13,11 +13,13 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The port of the activation twins of the asset, skill and glossary reads (ADR-0037 as amended 2026-11-09; research R1,
- * R2 and R15 of slice A2, R7 of #106): what an activation names of an asset, a skill or a glossary context, the winner of the layer merge and the source fingerprint of
- * the read that named it, in the edge's own words. The adapter is {@code artifacts.infra.activations}, the one place of
- * the edge that asks the activations slice; the application ring names no activations type. What the winner's pack
- * stores (an asset's descriptor and bytes, a skill's summary) is the packs port's to read, against that fingerprint.
+ * The port of the activation twins of the asset, skill and glossary reads, and of the activation's vocabulary reads
+ * (ADR-0037 as amended 2026-11-09; research R1, R2 and R15 of slice A2, R6 and R7 of #106): what an activation names of
+ * an asset, a skill or a glossary context, the winner of the layer merge and the source fingerprint of the read that
+ * named it, in the edge's own words. The adapter is {@code artifacts.infra.activations}, the one place of the edge
+ * that asks the activations slice; the application ring names no activations type. What the winner's pack stores (an
+ * asset's descriptor and bytes, a skill's summary, a glossary context's terms) is the packs port's to read, against
+ * that fingerprint.
  *
  * <p>Each read judges the activation, then whether a pack of its closure holds what it names, both before
  * {@code If-None-Match}; the refusals are the activations slice's, unchanged.
@@ -101,6 +103,21 @@ public interface ActivationArtifacts {
      */
     Outcome<GlossaryWinner> glossaryTerm(
             String activationId, String contextId, String termId, @Nullable String ifNoneMatch);
+
+    /**
+     * The glossary contexts in force under an activation (ADR-0076 decisions 1, 2 and 8), from one activation session,
+     * under the tag of one vocabulary read: the winning copy of each context whose state is in force, in id order, with
+     * the source fingerprint the winning packs are read against.
+     *
+     * @param activationId the activation's id, exactly as the request names it
+     * @param vocabulary the vocabulary read whose tag the answer carries
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the contexts in force, or that the client holds the current representation
+     * @throws CharterRefusal with {@code ACTIVATION_NOT_FOUND}, {@code PACK_UNREADABLE} or the code of a closure that
+     *     cannot compose or merge, each judged before {@code If-None-Match}
+     */
+    Outcome<ContextsInForce> contextsInForce(
+            String activationId, ContextsInForce.Vocabulary vocabulary, @Nullable String ifNoneMatch);
 
     /**
      * The winner of one artifact of any listed kind under an activation, whatever its state, with every artifact of a

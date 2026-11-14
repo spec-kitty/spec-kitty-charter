@@ -10,6 +10,7 @@ import ai.speckitty.charter.artifacts.application.EffectiveReferenceReads;
 import ai.speckitty.charter.artifacts.application.EffectiveSkillReads;
 import ai.speckitty.charter.artifacts.application.ReferenceReads;
 import ai.speckitty.charter.artifacts.application.SkillReads;
+import ai.speckitty.charter.artifacts.application.VocabularyReads;
 import ai.speckitty.charter.artifacts.application.config.ArtifactsApplicationConfiguration;
 import ai.speckitty.charter.artifacts.infra.activations.ActivationsArtifacts;
 import ai.speckitty.charter.artifacts.infra.activations.config.ArtifactsActivationsConfiguration;
@@ -25,6 +26,7 @@ import ai.speckitty.charter.artifacts.infra.api.config.ArtifactsApiConfiguration
 import ai.speckitty.charter.artifacts.infra.packs.PacksAssets;
 import ai.speckitty.charter.artifacts.infra.packs.PacksReferences;
 import ai.speckitty.charter.artifacts.infra.packs.PacksSkills;
+import ai.speckitty.charter.artifacts.infra.packs.PacksVocabulary;
 import ai.speckitty.charter.artifacts.infra.packs.config.ArtifactsPacksConfiguration;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.WinnerReferences;
@@ -35,7 +37,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 /**
  * The edge module's rings: each ring's configuration is a Spring configuration that starts with the others in a slice
  * context, each once, over the packs slice's read the packs adapters ask for (a stand-in that is never called). The
- * asset, skill and references reads are beans: the packs adapters are the application ring's ports, and the controllers and their
+ * asset, skill, references and vocabulary reads are beans: the packs adapters are the application ring's ports, and the controllers and their
  * body mappers are the inbound adapter's.
  */
 class ArtifactsEdgeWiringTest {
@@ -72,6 +74,9 @@ class ArtifactsEdgeWiringTest {
                     assertThat(context.getBean(ReferenceReads.class)).isInstanceOf(PacksReferences.class);
                     assertThat(context).hasSingleBean(EffectiveReferenceReads.class);
                     assertThat(context).hasSingleBean(EffectiveReferencesController.class);
+                    assertThat(context.getBean(VocabularyReads.WinningContexts.class))
+                            .isInstanceOf(PacksVocabulary.class);
+                    assertThat(context).hasSingleBean(VocabularyReads.class);
                 });
     }
 }

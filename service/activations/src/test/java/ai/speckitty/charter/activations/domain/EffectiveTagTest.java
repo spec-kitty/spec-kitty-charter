@@ -205,6 +205,42 @@ class EffectiveTagTest {
                 .hasMessage("The read " + read + " lists no winners of one kind.");
     }
 
+    @Test
+    void theVocabularyReadsEachHaveATagOfTheirOwnThatNoGlossaryReadShares() {
+        ClosureSnapshot closure = closure("sha256:one");
+        EffectiveTag.ArtifactQuery core = new EffectiveTag.ArtifactQuery(ArtifactKind.GLOSSARY, "core", 0);
+
+        Set<EffectiveTag> tags = new HashSet<>(List.of(
+                EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TERMS, REVISION, closure),
+                EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_CONTEXTIVE, REVISION, closure),
+                EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TABOOS, REVISION, closure),
+                EffectiveTag.artifact(REVISION, closure, core),
+                EffectiveTag.winner(EffectiveTag.Read.GLOSSARY, REVISION, closure, core),
+                EffectiveTag.winners(EffectiveTag.Read.GLOSSARIES, ArtifactKind.GLOSSARY, REVISION, closure),
+                EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "lane"))));
+
+        assertThat(tags)
+                .as("three vocabulary reads, the generic read, the context, the list and a term: one tag each")
+                .hasSize(7);
+        assertThat(EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TERMS, REVISION, closure("sha256:two")))
+                .as("a change of a pack of the closure moves the tag")
+                .isNotEqualTo(EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TERMS, REVISION, closure));
+        assertThat(EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TABOOS, REVISION, closure))
+                .as("the same inputs, the same tag")
+                .isEqualTo(EffectiveTag.vocabulary(EffectiveTag.Read.VOCABULARY_TABOOS, REVISION, closure));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = EffectiveTag.Read.class,
+            names = {"VOCABULARY_TERMS", "VOCABULARY_CONTEXTIVE", "VOCABULARY_TABOOS"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void noOtherReadIsAVocabularyRead(EffectiveTag.Read read) {
+        assertThatThrownBy(() -> EffectiveTag.vocabulary(read, REVISION, closure("sha256:one")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The read " + read + " is no vocabulary read of an activation.");
+    }
+
     // ---- the graph and the action context (T140, T141): each representation has its own tag ----
 
     private static final EffectiveTag.ContextQuery IMPLEMENT =
