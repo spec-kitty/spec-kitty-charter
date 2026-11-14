@@ -31,7 +31,7 @@ class GlossaryBodiesTest {
             List.of("The mission ships it."),
             List.of("feature"),
             List.of("epic"),
-            List.of("term:core/lane"),
+            List.of("term:core/lane", "writing::term:style/voice"),
             "term:core/mission");
     private static final GlossaryView.Term LANE = new GlossaryView.Term(
             "lane", "lane", "A worktree.", "deprecated", List.of(), List.of(), List.of(), List.of(), "term:core/lane");
@@ -93,7 +93,7 @@ class GlossaryBodiesTest {
                     "terms": [
                       {"id": "mission", "name": "mission", "definition": "A unit of planned work.",
                        "status": "active", "examples": ["The mission ships it."], "aliases": ["feature"],
-                       "avoid": ["epic"], "seeAlso": ["term:core/lane"]},
+                       "avoid": ["epic"], "seeAlso": ["term:core/lane", "writing::term:style/voice"]},
                       {"id": "lane", "name": "lane", "definition": "A worktree.", "status": "deprecated"}
                     ]
                   }
@@ -156,7 +156,7 @@ class GlossaryBodiesTest {
                   "examples": ["The mission ships it."],
                   "aliases": ["feature"],
                   "avoid": ["epic"],
-                  "seeAlso": ["term:core/lane"],
+                  "seeAlso": ["term:core/lane", "writing::term:style/voice"],
                   "urn": "term:core/mission",
                   "contextId": "core",
                   "_links": {

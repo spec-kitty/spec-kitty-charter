@@ -6,8 +6,8 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
@@ -123,7 +123,7 @@ public final class PacksGlossaries implements GlossaryReads {
                 term.examples(),
                 term.aliases(),
                 term.avoid(),
-                term.seeAlso().stream().map(Urn::toString).toList(),
+                term.seeAlso().stream().map(PackQualifiedReference::toString).toList(),
                 term.urn(context.id()).toString());
     }
 }
