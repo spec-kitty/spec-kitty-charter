@@ -460,9 +460,9 @@ class ClosureViewGovernanceTest {
                 PackLevel.BUILT_IN,
                 List.of(),
                 List.of("Base"),
-                List.of("directive:D", "glossary_pack:G"),
+                List.of("directive:D", "glossary_context:G"),
                 edge("agent_profile:Base", RelationType.REQUIRES, "directive:D"),
-                edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("agent_profile:Base", RelationType.VOCABULARY, "glossary_context:G"));
         pack(
                 "qa",
                 PackLevel.ORG,

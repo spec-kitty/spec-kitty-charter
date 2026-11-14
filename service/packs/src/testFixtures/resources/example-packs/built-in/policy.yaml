@@ -10,7 +10,7 @@ kind_defaults:
   procedure: open
   agent_profile: open
   mission_step_contract: open
-  glossary_pack: open
+  glossary: open
   skill: open
   anti_pattern: open
   asset: open

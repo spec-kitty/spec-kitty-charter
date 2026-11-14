@@ -20,34 +20,49 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The {@code glossary-pack} and {@code skill} schemas (FR-006, FR-007): every example file of either kind validates,
+ * The {@code glossary} (ADR-0049) and {@code skill} schemas (FR-006, FR-007): every example file of either kind validates,
  * every object in both is closed, and the keywords the skill schema brings ({@code not}, {@code maxLength}) yield a
  * stable violation detail.
  *
  * <p>The example-pack check reads the charter-owned example packs (ADR-0070).
  */
-@DisplayName("Glossary-pack and skill schemas (#192)")
-class GlossaryPackAndSkillSchemaTest {
+@DisplayName("Glossary and skill schemas (#192, ADR-0049)")
+class GlossaryAndSkillSchemaTest {
 
-    private static final String GLOSSARY = "glossary-pack";
+    private static final String GLOSSARY = "glossary";
     private static final String SKILL = "skill";
-    private static final String GLOSSARY_SUFFIX = ".glossary-pack.yaml";
+    private static final String GLOSSARY_SUFFIX = ".glossary.yaml";
     private static final String SKILL_SUFFIX = ".skill.yaml";
 
     private static final String VALID_GLOSSARY = """
+            schema_version: "1.0"
             id: demo-glossary
-            provenance: org
+            name: Demo
             description: A demo.
+            tags: [demo]
+            applies_to:
+              paths: ["src/**"]
+              languages: [java]
+              stacks: [spring]
             terms:
-            - surface: lane
+            - id: lane
+              name: lane
               definition: A sequence of work packages.
-              confidence: 0.9
-              status: active
-              see_also: [mission]
-              synonyms_to_avoid: [track]
+              examples: [Lane a holds WP01.]
               aliases: [swimlane]
-              banned_synonyms: [queue]
-              introduced_in_mission: 01M5YVEC
+              avoid: [track, queue]
+              status: active
+              see_also: ["term:demo-glossary/mission"]
+            """;
+
+    /** The smallest valid context: only the required fields. */
+    private static final String MINIMAL_GLOSSARY = """
+            schema_version: "1.0"
+            id: g
+            name: G
+            description: D
+            terms:
+            - {id: s, name: s, definition: d, status: active}
             """;
 
     private static final String VALID_PROMPT_SKILL = """
@@ -97,14 +112,16 @@ class GlossaryPackAndSkillSchemaTest {
     // ---- the example files ------------------------------------------------------------------------
 
     @Test
-    @DisplayName("every glossary pack and skill of the example packs validates")
+    @DisplayName("every glossary context and skill of the example packs validates")
     void everyFileOfTheExamplePacksValidates() throws IOException {
         List<Path> files = filesOfBothKinds(ExamplePacks.packsDirectory());
 
         assertThat(problems(files)).as("files that do not validate").isEmpty();
-        assertThat(files).as("glossary packs and skills in the example packs").isNotEmpty();
+        assertThat(files)
+                .as("glossary contexts and skills in the example packs")
+                .isNotEmpty();
         PackFiles.assertEachPackHolds(
-                "glossary pack",
+                "glossary context",
                 files.stream()
                         .filter(f -> f.toString().endsWith(GLOSSARY_SUFFIX))
                         .toList(),
@@ -145,40 +162,34 @@ class GlossaryPackAndSkillSchemaTest {
     // ---- positive controls ---------------------------------------------------------------------
 
     @Test
-    @DisplayName("a glossary pack carrying every field, and prompt and wrapper skills carrying every field, validate")
+    @DisplayName(
+            "a glossary context carrying every field, and prompt and wrapper skills carrying every field, validate")
     void fixturesCarryingEveryFieldValidate() {
         assertThat(validate(GLOSSARY, VALID_GLOSSARY)).isEmpty();
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY)).isEmpty();
         assertThat(validate(SKILL, VALID_PROMPT_SKILL)).isEmpty();
         assertThat(validate(SKILL, VALID_WRAPPER_SKILL)).isEmpty();
     }
 
-    @Test
-    @DisplayName("the nullable glossary fields accept an explicit null, as core does")
-    void theNullableGlossaryFieldsAcceptNull() {
-        String nulls = """
-                id: demo-glossary
-                provenance: org
-                description: null
-                terms:
-                - surface: lane
-                  definition: A sequence.
-                  confidence: 1
-                  status: draft
-                  see_also: null
-                  synonyms_to_avoid: null
-                  aliases: null
-                  banned_synonyms: null
-                  introduced_in_mission: null
-                """;
-        assertThat(validate(GLOSSARY, nulls)).isEmpty();
+    @ParameterizedTest(name = "an explicit null at {0} is refused")
+    @CsvSource({"tags", "applies_to"})
+    @DisplayName("an optional context field refuses an explicit null: the shape is closed and typed")
+    void anExplicitNullIsRefused(String field) {
+        String nulls = MINIMAL_GLOSSARY.replace("terms:\n", field + ": null\nterms:\n");
+
+        assertThat(validate(GLOSSARY, nulls)).singleElement().satisfies(v -> {
+            assertThat(v.keyword()).isEqualTo("type");
+            assertThat(v.pointer()).containsExactly(field);
+        });
     }
 
     // ---- unknown keys, at every level -------------------------------------------------------------
 
     @ParameterizedTest(name = "{0}: an unknown key at /{1} is refused")
     @CsvSource({
-        "glossary-pack, '', 'id: g\nprovenance: org\nterms:\n- {surface: s, definition: d, confidence: 0.9, status: active}\nextra: 1\n'",
-        "glossary-pack, terms/0, 'id: g\nprovenance: org\nterms:\n- {surface: s, definition: d, confidence: 0.9, status: active, extra: 1}\n'",
+        "glossary, '', 'schema_version: \"1.0\"\nid: g\nname: G\ndescription: D\nterms:\n- {id: s, name: s, definition: d, status: active}\nextra: 1\n'",
+        "glossary, terms/0, 'schema_version: \"1.0\"\nid: g\nname: G\ndescription: D\nterms:\n- {id: s, name: s, definition: d, status: active, extra: 1}\n'",
+        "glossary, applies_to, 'schema_version: \"1.0\"\nid: g\nname: G\ndescription: D\napplies_to: {paths: [x], extra: [y]}\nterms:\n- {id: s, name: s, definition: d, status: active}\n'",
         "skill, '', 'schema_version: \"1.0\"\nid: s\ntitle: t\ndescription: d\nform: prompt\nbody_path: s.md\nextra: 1\n'",
         "skill, expands_to, 'schema_version: \"1.0\"\nid: s\ntitle: t\ndescription: d\nform: wrapper\nexpands_to: {target: \"builtin:x\", extra: 1}\n'",
         "skill, parameters/0, 'schema_version: \"1.0\"\nid: s\ntitle: t\ndescription: d\nform: prompt\nbody_path: s.md\nparameters:\n- {name: p, extra: 1}\n'",
@@ -194,23 +205,75 @@ class GlossaryPackAndSkillSchemaTest {
         });
     }
 
-    // ---- glossary-pack refusals ---------------------------------------------------------------------
+    // ---- glossary refusals ---------------------------------------------------------------------
+
+    @ParameterizedTest(name = "{1} at /{2} breaks ''{3}''")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "status: active|status: retired|terms/0/status|enum",
+                "id: lane|id: Lane|terms/0/id|pattern",
+                "id: lane|id: a--b|terms/0/id|pattern",
+                "id: lane|id: 4-eyes|terms/0/id|pattern",
+                "id: demo-glossary|id: Demo|id|pattern",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: [mission]|terms/0/see_also/0|pattern",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: [\"glossary_context:demo-glossary\"]"
+                        + "|terms/0/see_also/0|pattern",
+                "see_also: [\"term:demo-glossary/mission\"]|see_also: []|terms/0/see_also|minItems",
+                "tags: [demo]|tags: []|tags|minItems",
+                "tags: [demo]|tags: [demo, demo]|tags|uniqueItems",
+                "name: Demo|name: \" \"|name|pattern",
+                "description: A demo.|description: \" \"|description|pattern",
+                "definition: A sequence of work packages.|definition: \" \"|terms/0/definition|pattern",
+                "avoid: [track, queue]|avoid: []|terms/0/avoid|minItems",
+                "paths: [\"src/**\"]|paths: []|applies_to/paths|minItems",
+                "schema_version: \"1.0\"|schema_version: \"2.0\"|schema_version|const"
+            })
+    void aGlossaryOffItsShapeIsRefused(String valid, String broken, String pointer, String keyword) {
+        assertThat(VALID_GLOSSARY).contains(valid);
+
+        assertThat(validate(GLOSSARY, VALID_GLOSSARY.replace(valid, broken)))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo(keyword);
+                    assertThat(v.pointer()).containsExactly(pointer.split("/"));
+                });
+    }
 
     @Test
-    @DisplayName("a confidence written as a string is refused: core's model reads a float")
-    void aStringConfidenceIsRefused() {
-        String yaml = VALID_GLOSSARY.replace("confidence: 0.9", "confidence: \"0.9\"");
+    @DisplayName("a context or term id of 65 characters breaks 'maxLength'; 64 is the limit")
+    void anIdOfSixtyFiveCharactersIsRefused() {
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY.replace("id: g", "id: " + "g".repeat(65))))
+                .extracting(SchemaViolation::keyword)
+                .containsExactly("maxLength");
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY.replace("{id: s,", "{id: " + "s".repeat(65) + ",")))
+                .extracting(SchemaViolation::keyword)
+                .containsExactly("maxLength");
+        assertThat(validate(GLOSSARY, MINIMAL_GLOSSARY.replace("id: g", "id: " + "g".repeat(64))))
+                .isEmpty();
+    }
+
+    @ParameterizedTest(name = "a context without {0} is refused")
+    @CsvSource({"schema_version", "id", "name", "description", "terms"})
+    void aContextWithoutARequiredFieldIsRefused(String field) {
+        String yaml = MINIMAL_GLOSSARY
+                .lines()
+                .filter(line -> !line.startsWith(field + ":") && !(field.equals("terms") && line.startsWith("-")))
+                .collect(java.util.stream.Collectors.joining("\n", "", "\n"));
 
         assertThat(validate(GLOSSARY, yaml)).singleElement().satisfies(v -> {
-            assertThat(v.keyword()).isEqualTo("type");
-            assertThat(v.pointer()).containsExactly("terms", "0", "confidence");
+            assertThat(v.keyword()).isEqualTo("required");
+            assertThat(v.property()).contains(field);
         });
     }
 
     @Test
-    @DisplayName("a glossary pack with no terms is refused")
+    @DisplayName("a glossary context with no terms is refused")
     void noTermsIsRefused() {
-        assertThat(validate(GLOSSARY, "id: g\nprovenance: org\nterms: []\n"))
+        assertThat(validate(
+                        GLOSSARY,
+                        MINIMAL_GLOSSARY.replace(
+                                "terms:\n- {id: s, name: s, definition: d, status: active}\n", "terms: []\n")))
                 .singleElement()
                 .satisfies(v -> {
                     assertThat(v.keyword()).isEqualTo("minItems");

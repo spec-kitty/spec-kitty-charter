@@ -221,15 +221,18 @@ class InboundReferencesTest {
               primary-focus: f
             """;
 
+    /** A term's examples are free text: naming an artifact there is data, not a reference (see_also holds terms). */
     private static final String GLOSSARY = """
+            schema_version: "1.0"
             id: g
-            provenance: org
+            name: G
+            description: d
             terms:
-            - surface: term
+            - id: term
+              name: term
               definition: d
-              confidence: 1.0
+              examples: [A_ONE, directive:A_ONE]
               status: active
-              see_also: [A_ONE, directive:A_ONE]
             """;
 
     private static final String CONTRACT = """
@@ -260,11 +263,7 @@ class InboundReferencesTest {
                         T_FILE,
                         "tactic:t-one"),
                 new NearMiss(
-                        "glossary see_also",
-                        "glossary_packs/g.glossary-pack.yaml",
-                        GLOSSARY,
-                        A_FILE,
-                        "directive:A_ONE"),
+                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE, "directive:A_ONE"),
                 new NearMiss(
                         "mission-step-contract delegation",
                         "mission_step_contracts/c.step-contract.yaml",

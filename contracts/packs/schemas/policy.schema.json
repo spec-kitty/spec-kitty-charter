@@ -50,7 +50,7 @@
         "mission_step_contract": {
           "$ref": "#/$defs/level"
         },
-        "glossary_pack": {
+        "glossary": {
           "$ref": "#/$defs/level"
         },
         "skill": {
@@ -83,9 +83,9 @@
     },
     "artifacts": {
       "additionalProperties": false,
-      "description": "The level per artifact, keyed by bare URN (<kind>:<id> of an artifact kind, no pack qualifier); an entry wins over its kind's default.",
+      "description": "The level per artifact, keyed by bare URN (<kind>:<id> of an artifact kind, no pack qualifier; a glossary context is glossary_context:<id>, ADR-0053 decision 13); an entry wins over its kind's default.",
       "patternProperties": {
-        "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|mission_type|guard|lifecycle|step_enhancement):[A-Za-z0-9_/.-]+$": {
+        "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_context|skill|anti_pattern|asset|template|mission_type|guard|lifecycle|step_enhancement):[A-Za-z0-9_/.-]+$": {
           "$ref": "#/$defs/level"
         }
       },

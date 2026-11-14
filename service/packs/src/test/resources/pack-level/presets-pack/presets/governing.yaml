@@ -23,7 +23,7 @@ activated_mission_step_contracts:
   - id: specify
 activated_anti_patterns:
   - id: big-ball-of-mud
-activated_glossary_packs:
+activated_glossaries:
   - id: core-terms
 activated_skills:
   - id: pr-review

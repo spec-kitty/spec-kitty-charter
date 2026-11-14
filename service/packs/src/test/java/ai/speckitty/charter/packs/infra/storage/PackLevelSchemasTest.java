@@ -41,7 +41,7 @@ class PackLevelSchemasTest {
             activated_agent_profiles: [{id: a}]
             activated_mission_step_contracts: [{id: m}]
             activated_anti_patterns: [{id: x}]
-            activated_glossary_packs: [{id: g}]
+            activated_glossaries: [{id: g}]
             activated_skills: [{id: s}]
             activated_mission_types: [{id: software-dev, must_have: true}]
             activated_step_enhancements: [{id: spdd-specify}]
@@ -142,13 +142,13 @@ class PackLevelSchemasTest {
     }
 
     @Test
-    void aSkillAndAGlossaryPackAreNamedLikeAnyKind() {
+    void aSkillAndAGlossaryAreNamedLikeAnyKind() {
         // A preset may name any kind (IC-20, decision DM-01M6RCY40CQQTHC130RWF43W0D): each list is a list of items.
         assertThat(preset(PRESET)).isEmpty();
         assertThat(at(preset(PRESET.replace("activated_skills: [{id: s}]", "activated_skills: []"))))
                 .containsExactly("minItems at /activated_skills");
-        assertThat(at(preset(PRESET.replace("activated_glossary_packs: [{id: g}]", "activated_glossary_packs: [g]"))))
-                .containsExactly("type at /activated_glossary_packs/0");
+        assertThat(at(preset(PRESET.replace("activated_glossaries: [{id: g}]", "activated_glossaries: [g]"))))
+                .containsExactly("type at /activated_glossaries/0");
     }
 
     @Test

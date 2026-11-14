@@ -261,17 +261,18 @@ class ActionContextWalkOwnershipTest {
         // V is listed by the action's vocabulary step, so its requires are not walked in pass 1; the project root W
         // requires V and walks through it to R, which the project pass lists under W's root.
         Closure closure = closure(
-                List.of("tactic:T", "glossary_pack:V", "directive:W", "procedure:R"),
+                List.of("tactic:T", "glossary_context:V", "directive:W", "procedure:R"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "glossary_pack:V"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_pack:V"),
-                edge("glossary_pack:V", RelationType.REQUIRES, "procedure:R"));
+                edge("tactic:T", RelationType.VOCABULARY, "glossary_context:V"),
+                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
+                edge("glossary_context:V", RelationType.REQUIRES, "procedure:R"));
 
         Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
 
         assertThat(entry(context, "procedure:R"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via)
-                .containsExactly(Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_pack:V"));
+                .containsExactly(
+                        Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_context:V"));
     }
 
     /**
@@ -281,11 +282,11 @@ class ActionContextWalkOwnershipTest {
     @Test
     void anArtifactAnEarlierPassListedStillSeedsTheVocabularyStepOfALaterPass() {
         Closure closure = closure(
-                List.of("tactic:T", "glossary_pack:V", "directive:W", "glossary_pack:G"),
+                List.of("tactic:T", "glossary_context:V", "directive:W", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "glossary_pack:V"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_pack:V"),
-                edge("glossary_pack:V", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("tactic:T", RelationType.VOCABULARY, "glossary_context:V"),
+                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
+                edge("glossary_context:V", RelationType.VOCABULARY, "glossary_context:G"));
 
         Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
 
@@ -300,14 +301,14 @@ class ActionContextWalkOwnershipTest {
                                 urn(START),
                                 1),
                         tuple(
-                                urn("glossary_pack:G"),
+                                urn("glossary_context:G"),
                                 Step.VOCABULARY,
                                 Pass.PROJECT,
                                 Optional.of(urn("directive:W")),
-                                urn("glossary_pack:V"),
+                                urn("glossary_context:V"),
                                 3),
                         tuple(
-                                urn("glossary_pack:V"),
+                                urn("glossary_context:V"),
                                 Step.VOCABULARY,
                                 Pass.ACTION,
                                 Optional.empty(),
@@ -319,20 +320,20 @@ class ActionContextWalkOwnershipTest {
     @Test
     void withoutTheActionReachingItTheProjectPassListsTheSameVocabularyThroughTheSameRoot() {
         Closure closure = closure(
-                List.of("tactic:T", "glossary_pack:V", "directive:W", "glossary_pack:G"),
+                List.of("tactic:T", "glossary_context:V", "directive:W", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_pack:V"),
-                edge("glossary_pack:V", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
+                edge("glossary_context:V", RelationType.VOCABULARY, "glossary_context:G"));
 
         Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
 
-        assertThat(entry(context, "glossary_pack:V"))
+        assertThat(entry(context, "glossary_context:V"))
                 .extracting(Entry::step, Entry::pass, Entry::root)
                 .containsExactly(Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")));
-        assertThat(entry(context, "glossary_pack:G"))
+        assertThat(entry(context, "glossary_context:G"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via)
                 .containsExactly(
-                        Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_pack:V"));
+                        Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_context:V"));
     }
 
     /**
@@ -481,17 +482,17 @@ class ActionContextWalkOwnershipTest {
     @Test
     void whereNoRootAddsAnythingTheEffectiveFormAnswersWhatTheOfferingFormAnswers() {
         Closure closure = closure(
-                List.of("tactic:T", "directive:R", "tactic:S", "glossary_pack:G", "tactic:Out", "directive:X"),
+                List.of("tactic:T", "directive:R", "tactic:S", "glossary_context:G", "tactic:Out", "directive:X"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
                 edge("action:M/b", RelationType.SCOPE, "directive:X"),
                 edge("tactic:T", RelationType.REQUIRES, "directive:R"),
                 edge("tactic:T", RelationType.SUGGESTS, "tactic:S"),
                 edge("tactic:S", RelationType.SUGGESTS, "tactic:Out"),
                 edge("tactic:T", RelationType.SUGGESTS, "tactic:Out"),
-                edge("directive:R", RelationType.VOCABULARY, "glossary_pack:G"),
+                edge("directive:R", RelationType.VOCABULARY, "glossary_context:G"),
                 edge("action:M/b", RelationType.SCOPE, "tactic:S"));
         Predicate<Urn> predicate =
-                inForce("mission_type:M", "tactic:T", "directive:R", "tactic:S", "glossary_pack:G", "directive:X");
+                inForce("mission_type:M", "tactic:T", "directive:R", "tactic:S", "glossary_context:G", "directive:X");
         ActionContextWalk walk = new ActionContextWalk(closure.merged());
 
         assertThat(walk.walkEffective("M", "a", 2, predicate)).isEqualTo(walk.walk("M", "a", 2, predicate));
@@ -572,7 +573,7 @@ class ActionContextWalkOwnershipTest {
     private static final Relationship[] BETA = {
         edge("alpha::mission_type:M", RelationType.SCOPE, "directive:B1"),
         edge("directive:B1", RelationType.REQUIRES, "directive:B2"),
-        edge("directive:B2", RelationType.VOCABULARY, "glossary_pack:BG"),
+        edge("directive:B2", RelationType.VOCABULARY, "glossary_context:BG"),
         edge("directive:BU", RelationType.SUGGESTS, "tactic:BOut")
     };
 
@@ -608,7 +609,12 @@ class ActionContextWalkOwnershipTest {
                     closure.pack(
                             "beta",
                             List.of("alpha"),
-                            List.of("directive:B1", "directive:B2", "glossary_pack:BG", "directive:BU", "tactic:BOut"),
+                            List.of(
+                                    "directive:B1",
+                                    "directive:B2",
+                                    "glossary_context:BG",
+                                    "directive:BU",
+                                    "tactic:BOut"),
                             inOrder(BETA, reversedLinks));
                 default ->
                     closure.pack(
@@ -643,7 +649,7 @@ class ActionContextWalkOwnershipTest {
                         "directive:B2",
                         "directive:BU",
                         "directive:GU",
-                        "glossary_pack:BG",
+                        "glossary_context:BG",
                         "paradigm:GP",
                         "tactic:AS",
                         "tactic:GT");

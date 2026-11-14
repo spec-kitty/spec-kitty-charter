@@ -27,7 +27,7 @@ class EffectiveProfileReadTest {
         assertThat(read.linksArtifact(effectiveRequires("styleguide:S", "main")))
                 .isTrue();
         assertThat(read.linksArtifact(effectiveRequires("procedure:Q", "main"))).isFalse();
-        assertThat(read.linksArtifact(effectiveRequires("glossary_pack:G", "main")))
+        assertThat(read.linksArtifact(effectiveRequires("glossary_context:G", "main")))
                 .isFalse();
     }
 

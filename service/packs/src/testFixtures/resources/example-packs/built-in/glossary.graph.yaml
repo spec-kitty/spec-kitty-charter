@@ -2,6 +2,6 @@ schema_version: '1.0'
 generated_at: STATIC
 generated_by: drg-migration-v1
 nodes:
-- urn: glossary_pack:spec-kitty-core
-  kind: glossary_pack
+- urn: glossary_context:spec-kitty-core
+  kind: glossary_context
 edges: []

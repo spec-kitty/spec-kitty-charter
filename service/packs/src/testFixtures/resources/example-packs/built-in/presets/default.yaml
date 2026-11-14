@@ -38,7 +38,7 @@ activated_mission_step_contracts:
 - id: implement
   must_have: true
 - id: plan
-activated_glossary_packs:
+activated_glossaries:
 - id: spec-kitty-core
   must_have: true
 activated_anti_patterns:

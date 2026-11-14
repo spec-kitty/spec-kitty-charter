@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
@@ -115,7 +116,9 @@ final class PolicyYaml {
      */
     static String write(MutabilityPolicySource policy) {
         Map<String, Object> kindDefaults = YamlDumpEmitter.mapping();
-        new TreeMap<>(policy.kindDefaults()).forEach((kind, level) -> kindDefaults.put(kind.token(), level.token()));
+        new TreeMap<>(policy.kindDefaults())
+                .forEach((kind, level) -> kindDefaults.put(
+                        kind.artifactKind().map(ArtifactKind::token).orElse(kind.token()), level.token()));
         Map<String, Object> artifacts = YamlDumpEmitter.mapping();
         new TreeMap<>(policy.urnEntries()).forEach((urn, level) -> artifacts.put(urn.toString(), level.token()));
         YamlDumpEmitter out = new YamlDumpEmitter().present("schema_version", SCHEMA_VERSION);
@@ -137,8 +140,14 @@ final class PolicyYaml {
         }
     }
 
+    /**
+     * The node kind of a {@code kind_defaults} key, an artifact kind token: the glossary kind's token is
+     * {@code glossary}, its URN token {@code glossary_context} (ADR-0053 decision 13), so the key maps through the
+     * artifact kind, never by URN token.
+     */
     private static NodeKind kind(String token) {
-        return NodeKind.fromToken(token)
+        return ArtifactKind.fromToken(token)
+                .map(NodeKind::of)
                 .orElseThrow(() -> new IllegalStateException("kind '" + token + "' passed the schema but is no kind"));
     }
 

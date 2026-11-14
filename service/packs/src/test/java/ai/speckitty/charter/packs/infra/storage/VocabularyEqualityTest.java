@@ -220,7 +220,7 @@ class VocabularyEqualityTest {
                         "procedure",
                         "mission-step-contract",
                         "asset",
-                        "glossary-pack",
+                        "glossary",
                         "skill");
     }
 

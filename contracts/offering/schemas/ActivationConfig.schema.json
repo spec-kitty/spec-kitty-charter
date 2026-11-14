@@ -126,13 +126,13 @@
           ],
           "description": "The mission_step_contract ids. Absent means no exclusion of the kind."
         },
-        "glossary_pack": {
+        "glossary": {
           "allOf": [
             {
               "$ref": "#/$defs/DeniedArtifactIdList"
             }
           ],
-          "description": "The glossary_pack ids. Absent means no exclusion of the kind."
+          "description": "The glossary context ids. Absent means no exclusion of the kind."
         },
         "skill": {
           "allOf": [
@@ -280,13 +280,13 @@
           ],
           "description": "The mission_step_contract ids. Absent means none of the kind; [] means none; a list means exactly those."
         },
-        "glossary_pack": {
+        "glossary": {
           "allOf": [
             {
               "$ref": "#/$defs/ArtifactIdList"
             }
           ],
-          "description": "The glossary_pack ids. Absent means none of the kind; [] means none; a list means exactly those."
+          "description": "The glossary context ids. Absent means none of the kind; [] means none; a list means exactly those."
         },
         "skill": {
           "allOf": [

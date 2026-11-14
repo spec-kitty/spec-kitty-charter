@@ -214,8 +214,10 @@ fun Task.readsTheUnitTestInputs() {
     ).forEach { (name, dir) ->
         inputs.dir(repositoryDir.dir(dir)).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName(name)
     }
-    // ProjectCharterYamlSchemaTest validates the project's own charter.yaml against the charter schema (#131).
-    inputs.file(repositoryDir.file(".kittify/charter/charter.yaml")).withPathSensitivity(PathSensitivity.RELATIVE)
+    // ProjectCharterYamlSchemaTest validates a canonical example charter.yaml against the charter schema (#131), not
+    // this repository's core-written .kittify/charter/charter.yaml (DM-01M7CEZ19K8QRA3KX68KRWX22G).
+    inputs.file(layout.projectDirectory.file("src/test/resources/project-charter/charter.yaml"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
         .withPropertyName("projectCharterYaml")
     inputs.property("requireSymlinks", requireSymlinks)
     // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a

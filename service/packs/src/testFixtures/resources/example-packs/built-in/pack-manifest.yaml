@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 3c74e9a4ca7549ed3f30711442d0edef2f4459e088a4eb0d552cfefce13ed579
+manifest_hash: f10d1b8e6209a70e79f2b2e689fabd9a2d7f60681447e9d6d2d22ccde9065ab3
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -45,10 +45,10 @@ constituents:
   id: DIRECTIVE_010
   path: directives/010-specification-fidelity-requirement.directive.yaml
   content_hash: 950b30ca27d33bf2229409052012b430de651cb579281c960fc286bb41b999d3
-- kind: glossary_pack
+- kind: glossary
   id: spec-kitty-core
-  path: glossary_packs/spec-kitty-core.glossary-pack.yaml
-  content_hash: 3d43ef4901127d3fb5d7f5847fffc7d68d84fd131a4a6cc969578ffb5a33a704
+  path: glossaries/spec-kitty-core.glossary.yaml
+  content_hash: 342abf2c3f8dc9761134fafdf885f90203c320c086832baa5947daaa57f55583
 - kind: guard
   id: subtasks-ready
   path: guards/subtasks-ready.guard.yaml
@@ -164,7 +164,7 @@ constituents:
 presets:
 - id: default
   path: presets/default.yaml
-  content_hash: 075e14a6b65d75255e79e3d43cfc27723a76ccc6c4bc09123c28870593dfff76
+  content_hash: 48a86c326162d12b7429c37d90908235013590a39cacc6a698e816ecce20047e
 - id: minimal
   path: presets/minimal.yaml
   content_hash: a954e556493d039775a923fd81e7026340fe26287d97a90012f397830540b444

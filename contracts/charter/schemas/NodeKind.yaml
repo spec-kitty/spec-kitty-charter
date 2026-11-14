@@ -1,7 +1,9 @@
 title: NodeKind
 description: >-
-  The kind of a DRG node: every artifact kind plus action and mission_type. The retiring
-  glossary node kinds are not part of this contract. It lists the authored kinds only: a guard and a lifecycle are
+  The kind of a DRG node, by its URN token: one per artifact kind, plus action and term. A glossary context's
+  token is glossary_context, not its artifact kind's glossary (ADR-0053 decision 13); a term
+  (term:<context-id>/<term-id>) is an edge target, never a declared node. Core's retiring glossary node kind is not
+  part of this contract. It lists the authored kinds only: a guard and a lifecycle are
   nodes of the graph that no read of this contract names, so no schema typed by NodeKind (EffectiveGraphNode,
   NodeReference) can carry one. Adding guard or lifecycle later is a Breaking change for EffectiveGraphNode,
   NodeReference and every SkippedReport carrier.
@@ -15,7 +17,8 @@ enum:
   - procedure
   - agent_profile
   - mission_step_contract
-  - glossary_pack
+  - glossary_context
+  - term
   - skill
   - anti_pattern
   - asset

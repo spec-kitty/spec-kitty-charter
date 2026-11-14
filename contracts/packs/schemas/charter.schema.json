@@ -333,11 +333,11 @@
           "title": "Selected Mission Step Contracts",
           "type": "array"
         },
-        "selected_glossary_packs": {
+        "selected_glossaries": {
           "items": {
             "type": "string"
           },
-          "title": "Selected Glossary Packs",
+          "title": "Selected Glossaries",
           "type": "array"
         },
         "selected_assets": {
@@ -882,7 +882,7 @@
       "default": null,
       "title": "Activated Mission Step Contracts"
     },
-    "activated_glossary_packs": {
+    "activated_glossaries": {
       "anyOf": [
         {
           "items": {
@@ -895,7 +895,7 @@
         }
       ],
       "default": null,
-      "title": "Activated Glossary Packs"
+      "title": "Activated Glossaries"
     },
     "activated_skills": {
       "anyOf": [

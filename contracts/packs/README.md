@@ -11,11 +11,10 @@ These schemas are canonical in this repository and are edited in place; core con
 and 5, ruling R20). Their history is a one-time import from core commit `9554e7b2` with changes C1-C16,
 recorded in the mission's
 [`research.md`](../../kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)
-and in git history. Of the schemas added later, two have outside sources: `skill` is core's
-`skill.schema.yaml` at `581b5c46da` as JSON, and `glossary-pack` is authored here from core's pydantic
-model, since core exports no schema for it. The rest were designed here: `preset`, `pack-manifest`
-and `pack-document` (ADR-0042), `toolguide-guide` (ADR-0043), `mission-type` with its two step
-schemas (ADR-0044), and `step-enhancement` with its `prompt-fragment` companion (ADR-0053 decision 22
+and in git history. Of the schemas added later, one has an outside source: `skill` is core's
+`skill.schema.yaml` at `581b5c46da` as JSON. The rest were designed here: `glossary` (ADR-0049, replacing
+the schema once authored from core's pydantic model), `preset`, `pack-manifest` and `pack-document`
+(ADR-0042), `toolguide-guide` (ADR-0043), `mission-type` with its two step schemas (ADR-0044), and `step-enhancement` with its `prompt-fragment` companion (ADR-0053 decision 22
 and ADR-0066). Where a schema differs from core's behavior, the
 [divergence register](../../docs/conformance/divergence-register.md) says why.
 

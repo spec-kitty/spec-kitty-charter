@@ -233,20 +233,20 @@ class ActionContextWalkTest {
                         "directive:R2",
                         "tactic:S1",
                         "directive:Q1",
-                        "glossary_pack:G1",
-                        "glossary_pack:G2",
-                        "glossary_pack:G3",
-                        "glossary_pack:G4",
-                        "glossary_pack:Deep"),
+                        "glossary_context:G1",
+                        "glossary_context:G2",
+                        "glossary_context:G3",
+                        "glossary_context:G4",
+                        "glossary_context:Deep"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 edge("tactic:T1", RelationType.REQUIRES, "directive:R2"),
                 edge("tactic:T1", RelationType.SUGGESTS, "tactic:S1"),
                 edge("tactic:S1", RelationType.REQUIRES, "directive:Q1"),
-                edge("tactic:T1", RelationType.VOCABULARY, "glossary_pack:G1"),
-                edge("directive:R2", RelationType.VOCABULARY, "glossary_pack:G2"),
-                edge("tactic:S1", RelationType.VOCABULARY, "glossary_pack:G3"),
-                edge("directive:Q1", RelationType.VOCABULARY, "glossary_pack:G4"),
-                edge("glossary_pack:G1", RelationType.VOCABULARY, "glossary_pack:Deep"));
+                edge("tactic:T1", RelationType.VOCABULARY, "glossary_context:G1"),
+                edge("directive:R2", RelationType.VOCABULARY, "glossary_context:G2"),
+                edge("tactic:S1", RelationType.VOCABULARY, "glossary_context:G3"),
+                edge("directive:Q1", RelationType.VOCABULARY, "glossary_context:G4"),
+                edge("glossary_context:G1", RelationType.VOCABULARY, "glossary_context:Deep"));
 
         Context context = walk(closure, 1, ActionContextWalkTest::everything);
 
@@ -254,11 +254,11 @@ class ActionContextWalkTest {
                 .filteredOn(entry -> entry.step() == Step.VOCABULARY)
                 .extracting(Entry::urn, Entry::via, Entry::hops)
                 .containsExactly(
-                        tuple(urn("glossary_pack:G1"), urn("tactic:T1"), 2),
-                        tuple(urn("glossary_pack:G2"), urn("directive:R2"), 3),
-                        tuple(urn("glossary_pack:G3"), urn("tactic:S1"), 3),
-                        tuple(urn("glossary_pack:G4"), urn("directive:Q1"), 4));
-        assertThat(listed(context)).doesNotContain("glossary_pack:Deep");
+                        tuple(urn("glossary_context:G1"), urn("tactic:T1"), 2),
+                        tuple(urn("glossary_context:G2"), urn("directive:R2"), 3),
+                        tuple(urn("glossary_context:G3"), urn("tactic:S1"), 3),
+                        tuple(urn("glossary_context:G4"), urn("directive:Q1"), 4));
+        assertThat(listed(context)).doesNotContain("glossary_context:Deep");
     }
 
     // ---- the rules the steps share ---------------------------------------------------------------------------------
@@ -266,53 +266,53 @@ class ActionContextWalkTest {
     @Test
     void theEntriesAreSortedByFullUrnStringWhateverStepListedThem() {
         Closure closure = closure(
-                List.of("tactic:B", "tactic:A", "directive:R", "tactic:S", "glossary_pack:G"),
+                List.of("tactic:B", "tactic:A", "directive:R", "tactic:S", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:B"),
                 edge(START, RelationType.SCOPE, "tactic:A"),
                 edge("tactic:A", RelationType.REQUIRES, "directive:R"),
                 edge("tactic:B", RelationType.SUGGESTS, "tactic:S"),
-                edge("tactic:B", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("tactic:B", RelationType.VOCABULARY, "glossary_context:G"));
 
         assertThat(listed(walk(closure, 1, ActionContextWalkTest::everything)))
                 .as("ADR-0018 D3: sorted by full URN string, not by step")
-                .containsExactly("directive:R", "glossary_pack:G", "tactic:A", "tactic:B", "tactic:S");
+                .containsExactly("directive:R", "glossary_context:G", "tactic:A", "tactic:B", "tactic:S");
     }
 
     @Test
     void anArtifactAnEarlierStepListedIsNeverListedAgainAndStillSeedsTheLaterSteps() {
         Closure closure = closure(
-                List.of("tactic:T1", "tactic:T2", "glossary_pack:G"),
+                List.of("tactic:T1", "tactic:T2", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 edge(START, RelationType.SCOPE, "tactic:T2"),
                 edge("tactic:T1", RelationType.REQUIRES, "tactic:T2"),
                 edge("tactic:T1", RelationType.SUGGESTS, "tactic:T2"),
-                edge("tactic:T2", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("tactic:T2", RelationType.VOCABULARY, "glossary_context:G"));
 
         Context context = walk(closure, 1, ActionContextWalkTest::everything);
 
-        assertThat(listed(context)).containsExactly("glossary_pack:G", "tactic:T1", "tactic:T2");
+        assertThat(listed(context)).containsExactly("glossary_context:G", "tactic:T1", "tactic:T2");
         assertThat(entry(context, "tactic:T2").step()).isEqualTo(Step.SCOPE);
-        assertThat(entry(context, "glossary_pack:G").via()).isEqualTo(urn("tactic:T2"));
+        assertThat(entry(context, "glossary_context:G").via()).isEqualTo(urn("tactic:T2"));
     }
 
     @Test
     void aNodeTakesAsParentTheOneWithTheFewestHopsThenTheSmallestUrn() {
         Closure closure = closure(
-                List.of("tactic:T1", "directive:R2", "glossary_pack:G", "glossary_pack:H"),
+                List.of("tactic:T1", "directive:R2", "glossary_context:G", "glossary_context:H"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 edge("tactic:T1", RelationType.REQUIRES, "directive:R2"),
-                edge("directive:R2", RelationType.VOCABULARY, "glossary_pack:G"),
-                edge("tactic:T1", RelationType.VOCABULARY, "glossary_pack:G"),
-                edge("tactic:T1", RelationType.VOCABULARY, "glossary_pack:H"),
-                edge("directive:R2", RelationType.VOCABULARY, "glossary_pack:H"));
+                edge("directive:R2", RelationType.VOCABULARY, "glossary_context:G"),
+                edge("tactic:T1", RelationType.VOCABULARY, "glossary_context:G"),
+                edge("tactic:T1", RelationType.VOCABULARY, "glossary_context:H"),
+                edge("directive:R2", RelationType.VOCABULARY, "glossary_context:H"));
 
         Context context = walk(closure, 0, ActionContextWalkTest::everything);
 
-        assertThat(entry(context, "glossary_pack:G").via())
+        assertThat(entry(context, "glossary_context:G").via())
                 .as("T1 has 1 hop, R2 has 2")
                 .isEqualTo(urn("tactic:T1"));
-        assertThat(entry(context, "glossary_pack:G").hops()).isEqualTo(2);
-        assertThat(entry(context, "glossary_pack:H").via()).isEqualTo(urn("tactic:T1"));
+        assertThat(entry(context, "glossary_context:G").hops()).isEqualTo(2);
+        assertThat(entry(context, "glossary_context:H").via()).isEqualTo(urn("tactic:T1"));
     }
 
     @Test
@@ -466,9 +466,9 @@ class ActionContextWalkTest {
                 edge("tactic:B", RelationType.REQUIRES, "directive:X"),
                 edge("tactic:B", RelationType.SUGGESTS, "tactic:S"),
                 edge("tactic:A", RelationType.SUGGESTS, "tactic:S"),
-                edge("tactic:S", RelationType.VOCABULARY, "glossary_pack:G"),
-                edge("tactic:A", RelationType.VOCABULARY, "glossary_pack:G"));
-        List<String> artifacts = List.of("tactic:A", "tactic:B", "directive:X", "tactic:S", "glossary_pack:G");
+                edge("tactic:S", RelationType.VOCABULARY, "glossary_context:G"),
+                edge("tactic:A", RelationType.VOCABULARY, "glossary_context:G"));
+        List<String> artifacts = List.of("tactic:A", "tactic:B", "directive:X", "tactic:S", "glossary_context:G");
 
         Context forward =
                 walk(closure(artifacts, written.toArray(Relationship[]::new)), 1, ActionContextWalkTest::everything);
@@ -492,7 +492,7 @@ class ActionContextWalkTest {
 
     private static Closure suggestingOutOfForce() {
         return closure(
-                List.of("tactic:T1", "tactic:S", "directive:R", "glossary_pack:G"),
+                List.of("tactic:T1", "tactic:S", "directive:R", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 new Relationship(
                         urn("tactic:T1"),
@@ -501,12 +501,12 @@ class ActionContextWalkTest {
                         Optional.of("the change is large"),
                         Optional.of("S checks it")),
                 edge("tactic:S", RelationType.REQUIRES, "directive:R"),
-                edge("tactic:S", RelationType.VOCABULARY, "glossary_pack:G"));
+                edge("tactic:S", RelationType.VOCABULARY, "glossary_context:G"));
     }
 
     @Test
     void aSuggestsTargetOutOfForceIsReportedWithItsEdgeDataAndNotExpanded() {
-        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_pack:G");
+        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_context:G");
 
         Context context = walk(suggestingOutOfForce(), 1, withoutS);
 
@@ -530,12 +530,12 @@ class ActionContextWalkTest {
 
     @Test
     void theSameSuggestsTargetInForceIsAnEntryAndIsExpanded() {
-        Predicate<Urn> withS = inForce("mission_type:M", "tactic:T1", "tactic:S", "directive:R", "glossary_pack:G");
+        Predicate<Urn> withS = inForce("mission_type:M", "tactic:T1", "tactic:S", "directive:R", "glossary_context:G");
 
         Context context = walk(suggestingOutOfForce(), 1, withS);
 
         assertThat(context.suggestionCandidates()).isEmpty();
-        assertThat(listed(context)).containsExactly("directive:R", "glossary_pack:G", "tactic:S", "tactic:T1");
+        assertThat(listed(context)).containsExactly("directive:R", "glossary_context:G", "tactic:S", "tactic:T1");
     }
 
     @Test
@@ -554,7 +554,7 @@ class ActionContextWalkTest {
 
     @Test
     void depthZeroReportsNoSuggestion() {
-        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_pack:G");
+        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_context:G");
 
         assertThat(walk(suggestingOutOfForce(), 0, withoutS).suggestionCandidates())
                 .isEmpty();

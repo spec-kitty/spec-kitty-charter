@@ -49,7 +49,7 @@ class PackFileKindTest {
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
             Map.entry("core/step-contracts/a.step-contract.yaml", "mission-step-contract"),
             Map.entry("core/assets/a.asset.yaml", "asset"),
-            Map.entry("core/glossary/a.glossary-pack.yaml", "glossary-pack"),
+            Map.entry("core/glossaries/a.glossary.yaml", "glossary"),
             Map.entry("core/skills/a.skill.yaml", "skill"),
             Map.entry("project/charter.yaml", "charter"),
             Map.entry("core/presets/minimal.yaml", "preset"),
@@ -327,8 +327,16 @@ class PackFileKindTest {
     @Test
     void theVocabularyListsAreExposed() {
         assertThat(KINDS.nodeKinds())
-                .hasSize(18)
-                .contains("directive", "mission_type", "action", "guard", "lifecycle", "step_enhancement");
+                .hasSize(19)
+                .contains(
+                        "directive",
+                        "mission_type",
+                        "action",
+                        "guard",
+                        "lifecycle",
+                        "step_enhancement",
+                        "glossary_context",
+                        "term");
         assertThat(KINDS.fragmentKinds())
                 .as("a fragment does not admit a guard or a lifecycle node yet (#156)")
                 .hasSize(16)

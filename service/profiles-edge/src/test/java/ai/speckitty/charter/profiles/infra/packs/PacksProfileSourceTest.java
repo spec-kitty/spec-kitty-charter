@@ -155,7 +155,7 @@ class PacksProfileSourceTest {
                 PackLevel.BUILT_IN,
                 List.of(),
                 List.of("Q"),
-                List.of("directive:D", "directive:S", "directive:R", "glossary_pack:G"),
+                List.of("directive:D", "directive:S", "directive:R", "glossary_context:G"),
                 edge("directive:S", RelationType.REQUIRES, "directive:R", Optional.empty(), Optional.of("S needs R")));
         pack(
                 "project",
@@ -176,7 +176,7 @@ class PacksProfileSourceTest {
                         "builtin::directive:S",
                         Optional.of("when tidying"),
                         Optional.of("the hub applies")),
-                edge("agent_profile:P", RelationType.VOCABULARY, "builtin::glossary_pack:G"));
+                edge("agent_profile:P", RelationType.VOCABULARY, "builtin::glossary_context:G"));
     }
 
     @Test
@@ -212,7 +212,7 @@ class PacksProfileSourceTest {
                         tuple("directive:D", GovernanceEntry.Step.REQUIRES, "agent_profile:P", 1),
                         tuple("directive:R", GovernanceEntry.Step.REQUIRES_OF_SUGGESTED, "directive:S", 2),
                         tuple("directive:S", GovernanceEntry.Step.SUGGESTS, "agent_profile:P", 1),
-                        tuple("glossary_pack:G", GovernanceEntry.Step.VOCABULARY, "agent_profile:P", 1));
+                        tuple("glossary_context:G", GovernanceEntry.Step.VOCABULARY, "agent_profile:P", 1));
     }
 
     @Test
@@ -230,7 +230,7 @@ class PacksProfileSourceTest {
                         tuple(
                                 "directive:S",
                                 new EdgeWords(Optional.of("when tidying"), Optional.of("the hub applies"))),
-                        tuple("glossary_pack:G", EdgeWords.NONE));
+                        tuple("glossary_context:G", EdgeWords.NONE));
     }
 
     @Test
@@ -241,7 +241,7 @@ class PacksProfileSourceTest {
 
         assertThat(read.governance())
                 .extracting(entry -> entry.urn().toString())
-                .containsExactly("agent_profile:Q", "directive:D", "glossary_pack:G");
+                .containsExactly("agent_profile:Q", "directive:D", "glossary_context:G");
     }
 
     @Test

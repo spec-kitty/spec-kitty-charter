@@ -33,7 +33,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Recaptures: pack document moved to README.md (#451, 2026-11-11). The fixture's {@code pack.md} became
  * {@code README.md} and the digested list changed only by that swap, in the same tail position; the fingerprint moved
- * because the file's name is part of what the digest hashes.
+ * because the file's name is part of what the digest hashes. The glossary kind replaced the old glossary pack kind
+ * (ADR-0049, 2026-11-14): the fixture's glossary file became {@code glossaries/eta.glossary.yaml} in the new shape, in
+ * the same position of the digested list; the fingerprint moved because the file's name and bytes are part of what
+ * the digest hashes.
  */
 @DisplayName("A fixed pack keeps its fingerprint and its digested file order (NFR-001)")
 class PackDigestFixtureTest {
@@ -51,7 +54,7 @@ class PackDigestFixtureTest {
             "paradigms/epsilon.paradigm.yaml",
             "agent_profiles/zeta.agent.yaml",
             "mission_step_contracts/m-first.step-contract.yaml",
-            "glossary_packs/eta.glossary-pack.yaml",
+            "glossaries/eta.glossary.yaml",
             "skills/theta.skill.yaml",
             "skills/theta.skill.md",
             "assets/data.txt.asset.yaml",
@@ -72,7 +75,7 @@ class PackDigestFixtureTest {
             "pack-manifest.yaml",
             "policy.yaml");
 
-    private static final String FINGERPRINT = "sha256:0003f96f19264157a362365a2db69bede7693cab2720f8040477299421bde1fd";
+    private static final String FINGERPRINT = "sha256:f7ba6e483fe94e450204faceb3b16c5e8a8c3bdc734acd748b43922da24e41bf";
 
     @Test
     void theFixedPackKeepsItsDigestedFilesAndItsFingerprint() throws URISyntaxException {
