@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -240,7 +241,7 @@ class PacksGlossariesTest {
 
     @Test
     void theTermDetailNamesTheTermThenTheContext() {
-        assertThat(GlossaryReads.termNotHeld("core", "mission"))
+        assertThat(TermHolder.termNotHeld("core", "mission"))
                 .isEqualTo("term `mission` is not held in glossary context `core`");
         verifyNoMoreInteractions(packs);
     }

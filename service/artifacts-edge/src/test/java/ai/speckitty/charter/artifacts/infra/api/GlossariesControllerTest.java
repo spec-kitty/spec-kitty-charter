@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.web.DeferredETag;
 import ai.speckitty.charter.web.RefusalHandler;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -210,7 +211,7 @@ class GlossariesControllerTest {
 
             @Override
             public TermRead term(PackIdentifier pack, String contextId, String termId) {
-                throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, GlossaryReads.termNotHeld(contextId, termId));
+                throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, TermHolder.termNotHeld(contextId, termId));
             }
 
             @Override

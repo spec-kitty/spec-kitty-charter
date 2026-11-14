@@ -3,6 +3,7 @@ package ai.speckitty.charter.artifacts.application;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,22 +14,11 @@ import java.util.Objects;
  * read there, so the answer, its revision and its fingerprint name the same inputs.
  *
  * <p>The segments are judged in path order (research R3): an unknown pack is {@code pack_not_found}; a context the pack
- * does not hold is {@code artifact_not_found} with the detail {@code glossary context `<id>` is not held}; a term the
- * context does not hold is {@code artifact_not_found} with the detail {@link #termNotHeld}. A pack that cannot be read
+ * does not hold is {@code artifact_not_found} with the detail {@link TermHolder#contextNotHeld}; a term the
+ * context does not hold is {@code artifact_not_found} with the detail {@link TermHolder#termNotHeld}. A pack that cannot be read
  * is {@code pack_unreadable}, and a change of the inputs during the read {@code stale_input}.
  */
 public interface GlossaryReads {
-
-    /**
-     * The detail of the refusal of a term its context does not hold (ruling {@code DM-01M7B1Q4BPQB95EVQBRWN4Q4F8}).
-     *
-     * @param contextId the context's id, as the request names it
-     * @param termId the term's id, as the request names it
-     * @return {@code term `<termId>` is not held in glossary context `<contextId>`}
-     */
-    static String termNotHeld(String contextId, String termId) {
-        return "term `" + termId + "` is not held in glossary context `" + contextId + "`";
-    }
 
     /**
      * The glossary contexts a pack holds, in id order.
