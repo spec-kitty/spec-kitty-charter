@@ -75,7 +75,7 @@ What no scenario covers:
 2. **A client that follows only links** from the API root to all of it.
 3. **The review squad:** the `adversarial-squad-deployment` procedure in force, and the review profiles read under the
    same activation.
-4. **The packaged jar** booted with a token, a random port and the filesystem pack source. This is not behaviour: the
+4. **The packaged jar** booted with a token, a random port and the filesystem pack source. This is packaging, not behavior: the
    release smoke (`scripts/release/smoke-service.sh`, `service.yml`) covers it.
 
 Items 1 to 3 fill the `@WIP` gaps of journey 01 ("The first Mission starts against the active charter", line 48),
@@ -89,7 +89,7 @@ A new journey, `contracts/charter/scenarios/journeys/journey-12-a-mission-walk-u
 - **Packs:** the example pack `built-in` configured, and `org-base` registered through `POST /packs` from the
   filesystem source, standing in for `internal`. One new step registers an example pack from the filesystem source
   (today the steps register only archives, `PackSourceSteps`).
-- **Activation:** written in the feature, over the example packs only. It selects nothing the packs do not hold, so a
+- **Activation:** written in the scenario file, over the example packs only. It selects nothing the packs do not hold, so a
   refused selection fails the scenario.
 - **Reads:** by following links, hidden in the glue; the scenario text names business outcomes, not URLs.
 - **Cost:** seconds inside the existing test JVM; no new workflow.
@@ -109,7 +109,7 @@ Draft scenarios (declarative):
    is readable under the activation.
 
 **Do not assert:** hop counts, link names, URLs, latency, exact body text, or counts copied from open-packs content.
-State the example pack's own counts in the feature, so a fixture change and its assertion land in one diff.
+State the example pack's own counts in the scenario file, so a fixture change and its assertion land in one diff.
 
 ## Limits the squad found
 
