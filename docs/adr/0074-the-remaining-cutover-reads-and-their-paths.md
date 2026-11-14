@@ -121,6 +121,9 @@ both to the operator, who ruled on each (decisions 9 to 14).
    contexts and terms. The kind becomes `glossary`, in ADR-0049's shape. That shape replaces `glossary-pack` outright,
    with no reader of the old shape beside it. A term is an item inside its context, read as a part of it
    (decisions 11 and 12).
+
+   *2026-11-14: the activation's vocabulary and its projections are decided by
+   [ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/).*
 4. **R13, pack skills (#107): a contract operation, in slice A; command projection is core-side.** `skill` joins the
    served kinds, and its item read carries the skill body, the `text` companion #432 made readable. Projecting a skill into
    a harness's command files is installation work. It runs in core and is not a read of the offering.

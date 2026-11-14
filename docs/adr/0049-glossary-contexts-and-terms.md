@@ -2,8 +2,8 @@
 title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary"
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
 doc_status: active
-updated: 2026-11-12T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decision 7 amended, decision 8 extended by ADR-0074 (2026-11-12)'
+updated: 2026-11-14T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053); decision 7 amended, decision 8 extended by ADR-0074 (2026-11-12); decisions 10 and 15 extended, decision 13 read and its load warning retired by ADR-0076 (2026-11-14)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -140,6 +140,8 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
    serve every kind.
 10. **Reading every active term across packs belongs on the active-charter side**, as a read of the activation, not
     of a pack. Its path and shape are left to the contract set that adds it.
+    *Extended 2026-11-14 ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) decisions 4, 5 and 8):
+    `GET /activations/{activationId}/vocabulary/terms`.*
 
 ### Scope and clashes (ruled)
 
@@ -149,6 +151,10 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
 13. **Only a clash on the same `term:` URN is a conflict.** Across levels, precedence follows the level (project
     over org over built-in) and the load warns. At the same level the compose is refused unless it is settled
     explicitly, the same way as a sibling conflict (ADR-0048 decision 9).
+    *Amended 2026-11-14 ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) decisions 1 and 2): a
+    context overrides across levels whole, as every artifact does, so a same-URN clash only arises between two copies
+    of one context and the override settles it. The load warning is retired: the effective reads report the
+    override, as for every kind.*
 14. **`applies_to` is advisory** (the notes' default, open question 6): it tells a reader or a tool where the
     context applies, and does not filter what is in force. Filtering, like `applies_to_languages`, can be added
     later without a shape change.
@@ -159,6 +165,8 @@ wait for core to retire its own `glossary` node kind. The original text stands; 
     uses, and the terminology gates' banned lists (fed by `avoid`), become **projections** of the active contexts.
     This repository's own docs glossary ([ADR-0029](/adr/0029-charter-glossary-is-owned-here/)) is not a
     pack glossary and is out of scope here.
+    *Extended 2026-11-14 ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/) decisions 6 and 7):
+    the projections are `…/vocabulary/contextive` (YAML) and `…/vocabulary/taboos` under an activation.*
 16. **A glossary `avoid` entry is not an anti-pattern** (the #154 ruling AP4,
     [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)): `avoid` is about words,
     an anti-pattern about practice.
