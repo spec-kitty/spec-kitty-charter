@@ -48,7 +48,7 @@ Rule 1).
 | J-H3 | HIGH | `term` conflicts with the authored-in-graphs parity pins. | Accepted: the predicate splits into node-declarable and edge-target flags, each checked against its own surface (research R1). |
 | J-H4 | HIGH | The concern order does not compile. | Accepted: the kernel, packs contract, domain and charter contract are one atomic concern (IC-02). |
 | J-H5 | HIGH | `.kittify/charter/charter.yaml` fails `ProjectCharterYamlSchemaTest`. | Ruled `DM-01M7CEZ19K8QRA3KX68KRWX22G`: the test narrows, and the file is not edited (research R14; IC-02). |
-| J-M1 | MED | No vocabulary port or read is named, and NFR-005 conflicts with a multi-pack read. | Accepted: `ActivationArtifacts.contextsInForce` and `PacksGlossaries`. NFR-005 is restated as one session plus one read per winning pack, counted (research R6; IC-06). |
+| J-M1 | MED | No vocabulary port or read is named, and NFR-005 conflicts with a multi-pack read. | Accepted: `ActivationArtifacts.contextsInForce` and `PacksVocabulary`. NFR-005 is restated as one session plus one read per winning pack, counted (research R6; IC-06). |
 | J-M2 | MED | The YAML dependency claim is wrong, and the precedent is missed. | Accepted: `snakeyaml-engine` (already verified) is added to `:artifacts-edge`; the `/openapi.yaml` precedent is cited (research R6). |
 | J-M3 | MED | Slice D's complexity gate and the mutation floors are not named. | Accepted: research R15 and plan risk 3. |
 | J-L1 | LOW | Smaller gaps: the relation table, the usability script, four tests, the `EffectiveTag` guards, the term query ids. | Accepted: each is named in IC-02, IC-05 or IC-06. |
