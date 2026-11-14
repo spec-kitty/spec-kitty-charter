@@ -141,6 +141,19 @@ class GlossaryContextTest {
     }
 
     @Test
+    @DisplayName("it holds a term of an id it holds, and no term of an id it lacks or one outside the term grammar")
+    void itHoldsTheTermsItHoldsByTheirIds() {
+        GlossaryContext context = valid("g").term(term("lane")).build();
+
+        assertThat(context.holdsTerm("lane")).isTrue();
+        assertThat(context.holdsTerm("ghost")).isFalse();
+        assertThat(context.holdsTerm("Lane"))
+                .as("outside the grammar, not a fault")
+                .isFalse();
+        assertThat(context.holdsTerm("")).isFalse();
+    }
+
+    @Test
     @DisplayName("the lists are copies: a change to the builder's list does not reach the context")
     void theListsAreImmutable() {
         java.util.ArrayList<String> tags = new java.util.ArrayList<>(List.of("core"));

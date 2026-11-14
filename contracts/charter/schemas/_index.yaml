@@ -128,3 +128,5 @@ files:
   - SkillSummary.yaml
   - EffectiveAssetRead.yaml
   - EffectiveSkillRead.yaml
+  - EffectiveGlossaryContextRead.yaml
+  - EffectiveGlossaryTermRead.yaml

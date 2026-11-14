@@ -13,8 +13,8 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The port of the activation twins of the asset and skill reads (ADR-0037 as amended 2026-11-09; research R1, R2 and
- * R15): what an activation names of an asset or a skill, the winner of the layer merge and the source fingerprint of
+ * The port of the activation twins of the asset, skill and glossary reads (ADR-0037 as amended 2026-11-09; research R1,
+ * R2 and R15 of slice A2, R7 of #106): what an activation names of an asset, a skill or a glossary context, the winner of the layer merge and the source fingerprint of
  * the read that named it, in the edge's own words. The adapter is {@code artifacts.infra.activations}, the one place of
  * the edge that asks the activations slice; the application ring names no activations type. What the winner's pack
  * stores (an asset's descriptor and bytes, a skill's summary) is the packs port's to read, against that fingerprint.
@@ -25,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public interface ActivationArtifacts {
 
     /**
-     * The winners of one kind under an activation, in id order: {@code listEffectiveSkills} or
-     * {@code listEffectiveAssets}.
+     * The winners of one kind under an activation, in id order: {@code listEffectiveSkills},
+     * {@code listEffectiveAssets} or {@code listEffectiveGlossaryContexts}.
      *
      * @param activationId the activation's id, exactly as the request names it
-     * @param kind {@code skill} or {@code asset}
+     * @param kind {@code skill}, {@code asset} or {@code glossary}
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winners, or that the client holds the current representation
      * @throws CharterRefusal with {@code ACTIVATION_NOT_FOUND}, {@code PACK_UNREADABLE}, the code of a closure that
@@ -72,6 +72,35 @@ public interface ActivationArtifacts {
      *     holds the skill
      */
     Outcome<SkillWinner> skill(String activationId, String skillId, @Nullable String ifNoneMatch);
+
+    /**
+     * The winner of one glossary context under an activation, whatever its state, with its facts and the context as the
+     * winning pack stores it, all of one verified read, under the tag of {@code getEffectiveGlossaryContext}.
+     *
+     * @param activationId the activation's id, exactly as the request names it
+     * @param contextId the context's id
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the context, or that the client holds the current representation
+     * @throws CharterRefusal as {@link #winners} does, and with {@code ARTIFACT_NOT_FOUND} when no pack of the closure
+     *     holds the context
+     */
+    Outcome<GlossaryWinner> glossary(String activationId, String contextId, @Nullable String ifNoneMatch);
+
+    /**
+     * The winner of the glossary context that holds one term under an activation, whatever its state, with its facts and
+     * the context as the winning pack stores it, under the tag of {@code getEffectiveGlossaryTerm}. A term has no state
+     * of its own: the facts are the context's.
+     *
+     * @param activationId the activation's id, exactly as the request names it
+     * @param contextId the context's id
+     * @param termId the term's id
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the context that holds the term, or that the client holds the current representation
+     * @throws CharterRefusal as {@link #glossary} does, then with {@code ARTIFACT_NOT_FOUND} when the winning context
+     *     does not hold the term
+     */
+    Outcome<GlossaryWinner> glossaryTerm(
+            String activationId, String contextId, String termId, @Nullable String ifNoneMatch);
 
     /**
      * The winner of one artifact of any listed kind under an activation, whatever its state, with every artifact of a
@@ -307,6 +336,29 @@ public interface ActivationArtifacts {
             Objects.requireNonNull(scope, "scope");
             Objects.requireNonNull(facts, "facts");
             Objects.requireNonNull(skill, "skill");
+        }
+    }
+
+    /**
+     * The winner of one glossary context with its facts and the context as the winning pack stores it.
+     *
+     * @param scope the activation and the read
+     * @param facts the facts of the winner
+     * @param context the winning context, a kernel artifact the packs port narrows
+     */
+    record GlossaryWinner(Scope scope, Facts facts, CharterArtifact context) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param scope the scope
+         * @param facts the facts
+         * @param context the context
+         */
+        public GlossaryWinner {
+            Objects.requireNonNull(scope, "scope");
+            Objects.requireNonNull(facts, "facts");
+            Objects.requireNonNull(context, "context");
         }
     }
 

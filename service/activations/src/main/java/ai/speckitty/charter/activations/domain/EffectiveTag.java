@@ -42,7 +42,8 @@ public record EffectiveTag(String token) {
      * slice C (rule E17 as amended, research R10, squad D1) makes the action context apply the ownership rule and its
      * items carry {@code appliesThrough}, so it answers more under an unchanged revision and closure fingerprint, and
      * makes {@code satisfiedBy} and {@code overriddenBy} name every overrider in force (#439). No release served a tag
-     * of {@code v3} with either body.
+     * of {@code v3} with either body. The glossary reads (#106) join {@code v3} unreleased too: {@code getActivation}
+     * links {@code glossaries}, and no release served a tag of {@code v3} without it.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 
@@ -80,6 +81,18 @@ public record EffectiveTag(String token) {
         ASSET,
         /** {@code getEffectiveAssetPayload}: the bytes of the winner of one asset. */
         ASSET_PAYLOAD,
+        /** {@code listEffectiveGlossaryContexts}: the glossary context winners of the closure, each with its summary. */
+        GLOSSARIES,
+        /**
+         * {@code getEffectiveGlossaryContext}: the winner of one glossary context, with the context as its pack stores
+         * it, so it never shares a tag with the generic read of the same context.
+         */
+        GLOSSARY,
+        /**
+         * {@code getEffectiveGlossaryTerm}: one term of the winner of a glossary context, with that context's facts; its
+         * query names the context and the term ({@link TermQuery}).
+         */
+        GLOSSARY_TERM,
         /**
          * {@code getEffectiveStepPrompt}: the prompt in force of one step with the fragments in force of its slots
          * (research R10). The closure fingerprint digests every loaded file, prompt companions and fragments included,
@@ -111,6 +124,31 @@ public record EffectiveTag(String token) {
 
         private String normalized() {
             return "kind=" + kind.token() + "\nid=" + artifactId + "\ndepth=" + depth;
+        }
+    }
+
+    /**
+     * The query of {@code getEffectiveGlossaryTerm}, as it selects a representation: the context and the term, both
+     * as the request spelled them, and no depth.
+     *
+     * @param contextId the context id of the path
+     * @param termId the term id of the path
+     */
+    public record TermQuery(String contextId, String termId) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param contextId the context id
+         * @param termId the term id
+         */
+        public TermQuery {
+            Objects.requireNonNull(contextId, "contextId");
+            Objects.requireNonNull(termId, "termId");
+        }
+
+        private String normalized() {
+            return "kind=" + ArtifactKind.GLOSSARY.token() + "\nid=" + contextId + "\nterm=" + termId;
         }
     }
 
@@ -305,10 +343,10 @@ public record EffectiveTag(String token) {
     }
 
     /**
-     * The tag of the list of the winners of one kind ({@code listEffectiveSkills}, {@code listEffectiveAssets}): its read
-     * names the kind, and the query repeats it.
+     * The tag of the list of the winners of one kind ({@code listEffectiveSkills}, {@code listEffectiveAssets},
+     * {@code listEffectiveGlossaryContexts}): its read names the kind, and the query repeats it.
      *
-     * @param read {@link Read#SKILLS} or {@link Read#ASSETS}
+     * @param read {@link Read#SKILLS}, {@link Read#ASSETS} or {@link Read#GLOSSARIES}
      * @param kind the kind listed
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
@@ -317,17 +355,18 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag winners(Read read, ArtifactKind kind, Revision revision, ClosureSnapshot closure) {
         Objects.requireNonNull(kind, "kind");
-        if (read != Read.SKILLS && read != Read.ASSETS) {
+        if (read != Read.SKILLS && read != Read.ASSETS && read != Read.GLOSSARIES) {
             throw new IllegalArgumentException("The read " + read + " lists no winners of one kind.");
         }
         return of(read, revision, closure, "kind=" + kind.token());
     }
 
     /**
-     * The tag of the read of one winner at a literal path of its kind ({@code getEffectiveSkill}, {@code getEffectiveAsset},
-     * {@code getEffectiveAssetPayload}): its kind, id and depth.
+     * The tag of the read of one winner at a literal path of its kind ({@code getEffectiveSkill},
+     * {@code getEffectiveGlossaryContext}, {@code getEffectiveAsset}, {@code getEffectiveAssetPayload}): its kind, id and
+     * depth.
      *
-     * @param read {@link Read#SKILL}, {@link Read#ASSET} or {@link Read#ASSET_PAYLOAD}
+     * @param read {@link Read#SKILL}, {@link Read#GLOSSARY}, {@link Read#ASSET} or {@link Read#ASSET_PAYLOAD}
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
      * @param query the kind, the id and the depth
@@ -335,10 +374,22 @@ public record EffectiveTag(String token) {
      * @throws IllegalArgumentException when {@code read} is not the read of one winner at a literal path
      */
     public static EffectiveTag winner(Read read, Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
-        if (read != Read.SKILL && read != Read.ASSET && read != Read.ASSET_PAYLOAD) {
+        if (read != Read.SKILL && read != Read.GLOSSARY && read != Read.ASSET && read != Read.ASSET_PAYLOAD) {
             throw new IllegalArgumentException("The read " + read + " is no read of one winner at a literal path.");
         }
         return of(read, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the read of one term of a glossary context ({@code getEffectiveGlossaryTerm}): the context and the term.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the context and the term
+     * @return the tag
+     */
+    public static EffectiveTag term(Revision revision, ClosureSnapshot closure, TermQuery query) {
+        return of(Read.GLOSSARY_TERM, revision, closure, query.normalized());
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {

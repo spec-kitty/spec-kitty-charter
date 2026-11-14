@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveTag.Query;
@@ -11,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * The entity tag of the reads that depend on the packs of the closure: the revision, the fingerprint of the packs in
@@ -152,6 +155,54 @@ class EffectiveTagTest {
                 .as("the generic read, the asset read and the payload read of one id and depth")
                 .hasSize(3);
         assertThat(listsOfOneKind).as("two lists over the same query").hasSize(2);
+    }
+
+    @Test
+    void theGlossaryReadsNeverShareATagAndTheTermsTagNamesTheContextAndTheTerm() {
+        ClosureSnapshot closure = closure("sha256:one");
+        EffectiveTag.ArtifactQuery core = new EffectiveTag.ArtifactQuery(ArtifactKind.GLOSSARY, "core", 0);
+
+        Set<EffectiveTag> tags = new HashSet<>(List.of(
+                EffectiveTag.artifact(REVISION, closure, core),
+                EffectiveTag.winner(EffectiveTag.Read.GLOSSARY, REVISION, closure, core),
+                EffectiveTag.winners(EffectiveTag.Read.GLOSSARIES, ArtifactKind.GLOSSARY, REVISION, closure),
+                EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "lane")),
+                EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "mission")),
+                EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("qa", "lane"))));
+
+        assertThat(tags)
+                .as("the generic read, the context read, the list and three terms: one tag each")
+                .hasSize(6);
+        assertThat(EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "lane")))
+                .as("the same inputs, the same tag")
+                .isEqualTo(EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "lane")));
+        assertThat(EffectiveTag.term(REVISION, closure("sha256:two"), new EffectiveTag.TermQuery("core", "lane")))
+                .as("a change of a pack of the closure moves the term's tag")
+                .isNotEqualTo(EffectiveTag.term(REVISION, closure, new EffectiveTag.TermQuery("core", "lane")));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = EffectiveTag.Read.class,
+            names = {"SKILL", "GLOSSARY", "ASSET", "ASSET_PAYLOAD"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void noOtherReadIsTheReadOfOneWinnerAtALiteralPath(EffectiveTag.Read read) {
+        EffectiveTag.ArtifactQuery query = new EffectiveTag.ArtifactQuery(ArtifactKind.GLOSSARY, "core", 0);
+
+        assertThatThrownBy(() -> EffectiveTag.winner(read, REVISION, closure("sha256:one"), query))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The read " + read + " is no read of one winner at a literal path.");
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = EffectiveTag.Read.class,
+            names = {"SKILLS", "ASSETS", "GLOSSARIES"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void noOtherReadListsTheWinnersOfOneKind(EffectiveTag.Read read) {
+        assertThatThrownBy(() -> EffectiveTag.winners(read, ArtifactKind.GLOSSARY, REVISION, closure("sha256:one")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The read " + read + " lists no winners of one kind.");
     }
 
     // ---- the graph and the action context (T140, T141): each representation has its own tag ----

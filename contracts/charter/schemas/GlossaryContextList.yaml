@@ -1,34 +1,44 @@
 title: GlossaryContextList
 description: >-
-  The glossary contexts of a pack (listPackGlossaryContexts; ADR-0049 decision 7, ADR-0074 decision 9), in id order
-  and unpaged, deliberately, because a pack holds few contexts (paging it later would be an additive change); a pack
-  that holds none answers an empty list. Each item is a summary with its term count; the context's own read answers its
-  terms. _links holds self.
+  The glossary contexts of one of two trees, in id order and unpaged, deliberately, because a pack or a closure holds
+  few contexts (paging it later would be an additive change); a tree with none answers an empty list. Each item is a
+  summary with its term count; the context's own read answers its terms. In a pack (listPackGlossaryContexts; ADR-0049
+  decision 7, ADR-0074 decision 9): every context the pack holds, packId names the pack, and _links holds self. Under an
+  activation (listEffectiveGlossaryContexts; ADR-0074 decision 12): the context winners of the activation's closure,
+  the copy of each id the layer merge keeps across the levels (project over org over built-in, whole), packId is
+  absent because each winner names its own pack, and _links holds self and up (the activation).
 type: object
 additionalProperties: false
 required:
-  - packId
   - items
   - _links
 properties:
   packId:
     type: string
-    description: The identity of the pack the contexts were read from, as the request named it.
+    description: >-
+      In a pack, the identity of the pack the contexts were read from, as the request named it; absent under an
+      activation, whose winners come from several packs.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
       symbol: CharterArtifact.packId
   items:
     type: array
-    description: The pack's glossary contexts, in id order.
+    description: The pack's glossary contexts, or the closure's context winners, in id order.
     items:
       $ref: GlossaryContextSummary.yaml
     x-derived:
-      rule: The glossary contexts of the pack, sorted by id.
+      rule: >-
+        In a pack, the glossary contexts of the pack; under an activation, the layer-merge winner of each context id
+        the packs of the closure hold. Sorted by id.
       inputs:
         - the glossary files under the glossaries/ directory of the pack
+        - under an activation, the activation's closure (listActivationPacks) and its layer merge
   _links:
     $ref: Links.yaml
 x-derived:
-  rule: The glossary contexts the service holds for the pack, read inside one verified read.
+  rule: >-
+    In a pack, the glossary contexts the service holds for the pack; under an activation, the context winners of the
+    closure. Read inside one verified read.
   inputs:
     - the glossary files under the glossaries/ directory of the pack
+    - under an activation, the activation's closure (listActivationPacks) and its layer merge

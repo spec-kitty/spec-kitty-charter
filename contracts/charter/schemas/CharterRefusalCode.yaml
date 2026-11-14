@@ -379,7 +379,9 @@ x-refusal:
       pack (#106), listPackGlossaryContexts raises only pack_not_found; getPackGlossaryContext and getPackGlossaryTerm
       raise artifact_not_found after it, for a glossary context the pack does not hold, with the detail glossary
       context `<contextId>` is not held, and then, by getPackGlossaryTerm, for a term the context does not hold, with
-      the detail term `<termId>` is not held in glossary context `<contextId>`
+      the detail term `<termId>` is not held in glossary context `<contextId>`. Their twins under an activation
+      (getEffectiveGlossaryContext, getEffectiveGlossaryTerm) raise it after activation_not_found with the same
+      details, for a context no pack of the closure holds and then for a term its winning copy does not hold
   preset_not_found:
     status: 404
     retryable: false

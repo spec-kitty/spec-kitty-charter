@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.EffectiveAssetsApi;
+import ai.speckitty.charter.api.EffectiveGlossariesApi;
 import ai.speckitty.charter.api.EffectiveMissionTypesApi;
 import ai.speckitty.charter.api.EffectiveSkillsApi;
 import ai.speckitty.charter.api.MissionTypesApi;
@@ -110,10 +111,10 @@ public class ActivationMapper {
 
     /**
      * The links of an activation answer (#409, ruling {@code DM-01M78RKM6Q23PA9QAC80QJKQFF}): its reads ({@code self},
-     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}, and the held assets
-     * and skills: {@code assets}, the templated {@code asset} and {@code skills}), the {@code offering} it chooses from,
-     * and its writes ({@code edit}, {@code delete}, {@code select}, {@code exclude}, {@code apply-preset}), each write
-     * with its method. {@code unselect} and {@code include} suit an artifact already selected or excluded, so the
+     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}, and the held
+     * assets, skills and glossary contexts: {@code assets}, the templated {@code asset}, {@code skills} and
+     * {@code glossaries}), the {@code offering} it chooses from, and its writes ({@code edit}, {@code delete},
+     * {@code select}, {@code exclude}, {@code apply-preset}), each write with its method. {@code unselect} and {@code include} suit an artifact already selected or excluded, so the
      * activation carries neither. Each link expands the generated path constant of the operation it names: only
      * {@code {activationId}} is filled in, and a template keeps its other variables.
      *
@@ -155,6 +156,8 @@ public class ActivationMapper {
         links.put("assets", link(under(EffectiveAssetsApi.PATH_LIST_EFFECTIVE_ASSETS, activationId)));
         links.put("asset", templated(under(EffectiveAssetsApi.PATH_GET_EFFECTIVE_ASSET, activationId)));
         links.put("skills", link(under(EffectiveSkillsApi.PATH_LIST_EFFECTIVE_SKILLS, activationId)));
+        links.put(
+                "glossaries", link(under(EffectiveGlossariesApi.PATH_LIST_EFFECTIVE_GLOSSARY_CONTEXTS, activationId)));
         return links;
     }
 

@@ -1,5 +1,5 @@
 summary: >-
-  A stored activation with the minimal document. self is the activation; the links lead to its reads, its held assets and skills, the offering
+  A stored activation with the minimal document. self is the activation; the links lead to its reads, its held assets, skills and glossary contexts, the offering
   and its writes, each write with its method.
 value:
   activationId: a-1
@@ -48,3 +48,5 @@ value:
       templated: true
     skills:
       href: /api/v1/activations/a-1/artifacts/skill
+    glossaries:
+      href: /api/v1/activations/a-1/artifacts/glossary

@@ -308,6 +308,7 @@ rules:
               - assets
               - asset
               - skills
+              - glossaries
               - term
               - mission-type
               - step

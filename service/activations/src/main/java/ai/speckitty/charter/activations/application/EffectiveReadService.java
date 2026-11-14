@@ -28,6 +28,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.HashMap;
@@ -595,8 +596,9 @@ public class EffectiveReadService {
      * is the {@link EffectiveTag} of the read, which names the kind, the id and the depth and, for an agent profile, its
      * own read; and only a request whose header does not match asks the session for the entity and the in-force
      * resolution, once each. An agent profile's answer carries its governance with the state of each entry, under the
-     * tag of its own read ({@link EffectiveTag.Read#PROFILE}); a skill's answer is the read of the skill route, under the
-     * tag of its own read too ({@link EffectiveTag.Read#SKILL}), so neither shares a tag with the generic route.
+     * tag of its own read ({@link EffectiveTag.Read#PROFILE}); a skill's and a glossary context's answers are the reads of
+     * their literal routes, under the tags of their own reads too ({@link EffectiveTag.Read#SKILL},
+     * {@link EffectiveTag.Read#GLOSSARY}), so none shares a tag with the generic route.
      *
      * @param id the activation's id
      * @param kind the artifact's kind
@@ -620,20 +622,21 @@ public class EffectiveReadService {
         EffectiveTag.Read route = switch (kind) {
             case AGENT_PROFILE -> EffectiveTag.Read.PROFILE;
             case SKILL -> EffectiveTag.Read.SKILL;
+            case GLOSSARY -> EffectiveTag.Read.GLOSSARY;
             default -> EffectiveTag.Read.ARTIFACT;
         };
         return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, route);
     }
 
     /**
-     * The winners of one kind under an activation, in id order (research R2, R3): {@code listEffectiveSkills} and
-     * {@code listEffectiveAssets}. Each is the version the layer merge keeps across the levels of the closure, with the
-     * pack and level that hold it and its policy, and no state; a skill's state is its own read's, and an asset has
-     * none. The whole set is answered, unpaged, from one {@link PacksSession}, with no in-force resolution; what each
+     * The winners of one kind under an activation, in id order (research R2, R3): {@code listEffectiveSkills},
+     * {@code listEffectiveAssets} and {@code listEffectiveGlossaryContexts}. Each is the version the layer merge keeps
+     * across the levels of the closure, with the pack and level that hold it and its policy, and no state; a skill's and
+     * a glossary context's state is its own read's, and an asset has none. The whole set is answered, unpaged, from one {@link PacksSession}, with no in-force resolution; what each
      * winner's pack stores is the packs slice's to read, against the source fingerprint of the answer.
      *
      * @param id the activation's id
-     * @param kind {@code skill} or {@code asset}
+     * @param kind {@code skill}, {@code asset} or {@code glossary}
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winners, or {@code NotModified} when the header matches the tag of the list
      * @throws IllegalArgumentException when the contract lists no winners of the kind under an activation
@@ -644,6 +647,7 @@ public class EffectiveReadService {
         EffectiveTag.Read read = switch (kind) {
             case SKILL -> EffectiveTag.Read.SKILLS;
             case ASSET -> EffectiveTag.Read.ASSETS;
+            case GLOSSARY -> EffectiveTag.Read.GLOSSARIES;
             default ->
                 throw new IllegalArgumentException("No read lists the winners of " + kind.token()
                         + " under an activation; listEffectiveArtifacts lists them.");
@@ -711,10 +715,7 @@ public class EffectiveReadService {
         StoredActivation stored = found(id);
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
-        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId)
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.ARTIFACT_NOT_FOUND,
-                        "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + "."));
+        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId).orElseThrow(() -> notHeld(kind, artifactId));
         String etag = EffectiveTag.winner(
                         read, stored.revision(), closure, new EffectiveTag.ArtifactQuery(kind, artifactId, 0))
                 .token();
@@ -751,10 +752,7 @@ public class EffectiveReadService {
                 ArtifactKind.fromToken(kindToken).filter(listed::contains).orElseThrow(() -> notServed(kindToken));
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
-        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId)
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.ARTIFACT_NOT_FOUND,
-                        "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + "."));
+        EffectiveHeldWinner winner = session.heldWinner(kind, artifactId).orElseThrow(() -> notHeld(kind, artifactId));
         Set<ArtifactRef> held = listed.stream()
                 .flatMap(each -> session.heldWinners(each).stream())
                 .map(EffectiveHeldWinner::ref)
@@ -927,9 +925,7 @@ public class EffectiveReadService {
         ArtifactRef ref = new ArtifactRef(kind, artifactId);
         MergedSnapshot merged = session.merged();
         if (!merged.winners().containsKey(ref)) {
-            throw new CharterRefusal(
-                    RefusalCode.ARTIFACT_NOT_FOUND,
-                    "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
+            throw notHeld(kind, artifactId);
         }
         EffectiveTag.ArtifactQuery asked = new EffectiveTag.ArtifactQuery(kind, artifactId, depth);
         EffectiveTag tag = switch (route) {
@@ -945,10 +941,78 @@ public class EffectiveReadService {
         EffectiveArtifactRead read = session.effectiveArtifact(kind, artifactId, depth, query)
                 .orElseThrow(() -> new IllegalStateException(
                         "The merged closure holds " + ref.urn() + ", and the session read no winner of it."));
+        return new Read.Found<>(answerOf(stored, session, merged, ref, query, read, profileRoute), etag);
+    }
+
+    /**
+     * {@code getEffectiveGlossaryTerm}: one term of a glossary context under an activation (#106, research R7). The
+     * context is resolved as {@link #artifact} resolves the context's own read, its winner whatever its state; the term
+     * is then found in that winner, so a term a copy the winner replaced holds is not answered, because a context
+     * overrides whole (research R5). A term has no state of its own: the answer is the context's, with the context's
+     * entity, from one {@link PacksSession}. The segments are judged in path order, each before any
+     * {@code If-None-Match}, so the winner is read before the tag is compared; the tag names the context and the term
+     * ({@link EffectiveTag.TermQuery}), so it is the tag of neither the context's read nor another term's.
+     *
+     * @param id the activation's id
+     * @param contextId the context's id, as the request names it
+     * @param termId the term's id, as the request names it
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the context's answer, or {@code NotModified} when the header matches the tag of this representation
+     * @throws CharterRefusal with {@code activation_not_found}; {@code kind_not_found} when the packs slice does not
+     *     list glossary contexts; {@code artifact_not_found} when no pack of the closure holds the context, then when the
+     *     winning context does not hold the term, each naming what is missing; or as {@link #artifact} refuses
+     * @throws IllegalStateException when the winner of a glossary context holds no terms: a broken invariant of the read
+     */
+    public Read<EffectiveArtifactAnswer> glossaryTerm(
+            ActivationId id, String contextId, String termId, @Nullable String ifNoneMatch) {
+        Objects.requireNonNull(contextId, "contextId");
+        Objects.requireNonNull(termId, "termId");
+        StoredActivation stored = found(id);
+        if (!packs.listedKinds().contains(ArtifactKind.GLOSSARY)) {
+            throw notServed(ArtifactKind.GLOSSARY.token());
+        }
+        PacksSession session = open(stored);
+        ArtifactRef ref = new ArtifactRef(ArtifactKind.GLOSSARY, contextId);
+        MergedSnapshot merged = session.merged();
+        if (!merged.winners().containsKey(ref)) {
+            throw notHeld(ArtifactKind.GLOSSARY, contextId);
+        }
+        InForceQuery query = EffectiveSet.queryOf(stored.document());
+        String asked = "The read of the term " + termId + " of the glossary context " + contextId + " under activation "
+                + id.value();
+        EffectiveArtifactRead read = winnerOf(session, ref, query, asked);
+        if (!(read.artifact() instanceof TermHolder context)) {
+            throw new IllegalStateException(asked + ": the winner " + ref.urn() + " holds no terms.");
+        }
+        if (!context.holdsTerm(termId)) {
+            throw new CharterRefusal(RefusalCode.ARTIFACT_NOT_FOUND, termNotHeld(contextId, termId));
+        }
+        String etag = EffectiveTag.term(
+                        stored.revision(), session.snapshot(), new EffectiveTag.TermQuery(contextId, termId))
+                .token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        return new Read.Found<>(answerOf(stored, session, merged, ref, query, read, false), etag);
+    }
+
+    /**
+     * The answer of one winner the session read: its facts from the one effective set of the request, over the merge the
+     * request already asked for, and, on the profile route, its governance with the state of each entry.
+     */
+    private static EffectiveArtifactAnswer answerOf(
+            StoredActivation stored,
+            PacksSession session,
+            MergedSnapshot merged,
+            ArtifactRef ref,
+            InForceQuery query,
+            EffectiveArtifactRead read,
+            boolean profileRoute) {
+        ClosureSnapshot closure = session.snapshot();
         EffectiveSet set = EffectiveSet.of(stored.document(), closure, merged, session.inForce(query));
         Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
         set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
-        EffectiveArtifactAnswer answer = new EffectiveArtifactAnswer(
+        return new EffectiveArtifactAnswer(
                 stored,
                 closure.fingerprint(),
                 closure.closureFingerprint(),
@@ -957,7 +1021,6 @@ public class EffectiveReadService {
                 profileRoute
                         ? read.governance().map(governance -> governed(governance, byRef, set))
                         : Optional.empty());
-        return new Read.Found<>(answer, etag);
     }
 
     /** A profile's governance with the state of each artifact it lists, from the one effective set of the request. */
@@ -989,6 +1052,25 @@ public class EffectiveReadService {
             throw new IllegalStateException("The read lists " + ref.urn() + ", which the effective set does not hold.");
         }
         return artifact;
+    }
+
+    /**
+     * The refusal of an artifact no pack of the closure holds. A glossary context is named as the pack read names it
+     * (ruling {@code DM-01M7B1Q4BPQB95EVQBRWN4Q4F8}), so the twin answers the pack read's detail.
+     */
+    private static CharterRefusal notHeld(ArtifactKind kind, String artifactId) {
+        if (kind == ArtifactKind.GLOSSARY) {
+            return new CharterRefusal(
+                    RefusalCode.ARTIFACT_NOT_FOUND, "glossary context `" + artifactId + "` is not held");
+        }
+        return new CharterRefusal(
+                RefusalCode.ARTIFACT_NOT_FOUND,
+                "No pack of the activation's closure holds the " + kind.token() + " " + artifactId + ".");
+    }
+
+    /** The detail of a term the winning context does not hold, as the pack read names it (the same ruling). */
+    private static String termNotHeld(String contextId, String termId) {
+        return "term `" + termId + "` is not held in glossary context `" + contextId + "`";
     }
 
     private static CharterRefusal notServed(String kindToken) {

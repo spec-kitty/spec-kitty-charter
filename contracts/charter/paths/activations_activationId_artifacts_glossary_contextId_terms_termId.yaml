@@ -1,0 +1,98 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/ContextId.yaml
+- $ref: ../parameters/TermId.yaml
+get:
+  operationId: getEffectiveGlossaryTerm
+  summary: Read one term of a glossary context under an activation, with its context's state.
+  description: >-
+    One term of a glossary context under an activation (#106, FR-011; ADR-0074 decisions 11 and 12, research R5 and
+    R7): the term as the winning copy of its context declares it, with the facts the activation gives that context
+    (the pack and level that hold it, and its state, reason, policy and required). A term has no state of its own: it
+    is in force exactly when its context's winning copy is in force and holds it, so the term carries its context's
+    state and reason, never one of its own. kind is glossary and artifactId the context's id, the artifact the facts
+    are of. A term the winning copy does not hold is not answered, whatever a copy that copy replaced holds: a context
+    overrides whole. _links.self is this request, _links.artifact the pack-scoped read of the term in the winner's
+    pack (getPackGlossaryTerm), and _links.up the context under the activation (getEffectiveGlossaryContext).
+
+    The segments are judged in path order: an unknown activation is a 404 activation_not_found; then a context that no
+    pack of the activation's closure holds is a 404 artifact_not_found whose detail names the context; then a term the
+    winning copy of the context does not hold is a 404 artifact_not_found whose detail names the term and its context.
+    Each is judged before any If-None-Match, so a name no pack holds is a 404 whatever the header says. A pack of the
+    closure that is no longer configured, a closure that cannot compose or merge (pack_sibling_conflict among them),
+    and a winner whose pack cannot read it are 500, with their code; stale_input and internal_error may be retried. The
+    answer is never partial: the state and the term are one verified read against the source fingerprint, which the
+    answer carries.
+
+    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
+    the activation's closure, and with the context and the term, and it does not change when a pack outside the
+    closure changes. It is not the tag of the context's read. A matching If-None-Match is a 304 without a body, and a
+    tag of another representation never matches (RFC 9110 section 13.1.2).
+  tags:
+  - EffectiveGlossaries
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The term under the activation, with its context's state.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveGlossaryTermRead.yaml
+          examples:
+            term:
+              $ref: ../examples/EffectiveGlossaryTermRead.mission.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        What the path names is not there, refused with 404, judged in path order: the activation (activation_not_found,
+        also for an activation this client may not see, so ids do not leak); then a glossary context that no pack of
+        the activation's closure holds (artifact_not_found, whose detail is glossary context `<contextId>` is not
+        held); then a term the winning copy of the context does not hold (artifact_not_found, whose detail is term
+        `<termId>` is not held in glossary context `<contextId>`).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            context-not-held:
+              summary: No pack of the activation's closure holds the glossary context.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: glossary context `nothing` is not held
+            term-not-held:
+              summary: The winning copy of the context holds no term with the asked identity.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: term `lane` is not held in glossary context `spec-kitty-core`
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

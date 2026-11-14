@@ -273,7 +273,13 @@ public class EffectiveBodies {
         return new ArtifactReference(ArtifactReference.KindEnum.fromValue(kind), urn.id());
     }
 
-    private static EffectiveArtifactSuggestion suggestion(ActivationArtifacts.Words words) {
+    /**
+     * The words of the edge that makes an artifact out of force a suggestion, each present only when the edge states it.
+     *
+     * @param words the words
+     * @return the contract's {@code EffectiveArtifactSuggestion}
+     */
+    static EffectiveArtifactSuggestion suggestion(ActivationArtifacts.Words words) {
         EffectiveArtifactSuggestion carrier = new EffectiveArtifactSuggestion();
         words.when().ifPresent(carrier::setWhen);
         words.reason().ifPresent(carrier::setReason);

@@ -2,9 +2,11 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
@@ -28,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Its terms keep their authored order; each term id appears once. Build one with {@link #builder()}.
  */
-public final class GlossaryContext implements CharterArtifact {
+public final class GlossaryContext implements CharterArtifact, TermHolder {
 
     /** The one {@code schema_version} the {@code glossary} schema admits. */
     public static final String SCHEMA_VERSION = "1.0";
@@ -185,6 +187,19 @@ public final class GlossaryContext implements CharterArtifact {
      */
     public Optional<GlossaryTerm> term(TermIdentifier termId) {
         return terms.stream().filter(term -> term.id().equals(termId)).findFirst();
+    }
+
+    /**
+     * Whether the context holds a term of an id; an id outside the term grammar names no term, so it is not held, never
+     * a fault.
+     *
+     * @param termId the term's id, as a request names it
+     * @return {@code true} when one of its terms has that id
+     */
+    @Override
+    public boolean holdsTerm(String termId) {
+        return IdentifierGrammar.isLetterFirstSlug(termId)
+                && term(new TermIdentifier(termId)).isPresent();
     }
 
     /**

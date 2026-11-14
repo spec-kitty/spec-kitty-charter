@@ -3,10 +3,10 @@ Feature: An activation is discoverable by links
   A client that knows only the root reaches an activation's reads and writes by links (#409, decision
   DM-01M78RKM6Q23PA9QAC80QJKQFF, FR-013 and FR-014). The root's activations link is followed with POST to create one;
   the activation answers self, artifacts, offering, packs, graph, skipped, the templated effective-context, its held
-  assets and skills (assets, the templated asset, skills), and its writes with their methods: edit (PUT) and delete
-  (DELETE) on itself, and select, exclude and apply-preset (PUT), templated. unselect and include are not on the
-  activation. Every href the scenarios use comes from a link: none is built by hand, not even by a guard runner that
-  reads an asset (asset:<id>).
+  assets, skills and glossary contexts (assets, the templated asset, skills, glossaries), and its writes with their
+  methods: edit (PUT) and delete (DELETE) on itself, and select, exclude and apply-preset (PUT), templated. unselect
+  and include are not on the activation. Every href the scenarios use comes from a link: none is built by hand, not
+  even by a guard runner that reads an asset (asset:<id>).
 
   Background:
     Given the org pack "main" with the file "pack.yaml":
@@ -104,14 +104,15 @@ Feature: An activation is discoverable by links
     Then the response status is 200
 
     Examples:
-      | relation |
-      | self     |
-      | offering |
-      | packs    |
-      | graph    |
-      | skipped  |
-      | assets   |
-      | skills   |
+      | relation   |
+      | self       |
+      | offering   |
+      | packs      |
+      | graph      |
+      | skipped    |
+      | assets     |
+      | skills     |
+      | glossaries |
 
   Scenario: The templated effective-context of an activation answers once expanded
     When I GET "/"

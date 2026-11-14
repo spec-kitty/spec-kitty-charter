@@ -73,6 +73,12 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | listEffectiveSkills             | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill                  | /activations/a-1/artifacts/skill                               | 200    |
       | getEffectiveSkill               | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill/land-pr          | /activations/a-1/artifacts/skill/land-pr                       | 404    |
       | getEffectiveSkill (skill id)    | /activations/a-1/artifacts/skill/Land-PR | /activations/a-1/artifacts/skill/land-pr | 404    |
+      | listEffectiveGlossaryContexts   | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary | /activations/a-1/artifacts/glossary | 200    |
+      | getEffectiveGlossaryContext     | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary/core | /activations/a-1/artifacts/glossary/core | 404    |
+      | getEffectiveGlossaryContext (context id) | /activations/a-1/artifacts/glossary/Core | /activations/a-1/artifacts/glossary/core | 404    |
+      | getEffectiveGlossaryTerm        | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary/core/terms/mission | /activations/a-1/artifacts/glossary/core/terms/mission | 404    |
+      | getEffectiveGlossaryTerm (context id) | /activations/a-1/artifacts/glossary/Core/terms/mission | /activations/a-1/artifacts/glossary/core/terms/mission | 404    |
+      | getEffectiveGlossaryTerm (term id) | /activations/a-1/artifacts/glossary/core/terms/Mission | /activations/a-1/artifacts/glossary/core/terms/mission | 404    |
       | listEffectiveArtifactReferences | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/directive/D/references | /activations/a-1/artifacts/directive/D/references              | 200    |
       | getActivationSkippedReport      | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/skipped                          | /activations/a-1/skipped                                       | 200    |
       | getEffectiveGraph               | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/graph                            | /activations/a-1/graph                                         | 200    |

@@ -1,0 +1,47 @@
+summary: >-
+  The glossary context spec-kitty-core under an activation that selects it, as the project pack's copy declares it:
+  the project copy overrides the built-in one whole, so it holds mission and not lane. self is this request, artifact
+  the pack-scoped read of the winner's pack, collection the activation's contexts, term the templated read of one of
+  its terms under the activation, and up the activation.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  kind: glossary
+  artifactId: spec-kitty-core
+  packId: project
+  level: project
+  state: active
+  required: false
+  policy: open
+  reason: selected
+  glossary:
+    schemaVersion: '1.0'
+    id: spec-kitty-core
+    name: Spec Kitty core
+    description: Canonical Spec Kitty terminology, as this project uses it.
+    tags:
+      - spec-kitty
+    terms:
+      - id: mission
+        name: mission
+        definition: A unit of planned work that runs from a specification to a merge.
+        status: active
+        aliases:
+          - feature
+        avoid:
+          - epic
+        seeAlso:
+          - built-in::term:spec-kitty-core/work-package
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core
+    artifact:
+      href: /api/v1/packs/project/artifacts/glossary/spec-kitty-core
+    collection:
+      href: /api/v1/activations/a-1/artifacts/glossary
+    term:
+      href: /api/v1/activations/a-1/artifacts/glossary/spec-kitty-core/terms/{termId}
+      templated: true
+    up:
+      href: /api/v1/activations/a-1

@@ -1,0 +1,66 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: listEffectiveGlossaryContexts
+  summary: List the glossary contexts of an activation's closure.
+  description: >-
+    The glossary contexts of the activation's closure (#106, FR-011; ADR-0074 decision 12, research R5 and R7): for each
+    context id a pack of the closure holds, the copy the layer merge keeps across the levels (a project copy over an
+    org or built-in one, whole, with no merge of its terms), each with its id, name, description, tags and term count as
+    that copy declares them. Every winner is listed whatever its state: an item carries no state, and its read under
+    the activation (getEffectiveGlossaryContext) answers the context with its state and reason. The effective list
+    answers the same contexts with their states (listEffectiveArtifacts with kind glossary). The items are in id order
+    and the list is unpaged, deliberately: a closure holds few contexts. A closure that holds no context answers 200
+    with an empty list.
+
+    Each item links effective-artifact, its read under this activation (getEffectiveGlossaryContext), and artifact, the
+    pack-scoped read of the winning copy (getPackGlossaryContext). _links holds self and up (the activation). The list
+    names no packId: each winner names its own pack through its artifact link.
+
+    The order of the refusals: an unknown activation is a 404 activation_not_found, the only reason this read answers
+    404. A pack of the closure that is no longer configured, a closure that cannot compose or merge (two packs of one
+    level holding one context id are pack_sibling_conflict), and a winner's pack that cannot be read are 500, with
+    their code (pack_unreadable also for a layer override that the mutability level forbids); stale_input and
+    internal_error may be retried. The answer is never partial: the winners and the contexts are read against one
+    source fingerprint, which the answer carries, and inputs that change between the two are stale_input.
+
+    ETag identifies the representation: it changes with the activation's revision and with any pack of the
+    activation's closure, and it does not change when a pack outside the closure changes. A matching If-None-Match is a
+    304 without a body, and a tag of another representation never matches (RFC 9110 section 13.1.2).
+  tags:
+  - EffectiveGlossaries
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The glossary contexts of the activation's closure, in id order.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/GlossaryContextList.yaml
+          examples:
+            two-contexts:
+              $ref: ../examples/EffectiveGlossaryContextList.activation.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
