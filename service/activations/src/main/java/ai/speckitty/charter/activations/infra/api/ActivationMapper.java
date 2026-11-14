@@ -160,11 +160,11 @@ public class ActivationMapper {
         links.put("skills", link(under(EffectiveSkillsApi.PATH_LIST_EFFECTIVE_SKILLS, activationId)));
         links.put(
                 "glossaries", link(under(EffectiveGlossariesApi.PATH_LIST_EFFECTIVE_GLOSSARY_CONTEXTS, activationId)));
-        links.put("vocabulary-terms", link(under(VocabularyApi.PATH_GET_ACTIVATION_VOCABULARY_TERMS, activationId)));
+        links.put("vocabulary-terms", link(under(VocabularyApi.PATH_LIST_ACTIVATION_VOCABULARY_TERMS, activationId)));
         links.put(
                 "vocabulary-contextive",
                 link(under(VocabularyApi.PATH_GET_ACTIVATION_VOCABULARY_CONTEXTIVE, activationId)));
-        links.put("vocabulary-taboos", link(under(VocabularyApi.PATH_GET_ACTIVATION_VOCABULARY_TABOOS, activationId)));
+        links.put("vocabulary-taboos", link(under(VocabularyApi.PATH_LIST_ACTIVATION_VOCABULARY_TABOOS, activationId)));
         return links;
     }
 

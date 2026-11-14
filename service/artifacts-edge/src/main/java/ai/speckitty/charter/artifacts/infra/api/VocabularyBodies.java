@@ -1,10 +1,10 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
-import ai.speckitty.charter.api.model.ActiveTerm;
-import ai.speckitty.charter.api.model.ActiveTermList;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.TabooEntry;
 import ai.speckitty.charter.api.model.TabooList;
+import ai.speckitty.charter.api.model.VocabularyTerm;
+import ai.speckitty.charter.api.model.VocabularyTermList;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.TabooProjection;
 import ai.speckitty.charter.artifacts.application.VocabularyReads;
@@ -26,7 +26,7 @@ import org.springframework.web.util.UriUtils;
  * base path the controllers are mapped under.
  *
  * <ul>
- *   <li>A list ({@code ActiveTermList}, {@code TabooList}) links {@code self} and {@code activation}.
+ *   <li>A list ({@code VocabularyTermList}, {@code TabooList}) links {@code self} and {@code activation}.
  *   <li>A term links {@code effective-term}, its read under the activation, and {@code effective-glossary}, its
  *       context's read under the activation. A member the term does not have is left {@code null}, which the JSON
  *       omits ({@link EffectiveJson}).
@@ -55,14 +55,14 @@ public class VocabularyBodies {
      * The terms in force under an activation.
      *
      * @param read what the application ring read
-     * @return the {@code ActiveTermList}
+     * @return the {@code VocabularyTermList}
      */
-    public ActiveTermList terms(VocabularyReads.ActiveTermList read) {
+    public VocabularyTermList terms(VocabularyReads.VocabularyTermList read) {
         ActivationArtifacts.Scope scope = read.scope();
         String activation = scope.activationId();
-        List<ActiveTerm> terms =
+        List<VocabularyTerm> terms =
                 read.terms().stream().map(term -> term(activation, term)).toList();
-        return new ActiveTermList(
+        return new VocabularyTermList(
                 activation, scope.revision(), scope.governanceFingerprint(), terms, listLinks(activation, "terms"));
     }
 
@@ -81,20 +81,20 @@ public class VocabularyBodies {
                 activation, scope.revision(), scope.governanceFingerprint(), entries, listLinks(activation, "taboos"));
     }
 
-    private ActiveTerm term(String activation, ai.speckitty.charter.artifacts.application.ActiveTerm term) {
+    private VocabularyTerm term(String activation, ai.speckitty.charter.artifacts.application.VocabularyTerm term) {
         String context = href(ACTIVATIONS, activation, "artifacts", GLOSSARY, term.contextId());
         Map<String, Link> links = new LinkedHashMap<>();
-        links.put("effective-term", new Link(context + segments("terms", term.termId())));
+        links.put("effective-term", new Link(context + segments("terms", term.id())));
         links.put("effective-glossary", new Link(context));
-        ActiveTerm wire = new ActiveTerm(
+        VocabularyTerm wire = new VocabularyTerm(
                 term.urn(),
                 term.contextId(),
-                term.termId(),
+                term.id(),
                 term.name(),
                 term.definition(),
-                ActiveTerm.StatusEnum.fromValue(term.status()),
+                VocabularyTerm.StatusEnum.fromValue(term.status()),
                 term.packId().value(),
-                ActiveTerm.LevelEnum.fromValue(term.level().token()),
+                VocabularyTerm.LevelEnum.fromValue(term.level().token()),
                 links);
         wire.setExamples(present(term.examples()));
         wire.setAliases(present(term.aliases()));
@@ -104,7 +104,7 @@ public class VocabularyBodies {
     }
 
     private static TabooEntry entry(TabooProjection.Entry entry) {
-        return new TabooEntry(entry.word(), entry.term(), entry.name());
+        return new TabooEntry(entry.word(), entry.urn(), entry.termName());
     }
 
     private Map<String, Link> listLinks(String activation, String leaf) {

@@ -89,7 +89,7 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
    `self` and `activation`.
 
    Each active term carries:
-   - its `urn` (`term:<context-id>/<term-id>`), `contextId` and `termId`;
+   - its `urn` (`term:<context-id>/<term-id>`), `contextId` and `id`;
    - its fields: `name`, `definition`, `status`, and `examples`, `aliases`, `avoid` and `seeAlso` when present;
    - the `packId` and `level` of its context's winning copy;
    - `_links` with `effective-term` (the activation's term read) and `effective-glossary` (its context).
@@ -108,7 +108,7 @@ It **extends** [ADR-0049](/adr/0049-glossary-contexts-and-terms/):
    `application/yaml` is a 406, as the conventions say for any operation.
 7. **`taboos` answers JSON**: `activationId`, `revision`, `governanceFingerprint`, `entries` and `_links` (`self` and
    `activation`).
-   - There is one entry per avoided word per term: `word`, `term` (the URN) and `name` (the term's name).
+   - There is one entry per avoided word per term: `word`, `urn` (the term's URN) and `termName` (the term's name).
    - Entries are ordered by word, then URN.
    - A word avoided by two terms appears twice: the list states facts and leaves the gate to decide.
 8. **Each of the three reads is cached by the activation, as the other effective reads are.**

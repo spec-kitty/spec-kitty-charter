@@ -36,9 +36,10 @@ public final class ContextiveProjection {
      * @throws IllegalArgumentException when a term names a context {@code contexts} does not hold: a broken invariant
      *     of the read that composed them
      */
-    public static Document of(List<ActiveTerm> terms, Map<String, GlossaryView> contexts) {
-        Map<String, List<ActiveTerm>> byContext = terms.stream().collect(Collectors.groupingBy(ActiveTerm::contextId));
-        for (Map.Entry<String, List<ActiveTerm>> held : byContext.entrySet()) {
+    public static Document of(List<VocabularyTerm> terms, Map<String, GlossaryView> contexts) {
+        Map<String, List<VocabularyTerm>> byContext =
+                terms.stream().collect(Collectors.groupingBy(VocabularyTerm::contextId));
+        for (Map.Entry<String, List<VocabularyTerm>> held : byContext.entrySet()) {
             if (!contexts.containsKey(held.getKey())) {
                 throw new IllegalArgumentException(
                         "The term " + held.getValue().getFirst().urn() + " names no context in force.");
@@ -50,18 +51,18 @@ public final class ContextiveProjection {
                 .toList());
     }
 
-    private static Context contextOf(GlossaryView context, List<ActiveTerm> terms) {
+    private static Context contextOf(GlossaryView context, List<VocabularyTerm> terms) {
         return new Context(
                 context.name(),
                 context.description(),
                 present(context.paths()),
                 terms.stream()
-                        .sorted(Comparator.comparing(ActiveTerm::termId))
+                        .sorted(Comparator.comparing(VocabularyTerm::id))
                         .map(ContextiveProjection::termOf)
                         .toList());
     }
 
-    private static Term termOf(ActiveTerm term) {
+    private static Term termOf(VocabularyTerm term) {
         return new Term(
                 term.name(),
                 term.definition(),

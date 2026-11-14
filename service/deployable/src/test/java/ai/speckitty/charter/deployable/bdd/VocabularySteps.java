@@ -35,7 +35,7 @@ public class VocabularySteps {
     private List<Taboo> rememberedAvoid = List.of();
 
     /** One avoided word and the URN of the term that avoids it. */
-    private record Taboo(String word, String term) {}
+    private record Taboo(String word, String urn) {}
 
     /**
      * The steps over the scenario's HTTP seam.
@@ -109,13 +109,13 @@ public class VocabularySteps {
         List<Taboo> entries = new ArrayList<>();
         for (JsonNode entry : JSON.readTree(http.body()).path("entries")) {
             entries.add(
-                    new Taboo(entry.path("word").asString(), entry.path("term").asString()));
+                    new Taboo(entry.path("word").asString(), entry.path("urn").asString()));
         }
         assertThat(entries).as("the taboo entries").containsExactlyInAnyOrderElementsOf(rememberedAvoid);
         assertThat(entries)
                 .as("the taboo entries, by word and then URN")
                 .isSortedAccordingTo(Comparator.comparing(Taboo::word, VocabularySteps::byCodePoint)
-                        .thenComparing(Taboo::term, VocabularySteps::byCodePoint));
+                        .thenComparing(Taboo::urn, VocabularySteps::byCodePoint));
     }
 
     /** Unicode code point order, as the contract states it, independent of the service's own comparison. */

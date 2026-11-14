@@ -130,7 +130,7 @@ files:
   - EffectiveSkillRead.yaml
   - EffectiveGlossaryContextRead.yaml
   - EffectiveGlossaryTermRead.yaml
-  - ActiveTermList.yaml
-  - ActiveTerm.yaml
+  - VocabularyTermList.yaml
+  - VocabularyTerm.yaml
   - TabooList.yaml
   - TabooEntry.yaml

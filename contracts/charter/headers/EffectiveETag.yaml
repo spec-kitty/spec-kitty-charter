@@ -3,8 +3,8 @@ description: >-
   listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph, getEffectiveActionContext,
   getEffectiveArtifact, getEffectiveAgentProfile, getEffectiveStepPrompt, listEffectiveSkills, getEffectiveSkill,
   listEffectiveAssets, getEffectiveAsset, getEffectiveAssetPayload, listEffectiveGlossaryContexts,
-  getEffectiveGlossaryContext, getEffectiveGlossaryTerm, getActivationVocabularyTerms, getActivationVocabularyContextive
-  and getActivationVocabularyTaboos, and getActivation): each vocabulary read has a tag of its own. It is an opaque
+  getEffectiveGlossaryContext, getEffectiveGlossaryTerm, listActivationVocabularyTerms, getActivationVocabularyContextive
+  and listActivationVocabularyTaboos, and getActivation); each vocabulary read has a tag of its own. It is an opaque
   digest that changes when the activation's revision or a pack of its closure changes (any of its files, a step prompt
   or a prompt fragment included), and, for the effective reads, with the query (the artifact list's kind, state, cursor
   and page size; the context's mission type, action and depth; the artifact read's kind, id and depth; the agent profile

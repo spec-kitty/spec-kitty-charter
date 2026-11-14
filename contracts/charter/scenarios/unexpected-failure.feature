@@ -112,9 +112,9 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getEffectiveMissionSkeleton       | /activations/a-1/artifacts/mission_type/m/skeletons/spec.md |
       | getEffectiveMissionStepContract   | /activations/a-1/artifacts/mission_step_contract/c          |
       | getActivationSkippedReport        | /activations/a-1/skipped                                    |
-      | getActivationVocabularyTerms      | /activations/a-1/vocabulary/terms                           |
+      | listActivationVocabularyTerms     | /activations/a-1/vocabulary/terms                           |
       | getActivationVocabularyContextive | /activations/a-1/vocabulary/contextive                      |
-      | getActivationVocabularyTaboos     | /activations/a-1/vocabulary/taboos                          |
+      | listActivationVocabularyTaboos    | /activations/a-1/vocabulary/taboos                          |
       | getEffectiveGraph                 | /activations/a-1/graph                                      |
       | getEffectiveActionContext         | /activations/a-1/mission-types/m/actions/s/context          |
       | getEffectiveStepPrompt            | /activations/a-1/mission-types/m/actions/s/prompt           |
@@ -173,12 +173,12 @@ Feature: An unexpected failure is refused with internal_error on every operation
     And the problem code is "internal_error"
 
     Examples:
-      | operation              | method | path                             | body                                                                                                                       |
-      | putPackDirective       | PUT    | /packs/qa/artifacts/directive/N  | {"schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                                         |
-      | putPackParadigm        | PUT    | /packs/qa/artifacts/paradigm/n   | {"schemaVersion": "1.0", "name": "N", "summary": "New"}                                                                    |
-      | putPackStyleguide      | PUT    | /packs/qa/artifacts/styleguide/n | {"schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]}            |
-      | putPackToolguide       | PUT    | /packs/qa/artifacts/toolguide/n  | {"schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}                     |
-      | putPackRelationship    | PUT    | /packs/qa/relationships          | {"from": "directive:D", "to": "directive:E", "type": "requires"}                                                           |
+      | operation           | method | path                             | body                                                                                                            |
+      | putPackDirective    | PUT    | /packs/qa/artifacts/directive/N  | {"schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                              |
+      | putPackParadigm     | PUT    | /packs/qa/artifacts/paradigm/n   | {"schemaVersion": "1.0", "name": "N", "summary": "New"}                                                         |
+      | putPackStyleguide   | PUT    | /packs/qa/artifacts/styleguide/n | {"schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]} |
+      | putPackToolguide    | PUT    | /packs/qa/artifacts/toolguide/n  | {"schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}        |
+      | putPackRelationship | PUT    | /packs/qa/relationships          | {"from": "directive:D", "to": "directive:E", "type": "requires"}                                                |
 
   Scenario Outline: <operation>, which takes no If-Match, that fails unexpectedly is 500 internal_error
     Given the service fails unexpectedly while it reads the packs
@@ -190,11 +190,11 @@ Feature: An unexpected failure is refused with internal_error on every operation
     And the problem code is "internal_error"
 
     Examples:
-      | operation              | method | path                             | body                                                                                                                       |
-      | registerPackDirective  | POST   | /packs/qa/artifacts/directive    | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                              |
-      | registerPackParadigm   | POST   | /packs/qa/artifacts/paradigm     | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                         |
-      | registerPackStyleguide | POST   | /packs/qa/artifacts/styleguide   | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]} |
-      | registerPackToolguide  | POST   | /packs/qa/artifacts/toolguide    | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}          |
+      | operation              | method | path                           | body                                                                                                                       |
+      | registerPackDirective  | POST   | /packs/qa/artifacts/directive  | {"id": "N", "schemaVersion": "1.0", "title": "N", "intent": "New", "enforcement": "required"}                              |
+      | registerPackParadigm   | POST   | /packs/qa/artifacts/paradigm   | {"id": "n", "schemaVersion": "1.0", "name": "N", "summary": "New"}                                                         |
+      | registerPackStyleguide | POST   | /packs/qa/artifacts/styleguide | {"id": "n", "schemaVersion": "1.0", "title": "N", "scope": "code", "principles": [{"name": "New", "description": "New."}]} |
+      | registerPackToolguide  | POST   | /packs/qa/artifacts/toolguide  | {"id": "n", "schemaVersion": "1.0", "tool": "n", "title": "N", "guide": "## Overview\\n\\nNew.", "summary": "New."}        |
 
   Scenario Outline: <operation> that fails unexpectedly is 500 internal_error
     Given the service fails unexpectedly while it reads the packs

@@ -109,15 +109,15 @@ class VocabularyReadsTest {
         return answered.value();
     }
 
-    private static List<String> urns(List<ActiveTerm> terms) {
-        return terms.stream().map(ActiveTerm::urn).toList();
+    private static List<String> urns(List<VocabularyTerm> terms) {
+        return terms.stream().map(VocabularyTerm::urn).toList();
     }
 
     // ---- what is in force
 
     @Test
     void theProjectCopyOverridesTheBuiltInCopyWholeSoATermOnlyTheBuiltInCopyHoldsIsNotInForce() {
-        VocabularyReads.ActiveTermList list =
+        VocabularyReads.VocabularyTermList list =
                 found(inForce(KITTY_PROJECT, TESTING).terms("a-1", null));
 
         assertThat(urns(list.terms()))
@@ -125,7 +125,7 @@ class VocabularyReadsTest {
                 .doesNotContain("term:spec-kitty-core/lane");
         assertThat(list.terms().getFirst())
                 .as("the project copy's term, not the built-in copy's: nothing is merged per term")
-                .isEqualTo(new ActiveTerm(
+                .isEqualTo(new VocabularyTerm(
                         "term:spec-kitty-core/mission",
                         "spec-kitty-core",
                         "mission",
@@ -143,7 +143,7 @@ class VocabularyReadsTest {
 
     @Test
     void withoutTheProjectCopyTheBuiltInCopyIsInForceWithLane() {
-        VocabularyReads.ActiveTermList list =
+        VocabularyReads.VocabularyTermList list =
                 found(inForce(KITTY_BUILT_IN, TESTING).terms("a-1", null));
 
         assertThat(urns(list.terms()))
@@ -161,23 +161,23 @@ class VocabularyReadsTest {
 
     @Test
     void aNameTwoContextsDefineIsTwoTermsWithTwoUrns() {
-        List<ActiveTerm> missions = found(inForce(KITTY_PROJECT, TESTING).terms("a-1", null)).terms().stream()
+        List<VocabularyTerm> missions = found(inForce(KITTY_PROJECT, TESTING).terms("a-1", null)).terms().stream()
                 .filter(term -> term.name().equals("Mission"))
                 .toList();
 
         assertThat(missions)
-                .extracting(ActiveTerm::urn)
+                .extracting(VocabularyTerm::urn)
                 .containsExactly("term:spec-kitty-core/mission", "term:testing/mission");
-        assertThat(missions).extracting(ActiveTerm::contextId).containsExactly("spec-kitty-core", "testing");
+        assertThat(missions).extracting(VocabularyTerm::contextId).containsExactly("spec-kitty-core", "testing");
     }
 
     @Test
     void everyTermIsListedWhateverItsStatusAndCarriesIt() {
-        List<ActiveTerm> terms =
+        List<VocabularyTerm> terms =
                 found(inForce(KITTY_BUILT_IN, TESTING).terms("a-1", null)).terms();
 
         assertThat(terms)
-                .extracting(ActiveTerm::termId, ActiveTerm::status)
+                .extracting(VocabularyTerm::id, VocabularyTerm::status)
                 .containsExactly(
                         tuple("lane", "active"),
                         tuple("mission", "deprecated"),
@@ -257,9 +257,9 @@ class VocabularyReadsTest {
     // ---- the projections of the read (SC-004)
 
     @Test
-    void theContextiveDocumentHoldsExactlyTheActiveTerms() {
+    void theContextiveDocumentHoldsExactlyTheTermsInForce() {
         VocabularyReads reads = inForce(KITTY_PROJECT, TESTING);
-        List<ActiveTerm> terms = found(reads.terms("a-1", null)).terms();
+        List<VocabularyTerm> terms = found(reads.terms("a-1", null)).terms();
 
         VocabularyReads.Contextive contextive = found(reads.contextive("a-1", null));
 
@@ -274,14 +274,14 @@ class VocabularyReadsTest {
     }
 
     @Test
-    void theTabooListIsExactlyTheFlattenedAvoidEntriesOfTheActiveTerms() {
+    void theTabooListIsExactlyTheFlattenedAvoidEntriesOfTheTermsInForce() {
         VocabularyReads reads = inForce(KITTY_BUILT_IN, TESTING);
-        List<ActiveTerm> terms = found(reads.terms("a-1", null)).terms();
+        List<VocabularyTerm> terms = found(reads.terms("a-1", null)).terms();
 
         VocabularyReads.TabooList taboos = found(reads.taboos("a-1", null));
 
         assertThat(taboos.scope()).isEqualTo(SCOPE);
-        assertThat(taboos.entries().stream().map(entry -> entry.word() + " -> " + entry.term()))
+        assertThat(taboos.entries().stream().map(entry -> entry.word() + " -> " + entry.urn()))
                 .containsExactlyInAnyOrderElementsOf(terms.stream()
                         .flatMap(term -> term.avoid().stream().map(word -> word + " -> " + term.urn()))
                         .toList())

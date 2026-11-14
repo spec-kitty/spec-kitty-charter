@@ -1,9 +1,9 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
-import ai.speckitty.charter.api.model.ActiveTerm;
 import ai.speckitty.charter.api.model.EffectiveGlossaryContextRead;
 import ai.speckitty.charter.api.model.EffectiveGlossaryTermRead;
 import ai.speckitty.charter.api.model.EffectiveSkillRead;
+import ai.speckitty.charter.api.model.VocabularyTerm;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.jspecify.annotations.Nullable;
 import org.springframework.aot.hint.RuntimeHints;
@@ -20,7 +20,7 @@ import tools.jackson.databind.module.SimpleModule;
  * {@code EffectiveGlossaryContextRead} and {@code EffectiveGlossaryTermRead} each have two optional members
  * ({@code satisfiedBy}, {@code suggestion}) and no nullable one; {@code EffectiveAssetRead} has no optional member, and
  * the {@code Asset}, {@code Skill} and glossary members are mixed in where the pack-scoped reads mix them in. An
- * {@code ActiveTerm} of the vocabulary read has four optional members ({@code examples}, {@code aliases},
+ * {@code VocabularyTerm} of the vocabulary read has four optional members ({@code examples}, {@code aliases},
  * {@code avoid}, {@code seeAlso}) and no nullable one. The rule reaches the generated DTO only through the mix-in.
  */
 @Configuration(proxyBeanMethods = false)
@@ -42,7 +42,7 @@ public class EffectiveJson {
                 .setMixInAnnotation(EffectiveSkillRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveGlossaryContextRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveGlossaryTermRead.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(ActiveTerm.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(VocabularyTerm.class, OmitAbsentMembers.class);
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */

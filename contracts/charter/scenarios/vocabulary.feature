@@ -1,5 +1,5 @@
 # The vocabulary reads of an activation (#106; FR-014 to FR-017, FR-019, SC-004, NFR-005; ADR-0076 decisions 1 to 9):
-# getActivationVocabularyTerms, getActivationVocabularyContextive and getActivationVocabularyTaboos read the terms of
+# listActivationVocabularyTerms, getActivationVocabularyContextive and listActivationVocabularyTaboos read the terms of
 # the glossary contexts in force, each context the copy the layer merge keeps, whole. The 400, 401, 403 and 500 answers
 # of the three operations are asserted in read-refusals.feature, every-operation.feature and unexpected-failure.feature
 # too.
@@ -122,7 +122,7 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
     And the field at "/terms" holds exactly 2 items
     And the field at "/terms/0/urn" is "term:planning/mission"
     And the field at "/terms/0/contextId" is "planning"
-    And the field at "/terms/0/termId" is "mission"
+    And the field at "/terms/0/id" is "mission"
     And the field at "/terms/0/name" is "Mission"
     And the field at "/terms/0/status" is "draft"
     And the field at "/terms/0/packId" is "core"
@@ -200,21 +200,21 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
     And the field at "/activationId" is "a-1"
     And the field at "/entries" holds exactly 2 items
     And the field at "/entries/0/word" is "epic"
-    And the field at "/entries/0/term" is "term:planning/mission"
-    And the field at "/entries/0/name" is "Mission"
+    And the field at "/entries/0/urn" is "term:planning/mission"
+    And the field at "/entries/0/termName" is "Mission"
     And the field at "/entries/1/word" is "epic"
-    And the field at "/entries/1/term" is "term:spec-kitty-core/mission"
-    And the field at "/entries/1/name" is "Mission"
+    And the field at "/entries/1/urn" is "term:spec-kitty-core/mission"
+    And the field at "/entries/1/termName" is "Mission"
     And the field at "/_links/self/href" is "/api/v1/activations/a-1/vocabulary/taboos"
     And the field at "/_links/activation/href" is "/api/v1/activations/a-1"
     When I GET "/activations/a-2/vocabulary/taboos"
     Then the response status is 200
     And the field at "/entries" holds exactly 3 items
-    And the field at "/entries/0/term" is "term:planning/mission"
-    And the field at "/entries/1/term" is "term:spec-kitty-core/mission"
+    And the field at "/entries/0/urn" is "term:planning/mission"
+    And the field at "/entries/1/urn" is "term:spec-kitty-core/mission"
     And the field at "/entries/2/word" is "track"
-    And the field at "/entries/2/term" is "term:spec-kitty-core/lane"
-    And the field at "/entries/2/name" is "lane"
+    And the field at "/entries/2/urn" is "term:spec-kitty-core/lane"
+    And the field at "/entries/2/termName" is "lane"
 
   Scenario Outline: Over one activation, the Contextive URNs are the terms' URNs and the taboo entries are the terms' avoid entries (SC-004, <activation>)
     When I GET "/activations/<activation>/vocabulary/terms"
@@ -283,9 +283,9 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
 
     Examples:
       | operation                         | other          | path                                   | other path                             |
-      | getActivationVocabularyTerms      | the taboo list | /activations/a-1/vocabulary/terms      | /activations/a-1/vocabulary/taboos     |
+      | listActivationVocabularyTerms     | the taboo list | /activations/a-1/vocabulary/terms      | /activations/a-1/vocabulary/taboos     |
       | getActivationVocabularyContextive | the terms      | /activations/a-1/vocabulary/contextive | /activations/a-1/vocabulary/terms      |
-      | getActivationVocabularyTaboos     | the Contextive | /activations/a-1/vocabulary/taboos     | /activations/a-1/vocabulary/contextive |
+      | listActivationVocabularyTaboos    | the Contextive | /activations/a-1/vocabulary/taboos     | /activations/a-1/vocabulary/contextive |
 
   Scenario: An Accept that excludes application/yaml is a 406 on the Contextive file, a Problem with no code
     When I GET "/activations/a-1/vocabulary/contextive" accepting "application/json"
@@ -306,9 +306,9 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
 
     Examples:
       | operation                         | path                                    |
-      | getActivationVocabularyTerms      | /activations/nope/vocabulary/terms      |
+      | listActivationVocabularyTerms     | /activations/nope/vocabulary/terms      |
       | getActivationVocabularyContextive | /activations/nope/vocabulary/contextive |
-      | getActivationVocabularyTaboos     | /activations/nope/vocabulary/taboos     |
+      | listActivationVocabularyTaboos    | /activations/nope/vocabulary/taboos     |
 
   Scenario Outline: <operation> over two packs of one level that hold one context is refused, before any If-None-Match
     The org packs left and right both hold the context shared, with no settlement: the closure cannot merge. The
@@ -363,9 +363,9 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
 
     Examples:
       | operation                         | path                                   |
-      | getActivationVocabularyTerms      | /activations/a-4/vocabulary/terms      |
+      | listActivationVocabularyTerms     | /activations/a-4/vocabulary/terms      |
       | getActivationVocabularyContextive | /activations/a-4/vocabulary/contextive |
-      | getActivationVocabularyTaboos     | /activations/a-4/vocabulary/taboos     |
+      | listActivationVocabularyTaboos    | /activations/a-4/vocabulary/taboos     |
 
   Scenario Outline: The activation links its vocabulary read <relation>, and the link answers
     When I GET "/activations/a-1"

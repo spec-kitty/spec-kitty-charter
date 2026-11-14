@@ -29,8 +29,6 @@ operations:
   getActivation: {switch: ready}
   getActivationSkippedReport: {switch: ready}
   getActivationVocabularyContextive: {switch: ready}
-  getActivationVocabularyTaboos: {switch: ready}
-  getActivationVocabularyTerms: {switch: ready}
   getApiRoot: {switch: ready}
   getEffectiveActionContext: {switch: ready}
   getEffectiveAgentProfile: {switch: ready}
@@ -67,6 +65,8 @@ operations:
     reason: its declared 500 is a failure of the registration job table alone (the status reads no pack), and the scenarios have no seam to fail it
   getServiceInfo: {switch: ready}
   listActivationPacks: {switch: ready}
+  listActivationVocabularyTaboos: {switch: ready}
+  listActivationVocabularyTerms: {switch: ready}
   listArtifactReferences: {switch: ready}
   listEffectiveArtifactReferences: {switch: ready}
   listEffectiveArtifacts: {switch: ready}

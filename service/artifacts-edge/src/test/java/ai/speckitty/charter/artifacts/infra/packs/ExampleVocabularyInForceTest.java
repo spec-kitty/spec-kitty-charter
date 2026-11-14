@@ -14,11 +14,11 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Held;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Outcome;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts.Scope;
-import ai.speckitty.charter.artifacts.application.ActiveTerm;
 import ai.speckitty.charter.artifacts.application.ContextiveProjection;
 import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.artifacts.application.TabooProjection;
 import ai.speckitty.charter.artifacts.application.VocabularyReads;
+import ai.speckitty.charter.artifacts.application.VocabularyTerm;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -94,7 +94,7 @@ class ExampleVocabularyInForceTest {
 
     @Test
     void theTermsAreAll139TermsOfTheExampleVocabularyFromOneReadOfTheWinningPack() {
-        List<ActiveTerm> terms = found(reads().terms("a-1", null)).terms();
+        List<VocabularyTerm> terms = found(reads().terms("a-1", null)).terms();
 
         readTheWinningPackOnce();
         assertThat(terms).as("the positive control: every term of the file").hasSize(TERMS);
@@ -102,13 +102,13 @@ class ExampleVocabularyInForceTest {
                 .allSatisfy(term -> {
                     assertThat(term.contextId()).isEqualTo("spec-kitty-core");
                     assertThat(term.packId()).isEqualTo(BUILT_IN);
-                    assertThat(term.urn()).isEqualTo("term:spec-kitty-core/" + term.termId());
+                    assertThat(term.urn()).isEqualTo("term:spec-kitty-core/" + term.id());
                 })
-                .extracting(ActiveTerm::termId)
+                .extracting(VocabularyTerm::id)
                 .isSorted()
                 .doesNotHaveDuplicates();
         assertThat(terms)
-                .extracting(ActiveTerm::status)
+                .extracting(VocabularyTerm::status)
                 .as("every status is served")
                 .contains("active", "draft", "deprecated");
     }
@@ -133,6 +133,6 @@ class ExampleVocabularyInForceTest {
         readTheWinningPackOnce();
         assertThat(entries)
                 .isNotEmpty()
-                .allSatisfy(entry -> assertThat(entry.term()).startsWith("term:spec-kitty-core/"));
+                .allSatisfy(entry -> assertThat(entry.urn()).startsWith("term:spec-kitty-core/"));
     }
 }

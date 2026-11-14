@@ -95,11 +95,11 @@ public record EffectiveTag(String token) {
          * query names the context and the term ({@link TermQuery}).
          */
         GLOSSARY_TERM,
-        /** {@code getActivationVocabularyTerms}: every term of the glossary contexts in force (ADR-0076 decision 5). */
+        /** {@code listActivationVocabularyTerms}: every term of the glossary contexts in force (ADR-0076 decision 5). */
         VOCABULARY_TERMS,
         /** {@code getActivationVocabularyContextive}: the Contextive document of the contexts in force (decision 6). */
         VOCABULARY_CONTEXTIVE,
-        /** {@code getActivationVocabularyTaboos}: the avoided words of the terms in force (decision 7). */
+        /** {@code listActivationVocabularyTaboos}: the avoided words of the terms in force (decision 7). */
         VOCABULARY_TABOOS,
         /**
          * {@code getEffectiveStepPrompt}: the prompt in force of one step with the fragments in force of its slots
