@@ -78,3 +78,57 @@ Move code first, then adjust callers; no logic edits while moving; tests unchang
 4. `ReservedRefusalCodesTest.NamesEveryCode.codes`: the array splits into two methods of the same
    probe class, so ArchUnit still sees every field access from `NamesEveryCode`.
 5. `PackPolicyStepEnhancementTest.failing`: the long arms move into one fixture method each.
+
+## Operator rulings (2026-11-14)
+
+1. The three methods outside #367's list (rows 6 to 8) are in scope: refactored here.
+2. `RefusalHandler.statusOf`: a table. The families are `EnumSet`s folded into an `EnumMap` in a nested
+   `StatusByCode` class, checked at class load for a missing or doubled code. It is nested so that
+   `ReservedRefusalCodesTest` keeps leaving the mapping out of its "raised codes are named" check, as it
+   left out the switch. In bytecode, the outer class still names 16 codes, all from code this change does
+   not touch, and the nested class names all 63.
+3. #367's class-split criterion: a research squad corroborates or refutes the recommendation, below.
+
+## Research squad on #367's class-split criterion (ad-hoc decision point-cut)
+
+Question: may #367 close with this PR, recording why `FilesystemPackStore` and `PackPolicy` are not split
+here? Three profile-loaded, read-only delegates, run in parallel:
+
+- architect-alphonso (opus);
+- planner-priti (sonnet);
+- researcher-robbie (sonnet).
+
+All three returned **AMEND**. Synthesis, adjudicated from the source:
+
+- **The split is already decided.** ADR-0075 is Accepted. Its decision 3 moves `PackPolicy`'s rules,
+  ordering and precedence into the new `pack-validation` module, as one ruleset per file kind. It keeps
+  the `packs` Spring beans as thin adapters over the module's load. Its Negative section lists
+  `FilesystemPackStore` as touched. #554 (open, Infra & Enablers) delivers it. So the recommendation's
+  "a separate design note" is wrong: the design note exists (architect, HIGH; verified at ADR-0075
+  decision 3, and "Large, refactor-heavy migration" under Negative).
+- **Slice F explains only part of it.** Slice F's plan edits `PackPolicy` (`endpoints`, `violationKind`,
+  `PackContents.MissionTypeFacts`). It names `FilesystemPackStore` only as the existing store, with no
+  code change (researcher, HIGH; architect, MEDIUM). So `FilesystemPackStore`'s reason is ADR-0075 and
+  #554, not slice F.
+- **Sizes grew.** Both classes are larger than #367's 2026-11-04 table:
+  - `FilesystemPackStore`: 1,201 → 1,379 non-blank lines;
+  - `PackPolicy`: 930 → 1,215 non-blank lines.
+
+  The record states the current numbers (researcher, HIGH).
+- **Criterion wording** (planner, HIGH). "The reason to keep them whole" does not literally fit a
+  split delivered elsewhere. The closing comment on #367 says the criterion is answered by ADR-0075
+  decision 3 and #554, and the operator is told. No edit to the issue's history is needed.
+- **No new issue** (all three). The split is tracked by #554 under ADR-0075. A size split is not a
+  correctness, data or security risk (issue-tracker Rule 1).
+
+| Finding | Disposition |
+|---|---|
+| Architect HIGH: ADR-0075 / #554 already decide the split | Accepted: the reason cites them, with no new note |
+| Architect MEDIUM / researcher HIGH: slice F touches `PackPolicy`, not the store's code | Accepted: a separate reason for each class |
+| Researcher HIGH: sizes grew | Accepted: current sizes in the closing comment |
+| Researcher MEDIUM: seams exist (store read/write/IO; policy rules/graph/wording/ordering) | Deferred to #554, which moves those regions |
+| Planner HIGH: criterion wording vs a deferral | Changed: the closing comment says the criterion is answered by ADR-0075 and #554 |
+| Planner HIGH: close only after the ruling | Accepted: the operator asked for this squad, and the PR says `Closes #367` |
+| Planner MEDIUM: no plan page names the split | Accepted: #554 is the tracker; no plan-page line |
+| Planner/architect: file no new issue | Accepted |
+| Planner LOW: tick #468 | Accepted at closeout |
