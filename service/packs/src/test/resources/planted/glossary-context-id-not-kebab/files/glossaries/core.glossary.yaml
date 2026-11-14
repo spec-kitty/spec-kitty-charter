@@ -1,0 +1,17 @@
+schema_version: '1.0'
+id: Core
+name: Core
+description: The planted pack's glossary context.
+terms:
+- id: lane
+  name: lane
+  definition: A sequence of work packages.
+  status: active
+- id: mission
+  name: mission
+  definition: A unit of planned work.
+  status: active
+- id: work-package
+  name: work package
+  definition: One slice of a mission.
+  status: draft

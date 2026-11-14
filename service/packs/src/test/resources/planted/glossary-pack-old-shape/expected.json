@@ -1,0 +1,26 @@
+{
+  "covers": [
+    "FR-005",
+    "C-001"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "glossary_packs/x.glossary-pack.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false,
+    "violations": [
+      {
+        "file": "glossary_packs/x.glossary-pack.yaml",
+        "kind": "retired",
+        "says": "the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)"
+      }
+    ]
+  }
+}

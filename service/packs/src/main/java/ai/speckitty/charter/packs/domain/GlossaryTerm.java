@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * One term of a {@link GlossaryContext} (ADR-0049 decision 3): an item of its context, not an artifact, addressed
@@ -89,5 +90,22 @@ public record GlossaryTerm(
      */
     public static Urn termUrn(GlossaryContextIdentifier context, TermIdentifier term) {
         return new Urn(NodeKind.TERM, context.value() + "/" + term.value());
+    }
+
+    /**
+     * The glossary context a term's address names: a term is an item of its context, so it goes when the context goes,
+     * as an action node goes with its mission type.
+     *
+     * @param term a URN of any kind
+     * @return {@code glossary_context:<context-id>} for {@code term:<context-id>/<term-id>}; empty for a URN of another
+     *     kind or one whose id is not two segments
+     */
+    public static Optional<Urn> contextOf(Urn term) {
+        Objects.requireNonNull(term, "term");
+        int slash = term.id().indexOf('/');
+        if (term.kind() != NodeKind.TERM || slash <= 0 || slash == term.id().length() - 1) {
+            return Optional.empty();
+        }
+        return Optional.of(new Urn(NodeKind.GLOSSARY_CONTEXT, term.id().substring(0, slash)));
     }
 }

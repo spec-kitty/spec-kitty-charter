@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -254,13 +255,15 @@ public final class InboundReferences {
 
     /**
      * The removed artifact a reference resolves to, when it resolves to one of the staged pack's. An action node is
-     * removed with its mission type, and resolves where the type does.
+     * removed with its mission type, and resolves where the type does; a term ({@code term:<context-id>/<term-id>}) is
+     * removed with its glossary context, and resolves where the context does.
      */
     private static Optional<Urn> removedTarget(
             PackQualifiedReference target, List<Member> closure, StagedTree staged, Set<Urn> removed) {
         Optional<Urn> urn = target.asUrn();
         Optional<Urn> owner = urn.filter(removed::contains)
-                .or(() -> urn.flatMap(StepHolding::missionTypeOf).filter(removed::contains));
+                .or(() -> urn.flatMap(StepHolding::missionTypeOf).filter(removed::contains))
+                .or(() -> urn.flatMap(GlossaryTerm::contextOf).filter(removed::contains));
         if (owner.isEmpty()) {
             return Optional.empty();
         }

@@ -184,6 +184,47 @@ class WholePackRoundTripTest {
                         + " does not list it in kinds with a reason");
     }
 
+    /**
+     * #106, #547: the built-in glossary context is a modelled file kind that round-trips green, not a file the gate
+     * skips. A round trip that no longer models {@code glossary} gives the file no outcome: the drift judgement fails
+     * naming the kind and the path, and the schema check fails naming the schema; the faithful round trip fails neither
+     * way.
+     */
+    @Test
+    void theBuiltInGlossaryIsModelledAndRoundTripsGreen(@TempDir Path temp) {
+        String glossary = ArtifactKind.GLOSSARY.token();
+        String file = "glossaries/spec-kitty-core.glossary.yaml";
+        Path pack = ExamplePacks.pack(BUILT_IN);
+        SortedMap<String, String> census = WholePackCensus.of(pack);
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+        WholePackRoundTrip faithful = new DomainRoundTrip(new YamlSerializationStrategy());
+        WholePackRoundTrip planted = withoutKind(faithful, glossary);
+
+        assertThat(census).as("the census classes the file by its kind").containsEntry(file, glossary);
+        assertThat(faithful.modelledKinds()).contains(glossary);
+        Map<String, Optional<String>> observed =
+                observe(faithful, pack, temp.resolve("observed/" + BUILT_IN), census, new TreeMap<>(), new TreeSet<>());
+        assertThat(observed)
+                .as("the file has an outcome, and it is equal meaning")
+                .containsEntry(file, Optional.empty());
+        assertThat(WholePackExpectation.fromClasspath()
+                        .forPack(BUILT_IN)
+                        .evaluate(census, faithful.modelledKinds(), observed)
+                        .byKind()
+                        .get(glossary))
+                .isEqualTo(Map.of(Status.GREEN, 1));
+        assertThat(WholePackDrift.problems(store, faithful, pack, temp.resolve("faithful/" + BUILT_IN)))
+                .noneSatisfy(problem -> assertThat(problem).contains(file));
+        assertThat(WholePackDrift.problems(store, planted, pack, temp.resolve("planted/" + BUILT_IN)))
+                .contains(BUILT_IN + ": UNEXPECTED_RED " + file + " (" + glossary + "): no adapter models kind "
+                        + glossary);
+        assertThat(WholePackExpectation.fromClasspath().schemaProblems(fileKindsSchemas(), planted.modelledKinds()))
+                .containsExactly(
+                        "UNMODELLED_SCHEMA " + glossary + ": the round trip does not model this file-kinds.yaml"
+                                + " schema, and " + WholePackExpectation.EXPECTED_RED_RESOURCE
+                                + " does not list it in kinds with a reason");
+    }
+
     /** The schema names of the bundled file-kind table's {@code files} rules. */
     private static Set<String> fileKindsSchemas() {
         return PackFileKind.bundled().fileRules().stream()

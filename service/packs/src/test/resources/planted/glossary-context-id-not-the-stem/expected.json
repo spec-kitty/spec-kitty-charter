@@ -1,0 +1,27 @@
+{
+  "covers": [
+    "FR-003"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "glossaries/a.glossary.yaml",
+      "place": [
+        "id"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false,
+    "violations": [
+      {
+        "file": "glossaries/a.glossary.yaml",
+        "kind": "schema",
+        "says": "glossary id 'b' is not its file stem 'a'"
+      }
+    ]
+  }
+}
