@@ -21,8 +21,8 @@ Only the step-keyed read waits for slice F.
 **Operator gate (2026-11-14, relayed):**
 
 - Implement and review the F-independent work packages now. Leave the F-dependent ones planned.
-- Do not accept or consolidate until the F-dependent WP is done after F lands, unless the slice splits into an
-  F-independent PR. It does (P3), and the operator has been asked.
+- Do not accept or consolidate until the F-dependent WP is done after F lands. The slice ships as one PR, held until
+  F lands (operator, 2026-11-14; P3).
 - Rulings D1 to D7 are open. A WP that a ruling touches is implemented only once that ruling is in.
 
 ## Technical Context
@@ -98,10 +98,11 @@ Registration rules sit in `RegistrationImpact`, beside `FallbackProfileRule`:
 alt-role rule is (ADR-0069 d3). #556 moves `FallbackProfileRule` behind ports; whichever of #556 and G lands second
 moves the new rules with it.
 
-### P3. Delivery split and overlaps
+### P3. Delivery and overlaps
 
-- **PR 1 (F-independent):** WP01 to WP06.
-- **PR 2:** WP07 after F lands.
+The slice lands as **one PR (#573)**, by operator decision (2026-11-14). WP01 to WP06 may be implemented on the
+mission branch before F lands. The PR stays a draft until F has landed, WP07 is done and the branch is rebased onto
+F. There is no separate F-independent PR.
 
 G builds no `Relationship` in main code; it only reads relationships. Its overlaps with F are these:
 
@@ -111,7 +112,7 @@ G builds no `Relationship` in main code; it only reads relationships. Its overla
 - test code that calls the `Relationship` constructor, which F makes package-private.
 
 #106 also edits `EffectiveReadService`, `EffectiveTag`, `policy.schema.json` and the profile DTOs. Whichever lands
-second rebases; the order is agreed through the orchestrator. Opening PR 1 waits for the operator's answer.
+second rebases; the order is agreed through the orchestrator. 
 
 ### P4. Contract
 
@@ -142,7 +143,7 @@ GET /activations/{activationId}/roles/{role}/profile-selection?language=&framewo
   - `policy.schema.json`: `role_pins` in, and the reserved-pins sentence amended;
   - the registration violations of P2 and P5.
 
-PR 2 adds `selectAgentProfileForStep` at `.../mission-types/{missionType}/actions/{action}/profile-selection`, and a
+WP07 (after F) adds `selectAgentProfileForStep` at `.../mission-types/{missionType}/actions/{action}/profile-selection`, and a
 `profile-selection` link on the effective step and action-context reads.
 
 ### P5. Effective profile (R8) and the merge (#380), D5 and D6
