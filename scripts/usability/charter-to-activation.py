@@ -50,7 +50,8 @@ KIND_OF_KEY: dict[str, str] = {
     "activated_styleguides": "styleguide",
     "activated_toolguides": "toolguide",
     "activated_procedures": "procedure",
-    "activated_glossary_packs": "glossary_pack",
+    # The key is core's charter.yaml key and stays; the value is the activation kind glossary (ADR-0049).
+    "activated_glossary_packs": "glossary",
 }
 
 
