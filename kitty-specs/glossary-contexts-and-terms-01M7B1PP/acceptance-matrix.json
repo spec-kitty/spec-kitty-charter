@@ -38,10 +38,10 @@
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "GlossaryAndSkillSchemaTest, GlossaryAndSkillCorpusTest, planted glossary-* cases (WP02/WP03 approved)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-14T18:28:32.332026+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
