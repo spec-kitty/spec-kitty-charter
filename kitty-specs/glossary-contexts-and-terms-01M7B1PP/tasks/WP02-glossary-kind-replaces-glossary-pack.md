@@ -60,7 +60,6 @@ owned_files:
 - contracts/packs/schemas/pack-manifest.schema.json
 - contracts/packs/schemas/preset.schema.json
 - contracts/packs/schemas/charter.schema.json
-- contracts/packs/schemas/org-charter.schema.json
 - contracts/packs/schemas/policy.schema.json
 - contracts/packs/schemas/mission-step-contract.schema.json
 - contracts/charter/schemas/NodeKind.yaml
@@ -133,7 +132,7 @@ tree compiles, otherwise squash the non-compiling steps together.
 | Kernel | `ArtifactKind.GLOSSARY_PACK("glossary_pack", "glossary_packs", true)`; `NodeKind.GLOSSARY_PACK` (made explicit by WP01); `Relation.VOCABULARY` and `RelationType.VOCABULARY` |
 | Domain | `GlossaryPack.java` `{id, packId, provenance, description?, terms}`, at least one term, unique `surface`; `GlossaryTerm.java` (core's shape, keyed by `surface`); `GlossaryPackIdentifier.java` (any non-blank text) |
 | Storage | `GlossaryPackBinding` (token `glossary-pack`, schema `glossary-pack`), `GlossaryPackDso`, `GlossaryPackYaml`, `KindBindings.java:27`, `YamlFormats.java:19`; `PresetYaml` derives `activated_<plural>` from `ArtifactKind.plural()`; `PresetMapper.java:102`, `case GLOSSARY_PACK -> setActivatedGlossaryPacks` |
-| Packs contract | `glossary-pack.schema.json`; `file-kinds.yaml` (`node_kinds`, `artifact_kinds`, `fragment_kinds` `glossary_packs: glossary_pack`, the `**/*.glossary-pack.yaml` rule); `graph-shard.schema.json` (URN alternations :12, :17, :67; node kind enum :81; per-kind branch :286-296); `org-fragment`, `pack-manifest`, `preset` (`activated_glossary_packs`), `charter` (`selected_glossary_packs`, `activated_glossary_packs`), `org-charter` (`required_glossary_packs`), `policy` (:53, :88), `mission-step-contract` (:18) |
+| Packs contract | `glossary-pack.schema.json`; `file-kinds.yaml` (`node_kinds`, `artifact_kinds`, `fragment_kinds` `glossary_packs: glossary_pack`, the `**/*.glossary-pack.yaml` rule); `graph-shard.schema.json` (URN alternations :12, :17, :67; node kind enum :81; per-kind branch :286-296); `org-fragment`, `pack-manifest`, `preset` (`activated_glossary_packs`), `charter` (`selected_glossary_packs`, `activated_glossary_packs`), `policy` (:53, :88), `mission-step-contract` (:18) |
 | Charter contract | `NodeKind.yaml`, `ActivatableKind.yaml`, `CascadeKind.yaml`, `SelectedArtifacts.yaml`, `DeactivatedArtifacts.yaml`, `Preset.yaml` (`activatedGlossaryPacks`); the 400 detail at `effective-reads.feature:~3297` lists every activatable token; the prose of `paths/activations_activationId_presets_presetId.yaml` |
 | Offering contract | `ActivationConfig.schema.json` (:129, :283); corpus `valid/06`, `valid/07` |
 | Fixtures | `example-packs/built-in/glossary_packs/spec-kitty-core.glossary-pack.yaml` (139 terms), `glossary_pack.graph.yaml`, `pack-manifest.yaml`, `policy.yaml`, `presets/default.yaml`; `digest-baseline/fixture/glossary_packs/eta.glossary-pack.yaml`; `pack-level/presets-pack/presets/governing.yaml` |
@@ -176,7 +175,6 @@ Leave these alone (occurrence map):
 - **The other packs schemas**: rename the token and plural.
   - `preset.schema.json`: `activated_glossaries`.
   - `charter.schema.json`: `selected_glossaries`, `activated_glossaries`.
-  - `org-charter.schema.json`: `required_glossaries`.
   - `org-fragment.schema.json`: URN patterns `glossary_context`, fragment plural `glossaries`.
   - `pack-manifest`, `policy` and `mission-step-contract`: the reference `type` enums use `glossary`, the artifact
     kind.
