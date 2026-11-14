@@ -146,7 +146,8 @@ pack and are never activated, so no graph document and no preset changes.
 six states. This sketch follows core's nine lanes instead, so that a client that maps lanes one-to-one finds every
 lane. If open-packs prefers the smaller machine, keep the guarded transition as written.
 
-This draft is valid under the current charter pin and can land before the fold. The `review` contract's `gates[]`
+This draft is valid under the current charter pin and depends on no other draft: it may land at any time, before or
+with the fold. The `review` contract's `gates[]`
 goes away with draft [TBD-fold-step-contracts](TBD-fold-step-contracts.md).
 
 ## Acceptance
@@ -155,7 +156,9 @@ goes away with draft [TBD-fold-step-contracts](TBD-fold-step-contracts.md).
   against `guard.schema.json` and `lifecycle.schema.json`, and the manifest lists them.
 - The charter service job registers foundation with the guard and the lifecycle, and the lifecycle's
   `in_progress -> for_review` transition names `spec-kitty-pre-review`.
-- No `handler_kind: mission_step_contract` gate remains in open-packs.
+- The review gate is the guard `spec-kitty-pre-review` on `in_progress -> for_review`. No step-contract gate remains
+  once draft [TBD-fold-step-contracts](TBD-fold-step-contracts.md) lands (until then the `review` contract still
+  holds its `gates[]` entry; that is expected).
 
 ## Files
 
