@@ -1,0 +1,34 @@
+title: GlossaryContextList
+description: >-
+  The glossary contexts of a pack (listPackGlossaryContexts; ADR-0049 decision 7, ADR-0074 decision 9), in id order
+  and unpaged, deliberately, because a pack holds few contexts (paging it later would be an additive change); a pack
+  that holds none answers an empty list. Each item is a summary with its term count; the context's own read answers its
+  terms. _links holds self.
+type: object
+additionalProperties: false
+required:
+  - packId
+  - items
+  - _links
+properties:
+  packId:
+    type: string
+    description: The identity of the pack the contexts were read from, as the request named it.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
+      symbol: CharterArtifact.packId
+  items:
+    type: array
+    description: The pack's glossary contexts, in id order.
+    items:
+      $ref: GlossaryContextSummary.yaml
+    x-derived:
+      rule: The glossary contexts of the pack, sorted by id.
+      inputs:
+        - the glossary files under the glossaries/ directory of the pack
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The glossary contexts the service holds for the pack, read inside one verified read.
+  inputs:
+    - the glossary files under the glossaries/ directory of the pack

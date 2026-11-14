@@ -1,0 +1,55 @@
+get:
+  operationId: listPackGlossaryContexts
+  summary: List the glossary contexts of a Charter Pack.
+  description: >-
+    Every glossary context the pack holds (glossaries/<id>.glossary.yaml, URN glossary_context:<id>; #106, ADR-0049
+    decision 7, ADR-0074 decision 9), each with its id, its name, where it applies (description), its tags, how many
+    terms it holds (termCount) and a self link to the context's own read (getPackGlossaryContext), which answers the
+    whole context with every term. The items are in id order and the list is unpaged, deliberately: a pack holds few
+    contexts. A pack that holds no context answers 200 with an empty list. The generic list answers the same contexts
+    with ?kind=glossary (listPackArtifacts).
+
+    The pack is judged first, as the pack-scoped artifact reads judge it: an identifier that matches no configured
+    pack, by name or by declared pack_id, is a 404 pack_not_found, and it is the only reason this read answers 404. A
+    configured pack whose directory is missing, that has no readable pack.yaml, or that holds a file the fingerprint
+    covers that cannot be read is a 500 pack_unreadable. The answer is verified against the source fingerprint and
+    carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the contexts were read at, quoted, as getPack answers it: a token over this pack's
+    committed content. It names nothing outside the pack and is not the Charter-Source-Fingerprint. The read takes no
+    If-None-Match and never answers 304.
+  tags:
+    - Glossaries
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  responses:
+    '200':
+      description: The pack's glossary contexts, in id order.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/PackRevisionETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/GlossaryContextList.yaml
+          examples:
+            two-contexts:
+              $ref: ../examples/GlossaryContextList.qa.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

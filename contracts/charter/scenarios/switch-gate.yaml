@@ -49,6 +49,8 @@ operations:
   getPackArtifact: {switch: ready}
   getPackAsset: {switch: ready}
   getPackAssetPayload: {switch: ready}
+  getPackGlossaryContext: {switch: ready}
+  getPackGlossaryTerm: {switch: ready}
   getPackMissionSkeleton: {switch: ready}
   getPackMissionStep: {switch: ready}
   getPackMissionType: {switch: ready}
@@ -67,6 +69,7 @@ operations:
   listEffectiveSkills: {switch: ready}
   listPackArtifacts: {switch: ready}
   listPackAssets: {switch: ready}
+  listPackGlossaryContexts: {switch: ready}
   listPackPresets: {switch: ready}
   listPackSkills: {switch: ready}
   putPackDirective: {switch: ready}

@@ -1,0 +1,58 @@
+title: GlossaryContextSummary
+description: >-
+  One glossary context as a GlossaryContextList lists it (ADR-0049 decision 7, ADR-0074 decision 9): its id, its name,
+  where it applies (description), its tags and how many terms it holds. _links holds self, the context's own read
+  (getPackGlossaryContext), which answers the whole context with every term.
+type: object
+additionalProperties: false
+required:
+  - id
+  - name
+  - description
+  - termCount
+  - _links
+properties:
+  id:
+    type: string
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The context's identity within its pack, as GlossaryContext.id.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.id
+  name:
+    type: string
+    minLength: 1
+    description: The context's name, as GlossaryContext.name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.name
+  description:
+    type: string
+    minLength: 1
+    description: Where the context applies, as GlossaryContext.description.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.description
+  tags:
+    type: array
+    minItems: 1
+    description: The context's tags, in authored order; absent when the file states none.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+      symbol: GlossaryContext.tags
+  termCount:
+    type: integer
+    minimum: 1
+    description: How many terms the context holds; a context holds at least one.
+    x-derived:
+      rule: The number of terms of the context.
+      inputs:
+        - schemas/GlossaryContext.yaml#/properties/terms
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryContext.java
+  symbol: GlossaryContext

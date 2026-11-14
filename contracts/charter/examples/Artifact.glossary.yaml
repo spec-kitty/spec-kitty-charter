@@ -1,0 +1,51 @@
+summary: >-
+  The glossary context spec-kitty-core of the pack qa, as getPackGlossaryContext answers it: every term in authored
+  order, a member the file does not state absent, and the templated link term to one term's read.
+value:
+  kind: glossary
+  id: spec-kitty-core
+  packId: qa
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/glossary/spec-kitty-core
+    collection:
+      href: /api/v1/packs/qa/artifacts/glossary
+    term:
+      href: /api/v1/packs/qa/artifacts/glossary/spec-kitty-core/terms/{termId}
+      templated: true
+  glossary:
+    schemaVersion: '1.0'
+    id: spec-kitty-core
+    name: Spec Kitty core
+    description: Canonical Spec Kitty terminology.
+    tags:
+      - spec-kitty
+      - workflow
+    appliesTo:
+      paths:
+        - kitty-specs/**
+      languages:
+        - markdown
+    terms:
+      - id: mission
+        name: mission
+        definition: A unit of planned work that runs from a specification to a merge.
+        status: active
+        examples:
+          - The mission glossary-contexts-and-terms ships the glossary reads.
+        aliases:
+          - feature
+        avoid:
+          - epic
+        seeAlso:
+          - term:spec-kitty-core/work-package
+      - id: work-package
+        name: work package
+        definition: A slice of a mission that one agent implements and one reviewer approves.
+        status: active
+      - id: lane
+        name: lane
+        definition: The old name of a work package's worktree.
+        status: deprecated
+        seeAlso:
+          - term:spec-kitty-core/work-package

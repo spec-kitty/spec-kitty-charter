@@ -1,6 +1,8 @@
 files:
   - ArtifactId.yaml
   - AssetOrSkillId.yaml
+  - ContextId.yaml
+  - TermId.yaml
   - ArtifactKind.yaml
   - ArtifactKindFilter.yaml
   - PackId.yaml

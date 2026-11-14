@@ -30,6 +30,8 @@ dependencies {
     implementation(catalog.lib("jackson-databind"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
+    // The example packs (ADR-0070): SC-001 reads every term of the built-in vocabulary through the real store.
+    testImplementation(testFixtures(project(":packs")))
 }
 
 // The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85) until the first

@@ -1,0 +1,26 @@
+summary: >-
+  The two glossary contexts of the pack qa, in id order, each with its term count and the link to its own read; the
+  context qa states no tags.
+value:
+  packId: qa
+  items:
+    - id: qa
+      name: Quality assurance
+      description: The vocabulary of testing and its reports.
+      termCount: 2
+      _links:
+        self:
+          href: /api/v1/packs/qa/artifacts/glossary/qa
+    - id: spec-kitty-core
+      name: Spec Kitty core
+      description: Canonical Spec Kitty terminology.
+      tags:
+        - spec-kitty
+        - workflow
+      termCount: 3
+      _links:
+        self:
+          href: /api/v1/packs/qa/artifacts/glossary/spec-kitty-core
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/glossary

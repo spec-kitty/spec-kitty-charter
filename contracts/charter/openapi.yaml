@@ -57,6 +57,11 @@ tags:
     description: >-
       The skills of a Charter Pack (ADR-0074): the list of a pack's skills and the read of one skill as the pack
       declares it, with the body of a prompt skill exactly as held.
+  - name: Glossaries
+    description: >-
+      The glossary contexts of a Charter Pack (ADR-0049, ADR-0074): the list of a pack's contexts with their term
+      counts, the read of one context with every term, and the read of one term by its context and its id, the path
+      that mirrors its URN term:<context-id>/<term-id>.
   - name: AgentProfiles
     description: >-
       The agent profiles of a Charter Pack: the pack-scoped read of one profile with its governance. The profile
@@ -140,6 +145,12 @@ paths:
     $ref: paths/packs_packId_artifacts_skill.yaml
   /packs/{packId}/artifacts/skill/{artifactId}:
     $ref: paths/packs_packId_artifacts_skill_artifactId.yaml
+  /packs/{packId}/artifacts/glossary:
+    $ref: paths/packs_packId_artifacts_glossary.yaml
+  /packs/{packId}/artifacts/glossary/{contextId}:
+    $ref: paths/packs_packId_artifacts_glossary_contextId.yaml
+  /packs/{packId}/artifacts/glossary/{contextId}/terms/{termId}:
+    $ref: paths/packs_packId_artifacts_glossary_contextId_terms_termId.yaml
   /packs/{packId}/artifacts/directive:
     $ref: paths/packs_packId_artifacts_directive.yaml
   /packs/{packId}/artifacts/directive/{artifactId}:

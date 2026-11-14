@@ -59,6 +59,9 @@ files:
   - Artifact.skill.yaml
   - Artifact.skill-wrapper.yaml
   - SkillList.org-base.yaml
+  - GlossaryContextList.qa.yaml
+  - Artifact.glossary.yaml
+  - GlossaryTerm.mission.yaml
   - AssetList.activation.yaml
   - EffectiveAssetRead.asset.yaml
   - SkillList.activation.yaml

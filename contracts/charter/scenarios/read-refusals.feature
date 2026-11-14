@@ -5,7 +5,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
   The behavior is the one request-id-length.feature, mission-types.feature and activation-register.feature describe;
   this file states it for the reads those files leave out, one row per read:
   - a path parameter outside its grammar (an activation id over 64 characters, a pack id over 63 characters or with an
-    upper-case letter, an asset or skill id with an upper-case letter, a mission type id with an upper-case letter) is
+    upper-case letter, an asset, skill, glossary context or term id with an upper-case letter, a mission type id with an upper-case letter) is
     a 400 without a code, and the same read with a valid id is judged by the domain;
   - a read whose If-None-Match matches the ETag it answered is a 304, and the ETag is sent again.
 
@@ -54,6 +54,12 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | listPackSkills                  | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill                        | /packs/main/artifacts/skill                                    | 200    |
       | getPackSkill                    | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/skill/land-pr                | /packs/main/artifacts/skill/land-pr                            | 404    |
       | getPackSkill (skill id)         | /packs/main/artifacts/skill/land-pr.skill | /packs/main/artifacts/skill/land-pr | 404    |
+      | listPackGlossaryContexts        | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary | /packs/main/artifacts/glossary | 200 |
+      | getPackGlossaryContext          | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary/core | /packs/main/artifacts/glossary/core | 404 |
+      | getPackGlossaryContext (context id) | /packs/main/artifacts/glossary/Core | /packs/main/artifacts/glossary/core | 404 |
+      | getPackGlossaryTerm             | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/glossary/core/terms/mission | /packs/main/artifacts/glossary/core/terms/mission | 404 |
+      | getPackGlossaryTerm (context id) | /packs/main/artifacts/glossary/Core/terms/mission | /packs/main/artifacts/glossary/core/terms/mission | 404 |
+      | getPackGlossaryTerm (term id)   | /packs/main/artifacts/glossary/core/terms/Mission | /packs/main/artifacts/glossary/core/terms/mission | 404 |
       | getPackMissionStep              | /packs/main/artifacts/mission_type/Main/steps/specify                                                           | /packs/main/artifacts/mission_type/main/steps/specify          | 404    |
       | getPackMissionSkeleton          | /packs/main/artifacts/mission_type/Main/skeletons/spec.md                                                       | /packs/main/artifacts/mission_type/main/skeletons/spec.md      | 404    |
       | getEffectiveMissionType         | /activations/a-1/artifacts/mission_type/Main                                                                    | /activations/a-1/artifacts/mission_type/main                   | 404    |

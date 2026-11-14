@@ -36,6 +36,9 @@ Feature: The worktree guard answers in front of every operation
       | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
       | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
+      | listPackGlossaryContexts        | GET    | /packs/qa/artifacts/glossary                                                                  |
+      | getPackGlossaryContext          | GET    | /packs/qa/artifacts/glossary/spec-kitty-core                                                  |
+      | getPackGlossaryTerm             | GET    | /packs/qa/artifacts/glossary/spec-kitty-core/terms/mission                                    |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
@@ -106,6 +109,9 @@ Feature: The worktree guard answers in front of every operation
       | getPackAssetPayload             | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | listPackSkills                  | GET    | /packs/qa/artifacts/skill                                                                     |
       | getPackSkill                    | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
+      | listPackGlossaryContexts        | GET    | /packs/qa/artifacts/glossary                                                                  |
+      | getPackGlossaryContext          | GET    | /packs/qa/artifacts/glossary/spec-kitty-core                                                  |
+      | getPackGlossaryTerm             | GET    | /packs/qa/artifacts/glossary/spec-kitty-core/terms/mission                                    |
       | registerPackDirective           | POST   | /packs/qa/artifacts/directive                                                                 |
       | putPackDirective                | PUT    | /packs/qa/artifacts/directive/rehearse                                                        |
       | registerPackStyleguide          | POST   | /packs/qa/artifacts/styleguide                                                                |
