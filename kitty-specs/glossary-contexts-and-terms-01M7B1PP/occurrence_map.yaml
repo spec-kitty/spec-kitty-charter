@@ -21,6 +21,9 @@ exceptions:
   - path: "packs/**"
     action: do_not_change
     reason: "Synced open-packs content; it migrates in spec-kitty-open-packs (draft issue in research)"
+  - path: "kitty-specs/glossary-contexts-and-terms-01M7B1PP/**"
+    action: manual_review
+    reason: "This mission's own planning records, status and occurrence map are written by the mission"
   - path: "kitty-specs/**"
     action: do_not_change
     reason: "Other missions' records are history; only this mission's own directory is written"
