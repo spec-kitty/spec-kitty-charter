@@ -2,8 +2,8 @@
 title: "ADR-0069: A profile has one primary role and optional alt-roles"
 description: "role and alt-roles replace the positional roles list outright, and role fit is the first, strict key of profile selection: a primary-role match outranks every alt-role match."
 doc_status: active
-updated: 2026-11-12T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-14 (ADR-0078, the ruled order and no fallback for operator)
 decision_date: '2026-11-10'
 type: ADR
 kind: ADR
@@ -11,6 +11,7 @@ related:
   - adr/0022-contract-versions-start-at-0-x
   - adr/0032-steps-name-roles-and-profile-selection-order
   - adr/0068-a-pack-declares-its-fallback-profile
+  - adr/0078-agent-profile-selection-performer-and-effective-profile
   - context/conceptual-model
 audience:
   - profile: pack-author
@@ -31,6 +32,15 @@ audience:
 [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decision 2 ("one primary role and optional
 alt-roles") its fields and states decision 3.1 as an explicit order. The operator ruled that the charter's model is
 canonical: the new shape replaces the old one with no deprecation window.
+
+### Amendment 2026-11-14
+
+The operator's slice G rulings of 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/)) change decision 4. The original text stands, and it is annotated:
+
+- decision 4.1 to 4.4 (ruling D2): the filters (pin, performer, role fit, context) all run before the tier is picked,
+  and the pin's tie-break of step 4 is unreachable.
+- decision 4.5 (ruling D4): no fallback for `operator`. With no human-performed candidate, `operator` answers
+  `404 no_profile_matched`.
 
 ## Context
 
@@ -66,6 +76,12 @@ canonical: the new shape replaces the old one with no deprecation window.
    4. **Ties**: the pinned profile wins a tie it is part of; otherwise every equal candidate is returned and the
       client picks (ADR-0032 decisions 8 and 9, ruled 2026-11-12).
    5. **No candidate**: the fallback in force (ADR-0068), marked `fallback`; none: `no_profile_matched`.
+
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decisions 2 and 4): every filter runs before the tier: the pin, the performer rule, role
+   fit, then the declared context of a specialization. Then the tier, the longest in-force `specializes_from` chain
+   and `routing-priority` (50 when absent). The pin never wins a tie (step 4), since its surviving specializations
+   are deeper. `operator` never falls back (step 5): with no human-performed candidate it answers
+   `no_profile_matched`.*
 
    This replaces the weighted score: role is no longer a weight beside the others but decides first. A profile id is
    not accepted as a role: steps name roles, never profiles (ADR-0032 decision 1).

@@ -2,14 +2,15 @@
 title: "ADR-0032: Steps name roles, and a profile is selected by role fit, then specialization, then fallback"
 description: Mission steps ask for a role, never a profile; the service picks the most specialized fitting profile, a declared fallback, or refuses; a derived pack may pin a role.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted, with Amendments 2026-11-12 (issue #42) and 2026-11-14 (ADR-0078)
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:
   - adr/0030-removal-is-distinct-from-deactivation
   - adr/0006-onion-vertical-slices-archunit
+  - adr/0078-agent-profile-selection-performer-and-effective-profile
   - context/conceptual-model
 audience:
   - profile: pack-author
@@ -32,6 +33,19 @@ A new decision; it supersedes no record of this repository.
 
 **Amended 2026-11-12 (operator ruling, issue #42).** The two open questions are ruled: ties and the role
 pin (decisions 8 and 9, in [Rulings on the open questions](#rulings-on-the-open-questions)).
+
+### Amendment 2026-11-14
+
+The operator's slice G rulings of 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/)) change two points. The original text stands, and each is
+annotated:
+
+- decision 5 (ruling D4): `operator` is reserved for a human-performed profile (`performer: human`), not a role like
+  any other. An agent-performed profile that takes it is invalid content, and `operator` never falls back: with no
+  human candidate the answer is `404 no_profile_matched`. A human-performed profile serves another role only through
+  a pin that fits it.
+- decision 9 (ruling D2): the pin still filters first, but its tie-break is unreachable. Under the ruled order every
+  in-force specialization of the pinned profile is deeper than it, so the pinned profile is answered only when no
+  specialization survives, and then alone. ADR-0078 gives the argument.
 
 ## Context
 
@@ -71,6 +85,8 @@ roles are extensible by packs, and an explicit selection order.
    How a pin combines with the selection order is decision 9.
 5. **`operator` is a role like any other.** A profile can be marked as performed by a human; a
    step that asks for `operator` (or a pinned role) can be served by a human.
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 4): `operator` is reserved for a human-performed profile and never falls
+   back; the marker is `performer: agent | human`.*
 6. **Mission types and profiles are their own concepts**, each with its own domain model, loosely
    coupled to the rest by role or by id.
 7. **Representation is a candidate only.** The query shape, the role value object and the
@@ -93,6 +109,8 @@ win. When candidates are still tied after the order, and the pinned profile is a
 profile is the answer. With no pin, a tie is answered by decision 8. This is the reading the
 [conceptual model](/context/conceptual-model/#role-pin) and journey 08 recorded, plus the tie-break.
 This ruling does not cover the case where no pinned candidate fits the context.
+*Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/), ruling D2): the tie-break is unreachable. A surviving specialization of the pinned
+profile is always deeper than it, so the pinned profile is never among tied candidates.*
 
 ## Consequences
 

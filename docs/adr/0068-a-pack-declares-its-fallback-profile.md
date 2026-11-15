@@ -2,8 +2,8 @@
 title: "ADR-0068: A pack declares its fallback profile in pack.yaml"
 description: "pack.yaml names the fallback agent profile: found in the closure, locked along it, with the reserved role generic. A derived pack may name a more specific one."
 doc_status: active
-updated: 2026-11-10T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-14 (ADR-0078, an agent-performed fallback)
 decision_date: '2026-11-10'
 type: ADR
 kind: ADR
@@ -16,6 +16,7 @@ related:
   - adr/0063-pack-mutability-policy-file
   - adr/0065-pack-registration-replaces-the-whole-pack
   - adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles
+  - adr/0078-agent-profile-selection-performer-and-effective-profile
 audience:
   - profile: pack-author
     guidance_text: Read this for how a pack names its fallback profile, what that profile must be, and what a derived pack may change.
@@ -36,6 +37,17 @@ audience:
 [conceptual model](/context/conceptual-model/) of [PR #199](https://github.com/spec-kitty/spec-kitty-charter/pull/199)
 ("Selection order", step 3) leave open. The operator ruled on the two open points: the declared profile resolves in
 the pack's closure and is judged locked along it, and the fallback declares the reserved role `generic`.
+
+### Amendment 2026-11-14
+
+The operator's slice G rulings of 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/)) change two points. The original text stands, and each is
+annotated:
+
+- decision 4 (ruling D4): the fallback profile is agent-performed. A `fallback_profile` that names a
+  `performer: human` profile is refused at registration with `422 fallback_profile_not_agent`, since a fallback serves
+  every role but `operator`, which never falls back.
+- decision 7: the selection reads are built (`selectAgentProfile`, `selectAgentProfileForStep`), so
+  `fallback_profile_conflict` (`422`) and `no_profile_matched` (`404`) are raised.
 
 ## Context
 
@@ -64,6 +76,8 @@ the pack's closure and is judged locked along it, and the fallback declares the 
    `role: generic` and no `alt-roles`; otherwise: `fallback_profile_not_role_neutral`. `generic` never earns a role
    fit (ADR-0069 decision 4): a profile whose role is `generic` is served only at the fallback step, and a step does
    not ask for `generic`.
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 4): the fallback profile is also agent-performed; a `performer: human`
+   fallback is refused with `422 fallback_profile_not_agent`. A step's `role` is never `generic` in the schema.*
 5. **Built-in ships one; a derived pack may name a more specific one.**
    - The built-in pack declares a fallback, locked by built-in's policy file. open-packs ships the declaration, the
      policy file and a role-neutral profile together (open-packs#69).
@@ -92,6 +106,9 @@ the pack's closure and is judged locked along it, and the fallback declares the 
    whose closure holds it: a write to a dependency that removes, unlocks or re-roles the profile a derived pack names is
    refused with the derived pack's closure named. Like the other impact rules, a pack stored before the rule is not re-judged on a read; the
    startup census logs it.
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decisions 1 and 4): the selection reads are built, so `fallback_profile_conflict`
+   (`422`) and `no_profile_matched` (`404`) are raised; `fallback_profile_not_agent` (`422`) joins the registration
+   rules.*
 
 ## Consequences
 
