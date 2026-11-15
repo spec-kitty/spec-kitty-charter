@@ -66,6 +66,8 @@ public interface PackRemovalStore extends PackRevisions {
      * @param relationships the complete registered-relationship set to persist, in place of the stored one
      * @param presets the presets to rewrite, whole, with the items that name the artifacts left out; one that holds no
      *     list any longer is written with none
+     * @param droppedLinks a removed mission type's own step links and the scope edges from its own step actions, which
+     *     go from the author-written documents that hold them; empty when no mission type is removed
      */
     record Removal(
             List<Urn> artifacts,
