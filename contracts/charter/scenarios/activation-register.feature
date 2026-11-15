@@ -880,7 +880,7 @@ Feature: The activation register and the packs an activation builds on
       edges:
       - source: action:software-dev/implement
         target: beta-pack::directive:SHARE
-        relation: requires
+        relation: scope
       """
     When I GET "/activations/project/packs"
     Then the response status is 500

@@ -471,44 +471,6 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       q
       """
 
-  Scenario: A stop reached through a template is required by what instantiates it
-    ArtifactReference.yaml: requiredBy names artifacts an ArtifactReference can name, so a template on the way to
-    a stop leads back to the directive that instantiates it, and the answer is 200.
-    Given the org pack "main" with the file "templates/tpl.md":
-      """
-      # A template
-      """
-    And the org pack "main" with the file "template.graph.yaml":
-      """
-      schema_version: '1.0'
-      generated_at: STATIC
-      nodes: []
-      edges:
-      - source: directive:D2
-        target: template:tpl.md
-        relation: instantiates
-      - source: template:tpl.md
-        target: tactic:x
-        relation: requires
-      """
-    And the activation "a-1" holds:
-      """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
-      """
-    When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
-      """
-      {"cascade": ["all"]}
-      """
-    Then the response status is 200
-    And the field at "/skipped/skippedDeactivated" holds exactly the ids:
-      """
-      tactic:x
-      """
-    And the field at "/skipped/skippedDeactivated/0/requiredBy" holds exactly the ids:
-      """
-      directive:D2
-      """
-
   Scenario: A cascade passes through a profile's ancestor without putting it in force
     US3 AS4: p specializes from q; q requires R and suggests S. The lineage passes requires through, so R is
     selected; q is an ancestor, never in force, and S is reached only over suggests from it.

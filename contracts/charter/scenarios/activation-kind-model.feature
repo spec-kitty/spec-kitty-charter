@@ -25,7 +25,7 @@ Feature: One kind model on the activation document
   the next write, never by a read. A client that sends [] for a selected kind it read as absent registers the same
   document (FR-042).
 
-  The fixture is one org pack, main. Its mission types: software-dev, whose step implement requires directive SD;
+  The fixture is one org pack, main. Its mission types: software-dev, whose step implement scopes directive SD;
   research; required-type, which main's governing preset requires; locked-type, which main's policy locks. It also
   holds directive OTHER, which nothing reaches, and the skill land-pr, which the preset with-skill names.
 
@@ -111,7 +111,7 @@ Feature: One kind model on the activation document
       schema_version: '1.0'
       id: SD
       title: SD
-      intent: The directive the implement step requires
+      intent: The directive the implement step scopes
       enforcement: required
       """
     And the org pack "main" with the file "directives/OTHER.directive.yaml":
@@ -146,7 +146,7 @@ Feature: One kind model on the activation document
       edges:
       - source: action:software-dev/implement
         target: directive:SD
-        relation: requires
+        relation: scope
       """
 
   # Q1: a mission type cascades to the steps it holds.
@@ -179,9 +179,10 @@ Feature: One kind model on the activation document
       """
     And the response body has no field at "/config/missionTypes"
 
-  Scenario: A denied directive a step requires is reported as required by the mission type
+  Scenario: A denied directive a step scopes is reported as required by the mission type
     Q1, rule W20: the via from the step of software-dev to SD is the mission type's own, so SD, denied, stays denied and
-    is reported in skippedDeactivated as required by software-dev, not as a plain suggestion.
+    is reported in skippedDeactivated as required by software-dev. The step reaches SD over scope (ADR-0064 decision 13:
+    an action scopes guidance, it does not require it), so viaRequires is false.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["SD"]}}
@@ -199,7 +200,7 @@ Feature: One kind model on the activation document
       """
       directive:SD
       """
-    And the field at "/skipped/skippedDeactivated/0/viaRequires" is true
+    And the field at "/skipped/skippedDeactivated/0/viaRequires" is false
     And the field at "/skipped/skippedDeactivated/0/requiredBy" holds exactly the ids:
       """
       mission_type:software-dev

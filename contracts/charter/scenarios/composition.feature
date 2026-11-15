@@ -648,19 +648,27 @@ Feature: The compose resolves the configured packs' dependency graph
       name: left-pack
       pack_level: org
       """
+    And the org pack "left" with the file "directives/LEFT-FIRST.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: LEFT-FIRST
+      title: LEFT-FIRST
+      intent: LEFT-FIRST
+      enforcement: advisory
+      """
     And the org pack "left" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: action:software-dev/implement
-        kind: action
-        label: implement
+      - urn: directive:LEFT-FIRST
+        kind: directive
+        label: LEFT-FIRST
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: action:software-dev/implement
+      - source: directive:LEFT-FIRST
         target: directive:software-dev/test-first
         relation: overrides
       """
@@ -672,19 +680,27 @@ Feature: The compose resolves the configured packs' dependency graph
       name: right-pack
       pack_level: org
       """
+    And the org pack "right" with the file "directives/RIGHT-FIRST.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: RIGHT-FIRST
+      title: RIGHT-FIRST
+      intent: RIGHT-FIRST
+      enforcement: advisory
+      """
     And the org pack "right" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: action:software-dev/implement
-        kind: action
-        label: implement
+      - urn: directive:RIGHT-FIRST
+        kind: directive
+        label: RIGHT-FIRST
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: action:software-dev/implement
+      - source: directive:RIGHT-FIRST
         target: directive:software-dev/test-first
         relation: overrides
       """
@@ -712,19 +728,27 @@ Feature: The compose resolves the configured packs' dependency graph
       name: left-pack
       pack_level: org
       """
+    And the org pack "left" with the file "directives/LEFT-FIRST.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: LEFT-FIRST
+      title: LEFT-FIRST
+      intent: LEFT-FIRST
+      enforcement: advisory
+      """
     And the org pack "left" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: action:software-dev/implement
-        kind: action
-        label: implement
+      - urn: directive:LEFT-FIRST
+        kind: directive
+        label: LEFT-FIRST
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: action:software-dev/implement
+      - source: directive:LEFT-FIRST
         target: directive:software-dev/test-first
         relation: overrides
       """
@@ -736,19 +760,27 @@ Feature: The compose resolves the configured packs' dependency graph
       name: right-pack
       pack_level: org
       """
+    And the org pack "right" with the file "directives/RIGHT-FIRST.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: RIGHT-FIRST
+      title: RIGHT-FIRST
+      intent: RIGHT-FIRST
+      enforcement: advisory
+      """
     And the org pack "right" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: action:software-dev/implement
-        kind: action
-        label: implement
+      - urn: directive:RIGHT-FIRST
+        kind: directive
+        label: RIGHT-FIRST
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: action:software-dev/implement
+      - source: directive:RIGHT-FIRST
         target: directive:software-dev/test-first
         relation: overrides
       """
@@ -1105,7 +1137,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:SHARE
-        relation: requires
+        relation: scope
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1159,7 +1191,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: beta-pack::directive:SHARE
-        relation: requires
+        relation: scope
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1215,7 +1247,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: beta-pack::directive:SHARE
-        relation: requires
+        relation: scope
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1264,7 +1296,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: beta-pack::directive:SHARE
-        relation: requires
+        relation: scope
       """
     When I GET "/offering"
     Then the response status is 500

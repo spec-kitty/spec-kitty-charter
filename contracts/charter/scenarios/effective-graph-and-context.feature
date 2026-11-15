@@ -25,7 +25,7 @@
 #
 # Mission effective-step-and-action-context (WP02, FR-008, squad R3) changed the meaning of three scenarios here: the
 # context now applies the ownership rule (operator ruling of 2026-11-12), so an in-force directive, tactic or paradigm that
-# no action and no mission type scopes is listed project-wide. US5 AS3 now lists the tactic e, US5 AS4 lists O and e, and
+# no action and no mission type scopes is listed project-wide. US5 AS3 now lists the directive E, US5 AS4 lists O and E, and
 # the #484 case lists DX and t3. US5 AS4 and #484 keep negative twins of kinds that are no root (the styleguide os; px, s3
 # and g3). Each scenario says so.
 
@@ -318,12 +318,12 @@ Feature: The effective graph and the effective action context answer what the ac
       """
 
   Scenario: US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not
-    US5 AS3, FR-015, E12: the tactic e enhances the directive T, and both are selected, so the graph has the edge and T is
-    enhanced by e. The tactic e2 enhances T2, which is selected, but e2 is not: an enhancer is returned only when it is
-    itself in force, so its edge is absent and T2 stays a node. The context of the action that scopes T and T2 carries the
-    same fact from the node's side: T is enhanced by e, and T2 by nothing. Changed meaning (2026-11-12 ownership rule,
-    FR-008): e is selected and in force, and no action and no mission type scopes it, so the context also lists e
-    project-wide; e2 is not in force and is listed nowhere.
+    US5 AS3, FR-015, E12: the directive E enhances the directive T, and both are selected, so the graph has the edge and
+    T is enhanced by E. The directive E2 enhances T2, which is selected, but E2 is not: an enhancer is returned only when
+    it is itself in force, so its edge is absent and T2 stays a node. The context of the action that scopes T and T2
+    carries the same fact from the node's side: T is enhanced by E, and T2 by nothing. Changed meaning (2026-11-12
+    ownership rule, FR-008): E is selected and in force, and no action and no mission type scopes it, so the context also
+    lists E project-wide; E2 is not in force and is listed nowhere.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -359,21 +359,21 @@ Feature: The effective graph and the effective action context answer what the ac
       intent: T2
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/e.tactic.yaml":
+    And the org pack "main" with the file "directives/E.directive.yaml":
       """
       schema_version: '1.0'
-      id: e
-      name: e
-      steps:
-        - title: Only step
+      id: E
+      title: E
+      intent: E
+      enforcement: advisory
       """
-    And the org pack "main" with the file "tactics/e2.tactic.yaml":
+    And the org pack "main" with the file "directives/E2.directive.yaml":
       """
       schema_version: '1.0'
-      id: e2
-      name: e2
-      steps:
-        - title: Only step
+      id: E2
+      title: E2
+      intent: E2
+      enforcement: advisory
       """
     And the org pack "main" with the file "edges.graph.yaml":
       """
@@ -384,10 +384,10 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
-      - source: tactic:e
+      - source: directive:E
         target: directive:T
         relation: enhances
-      - source: tactic:e2
+      - source: directive:E2
         target: directive:T2
         relation: enhances
       - source: action:software-dev/implement
@@ -399,35 +399,35 @@ Feature: The effective graph and the effective action context answer what the ac
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["T", "T2"], "tactic": ["e"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["E", "T", "T2"]}}
       """
     When I GET "/activations/a-1/graph"
     Then the response status is 200
     And the graph holds exactly the nodes:
       """
       action:software-dev/implement
+      directive:E
       directive:T
       directive:T2
       mission_type:software-dev
-      tactic:e
       """
     And the graph holds exactly the edges:
       """
       action:software-dev/implement scope directive:T
       action:software-dev/implement scope directive:T2
-      tactic:e enhances directive:T
+      directive:E enhances directive:T
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
     Then the response status is 200
     And the context holds exactly the artifacts:
       """
+      directive:E active/selected project
       directive:T active/selected action
       directive:T2 active/selected action
-      tactic:e active/selected project
       """
     And the context holds exactly the enhancements:
       """
-      directive:T is enhanced by tactic:e
+      directive:T is enhanced by directive:E
       """
 
   Scenario: US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests
@@ -435,11 +435,11 @@ Feature: The effective graph and the effective action context answer what the ac
     scopes D and D2, both in force, so both are entries, with D2 listed after D (URN order). D suggests S, which the
     document does not select and nothing else reaches: S is listed as a suggestion, inactive with reason not_selected,
     with the edge's when and reason. D2 suggests R2, which D also requires: R2 is reached through requires too, so it is
-    not a suggestion and, out of force, not in the context at all. The tactic e enhances D and is in force: D is enhanced
-    by e. A context with no depth follows no suggests, so the suggestion is read with depth 1. Changed meaning (2026-11-12
+    not a suggestion and, out of force, not in the context at all. The directive E enhances D and is in force: D is
+    enhanced by E. A context with no depth follows no suggests, so the suggestion is read with depth 1. Changed meaning (2026-11-12
     ownership rule, FR-008): O is selected and in force and no step reaches it, but no action and no mission type scopes
-    it either, so the context lists it project-wide; so is e, which an enhances edge never pulls in but the rule lists as
-    an unscoped tactic in force. The styleguide os is selected, in force and scoped by nothing too: a styleguide is no root
+    it either, so the context lists it project-wide; so is E, which an enhances edge never pulls in but the rule lists as
+    an unscoped directive in force. The styleguide os is selected, in force and scoped by nothing too: a styleguide is no root
     of the rule and nothing listed reaches it, so it is the negative twin and stays out.
     Given the org pack "main" with the file "pack.yaml":
       """
@@ -500,13 +500,13 @@ Feature: The effective graph and the effective action context answer what the ac
       intent: O
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/e.tactic.yaml":
+    And the org pack "main" with the file "directives/E.directive.yaml":
       """
       schema_version: '1.0'
-      id: e
-      name: e
-      steps:
-        - title: Only step
+      id: E
+      title: E
+      intent: E
+      enforcement: advisory
       """
     And the org pack "main" with the file "styleguides/os.styleguide.yaml":
       """
@@ -546,13 +546,13 @@ Feature: The effective graph and the effective action context answer what the ac
         relation: suggests
         when: the change is risky
         reason: R2 is the safe path
-      - source: tactic:e
+      - source: directive:E
         target: directive:D
         relation: enhances
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "D2", "O"], "styleguide": ["os"], "tactic": ["e"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["D", "D2", "E", "O"], "styleguide": ["os"]}}
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1"
     Then the response status is 200
@@ -562,13 +562,13 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       directive:D active/selected action
       directive:D2 active/selected action
+      directive:E active/selected project
       directive:O active/selected project
       directive:S inactive/not_selected action suggested when "the change touches the schema" because "S covers the schema checks"
-      tactic:e active/selected project
       """
     And the context holds exactly the enhancements:
       """
-      directive:D is enhanced by tactic:e
+      directive:D is enhanced by directive:E
       """
     And the field at "/skipped/missionTypeNotInForce" holds exactly 0 items
     When I GET "/activations/a-1/artifacts/styleguide/os"
@@ -580,8 +580,8 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       directive:D active/selected action
       directive:D2 active/selected action
+      directive:E active/selected project
       directive:O active/selected project
-      tactic:e active/selected project
       """
 
   Scenario: The context holds every kind the action scopes and the activation selects, and the unscoped directive and tactic in force (#484)
@@ -1104,9 +1104,9 @@ Feature: The effective graph and the effective action context answer what the ac
       | mission-types/software-dev/actions/implement/context |
 
   Scenario: #429 - a target of an enhancer without a target in force is a NodeReference, on the report and on the context
-    #429, D15: the tactic e enhances the directive T, which the document does not select, so e is not in force and the
-    report names T as a node, {kind, id}, where an ArtifactReference said {kind, artifactId}. The tactic e2 enhances the
-    selected directive T2: the control, in force in the same answer, so only e is listed. The context of the action reads the
+    #429, D15: the directive E enhances the directive T, which the document does not select, so E is not in force and
+    the report names T as a node, {kind, id}, where an ArtifactReference said {kind, artifactId}. The directive E2
+    enhances the selected directive T2: the control, in force in the same answer, so only E is listed. The context of the action reads the
     same bucket in its skipped report. A step as a target (kind action) is no shape a pack file can author before step
     enhancements are loaded (#424): ClosureViewSessionStepRefsTest pins it from the in-force resolution.
     Given the org pack "main" with the file "pack.yaml":
@@ -1144,21 +1144,21 @@ Feature: The effective graph and the effective action context answer what the ac
       intent: T2
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/e.tactic.yaml":
+    And the org pack "main" with the file "directives/E.directive.yaml":
       """
       schema_version: '1.0'
-      id: e
-      name: e
-      steps:
-        - title: Only step
+      id: E
+      title: E
+      intent: E
+      enforcement: advisory
       """
-    And the org pack "main" with the file "tactics/e2.tactic.yaml":
+    And the org pack "main" with the file "directives/E2.directive.yaml":
       """
       schema_version: '1.0'
-      id: e2
-      name: e2
-      steps:
-        - title: Only step
+      id: E2
+      title: E2
+      intent: E2
+      enforcement: advisory
       """
     And the org pack "main" with the file "edges.graph.yaml":
       """
@@ -1169,22 +1169,22 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
-      - source: tactic:e
+      - source: directive:E
         target: directive:T
         relation: enhances
-      - source: tactic:e2
+      - source: directive:E2
         target: directive:T2
         relation: enhances
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["T2"], "tactic": ["e", "e2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "directive": ["E", "E2", "T2"]}}
       """
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
     And the field at "/report/enhancedTargetNotInForce" holds exactly the ids:
       """
-      tactic:e
+      directive:E
       """
     And the field at "/report/enhancedTargetNotInForce/0/targets" holds exactly the ids:
       """
@@ -1192,11 +1192,12 @@ Feature: The effective graph and the effective action context answer what the ac
       """
     And the field at "/report/enhancedTargetNotInForce/0/targets/0/id" is "T"
     And the response body has no field at "/report/enhancedTargetNotInForce/0/targets/0/artifactId"
-    When I GET "/activations/a-1/artifacts?kind=tactic&state=active"
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:e2
+      directive:E2
+      directive:T2
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
     Then the response status is 200

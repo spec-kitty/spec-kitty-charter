@@ -14,7 +14,7 @@
 # answered 409 artifact_required. A deny entry on an artifact nothing requires never consults the merge.
 #
 # The fixture is one org pack, main. Its governing preset requires directives T and T2 and its policy locks LK. F
-# overrides T, L overrides LK, and the tactic e enhances T; nothing overrides T2.
+# overrides T, L overrides LK, and the directive E enhances T; nothing overrides T2.
 
 @contract @activations
 Feature: A deny entry on a required artifact is accepted when an active override satisfies the requirement
@@ -103,13 +103,13 @@ Feature: A deny entry on a required artifact is accepted when an active override
       intent: X
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/e.tactic.yaml":
+    And the org pack "main" with the file "directives/E.directive.yaml":
       """
       schema_version: '1.0'
-      id: e
-      name: e
-      steps:
-        - title: Only step
+      id: E
+      title: E
+      intent: E
+      enforcement: advisory
       """
     And the org pack "main" with the file "relations.graph.yaml":
       """
@@ -123,7 +123,7 @@ Feature: A deny entry on a required artifact is accepted when an active override
       - source: directive:L
         target: directive:LK
         relation: overrides
-      - source: tactic:e
+      - source: directive:E
         target: directive:T
         relation: enhances
       - source: directive:T
@@ -173,11 +173,11 @@ Feature: A deny entry on a required artifact is accepted when an active override
     And the field at "/report/requiredNotInForce" holds exactly 0 items
 
   Scenario: IC-13 regression control, green before - deactivating a required T with only an enhancer of it active is 409 artifact_required
-    R11, Q8: the tactic e enhances T and is selected, and an enhancement never satisfies a requirement, so the deny
+    R11, Q8: the directive E enhances T and is selected, and an enhancement never satisfies a requirement, so the deny
     entry on T is refused as #399 refused it, naming main, and nothing is stored.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["E"]}}
       """
     When I PUT "/activations/a-1/exclusions/directive/T" with the stored ETag and the body:
       """
@@ -188,9 +188,9 @@ Feature: A deny entry on a required artifact is accepted when an active override
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
     Then the field at "/revision" is the stored revision
-    And the field at "/config/selected/tactic" holds exactly the ids:
+    And the field at "/config/selected/directive" holds exactly the ids:
       """
-      e
+      E
       """
     And the response body has no field at "/config/deactivated"
 
@@ -275,7 +275,7 @@ Feature: A deny entry on a required artifact is accepted when an active override
       """
     When I POST "/activations" as JSON with the body:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e"]}, "deactivated": {"directive": ["T"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["E"]}, "deactivated": {"directive": ["T"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_required"
