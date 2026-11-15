@@ -192,9 +192,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       - source: mission_type:software-dev
         target: directive:GUARD
         relation: scope
-      - source: mission_step_contract:specify
-        target: directive:GUARD
-        relation: requires
       """
 
   Scenario: A mission type is read in the envelope, its steps then its on-demand steps, then its skeletons, each linked
@@ -545,7 +542,18 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And following the link "self" of every element of "items" answers 200
 
   Scenario: The references of a mission type and of a step contract are read like any served kind's
-    FR-001: /references answers for both kinds; an unknown id is the not-found code of its kind.
+    FR-001: /references answers for both kinds; an unknown id is the not-found code of its kind. The step contract's
+    edge joins it to the other step contract, the one kind a step contract may enhance (ADR-0064 decision 13).
+    Given the org pack "main" with the file "contracts.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_step_contract:specify
+        target: mission_step_contract:orphan
+        relation: enhances
+      """
     When I GET "/packs/main/artifacts/mission_type/software-dev/references"
     Then the response status is 200
     And the field at "/items" holds exactly 1 item
@@ -555,8 +563,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I GET "/packs/main/artifacts/mission_step_contract/specify/references"
     Then the response status is 200
     And the field at "/items" holds exactly 1 item
-    And the field at "/items/0/urn" is "directive:GUARD"
-    And the field at "/items/0/relation" is "requires"
+    And the field at "/items/0/urn" is "mission_step_contract:orphan"
+    And the field at "/items/0/relation" is "enhances"
     When I GET "/packs/main/artifacts/mission_type/nope/references"
     Then the response status is 404
     And the problem code is "mission_type_not_found"

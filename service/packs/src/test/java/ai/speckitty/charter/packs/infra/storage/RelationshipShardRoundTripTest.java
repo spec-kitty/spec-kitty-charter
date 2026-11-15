@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -21,7 +22,7 @@ class RelationshipShardRoundTripTest {
     @Test
     void aSetOfRelationshipsWrittenAndReadBackIsTheSameSetWithItsTexts() {
         List<Relationship> relationships = List.of(
-                new Relationship(A, B, RelationType.REQUIRES, Optional.of("when it rains"), Optional.of("why")),
+                Relationship.of(A, B, RelationType.REQUIRES, Optional.of("when it rains"), Optional.of("why")),
                 Relationship.of(B, C, RelationType.SUGGESTS));
 
         ShardRead read = RelationshipShard.read("qa", RelationshipShard.write(relationships));
@@ -40,15 +41,27 @@ class RelationshipShardRoundTripTest {
     @Test
     void everyRegistrableRelationIsWrittenInAFormTheReaderAccepts() {
         // implemented_by is derived, never registered (RelationshipWire); every other relation must read back clean, or
-        // the next registration over the shard is refused as unreadable.
+        // the next registration over the shard is refused as unreadable. Each joins the first endpoint pair the
+        // endpoint table allows it (ADR-0064 decision 13).
         List<Relationship> relationships = EnumSet.complementOf(EnumSet.of(RelationType.IMPLEMENTED_BY)).stream()
-                .map(type -> Relationship.of(A, new Urn(NodeKind.DIRECTIVE, "to-" + type.token()), type))
+                .map(type -> {
+                    EndpointPair pair = type.endpoints().iterator().next();
+                    return Relationship.of(
+                            endpoint(pair.source(), "from-" + type.token()),
+                            endpoint(pair.target(), "to-" + type.token()),
+                            type);
+                })
                 .toList();
 
         ShardRead read = RelationshipShard.read("qa", RelationshipShard.write(relationships));
 
         assertThat(read.findings()).isEmpty();
         assertThat(read.relationships()).containsExactlyElementsOf(relationships);
+    }
+
+    private static Urn endpoint(NodeKind kind, String id) {
+        return Urn.parse(kind.token() + ":" + (kind == NodeKind.ACTION ? "m/" + id : id))
+                .orElseThrow();
     }
 
     @Test

@@ -230,25 +230,26 @@ class ActionContextWalkOwnershipTest {
     }
 
     @Test
-    void anEligibleRootFirstReachedByVocabularyIsListedThroughTheActionAndStillSeedsItsPass() {
-        // Research R3, revised after squad A7: first reach wins in every step, vocabulary included. V is project-wide,
-        // but the action's vocabulary step reaches it first, so it is listed through the action; as a root of the
-        // project pass it still seeds steps 2 to 5, which list what it requires through the project.
+    void anEligibleRootFirstReachedByTheActionIsListedThroughTheActionAndStillSeedsItsPass() {
+        // Research R3, revised after squad A7: first reach wins in every step. V is project-wide, but the action's
+        // requires step reaches it first, so it is listed through the action, which does not follow the suggestions of
+        // a required artifact; as a root of the project pass it still seeds steps 2 to 5, which list what it suggests
+        // through the project.
         Closure closure = closure(
                 List.of("tactic:T", "directive:V", "procedure:R"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "directive:V"),
-                edge("directive:V", RelationType.REQUIRES, "procedure:R"));
+                edge("tactic:T", RelationType.REQUIRES, "directive:V"),
+                edge("directive:V", RelationType.SUGGESTS, "procedure:R"));
 
-        Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
+        Context context = effective(closure, 1, ActionContextWalkOwnershipTest::everything);
 
         assertThat(context.entries())
                 .extracting(Entry::urn, Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
                 .containsExactly(
-                        tuple(urn("directive:V"), Step.VOCABULARY, Pass.ACTION, Optional.empty(), urn("tactic:T"), 2),
+                        tuple(urn("directive:V"), Step.REQUIRES, Pass.ACTION, Optional.empty(), urn("tactic:T"), 2),
                         tuple(
                                 urn("procedure:R"),
-                                Step.REQUIRES,
+                                Step.SUGGESTS,
                                 Pass.PROJECT,
                                 Optional.of(urn("directive:V")),
                                 urn("directive:V"),
@@ -258,37 +259,37 @@ class ActionContextWalkOwnershipTest {
 
     @Test
     void whatARootReachesThroughAnArtifactAnEarlierPassListedNamesThatRoot() {
-        // V is listed by the action's vocabulary step, so its requires are not walked in pass 1; the project root W
-        // requires V and walks through it to R, which the project pass lists under W's root.
+        // V is listed by the action's requires step, so its suggestions are not walked in pass 1; the project root W
+        // suggests V and walks through it to R, which the project pass lists under W's root.
         Closure closure = closure(
-                List.of("tactic:T", "glossary_context:V", "directive:W", "procedure:R"),
+                List.of("tactic:T", "procedure:V", "directive:W", "procedure:R"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "glossary_context:V"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
-                edge("glossary_context:V", RelationType.REQUIRES, "procedure:R"));
+                edge("tactic:T", RelationType.REQUIRES, "procedure:V"),
+                edge("directive:W", RelationType.SUGGESTS, "procedure:V"),
+                edge("procedure:V", RelationType.SUGGESTS, "procedure:R"));
 
-        Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
+        Context context = effective(closure, 2, ActionContextWalkOwnershipTest::everything);
 
         assertThat(entry(context, "procedure:R"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via)
-                .containsExactly(
-                        Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_context:V"));
+                .containsExactly(Step.SUGGESTS, Pass.PROJECT, Optional.of(urn("directive:W")), urn("procedure:V"));
     }
 
     /**
-     * The project root W requires V, which the action's vocabulary step listed first; V's vocabulary G is what W reaches
-     * by step 5, so the project pass lists it through V (review cycle 1, probe 1).
+     * The project root W suggests V, which the action's requires step listed first; V's suggestion X and X's vocabulary
+     * G are what W reaches by steps 3 and 5, so the project pass lists them through V and X (review cycle 1, probe 1).
      */
     @Test
     void anArtifactAnEarlierPassListedStillSeedsTheVocabularyStepOfALaterPass() {
         Closure closure = closure(
-                List.of("tactic:T", "glossary_context:V", "directive:W", "glossary_context:G"),
+                List.of("tactic:T", "procedure:V", "directive:W", "procedure:X", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "glossary_context:V"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
-                edge("glossary_context:V", RelationType.VOCABULARY, "glossary_context:G"));
+                edge("tactic:T", RelationType.REQUIRES, "procedure:V"),
+                edge("directive:W", RelationType.SUGGESTS, "procedure:V"),
+                edge("procedure:V", RelationType.SUGGESTS, "procedure:X"),
+                edge("procedure:X", RelationType.VOCABULARY, "glossary_context:G"));
 
-        Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
+        Context context = effective(closure, 2, ActionContextWalkOwnershipTest::everything);
 
         assertThat(context.entries())
                 .extracting(Entry::urn, Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
@@ -305,63 +306,65 @@ class ActionContextWalkOwnershipTest {
                                 Step.VOCABULARY,
                                 Pass.PROJECT,
                                 Optional.of(urn("directive:W")),
-                                urn("glossary_context:V"),
-                                3),
+                                urn("procedure:X"),
+                                4),
+                        tuple(urn("procedure:V"), Step.REQUIRES, Pass.ACTION, Optional.empty(), urn("tactic:T"), 2),
                         tuple(
-                                urn("glossary_context:V"),
-                                Step.VOCABULARY,
-                                Pass.ACTION,
-                                Optional.empty(),
-                                urn("tactic:T"),
-                                2),
+                                urn("procedure:X"),
+                                Step.SUGGESTS,
+                                Pass.PROJECT,
+                                Optional.of(urn("directive:W")),
+                                urn("procedure:V"),
+                                3),
                         tuple(urn("tactic:T"), Step.SCOPE, Pass.ACTION, Optional.empty(), urn(START), 1));
     }
 
     @Test
     void withoutTheActionReachingItTheProjectPassListsTheSameVocabularyThroughTheSameRoot() {
         Closure closure = closure(
-                List.of("tactic:T", "glossary_context:V", "directive:W", "glossary_context:G"),
+                List.of("tactic:T", "procedure:V", "directive:W", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("directive:W", RelationType.REQUIRES, "glossary_context:V"),
-                edge("glossary_context:V", RelationType.VOCABULARY, "glossary_context:G"));
+                edge("directive:W", RelationType.REQUIRES, "procedure:V"),
+                edge("procedure:V", RelationType.VOCABULARY, "glossary_context:G"));
 
         Context context = effective(closure, 0, ActionContextWalkOwnershipTest::everything);
 
-        assertThat(entry(context, "glossary_context:V"))
+        assertThat(entry(context, "procedure:V"))
                 .extracting(Entry::step, Entry::pass, Entry::root)
                 .containsExactly(Step.REQUIRES, Pass.PROJECT, Optional.of(urn("directive:W")));
         assertThat(entry(context, "glossary_context:G"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via)
-                .containsExactly(
-                        Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("glossary_context:V"));
+                .containsExactly(Step.VOCABULARY, Pass.PROJECT, Optional.of(urn("directive:W")), urn("procedure:V"));
     }
 
     /**
-     * The project root W suggests S, which the action's vocabulary step listed first; what S requires is what W reaches
-     * by step 4, so the project pass lists it through S (review cycle 1, probe 2).
+     * The project root W suggests S, which the action's requires step listed first without following its suggestions;
+     * W reaches S's suggestion Y by step 3 and what Y requires by step 4, so the project pass lists it through Y (review
+     * cycle 1, probe 2).
      */
     @Test
     void anArtifactAnEarlierPassListedStillSeedsTheRequiresOfSuggestedStepOfALaterPass() {
         Closure closure = closure(
-                List.of("tactic:T", "procedure:S", "directive:W", "procedure:R"),
+                List.of("tactic:T", "procedure:S", "directive:W", "procedure:Y", "procedure:R"),
                 edge(START, RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "procedure:S"),
+                edge("tactic:T", RelationType.REQUIRES, "procedure:S"),
                 edge("directive:W", RelationType.SUGGESTS, "procedure:S"),
-                edge("procedure:S", RelationType.REQUIRES, "procedure:R"));
+                edge("procedure:S", RelationType.SUGGESTS, "procedure:Y"),
+                edge("procedure:Y", RelationType.REQUIRES, "procedure:R"));
 
-        Context context = effective(closure, 1, ActionContextWalkOwnershipTest::everything);
+        Context context = effective(closure, 2, ActionContextWalkOwnershipTest::everything);
 
         assertThat(entry(context, "procedure:S"))
                 .extracting(Entry::step, Entry::pass)
-                .containsExactly(Step.VOCABULARY, Pass.ACTION);
+                .containsExactly(Step.REQUIRES, Pass.ACTION);
         assertThat(entry(context, "procedure:R"))
                 .extracting(Entry::step, Entry::pass, Entry::root, Entry::via, Entry::hops)
                 .containsExactly(
                         Step.REQUIRES_OF_SUGGESTED,
                         Pass.PROJECT,
                         Optional.of(urn("directive:W")),
-                        urn("procedure:S"),
-                        3);
+                        urn("procedure:Y"),
+                        4);
     }
 
     @Test

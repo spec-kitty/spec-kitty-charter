@@ -64,7 +64,13 @@ public enum PackFindingCode {
      * {@link OverrideSourceRule}). It is the violation code {@value OverrideSourceRule#CODE} of the graph document at
      * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
      */
-    OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING);
+    OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING),
+    /**
+     * An edge of a graph document whose relation does not allow its source and target kinds (ADR-0064 decision 13,
+     * {@link RelationshipEndpointRule}). It is the violation code {@value RelationshipEndpointRule#CODE} of the graph
+     * document at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    RELATIONSHIP_ENDPOINT_NOT_ALLOWED(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {

@@ -132,6 +132,15 @@ class EndpointRuleTest {
     }
 
     @Test
+    @DisplayName(
+            "an overrides edge from a step is the table's fault, not the source rule's: a step has no artifact kind")
+    void overridesFromAStepIsTheTablesFault() {
+        Fault fault = (Fault) bind(RelationType.OVERRIDES, "action:software-dev/plan", "action:software-dev/build");
+
+        assertThat(fault.code()).isEqualTo(EndpointRule.ENDPOINT_NOT_ALLOWED);
+    }
+
+    @Test
     @DisplayName("a tension joins two guidance kinds only")
     void aTensionJoinsGuidanceOnly() {
         assertThat(EndpointRule.bindTension(

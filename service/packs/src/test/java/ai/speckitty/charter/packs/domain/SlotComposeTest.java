@@ -90,7 +90,7 @@ class SlotComposeTest {
     private static Relationship enhances(String from, String to) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),

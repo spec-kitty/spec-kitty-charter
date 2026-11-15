@@ -51,6 +51,13 @@ class ReachabilityTest {
         return Reachability.reach(index, request(starts, stopAt, false));
     }
 
+    /** The five relations and {@code overrides}, the one relation that reaches a mission type. */
+    private static ReachResult reachOverriding(EdgeIndex index, Set<Urn> starts, Predicate<Urn> stopAt) {
+        Set<RelationType> relations = EnumSet.copyOf(FIVE);
+        relations.add(RelationType.OVERRIDES);
+        return Reachability.reach(index, new ReachRequest(starts, relations, stopAt, Optional.empty()));
+    }
+
     private static Via via(String predecessor, RelationType relation) {
         return new Via(urn(predecessor), relation);
     }
@@ -101,9 +108,9 @@ class ReachabilityTest {
         EdgeIndex index = new Closure()
                 .pack(
                         "alpha",
-                        List.of("directive:D", "styleguide:S", "tactic:E"),
+                        List.of("directive:D", "styleguide:S", "directive:E"),
                         edge("directive:D", RelationType.SUGGESTS, "styleguide:S"),
-                        edge("tactic:E", RelationType.ENHANCES, "directive:D"))
+                        edge("directive:E", RelationType.ENHANCES, "directive:D"))
                 .index();
 
         ReachResult result = Reachability.reach(
@@ -123,7 +130,7 @@ class ReachabilityTest {
                         edge("directive:D", RelationType.REQUIRES, "tactic:X"),
                         edge("tactic:X", RelationType.REQUIRES, "tactic:Y"),
                         edge("tactic:X", RelationType.REQUIRES, "tactic:Z"),
-                        edge("directive:D", RelationType.SCOPE, "tactic:Y"))
+                        edge("directive:D", RelationType.REFINES, "tactic:Y"))
                 .index();
 
         ReachResult result = reach(index, urns("directive:D"), denied("tactic:X"));
@@ -132,7 +139,7 @@ class ReachabilityTest {
         assertThat(result.behindStopped()).containsExactly(urn("tactic:Z"));
     }
 
-    /** P specializes_from Q; Q requires R and suggests S; with {@code directRequirer}, D also requires Q. */
+    /** P specializes_from Q; Q requires R and suggests S; with {@code directRequirer}, D also suggests Q. */
     private static EdgeIndex lineageIndex(boolean directRequirer) {
         List<String> held = List.of("agent_profile:P", "agent_profile:Q", "tactic:R", "styleguide:S", "directive:D");
         List<Relationship> edges = new ArrayList<>(List.of(
@@ -140,7 +147,7 @@ class ReachabilityTest {
                 edge("agent_profile:Q", RelationType.REQUIRES, "tactic:R"),
                 edge("agent_profile:Q", RelationType.SUGGESTS, "styleguide:S")));
         if (directRequirer) {
-            edges.add(edge("directive:D", RelationType.REQUIRES, "agent_profile:Q"));
+            edges.add(edge("directive:D", RelationType.SUGGESTS, "agent_profile:Q"));
         }
         return new Closure()
                 .pack("alpha", held, edges.toArray(Relationship[]::new))
@@ -199,13 +206,14 @@ class ReachabilityTest {
                         List.of("agent_profile:P", "agent_profile:Q", "agent_profile:Q2", "tactic:R2"),
                         edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "agent_profile:Q"),
                         edge("agent_profile:Q", RelationType.SPECIALIZES_FROM, "agent_profile:Q2"),
-                        edge("agent_profile:Q2", RelationType.SCOPE, "tactic:R2"))
+                        edge("agent_profile:Q2", RelationType.REQUIRES, "tactic:R2"))
                 .index();
 
         ReachResult result = Reachability.reach(index, request(urns("agent_profile:P"), urn -> false, true));
 
         assertThat(result.reached()).containsOnlyKeys(urn("agent_profile:P"), urn("tactic:R2"));
-        assertThat(result.reached().get(urn("tactic:R2"))).containsExactly(via("agent_profile:Q2", RelationType.SCOPE));
+        assertThat(result.reached().get(urn("tactic:R2")))
+                .containsExactly(via("agent_profile:Q2", RelationType.REQUIRES));
         assertThat(result.ancestorsPassed()).containsExactlyInAnyOrder(urn("agent_profile:Q"), urn("agent_profile:Q2"));
     }
 
@@ -247,7 +255,7 @@ class ReachabilityTest {
     @Test
     void aPackQualifiedTargetIsReachedInThePackThatHoldsIt() {
         EdgeIndex index = new Closure()
-                .pack("beta", List.of("tactic:T", "tactic:U"), edge("tactic:T", RelationType.INSTANTIATES, "tactic:U"))
+                .pack("beta", List.of("tactic:T", "tactic:U"), edge("tactic:T", RelationType.REFINES, "tactic:U"))
                 .pack(
                         "alpha",
                         List.of("beta"),
@@ -258,17 +266,17 @@ class ReachabilityTest {
         ReachResult result = reach(index, urns("directive:D"), urn -> false);
 
         assertThat(result.reached()).containsOnlyKeys(urn("directive:D"), urn("tactic:T"), urn("tactic:U"));
-        assertThat(result.reached().get(urn("tactic:U"))).containsExactly(via("tactic:T", RelationType.INSTANTIATES));
+        assertThat(result.reached().get(urn("tactic:U"))).containsExactly(via("tactic:T", RelationType.REFINES));
     }
 
-    /** J4: Q is both P's ancestor and D's direct requires target; only the in-force Q crosses its suggests. */
+    /** J4: Q is both P's ancestor and D's direct suggests target; only the in-force Q crosses its suggests. */
     @Test
     void anAncestorThatIsAlsoADirectTargetIsInForceAndPassedThrough() {
         ReachResult result = Reachability.reach(
                 lineageIndex(true), request(urns("agent_profile:P", "directive:D"), urn -> false, true));
 
         assertThat(result.reached().get(urn("agent_profile:Q")))
-                .containsExactly(via("directive:D", RelationType.REQUIRES));
+                .containsExactly(via("directive:D", RelationType.SUGGESTS));
         assertThat(result.reached()).containsKeys(urn("tactic:R"), urn("styleguide:S"));
         assertThat(result.reached().get(urn("tactic:R")))
                 .as("reached both in force from Q and passed through as P's ancestor")
@@ -328,21 +336,21 @@ class ReachabilityTest {
     }
 
     /**
-     * Mission type m holds the steps plan and review; plan requires directive D. Another type's step is held too.
-     * With {@code requirer}, directive R requires m.
+     * Mission type m holds the steps plan and review; plan scopes directive D. Another type's step is held too. With
+     * {@code overrider}, mission type n overrides m: the one relation that reaches a mission type (ADR-0064 decision
+     * 13).
      */
-    private static EdgeIndex missionTypeIndex(boolean requirer) {
+    private static EdgeIndex missionTypeIndex(boolean overrider) {
         List<String> held = List.of(
                 "mission_type:m",
                 "action:m/plan",
                 "action:m/review",
                 "action:other/plan",
                 "directive:D",
-                "directive:R");
-        List<Relationship> edges =
-                new ArrayList<>(List.of(edge("action:m/plan", RelationType.REQUIRES, "directive:D")));
-        if (requirer) {
-            edges.add(edge("directive:R", RelationType.REQUIRES, "mission_type:m"));
+                "mission_type:n");
+        List<Relationship> edges = new ArrayList<>(List.of(edge("action:m/plan", RelationType.SCOPE, "directive:D")));
+        if (overrider) {
+            edges.add(edge("mission_type:n", RelationType.OVERRIDES, "mission_type:m"));
         }
         return new Closure()
                 .pack("alpha", held, edges.toArray(Relationship[]::new))
@@ -361,13 +369,12 @@ class ReachabilityTest {
                 .containsExactly(via("mission_type:m", RelationType.REQUIRES));
         assertThat(result.reached().get(urn("action:m/review")))
                 .containsExactly(via("mission_type:m", RelationType.REQUIRES));
-        assertThat(result.reached().get(urn("directive:D")))
-                .containsExactly(via("action:m/plan", RelationType.REQUIRES));
+        assertThat(result.reached().get(urn("directive:D"))).containsExactly(via("action:m/plan", RelationType.SCOPE));
     }
 
     @Test
     void aMissionTypeTheWalkReachesBringsItsStepsToo() {
-        ReachResult result = reach(missionTypeIndex(true), urns("directive:R"), urn -> false);
+        ReachResult result = reachOverriding(missionTypeIndex(true), urns("mission_type:n"), urn -> false);
 
         assertThat(result.reached())
                 .containsKeys(urn("mission_type:m"), urn("action:m/plan"), urn("action:m/review"), urn("directive:D"))
@@ -376,9 +383,9 @@ class ReachabilityTest {
 
     @Test
     void theStepsOfAStoppedMissionTypeLieBehindTheStop() {
-        ReachResult result = reach(missionTypeIndex(true), urns("directive:R"), denied("mission_type:m"));
+        ReachResult result = reachOverriding(missionTypeIndex(true), urns("mission_type:n"), denied("mission_type:m"));
 
-        assertThat(result.reached()).containsOnlyKeys(urn("directive:R"));
+        assertThat(result.reached()).containsOnlyKeys(urn("mission_type:n"));
         assertThat(result.stopped()).containsOnlyKeys(urn("mission_type:m"));
         assertThat(result.behindStopped())
                 .containsExactlyInAnyOrder(urn("action:m/plan"), urn("action:m/review"), urn("directive:D"));
@@ -402,11 +409,11 @@ class ReachabilityTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:m", "action:m/held", "directive:Held"),
-                        edge("action:m/held", RelationType.REQUIRES, "directive:Held"))
+                        edge("action:m/held", RelationType.SCOPE, "directive:Held"))
                 .pack(
                         "beta",
                         List.of("action:m/orphan", "directive:Orphan"),
-                        edge("action:m/orphan", RelationType.REQUIRES, "directive:Orphan"))
+                        edge("action:m/orphan", RelationType.SCOPE, "directive:Orphan"))
                 .index();
 
         ReachResult result = reach(index, urns("mission_type:m"), urn -> false);

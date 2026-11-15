@@ -114,6 +114,10 @@ put:
         FR-014) is refused validation_failed with one violation at /from whose code is overrides_source_not_activatable:
         such an artifact has no activation state and cannot stand in for another. Nothing is written. The same edge
         from an activatable kind is unchanged.
+        An edge whose type does not allow its from and to kinds (the endpoint table of ADR-0064 decision 13; for
+        example a procedure that requires a step's action, or an overrides edge between two kinds) is refused
+        validation_failed with one violation at /type whose code is relationship_endpoint_not_allowed, after the two
+        refusals above, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -126,6 +130,8 @@ put:
           examples:
             overrides-source-not-activatable:
               $ref: ../examples/CharterRefusal.overrides-source-not-activatable.yaml
+            relationship-endpoint-not-allowed:
+              $ref: ../examples/CharterRefusal.relationship-endpoint-not-allowed.yaml
     '428':
       $ref: ../../_shared/responses/Problem.yaml
     '500':

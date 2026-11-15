@@ -1,0 +1,19 @@
+summary: A registration refused because an edge joins two kinds its relation does not allow (ADR-0064 decision 13).
+value:
+  registrationId: 01M7B19K00000000000000EP1A
+  state: refused
+  packId: acme
+  acceptedAt: '2026-11-13T10:00:00Z'
+  finishedAt: '2026-11-13T10:00:01Z'
+  problem:
+    title: Validation failed
+    status: 422
+    code: validation_failed
+    detail: 'The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml.'
+    violations:
+    - pointer: procedure.graph.yaml
+      code: relationship_endpoint_not_allowed
+      detail: 'procedure.graph.yaml: a requires edge may not connect procedure to action'
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M7B19K00000000000000EP1A

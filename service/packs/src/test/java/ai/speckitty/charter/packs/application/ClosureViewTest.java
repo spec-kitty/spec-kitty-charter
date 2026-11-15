@@ -76,7 +76,7 @@ class ClosureViewTest {
     private static Relationship edge(String from, RelationType type, String to) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),
@@ -323,64 +323,53 @@ class ClosureViewTest {
                 .containsExactly(u("action:M/s"), u("action:M/t"));
     }
 
+    /**
+     * A step enhancer with an artifact target, alone or beside an action target, is a shape the endpoint table refuses
+     * (ADR-0064 decision 13: a step enhancement enhances an action only), so no closure can hold it.
+     */
     @Test
-    void aStepEnhancerWithAnActionAndAnArtifactTargetKeepsTheEnhancerRule() {
-        pack(
-                "alpha",
-                List.of("mission_type:M", "action:M/s", "tactic:T", "step_enhancement:x"),
-                edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"),
-                edge("step_enhancement:x", RelationType.ENHANCES, "tactic:T"));
-
-        expect(
-                select("step_enhancement:x", "mission_type:M"),
-                "step_enhancement:x",
-                State.INACTIVE,
-                Reason.ENHANCED_TARGET_NOT_IN_FORCE);
-        expect(
-                select("step_enhancement:x", "mission_type:M", "tactic:T"),
-                "step_enhancement:x",
-                State.ACTIVE,
-                Reason.SELECTED);
+    void aStepEnhancerWithAnArtifactTargetIsRefusedByTheEndpointTable() {
+        assertThat(edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"))
+                .as("the action target alone is the shape rule E6 amends")
+                .isNotNull();
+        assertThatThrownBy(() -> edge("step_enhancement:x", RelationType.ENHANCES, "tactic:T"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("an enhances edge may not connect step_enhancement to tactic");
     }
 
+    /** An enhancer of another kind whose target is an action is a shape the endpoint table refuses (decision 13). */
     @Test
-    void aStepEnhancerOfOneArtifactTargetKeepsTheEnhancerRule() {
-        pack(
-                "alpha",
-                List.of("mission_type:M", "tactic:T", "step_enhancement:x"),
-                edge("step_enhancement:x", RelationType.ENHANCES, "tactic:T"));
-
-        expect(
-                select("step_enhancement:x", "mission_type:M"),
-                "step_enhancement:x",
-                State.INACTIVE,
-                Reason.ENHANCED_TARGET_NOT_IN_FORCE);
-        expect(select("step_enhancement:x", "tactic:T"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
-    }
-
-    @Test
-    void anEnhancerOfAnotherKindWhoseTargetIsAnActionKeepsTheEnhancerRule() {
-        pack(
-                "alpha",
-                List.of("mission_type:M", "action:M/s", "tactic:Y"),
-                edge("tactic:Y", RelationType.ENHANCES, "action:M/s"));
-
-        expect(select("tactic:Y", "mission_type:M"), "tactic:Y", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+    void anEnhancerOfAnotherKindWhoseTargetIsAnActionIsRefusedByTheEndpointTable() {
+        assertThatThrownBy(() -> edge("tactic:Y", RelationType.ENHANCES, "action:M/s"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("an enhances edge may not connect tactic to action");
     }
 
     // ---- the node predicate, built from the in-force states (decisions 01M702A71YF7WNDTG2AA89K8ZA,
     // 01M7037ZNKJ6JTRKGD7G695ZV1)
 
-    /** One pack: mission type {@code M}, steps {@code a} and {@code b}, artifacts {@code T}, {@code U}, {@code D}. */
+    /**
+     * One pack: mission type {@code M}, steps {@code a} and {@code b}, artifacts {@code T}, {@code U}, {@code D}, and
+     * {@code E}, which enhances {@code T}; step {@code b} scopes {@code E}, so it is no project-wide root of step
+     * {@code a}.
+     */
     private void aMissionTypeWithAnAction() {
         pack(
                 "alpha",
-                List.of("mission_type:M", "action:M/a", "action:M/b", "tactic:T", "tactic:U", "directive:D", "skill:E"),
+                List.of(
+                        "mission_type:M",
+                        "action:M/a",
+                        "action:M/b",
+                        "tactic:T",
+                        "tactic:U",
+                        "directive:D",
+                        "tactic:E"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
-                edge("action:M/a", RelationType.SCOPE, "action:M/b"),
+                edge("action:M/b", RelationType.SCOPE, "tactic:E"),
+                edge("mission_type:M", RelationType.REQUIRES, "action:M/b"),
                 edge("tactic:T", RelationType.REQUIRES, "directive:D"),
                 edge("tactic:T", RelationType.SUGGESTS, "tactic:U"),
-                edge("skill:E", RelationType.ENHANCES, "tactic:T"));
+                edge("tactic:E", RelationType.ENHANCES, "tactic:T"));
     }
 
     private static List<String> names(Iterable<Urn> urns) {
@@ -400,7 +389,7 @@ class ClosureViewTest {
         assertThat(names(graph.nodes())).containsExactly("action:M/a", "action:M/b", "mission_type:M", "tactic:T");
         assertThat(graph.edges())
                 .extracting(edge -> edge.source() + " " + edge.relation().token() + " " + edge.target())
-                .containsExactly("action:M/a scope action:M/b", "action:M/a scope tactic:T");
+                .containsExactly("action:M/a scope tactic:T", "mission_type:M requires action:M/b");
     }
 
     @Test
@@ -424,7 +413,7 @@ class ClosureViewTest {
                         .entry(u("template:Tpl"), MutabilityLevel.LOCKED)
                         .build(),
                 List.of("mission_type:M", "action:M/a", "template:Tpl", "tactic:T"),
-                edge("action:M/a", RelationType.SCOPE, "template:Tpl"),
+                edge("tactic:T", RelationType.REQUIRES, "template:Tpl"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"));
         ClosureView view = view();
         InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T")));
@@ -460,7 +449,7 @@ class ClosureViewTest {
     void theWalkStartsAtTheHeldStepOfAMissionTypeInForceAndListsOnlyArtifactsInForce() {
         aMissionTypeWithAnAction();
         ClosureView view = view();
-        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T", "skill:E")));
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T", "tactic:E")));
 
         ActionContextWalk.Context context = view.actionContext("M", "a", 1, states);
 
@@ -469,7 +458,7 @@ class ClosureViewTest {
                 .as("action:M/b is a held step, never an entry; D is not selected and U is not in force")
                 .extracting(entry -> entry.urn().toString())
                 .containsExactly("tactic:T");
-        assertThat(context.entries().getFirst().enhancedBy()).containsExactly(u("skill:E"));
+        assertThat(context.entries().getFirst().enhancedBy()).containsExactly(u("tactic:E"));
     }
 
     @Test
@@ -478,7 +467,7 @@ class ClosureViewTest {
                 "alpha",
                 List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:U"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
-                new Relationship(
+                Relationship.of(
                         u("tactic:T"),
                         u("tactic:U"),
                         RelationType.SUGGESTS,
@@ -502,10 +491,10 @@ class ClosureViewTest {
     void aSuggestedArtifactNotSelectedIsASuggestionCandidateWithTheWhenAndTheReasonOfTheEdge() {
         pack(
                 "alpha",
-                List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:S", "tactic:Other"),
+                List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:S", "glossary_context:Other"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
-                edge("tactic:T", RelationType.VOCABULARY, "tactic:Other"),
-                new Relationship(
+                edge("tactic:T", RelationType.VOCABULARY, "glossary_context:Other"),
+                Relationship.of(
                         u("tactic:T"),
                         u("tactic:S"),
                         RelationType.SUGGESTS,

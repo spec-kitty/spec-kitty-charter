@@ -207,7 +207,7 @@ Feature: One artifact or one registered relationship is removed from a pack
     And I remember the ETag
     And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
       """
-      {"from": "directive:D2", "to": "agent_profile:jenny", "type": "requires"}
+      {"from": "directive:D2", "to": "agent_profile:jenny", "type": "suggests"}
       """
     Then the response status is 201
     When I GET "/packs/qa"

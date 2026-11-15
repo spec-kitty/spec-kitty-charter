@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -59,7 +60,7 @@ class EnhancementComposeTest {
     private static Relationship edge(String from, RelationType type, String to) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),
@@ -205,17 +206,20 @@ class EnhancementComposeTest {
         @Test
         void anEnhancerOfAnotherShapeIsNotJudged() {
             PackUnderResolution base = base();
-            PackUnderResolution enhancer = pack("enhancer", List.of("base"), "step_enhancement:x", "tactic:t");
+            PackUnderResolution enhancer = pack("enhancer", List.of("base"), "step_enhancement:x");
 
             assertThat(EnhancementCompose.targetHeld(
                             List.of(base, enhancer),
                             enhancer,
                             List.of(
                                     enhances("step_enhancement:x", "base::action:M/s"),
-                                    enhances("step_enhancement:x", "base::action:M/nosuch"),
-                                    enhances("tactic:t", "base::action:M/nosuch"))))
-                    .as("a step enhancement with two targets, and a tactic, keep rule E6 as built")
+                                    enhances("step_enhancement:x", "base::action:M/nosuch"))))
+                    .as("a step enhancement with two targets keeps rule E6 as built")
                     .isEmpty();
+            assertThatIllegalArgumentException()
+                    .as("a tactic enhancing an action is a shape the endpoint table refuses (ADR-0064 decision 13)")
+                    .isThrownBy(() -> enhances("tactic:t", "base::action:M/nosuch"))
+                    .withMessageContaining("an enhances edge may not connect tactic to action");
         }
 
         @Test

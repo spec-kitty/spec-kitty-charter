@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The single owner of the pack rules: it chooses every code and writes every text. It is pure; an adapter reads
@@ -194,6 +196,7 @@ public final class PackPolicy {
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.addAll(promptSlotFindings(contents));
         findings.addAll(overrideSourceFindings(name, contents));
+        findings.addAll(endpointFindings(name, contents));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
@@ -292,6 +295,7 @@ public final class PackPolicy {
             case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED.token();
             case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
             case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> OverrideSourceRule.CODE;
+            case RELATIONSHIP_ENDPOINT_NOT_ALLOWED -> RelationshipEndpointRule.CODE;
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
@@ -320,6 +324,41 @@ public final class PackPolicy {
                             fault.file(),
                             List.of(EDGES, Integer.toString(i)),
                             origin(packName, fault.file()) + ": " + fault.reason()));
+                }
+            }
+        }
+        return findings;
+    }
+
+    /**
+     * Judges the edges of every graph document that was read by {@link RelationshipEndpointRule}, as the load does: one
+     * blocking finding per edge whose relation does not allow its endpoint kinds, at its document and its place
+     * {@code /edges/<index>}. A document that could not be read is refused on its own and not judged here.
+     */
+    private static List<PackFinding> endpointFindings(String packName, PackContents contents) {
+        RelationshipEndpointRule.Scope scope = new RelationshipEndpointRule.Scope(
+                contents.descriptor() instanceof FileRead.Read<PackDescriptor> descriptor
+                        ? descriptor.value().name()
+                        : packName,
+                contents.stepEnhancements().enhancements().stream()
+                        .map(StepEnhancementFacts.Enhancement::id)
+                        .collect(Collectors.toSet()));
+        List<PackFinding> findings = new ArrayList<>();
+        for (FileRead<RawGraph> document : documents(contents)) {
+            if (!(document instanceof FileRead.Read<RawGraph> read)) {
+                continue;
+            }
+            RawGraph raw = read.value();
+            for (int i = 0; i < raw.edges().size(); i++) {
+                RawEdge edge = raw.edges().get(i);
+                Optional<String> reason = RelationshipEndpointRule.refusal(
+                        new OverrideSourceRule.Edge(raw.file(), edge.source(), edge.target(), edge.relation()), scope);
+                if (reason.isPresent()) {
+                    findings.add(new PackFinding(
+                            PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
+                            raw.file(),
+                            List.of(EDGES, Integer.toString(i)),
+                            origin(packName, raw.file()) + ": " + reason.get()));
                 }
             }
         }
@@ -708,6 +747,19 @@ public final class PackPolicy {
             switch (outcome) {
                 case Relationship relationship -> relationships.add(relationship);
                 case Tension tension -> tensions.add(tension);
+                // Refused by the table or by the source rule. In a pack's graph documents each pack-level pass reports
+                // it under its own code; the registered shard is read on its own, so its read reports it here.
+                case EndpointRule.Fault refused -> {
+                    if (registered) {
+                        findings.add(new PackFinding(
+                                EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE.equals(refused.code())
+                                        ? PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE
+                                        : PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
+                                raw.file(),
+                                List.of(EDGES, Integer.toString(i)),
+                                origin + ": " + refused.message()));
+                    }
+                }
                 default -> findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
             }
         }
@@ -784,8 +836,9 @@ public final class PackPolicy {
     }
 
     /**
-     * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, or
-     * the finding text for the first fault.
+     * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, the
+     * {@link EndpointRule.Fault} of an edge whose relation does not allow its endpoints, or the finding text for the
+     * first other fault.
      */
     private static Object edge(RawEdge raw, String origin) {
         if (TENSION.equals(raw.relation())) {
@@ -800,16 +853,14 @@ public final class PackPolicy {
                     + " authored as an edge";
         }
         Object endpoints = endpoints(raw, origin, relation);
-        return endpoints instanceof Endpoints bound
-                ? new Relationship(
-                        bound.from(),
-                        bound.fromPack(),
-                        bound.to(),
-                        bound.toPack(),
-                        relation.get(),
-                        raw.when(),
-                        raw.reason())
-                : endpoints;
+        if (!(endpoints instanceof Endpoints bound)) {
+            return endpoints;
+        }
+        return switch (EndpointRule.bind(
+                relation.get(), bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())) {
+            case EndpointRule.Bound typed -> typed.relationship();
+            case EndpointRule.Fault fault -> fault;
+        };
     }
 
     /**
@@ -817,9 +868,13 @@ public final class PackPolicy {
      */
     private static Object tension(RawEdge raw, String origin) {
         Object endpoints = endpoints(raw, origin, Optional.empty());
-        return endpoints instanceof Endpoints bound
-                ? new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())
-                : endpoints;
+        if (!(endpoints instanceof Endpoints bound)) {
+            return endpoints;
+        }
+        Optional<EndpointRule.Fault> fault = EndpointRule.bindTension(bound.from(), bound.to());
+        return fault.isPresent()
+                ? fault.get()
+                : new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason());
     }
 
     /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */

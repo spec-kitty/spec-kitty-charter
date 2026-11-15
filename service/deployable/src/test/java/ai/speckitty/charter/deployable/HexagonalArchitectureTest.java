@@ -7,7 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -942,6 +944,32 @@ class HexagonalArchitectureTest {
         assertBites(
                 WEB_IS_AN_ADAPTER_RING, ROOT + ".activations.application.badfixture", "ApplicationNamesWebTransport");
         assertBites(WEB_NAMES_NO_SLICE, ROOT + ".web.badfixture", "WebNamesASlice", "WebNamesTheArtifactsEdge");
+    }
+
+    /**
+     * RELATIONSHIP_IS_BOUND (ADR-0064 decision 13): a relationship is built only through {@link EndpointRule}, which
+     * judges its endpoint kinds against the table, or the typed factories; no class but {@link Relationship} itself and
+     * {@link EndpointRule} calls its constructor, so no relationship exists whose relation does not allow its kinds.
+     */
+    private static final ArchRule RELATIONSHIP_IS_BOUND = noClasses()
+            .that()
+            .doNotHaveFullyQualifiedName(Relationship.class.getName())
+            .and()
+            .doNotHaveFullyQualifiedName(EndpointRule.class.getName())
+            .should()
+            .callConstructorWhere(DescribedPredicate.describe(
+                    "a constructor of " + Relationship.class.getSimpleName(),
+                    call -> call.getTargetOwner().isEquivalentTo(Relationship.class)));
+
+    @Test
+    @DisplayName("RELATIONSHIP_IS_BOUND")
+    void everyRelationshipIsBoundThroughTheEndpointTable() {
+        RELATIONSHIP_IS_BOUND.check(classes);
+    }
+
+    @Test
+    void theRelationshipRuleFailsOnAClassThatBuildsOnePastTheTable() {
+        assertBites(RELATIONSHIP_IS_BOUND, ROOT + ".kernel.domain", "RelationshipBuiltPastTheTable");
     }
 
     /**

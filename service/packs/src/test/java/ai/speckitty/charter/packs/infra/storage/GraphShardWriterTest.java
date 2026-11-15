@@ -92,7 +92,7 @@ class GraphShardWriterTest {
                 List.of(
                         new DrgNode(A, Optional.of("A"), Optional.empty(), List.of(), Optional.of("a.md")),
                         new DrgNode(new Urn(NodeKind.AGENT_PROFILE, "p"), Optional.empty())),
-                List.of(new Relationship(A, B, RelationType.SUGGESTS, Optional.empty(), Optional.of("why"))),
+                List.of(Relationship.of(A, B, RelationType.SUGGESTS, Optional.empty(), Optional.of("why"))),
                 List.of(new Tension(A, B, Optional.empty(), Optional.of("both"))));
 
         String written = GraphShardWriter.writeFragment(graph);

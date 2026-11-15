@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -690,15 +691,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 entry.get("relation") instanceof String token ? RelationType.fromToken(token) : Optional.empty();
         if (target.isPresent() && target.get().asUrn().isPresent() && relation.isPresent()) {
             try {
-                out.edges.add(new Relationship(
-                        source.get().asUrn().get(),
-                        source.get().packName(),
-                        target.get().asUrn().get(),
-                        target.get().packName(),
-                        relation.get(),
-                        Optional.empty(),
-                        Optional.empty()));
-                return;
+                if (EndpointRule.bind(
+                                relation.get(),
+                                source.get().asUrn().get(),
+                                source.get().packName(),
+                                target.get().asUrn().get(),
+                                target.get().packName(),
+                                Optional.empty(),
+                                Optional.empty())
+                        instanceof EndpointRule.Bound bound) {
+                    out.edges.add(bound.relationship());
+                    return;
+                }
+                // refused by the endpoint table: not a relationship, so it is kept loosely below
             } catch (IllegalArgumentException selfLoop) {
                 // not a relationship: it is kept loosely below
             }

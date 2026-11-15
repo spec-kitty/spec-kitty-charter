@@ -108,14 +108,22 @@ public final class OverrideSourceRule {
      * @return the reason it is refused, or empty when it is no {@code overrides} edge or its source kind is activatable
      */
     public static Optional<String> refusal(Relationship relationship) {
-        if (relationship.type() != RelationType.OVERRIDES) {
+        return refusal(relationship.from(), relationship.toReference().toString(), relationship.type());
+    }
+
+    /**
+     * Judges one edge a write would register, before it is bound.
+     *
+     * @param from the source
+     * @param target the target as written
+     * @param type the relation
+     * @return the reason it is refused, or empty when it is no {@code overrides} edge or its source kind is activatable
+     */
+    public static Optional<String> refusal(Urn from, String target, RelationType type) {
+        if (type != RelationType.OVERRIDES) {
             return Optional.empty();
         }
-        return inactivatableKind(relationship.from())
-                .map(kind -> reason(
-                        kind,
-                        relationship.from().toString(),
-                        relationship.toReference().toString()));
+        return inactivatableKind(from).map(kind -> reason(kind, from.toString(), target));
     }
 
     /**

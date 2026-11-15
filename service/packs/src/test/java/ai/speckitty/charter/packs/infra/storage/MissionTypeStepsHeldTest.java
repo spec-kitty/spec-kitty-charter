@@ -58,7 +58,7 @@ class MissionTypeStepsHeldTest {
                 schema_version: '1.0'
                 id: SD
                 title: SD
-                intent: The directive the implement step requires
+                intent: The directive the implement step scopes
                 enforcement: required
                 """);
         Files.writeString(pack.resolve("directives/OTHER.directive.yaml"), """
@@ -78,7 +78,7 @@ class MissionTypeStepsHeldTest {
                 edges:
                 - source: action:software-dev/implement
                   target: directive:SD
-                  relation: requires
+                  relation: scope
                 """);
         return pack;
     }
@@ -117,7 +117,7 @@ class MissionTypeStepsHeldTest {
         assertThat(result.reached()).containsOnlyKeys(SOFTWARE_DEV, IMPLEMENT, SD);
         assertThat(result.reached().get(IMPLEMENT))
                 .containsExactly(new ReachResult.Via(SOFTWARE_DEV, RelationType.REQUIRES));
-        assertThat(result.reached().get(SD)).containsExactly(new ReachResult.Via(IMPLEMENT, RelationType.REQUIRES));
+        assertThat(result.reached().get(SD)).containsExactly(new ReachResult.Via(IMPLEMENT, RelationType.SCOPE));
         assertThat(result.reached()).doesNotContainKey(OTHER);
     }
 }

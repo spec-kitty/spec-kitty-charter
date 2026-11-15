@@ -8,6 +8,9 @@ Feature: The reads answer each refusal and each conditional answer they declare
     upper-case letter, an asset, skill, glossary context or term id with an upper-case letter, a mission type id with an upper-case letter) is
     a 400 without a code, and the same read with a valid id is judged by the domain;
   - a read whose If-None-Match matches the ETag it answered is a 304, and the ETag is sent again.
+  - a composing read of a closure holding a pack whose graph document has an edge its relation does not allow (the
+    endpoint table, ADR-0064 decision 13; #350, a procedure that requires a step's action) is a 500 pack_unreadable
+    naming the graph document, and the same edge to a directive is read.
 
   Background:
     Given the org pack "main" with the file "pack.yaml":
@@ -99,3 +102,57 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | getActivationSkippedReport | /activations/a-1/skipped |
       | listActivationPacks        | /activations/a-1/packs   |
       | getOpenApiDocument         | /openapi.yaml            |
+
+  # ADR-0064 decision 13, #350: a procedure may require guidance, never a step's action.
+  Scenario: A closure whose pack has a procedure requiring a step's action is unreadable and names the graph document
+    Given the org pack "main" with the file "procedures/p.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: p
+      title: P
+      description: A procedure.
+      entry_condition: A change is ready.
+      exit_condition: The change is shipped.
+      steps:
+        - title: Ship it
+      """
+    And the org pack "main" with the file "procedure.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: procedure:p
+        target: action:software-dev/implement
+        relation: requires
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field at "/detail" contains "procedure.graph.yaml"
+
+  # The 200 beside the 500 above: the closure differs only in the target of the edge.
+  Scenario: The positive control: the same closure with the procedure requiring the directive is read
+    Given the org pack "main" with the file "procedures/p.procedure.yaml":
+      """
+      schema_version: '1.0'
+      id: p
+      title: P
+      description: A procedure.
+      entry_condition: A change is ready.
+      exit_condition: The change is shipped.
+      steps:
+        - title: Ship it
+      """
+    And the org pack "main" with the file "procedure.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: procedure:p
+        target: directive:D
+        relation: requires
+      """
+    When I GET "/offering"
+    Then the response status is 200

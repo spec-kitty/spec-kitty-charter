@@ -159,9 +159,9 @@ class GraphProjectionTest {
                 edge("directive:D", RelationType.REQUIRES, "tactic:U"),
                 edge("directive:D", RelationType.REQUIRES, "tactic:T"),
                 edge("directive:D", RelationType.REQUIRES, "tactic:T"),
-                edge("directive:D", RelationType.ENHANCES, "tactic:T"));
-        List<String> held = List.of("directive:D", "tactic:T", "tactic:U");
-        Predicate<Urn> all = inForce("directive:D", "tactic:T", "tactic:U");
+                edge("directive:D", RelationType.ENHANCES, "directive:E"));
+        List<String> held = List.of("directive:D", "directive:E", "tactic:T", "tactic:U");
+        Predicate<Urn> all = inForce("directive:D", "directive:E", "tactic:T", "tactic:U");
 
         GraphProjection forward = project(new Closure().pack("alpha", held, written.toArray(Relationship[]::new)), all);
         GraphProjection backward = project(
@@ -169,7 +169,7 @@ class GraphProjectionTest {
 
         assertThat(forward.edges())
                 .containsExactly(
-                        link("directive:D", RelationType.ENHANCES, "tactic:T"),
+                        link("directive:D", RelationType.ENHANCES, "directive:E"),
                         link("directive:D", RelationType.REQUIRES, "tactic:T"),
                         link("directive:D", RelationType.REQUIRES, "tactic:U"),
                         link("directive:D", RelationType.SUGGESTS, "tactic:T"),

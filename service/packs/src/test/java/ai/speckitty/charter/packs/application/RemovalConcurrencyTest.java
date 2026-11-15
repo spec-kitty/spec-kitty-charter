@@ -92,7 +92,7 @@ class RemovalConcurrencyTest {
             deletes.remove(new PackIdentifier("a"), "directive", "X", "*");
         }));
         Future<Boolean> put = pool.submit(attempt(start, writers, 1, () -> {
-            puts.registerRelationship(new PackIdentifier("b"), edgeOntoX(), revisionOfB);
+            puts.registerRelationship(new PackIdentifier("b"), RelationshipDraft.of(edgeOntoX()), revisionOfB);
         }));
         boolean deleted = delete.get(60, TimeUnit.SECONDS);
         boolean registered = put.get(60, TimeUnit.SECONDS);
@@ -132,7 +132,7 @@ class RemovalConcurrencyTest {
     }
 
     private static Relationship edgeOntoX() {
-        return new Relationship(
+        return Relationship.of(
                 Urn.parse("directive:Y").orElseThrow(),
                 Optional.empty(),
                 Urn.parse("directive:X").orElseThrow(),

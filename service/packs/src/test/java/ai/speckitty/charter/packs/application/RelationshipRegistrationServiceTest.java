@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.AssetIdentifier;
 import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
@@ -26,6 +27,7 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFragment;
 import ai.speckitty.charter.packs.domain.StepEnhancement;
 import ai.speckitty.charter.packs.domain.Template;
@@ -51,6 +53,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * The kind-neutral relationship registration use case over in-memory ports (FR-009/012), and, for the {@code asset:}
@@ -75,10 +79,10 @@ class RelationshipRegistrationServiceTest {
         Urn b = new Urn(NodeKind.DIRECTIVE, "DIR_B");
         String etag = store.currentRevision(PACK).token();
 
-        service.registerRelationship(PACK, Relationship.of(a, b, RelationType.REQUIRES), etag);
+        service.registerRelationship(PACK, RelationshipDraft.of(Relationship.of(a, b, RelationType.REQUIRES)), etag);
         service.registerRelationship(
                 PACK,
-                Relationship.of(a, b, RelationType.REQUIRES),
+                RelationshipDraft.of(Relationship.of(a, b, RelationType.REQUIRES)),
                 store.currentRevision(PACK).token());
         assertThat(store.relationships(PACK))
                 .as("re-registering the same pair keeps one edge")
@@ -87,7 +91,8 @@ class RelationshipRegistrationServiceTest {
         // Same orientation, new payload: last write wins (US1 scenario 3).
         service.registerRelationship(
                 PACK,
-                new Relationship(a, b, RelationType.SUGGESTS, Optional.of("second"), Optional.of("because")),
+                RelationshipDraft.of(
+                        Relationship.of(a, b, RelationType.SUGGESTS, Optional.of("second"), Optional.of("because"))),
                 store.currentRevision(PACK).token());
         assertThat(store.relationships(PACK)).singleElement().satisfies(r -> {
             assertThat(r.type()).isEqualTo(RelationType.SUGGESTS);
@@ -98,7 +103,7 @@ class RelationshipRegistrationServiceTest {
         // The reverse orientation replaces rather than adds (unordered-pair identity).
         RelationshipRegistrationService.Registered reverse = service.registerRelationship(
                 PACK,
-                Relationship.of(b, a, RelationType.SUGGESTS),
+                RelationshipDraft.of(Relationship.of(b, a, RelationType.SUGGESTS)),
                 store.currentRevision(PACK).token());
         assertThat(reverse.created()).isFalse();
         assertThat(store.relationships(PACK)).hasSize(1);
@@ -113,7 +118,7 @@ class RelationshipRegistrationServiceTest {
     void aTargetQualifiedToAPackTheComposeDoesNotHoldIsRefusedAndChangesNothing() {
         seedDirective("DIR_A");
         Urn from = new Urn(NodeKind.DIRECTIVE, "DIR_A");
-        Relationship toUnknownPack = new Relationship(
+        Relationship toUnknownPack = Relationship.of(
                 from,
                 Optional.empty(),
                 new Urn(NodeKind.PROCEDURE, "p"),
@@ -124,7 +129,9 @@ class RelationshipRegistrationServiceTest {
         int before = store.commits;
 
         assertThatThrownBy(() -> service.registerRelationship(
-                        PACK, toUnknownPack, store.currentRevision(PACK).token()))
+                        PACK,
+                        RelationshipDraft.of(toUnknownPack),
+                        store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
                     assertThat(r.packs())
@@ -145,7 +152,7 @@ class RelationshipRegistrationServiceTest {
 
         assertThatThrownBy(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(unresolvable, external, RelationType.REQUIRES),
+                        RelationshipDraft.of(Relationship.of(unresolvable, external, RelationType.REQUIRES)),
                         store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
@@ -154,7 +161,7 @@ class RelationshipRegistrationServiceTest {
         // from resolves, to is external (allowed): accepted.
         assertThatCode(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(resolvable, external, RelationType.REQUIRES),
+                        RelationshipDraft.of(Relationship.of(resolvable, external, RelationType.REQUIRES)),
                         store.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(before + 1);
@@ -174,7 +181,7 @@ class RelationshipRegistrationServiceTest {
 
         assertThatThrownBy(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(ghost, ivan, RelationType.SPECIALIZES_FROM),
+                        RelationshipDraft.of(Relationship.of(ghost, ivan, RelationType.SPECIALIZES_FROM)),
                         store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
@@ -182,7 +189,7 @@ class RelationshipRegistrationServiceTest {
 
         assertThatCode(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(jenny, ivan, RelationType.SPECIALIZES_FROM),
+                        RelationshipDraft.of(Relationship.of(jenny, ivan, RelationType.SPECIALIZES_FROM)),
                         store.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(before + 1);
@@ -196,13 +203,16 @@ class RelationshipRegistrationServiceTest {
         Relationship edge = Relationship.of(
                 new Urn(NodeKind.DIRECTIVE, "DIR_A"), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
 
-        assertThatThrownBy(() -> service.registerRelationship(PACK, edge, "sha256:" + "0".repeat(64)))
+        assertThatThrownBy(() ->
+                        service.registerRelationship(PACK, RelationshipDraft.of(edge), "sha256:" + "0".repeat(64)))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
 
         assertThatCode(() -> service.registerRelationship(
-                        PACK, edge, store.currentRevision(PACK).token()))
+                        PACK,
+                        RelationshipDraft.of(edge),
+                        store.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
     }
 
@@ -211,7 +221,7 @@ class RelationshipRegistrationServiceTest {
         seedDirective("DIR_A");
         Relationship edge = Relationship.of(
                 new Urn(NodeKind.DIRECTIVE, "DIR_A"), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
-        assertThatThrownBy(() -> service.registerRelationship(PACK, edge, null))
+        assertThatThrownBy(() -> service.registerRelationship(PACK, RelationshipDraft.of(edge), null))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.MISSING));
@@ -220,18 +230,21 @@ class RelationshipRegistrationServiceTest {
     // ---- FR-012 / R6: asset: and template: URNs as endpoints, through the real store (not the fake) ----------------
 
     private static final Urn LOGO = new Urn(NodeKind.ASSET, "logo");
+    private static final Urn BANNER = new Urn(NodeKind.ASSET, "banner");
     private static final Urn MINUTES = new Urn(NodeKind.TEMPLATE, "writing/minutes.md");
 
     /**
-     * Over the real {@code DomainRepositoryService} and commit store on a temp pack holding a sidecar, its payload and
-     * a template: an edge from the held asset to the template, one from the template, and one to the asset register
-     * and read back from the shard; the real ADR-0012 gate (every target open) accepts the new kinds.
+     * Over the real {@code DomainRepositoryService} and commit store on a temp pack holding two sidecars, their payloads
+     * and a template: an edge from a held asset to the other, one from a directive to the template, and one to an asset
+     * register and read back from the shard; the real ADR-0012 gate (every target open) accepts the new kinds. A
+     * template is the source of no relation, and an asset requires only an asset (ADR-0064 decision 13).
      */
     @Test
-    void relationshipsFromAndToAHeldAssetAndTemplateRegisterThroughTheRealStore(@TempDir Path host) throws IOException {
+    void relationshipsFromAndToAHeldAssetAndToATemplateRegisterThroughTheRealStore(@TempDir Path host)
+            throws IOException {
         RealPack real = RealPack.over(host, new PackMutabilityPolicy());
         Pack loaded = real.repository.load(PACK);
-        assertThat(loaded.assets()).extracting(Asset::urn).containsExactly(LOGO);
+        assertThat(loaded.assets()).extracting(Asset::urn).containsExactlyInAnyOrder(BANNER, LOGO);
         assertThat(loaded.templates()).extracting(Template::urn).containsExactly(MINUTES);
         real.directives.registerDirective(
                 PACK,
@@ -239,14 +252,14 @@ class RelationshipRegistrationServiceTest {
                 false,
                 real.writeStore.currentRevision(PACK).token());
         Urn guard = new Urn(NodeKind.DIRECTIVE, "GUARD");
-        Relationship assetToTemplate = Relationship.of(LOGO, MINUTES, RelationType.REQUIRES);
-        Relationship templateToDirective = Relationship.of(MINUTES, guard, RelationType.SUGGESTS);
+        Relationship assetToAsset = Relationship.of(LOGO, BANNER, RelationType.REQUIRES);
+        Relationship directiveToTemplate = Relationship.of(guard, MINUTES, RelationType.SUGGESTS);
         Relationship directiveToAsset = Relationship.of(guard, LOGO, RelationType.REQUIRES);
 
-        for (Relationship edge : List.of(assetToTemplate, templateToDirective, directiveToAsset)) {
+        for (Relationship edge : List.of(assetToAsset, directiveToTemplate, directiveToAsset)) {
             PackRevision before = real.writeStore.currentRevision(PACK);
             RelationshipRegistrationService.Registered registered =
-                    real.relationships.registerRelationship(PACK, edge, before.token());
+                    real.relationships.registerRelationship(PACK, RelationshipDraft.of(edge), before.token());
             assertThat(registered.created()).as("%s is new", edge).isTrue();
             assertThat(registered.revision())
                     .as("%s advanced the revision", edge)
@@ -254,11 +267,11 @@ class RelationshipRegistrationServiceTest {
         }
 
         assertThat(real.writeStore.registeredRelationships(PACK))
-                .containsExactlyInAnyOrder(assetToTemplate, templateToDirective, directiveToAsset);
+                .containsExactlyInAnyOrder(assetToAsset, directiveToTemplate, directiveToAsset);
         assertThat(real.repository.load(PACK).assetFiles())
-                .as("the relationship commits kept the asset file")
+                .as("the relationship commits kept the asset files")
                 .extracting(AssetFile::path)
-                .containsExactly("debrief/logo.png");
+                .containsExactlyInAnyOrder("debrief/banner.png", "debrief/logo.png");
     }
 
     /** An {@code asset:} URN the pack does not hold is refused as before; the held one is the same-fixture control. */
@@ -269,7 +282,8 @@ class RelationshipRegistrationServiceTest {
 
         assertThatThrownBy(() -> real.relationships.registerRelationship(
                         PACK,
-                        Relationship.of(new Urn(NodeKind.ASSET, "ghost"), MINUTES, RelationType.REQUIRES),
+                        RelationshipDraft.of(
+                                Relationship.of(new Urn(NodeKind.ASSET, "ghost"), BANNER, RelationType.REQUIRES)),
                         before.token()))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
@@ -281,15 +295,18 @@ class RelationshipRegistrationServiceTest {
         assertThat(real.writeStore.registeredRelationships(PACK)).isEmpty();
 
         assertThatCode(() -> real.relationships.registerRelationship(
-                        PACK, Relationship.of(LOGO, MINUTES, RelationType.REQUIRES), before.token()))
+                        PACK,
+                        RelationshipDraft.of(Relationship.of(LOGO, BANNER, RelationType.REQUIRES)),
+                        before.token()))
                 .doesNotThrowAnyException();
         assertThat(real.writeStore.registeredRelationships(PACK))
-                .containsExactly(Relationship.of(LOGO, MINUTES, RelationType.REQUIRES));
+                .containsExactly(Relationship.of(LOGO, BANNER, RelationType.REQUIRES));
     }
 
     /**
      * The mutability gate resolves the new kinds by their kind: a source locking {@code asset} refuses the edge from
-     * the asset, while the template edge on the same fixture and gate registers.
+     * the asset, while an edge from a directive to the asset on the same fixture and gate registers (a template is the
+     * source of no relation, ADR-0064 decision 13).
      */
     @Test
     void aMutabilityPolicyLockingAssetsRefusesTheAssetEdgeWhileTheTemplateEdgeRegisters(@TempDir Path host)
@@ -302,17 +319,27 @@ class RelationshipRegistrationServiceTest {
         PackRevision before = real.writeStore.currentRevision(PACK);
 
         assertThatThrownBy(() -> real.relationships.registerRelationship(
-                        PACK, Relationship.of(LOGO, MINUTES, RelationType.REQUIRES), before.token()))
+                        PACK,
+                        RelationshipDraft.of(Relationship.of(LOGO, BANNER, RelationType.REQUIRES)),
+                        before.token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         r -> assertThat(r.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION));
         assertThat(real.writeStore.currentRevision(PACK)).isEqualTo(before);
 
+        real.directives.registerDirective(
+                PACK,
+                directive("GUARD"),
+                false,
+                real.writeStore.currentRevision(PACK).token());
+        Relationship directiveToAsset =
+                Relationship.of(new Urn(NodeKind.DIRECTIVE, "GUARD"), LOGO, RelationType.REQUIRES);
         assertThatCode(() -> real.relationships.registerRelationship(
-                        PACK, Relationship.of(MINUTES, LOGO, RelationType.REQUIRES), before.token()))
+                        PACK,
+                        RelationshipDraft.of(directiveToAsset),
+                        real.writeStore.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
-        assertThat(real.writeStore.registeredRelationships(PACK))
-                .containsExactly(Relationship.of(MINUTES, LOGO, RelationType.REQUIRES));
+        assertThat(real.writeStore.registeredRelationships(PACK)).containsExactly(directiveToAsset);
     }
 
     // ---- FR-014: an overrides edge comes from an activatable artifact (#447, option 1) ------------------------------
@@ -341,7 +368,7 @@ class RelationshipRegistrationServiceTest {
 
         for (Urn source : List.of(MINUTES, LOGO)) {
             assertThatThrownBy(() -> real.relationships.registerRelationship(
-                            PACK, Relationship.of(source, target, RelationType.OVERRIDES), before.token()))
+                            PACK, draft(source, target, RelationType.OVERRIDES), before.token()))
                     .as("%s overrides %s", source, target)
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
@@ -358,7 +385,7 @@ class RelationshipRegistrationServiceTest {
         }
 
         Relationship twin = Relationship.of(new Urn(NodeKind.DIRECTIVE, "E"), target, RelationType.OVERRIDES);
-        assertThatCode(() -> real.relationships.registerRelationship(PACK, twin, before.token()))
+        assertThatCode(() -> real.relationships.registerRelationship(PACK, RelationshipDraft.of(twin), before.token()))
                 .doesNotThrowAnyException();
         assertThat(real.writeStore.registeredRelationships(PACK)).containsExactly(twin);
     }
@@ -414,6 +441,12 @@ class RelationshipRegistrationServiceTest {
             write(pack, "assets/debrief/logo.png.asset.yaml", "id: logo\nmime: image/png\npath: debrief/logo.png\n");
             Files.write(
                     pack.resolve("assets/debrief/logo.png"), new byte[] {(byte) 0x89, 'P', 'N', 'G', 0, '\r', '\n'});
+            write(
+                    pack,
+                    "assets/debrief/banner.png.asset.yaml",
+                    "id: banner\nmime: image/png\npath: debrief/banner.png\n");
+            Files.write(
+                    pack.resolve("assets/debrief/banner.png"), new byte[] {(byte) 0x89, 'P', 'N', 'G', 0, '\r', '\n'});
             write(pack, "templates/writing/minutes.md", "# Minutes\n");
             StorageRootLocations locations = new StorageRootLocations(host);
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
@@ -480,12 +513,12 @@ class RelationshipRegistrationServiceTest {
         store.packs.put(PACK, store.packs.get(PACK).with(contract("implement")));
         Urn implement = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "implement");
         Urn ghost = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "ghost");
-        Urn external = new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_030");
+        Urn external = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "upstream");
         int before = store.commits;
 
         assertThatThrownBy(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(ghost, external, RelationType.REQUIRES),
+                        RelationshipDraft.of(Relationship.of(ghost, external, RelationType.OVERRIDES)),
                         store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
@@ -493,7 +526,7 @@ class RelationshipRegistrationServiceTest {
 
         assertThatCode(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(implement, external, RelationType.REQUIRES),
+                        RelationshipDraft.of(Relationship.of(implement, external, RelationType.OVERRIDES)),
                         store.currentRevision(PACK).token()))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(before + 1);
@@ -545,12 +578,34 @@ class RelationshipRegistrationServiceTest {
         store.packs.put(PACK, pack);
     }
 
-    private void assertRefusedAndNothingWritten(Relationship relationship, String named) {
+    /** A draft as a write asks for it, whether or not the endpoint table allows its kinds. */
+    private static RelationshipDraft draft(Urn from, Urn to, RelationType type) {
+        return new RelationshipDraft(from, to, Optional.empty(), type, Optional.empty(), Optional.empty());
+    }
+
+    private void assertRefusedByTheEndpointTableAndNothingWritten(RelationshipDraft draft) {
         int before = store.commits;
         List<Relationship> shard = store.relationships(PACK);
 
         assertThatThrownBy(() -> service.registerRelationship(
-                        PACK, relationship, store.currentRevision(PACK).token()))
+                        PACK, draft, store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                        assertThat(violation.pointer()).isEqualTo("/type");
+                        assertThat(violation.code()).isEqualTo("relationship_endpoint_not_allowed");
+                    });
+                });
+        assertThat(store.commits).isEqualTo(before);
+        assertThat(store.relationships(PACK)).isEqualTo(shard);
+    }
+
+    private void assertRefusedAndNothingWritten(RelationshipDraft draft, String named) {
+        int before = store.commits;
+        List<Relationship> shard = store.relationships(PACK);
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK, draft, store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
                     assertThat(refusal.getMessage())
@@ -565,7 +620,7 @@ class RelationshipRegistrationServiceTest {
     void anOverridesEdgeFromAHeldStepEnhancementIsRefusedAndTheShardIsUnchanged() {
         seedEnhancementAndDirectives();
 
-        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, TYPE, RelationType.OVERRIDES), "overrides");
+        assertRefusedAndNothingWritten(draft(ENHANCEMENT, TYPE, RelationType.OVERRIDES), "overrides");
     }
 
     @Test
@@ -577,7 +632,7 @@ class RelationshipRegistrationServiceTest {
 
         service.registerRelationship(
                 PACK,
-                Relationship.of(a, b, RelationType.OVERRIDES),
+                RelationshipDraft.of(Relationship.of(a, b, RelationType.OVERRIDES)),
                 store.currentRevision(PACK).token());
 
         assertThat(store.commits).isEqualTo(before + 1);
@@ -590,15 +645,16 @@ class RelationshipRegistrationServiceTest {
     void aSecondEnhancesEdgeFromAHeldStepEnhancementIsRefusedAndTheShardIsUnchanged() {
         seedEnhancementAndDirectives();
 
-        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES), "enhances");
+        assertRefusedAndNothingWritten(draft(ENHANCEMENT, STEP, RelationType.ENHANCES), "enhances");
     }
 
+    /** The step-enhancement rules come before the endpoint table, so their code names the fault (WP05 order). */
     @Test
     void anEnhancesEdgeToANonStepIsRefusedBySameRule() {
         seedEnhancementAndDirectives();
 
         assertRefusedAndNothingWritten(
-                Relationship.of(ENHANCEMENT, new Urn(NodeKind.DIRECTIVE, "A"), RelationType.ENHANCES), "enhances");
+                draft(ENHANCEMENT, new Urn(NodeKind.DIRECTIVE, "A"), RelationType.ENHANCES), "enhances");
     }
 
     @Test
@@ -609,8 +665,8 @@ class RelationshipRegistrationServiceTest {
 
         service.registerRelationship(
                 PACK,
-                new Relationship(
-                        ENHANCEMENT, STEP, RelationType.ENHANCES, Optional.empty(), Optional.of("a new rationale")),
+                RelationshipDraft.of(Relationship.of(
+                        ENHANCEMENT, STEP, RelationType.ENHANCES, Optional.empty(), Optional.of("a new rationale"))),
                 store.currentRevision(PACK).token());
 
         assertThat(store.commits).isEqualTo(before + 1);
@@ -624,16 +680,16 @@ class RelationshipRegistrationServiceTest {
         seedEnhancementAndDirectives();
         store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
 
-        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, OTHER_STEP, RelationType.ENHANCES), "enhances");
+        assertRefusedAndNothingWritten(draft(ENHANCEMENT, OTHER_STEP, RelationType.ENHANCES), "enhances");
     }
 
+    /** The edge over the enhances pair is judged by the enhancement rules before the endpoint table (WP05 order). */
     @Test
     void aRelationshipOfAnotherTypeOverTheEnhancesPairOfAHeldEnhancementWouldReplaceItAndIsRefused() {
         seedEnhancementAndDirectives();
-        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
-        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, a, RelationType.ENHANCES))));
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
 
-        assertRefusedAndNothingWritten(Relationship.of(a, ENHANCEMENT, RelationType.SUGGESTS), "leave it with none");
+        assertRefusedAndNothingWritten(draft(ENHANCEMENT, STEP, RelationType.REQUIRES), "leave it with none");
     }
 
     @Test
@@ -641,7 +697,59 @@ class RelationshipRegistrationServiceTest {
         seedEnhancementAndDirectives();
         store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
 
-        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, STEP, RelationType.SUGGESTS), "enhances");
+        assertRefusedAndNothingWritten(draft(ENHANCEMENT, STEP, RelationType.SUGGESTS), "enhances");
+    }
+
+    /**
+     * The fault order of the write (WP05): the step-enhancement rules, then the source rule of slice C, then the endpoint
+     * table. Each row is an edge two rules refuse, and the earlier rule's code names it. No row pairs the step-enhancement
+     * rules with slice C's: a step enhancement is activatable, so the source rule never refuses its edge.
+     */
+    @ParameterizedTest(name = "{0} {2} {1}: {3}")
+    @CsvSource({
+        // step-enhancement rule before the table (overrides across kinds)
+        "step_enhancement:spdd-plan, mission_type:software-dev, overrides, prompt_fragment_invalid",
+        // step-enhancement rule before the table (enhances to a non-step)
+        "step_enhancement:spdd-plan, directive:A, enhances, prompt_fragment_invalid",
+        // slice C's source rule before the table (overrides across kinds from an asset)
+        "asset:seal, directive:A, overrides, overrides_source_not_activatable",
+        // the table alone
+        "directive:A, tactic:t, overrides, relationship_endpoint_not_allowed"
+    })
+    void theFaultOrderNamesTheEarlierRule(String from, String to, String type, String code) {
+        seedEnhancementAndDirectives();
+        store.packs.put(
+                PACK,
+                store.packs.get(PACK).toBuilder()
+                        .assetFile(new AssetFile("seal.png", Payload.of(new byte[] {1})))
+                        .build()
+                        .with(Asset.builder()
+                                .id(new AssetIdentifier("seal"))
+                                .packId(PACK)
+                                .mime("image/png")
+                                .path("seal.png")
+                                .build()));
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        draft(
+                                Urn.parse(from).orElseThrow(),
+                                Urn.parse(to).orElseThrow(),
+                                RelationType.fromToken(type).orElseThrow()),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    if ("prompt_fragment_invalid".equals(code)) {
+                        assertThat(refusal.code()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
+                    } else {
+                        assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                        assertThat(refusal.violations())
+                                .singleElement()
+                                .satisfies(violation ->
+                                        assertThat(violation.code()).isEqualTo(code));
+                    }
+                });
+        assertThat(store.commits).isEqualTo(before);
     }
 
     @Test
@@ -652,7 +760,7 @@ class RelationshipRegistrationServiceTest {
 
         assertThatThrownBy(() -> service.registerRelationship(
                         PACK,
-                        Relationship.of(notHeld, STEP, RelationType.SUGGESTS),
+                        RelationshipDraft.of(Relationship.of(notHeld, STEP, RelationType.ENHANCES)),
                         store.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
@@ -670,7 +778,7 @@ class RelationshipRegistrationServiceTest {
 
         service.registerRelationship(
                 PACK,
-                Relationship.of(b, a, RelationType.SUGGESTS),
+                RelationshipDraft.of(Relationship.of(b, a, RelationType.SUGGESTS)),
                 store.currentRevision(PACK).token());
 
         assertThat(store.commits).isEqualTo(before + 1);
@@ -679,18 +787,16 @@ class RelationshipRegistrationServiceTest {
                 .satisfies(r -> assertThat(r.type()).isEqualTo(RelationType.SUGGESTS));
     }
 
+    /**
+     * An edge that does not start at a held step enhancement is not judged by the enhancement rules: an edge to one is
+     * refused by the endpoint table alone, since no relation targets a step enhancement (decision 13).
+     */
     @Test
     void anEdgeThatDoesNotStartAtAHeldStepEnhancementIsNotJudgedByTheEnhancementRules() {
         seedEnhancementAndDirectives();
         Urn a = new Urn(NodeKind.DIRECTIVE, "A");
-        int before = store.commits;
 
-        service.registerRelationship(
-                PACK,
-                Relationship.of(a, ENHANCEMENT, RelationType.SUGGESTS),
-                store.currentRevision(PACK).token());
-
-        assertThat(store.commits).isEqualTo(before + 1);
+        assertRefusedByTheEndpointTableAndNothingWritten(draft(a, ENHANCEMENT, RelationType.SUGGESTS));
     }
 
     /** One fake that realizes both the load port and the write-path port, recording what a commit persisted. */

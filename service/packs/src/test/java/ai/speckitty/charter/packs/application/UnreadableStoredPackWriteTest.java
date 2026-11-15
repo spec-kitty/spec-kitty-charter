@@ -156,9 +156,10 @@ class UnreadableStoredPackWriteTest {
                 new Urn(NodeKind.DIRECTIVE, "KEPT_ONE"),
                 RelationType.SUGGESTS);
 
-        assertUnreadable(() -> service.registerRelationship(new PackIdentifier("broken"), edge, "*"), rig);
+        assertUnreadable(
+                () -> service.registerRelationship(new PackIdentifier("broken"), RelationshipDraft.of(edge), "*"), rig);
 
-        service.registerRelationship(new PackIdentifier("sound"), edge, "*");
+        service.registerRelationship(new PackIdentifier("sound"), RelationshipDraft.of(edge), "*");
         assertThat(rig.writeStore.registeredRelationships(new PackIdentifier("sound")))
                 .as("the control: the same PUT on the readable pack lands")
                 .singleElement()

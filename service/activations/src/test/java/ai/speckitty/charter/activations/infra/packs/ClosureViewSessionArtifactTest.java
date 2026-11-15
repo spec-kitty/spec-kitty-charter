@@ -313,7 +313,7 @@ class ClosureViewSessionArtifactTest {
     }
 
     private static Relationship relationship(String from, RelationType type, String to) {
-        return new Relationship(urn(from), urn(to), type, Optional.empty(), Optional.empty());
+        return Relationship.of(urn(from), urn(to), type, Optional.empty(), Optional.empty());
     }
 
     /** A closure of hand-built packs, merged for real, whose winners are read from a source that records its reads. */

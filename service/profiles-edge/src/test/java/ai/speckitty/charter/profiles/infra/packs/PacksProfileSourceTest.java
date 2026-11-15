@@ -60,7 +60,7 @@ class PacksProfileSourceTest {
             String from, RelationType type, String to, Optional<String> when, Optional<String> reason) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),

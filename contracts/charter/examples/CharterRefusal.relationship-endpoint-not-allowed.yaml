@@ -1,0 +1,10 @@
+summary: The relationship body asks a procedure to require a step, which the endpoint table does not allow (#350).
+value:
+  title: Validation failed
+  status: 422
+  code: validation_failed
+  detail: 'The relationship is refused: a requires edge may not connect procedure to action.'
+  violations:
+  - pointer: /type
+    code: relationship_endpoint_not_allowed
+    detail: a requires edge may not connect procedure to action

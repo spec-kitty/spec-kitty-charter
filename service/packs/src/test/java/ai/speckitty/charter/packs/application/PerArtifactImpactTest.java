@@ -120,7 +120,7 @@ class PerArtifactImpactTest {
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
 
         CharterRefusal refused = refusal(() -> writes.relationships.registerRelationship(
-                derived, overrides("LOCKED_ONE"), writes.revisionOf("derived")));
+                derived, RelationshipDraft.of(overrides("LOCKED_ONE")), writes.revisionOf("derived")));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
         assertThat(refused.packs())
@@ -133,14 +133,15 @@ class PerArtifactImpactTest {
                 .isEqualTo(before)
                 .doesNotContainKey("registered.graph.yaml");
 
-        writes.relationships.registerRelationship(derived, overrides("OPEN_ONE"), writes.revisionOf("derived"));
+        writes.relationships.registerRelationship(
+                derived, RelationshipDraft.of(overrides("OPEN_ONE")), writes.revisionOf("derived"));
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
                 .as("the control: the target is open")
                 .containsKey("registered.graph.yaml");
     }
 
     private static Relationship overrides(String target) {
-        return new Relationship(
+        return Relationship.of(
                 directiveUrn("DERIVED_ONE"),
                 Optional.empty(),
                 directiveUrn(target),
@@ -161,12 +162,12 @@ class PerArtifactImpactTest {
         writes.directives.registerDirective(derived, directive("derived", "DERIVED_TWO"), false, null);
         writes.relationships.registerRelationship(
                 derived,
-                new Relationship(
+                RelationshipDraft.of(Relationship.of(
                         directiveUrn("DERIVED_ONE"),
                         directiveUrn("DERIVED_TWO"),
                         RelationType.SUGGESTS,
                         Optional.empty(),
-                        Optional.empty()),
+                        Optional.empty())),
                 writes.revisionOf("derived"));
 
         assertThat(rig.filesOf(rig.packs.resolve("derived")))

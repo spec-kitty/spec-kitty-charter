@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -668,7 +669,8 @@ public final class DomainRepositoryService
 
     /**
      * One graph-document edge as the kernel's typed edge, with each endpoint's qualifier as written; empty for an
-     * endpoint or a relation that is no reference, which the reads that judge the document report.
+     * endpoint or a relation that is no reference, or a relation that does not allow the endpoint kinds, which the
+     * reads that judge the document report.
      */
     static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
         try {
@@ -678,14 +680,17 @@ public final class DomainRepositoryService
             if (source.asUrn().isEmpty() || target.asUrn().isEmpty() || relation.isEmpty()) {
                 return Optional.empty();
             }
-            return Optional.of(new Relationship(
-                    source.asUrn().get(),
-                    source.packName(),
-                    target.asUrn().get(),
-                    target.packName(),
-                    relation.get(),
-                    edge.when(),
-                    edge.reason()));
+            return EndpointRule.bind(
+                                    relation.get(),
+                                    source.asUrn().get(),
+                                    source.packName(),
+                                    target.asUrn().get(),
+                                    target.packName(),
+                                    edge.when(),
+                                    edge.reason())
+                            instanceof EndpointRule.Bound bound
+                    ? Optional.of(bound.relationship())
+                    : Optional.empty();
         } catch (IllegalArgumentException malformed) {
             return Optional.empty();
         }

@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ class RelationshipWireTest {
 
     @Test
     void endpointsAtTheCapAreMapped() {
-        Relationship mapped = RelationshipWire.fromWire(wire(URN_AT_THE_CAP, "directive:D1"));
+        RelationshipDraft mapped = RelationshipWire.fromWire(wire(URN_AT_THE_CAP, "directive:D1"));
         assertThat(mapped.from().toString()).hasSize(255);
 
         String qualifiedAtTheCap = "p".repeat(64) + "::directive:" + "D".repeat(255 - 64 - 2 - 10);
@@ -53,7 +53,7 @@ class RelationshipWireTest {
     @Test
     void aTermIsRegisteredOnlyAsTheTargetOfAVocabularyEdge() {
         // Positive control: a term as the target of a vocabulary relationship is mapped, bare or pack-qualified.
-        Relationship valid = RelationshipWire.fromWire(
+        RelationshipDraft valid = RelationshipWire.fromWire(
                 new RelationshipRegistration("agent_profile:p", "core::term:spec-kitty-core/mission", "vocabulary"));
         assertThat(valid.to().toString()).isEqualTo("term:spec-kitty-core/mission");
         assertThat(valid.toPack()).contains("core");

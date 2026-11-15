@@ -71,7 +71,7 @@ class ClosureViewGovernanceTest {
     private static Relationship edge(String from, RelationType type, String to) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),

@@ -217,7 +217,7 @@ public final class GlossaryContext implements CharterArtifact, TermHolder {
         return terms.stream()
                 .flatMap(term -> term.seeAlso().stream())
                 .distinct()
-                .map(reference -> new Relationship(
+                .map(reference -> Relationship.of(
                         source,
                         Optional.empty(),
                         reference.asUrn().orElseThrow(),

@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
@@ -419,20 +420,41 @@ final class FilesystemPackStore {
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
         violations.addAll(overrideSourceViolations(graphs));
+        violations.addAll(RelationshipEndpointRule.violations(edgesOf(graphs), endpointScope(descriptor, elements)));
         return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
     }
 
     /** Each {@code overrides} edge of a readable graph document whose source kind is not activatable, at its file. */
     private static List<PackElementViolation> overrideSourceViolations(GraphRead graphs) {
+        return OverrideSourceRule.judge(edgesOf(graphs)).stream()
+                .map(OverrideSourceRule::violationOf)
+                .toList();
+    }
+
+    /**
+     * The scope of the endpoint rule: the pack's own name and the step enhancements it holds, whose {@code enhances} and
+     * {@code overrides} edges the step-enhancement rules judge at assembly.
+     */
+    private static RelationshipEndpointRule.Scope endpointScope(
+            PackDescriptorDso descriptor, Map<ArtifactKind, List<Stored<?>>> elements) {
+        Set<String> held = new HashSet<>();
+        for (Stored<?> stored : elements.getOrDefault(ArtifactKind.STEP_ENHANCEMENT, List.of())) {
+            if (stored.dso() instanceof StepEnhancementDso enhancement) {
+                held.add(enhancement.id());
+            }
+        }
+        return new RelationshipEndpointRule.Scope(descriptor.name(), held);
+    }
+
+    /** The edges of the readable graph documents as written, in document order. */
+    private static List<OverrideSourceRule.Edge> edgesOf(GraphRead graphs) {
         List<OverrideSourceRule.Edge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
                 edges.add(new OverrideSourceRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
             }
         }
-        return OverrideSourceRule.judge(edges).stream()
-                .map(OverrideSourceRule::violationOf)
-                .toList();
+        return edges;
     }
 
     /**

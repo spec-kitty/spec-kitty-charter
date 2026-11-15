@@ -203,7 +203,7 @@ final class EffectiveReadFixture {
                     "governing", "R is required.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("R")))));
             PackQualifiedReference head = PackQualifiedReference.parse("directive:" + id(0, 0));
             PackQualifiedReference target = PackQualifiedReference.parse("directive:G");
-            edges.add(new Relationship(
+            edges.add(Relationship.of(
                     head.asUrn().orElseThrow(),
                     head.packName(),
                     target.asUrn().orElseThrow(),
@@ -214,7 +214,7 @@ final class EffectiveReadFixture {
             for (int link = 0; link < CHAIN; link++) {
                 PackQualifiedReference from = PackQualifiedReference.parse("directive:" + id(0, link));
                 PackQualifiedReference to = PackQualifiedReference.parse("directive:" + id(0, link + 1));
-                edges.add(new Relationship(
+                edges.add(Relationship.of(
                         from.asUrn().orElseThrow(),
                         from.packName(),
                         to.asUrn().orElseThrow(),

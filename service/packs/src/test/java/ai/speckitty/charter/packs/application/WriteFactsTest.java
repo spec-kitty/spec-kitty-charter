@@ -27,7 +27,7 @@ class WriteFactsTest {
     }
 
     private static Relationship edge(String from, String to, RelationType type, String toPack) {
-        return new Relationship(
+        return Relationship.of(
                 directive(from),
                 Optional.empty(),
                 directive(to),
