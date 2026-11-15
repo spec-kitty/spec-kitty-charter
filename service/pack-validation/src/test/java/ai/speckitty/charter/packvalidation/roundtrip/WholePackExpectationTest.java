@@ -1,15 +1,13 @@
-package ai.speckitty.charter.packs.infra.storage;
+package ai.speckitty.charter.packvalidation.roundtrip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.FileResult;
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Status;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.Evaluation;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.FileResult;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.Status;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +17,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -913,51 +910,6 @@ class WholePackExpectationTest {
         }
     }
 
-    @Nested
-    class TheCensus {
-
-        @TempDir
-        Path temp;
-
-        @Test
-        void filesTakeTheirSchemaKindOrWhereTheyLive() throws IOException {
-            Path pack = temp.resolve("built-in");
-            for (String path : List.of(
-                    "pack.yaml",
-                    "README.md",
-                    "tactic.graph.yaml",
-                    "tactics/x/a.tactic.yaml",
-                    "missions/m/mission.yaml",
-                    "toolguides/GUIDE.md",
-                    "toolguides/notes.txt")) {
-                Files.createDirectories(pack.resolve(path).getParent());
-                Files.writeString(pack.resolve(path), "x");
-            }
-
-            assertThat(WholePackCensus.of(pack))
-                    .containsExactlyEntriesOf(new TreeMap<>(Map.of(
-                            "missions/m/mission.yaml", "retired:*/missions/*/mission.yaml",
-                            "README.md", "pack-document",
-                            "pack.yaml", "pack-descriptor",
-                            "tactic.graph.yaml", "graph-shard",
-                            "tactics/x/a.tactic.yaml", "tactic",
-                            "toolguides/GUIDE.md", "excluded:**/*.md",
-                            "toolguides/notes.txt", "other:toolguides")));
-        }
-
-        @Test
-        void aSymbolicLinkIsCountedNeverFollowed() throws IOException {
-            Path pack = temp.resolve("built-in");
-            Files.createDirectories(pack.resolve("tactics"));
-            Files.writeString(pack.resolve("tactics/a.tactic.yaml"), "x");
-            SymbolicLinks.create(pack.resolve("link.tactic.yaml"), pack.resolve("tactics/a.tactic.yaml"));
-
-            assertThat(WholePackCensus.of(pack))
-                    .containsEntry("link.tactic.yaml", WholePackCensus.SYMLINK)
-                    .containsEntry("tactics/a.tactic.yaml", "tactic");
-        }
-    }
-
     /**
      * A file the table excludes is checked, not compared (#451): it is absent from the tree the store wrote, it is never
      * red and it needs no entry in a baseline list; a file nothing models that is not Markdown stays red.
@@ -965,7 +917,7 @@ class WholePackExpectationTest {
     @Nested
     class TheExcludedFiles {
 
-        private static final String NOTE_KIND = WholePackCensus.EXCLUDED + "**/*.md";
+        private static final String NOTE_KIND = PackRoundTripResult.EXCLUDED + "**/*.md";
 
         private final SortedMap<String, String> census = census(
                 "pack.yaml", "pack-descriptor",
@@ -976,25 +928,6 @@ class WholePackExpectationTest {
         private Evaluation judged(Map<String, Optional<String>> observed) {
             return WholePackExpectation.load("kinds: []\nfiles: []\n", NO_EXCLUSIONS)
                     .evaluate(census, MODELLED, observed);
-        }
-
-        @Test
-        void theCensusTakesAnExcludedKindFromTheTable(@TempDir Path pack) throws IOException {
-            Files.createDirectories(pack.resolve("docs"));
-            Files.writeString(pack.resolve("docs/notes.md"), "# note\n");
-            Files.writeString(pack.resolve("notes.txt"), "stray");
-            Files.createDirectories(pack.resolve("missions/x/templates"));
-            Files.writeString(pack.resolve("missions/x/templates/README.md"), "# t\n");
-
-            assertThat(WholePackCensus.of(pack))
-                    .containsEntry("docs/notes.md", NOTE_KIND)
-                    .containsEntry(
-                            "missions/x/templates/README.md",
-                            WholePackCensus.EXCLUDED + "*/missions/*/templates/**/README.md")
-                    .containsEntry("notes.txt", "other:notes.txt");
-            assertThat(WholePackCensus.kindOf(pack.getFileName().toString(), "README.md"))
-                    .as("the pack document is a file of the pack, not an excluded one")
-                    .isEqualTo("pack-document");
         }
 
         @Test

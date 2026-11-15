@@ -766,9 +766,9 @@ class MissionTypeBindingTest {
             }
         };
         Set<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 recording, source, target, census, new TreeMap<>(), paired, WholePackCensus.formsOf(source));
-        return new Gate(observed, WholePackRoundTripTest.unpaired(target, paired));
+        return new Gate(observed, WholePackGateRun.unpaired(target, paired));
     }
 
     private static MissionType edit(Pack pack, UnaryOperator<MissionType> change) {

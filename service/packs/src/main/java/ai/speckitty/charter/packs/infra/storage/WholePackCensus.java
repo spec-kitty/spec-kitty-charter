@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -31,23 +32,23 @@ import org.jspecify.annotations.Nullable;
  */
 final class WholePackCensus {
 
-    /** The gate kind of a symbolic link: counted, never followed, so "every file once" holds. */
-    static final String SYMLINK = "other:symlink";
+    /** The gate kind of a symbolic link ({@link PackRoundTripResult#SYMLINK}). */
+    static final String SYMLINK = PackRoundTripResult.SYMLINK;
 
-    /** The prefix of a gate kind for a file no schema covers. */
-    static final String OTHER = "other:";
-
-    /**
-     * The prefix of a retired file's gate kind, followed by its rule's glob (ADR-0044 decision 6): a bucket of its own, never
-     * folded into {@code other:}, so a stale file is red.
-     */
-    static final String RETIRED = "retired:";
+    /** The prefix of a gate kind for a file no schema covers ({@link PackRoundTripResult#OTHER}). */
+    static final String OTHER = PackRoundTripResult.OTHER;
 
     /**
-     * The prefix of an excluded file's gate kind, followed by the glob of the rule that excludes it: the gate checks that
-     * the store did not write it ({@link WholePackExpectation}), and it needs no entry in a baseline list.
+     * The prefix of a retired file's gate kind ({@link PackRoundTripResult#RETIRED}): a bucket of its own, never folded
+     * into {@code other:}, so a stale file is red.
      */
-    static final String EXCLUDED = "excluded:";
+    static final String RETIRED = PackRoundTripResult.RETIRED;
+
+    /**
+     * The prefix of an excluded file's gate kind ({@link PackRoundTripResult#EXCLUDED}): the verdict checks that the
+     * store did not write it, and it needs no entry in a baseline list.
+     */
+    static final String EXCLUDED = PackRoundTripResult.EXCLUDED;
 
     private WholePackCensus() {}
 

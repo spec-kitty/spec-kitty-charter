@@ -12,6 +12,8 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -194,7 +196,7 @@ class WholePackExamplesRoundTripTest {
         }
         for (Asset asset : loaded.pack().assets()) {
             String file = loaded.layout().pathOf(asset);
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .compareTexts("asset", Files.readString(pack.resolve(file)), Files.readString(target.resolve(file)))
                     .ifPresent(difference -> out.add(pack + "/" + file + " differs: " + difference));
         }
@@ -209,7 +211,7 @@ class WholePackExamplesRoundTripTest {
         }
         for (Preset preset : loaded.pack().presets()) {
             String file = PresetFiles.pathOf(preset.id());
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .compareTexts(
                             PresetFiles.KIND,
                             Files.readString(pack.resolve(file)),
@@ -222,7 +224,7 @@ class WholePackExamplesRoundTripTest {
         }
         if (loaded.pack().document().isPresent()) {
             String file = PackDocumentMarkdown.FILE;
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .compareMarkdown(Files.readString(pack.resolve(file)), Files.readString(target.resolve(file)))
                     .forEach(difference -> out.add(pack + "/" + file + " differs: " + difference));
         }
@@ -242,7 +244,7 @@ class WholePackExamplesRoundTripTest {
         }
         PackManifests.stale(reloaded.manifest().get(), path -> bytesOf(target.resolve(path)))
                 .forEach(field -> out.add(target + "/" + PackFileSet.MANIFEST + " is written stale at " + field));
-        MeaningComparator.adr0036()
+        MeaningOfTexts.adr0036()
                 .compareTexts(
                         MeaningComparator.MANIFEST,
                         Files.readString(pack.resolve(PackFileSet.MANIFEST)),

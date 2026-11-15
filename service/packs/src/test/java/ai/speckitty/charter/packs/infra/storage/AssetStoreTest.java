@@ -86,7 +86,7 @@ class AssetStoreTest {
         assertThat(dso.title()).isNull();
         String written = Files.readString(target.resolve("notes.asset.yaml"));
         assertThat(written).doesNotContain("title");
-        assertThat(MeaningComparator.adr0036().compareTexts("asset", text, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("asset", text, written))
                 .isEmpty();
     }
 
@@ -110,7 +110,7 @@ class AssetStoreTest {
         store.write(TARGET, AssetBinding.INSTANCE, plain);
 
         assertThat(logo.title()).isEqualTo("Logo: the cat");
-        assertThat(MeaningComparator.adr0036()
+        assertThat(MeaningOfTexts.adr0036()
                         .compareTexts("asset", titled, Files.readString(target.resolve("logo.asset.yaml"))))
                 .isEmpty();
         assertThat(plain.title()).isNull();

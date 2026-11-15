@@ -230,11 +230,11 @@ class ToolguideGuideTest {
             }
         };
         Set<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 recording, source, target, census, new TreeMap<>(), paired, WholePackCensus.formsOf(source));
         assertThat(census).containsEntry(GUIDE_FILE, "toolguide");
         assertThat(WholePackCensus.formsOf(source).apply(GUIDE_FILE)).isEqualTo(ContentForm.MARKDOWN);
-        return new Gate(outcomes, observed, WholePackRoundTripTest.unpaired(target, paired));
+        return new Gate(outcomes, observed, WholePackGateRun.unpaired(target, paired));
     }
 
     // ---- the guide layout (T027), each refusal beside its accepted neighbour --------------------------------------

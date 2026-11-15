@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -77,7 +78,7 @@ class PackManifestRoundTripTest {
                     .as(source.presets().get(i).path())
                     .isNotEqualTo(source.presets().get(i).contentHash());
         }
-        assertThat(MeaningComparator.adr0036()
+        assertThat(MeaningOfTexts.adr0036()
                         .compareTexts(
                                 MeaningComparator.MANIFEST,
                                 Files.readString(pack.resolve(PackFileSet.MANIFEST)),
@@ -187,7 +188,7 @@ class PackManifestRoundTripTest {
 
         assertThat(outcomes.get(PackFileSet.MANIFEST)).isEqualTo(new Written(PackFileSet.MANIFEST));
         assertThat(writtenStale(target, outcomes)).isEmpty();
-        assertThat(MeaningComparator.adr0036()
+        assertThat(MeaningOfTexts.adr0036()
                         .compareTexts(
                                 MeaningComparator.MANIFEST,
                                 Files.readString(pack.resolve(PackFileSet.MANIFEST)),

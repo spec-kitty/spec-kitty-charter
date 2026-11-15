@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.errorprone
+
 // The pack-validation module (ADR-0075 decision 3, as amended 2026-11-13): every pack check as a kernel ruleset, run
 // over the pack's contents that the packs slice's own Spring-free load builds. The service and the pack-check CLI both
 // run it.
@@ -38,8 +40,11 @@ dependencies {
     api(project(":packs"))
     // Exported, so a consumer (pack-check) resolves :packs' versionless dependencies at the same versions.
     api(platform(catalog.lib("spring-boot-bom")))
+    // The whole-pack round trip's expected baseline lists (WholePackExpectation, ADR-0075 decision 8 as amended
+    // 2026-11-15): plain YAML, not pack content, so no pack reader parses them.
+    implementation(catalog.lib("snakeyaml-engine"))
 
-    // The charter-owned example packs (ADR-0070).
+    // The charter-owned example packs (ADR-0070), their expected-red baseline and the round trip's lossy controls.
     testImplementation(testFixtures(project(":packs")))
 }
 
@@ -52,4 +57,59 @@ mutationFloors {
         packages.add("ai.speckitty.charter.packvalidation")
         floor = 85
     }
+}
+
+val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
+val testSourceSet = sourceSets.test.get()
+
+// The whole-pack round trip's gate (`whole-pack`) runs in its own task, below, never in `test` or PIT.
+tasks.test {
+    useJUnitPlatform { excludeTags("whole-pack") }
+}
+
+// The whole-pack round-trip gate (#187; ADR-0075 decision 8, as amended by operator ruling 2 of 2026-11-15): every file of
+// every charter example pack (ADR-0070, #547) goes through the production flow (PackRoundTrip, in :packs main), and
+// WholePackRoundTripRule judges it by meaning against the checked-in expected-red baseline, which sits beside the example
+// packs in :packs' test fixtures (whole-pack/). It writes one report per pack, reports/whole-pack/<pack>.md. It is not part
+// of check; CI requires it through `CI gate / gate`, which calls .github/workflows/whole-pack.yml for the `wholepack`
+// group (epic #186, operator ruling of 2026-11-05).
+val wholePackReports = layout.buildDirectory.dir("reports/whole-pack")
+tasks.register<Test>("wholePackRoundTrip") {
+    group = "verification"
+    description = "The whole-pack round-trip gate over every charter example pack (#187, #547); not part of check."
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = testSourceSet.runtimeClasspath
+    useJUnitPlatform { includeTags("whole-pack") }
+    val reports = wholePackReports
+    outputs.dir(reports).withPropertyName("wholePackReports")
+    systemProperty("charter.wholePackReportDir", reports.get().asFile.absolutePath)
+}
+
+// The nightly open-packs drift watch (ADR-0070, .github/workflows/open-packs-drift.yml): the driftTest source set runs
+// every pack of a spec-kitty-open-packs checkout through the production round trip and the gate's rule, with no
+// expectation (its helpers come from the test source set). `check` (so verifyAll) compiles and lints the source set but
+// never runs it, and no required job runs the driftTest task; -PopenPacksDir points at the checkout (default: the sibling
+// ../spec-kitty-open-packs).
+val driftTestSourceSet = sourceSets.create("driftTest") {
+    compileClasspath += sourceSets.main.get().output + testSourceSet.output
+    runtimeClasspath += sourceSets.main.get().output + testSourceSet.output
+}
+configurations[driftTestSourceSet.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
+configurations[driftTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
+configurations[driftTestSourceSet.compileOnlyConfigurationName].extendsFrom(configurations.testCompileOnly.get())
+// Test code: the same rules as compileTestJava (charter.hand-written), NullAway off.
+tasks.named<JavaCompile>(driftTestSourceSet.compileJavaTaskName) {
+    options.errorprone { disable("NullAway") }
+}
+val openPacksDir = providers.gradleProperty("openPacksDir")
+    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
+    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
+tasks.register<Test>("driftTest") {
+    group = "verification"
+    description = "Round-trips every pack of a spec-kitty-open-packs checkout by meaning (nightly drift watch); not run by check."
+    testClassesDirs = driftTestSourceSet.output.classesDirs
+    classpath = driftTestSourceSet.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("charter.openPacksDir", openPacksDir.get())
+    doNotTrackState("open-packs main moves; a cached pass says nothing about today's tree")
 }

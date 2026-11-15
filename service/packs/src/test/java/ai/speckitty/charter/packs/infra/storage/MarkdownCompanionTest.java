@@ -280,7 +280,7 @@ class MarkdownCompanionTest {
 
     /**
      * Loads {@code source} through a {@link WholePackStore} carrying the test binding, writes the (changed) pack to
-     * {@code target}, and runs the gate's comparison ({@link WholePackRoundTripTest#observe}) with each companion in its
+     * {@code target}, and runs the gate's comparison ({@link WholePackGateRun#observe}) with each companion in its
      * declared form. Every written file must pair with a source file.
      */
     private Map<String, Optional<String>> gate(
@@ -316,7 +316,7 @@ class MarkdownCompanionTest {
         };
         Set<String> paired = new TreeSet<>();
 
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 throughTheStore,
                 source,
                 target,
@@ -326,7 +326,7 @@ class MarkdownCompanionTest {
                 WholePackCensus.formsOf(source, WholePackCensus.companionsOf(source, BINDINGS, RULES)));
 
         assertThat(census).containsEntry(BODY_FILE, "skill");
-        assertThat(WholePackRoundTripTest.unpaired(target, paired)).isEmpty();
+        assertThat(WholePackGateRun.unpaired(target, paired)).isEmpty();
         return observed;
     }
 
@@ -387,11 +387,11 @@ class MarkdownCompanionTest {
             }
         };
         Set<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 recording, source, target, census, new TreeMap<>(), paired, WholePackCensus.formsOf(source));
         assertThat(census).containsEntry(BODY_FILE, "skill");
         assertThat(WholePackCensus.formsOf(source).apply(BODY_FILE)).isEqualTo(ContentForm.TEXT);
-        return new Gate(outcomes, observed, WholePackRoundTripTest.unpaired(target, paired));
+        return new Gate(outcomes, observed, WholePackGateRun.unpaired(target, paired));
     }
 
     // ---- fixture ----------------------------------------------------------------------------------------------------

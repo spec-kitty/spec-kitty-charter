@@ -114,7 +114,7 @@ class PackArtifactExamplesRoundTripTest {
             if (yaml.read(AgentProfileBinding.INSTANCE, text, path.getFileName().toString())
                     instanceof FileRead.Read<AgentProfileDso> read) {
                 String written = yaml.write(AgentProfileBinding.INSTANCE, read.value());
-                MeaningComparator.adr0036()
+                MeaningOfTexts.adr0036()
                         .compareTexts("agent-profile", text, written)
                         .ifPresent(difference -> problems.add(path + ": " + difference));
             } else {

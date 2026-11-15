@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
-import ai.speckitty.charter.packs.infra.storage.MeaningComparator.Difference;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator.Difference;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,7 +46,7 @@ class GlossaryAndSkillCorpusTest {
         for (Path file : files) {
             String source = Files.readString(file, StandardCharsets.UTF_8);
             String written = glossary(file, UnaryOperator.identity());
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .compareTexts("glossary", source, written)
                     .ifPresent(difference -> problems.add(file + ": " + difference));
         }
@@ -68,7 +68,7 @@ class GlossaryAndSkillCorpusTest {
             Optional<SkillDso> reread =
                     store(pack).readAll(PROBE, SkillBinding.INSTANCE).stream().findFirst();
 
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .compareTexts(
                             "skill",
                             Files.readString(file, StandardCharsets.UTF_8),
@@ -159,7 +159,7 @@ class GlossaryAndSkillCorpusTest {
             seeAlso += (int) glossary(file).terms().stream()
                     .filter(term -> !term.seeAlso().isEmpty())
                     .count();
-            differences.addAll(MeaningComparator.adr0036()
+            differences.addAll(MeaningOfTexts.adr0036()
                     .differencesOfTexts("glossary", source, glossary(file, GlossaryAndSkillCorpusTest::dropSeeAlso)));
         }
 

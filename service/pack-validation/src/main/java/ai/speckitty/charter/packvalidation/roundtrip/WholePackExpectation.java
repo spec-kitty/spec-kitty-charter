@@ -1,5 +1,6 @@
-package ai.speckitty.charter.packs.infra.storage;
+package ai.speckitty.charter.packvalidation.roundtrip;
 
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -10,6 +11,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -17,6 +19,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 
 /**
  * What the whole-pack gate expects to see, and the two-way ratchet that holds the observed result to it.
@@ -45,17 +49,20 @@ import org.jspecify.annotations.Nullable;
  * ({@link #none}) every red is a problem: the open-packs drift test judges each pack that way, so a file of a kind the
  * round trip does not model fails it by kind and path.
  */
-final class WholePackExpectation {
+public final class WholePackExpectation {
 
-    static final String EXPECTED_RED_RESOURCE = "whole-pack/expected-red.yaml";
-    static final String EXCLUSIONS_RESOURCE = "whole-pack/exclusions.yaml";
-    static final String KNOWN_FAILURES_RESOURCE = "whole-pack/known-failures.yaml";
+    /** The classpath resource of the expected-red list. */
+    public static final String EXPECTED_RED_RESOURCE = "whole-pack/expected-red.yaml";
+    /** The classpath resource of the exclusion list. */
+    public static final String EXCLUSIONS_RESOURCE = "whole-pack/exclusions.yaml";
+    /** The classpath resource of the known-failure list. */
+    public static final String KNOWN_FAILURES_RESOURCE = "whole-pack/known-failures.yaml";
 
     /** The only form of issue a known failure may name: an issue of spec-kitty-open-packs. */
     private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
     /** The status of one file in a gate run. */
-    enum Status {
+    public enum Status {
         /** Written, read back, and its meaning is unchanged. */
         GREEN,
         /** Expected to differ, and does. */
@@ -78,7 +85,7 @@ final class WholePackExpectation {
      * @param reason why the round trip does not model it
      * @param issue the issue that owns it
      */
-    record KindEntry(String kind, String reason, String issue) {}
+    public record KindEntry(String kind, String reason, String issue) {}
 
     /**
      * An expected-red file of a modelled kind.
@@ -90,7 +97,7 @@ final class WholePackExpectation {
      * @param reason why it is red
      * @param issue the issue that owns the fix
      */
-    record FileEntry(String path, String at, String reason, String issue) {}
+    public record FileEntry(String path, String at, String reason, String issue) {}
 
     /**
      * A file of a modelled kind that fails because the pack's own data is inconsistent, while the fix is pending in
@@ -104,7 +111,7 @@ final class WholePackExpectation {
      * @param roundTripOnly whether only the gate's round trip reports the failure while the store load accepts the
      *     file, so load-refusal ratchets skip the entry and the gate still pins it exactly
      */
-    record KnownFailure(String path, String at, String reason, String issue, boolean roundTripOnly) {
+    public record KnownFailure(String path, String at, String reason, String issue, boolean roundTripOnly) {
 
         /**
          * The convenience form of an entry the load itself refuses, so {@code roundTripOnly} is false.
@@ -114,7 +121,7 @@ final class WholePackExpectation {
          * @param reason why it fails
          * @param issue the open-packs issue
          */
-        KnownFailure(String path, String at, String reason, String issue) {
+        public KnownFailure(String path, String at, String reason, String issue) {
             this(path, at, reason, issue, false);
         }
     }
@@ -126,7 +133,7 @@ final class WholePackExpectation {
      *     {@code **} across segments); pack-relative once {@link #forPack} has scoped the list
      * @param reason why
      */
-    record Exclusion(String match, String reason) {}
+    public record Exclusion(String match, String reason) {}
 
     /**
      * One file's verdict.
@@ -136,7 +143,7 @@ final class WholePackExpectation {
      * @param status the status
      * @param detail the first difference, refusal or reason; empty for a green file
      */
-    record FileResult(String path, String kind, Status status, String detail) {}
+    public record FileResult(String path, String kind, Status status, String detail) {}
 
     /**
      * A judged gate run.
@@ -144,14 +151,14 @@ final class WholePackExpectation {
      * @param files every census file, once, sorted by path
      * @param problems every reason the run fails; empty when it passes
      */
-    record Evaluation(List<FileResult> files, List<String> problems) {
+    public record Evaluation(List<FileResult> files, List<String> problems) {
 
         /**
          * The count of each status per kind.
          *
          * @return kind to status to count, both sorted
          */
-        SortedMap<String, SortedMap<Status, Integer>> byKind() {
+        public SortedMap<String, SortedMap<Status, Integer>> byKind() {
             SortedMap<String, SortedMap<Status, Integer>> byKind = new TreeMap<>();
             for (FileResult file : files) {
                 byKind.computeIfAbsent(file.kind(), kind -> new TreeMap<>()).merge(file.status(), 1, Integer::sum);
@@ -182,7 +189,7 @@ final class WholePackExpectation {
      *
      * @return the empty expectation
      */
-    static WholePackExpectation none() {
+    public static WholePackExpectation none() {
         return new WholePackExpectation(List.of(), List.of(), List.of(), List.of());
     }
 
@@ -193,7 +200,7 @@ final class WholePackExpectation {
      * @param pack the example pack's name
      * @return the scoped expectation, judged by {@link #evaluate} against that pack's census
      */
-    WholePackExpectation forPack(String pack) {
+    public WholePackExpectation forPack(String pack) {
         String prefix = pack + "/";
         return new WholePackExpectation(
                 kinds,
@@ -224,7 +231,7 @@ final class WholePackExpectation {
      * @param packs the example packs' names
      * @return one problem per such entry, in list order
      */
-    List<String> unscopedEntries(Collection<String> packs) {
+    public List<String> unscopedEntries(Collection<String> packs) {
         List<String> problems = new ArrayList<>();
         files.stream()
                 .map(FileEntry::path)
@@ -258,7 +265,7 @@ final class WholePackExpectation {
      * @param modelledKinds the gate kinds the round trip models
      * @return one problem per schema or entry out of line, schemas first, each list sorted
      */
-    List<String> schemaProblems(Collection<String> schemas, Set<String> modelledKinds) {
+    public List<String> schemaProblems(Collection<String> schemas, Set<String> modelledKinds) {
         Set<String> listed = new TreeSet<>();
         kinds.forEach(entry -> listed.add(entry.kind()));
         List<String> problems = new ArrayList<>();
@@ -284,7 +291,7 @@ final class WholePackExpectation {
      * @param modelledKinds the gate kinds the round trip models
      * @return one problem per modelled kind no pack has a file of, sorted
      */
-    static List<String> emptyKindProblems(
+    public static List<String> emptyKindProblems(
             Map<String, SortedMap<String, String>> censusByPack, Set<String> modelledKinds) {
         Set<String> held = new HashSet<>();
         censusByPack.values().forEach(census -> held.addAll(census.values()));
@@ -301,7 +308,7 @@ final class WholePackExpectation {
      *
      * @return the expectation
      */
-    static WholePackExpectation fromClasspath() {
+    public static WholePackExpectation fromClasspath() {
         return load(resource(EXPECTED_RED_RESOURCE), resource(EXCLUSIONS_RESOURCE), resource(KNOWN_FAILURES_RESOURCE));
     }
 
@@ -313,7 +320,7 @@ final class WholePackExpectation {
      * @return the expectation
      * @throws IllegalArgumentException when an entry lacks a reason or issue, carries an unknown key, or repeats
      */
-    static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml) {
+    public static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml) {
         return load(expectedRedYaml, exclusionsYaml, "known_failures: []\n");
     }
 
@@ -327,21 +334,25 @@ final class WholePackExpectation {
      * @throws IllegalArgumentException when an entry lacks a field, carries an unknown key, or repeats, or when a known
      *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue
      */
-    static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
+    public static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
         Map<String, Object> red = document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files"));
         Map<String, Object> excluded = document(exclusionsYaml, EXCLUSIONS_RESOURCE, Set.of("exclusions"));
         List<KindEntry> kinds = new ArrayList<>();
         for (Map<String, String> entry : entries(red.get("kinds"), "kinds", List.of("kind", "reason", "issue"))) {
-            kinds.add(new KindEntry(entry.get("kind"), entry.get("reason"), entry.get("issue")));
+            kinds.add(new KindEntry(required(entry, "kind"), required(entry, "reason"), required(entry, "issue")));
         }
         List<FileEntry> files = new ArrayList<>();
         for (Map<String, String> entry : entries(red.get("files"), "files", List.of("path", "at", "reason", "issue"))) {
-            files.add(new FileEntry(entry.get("path"), entry.get("at"), entry.get("reason"), entry.get("issue")));
+            files.add(new FileEntry(
+                    required(entry, "path"),
+                    required(entry, "at"),
+                    required(entry, "reason"),
+                    required(entry, "issue")));
         }
         List<Exclusion> exclusions = new ArrayList<>();
         for (Map<String, String> entry :
                 entries(excluded.get("exclusions"), "exclusions", List.of("match", "reason"))) {
-            exclusions.add(new Exclusion(entry.get("match"), entry.get("reason")));
+            exclusions.add(new Exclusion(required(entry, "match"), required(entry, "reason")));
         }
         Map<String, Object> known = document(knownFailuresYaml, KNOWN_FAILURES_RESOURCE, Set.of("known_failures"));
         List<KnownFailure> knownFailures = new ArrayList<>();
@@ -350,8 +361,8 @@ final class WholePackExpectation {
                 "known_failures",
                 List.of("path", "at", "reason", "issue"),
                 Set.of("round_trip_only"))) {
-            String path = entry.get("path");
-            String issue = entry.get("issue");
+            String path = required(entry, "path");
+            String issue = required(entry, "issue");
             if (!OPEN_PACKS_ISSUE.matcher(issue).matches()) {
                 throw new IllegalArgumentException("known_failures entry " + path + " has issue '" + issue
                         + "'; expected spec-kitty/spec-kitty-open-packs#<number> (ADR-0036 decision 5)");
@@ -361,7 +372,8 @@ final class WholePackExpectation {
                 throw new IllegalArgumentException(
                         "known_failures entry " + path + " has round_trip_only '" + flag + "'; expected true or false");
             }
-            knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue, "true".equals(flag)));
+            knownFailures.add(new KnownFailure(
+                    path, required(entry, "at"), required(entry, "reason"), issue, "true".equals(flag)));
         }
         return new WholePackExpectation(kinds, files, exclusions, knownFailures);
     }
@@ -373,7 +385,7 @@ final class WholePackExpectation {
      *
      * @return the known failures
      */
-    List<KnownFailure> knownFailures() {
+    public List<KnownFailure> knownFailures() {
         return knownFailures;
     }
 
@@ -387,7 +399,7 @@ final class WholePackExpectation {
      *     {@code refused: …})
      * @return every file's verdict, and every problem
      */
-    Evaluation evaluate(
+    public Evaluation evaluate(
             SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
         Judgement judgement = new Judgement(census, modelledKinds, observed);
         census.forEach(judgement::judge);
@@ -429,7 +441,7 @@ final class WholePackExpectation {
 
         /** Judges one file of the census. */
         void judge(String path, String kind) {
-            if (kind.startsWith(WholePackCensus.EXCLUDED)) {
+            if (kind.startsWith(PackRoundTripResult.EXCLUDED)) {
                 judgeExcludedFile(path, kind);
                 return;
             }
@@ -459,7 +471,7 @@ final class WholePackExpectation {
                         path,
                         kind,
                         Status.EXCLUDED,
-                        "excluded by " + kind.substring(WholePackCensus.EXCLUDED.length()) + ": not written"));
+                        "excluded by " + kind.substring(PackRoundTripResult.EXCLUDED.length()) + ": not written"));
             } else {
                 results.add(new FileResult(path, kind, Status.RED, written.get()));
                 problems.add("EXCLUDED_WRITTEN " + path + " (" + kind + "): " + written.get());
@@ -589,8 +601,13 @@ final class WholePackExpectation {
         }
     }
 
-    /** Where a red detail says the file first differs: the text before its first {@code ": "}. */
-    static String atOf(String red) {
+    /**
+     * Where a red detail says the file first differs: the text before its first {@code ": "}.
+     *
+     * @param red a red detail
+     * @return where it first differs
+     */
+    public static String atOf(String red) {
         int colon = red.indexOf(": ");
         return colon < 0 ? red : red.substring(0, colon);
     }
@@ -659,7 +676,7 @@ final class WholePackExpectation {
     // ---- loading -------------------------------------------------------------------------------
 
     private static Map<String, Object> document(String text, String name, Set<String> keys) {
-        Object loaded = Yaml.load(text);
+        Object loaded = new Load(LoadSettings.builder().build()).loadFromString(text);
         if (loaded == null) {
             return Map.of();
         }
@@ -676,6 +693,11 @@ final class WholePackExpectation {
             }
         });
         return document;
+    }
+
+    /** A field {@link #entries} has checked is present. */
+    private static String required(Map<String, String> entry, String field) {
+        return Objects.requireNonNull(entry.get(field), field);
     }
 
     private static List<Map<String, String>> entries(@Nullable Object list, String where, List<String> fields) {

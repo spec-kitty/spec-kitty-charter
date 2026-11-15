@@ -131,8 +131,7 @@ class GuardAndLifecycleYamlTest {
 
         assertThat(reread).isEqualTo(dso);
         assertThat(throughTheDomain).isEqualTo(dso);
-        assertThat(MeaningComparator.adr0036().compareTexts(kind, source, written))
-                .isEmpty();
+        assertThat(MeaningOfTexts.adr0036().compareTexts(kind, source, written)).isEmpty();
         assertThat(strategy.write(binding, throughTheDomain))
                 .as("the write is stable")
                 .isEqualTo(written);

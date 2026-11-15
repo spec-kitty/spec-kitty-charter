@@ -1,11 +1,14 @@
-package ai.speckitty.charter.packs.infra.storage;
+package ai.speckitty.charter.packvalidation.roundtrip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.infra.storage.MeaningComparator.Difference;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator.Difference;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 
 /**
  * The oracle of the whole-pack gate, by example. Every rule that makes two documents equal has an unequal twin, so no
@@ -20,7 +23,12 @@ class MeaningComparatorTest {
     private final MeaningComparator comparator = MeaningComparator.adr0036();
 
     private Optional<Difference> compare(String kind, String source, String written) {
-        return comparator.compareTexts(kind, source, written);
+        return comparator.compare(kind, load(source), load(written));
+    }
+
+    /** A YAML text as a tree: the flow parses each side before the comparator sees it. */
+    private static @Nullable Object load(String text) {
+        return new Load(LoadSettings.builder().build()).loadFromString(text);
     }
 
     @Nested
@@ -172,12 +180,12 @@ class MeaningComparatorTest {
 
         @Test
         void everyDifferenceIsListedNotOnlyTheFirst() {
-            assertThat(comparator.differencesOfTexts(ARTEFACT, "a: z\nb: 1\nc: [x, y]\n", "b: 2\nc: [x]\n"))
+            assertThat(comparator.differences(ARTEFACT, load("a: z\nb: 1\nc: [x, y]\n"), load("b: 2\nc: [x]\n")))
                     .containsExactly(
                             new Difference("a", "z", "<absent>"),
                             new Difference("b", "1", "2"),
                             new Difference("c[1]", "y", "<absent>"));
-            assertThat(comparator.differencesOfTexts(ARTEFACT, "a: 1\n", "a: 1\n"))
+            assertThat(comparator.differences(ARTEFACT, load("a: 1\n"), load("a: 1\n")))
                     .isEmpty();
         }
 
@@ -331,11 +339,11 @@ class MeaningComparatorTest {
 
         @Test
         void duplicateSourceEdgesAreReportedAsInformation() {
-            assertThat(comparator.duplicateEdges(SHARD, shard(NODES, EDGE_AB + EDGE_AB + EDGE_BA)))
+            assertThat(comparator.duplicateEdges(SHARD, load(shard(NODES, EDGE_AB + EDGE_AB + EDGE_BA))))
                     .singleElement()
                     .asString()
                     .contains("\"relation\"=\"requires\"");
-            assertThat(comparator.duplicateEdges(SHARD, shard(NODES, EDGE_AB + EDGE_BA)))
+            assertThat(comparator.duplicateEdges(SHARD, load(shard(NODES, EDGE_AB + EDGE_BA))))
                     .isEmpty();
         }
     }

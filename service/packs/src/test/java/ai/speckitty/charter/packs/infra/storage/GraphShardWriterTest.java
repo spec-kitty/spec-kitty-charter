@@ -131,7 +131,7 @@ class GraphShardWriterTest {
 
         String written = GraphShardWriter.writeFragment(graph);
 
-        MeaningComparator comparator = MeaningComparator.adr0036();
+        MeaningOfTexts comparator = MeaningOfTexts.adr0036();
         assertThat(comparator.compareTexts("org-fragment", source, written)).isEmpty();
         // Positive control: the comparator would see the body path go missing.
         assertThat(comparator.compareTexts(
@@ -186,7 +186,7 @@ class GraphShardWriterTest {
         assertThat(written)
                 .contains("  relation: suggests\n  when: writing a REASONS canvas\n")
                 .contains("  relation: in_tension_with\n  when: under deadline\n");
-        MeaningComparator comparator = MeaningComparator.adr0036();
+        MeaningOfTexts comparator = MeaningOfTexts.adr0036();
         assertThat(comparator.compareTexts("org-fragment", source, written)).isEmpty();
         // Positive control: the comparator would see the condition go missing.
         assertThat(comparator.compareTexts("org-fragment", source, written.replace("  when: under deadline\n", "")))
