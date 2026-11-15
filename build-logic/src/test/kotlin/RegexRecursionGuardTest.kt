@@ -57,6 +57,13 @@ class RegexRecursionGuardTest {
                 + " [^/]* and Pattern.quote(...); PackFileKindTest#aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments"
                 + " proves a very deep path does not overflow",
         ),
+        "pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackExpectation.java:regex.toString()"
+            to Allowed(
+                "cannot judge `regex.toString()`",
+                "built from a baseline glob (#555 moved it from test into main): the only group glob() emits is (?:.*/)?"
+                    + " (optional, never repeated), the rest is [^/]*, [^/], .* and Pattern.quote(...);"
+                    + " WholePackExpectationTest covers glob()",
+            ),
         "packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java:SPELLING_SHAPE" to Allowed(
             "cannot judge `\"builtin:(\" + IdentifierGrammar.SLUG + \")|(?:(\" + IdentifierGrammar.SLUG\n" +
                 "            + \")::)?asset:([A-Za-z0-9_/.-]++)\"`",
