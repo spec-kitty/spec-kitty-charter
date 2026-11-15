@@ -38,10 +38,10 @@ properties:
       symbol: MissionStep.description
   role:
     type: string
-    pattern: '^(?:[a-fh-z][a-z0-9-]{0,63}|g(?:[a-df-z0-9-][a-z0-9-]{0,62})?|ge(?:[a-mo-z0-9-][a-z0-9-]{0,61})?|gen(?:[a-df-z0-9-][a-z0-9-]{0,60})?|gene(?:[a-qs-z0-9-][a-z0-9-]{0,59})?|gener(?:[a-hj-z0-9-][a-z0-9-]{0,58})?|generi(?:[abd-z0-9-][a-z0-9-]{0,57})?|generic[a-z0-9-][a-z0-9-]{0,56})$'
+    pattern: '^(?:(?:[a-fh-z][a-z0-9]*|g(?:[a-df-z0-9][a-z0-9]*|e(?:[a-mo-z0-9][a-z0-9]*|n(?:[a-df-z0-9][a-z0-9]*|e(?:[a-qs-z0-9][a-z0-9]*|r(?:[a-hj-z0-9][a-z0-9]*|i(?:[abd-z0-9][a-z0-9]*|c[a-z0-9]+)?)?)?)?)?)?)(?:-[a-z0-9]+)*|generic(?:-[a-z0-9]+)+)$'
     maxLength: 64
     description: >-
-      The role that runs the step, a lower-case role token of at most 64 characters such as implementer; absent when
+      The role that runs the step, a role token (a letter-first kebab slug) of at most 64 characters such as implementer; absent when
       none is declared. Never the reserved generic, which marks a fallback profile and fits no role a step asks for
       (ADR-0068 decision 4); the pattern spells that exclusion without a lookahead, as selectAgentProfile's role does.
     x-source:

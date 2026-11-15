@@ -19,7 +19,8 @@ properties:
       symbol: ProcedureStep.description
   role:
     type: ['string', 'null']
-    pattern: '^[a-z][a-z0-9-]*$'
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    maxLength: 64
     description: The open role token of the role that acts, for example implementer; null when any role may act.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java

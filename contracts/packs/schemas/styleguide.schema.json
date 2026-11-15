@@ -122,7 +122,7 @@
   "description": "A style and convention guide for a specific scope.\n\nStyleguides define principles, anti-patterns, and quality tests\nfor consistent governance across a domain area.",
   "properties": {
     "id": {
-      "pattern": "^[a-z][a-z0-9-]*$",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
       "maxLength": 64,
       "title": "Id",
       "type": "string"

@@ -45,7 +45,8 @@
         },
         "role": {
           "description": "An open role token, for example operator; absent when any role may act.",
-          "pattern": "^[a-z][a-z0-9-]*$",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "maxLength": 64,
           "title": "Role",
           "type": "string"
         },

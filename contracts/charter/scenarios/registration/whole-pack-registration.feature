@@ -816,10 +816,12 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
 
-    Examples: ids the grammar ^[a-z0-9][a-z0-9-]{0,62}$ refuses
+    Examples: ids the pack-id grammar, a kebab slug of at most 63 characters (ADR-0075 decision 2), refuses
       | packId | shown |
       | Acme | Acme |
       | -acme | -acme |
+      | acme--x | acme--x |
+      | acme- | acme- |
       | acme_x | acme_x |
       | acme.x | acme.x |
       | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… |

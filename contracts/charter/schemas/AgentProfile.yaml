@@ -67,7 +67,7 @@ properties:
       symbol: AgentProfile.schemaVersion
   role:
     type: string
-    pattern: '^[a-z][a-z0-9-]*$'
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
     maxLength: 64
     description: >-
       The profile's primary role (ADR-0069). A step asking for this role finds the profile a primary-role fit, which
@@ -81,7 +81,7 @@ properties:
       The profile's alt-roles, in the order the file declares them; [] when it has none.
     items:
       type: string
-      pattern: '^[a-z][a-z0-9-]*$'
+      pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
       maxLength: 64
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java

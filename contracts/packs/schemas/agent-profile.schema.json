@@ -274,7 +274,7 @@
     },
     "role": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9-]*$",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
       "maxLength": 64,
       "title": "Role",
       "description": "The profile's primary role (ADR-0069). A step asking for it finds a primary-role fit, which outranks every alt-role fit. 'generic' is reserved for a fallback profile and fits no role (ADR-0068). 'operator' is reserved for a human-performed profile (see performer)."
@@ -286,7 +286,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^[a-z][a-z0-9-]*$",
+        "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
         "maxLength": 64,
         "not": {
           "const": "generic"

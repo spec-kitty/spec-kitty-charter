@@ -8,7 +8,8 @@ parameters:
     Problem without a code, before the body is read.
   schema:
     type: string
-    pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    maxLength: 63
 put:
   operationId: registerPackFromArchive
   summary: Register a whole Charter Pack from an archive, replacing the pack the service holds.
