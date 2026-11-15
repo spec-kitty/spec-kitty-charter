@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,9 +21,6 @@ public record RolePins(Map<String, String> byRole) {
     /** No role pinned. */
     public static final RolePins NONE = new RolePins(Map.of());
 
-    /** The role token grammar, as the agent profile's {@code role} declares it. */
-    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9-]{0,63}$");
-
     /** The identifier grammar of a profile-id. */
     private static final Pattern PROFILE_ID = Pattern.compile("^[a-z0-9][a-z0-9_-]{0,63}$");
 
@@ -42,7 +40,7 @@ public record RolePins(Map<String, String> byRole) {
         byRole.forEach((role, profileId) -> {
             Objects.requireNonNull(role, "role");
             Objects.requireNonNull(profileId, "profileId");
-            if (!ROLE.matcher(role).matches() || GENERIC.equals(role)) {
+            if (!RoleBearer.isRole(role) || GENERIC.equals(role)) {
                 throw new IllegalArgumentException("'" + role + "' is no role a pin may name");
             }
             if (!PROFILE_ID.matcher(profileId).matches()) {

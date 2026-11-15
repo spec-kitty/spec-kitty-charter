@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
@@ -51,7 +52,6 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private static final String SOURCE = "registerPackFromSource";
     private static final String DELETE_ARTIFACT = "deletePackArtifact";
     private static final String DELETE_RELATIONSHIP = "deletePackRelationship";
-    private static final Pattern PACK_ID = Pattern.compile("^[a-z0-9][a-z0-9-]{0,62}$");
     private static final Pattern IF_MATCH = Pattern.compile("^(\\*|\"sha256:[0-9a-f]{64}\")$");
 
     private final RegistrationSwitch registration;
@@ -204,7 +204,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private static String packIdOf(HttpServletRequest request) {
         Object variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         Object value = variables instanceof Map<?, ?> map ? map.get("packId") : null;
-        if (!(value instanceof String packId) || !PACK_ID.matcher(packId).matches()) {
+        if (!(value instanceof String packId) || !PackIdentifier.isPackId(packId)) {
             throw new InvalidParameter(
                     InvalidParameter.In.PATH,
                     "packId",

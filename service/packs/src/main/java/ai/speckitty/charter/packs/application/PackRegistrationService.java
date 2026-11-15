@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -198,9 +197,6 @@ public final class PackRegistrationService {
         this.impact = Objects.requireNonNull(impact, "impact");
     }
 
-    /** The grammar of the name a pack is stored under: also the grammar of a directory under the pack domain. */
-    private static final Pattern PACK_ID = Pattern.compile("^[a-z0-9][a-z0-9-]{0,62}$");
-
     /** The upload as the decisive steps judge it. */
     private record Upload(
             String packId,
@@ -295,9 +291,8 @@ public final class PackRegistrationService {
     }
 
     private static void requireValidPackId(String packId) {
-        if (!PACK_ID.matcher(packId).matches()) {
-            String detail = "The pack id must match " + PACK_ID.pattern() + ": a lower-case letter or digit first, then"
-                    + " lower-case letters, digits and hyphens, 63 characters at most.";
+        if (!PackIdentifier.isPackId(packId)) {
+            String detail = PackIdentifier.GRAMMAR_DETAIL;
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
                     detail,

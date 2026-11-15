@@ -266,9 +266,7 @@ public final class PromptSlots {
 
         void accept(Marker marker) {
             if (marker.id().isEmpty()) {
-                malformed(
-                        marker,
-                        "the id '" + bounded(marker.rawId()) + "' does not match ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$");
+                malformed(marker, "the id '" + bounded(marker.rawId()) + "' does not match " + SlotId.GRAMMAR);
             } else if (marker.start()) {
                 start(marker, marker.id().get());
             } else {

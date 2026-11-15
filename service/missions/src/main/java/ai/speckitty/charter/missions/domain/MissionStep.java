@@ -1,6 +1,7 @@
 package ai.speckitty.charter.missions.domain;
 
 import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.HashSet;
@@ -8,7 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * A step of a {@link MissionType}: an entity of its type, identified by its {@code id} within the type, with no file of
@@ -44,28 +44,26 @@ public record MissionStep(
      */
     public static final int DESCRIPTION_MAX_LENGTH = 160;
 
-    private static final Pattern ROLE_SHAPE = Pattern.compile("[a-z][a-z0-9-]*");
-
     private static final ModularRuleset<String> ID_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "A mission step id is a letter-first kebab slug of at most 64 characters.",
                     IdentifierGrammar::isLetterFirstSlug));
     private static final ModularRuleset<String> TEXT_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A mission step's title and description are not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A mission step's title and description are not blank."));
     private static final ModularRuleset<String> DESCRIPTION_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "A mission step's description is at most " + DESCRIPTION_MAX_LENGTH + " characters.",
                     text -> text.codePointCount(0, text.length()) <= DESCRIPTION_MAX_LENGTH));
     /** The longest role token, as a profile's roles are capped (#446). */
-    public static final int ROLE_MAX_LENGTH = 64;
+    public static final int ROLE_MAX_LENGTH = RoleBearer.ROLE_MAX_LENGTH;
 
     /** The reserved role of a fallback profile, which no step asks for (ADR-0068 decision 4). */
     private static final String GENERIC_ROLE = "generic";
 
     private static final ModularRuleset<String> ROLE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A mission step's role is a lower-case role token of at most " + ROLE_MAX_LENGTH + " characters.",
-                    role -> ROLE_SHAPE.matcher(role).matches() && role.length() <= ROLE_MAX_LENGTH))
+                    "A mission step's role is a letter-first kebab slug of at most " + ROLE_MAX_LENGTH + " characters.",
+                    RoleBearer::isRole))
             .must(Constraints.of(
                     "A mission step never asks for the reserved role " + GENERIC_ROLE
                             + ", which marks a fallback profile (ADR-0068 decision 4).",

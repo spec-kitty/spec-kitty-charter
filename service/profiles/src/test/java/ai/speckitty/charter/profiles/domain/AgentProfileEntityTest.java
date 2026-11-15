@@ -343,8 +343,9 @@ class AgentProfileEntityTest {
                 .isInstanceOfSatisfying(
                         ConstraintBreachException.class,
                         breach -> assertThat(breach.reason().detail())
-                                .isEqualTo("An agent profile's role and alt-roles must be lowercase letters, digits and"
-                                        + " hyphens, starting with a letter, at most 64 characters."));
+                                .isEqualTo("An agent profile's role and alt-roles must be letter-first kebab slugs:"
+                                        + " lowercase letters and digits in hyphen-separated runs, starting with a"
+                                        + " letter, at most 64 characters."));
     }
 
     @Test

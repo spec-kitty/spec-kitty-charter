@@ -27,7 +27,6 @@ import org.jspecify.annotations.Nullable;
 public final class AgentProfile implements CharterArtifact, RoleBearer {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^(1\\.0|2)$");
-    private static final Pattern ROLE = Pattern.compile("^[a-z][a-z0-9-]*+$");
 
     /** The rule text of an alt-role that repeats the role or an earlier alt-role (ADR-0069 decision 1). */
     public static final String ALT_ROLES_DISTINCT =
@@ -48,7 +47,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     public static final String OPERATOR_ROLE = "operator";
 
     /** The longest role token; the cap of an identifier (#446). */
-    public static final int ROLE_MAX = 64;
+    public static final int ROLE_MAX = RoleBearer.ROLE_MAX_LENGTH;
 
     private static final ModularRuleset<AgentProfile> RULES = ModularRuleset.<AgentProfile>emptyRules()
             .must(Constraints.of(
@@ -57,11 +56,12 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
                             .map(version -> SCHEMA_VERSION.matcher(version).matches())
                             .orElse(true)))
             .must(Constraints.of(
-                    "An agent profile's role and alt-roles must be lowercase letters, digits and hyphens, starting"
-                            + " with a letter, at most " + AgentProfile.ROLE_MAX + " characters.",
+                    "An agent profile's role and alt-roles must be letter-first kebab slugs: lowercase letters and digits in"
+                            + " hyphen-separated runs, starting with a letter, at most " + AgentProfile.ROLE_MAX
+                            + " characters.",
                     profile -> java.util.stream.Stream.concat(
                                     java.util.stream.Stream.of(profile.role), profile.altRoles.stream())
-                            .allMatch(AgentProfile::wellFormedRole)))
+                            .allMatch(RoleBearer::isRole)))
             .must(Constraints.of(ALT_ROLES_NOT_GENERIC, profile -> !profile.altRoles.contains(GENERIC_ROLE)))
             .must(Constraints.of(
                     OPERATOR_ROLE_HUMAN_ONLY,
@@ -263,10 +263,6 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
             }
         }
         return java.util.OptionalInt.empty();
-    }
-
-    private static boolean wellFormedRole(String role) {
-        return role.length() <= ROLE_MAX && ROLE.matcher(role).matches();
     }
 
     /**

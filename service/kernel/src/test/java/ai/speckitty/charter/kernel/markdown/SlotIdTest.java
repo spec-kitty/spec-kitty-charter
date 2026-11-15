@@ -11,7 +11,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * The slot id of ADR-0066 decision 2: {@code <namespace>:<name>}, each part {@code [a-z][a-z0-9-]*}. Every refused id
+ * The slot id of ADR-0066 decision 2: {@code <namespace>:<name>}, each part a letter-first kebab slug of at most 64
+ * characters (ADR-0075 decision 2). Every refused id
  * stands beside the accepted neighbour that differs in the one property the rule is about.
  */
 @DisplayName("SlotId: the slot id grammar")
@@ -31,12 +32,24 @@ class SlotIdTest {
     @ParameterizedTest(name = "[{index}] ''{0}'' is refused")
     @ValueSource(
             strings = {
-                "A:b", "a:B", "a", "a:b:c", ":b", "a:", "1a:b", "a:1b", "-a:b", "a:-b", "a_b:c", "a:b_c", "a b:c", ""
+                "A:b", "a:B", "a", "a:b:c", ":b", "a:", "1a:b", "a:1b", "-a:b", "a:-b", "a_b:c", "a:b_c", "a b:c", "",
+                "a--b:c", "a:b--c", "a-:b", "a:b-"
             })
-    @DisplayName("an uppercase, missing, extra, digit-led or underscored part is refused, as an answer and as a build")
+    @DisplayName(
+            "an uppercase, missing, extra, digit-led, underscored or doubled- or trailing-hyphen part is refused, as an"
+                    + " answer and as a build")
     void refused(String text) {
         assertThat(SlotId.tryParse(text)).isEmpty();
         assertThatIllegalArgumentException().isThrownBy(() -> new SlotId(text)).withMessageContaining("slot id");
+    }
+
+    @Test
+    @DisplayName("each part is capped at 64 characters")
+    void eachPartIsCappedAt64() {
+        String atCap = "a".repeat(64);
+        assertThat(SlotId.tryParse(atCap + ":" + atCap)).isPresent();
+        assertThat(SlotId.tryParse(atCap + "a:b")).isEmpty();
+        assertThat(SlotId.tryParse("a:" + atCap + "b")).isEmpty();
     }
 
     @Test

@@ -91,6 +91,30 @@ class IdentifierBoundsTest {
         assertVerdict(MissionTypeIdentifier::new, id, missionTypeValid);
     }
 
+    private static void stepRole(String role) {
+        new MissionStep(
+                "plan",
+                "Plan",
+                Optional.empty(),
+                Optional.of(role),
+                Optional.empty(),
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    @Test
+    @DisplayName("a mission step's role is a letter-first slug: a doubled or trailing hyphen is refused (ADR-0075 d2)")
+    void aMissionStepRoleIsOnTheSharedRoleGrammar() {
+        assertVerdict(IdentifierBoundsTest::stepRole, "human-in-charge", true);
+        assertVerdict(IdentifierBoundsTest::stepRole, "r".repeat(64), true);
+        assertVerdict(IdentifierBoundsTest::stepRole, "r".repeat(65), false);
+        assertVerdict(IdentifierBoundsTest::stepRole, "human--in-charge", false);
+        assertVerdict(IdentifierBoundsTest::stepRole, "implementer-", false);
+        assertVerdict(IdentifierBoundsTest::stepRole, "1-implementer", false);
+    }
+
     static Stream<Arguments> guardReferenceVerdicts() {
         return Stream.of(
                 Arguments.of("review", Optional.empty(), "review"),
