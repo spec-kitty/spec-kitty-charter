@@ -1,5 +1,24 @@
 package ai.speckitty.charter.kernel.domain;
 
+import ai.speckitty.charter.kernel.domain.kinds.Action;
+import ai.speckitty.charter.kernel.domain.kinds.Advisor;
+import ai.speckitty.charter.kernel.domain.kinds.AgentProfile;
+import ai.speckitty.charter.kernel.domain.kinds.AntiPattern;
+import ai.speckitty.charter.kernel.domain.kinds.AppliesTarget;
+import ai.speckitty.charter.kernel.domain.kinds.Asset;
+import ai.speckitty.charter.kernel.domain.kinds.Enhanceable;
+import ai.speckitty.charter.kernel.domain.kinds.GraphAuthored;
+import ai.speckitty.charter.kernel.domain.kinds.Guard;
+import ai.speckitty.charter.kernel.domain.kinds.Guidance;
+import ai.speckitty.charter.kernel.domain.kinds.MissionType;
+import ai.speckitty.charter.kernel.domain.kinds.Overridable;
+import ai.speckitty.charter.kernel.domain.kinds.RequiresTarget;
+import ai.speckitty.charter.kernel.domain.kinds.ScopeSource;
+import ai.speckitty.charter.kernel.domain.kinds.ScopeTarget;
+import ai.speckitty.charter.kernel.domain.kinds.StepEnhancement;
+import ai.speckitty.charter.kernel.domain.kinds.SuggestsTarget;
+import ai.speckitty.charter.kernel.domain.kinds.Template;
+import ai.speckitty.charter.kernel.domain.kinds.VocabularyTarget;
 import java.util.Optional;
 
 /**
@@ -15,6 +34,9 @@ import java.util.Optional;
  * <p>This is a {@code final class} rather than a {@code record} precisely because the generated
  * component-wise equality would make {@code A → B} unequal to {@code B → A} and silently break
  * "one relationship per pair"; equality is overridden to compare the unordered pair.
+ *
+ * <p>The typed factories (ADR-0064 decision 13) each name the relation they build: a factory's name starts with the
+ * relation's token in camel case, which {@code EndpointTableAgreementTest} relies on to check them against the table.
  */
 public final class Relationship {
 
@@ -106,6 +128,209 @@ public final class Relationship {
      */
     public static Relationship of(Urn from, Urn to, RelationType type) {
         return new Relationship(from, to, type, Optional.empty(), Optional.empty());
+    }
+
+    /**
+     * Builds the {@code requires} relationship (ADR-0064 decision 13): a guidance kind, an agent profile or a skill
+     * requires a guidance kind, an asset or a template.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship requires(KindRef<? extends Advisor> from, KindRef<? extends RequiresTarget> to) {
+        return typed(from, to, RelationType.REQUIRES);
+    }
+
+    /**
+     * Builds the {@code requires} relationship (ADR-0064 decision 13): an asset requires another asset.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship requiresAsset(KindRef<Asset> from, KindRef<Asset> to) {
+        return typed(from, to, RelationType.REQUIRES);
+    }
+
+    /**
+     * Builds the {@code requires} relationship (ADR-0064 decision 13): a mission type requires one of its steps'
+     * actions.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship requiresStep(KindRef<MissionType> from, KindRef<Action> to) {
+        return typed(from, to, RelationType.REQUIRES);
+    }
+
+    /**
+     * Builds the {@code suggests} relationship (ADR-0064 decision 13): a guidance kind, an agent profile or a skill
+     * suggests a guidance kind, an asset, a template or an agent profile.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship suggests(KindRef<? extends Advisor> from, KindRef<? extends SuggestsTarget> to) {
+        return typed(from, to, RelationType.SUGGESTS);
+    }
+
+    /**
+     * Builds the {@code applies} relationship (ADR-0064 decision 13): a step's action applies a directive or a tactic.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship applies(KindRef<Action> from, KindRef<? extends AppliesTarget> to) {
+        return typed(from, to, RelationType.APPLIES);
+    }
+
+    /**
+     * Builds the {@code scope} relationship (ADR-0064 decision 13): a mission type or a step's action scopes a guidance
+     * kind or an agent profile.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship scope(KindRef<? extends ScopeSource> from, KindRef<? extends ScopeTarget> to) {
+        return typed(from, to, RelationType.SCOPE);
+    }
+
+    /**
+     * Builds the {@code vocabulary} relationship (ADR-0064 decision 13): any kind a graph names takes its vocabulary
+     * from a glossary.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship vocabulary(
+            KindRef<? extends GraphAuthored> from, KindRef<? extends VocabularyTarget> to) {
+        return typed(from, to, RelationType.VOCABULARY);
+    }
+
+    /**
+     * Builds the {@code instantiates} relationship (ADR-0064 decision 13): a step's action instantiates a template.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship instantiates(KindRef<Action> from, KindRef<Template> to) {
+        return typed(from, to, RelationType.INSTANTIATES);
+    }
+
+    /**
+     * Builds the {@code refines} relationship (ADR-0064 decision 13): a guidance kind refines a guidance kind.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship refines(KindRef<? extends Guidance> from, KindRef<? extends Guidance> to) {
+        return typed(from, to, RelationType.REFINES);
+    }
+
+    /**
+     * Builds the {@code specializes_from} relationship (ADR-0064 decision 13): an agent profile specializes another.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship specializesFrom(KindRef<AgentProfile> from, KindRef<AgentProfile> to) {
+        return typed(from, to, RelationType.SPECIALIZES_FROM);
+    }
+
+    /**
+     * Builds the {@code enhances} relationship (ADR-0064 decision 13): a step enhancement enhances a step's action.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship enhancesStep(KindRef<StepEnhancement> from, KindRef<Action> to) {
+        return typed(from, to, RelationType.ENHANCES);
+    }
+
+    /**
+     * Builds the {@code enhances} relationship (ADR-0064 decision 13): an artifact enhances another of its own kind
+     * (every activatable kind but mission_type and step_enhancement).
+     *
+     * @param <K> the one kind both ends share
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static <K extends Enhanceable> Relationship enhancesSame(KindRef<K> from, KindRef<K> to) {
+        return typed(from, to, RelationType.ENHANCES);
+    }
+
+    /**
+     * Builds the {@code overrides} relationship (ADR-0064 decision 13): an artifact overrides another of its own kind
+     * (every activatable kind but step_enhancement).
+     *
+     * @param <K> the one kind both ends share
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static <K extends Overridable> Relationship overrides(KindRef<K> from, KindRef<K> to) {
+        return typed(from, to, RelationType.OVERRIDES);
+    }
+
+    /**
+     * Builds the {@code reconciles_tension} relationship (ADR-0064 decision 13): a guidance kind reconciles a tension
+     * with a guidance kind.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship reconcilesTension(KindRef<? extends Guidance> from, KindRef<? extends Guidance> to) {
+        return typed(from, to, RelationType.RECONCILES_TENSION);
+    }
+
+    /**
+     * Builds the {@code rejects} relationship (ADR-0064 decision 13): a guidance kind rejects an anti-pattern.
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship rejects(KindRef<? extends Guidance> from, KindRef<AntiPattern> to) {
+        return typed(from, to, RelationType.REJECTS);
+    }
+
+    /**
+     * Builds the {@code implemented_by} relationship (ADR-0064 decision 13): a guard is implemented by an asset
+     * (derived from the guard's field, never authored).
+     *
+     * @param from the source
+     * @param to the target
+     * @return the relationship
+     */
+    public static Relationship implementedBy(KindRef<Guard> from, KindRef<Asset> to) {
+        return typed(from, to, RelationType.IMPLEMENTED_BY);
+    }
+
+    private static Relationship typed(KindRef<?> from, KindRef<?> to, RelationType type) {
+        return new Relationship(from.urn(), from.pack(), to.urn(), to.pack(), type, Optional.empty(), Optional.empty());
+    }
+
+    /**
+     * The same relationship with its authored annotations.
+     *
+     * @param newWhen when the relationship applies
+     * @param newRationale why it holds
+     * @return a copy carrying them
+     */
+    public Relationship annotated(Optional<String> newWhen, Optional<String> newRationale) {
+        return new Relationship(from, fromPack, to, toPack, type, newWhen, newRationale);
     }
 
     /**
