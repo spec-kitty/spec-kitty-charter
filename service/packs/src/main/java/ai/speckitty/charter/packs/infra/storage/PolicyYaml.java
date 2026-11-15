@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * The YAML form of a pack's mutability policy file, {@code policy.yaml} (ADR-0063): read through the bundled
  * {@code policy} schema into the domain's {@link MutabilityPolicySource}. The schema is closed, so every key the file
  * holds is one this reader maps: {@code kind_defaults} by artifact kind token, {@code artifacts} by bare URN, each to a
- * level, and written back from it ({@link #write}), which only the whole-pack gate's test seam calls: the production
+ * level, and {@code role_pins} by role token to a profile-id, in authored order; and written back from it ({@link #write}), which only the whole-pack gate's test seam calls: the production
  * store copies the file as it was read. Not a {@link YamlFormat}: the policy is a pack-level file, not a
  * kind.
  */
@@ -102,12 +102,16 @@ final class PolicyYaml {
         MutabilityPolicySource.Builder builder = MutabilityPolicySource.builder();
         levels(root, "kind_defaults", PolicyYaml::kind, builder::kindDefault);
         levels(root, "artifacts", PolicyYaml::urn, builder::entry);
+        if (root.get("role_pins") instanceof Map<?, ?> pins) {
+            pins.forEach((role, profileId) -> builder.rolePin(String.valueOf(role), String.valueOf(profileId)));
+        }
         return builder.build();
     }
 
     /**
      * The text of a policy file that declares {@code policy}: {@code schema_version}, then {@code kind_defaults} in
-     * kind order and {@code artifacts} by URN, each omitted when it declares nothing. Equal policies write equal text,
+     * kind order, {@code artifacts} by URN and {@code role_pins} in authored order, each omitted when it declares
+     * nothing. Equal policies write equal text,
      * and {@link #read} of the text of a policy {@link #read} gave is that policy again. A policy built otherwise, with a
      * kind or id the schema does not admit, writes text that {@link #read} refuses.
      *
@@ -127,6 +131,11 @@ final class PolicyYaml {
         }
         if (!artifacts.isEmpty()) {
             out.present("artifacts", artifacts);
+        }
+        if (!policy.rolePins().isEmpty()) {
+            Map<String, Object> pins = YamlDumpEmitter.mapping();
+            pins.putAll(policy.rolePins().byRole());
+            out.present("role_pins", pins);
         }
         return out.dump();
     }
