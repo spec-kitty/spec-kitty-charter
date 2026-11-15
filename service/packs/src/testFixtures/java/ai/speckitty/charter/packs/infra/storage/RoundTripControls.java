@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 /**
  * The whole-pack round trip's positive controls, for the gate in {@code pack-validation} (ADR-0075 decision 8, as amended
  * by operator ruling 2 of 2026-11-15): the production flow ({@link PackRoundTrip}) with one loss planted on its write
- * path, so the verdict can be shown to see it end to end. Test fixtures only: production code carries no hook for them.
+ * path, so the verdict can be shown to see it end to end. Only the adapter's package-private constructors take the loss;
+ * the public entry ({@link PackRoundTrip#run(Path, Path)}) never does.
  */
 public final class RoundTripControls {
 

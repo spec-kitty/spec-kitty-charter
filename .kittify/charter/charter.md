@@ -113,7 +113,7 @@ When a session hands Missions to child cloud sessions, it follows these rules. T
 - The **Java style check** on hand-written sources, wired into `verifyAll`: palantir-java-format
   (Spotless) and Checkstyle, with Error Prone, NullAway and doclint beside them. What each
   gate covers: `docs/guides/service-build.md`.
-- The **whole-pack round trip** (`:packs:wholePackRoundTrip`), required through `CI gate / gate` for every
+- The **whole-pack round trip** (`:pack-validation:wholePackRoundTrip`), required through `CI gate / gate` for every
   pull request that changes the contracts, the service or the build (operator ruling, 2026-11-05; epic #186).
 - The docs checks: `check_docs.py` (all eight), markdownlint-cli2 and cspell.
 
