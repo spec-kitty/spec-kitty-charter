@@ -86,7 +86,7 @@ class SkillYamlTest {
         String written = strategy.write(SkillBinding.INSTANCE, back);
 
         assertThat(back).as("the body survives the domain, byte for byte").isEqualTo(dso);
-        assertThat(MeaningComparator.adr0036().compareTexts("skill", PROMPT, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("skill", PROMPT, written))
                 .isEmpty();
         assertThat(written).as("the format never writes the body").doesNotContain("Goal: land it.");
     }
@@ -96,7 +96,7 @@ class SkillYamlTest {
     void aWrapperSkillRoundTrips() {
         SkillDso dso = read(WRAPPER);
 
-        assertThat(MeaningComparator.adr0036().compareTexts("skill", WRAPPER, throughTheDomain(dso)))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("skill", WRAPPER, throughTheDomain(dso)))
                 .isEmpty();
         assertThat(SkillBinding.INSTANCE.companions(dso)).isEmpty();
     }
@@ -124,7 +124,7 @@ class SkillYamlTest {
         // ADR-0036 decision 2 makes both mean "no invocation". The comparator agrees for {} and, applying the rule one
         // level only, not yet for {side_effects: []}; no pinned file has either shape.
         String empty = WRAPPER + "invocation: {}\n";
-        assertThat(MeaningComparator.adr0036().compareTexts("skill", empty, throughTheDomain(read(empty))))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("skill", empty, throughTheDomain(read(empty))))
                 .isEmpty();
     }
 

@@ -259,7 +259,7 @@ class PresetRoundTripTest {
     private static List<String> differences(Path source, Path written) throws IOException {
         List<String> out = new ArrayList<>();
         for (String file : presetBytes(source).keySet()) {
-            MeaningComparator.adr0036()
+            MeaningOfTexts.adr0036()
                     .differencesOfTexts(
                             PresetFiles.KIND,
                             Files.readString(source.resolve(file)),

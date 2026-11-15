@@ -80,7 +80,7 @@ class GlossaryYamlTest {
     void everyFieldRoundTrips() {
         String written = throughTheDomain(read(FULL));
 
-        assertThat(MeaningComparator.adr0036().compareTexts("glossary", FULL, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("glossary", FULL, written))
                 .as("the written file means what the source meant")
                 .isEmpty();
         assertThat(read(written)).isEqualTo(read(FULL));
@@ -146,7 +146,7 @@ class GlossaryYamlTest {
 
         assertThat(map(Yaml.load(written))).containsOnlyKeys("schema_version", "id", "name", "description", "terms");
         assertThat(term(written, 0)).containsOnlyKeys("id", "name", "definition", "status");
-        assertThat(MeaningComparator.adr0036().compareTexts("glossary", MINIMAL, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("glossary", MINIMAL, written))
                 .isEmpty();
     }
 

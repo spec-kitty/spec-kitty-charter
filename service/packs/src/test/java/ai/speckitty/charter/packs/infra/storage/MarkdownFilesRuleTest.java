@@ -7,6 +7,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -36,7 +37,7 @@ class MarkdownFilesRuleTest {
 
     private static final PackSchemas SCHEMAS = new PackSchemas(FIXTURES, List.of("notes"));
     private static final String DIRECTIVE = "directives/x.directive.yaml";
-    private static final MeaningComparator COMPARATOR = MeaningComparator.adr0036();
+    private static final MeaningOfTexts COMPARATOR = MeaningOfTexts.adr0036();
 
     @Test
     void theTestRuleClassifiesAFixtureFileAsMarkdownWithItsStructureSchema() {

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 class AgentProfileYamlTest {
 
     private static final SerializationStrategy YAML = new YamlSerializationStrategy();
-    private static final MeaningComparator MEANING = MeaningComparator.adr0036();
+    private static final MeaningOfTexts MEANING = MeaningOfTexts.adr0036();
 
     private static final String MINIMAL = """
             profile-id: p

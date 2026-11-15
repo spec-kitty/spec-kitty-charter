@@ -1,8 +1,8 @@
-package ai.speckitty.charter.packs.infra.storage;
+package ai.speckitty.charter.packvalidation.roundtrip;
 
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.FileResult;
-import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Status;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.Evaluation;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.FileResult;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.Status;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -11,7 +11,7 @@ import java.util.SortedMap;
  * The whole-pack gate's report, as Markdown: totals, a table per gate kind, the problems, then every file. It carries
  * no timestamp, so two runs over the same pinned pack give identical bytes.
  */
-final class WholePackReport {
+public final class WholePackReport {
 
     private WholePackReport() {}
 
@@ -24,7 +24,7 @@ final class WholePackReport {
      * @param information extra lines per file (for example duplicate graph edges), appended after its row
      * @return the report
      */
-    static String render(Evaluation evaluation, String pack, String pin, Map<String, List<String>> information) {
+    public static String render(Evaluation evaluation, String pack, String pin, Map<String, List<String>> information) {
         StringBuilder out = new StringBuilder();
         out.append("# Whole-pack round-trip report\n\n");
         out.append("- Pack: ").append(pack).append('\n');
@@ -70,7 +70,7 @@ final class WholePackReport {
      * @param evaluation the judged run
      * @return the Markdown table
      */
-    static String kindTable(Evaluation evaluation) {
+    public static String kindTable(Evaluation evaluation) {
         StringBuilder out =
                 new StringBuilder("| kind | files | green | expected red | excluded | red | known failure |\n");
         out.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n");

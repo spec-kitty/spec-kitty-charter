@@ -46,7 +46,7 @@ class ProcedureYamlTest {
 
         assertThat(reread).isEqualTo(dso);
         assertThat(throughTheDomain).isEqualTo(dso);
-        assertThat(MeaningComparator.adr0036().compareTexts("procedure", source, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("procedure", source, written))
                 .isEmpty();
         assertThat(map(Yaml.load(written)).keySet())
                 .as("keys in schema order")
@@ -119,7 +119,7 @@ class ProcedureYamlTest {
 
         assertThat(read(written)).isEqualTo(dso);
         assertThat(map(Yaml.load(written))).doesNotContainKeys("anti_patterns", "notes", "applies_to_languages");
-        assertThat(MeaningComparator.adr0036().compareTexts("procedure", source, written))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("procedure", source, written))
                 .isEmpty();
     }
 

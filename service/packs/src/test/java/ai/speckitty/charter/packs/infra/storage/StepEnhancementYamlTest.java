@@ -55,7 +55,7 @@ class StepEnhancementYamlTest {
         assertSameMeaning(source, reread);
         assertThat(reread).isEqualTo(source);
         assertSameMeaning(source, BINDING.dsoOf(BINDING.toEntity(PACK, reread)));
-        assertThat(MeaningComparator.adr0036().compareTexts("step-enhancement", SOURCE, written.yaml()))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("step-enhancement", SOURCE, written.yaml()))
                 .isEmpty();
         assertThat(write(reread)).as("the write is stable").isEqualTo(written);
     }

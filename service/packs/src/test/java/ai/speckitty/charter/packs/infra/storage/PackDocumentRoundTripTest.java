@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -414,7 +415,7 @@ class PackDocumentRoundTripTest {
     private static Gate gate(Path pack, Path host, UnaryOperator<Pack> beforeSave) throws IOException {
         Path target = host.resolve(String.valueOf(pack.getFileName()));
         Set<String> paired = new TreeSet<>();
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 new DomainRoundTrip(new YamlSerializationStrategy(), beforeSave),
                 pack,
                 target,
@@ -422,7 +423,7 @@ class PackDocumentRoundTripTest {
                 new TreeMap<>(),
                 paired,
                 WholePackCensus.formsOf(pack));
-        return new Gate(observed, WholePackRoundTripTest.unpaired(target, paired));
+        return new Gate(observed, WholePackGateRun.unpaired(target, paired));
     }
 
     private static WholePackStore.LoadedPack withDocument(WholePackStore.LoadedPack loaded, PackDocument document) {
@@ -449,7 +450,7 @@ class PackDocumentRoundTripTest {
     }
 
     private static List<MeaningComparator.Difference> meaningDifferences(Path source, Path written) throws IOException {
-        return MeaningComparator.adr0036()
+        return MeaningOfTexts.adr0036()
                 .compareMarkdown(
                         Files.readString(source.resolve(PackDocumentMarkdown.FILE)),
                         Files.readString(written.resolve(PackDocumentMarkdown.FILE)));

@@ -117,7 +117,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     static final Set<String> ARTEFACT_KINDS =
             KindBindings.all().stream().map(KindBinding::schemaName).collect(Collectors.toUnmodifiableSet());
 
-    private static final Set<String> MODELLED = Stream.concat(
+    static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(),
                     Stream.of(
                             DESCRIPTOR,

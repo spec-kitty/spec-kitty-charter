@@ -126,7 +126,7 @@ class ProcedureAndGuideCorpusTest {
     private Map<String, Optional<String>> observe(String pack) {
         Path source = ExamplePacks.pack(pack);
         SortedMap<String, String> census = WholePackCensus.of(source);
-        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+        Map<String, Optional<String>> observed = WholePackGateRun.observe(
                 new DomainRoundTrip(new YamlSerializationStrategy()),
                 source,
                 host.resolve(pack + "-" + System.nanoTime()).resolve(pack),

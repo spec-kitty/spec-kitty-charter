@@ -233,7 +233,7 @@ class DomainRoundTripTest {
                 .containsEntry(FRAGMENT_CANVAS, new Written(FRAGMENT_CANVAS));
         assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
         for (String fragment : List.of(FRAGMENT_REASONS, FRAGMENT_CANVAS)) {
-            assertThat(MeaningComparator.adr0036()
+            assertThat(MeaningOfTexts.adr0036()
                             .compareMarkdown(
                                     Files.readString(source.resolve(fragment)), written(outcomes.get(fragment))))
                     .as("the fragment %s is written with its meaning", fragment)
@@ -368,7 +368,7 @@ class DomainRoundTripTest {
 
         String written = written(roundTrip(new YamlSerializationStrategy()).get("directive.graph.yaml"));
 
-        MeaningComparator comparator = MeaningComparator.adr0036();
+        MeaningOfTexts comparator = MeaningOfTexts.adr0036();
         assertThat(comparator.compareTexts("graph-shard", source, written)).isEmpty();
         // Positive controls on the same fixture: the comparator sees a swapped tag order and a lost tension.
         assertThat(comparator.compareTexts("graph-shard", source, written.replace("  - b\n  - a\n", "  - a\n  - b\n")))
@@ -607,7 +607,7 @@ class DomainRoundTripTest {
         Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
 
         assertThat(outcomes.get("presets/p.yaml")).isEqualTo(new Written("presets/p.yaml"));
-        assertThat(MeaningComparator.adr0036().compareTexts("preset", PRESET, written(outcomes.get("presets/p.yaml"))))
+        assertThat(MeaningOfTexts.adr0036().compareTexts("preset", PRESET, written(outcomes.get("presets/p.yaml"))))
                 .isEmpty();
         assertThat(outcomes.get("presets/q.yaml"))
                 .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'name'; "

@@ -1,8 +1,7 @@
-package ai.speckitty.charter.packs.infra.storage;
+package ai.speckitty.charter.packvalidation.roundtrip;
 
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
+import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,9 +18,10 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The oracle of the whole-pack round-trip gate: does a written YAML document mean the same as its source? Both texts
- * are parsed with the readers' own YAML settings and compared as trees, so quoting, comments, whitespace and key order
- * do not count, while a missing, extra or changed key or value does.
+ * The oracle of the whole-pack round trip: does a written YAML document mean the same as its source? Both sides arrive
+ * parsed with the pack readers' own YAML settings (the flow reads them, {@code packs.infra.storage.PackRoundTrip}) and are
+ * compared as trees, so quoting, comments, whitespace and key order do not count, while a missing, extra or changed key
+ * or value does. It never reads a file (ADR-0075 decision 8, as amended by operator ruling 2 of 2026-11-15).
  *
  * <p>The rules are ADR-0036's (Decision 2 and 4, and its per-kind table), and they live only here:
  *
@@ -42,12 +42,12 @@ import org.jspecify.annotations.Nullable;
  * <p>Not implemented: ADR-0036's reading that an absent field equals its schema default (no corpus file needs it).
  *
  * <p>A file of the {@code markdown} content form is compared by {@link #compareMarkdown}, never through the YAML
- * reader: its texts are read into Markdown models and compared there (ADR-0040 decision 3, as amended by #194).
+ * reader: its texts arrive read into Markdown models and are compared there (ADR-0040 decision 3, as amended by #194).
  */
-final class MeaningComparator {
+public final class MeaningComparator {
 
     /** The gate kind of a {@code <kind>.graph.yaml} file. */
-    static final String GRAPH_SHARD = "graph-shard";
+    public static final String GRAPH_SHARD = "graph-shard";
 
     private static final String ABSENT = "<absent>";
     private static final String ROOT = "";
@@ -60,10 +60,10 @@ final class MeaningComparator {
      * @param source the source value, rendered, or {@code <absent>}
      * @param written the written value, rendered, or {@code <absent>}
      */
-    record Difference(String path, String source, String written) {}
+    public record Difference(String path, String source, String written) {}
 
     /** The gate kind of {@code pack-manifest.yaml}. */
-    static final String MANIFEST = PackManifestYaml.SCHEMA;
+    public static final String MANIFEST = "pack-manifest";
 
     /** ADR-0036's open maps per gate kind: top-level keys whose content is data, not fields. */
     private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
@@ -74,21 +74,13 @@ final class MeaningComparator {
 
     private MeaningComparator() {}
 
-    /** The rules of ADR-0036 (Proposed; its readings stand until the operator overrules them). */
-    static MeaningComparator adr0036() {
-        return new MeaningComparator();
-    }
-
     /**
-     * Parses both texts as the readers do, then compares them.
+     * The rules of ADR-0036 (Proposed; its readings stand until the operator overrules them).
      *
-     * @param kind the gate kind of the file, which selects the graph-shard rules
-     * @param sourceText the source file's text
-     * @param writtenText the written file's text
-     * @return the first difference, or empty when both mean the same
+     * @return the comparator
      */
-    Optional<Difference> compareTexts(String kind, String sourceText, String writtenText) {
-        return compare(kind, Yaml.load(sourceText), Yaml.load(writtenText));
+    public static MeaningComparator adr0036() {
+        return new MeaningComparator();
     }
 
     /**
@@ -99,37 +91,22 @@ final class MeaningComparator {
      * @param written the parsed written document
      * @return the first difference, or empty when both mean the same
      */
-    Optional<Difference> compare(String kind, @Nullable Object source, @Nullable Object written) {
+    public Optional<Difference> compare(String kind, @Nullable Object source, @Nullable Object written) {
         return differences(kind, source, written).stream().findFirst();
     }
 
     /**
-     * Parses both texts as the readers do, then lists every difference.
+     * Lists every difference between two Markdown readings, located by model path ({@code frontmatter}, {@code title},
+     * {@code preamble}, {@code sections[i].title}, {@code sections[i].content}, {@code sections[i]}). A side the Markdown
+     * reader refused is one difference at {@code document}, naming the refusal.
      *
-     * @param kind the gate kind of the file, which selects the graph-shard rules
-     * @param sourceText the source file's text
-     * @param writtenText the written file's text
-     * @return every difference, in the order {@link #compareTexts} meets them; empty when both mean the same
-     */
-    List<Difference> differencesOfTexts(String kind, String sourceText, String writtenText) {
-        return differences(kind, Yaml.load(sourceText), Yaml.load(writtenText));
-    }
-
-    /**
-     * Reads both texts as Markdown documents and lists every difference between their models, located by model path
-     * ({@code frontmatter}, {@code title}, {@code preamble}, {@code sections[i].title}, {@code sections[i].content},
-     * {@code sections[i]}). A text the Markdown reader refuses is one difference at {@code document}, naming the refusal;
-     * the texts never reach the YAML reader; only a frontmatter's own lines do, loaded by the Markdown reader.
-     *
-     * @param sourceText the source file's text
-     * @param writtenText the written file's text
+     * @param source the source file, read
+     * @param written the written file, read
      * @return every difference, in model order; empty when both models are equal
      */
-    List<Difference> compareMarkdown(String sourceText, String writtenText) {
-        MarkdownCodec.Outcome source = MarkdownCodec.parse(sourceText);
-        MarkdownCodec.Outcome written = MarkdownCodec.parse(writtenText);
-        if (!(source instanceof MarkdownCodec.Parsed(MarkdownDocument s))
-                || !(written instanceof MarkdownCodec.Parsed(MarkdownDocument w))) {
+    public List<Difference> compareMarkdown(Reading source, Reading written) {
+        if (!(source instanceof Reading.Markdown(MarkdownDocument s))
+                || !(written instanceof Reading.Markdown(MarkdownDocument w))) {
             return List.of(new Difference("document", describe(source), describe(written)));
         }
         return MarkdownDocument.differences(s, w).stream()
@@ -137,11 +114,14 @@ final class MeaningComparator {
                 .toList();
     }
 
-    /** A read outcome as a difference renders it: the refusal, or that the text was read. */
-    private static String describe(MarkdownCodec.Outcome outcome) {
-        return switch (outcome) {
-            case MarkdownCodec.Parsed parsed -> "read";
-            case MarkdownRefusal refusal -> "refused: " + refusal.message();
+    /** A reading as a difference renders it: the refusal, or that the text was read. */
+    private static String describe(Reading reading) {
+        return switch (reading) {
+            case Reading.MarkdownRefused refused -> "refused: " + refused.message();
+            case Reading.Markdown markdown -> "read";
+            case Reading.Bytes bytes -> "not markdown: bytes";
+            case Reading.Text text -> "not markdown: text";
+            case Reading.Yaml yaml -> "not markdown: yaml";
         };
     }
 
@@ -172,7 +152,7 @@ final class MeaningComparator {
      * @param written the parsed written document
      * @return every difference, deterministic in order; empty when both mean the same
      */
-    List<Difference> differences(String kind, @Nullable Object source, @Nullable Object written) {
+    public List<Difference> differences(String kind, @Nullable Object source, @Nullable Object written) {
         List<Difference> out = new ArrayList<>();
         if (GRAPH_SHARD.equals(kind) && source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
             compareShard(s, w, out);
@@ -230,11 +210,11 @@ final class MeaningComparator {
      * The edges a graph shard lists more than once, as information: duplicates do not count as a difference.
      *
      * @param kind the gate kind of the file; anything but a graph shard has none
-     * @param text the shard's text
+     * @param tree the shard, parsed
      * @return the canonical form of every edge that occurs more than once, sorted
      */
-    List<String> duplicateEdges(String kind, String text) {
-        if (!GRAPH_SHARD.equals(kind) || !(Yaml.load(text) instanceof Map<?, ?> document)) {
+    public List<String> duplicateEdges(String kind, @Nullable Object tree) {
+        if (!GRAPH_SHARD.equals(kind) || !(tree instanceof Map<?, ?> document)) {
             return List.of();
         }
         SortedMap<String, Integer> counts = new TreeMap<>();
@@ -314,8 +294,11 @@ final class MeaningComparator {
      * A value in one unambiguous, typed text form: maps with their keys sorted, strings quoted and escaped, and every
      * other scalar tagged with its type, so {@code true} is not {@code 'true'} and a comma inside a {@code reason}
      * cannot make two different edges render alike.
+     *
+     * @param value the value
+     * @return its canonical text
      */
-    static String canonical(@Nullable Object value) {
+    public static String canonical(@Nullable Object value) {
         if (value == null) {
             return "null";
         }

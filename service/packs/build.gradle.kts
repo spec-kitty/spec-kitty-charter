@@ -1,5 +1,3 @@
-import net.ltgt.gradle.errorprone.errorprone
-
 // The pack vertical slice: domain, application, infra.storage, infra.api under ai.speckitty.charter.packs.
 // WP05 activated the infra.storage dependencies; WP06 activated the infra.api ones.
 plugins {
@@ -51,6 +49,10 @@ dependencies {
     testImplementation(catalog.lib("archunit"))
     // OwnerOnlyTest: a file system without POSIX views, to run the ACL path of the owner-only helper on Linux (#510).
     testImplementation(catalog.lib("jimfs"))
+    // pack-validation's ADR-0036 oracle (MeaningComparator) and the round trip's observation, which the per-kind codec
+    // tests here compare with (ADR-0075 decision 8, as amended 2026-11-15). Test scope only: main code depends the other
+    // way, pack-validation on packs.
+    testImplementation(project(":pack-validation"))
 }
 
 // The contract version the service reports (ContractVersion): the info.version of contracts/charter/openapi.yaml,
@@ -109,28 +111,7 @@ tasks.processResources {
     }
 }
 
-val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
 val testSourceSet = sourceSets.test.get()
-
-// The whole-pack round-trip gate (#187): every file of every charter example pack (ADR-0070, #547) is read into the
-// domain, written back, read again and compared with its source by meaning, against the checked-in expected-red
-// baseline (src/test/resources/whole-pack). It writes one report per pack, reports/whole-pack/<pack>.md. It is not part
-// of check; CI requires it through `CI gate / gate`, which calls .github/workflows/whole-pack.yml for the `wholepack`
-// group (epic #186, operator ruling of 2026-11-05).
-val wholePackReports = layout.buildDirectory.dir("reports/whole-pack")
-tasks.register<Test>("wholePackRoundTrip") {
-    group = "verification"
-    description = "The whole-pack round-trip gate over every charter example pack (#187, #547); not part of check."
-    testClassesDirs = testSourceSet.output.classesDirs
-    classpath = testSourceSet.runtimeClasspath
-    useJUnitPlatform {
-        includeTags("whole-pack")
-        excludeTags("timing")
-    }
-    val reports = wholePackReports
-    outputs.dir(reports).withPropertyName("wholePackReports")
-    systemProperty("charter.wholePackReportDir", reports.get().asFile.absolutePath)
-}
 
 // The real-git tests of the git source (WP18, T093, T152): bare repositories served over https by `git http-backend`
 // behind a test HTTPS server, fetched with the host git, which must be 2.50.1 or later (C-008, NFR-011). They carry the
@@ -187,7 +168,7 @@ val repositoryDir = rootProject.layout.projectDirectory
 // `git-host` (WP18's real-git tests) needs the host git binary and runs in its own CI job, so neither `test` nor `check`
 // runs it. `stress` (the 100-run concurrency tests of WP12, WP14 and WP19) still runs in `test` and `check`, and only PIT
 // leaves it out (pitest, below): a mutant would multiply its cost by the mutant count.
-val unitTestExcludedTags = listOf("whole-pack", "timing", "git-host")
+val unitTestExcludedTags = listOf("timing", "git-host")
 // The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
 // (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
 val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
@@ -234,40 +215,12 @@ tasks.test {
     readsTheUnitTestInputs()
 }
 
-// The nightly open-packs drift watch (ADR-0070, .github/workflows/open-packs-drift.yml): the driftTest source set runs
-// every pack of a spec-kitty-open-packs checkout through the whole-pack round trip the gate uses (its helpers come from
-// the test source set). `check` (so verifyAll) compiles and lints the source set but never runs it, and no required job
-// runs the driftTest task; -PopenPacksDir points at the checkout (default: the sibling ../spec-kitty-open-packs).
-val driftTestSourceSet = sourceSets.create("driftTest") {
-    compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
-    runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
-}
-configurations[driftTestSourceSet.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
-configurations[driftTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
-configurations[driftTestSourceSet.compileOnlyConfigurationName].extendsFrom(configurations.testCompileOnly.get())
-// Test code: the same rules as compileTestJava (charter.hand-written), NullAway off.
-tasks.named<JavaCompile>(driftTestSourceSet.compileJavaTaskName) {
-    options.errorprone { disable("NullAway") }
-}
-val openPacksDir = providers.gradleProperty("openPacksDir")
-    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
-    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
-tasks.register<Test>("driftTest") {
-    group = "verification"
-    description = "Round-trips every pack of a spec-kitty-open-packs checkout by meaning (nightly drift watch); not run by check."
-    testClassesDirs = driftTestSourceSet.output.classesDirs
-    classpath = driftTestSourceSet.runtimeClasspath
-    useJUnitPlatform()
-    systemProperty("charter.openPacksDir", openPacksDir.get())
-    doNotTrackState("open-packs main moves; a cached pass says nothing about today's tree")
-}
-
 // The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
 // (infra.storage.config included), infra.fetch, and since WP13 infra.archive (the archive extractor, which carries the upload's
 // safety rules; floor group infra.archive), but never the Spring wiring (application.config, infra.fetch.config) nor the
 // inbound REST adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests
 // (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out (
-// whole-pack, timing, git-host, and stress for PIT alone) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
+// timing, git-host, and stress for PIT alone) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
 // one work package's classes.
 val packsPackage = "ai.speckitty.charter.packs"
 val mutatedPackages =
