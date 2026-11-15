@@ -3,6 +3,7 @@ package ai.speckitty.charter.kernel.domain;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The closed, behaviour-carrying catalogue of DRG relation meanings (FR-002, ADR-0025 Decision 2,
@@ -80,6 +81,26 @@ public enum RelationType {
      */
     public boolean derived() {
         return derived;
+    }
+
+    /**
+     * The source and target kinds this relation may connect (ADR-0064 decision 13). A retired relation has none.
+     *
+     * @return the allowed endpoint pairs, in a stable order
+     */
+    public Set<EndpointPair> endpoints() {
+        return EndpointTable.of(this);
+    }
+
+    /**
+     * Whether this relation may join an edge from one kind to another.
+     *
+     * @param source the source's node kind
+     * @param target the target's node kind
+     * @return whether the pair is in {@link #endpoints()}
+     */
+    public boolean allows(NodeKind source, NodeKind target) {
+        return endpoints().contains(new EndpointPair(source, target));
     }
 
     /**
