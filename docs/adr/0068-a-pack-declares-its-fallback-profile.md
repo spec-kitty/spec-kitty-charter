@@ -89,6 +89,8 @@ annotated:
      (`409 artifact_locked`, ADR-0013, ADR-0030).
 6. **How the result is marked.** A selection answer says how it fits: `primary`, `alt` (ADR-0069) or `fallback`. The
    field belongs to the selection read, which is not built yet; this record fixes the three values.
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 1): the selection reads are built; `fit` is
+   answered on each candidate of `ProfileSelectionRead`.*
 7. **Refusals.**
 
    | Code | When | Status |

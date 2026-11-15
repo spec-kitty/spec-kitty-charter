@@ -1,8 +1,8 @@
 # WP04 of agent-profile-reads: the pack-scoped read of one agent profile, getPackAgentProfile (FR-002, FR-003, FR-004, FR-010,
 # NFR-001, NFR-002, SC-003, SC-004; plan fold C1 to C3, C6, C9 to C11). Written red first: the scenarios were committed
 # with every step bound and run against the service as it stood, where a read of an agent_profile answered the generic
-# route's 404 kind_not_found; the operation was then built. profiles.feature (#380) is left alone: it is @WIP and describes
-# the effective profile, which this read is not.
+# route's 404 kind_not_found; the operation was then built. profiles.feature (#380) is left alone: it is @contract, wires
+# PR-CHARTER-REFUSAL-001 and describes the effective profile, which this read is not.
 #
 # The governance walk lists an artifact once, at its earliest step, and depth counts the suggests hops it follows: at the
 # default depth 0 no suggestion is listed, at depth=1 the suggested artifacts and what they require are. An entry links

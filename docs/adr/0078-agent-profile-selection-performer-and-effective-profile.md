@@ -82,7 +82,7 @@ It **amends**, each with a dated note where it stands:
      `candidates`, each with its `id`, the `pack` that holds the version in force, its `fit` (`primary`, `alt` or
      `fallback`, ADR-0068 decision 6) and an `effective-artifact` link, and `tie` when several are answered.
    - `selectAgentProfileForStep`:
-     `GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/profile-selection`. It answers what
+     `GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/profile-selection?language=&framework=`. It answers what
      `selectAgentProfile` answers for the role the step names, the step judged as the step and action-context reads
      judge it. A step that names no role answers the fallback in force, so `ProfileSelectionRead.role` is optional.
      The effective step read and the action context link it as `profile-selection`.

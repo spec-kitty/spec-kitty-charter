@@ -205,7 +205,7 @@ How the service picks the profile in force for a role, or for the role a step na
 
 ## Profile tie
 
-Two or more equally fitting profiles after profile selection. There is no hidden tie-break: the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decision 8). A pinned profile is never in a tie, since its surviving specializations always rank above it (ADR-0078).
+Two or more equally fitting profiles after profile selection. There is no hidden tie-break: the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decision 8). A pinned profile is never in a tie, since its surviving specializations are never tied with it (ADR-0078).
 
 **Meta:**
 
