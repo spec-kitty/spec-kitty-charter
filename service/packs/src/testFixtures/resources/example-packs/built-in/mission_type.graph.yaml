@@ -7,10 +7,25 @@ nodes:
   label: Software Development
 edges:
 - source: mission_type:software-dev
+  target: action:software-dev/accept
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/analyze
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/charter
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/discovery
+  relation: requires
+- source: mission_type:software-dev
   target: action:software-dev/implement
   relation: requires
 - source: mission_type:software-dev
   target: action:software-dev/plan
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/retrospect
   relation: requires
 - source: mission_type:software-dev
   target: action:software-dev/review
@@ -20,4 +35,13 @@ edges:
   relation: requires
 - source: mission_type:software-dev
   target: action:software-dev/tasks
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/tasks-finalize
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/tasks-outline
+  relation: requires
+- source: mission_type:software-dev
+  target: action:software-dev/tasks-packages
   relation: requires

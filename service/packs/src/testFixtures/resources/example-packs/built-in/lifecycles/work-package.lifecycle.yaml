@@ -26,6 +26,7 @@ transitions:
 - from: in_progress
   to: for_review
   guard:
+  - ref: spec-kitty-pre-review
   - ref: subtasks-ready
   - ref: traceability-ready
     config:

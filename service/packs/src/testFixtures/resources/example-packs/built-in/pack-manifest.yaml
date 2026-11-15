@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: f10d1b8e6209a70e79f2b2e689fabd9a2d7f60681447e9d6d2d22ccde9065ab3
+manifest_hash: f8d4a64e6ad7d655310c6f2414c74f94c5b1f4c08d052c83935eabd02a8adf29
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -57,10 +57,14 @@ constituents:
   id: traceability-ready
   path: guards/traceability-ready.guard.yaml
   content_hash: fffca74b8d2dc9982319feca7dc685a481dcc190c81d0b3c91bfe62fea581557
+- kind: guard
+  id: spec-kitty-pre-review
+  path: guards/spec-kitty-pre-review.guard.yaml
+  content_hash: 111594aaa9a0dd8d01d0c4bd05b6105a3ff8614702b7f6033510bdc971dbcd23
 - kind: lifecycle
   id: work-package
   path: lifecycles/work-package.lifecycle.yaml
-  content_hash: b32cc98b9d2924923e3d0ea49a3e7306670874bfdb333c4aeffbab73bca16878
+  content_hash: cb64c6c2724ca2b1a8f4c5bac8cc74ffd89caf2e43044efe6c3b392ee53b4d92
 - kind: mission_step_contract
   id: implement
   path: missions/built_in_step_contracts/implement.step-contract.yaml
