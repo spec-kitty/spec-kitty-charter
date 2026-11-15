@@ -7,7 +7,8 @@
  * the scanner's {@code scan}, {@code Line}, {@code Kind}, {@code Refused} and {@code refused} are public for the packs
  * codec ({@code infra.storage.markdown}), which reads whole texts with them. It also holds the slot grammar of a step
  * prompt: {@link ai.speckitty.charter.kernel.markdown.PromptSlots} reads the slots a prompt declares from its
- * canonical text, and {@link ai.speckitty.charter.kernel.markdown.SlotId} is the id a slot is declared by. Depends on {@code java} and JSpecify only.
+ * canonical text, and {@link ai.speckitty.charter.kernel.markdown.SlotId} is the id a slot is declared by. Depends on {@code java}, JSpecify and the kernel's own
+ * {@link ai.speckitty.charter.kernel.domain.IdentifierGrammar}, which holds the slug grammar of a slot id's parts.
  */
 @NullMarked
 package ai.speckitty.charter.kernel.markdown;

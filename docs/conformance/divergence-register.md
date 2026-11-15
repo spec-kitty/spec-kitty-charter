@@ -688,7 +688,7 @@ Core paths are at spec-kitty `3131fffa`.
 ### DIV-401: The procedure shape
 
 - **Core:** Requires `name` and `purpose`; a step names who acts with `actor` (`human`, `agent` or `system`, default `agent`); an anti-pattern is `{name, description}`, both required; a reference is `{type, id, reason?}`; an optional list may be empty; the `id` is `^[a-z][a-z0-9-]*$` and need not equal the file stem (`offering/schemas/procedure.schema.yaml`).
-- **Service:** Requires `title` and `description`; a step names the acting `role` (`^[a-z][a-z0-9-]*$`, absent when any role may act), never `actor`; an anti-pattern is `{title, content?, bad_example?, good_example?}`; a reference is `{type, id, when?, reason?}`; an optional list holds at least one entry; the `id` is `^[a-z0-9]+(-[a-z0-9]+)*$` and equals the file stem. A procedure in core's shape, or one whose `id` is not its stem, is an `artifact_schema_error` in validate mode and is refused by the load.
+- **Service:** Requires `title` and `description`; a step names the acting `role` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, absent when any role may act), never `actor`; an anti-pattern is `{title, content?, bad_example?, good_example?}`; a reference is `{type, id, when?, reason?}`; an optional list holds at least one entry; the `id` is `^[a-z0-9]+(-[a-z0-9]+)*$` and equals the file stem. A procedure in core's shape, or one whose `id` is not its stem, is an `artifact_schema_error` in validate mode and is refused by the load.
 - **Rationale:** The sanitized artifact shapes of ADR-0043 (S1, S10 to S16); a step names a role, not an agent kind (ADR-0032).
 - **Ruling:** operator rulings on #194 (2026-10-28, 2026-10-29); #186 "as if core does not exist"
 - **Status:** open, since 2026-10-29

@@ -160,7 +160,7 @@ The mission type as a declared state machine, as decided in ADR-0050 and ADR-005
 - `- expected_output_artifacts`, `- references`: each `[1..]`
 - `+ steps`: `[1..]` steps, in run order; `- on_demand_steps`: `[1..]` steps
 - a step: `+ id` (the id grammar, at most 64 characters), `+ title`, `- description` (1 to 160 characters), `- role`
-  (`~ ^[a-z][a-z0-9-]*$`), `- prompt_path`, `- guidelines_path`, `- expected_input_artifacts`,
+  (`~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, never `generic`), `- prompt_path`, `- guidelines_path`, `- expected_input_artifacts`,
   `- expected_output_artifacts`, `- references`
 - an input: `+ artifact_key` (at most 255 characters), `+ path_pattern`, `- blocking` (only `true`)
 - an output: `+ artifact_key` (at most 255 characters), `+ artifact_class`, `+ path_pattern`, `- blocking`,

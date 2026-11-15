@@ -54,15 +54,13 @@ public record MissionStep(
             .must(Constraints.of(
                     "A mission step's description is at most " + DESCRIPTION_MAX_LENGTH + " characters.",
                     text -> text.codePointCount(0, text.length()) <= DESCRIPTION_MAX_LENGTH));
-    /** The longest role token, as a profile's roles are capped (#446). */
-    public static final int ROLE_MAX_LENGTH = RoleBearer.ROLE_MAX_LENGTH;
-
     /** The reserved role of a fallback profile, which no step asks for (ADR-0068 decision 4). */
     private static final String GENERIC_ROLE = "generic";
 
     private static final ModularRuleset<String> ROLE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A mission step's role is a letter-first kebab slug of at most " + ROLE_MAX_LENGTH + " characters.",
+                    "A mission step's role is a letter-first kebab slug of at most " + RoleBearer.ROLE_MAX_LENGTH
+                            + " characters.",
                     RoleBearer::isRole))
             .must(Constraints.of(
                     "A mission step never asks for the reserved role " + GENERIC_ROLE
