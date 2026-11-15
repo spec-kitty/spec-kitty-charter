@@ -21,7 +21,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The name a pack is stored under (FR-003, NFR-005): {@code ^[a-z0-9][a-z0-9-]{0,62}$}, unique after case folding
+ * The name a pack is stored under (FR-003, NFR-005): a kebab slug of at most 63 characters (ADR-0075 decision 2,
+ * {@code PackIdentifier.isPackId}), unique after case folding
  * against every stored pack, and the entry {@code <writable root>/<packId>} is where the pack really lives. Each hostile
  * id is refused before anything is written, and the same upload under a sound id is the positive control.
  */
@@ -39,6 +40,9 @@ class PackIdRulesTest {
         return Stream.of(
                 new Hostile("upper case", "Pack-X", RefusalCode.VALIDATION_FAILED),
                 new Hostile("a leading hyphen", "-pack", RefusalCode.VALIDATION_FAILED),
+                new Hostile("a doubled hyphen", "pack--x", RefusalCode.VALIDATION_FAILED),
+                new Hostile("a trailing hyphen", "pack-x-", RefusalCode.VALIDATION_FAILED),
+                new Hostile("an underscore", "pack_x", RefusalCode.VALIDATION_FAILED),
                 new Hostile("64 characters", "a".repeat(64), RefusalCode.VALIDATION_FAILED),
                 new Hostile("a parent segment", "..", RefusalCode.VALIDATION_FAILED),
                 new Hostile("a path separator", "a/b", RefusalCode.VALIDATION_FAILED),

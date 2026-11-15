@@ -262,6 +262,30 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
+  # ADR-0075 decision 2 (#552): each part of a slot is a letter-first kebab slug, so a doubled hyphen breaks the
+  # schema's slot pattern, which the old [a-z][a-z0-9-]* accepted. The control is the pack with a slot that fits.
+  Scenario: An entry whose slot part holds a doubled hyphen is a schema violation
+    Given the archive "bad" is a copy of the archive "enhancer"
+    And the archive "bad" holds the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons--block
+          path: spdd-plan.prompt-fragment.md
+      """
+    When I PUT "/packs/enhancer" with the archive "bad"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "schema"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    When I PUT "/packs/enhancer" with the archive "enhancer"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   # D12, the empty-list shape: minItems refuses it in the schema (documented in the schema's description).
   Scenario: An enhancement with prompt_fragments: [] is a schema violation, not prompt_fragment_invalid
     Given the archive "bad" is a copy of the archive "enhancer"

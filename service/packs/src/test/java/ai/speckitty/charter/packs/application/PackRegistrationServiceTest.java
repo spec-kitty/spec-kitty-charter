@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The whole-pack registration flow of IC-04, one test per step's refusal and the happy paths (FR-001, FR-002, FR-003,
@@ -63,28 +62,6 @@ class PackRegistrationServiceTest {
     /** A 26 character Crockford base32 identity ending in {@code c} repeated. */
     static String ulid(char c) {
         return "01M6R0WP14" + String.valueOf(c).repeat(16);
-    }
-
-    // ---- the pack id -----------------------------------------------------------------------------------------------
-
-    @ParameterizedTest(name = "\"{0}\" is refused before anything is read")
-    @ValueSource(strings = {"pack--x", "pack-x-", "-pack-x", "Pack-x", "pack_x"})
-    void aPackIdOffTheSharedSlugGrammarIsRefusedAndNothingIsStored(String packId, @TempDir Path host) {
-        Rig rig = new Rig(host);
-        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org"));
-
-        CharterRefusal refused = refusal(() -> rig.register(packId, upload, Preconditions.none()));
-
-        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-        assertThat(refused.violations()).singleElement().satisfies(violation -> {
-            assertThat(violation.pointer()).isEqualTo("packId");
-            assertThat(violation.code()).isEqualTo("invalid_pack_id");
-            assertThat(violation.detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL);
-        });
-        assertThat(rig.packs.resolve(packId)).as("nothing was stored").doesNotExist();
-        // control: the same upload under its canonical id is created
-        assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome())
-                .isEqualTo(Outcome.CREATED);
     }
 
     // ---- creating a pack -----------------------------------------------------------------------------------------

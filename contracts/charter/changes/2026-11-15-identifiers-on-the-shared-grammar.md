@@ -12,7 +12,10 @@
     `ProfileSelectionRead.role` and the `role` path parameter of `selectAgentProfile`, whose patterns still refuse
     the reserved `generic` without a lookahead.
   - **A slot id** is two letter-first kebab slugs joined by a colon, each at most 64 characters: `SlotId` (now with
-    `maxLength: 129`).
+    `maxLength: 129`). The pattern cannot cap each part without a lookahead, so the 64-character cap of a part is
+    the service's: a step enhancement whose slot part is longer passes the pack schema and is refused by the step
+    enhancement's rule.
+    `prompt-fragment-refusals.feature` gains a slot part with a doubled hyphen, refused as a `schema` violation.
   - The pack schemas follow (packs contract `0.1.0-SNAPSHOT`, `### Changed`).
   - Core's seam: regenerate the DTOs; a client that sent or stored an id, a role or a slot with a doubled, leading or
     trailing hyphen must rename it. No refusal code is added.

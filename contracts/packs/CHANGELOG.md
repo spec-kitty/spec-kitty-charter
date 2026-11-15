@@ -37,7 +37,7 @@ The first packs contract version, not yet released (#559).
 - Identifiers on the shared grammar (ADR-0075 decision 2, #552): a role (`agent-profile.schema.json` `role` and
   `alt-roles`, `mission-type.schema.json` step `role`, `procedure.schema.json` step `role`, now also at most 64
   characters, and the `role_pins` keys of `policy.schema.json`), a paradigm `id`, a styleguide `id` and each part of a
-  step enhancement's `slot` are letter-first kebab slugs, `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, so a doubled, leading or
+  step enhancement's `slot` (now `maxLength: 129`; the 64-character cap of each part is the service's) are letter-first kebab slugs, `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, so a doubled, leading or
   trailing hyphen is invalid where `^[a-z][a-z0-9-]*$` accepted it. No spec-kitty-open-packs id breaks (census at
   `openPacksRef` and at open-packs `main`).
 - The agent profile's performer (slice G, #512; ADR-0078 decision 4): `agent-profile.schema.json` replaces
