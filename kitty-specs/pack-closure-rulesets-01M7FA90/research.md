@@ -112,6 +112,13 @@ No issue is filed. Nothing found is a correctness, data or security risk beyond 
 
 - **#555** runs in parallel in another session. Both touch `WholePackStore` and `packs.infra.storage`. The second to
   land rebases, and overlaps go through the orchestrator.
+- **#555 (PR #578), as relayed on 2026-11-15.** The unmodelled-file ruling is compatible with #555.
+  - A file no rule maps (`other:<dir>`) becomes this Mission's `file_not_held` warning. The gate and the drift test
+    still fail on it, because the drift test treats every load warning as a problem (ADR-0070).
+  - #547's loud failure concerns held files that have a schema but no round-trip adapter. #554 does not change it.
+  - Rebase: #554 removes `WholePackStore.LoadedPack.unmodelled()`, which
+    `pack-validation/src/test/.../roundtrip/WholePackDrift.java` calls in #578. Whichever lands second drops that
+    call, since the `file_not_held` warning carries the same file. If #554 lands second, the fix is ours.
 - **#556** and **#478** follow #554. #556's ruling 3 is kept compatible: `Severity` has no `ERROR` today. #556 adds
   it, or its named code, when it adds the external checks. #554 adds no external check.
 - **#552** waits for slice G and is untouched here.
