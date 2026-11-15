@@ -94,6 +94,9 @@ files:
   - PackGovernanceEntry.yaml
   - GovernanceEdgeWords.yaml
   - EffectiveAgentProfileRead.yaml
+  - ProfileSelectionRead.yaml
+  - ProfileSelectionCandidate.yaml
+  - ProfileSelectionContext.yaml
   - EffectiveArtifactRead.yaml
   - EffectiveGovernanceEntry.yaml
   - MissionExpectedArtifact.yaml

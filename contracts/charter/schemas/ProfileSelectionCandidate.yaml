@@ -1,0 +1,45 @@
+title: ProfileSelectionCandidate
+description: >-
+  One profile a selection answers, with the pack that holds the version in force and how it fills the role.
+  _links holds effective-artifact, the read of the profile under the activation (getEffectiveAgentProfile).
+type: object
+additionalProperties: false
+required:
+- id
+- pack
+- fit
+- _links
+properties:
+  id:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The profile's declared profile-id.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/Pick.java
+      symbol: Pick.profileId
+  pack:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version of the profile in force: the winner of the layer
+      merge.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/Pick.java
+      symbol: Pick.pack
+  fit:
+    type: string
+    enum:
+    - primary
+    - alt
+    - fallback
+    description: >-
+      How the profile fills the role: primary when the role is its role, alt when the role is one of its alt-roles,
+      fallback when no profile fits and the fallback in force is answered.
+    x-source:
+      path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/Fit.java
+      symbol: Fit
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/Pick.java
+  symbol: Pick

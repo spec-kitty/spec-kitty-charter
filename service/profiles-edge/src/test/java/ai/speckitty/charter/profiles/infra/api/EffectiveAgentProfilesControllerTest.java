@@ -11,13 +11,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.profiles.application.EffectiveProfiles;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
 import ai.speckitty.charter.profiles.application.ProfileReadService;
+import ai.speckitty.charter.profiles.application.ProfileSelectionService;
 import ai.speckitty.charter.profiles.application.ProfileSource;
+import ai.speckitty.charter.profiles.application.SelectionCandidates;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
+import ai.speckitty.charter.profiles.domain.selection.Candidates;
+import ai.speckitty.charter.profiles.domain.selection.SelectionCandidate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -37,12 +46,24 @@ class EffectiveAgentProfilesControllerTest {
 
     private final List<String> asked = new ArrayList<>();
 
+    /** A selection port for the tests of the profile read: asked, it is a fault. */
+    private static final SelectionCandidates NO_SELECTION = (activationId, role, context) -> {
+        throw new AssertionError("the profile read does not ask the selection port");
+    };
+
     private MockMvc mvc(EffectiveProfiles port) {
+        return mvc(port, NO_SELECTION);
+    }
+
+    private MockMvc mvc(EffectiveProfiles port, SelectionCandidates selection) {
         ProfileSource noPacks = (pack, profileId, depth) -> {
             throw new AssertionError("the pack-scoped read is not asked");
         };
         EffectiveAgentProfilesController controller = new EffectiveAgentProfilesController(
-                new ProfileReadService(noPacks, port), new EffectiveProfileDtos("/api/v1"));
+                new ProfileReadService(noPacks, port),
+                new EffectiveProfileDtos("/api/v1"),
+                new ProfileSelectionService(selection),
+                new ProfileSelectionDtos("/api/v1"));
         return MockMvcBuilders.standaloneSetup(controller)
                 .setMessageConverters(new JacksonJsonHttpMessageConverter(JsonMapper.builder()
                         .addModule(new ProfileJson().profileJsonModule())
@@ -123,6 +144,60 @@ class EffectiveAgentProfilesControllerTest {
                 .hasCauseInstanceOf(CharterRefusal.class);
     }
 
+    // ---- selectAgentProfile, served by the same controller (one tag, one generated interface)
+
+    private SelectionCandidates selection() {
+        return (activationId, role, context) -> {
+            asked.add(activationId + "/" + role + "/" + context.language().orElse("-") + "/"
+                    + context.framework().orElse("-"));
+            AgentProfile rita = AgentProfile.builder()
+                    .id(new AgentProfileIdentifier("reviewer-rita"))
+                    .packId(new PackIdentifier("org-base"))
+                    .name("Reviewer Rita")
+                    .purpose("Review.")
+                    .role("reviewer")
+                    .specialization(new Specialization("Review", Optional.empty(), Optional.empty(), Optional.empty()))
+                    .build();
+            return new SelectionCandidates.Read(
+                    activationId,
+                    Candidates.unpinned(List.of(new SelectionCandidate(rita, "org-base", 1, 0)), Optional.empty()),
+                    SOURCE,
+                    "t-2");
+        };
+    }
+
+    @Test
+    void aSelectionCarriesTheVerifiedFingerprintTheQuotedTagAndTheAskedContext() throws Exception {
+        mvc(port(), selection())
+                .perform(get("/api/v1/activations/a-1/roles/reviewer/profile-selection?language=java")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Charter-Source-Fingerprint", SOURCE))
+                .andExpect(header().string("ETag", "\"t-2\""))
+                .andExpect(jsonPath("$.role").value("reviewer"))
+                .andExpect(jsonPath("$.context.language").value("java"))
+                .andExpect(jsonPath("$.context.framework").doesNotExist())
+                .andExpect(jsonPath("$.candidates[0].id").value("reviewer-rita"))
+                .andExpect(jsonPath("$.candidates[0].pack").value("org-base"))
+                .andExpect(jsonPath("$.candidates[0].fit").value("primary"))
+                .andExpect(jsonPath("$.tie").value(false))
+                .andExpect(jsonPath("$._links.self.href")
+                        .value("/api/v1/activations/a-1/roles/reviewer/profile-selection?language=java"));
+        assertThat(asked).containsExactly("a-1/reviewer/java/-");
+    }
+
+    @Test
+    void aSelectionWhoseTagMatchesIsA304ThatSendsTheTagAlone() throws Exception {
+        mvc(port(), selection())
+                .perform(get("/api/v1/activations/a-1/roles/reviewer/profile-selection")
+                        .header("If-None-Match", "\"t-2\"")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string("ETag", "\"t-2\""))
+                .andExpect(header().doesNotExist("Charter-Source-Fingerprint"))
+                .andExpect(content().string(""));
+    }
+
     @Test
     void theControllerRequiresItsCollaborators() {
         ProfileReadService service = new ProfileReadService(
@@ -130,9 +205,16 @@ class EffectiveAgentProfilesControllerTest {
                     throw new AssertionError("not asked");
                 },
                 ProfileFixtures.NO_ACTIVATIONS);
-        assertThatThrownBy(() -> new EffectiveAgentProfilesController(null, new EffectiveProfileDtos("/api/v1")))
+        EffectiveProfileDtos dtos = new EffectiveProfileDtos("/api/v1");
+        ProfileSelectionService selection = new ProfileSelectionService(NO_SELECTION);
+        ProfileSelectionDtos selectionDtos = new ProfileSelectionDtos("/api/v1");
+        assertThatThrownBy(() -> new EffectiveAgentProfilesController(null, dtos, selection, selectionDtos))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new EffectiveAgentProfilesController(service, null))
+        assertThatThrownBy(() -> new EffectiveAgentProfilesController(service, null, selection, selectionDtos))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EffectiveAgentProfilesController(service, dtos, null, selectionDtos))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EffectiveAgentProfilesController(service, dtos, selection, null))
                 .isInstanceOf(NullPointerException.class);
     }
 }

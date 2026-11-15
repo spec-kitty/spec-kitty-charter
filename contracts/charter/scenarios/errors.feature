@@ -146,6 +146,26 @@ Feature: Failures outside the charter's refusals
     And the contract says "mission_type_not_in_force" is raised by an operation
     And the contract says "mission_type_not_in_force" is answered with status 409 by the operation "getEffectiveStepPrompt"
 
+  Scenario: no_profile_matched is raised by the selection read
+    A declaration pin (ADR-0068, ADR-0069, ruling D4): the selection read (selectAgentProfile) raises the code, as a
+    404, when no profile in force fills the asked role and no fallback is in force, or the role is operator, which never
+    falls back; profile-selection.feature pins the behavior. ReservedRefusalCodesTest fails when the contract marks it
+    raised and no main class names it. Nothing here calls the service.
+    Then the contract declares the refusal code "no_profile_matched"
+    And the contract says "no_profile_matched" is answered with status 404
+    And the contract says "no_profile_matched" may not be retried
+    And the contract says "no_profile_matched" is raised by an operation
+
+  Scenario: fallback_profile_conflict is raised by the selection read
+    A declaration pin (ADR-0068 decision 5): the selection read (selectAgentProfile) raises the code, as a 422, when two
+    packs of the activation's closure, neither derived from the other, declare different fallback profiles, and
+    profile-selection.feature pins the behavior. ReservedRefusalCodesTest fails when the contract marks it raised and no
+    main class names it. Nothing here calls the service.
+    Then the contract declares the refusal code "fallback_profile_conflict"
+    And the contract says "fallback_profile_conflict" is answered with status 422
+    And the contract says "fallback_profile_conflict" may not be retried
+    And the contract says "fallback_profile_conflict" is raised by an operation
+
   Scenario: preset_not_found is raised by the preset application and the pack's preset read
     A declaration pin: applying a preset raises the code when the path names a preset no pack of the
     activation's closure holds, and activation-presets.feature pins the behavior; getPackPreset raises it when
@@ -236,7 +256,8 @@ Feature: Failures outside the charter's refusals
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
     artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is raised by
     the effective action context (ADR-0020 D7, PR C), which answers it with 404 when the merged closure holds no such
-    action of the mission type. unresolved_edge_endpoint and pack_level_mismatch are raised by no
+    action of the mission type. The selection read (selectAgentProfile) adds no_profile_matched and
+    fallback_profile_conflict, and raises role_pin_conflict too, for the asked role. unresolved_edge_endpoint and pack_level_mismatch are raised by no
     operation. drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty are
     violation codes of a refused registration (422 validation_failed, each at the pack-relative file of the fault),
     which the amended definition of raised counts: the whole-pack load that the registration runs refuses a graph that
@@ -312,3 +333,5 @@ Feature: Failures outside the charter's refusals
       | role_pin_conflict           |
       | specialization_cycle        |
       | profile_enhancement_drops_field |
+      | fallback_profile_conflict   |
+      | no_profile_matched          |

@@ -1,0 +1,27 @@
+title: ProfileSelectionContext
+description: >-
+  The context a role was asked in (selectAgentProfile): the language and the framework of the work, each present only
+  when the request asked it, so the object is empty when it asked neither.
+type: object
+additionalProperties: false
+properties:
+  language:
+    allOf:
+    - $ref: LanguageToken.yaml
+    description: The asked language.
+    x-derived:
+      rule: The language query parameter.
+      inputs:
+      - openapi.yaml#/paths
+  framework:
+    type: string
+    maxLength: 64
+    pattern: ^[a-z0-9][a-z0-9+#._-]*$
+    description: The asked framework.
+    x-derived:
+      rule: The framework query parameter.
+      inputs:
+      - openapi.yaml#/paths
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/SelectionContext.java
+  symbol: SelectionContext

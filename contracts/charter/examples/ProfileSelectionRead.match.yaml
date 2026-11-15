@@ -1,0 +1,18 @@
+summary: >-
+  java-jenny fills implementer for Java work: she and python-pedro specialize implementer-ivan, she declares java, and
+  the deeper specialization wins within the primary tier.
+value:
+  role: implementer
+  context:
+    language: java
+  candidates:
+  - id: java-jenny
+    pack: built-in
+    fit: primary
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/agent_profile/java-jenny
+  tie: false
+  _links:
+    self:
+      href: /api/v1/activations/a-1/roles/implementer/profile-selection?language=java

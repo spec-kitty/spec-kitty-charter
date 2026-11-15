@@ -61,6 +61,9 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private BiFunction<String, String, Optional<String>> placeAnswer = (missionType, action) -> Optional.empty();
     private Function<ArtifactKind, List<EffectiveHeldWinner>> heldAnswer = kind -> List.of();
     private final List<ArtifactKind> heldAsks = new ArrayList<>();
+    private BiFunction<String, InForceQuery, ProfileCandidates> candidatesAnswer =
+            (role, query) -> ProfileCandidates.NONE;
+    private final List<String> candidateAsks = new ArrayList<>();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -266,6 +269,25 @@ public final class FakeAvailablePacks implements AvailablePacks {
     }
 
     /**
+     * Answers every profile-candidates read of a session with this function from now on; a function that throws a
+     * refusal answers as the packs slice does.
+     *
+     * @param next the answers of {@link PacksSession#profileCandidates}, by role and query
+     */
+    public void profileCandidates(BiFunction<String, InForceQuery, ProfileCandidates> next) {
+        this.candidatesAnswer = next;
+    }
+
+    /**
+     * The roles the sessions were asked the profile candidates of, in order.
+     *
+     * @return the roles
+     */
+    public List<String> candidateAsks() {
+        return List.copyOf(candidateAsks);
+    }
+
+    /**
      * The kinds the sessions were asked the held winners of, in order, an item read included.
      *
      * @return the kinds
@@ -413,6 +435,12 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public GraphSnapshot graph(InForceQuery query) {
             graphReads++;
             return graphAnswer.apply(query);
+        }
+
+        @Override
+        public ProfileCandidates profileCandidates(String role, InForceQuery query) {
+            candidateAsks.add(role);
+            return candidatesAnswer.apply(role, query);
         }
 
         @Override

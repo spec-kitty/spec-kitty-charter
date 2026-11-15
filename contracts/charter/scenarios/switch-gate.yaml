@@ -92,4 +92,5 @@ operations:
   registerPackToolguide: {switch: ready}
   replaceActivation: {switch: ready}
   selectActivationArtifact: {switch: ready}
+  selectAgentProfile: {switch: ready}
   unselectActivationArtifact: {switch: ready}

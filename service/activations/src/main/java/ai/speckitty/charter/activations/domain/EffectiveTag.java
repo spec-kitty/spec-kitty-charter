@@ -106,7 +106,13 @@ public record EffectiveTag(String token) {
          * (research R10). The closure fingerprint digests every loaded file, prompt companions and fragments included,
          * so an edit of a fragment's bytes moves the tag.
          */
-        PROMPT
+        PROMPT,
+        /**
+         * {@code selectAgentProfile}: the profiles that fill one role in one context. The revision names what the
+         * activation puts in force, and the closure fingerprint digests every file of the closure's packs: the profiles'
+         * bodies, the policies with their role pins and the descriptors with their fallbacks.
+         */
+        SELECTION
     }
 
     /**
@@ -207,6 +213,37 @@ public record EffectiveTag(String token) {
 
         private String normalized() {
             return "missionType=" + missionType + "\naction=" + action;
+        }
+    }
+
+    /**
+     * The query of {@code selectAgentProfile}, as it selects a representation: the role and the asked context, an absent
+     * dimension the same representation however the request spelled its absence.
+     *
+     * @param role the role of the path
+     * @param language the asked language, if the request sent one
+     * @param framework the asked framework, if the request sent one
+     */
+    public record SelectionQuery(String role, Optional<String> language, Optional<String> framework) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param role the role
+         * @param language the asked language
+         * @param framework the asked framework
+         */
+        public SelectionQuery {
+            Objects.requireNonNull(role, "role");
+            Objects.requireNonNull(language, "language");
+            Objects.requireNonNull(framework, "framework");
+        }
+
+        /** The query as one unambiguous line: an absent part is {@code -}, a present one is marked {@code +}. */
+        private String normalized() {
+            return "role=" + role
+                    + "\nlanguage=" + language.map(value -> "+" + value).orElse("-")
+                    + "\nframework=" + framework.map(value -> "+" + value).orElse("-");
         }
     }
 
@@ -324,6 +361,19 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag prompt(Revision revision, ClosureSnapshot closure, PromptQuery query) {
         return of(Read.PROMPT, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of one profile selection: the role and the asked context, over the revision (what is in force) and the
+     * closure's fingerprint (every profile's body, every policy and every descriptor of the closure's packs).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the role and the context
+     * @return the tag
+     */
+    public static EffectiveTag selection(Revision revision, ClosureSnapshot closure, SelectionQuery query) {
+        return of(Read.SELECTION, revision, closure, query.normalized());
     }
 
     /**
