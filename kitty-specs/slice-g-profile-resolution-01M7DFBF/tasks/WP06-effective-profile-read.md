@@ -10,14 +10,13 @@ requirement_refs:
 - SC-004
 planning_base_branch: slice-g-538-profile-resolution
 merge_target_branch: slice-g-538-profile-resolution
-branch_strategy: Planning artifacts were generated on the mission branch kitty/mission-slice-g-profile-resolution-01M7DFBF (target slice-g-538-profile-resolution). Completed changes merge back into slice-g-538-profile-resolution; the slice lands as one PR (#573), held until slice F lands.
+branch_strategy: Planning artifacts for this mission were generated on slice-g-538-profile-resolution. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-g-538-profile-resolution unless the human explicitly redirects the landing branch.
 subtasks:
 - T027
 - T028
 - T029
 - T030
 phase: Phase 3 - Reads
-agent: claude
 history:
 - at: '2026-11-15T00:00:00Z'
   actor: system
@@ -37,13 +36,14 @@ owned_files:
 - contracts/charter/changes/2026-11-15-performer-and-effective-profile.md
 - service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java
 - service/profiles-edge/src/test/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtosTest.java
-- service/profiles/src/main/java/ai/speckitty/charter/profiles/application/ProfileReadService.java
-- service/profiles/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfiles.java
-- service/profiles/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileReadService.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfiles.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java
 - tests/scenarios/charter/PROMISES.md
 role: implementer
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP06 — Effective profile read (R8) and the #380 scenario

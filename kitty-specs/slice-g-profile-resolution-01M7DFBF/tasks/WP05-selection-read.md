@@ -13,7 +13,7 @@ requirement_refs:
 - SC-002
 planning_base_branch: slice-g-538-profile-resolution
 merge_target_branch: slice-g-538-profile-resolution
-branch_strategy: Planning artifacts were generated on the mission branch kitty/mission-slice-g-profile-resolution-01M7DFBF (target slice-g-538-profile-resolution). Completed changes merge back into slice-g-538-profile-resolution; the slice lands as one PR (#573), held until slice F lands.
+branch_strategy: Planning artifacts for this mission were generated on slice-g-538-profile-resolution. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-g-538-profile-resolution unless the human explicitly redirects the landing branch.
 subtasks:
 - T022
 - T023
@@ -21,7 +21,6 @@ subtasks:
 - T025
 - T026
 phase: Phase 3 - Reads
-agent: claude
 history:
 - at: '2026-11-15T00:00:00Z'
   actor: system
@@ -39,7 +38,7 @@ create_intent:
 - service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionController.java
 - service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionDtos.java
 - service/profiles-edge/src/test/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionDtosTest.java
-- service/profiles/src/main/java/ai/speckitty/charter/profiles/application/ProfileSelectionService.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileSelectionService.java
 - service/packs/src/testFixtures/resources/example-packs/org-base/agent_profiles/reviewer-rita.agent.yaml
 execution_mode: code_change
 owned_files:
@@ -58,13 +57,14 @@ owned_files:
 - service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionController.java
 - service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionDtos.java
 - service/profiles-edge/src/test/java/ai/speckitty/charter/profiles/infra/api/ProfileSelectionDtosTest.java
-- service/profiles/src/main/java/ai/speckitty/charter/profiles/application/ProfileSelectionService.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileSelectionService.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ProfileSteps.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java
 - service/packs/src/testFixtures/resources/example-packs/org-base/agent_profiles/reviewer-rita.agent.yaml
 role: implementer
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP05 — Selection read: contract, activation wiring and scenarios
@@ -120,7 +120,7 @@ GET /activations/{activationId}/roles/{role}/profile-selection?language=&framewo
 - Overlap: #106 also edits `EffectiveReadService` and `EffectiveTag`. Keep the additions in their own methods.
 
 ### T024 Edge
-- `ProfileSelectionService` (profiles application) adapts candidates to `ProfileSelection`.
+- `ProfileSelectionService` (profiles-edge application) adapts candidates to `ProfileSelection`.
   `ProfileSelectionController` and `ProfileSelectionDtos` map the answer. Follow
   `EffectiveAgentProfilesController` for the 304 and ETag handling.
 

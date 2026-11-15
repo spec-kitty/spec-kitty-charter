@@ -10,7 +10,7 @@ requirement_refs:
 - NFR-002
 planning_base_branch: slice-g-538-profile-resolution
 merge_target_branch: slice-g-538-profile-resolution
-branch_strategy: Planning artifacts were generated on the mission branch kitty/mission-slice-g-profile-resolution-01M7DFBF (target slice-g-538-profile-resolution). Completed changes merge back into slice-g-538-profile-resolution; the slice lands as one PR (#573), held until slice F lands.
+branch_strategy: Planning artifacts for this mission were generated on slice-g-538-profile-resolution. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-g-538-profile-resolution unless the human explicitly redirects the landing branch.
 subtasks:
 - T007
 - T008
@@ -19,7 +19,6 @@ subtasks:
 - T011
 - T012
 phase: Phase 1 - Profile model
-agent: claude
 history:
 - at: '2026-11-15T00:00:00Z'
   actor: system
@@ -60,6 +59,7 @@ owned_files:
 role: implementer
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 — Role pins, closure facts and registration rules

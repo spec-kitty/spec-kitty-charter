@@ -8,13 +8,12 @@ requirement_refs:
 - FR-011
 planning_base_branch: slice-g-538-profile-resolution
 merge_target_branch: slice-g-538-profile-resolution
-branch_strategy: Planning artifacts were generated on the mission branch kitty/mission-slice-g-profile-resolution-01M7DFBF (target slice-g-538-profile-resolution). Completed changes merge back into slice-g-538-profile-resolution; the slice lands as one PR (#573), held until slice F lands.
+branch_strategy: Planning artifacts for this mission were generated on slice-g-538-profile-resolution. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-g-538-profile-resolution unless the human explicitly redirects the landing branch.
 subtasks:
 - T031
 - T032
 - T033
 phase: Phase 4 - Records
-agent: claude
 history:
 - at: '2026-11-15T00:00:00Z'
   actor: system
@@ -36,6 +35,7 @@ owned_files:
 role: architect
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP07 — Records: ADR-0078, service contract, models and open-packs drafts
