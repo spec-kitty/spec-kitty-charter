@@ -127,6 +127,7 @@ class MissionValuesTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThat(new MissionStep(
@@ -136,6 +137,7 @@ class MissionValuesTest {
                                 Optional.of("qa-strategist"),
                                 Optional.empty(),
                                 Optional.empty(),
+                                List.of(),
                                 List.of(),
                                 List.of())
                         .role())
@@ -191,7 +193,15 @@ class MissionValuesTest {
 
     private static MissionStep stepWith(Optional<StepDocument> prompt, Optional<StepDocument> guidelines) {
         return new MissionStep(
-                "plan", "Plan", Optional.empty(), Optional.empty(), prompt, guidelines, List.of(), List.of());
+                "plan",
+                "Plan",
+                Optional.empty(),
+                Optional.empty(),
+                prompt,
+                guidelines,
+                List.of(),
+                List.of(),
+                List.of());
     }
 
     private static MissionStep stepDescribedAs(String description) {
@@ -202,6 +212,7 @@ class MissionValuesTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                List.of(),
                 List.of(),
                 List.of());
     }

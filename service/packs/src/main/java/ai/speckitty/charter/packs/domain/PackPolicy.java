@@ -198,6 +198,8 @@ public final class PackPolicy {
         findings.addAll(overrideSourceFindings(name, contents));
         findings.addAll(endpointFindings(name, contents));
         findings.addAll(missionStepFindings(name, contents));
+        findings.addAll(substepIdRules(contents.missionTypes()));
+        findings.addAll(substepDelegationFindings(name, contents));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
@@ -298,6 +300,8 @@ public final class PackPolicy {
             case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> OverrideSourceRule.CODE;
             case RELATIONSHIP_ENDPOINT_NOT_ALLOWED -> RelationshipEndpointRule.CODE;
             case MISSION_STEP_UNLINKED -> MissionStepLinkRule.CODE;
+            case SUBSTEP_DELEGATION_UNRESOLVED -> SubstepDelegationRule.UNRESOLVED;
+            case SUBSTEP_DELEGATION_UNSCOPED -> SubstepDelegationRule.UNSCOPED;
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
@@ -377,6 +381,75 @@ public final class PackPolicy {
         if (!graphsRead(contents)) {
             return List.of();
         }
+        return MissionStepLinkRule.judge(ownName(packName, contents), heldTypes(contents), edgesOf(contents)).stream()
+                .map(fault -> new PackFinding(
+                        PackFindingCode.MISSION_STEP_UNLINKED,
+                        fault.file(),
+                        List.of(),
+                        origin(packName, fault.file()) + ": " + fault.reason()))
+                .toList();
+    }
+
+    /**
+     * Judges the pack's mission types by {@link SubstepDelegationRule}, as the load does: one blocking finding per
+     * candidate that is no artifact of its kind in the pack, or that the step's action has no {@code scope} edge to, at
+     * the mission type file and the candidate's place. When a graph document could not be read the rule is not judged,
+     * as a candidate would otherwise lack an edge the pack may well hold.
+     */
+    private static List<PackFinding> substepDelegationFindings(String packName, PackContents contents) {
+        if (!graphsRead(contents)) {
+            return List.of();
+        }
+        Set<String> held = contents.artifacts().stream()
+                .map(artifact -> artifact.kind() + ":" + artifact.id())
+                .collect(Collectors.toSet());
+        return SubstepDelegationRule.judge(ownName(packName, contents), heldTypes(contents), held, edgesOf(contents))
+                .stream()
+                .map(fault -> new PackFinding(
+                        SubstepDelegationRule.UNRESOLVED.equals(fault.code())
+                                ? PackFindingCode.SUBSTEP_DELEGATION_UNRESOLVED
+                                : PackFindingCode.SUBSTEP_DELEGATION_UNSCOPED,
+                        fault.file(),
+                        fault.place(),
+                        origin(packName, fault.file()) + ": " + fault.reason()))
+                .toList();
+    }
+
+    /**
+     * A substep id declared twice within one step of a mission type (FR-004): one finding per repeated id, at its
+     * second occurrence. The load refuses the type in its domain.
+     */
+    private static List<PackFinding> substepIdRules(List<MissionTypeFacts> types) {
+        List<PackFinding> findings = new ArrayList<>();
+        for (MissionTypeFacts type : types) {
+            Set<String> seen = new LinkedHashSet<>();
+            Set<String> reported = new LinkedHashSet<>();
+            for (MissionTypeFacts.SubstepFacts substep : type.substeps()) {
+                String key = substep.list() + "/" + substep.stepIndex() + "/" + substep.id();
+                if (!seen.add(key) && reported.add(key)) {
+                    List<String> place = new ArrayList<>(substep.place());
+                    place.add("id");
+                    findings.add(new PackFinding(
+                            PackFindingCode.DUPLICATE_STEP_ID,
+                            type.file(),
+                            place,
+                            type.file() + ": substep id '" + substep.id() + "' is declared more than once in the step '"
+                                    + substep.stepId() + "'"));
+                }
+            }
+        }
+        return findings;
+    }
+
+    /** The mission types the load holds: one whose step repeats a substep id is refused in its domain. */
+    private static List<MissionTypeFacts> heldTypes(PackContents contents) {
+        return contents.missionTypes().stream()
+                .filter(type -> !type.repeatsASubstepId())
+                .toList();
+    }
+
+    /** The edges of every graph document that was read, as written, in document order. */
+    private static List<MissionStepLinkRule.Edge> edgesOf(PackContents contents) {
         List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
         for (FileRead<RawGraph> document : documents(contents)) {
             if (document instanceof FileRead.Read<RawGraph> read) {
@@ -386,16 +459,14 @@ public final class PackPolicy {
                 }
             }
         }
-        String ownName = contents.descriptor() instanceof FileRead.Read<PackDescriptor> descriptor
+        return edges;
+    }
+
+    /** The name the pack's descriptor declares, else its configured name. */
+    private static String ownName(String packName, PackContents contents) {
+        return contents.descriptor() instanceof FileRead.Read<PackDescriptor> descriptor
                 ? descriptor.value().name()
                 : packName;
-        return MissionStepLinkRule.judge(ownName, contents.missionTypes(), edges).stream()
-                .map(fault -> new PackFinding(
-                        PackFindingCode.MISSION_STEP_UNLINKED,
-                        fault.file(),
-                        List.of(),
-                        origin(packName, fault.file()) + ": " + fault.reason()))
-                .toList();
     }
 
     // ---- step prompt slots ------------------------------------------------------------------------

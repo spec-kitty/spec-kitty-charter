@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
 import ai.speckitty.charter.missions.application.PackRead;
@@ -14,6 +15,9 @@ import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
+import ai.speckitty.charter.missions.domain.Substep;
+import ai.speckitty.charter.missions.domain.SubstepCandidate;
+import ai.speckitty.charter.missions.domain.SubstepDelegation;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -30,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -58,6 +63,7 @@ class PacksMissionTypesTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        List.of(),
                         List.of(),
                         List.of()))
                 .build();
@@ -113,6 +119,46 @@ class PacksMissionTypesTest {
                 .contains(StoredFile.of("# Specify\n".getBytes(StandardCharsets.UTF_8)));
         assertThat(routed.stepFiles().get("specify").guidelines()).isEmpty();
         assertThat(routed.fingerprint()).isEqualTo(FINGERPRINT);
+    }
+
+    @Test
+    void theHeldCandidatesAreTheOnesWrittenBareOrWithThePacksOwnNameKeyedAsWritten() {
+        MissionType type = MissionType.builder()
+                .id(new MissionTypeIdentifier("rx"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .title("Rx")
+                .description("Rx")
+                .step(new MissionStep(
+                        "a",
+                        "A",
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of(),
+                        List.of(),
+                        List.of(new Substep(
+                                "run",
+                                "Run",
+                                Optional.empty(),
+                                List.of(),
+                                Optional.of(new SubstepDelegation(
+                                        ArtifactKind.TACTIC,
+                                        Stream.of("x", "main::y", "other::x")
+                                                .map(SubstepCandidate::parse)
+                                                .toList())),
+                                Optional.empty()))))
+                .build();
+        Pack pack =
+                Pack.builder().id(PACK).descriptor(descriptor()).artifact(type).build();
+
+        MissionTypeHolding holding = new PacksMissionTypes(read(pack, (id, held) -> Map.of())).holding(PACK, "rx");
+
+        assertThat(holding.held())
+                .as("other::x is resolved in a closure, never as the pack's own x")
+                .containsExactlyInAnyOrder(
+                        new HeldArtifact(ArtifactKind.TACTIC, "x"), new HeldArtifact(ArtifactKind.TACTIC, "main::y"));
     }
 
     @Test

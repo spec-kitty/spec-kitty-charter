@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -499,6 +500,52 @@ public final class PackCompositionResolver {
                         referringLabel + " writes the bare reference `" + reference + "`, which resolves only in "
                                 + holdingLabel + "; a cross-pack reference is written pack-qualified");
             }
+        }
+    }
+
+    /**
+     * Refuses a substep delegation candidate a pack writes with another pack's name when that pack is of the compose and
+     * of the writer's {@code depends_on} closure and does not hold an artifact of the candidate's kind and id (FR-005).
+     * It runs before {@link #checkReferences}, so such a candidate is refused once, by its own code, and not again as the
+     * reference of its {@code scope} edge. A candidate whose pack the compose does not hold, or holds outside the
+     * closure, is left to the reference check of its edge ({@code pack_reference_pack_missing}).
+     *
+     * @param packs the resolved compose
+     * @param referringPackId the {@code pack_id} of the pack whose mission types write the candidates
+     * @param candidates the candidates, as {@link SubstepDelegationRule#qualifiedCandidates} lists them
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE}, naming both packs, with one violation
+     *     {@value SubstepDelegationRule#UNRESOLVED} at the mission type file
+     */
+    public static void refuseUnresolvedDelegations(
+            List<PackUnderResolution> packs,
+            String referringPackId,
+            List<SubstepDelegationRule.QualifiedCandidate> candidates) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(referringPackId, "referringPackId");
+        Objects.requireNonNull(candidates, "candidates");
+        if (candidates.isEmpty()) {
+            return;
+        }
+        Map<String, PackUnderResolution> byId = indexById(packs);
+        Map<String, PackUnderResolution> byName = new HashMap<>();
+        packs.forEach(pack -> byName.putIfAbsent(pack.descriptor().name(), pack));
+        Set<String> closure = dependsOnClosure(referringPackId, byId);
+        PackUnderResolution referring = byId.get(referringPackId);
+        for (SubstepDelegationRule.QualifiedCandidate candidate : candidates) {
+            PackUnderResolution target =
+                    byName.get(candidate.reference().packName().orElseThrow());
+            if (target == null
+                    || !closure.contains(target.descriptor().packId())
+                    || target.holds(candidate.reference().urn())) {
+                continue;
+            }
+            String reason = candidate.unresolved(label(target));
+            List<RefusalPack> named = referring == null ? named(target) : named(referring, target);
+            throw CharterRefusal.withPacksAndViolations(
+                    RefusalCode.PACK_UNREADABLE,
+                    (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": " + reason,
+                    named,
+                    List.of(new RefusalViolation(candidate.file(), SubstepDelegationRule.UNRESOLVED, reason)));
         }
     }
 

@@ -47,7 +47,10 @@ public final class ActivationsMissionTypes implements ActivationMissionTypes {
                         winner.missionType(),
                         "The read of the mission type " + missionTypeId + " under activation " + activationId),
                 winner.stepContracts(),
-                winner.sourceFingerprint());
+                winner.sourceFingerprint(),
+                winner.held().stream()
+                        .map(ref -> new HeldArtifact(ref.kind(), ref.id()))
+                        .collect(Collectors.toUnmodifiableSet()));
     }
 
     @Override

@@ -357,6 +357,7 @@ public final class OfferingReadService {
             List<PackUnderResolution> members = withFacts(reads, Set.copyOf(roots), closure, facts);
             refuseTargetOnlyAnUnreadablePackCouldDeclare(reads, closure);
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(members, roots);
+            checkDelegations(composed, facts);
             checkReferences(composed, facts);
             checkStepEnhancementTargets(composed, facts);
             PackCompositionResolver.refusePresetContests(
@@ -488,6 +489,20 @@ public final class OfferingReadService {
                                 .map(read -> "pack " + read.configured().id().value() + " cannot be read ("
                                         + read.refusal().orElseThrow().getMessage() + ")")
                                 .collect(Collectors.joining("; ")));
+    }
+
+    /**
+     * FR-005: every substep delegation candidate a member writes with another pack's name resolves in its closure,
+     * judged before the references so that such a candidate is refused once, by its own code.
+     */
+    private static void checkDelegations(List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts) {
+        for (PackUnderResolution pack : composed) {
+            PackCompositionResolver.refuseUnresolvedDelegations(
+                    composed,
+                    pack.descriptor().packId(),
+                    Objects.requireNonNull(facts.get(pack.configured().id().value()), "read above")
+                            .delegations());
+        }
     }
 
     /** Checks every member's references against the compose, as the offering always has. */

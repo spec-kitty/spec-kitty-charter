@@ -41,6 +41,7 @@ class IdentifierBoundsTest {
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 

@@ -192,7 +192,8 @@ class StepDocumentRulesTest {
                         Optional.of(prompt),
                         first.guidelines(),
                         first.expectedInputArtifacts(),
-                        first.expectedOutputArtifacts()));
+                        first.expectedOutputArtifacts(),
+                        List.of()));
         MissionType.Builder builder = MissionType.builder()
                 .id(type.id())
                 .packId(type.packId())

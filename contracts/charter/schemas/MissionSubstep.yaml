@@ -1,0 +1,49 @@
+title: MissionSubstep
+description: >-
+  One substep of a mission type's step, from the step's flat, ordered substeps list (operator ruling
+  DM-01M7B1YH1GF15RD0G4ZPSA8KW9, FR-004): what to do, the command that does it with its inputs, the artifacts it
+  delegates to, and free guidance.
+type: object
+additionalProperties: false
+required:
+  - id
+  - description
+  - inputs
+properties:
+  id:
+    type: string
+    description: The substep's id, unique within its step.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+      symbol: Substep.id
+  description:
+    type: string
+    description: What the substep does.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+      symbol: Substep.description
+  command:
+    type: string
+    description: The command the substep runs, as stored; absent when it names none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+      symbol: Substep.command
+  inputs:
+    type: array
+    description: The inputs the substep's command takes, in stored order; empty when it declares none.
+    items:
+      $ref: MissionSubstepInput.yaml
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+      symbol: Substep.inputs
+  delegatesTo:
+    $ref: MissionSubstepDelegation.yaml
+  guidance:
+    type: string
+    description: The substep's guidance text, as stored; absent when it declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+      symbol: Substep.guidance
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/Substep.java
+  symbol: Substep

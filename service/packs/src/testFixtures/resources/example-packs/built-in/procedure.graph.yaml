@@ -8,4 +8,7 @@ nodes:
 - urn: procedure:adversarial-squad-deployment
   kind: procedure
   label: Adversarial Squad Deployment
+- urn: procedure:example-mapping-workshop
+  kind: procedure
+  label: Example Mapping Workshop
 edges: []

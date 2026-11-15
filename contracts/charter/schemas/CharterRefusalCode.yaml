@@ -110,6 +110,15 @@ description: >-
   requires edge at the mission type in force that names no step of the type. putPackRelationship of such a stray edge
   answers 422 validation_failed with the violation at /to, and deletePackRelationship of the last edge that links a
   step answers 422 validation_failed with the violation at /to.
+  substep_delegation_unresolved and substep_delegation_unscoped (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9,
+  FR-005) are two more: every candidate of a substep's delegates_to is an artifact of the delegation's kind, and the
+  step's action has a scope edge to it. A registration lists one violation per such candidate at the mission type
+  file, and a composing read answers 500 pack_unreadable. A candidate written with another pack's name is resolved in
+  the closure when the packs compose: one that the named pack, inside the writer's depends_on closure, does not hold
+  makes a composing read answer 500 pack_unreadable and a registration 422 validation_failed, with the violation
+  substep_delegation_unresolved at the mission type file, before the scope edge's reference is judged.
+  deletePackRelationship of the last scope edge a candidate needs answers 422 validation_failed with
+  substep_delegation_unscoped at /to.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -374,8 +383,10 @@ x-refusal:
       a violation at its pack-relative file. Its violation codes include the raised codes above and
       overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
       putPackRelationship lists at /from, relationship_endpoint_not_allowed, an edge whose relation does not allow
-      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type, and mission_step_unlinked, a
-      mission type step without its requires edge, or a requires edge from the type to an action that is not its step
+      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type, mission_step_unlinked, a
+      mission type step without its requires edge, or a requires edge from the type to an action that is not its step,
+      and substep_delegation_unresolved and substep_delegation_unscoped, a substep's delegation candidate that is no
+      artifact of its kind or that the step's action has no scope edge to (FR-005)
   registration_conflict:
     status: 409
     retryable: false

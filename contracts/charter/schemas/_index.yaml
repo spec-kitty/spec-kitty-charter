@@ -106,9 +106,11 @@ files:
   - MissionStepContractGate.yaml
   - MissionStepContractInput.yaml
   - MissionStepContractStep.yaml
-  - MissionStepDelegation.yaml
-  - MissionStepDelegationCandidate.yaml
   - MissionStepSummary.yaml
+  - MissionSubstep.yaml
+  - MissionSubstepDelegation.yaml
+  - MissionSubstepDelegationCandidate.yaml
+  - MissionSubstepInput.yaml
   - MissionType.yaml
   - Asset.yaml
   - AssetExecutable.yaml

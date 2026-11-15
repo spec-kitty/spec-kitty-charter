@@ -93,6 +93,7 @@ record MissionTypeDso(
      * @param guidelinesPath the {@code guidelines_path}, when present
      * @param expectedInputArtifacts the {@code expected_input_artifacts}
      * @param expectedOutputArtifacts the {@code expected_output_artifacts}
+     * @param substeps the {@code substeps}, in written order
      * @param prompt the prompt document, once read
      * @param guidelines the guidelines document, once read
      */
@@ -105,6 +106,7 @@ record MissionTypeDso(
             Optional<String> guidelinesPath,
             List<Artifact> expectedInputArtifacts,
             List<Artifact> expectedOutputArtifacts,
+            List<Substep> substeps,
             Optional<MarkdownDocument> prompt,
             Optional<MarkdownDocument> guidelines) {
 
@@ -119,6 +121,7 @@ record MissionTypeDso(
          * @param guidelinesPath the guidelines path, possibly empty
          * @param expectedInputArtifacts the inputs
          * @param expectedOutputArtifacts the outputs
+         * @param substeps the substeps
          * @param prompt the prompt document, possibly empty
          * @param guidelines the guidelines document, possibly empty
          */
@@ -131,6 +134,7 @@ record MissionTypeDso(
             Objects.requireNonNull(guidelinesPath, "guidelinesPath");
             expectedInputArtifacts = List.copyOf(expectedInputArtifacts);
             expectedOutputArtifacts = List.copyOf(expectedOutputArtifacts);
+            substeps = List.copyOf(substeps);
             Objects.requireNonNull(prompt, "prompt");
             Objects.requireNonNull(guidelines, "guidelines");
         }
@@ -152,8 +156,89 @@ record MissionTypeDso(
                     guidelinesPath,
                     expectedInputArtifacts,
                     expectedOutputArtifacts,
+                    substeps,
                     newPrompt,
                     newGuidelines);
+        }
+    }
+
+    /**
+     * A substep sub-item of a step.
+     *
+     * @param id the {@code id}
+     * @param description the {@code description}
+     * @param command the {@code command}, when present
+     * @param inputs the {@code inputs}, in written order
+     * @param delegatesTo the {@code delegates_to}, when present
+     * @param guidance the {@code guidance}, when present
+     */
+    record Substep(
+            String id,
+            String description,
+            Optional<String> command,
+            List<Input> inputs,
+            Optional<Delegation> delegatesTo,
+            Optional<String> guidance) {
+
+        /**
+         * Checks that every component is present and copies the inputs.
+         *
+         * @param id the id
+         * @param description the description
+         * @param command the command, possibly empty
+         * @param inputs the inputs
+         * @param delegatesTo the delegation, possibly empty
+         * @param guidance the guidance, possibly empty
+         */
+        Substep {
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(description, "description");
+            Objects.requireNonNull(command, "command");
+            inputs = List.copyOf(inputs);
+            Objects.requireNonNull(delegatesTo, "delegatesTo");
+            Objects.requireNonNull(guidance, "guidance");
+        }
+    }
+
+    /**
+     * An input of a substep's command.
+     *
+     * @param flag the {@code flag}
+     * @param source the {@code source}
+     * @param optional whether {@code optional: true} is written
+     */
+    record Input(String flag, String source, boolean optional) {
+
+        /**
+         * Checks that every component is present.
+         *
+         * @param flag the flag
+         * @param source the source
+         * @param optional the flag
+         */
+        Input {
+            Objects.requireNonNull(flag, "flag");
+            Objects.requireNonNull(source, "source");
+        }
+    }
+
+    /**
+     * The {@code delegates_to} of a substep.
+     *
+     * @param kind the {@code kind} token
+     * @param candidates the {@code candidates}, as written, in written order
+     */
+    record Delegation(String kind, List<String> candidates) {
+
+        /**
+         * Checks the kind and copies the candidates.
+         *
+         * @param kind the kind
+         * @param candidates the candidates
+         */
+        Delegation {
+            Objects.requireNonNull(kind, "kind");
+            candidates = List.copyOf(candidates);
         }
     }
 

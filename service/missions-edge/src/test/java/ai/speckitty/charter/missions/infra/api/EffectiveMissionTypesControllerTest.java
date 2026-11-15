@@ -83,7 +83,8 @@ class EffectiveMissionTypesControllerTest {
                                                     new PackIdentifier("proj"),
                                                     holding().type(),
                                                     List.of(mock(CharterArtifact.class)),
-                                                    FINGERPRINT);
+                                                    FINGERPRINT,
+                                                    Set.of());
                                         }
 
                                         @Override
@@ -313,7 +314,8 @@ class EffectiveMissionTypesControllerTest {
                                 ArtifactClass.INPUT,
                                 "spec.md",
                                 true,
-                                Optional.of("templates/divio/x.md")))))
+                                Optional.of("templates/divio/x.md"))),
+                        List.of()))
                 .build();
         return new MissionTypeHolding(
                 type,
@@ -322,7 +324,8 @@ class EffectiveMissionTypesControllerTest {
                         new MissionTypeHolding.StoredSkeleton("x;y.md", utf8("# Semicolon\n"))),
                 List.of(),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
-                FINGERPRINT);
+                FINGERPRINT,
+                Set.of());
     }
 
     /** main's version, which proj's replaced: it keeps review, whose output starts from main's skeleton divio/r.md. */
@@ -346,14 +349,16 @@ class EffectiveMissionTypesControllerTest {
                                 ArtifactClass.INPUT,
                                 "review.md",
                                 true,
-                                Optional.of("templates/divio/r.md")))))
+                                Optional.of("templates/divio/r.md"))),
+                        List.of()))
                 .build();
         return new MissionTypeHolding(
                 type,
                 List.of(new MissionTypeHolding.StoredSkeleton("divio/r.md", utf8("# R\n"))),
                 List.of(),
                 Map.of(),
-                FINGERPRINT);
+                FINGERPRINT,
+                Set.of());
     }
 
     private static StoredFile utf8(String text) {

@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -519,6 +520,18 @@ public final class RegistrationImpact {
     /** A compose refusal, as the registration's refusal: the same code, the closure named, its roots among the packs. */
     private static CharterRefusal inClosure(
             ClosureRoots.Roots roots, CharterRefusal refused, StagedPackViews.View staged) {
+        if (refused.code() == RefusalCode.PACK_UNREADABLE
+                && !refused.violations().isEmpty()
+                && refused.violations().stream()
+                        .allMatch(violation -> SubstepDelegationRule.UNRESOLVED.equals(violation.code()))) {
+            // FR-005: a qualified substep candidate the closure does not hold is the author's fault, refused as the
+            // load refuses an in-pack one: validation_failed, the violation at the mission type file.
+            return CharterRefusal.withPacksAndViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "In the closure rooted at " + roots.label() + ": " + refused.getMessage(),
+                    refused.packs(),
+                    refused.violations());
+        }
         if (!refused.violations().isEmpty() || !refused.requiredBy().isEmpty()) {
             return refused;
         }

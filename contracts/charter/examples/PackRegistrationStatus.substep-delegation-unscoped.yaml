@@ -1,0 +1,22 @@
+summary: >-
+  A registration refused because the step's action has no scope edge to a substep's delegation candidate (FR-005).
+value:
+  registrationId: 01M7B19K00000000000000SD2A
+  state: refused
+  packId: acme
+  acceptedAt: '2026-11-14T10:00:00Z'
+  finishedAt: '2026-11-14T10:00:01Z'
+  problem:
+    title: Validation failed
+    status: 422
+    code: validation_failed
+    detail: 'The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.'
+    violations:
+    - pointer: missions/rx/rx.mission-type.yaml
+      code: substep_delegation_unscoped
+      detail: >-
+        the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds
+        action:rx/a scope tactic:tdd
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M7B19K00000000000000SD2A

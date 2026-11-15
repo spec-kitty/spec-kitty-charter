@@ -1,20 +1,24 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -130,6 +134,7 @@ public final class RelationshipRemovalService {
         List<Relationship> retained =
                 registered.stream().filter(edge -> !names(edge, from, to)).toList();
         refuseUnlinkingAStep(pack, current.descriptor().name(), named, retained);
+        refuseUnscopingACandidate(pack, current, named, retained);
         impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
         PackRevision after = store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
         trail.moved(before, after);
@@ -160,6 +165,43 @@ public final class RelationshipRemovalService {
                         RefusalCode.VALIDATION_FAILED,
                         "The relationship removal is refused: " + reason + ".",
                         List.of(new RefusalViolation("/to", MissionStepLinkRule.CODE, reason)));
+            }
+        }
+    }
+
+    /**
+     * Refuses the removal of the last {@code scope} edge from a step's action to a delegation candidate of one of its
+     * substeps (FR-005): the candidate would be left without its edge, and every read of the pack would refuse it. A
+     * substep goes with its edge by registering the whole pack. The refusal is {@code validation_failed} with one
+     * violation {@value SubstepDelegationRule#UNSCOPED} at {@code /to}.
+     */
+    private void refuseUnscopingACandidate(
+            PackIdentifier pack, Pack current, List<Relationship> removed, List<Relationship> retained) {
+        String packName = current.descriptor().name();
+        List<Relationship> scopes = removed.stream()
+                .filter(edge -> edge.type() == RelationType.SCOPE && edge.from().kind() == NodeKind.ACTION)
+                .filter(edge -> edge.fromPack().map(packName::equals).orElse(true))
+                .toList();
+        if (scopes.isEmpty()) {
+            return;
+        }
+        List<Relationship> kept = new ArrayList<>(store.authored(pack).edges());
+        kept.addAll(retained);
+        Set<String> needed = SubstepDelegationRule.neededScopes(packName, store.missionTypes(pack));
+        for (Relationship edge : scopes) {
+            String key = SubstepDelegationRule.scopeKey(packName, edge.from(), edge.toReference());
+            boolean stillScoped = kept.stream()
+                    .filter(other -> other.type() == RelationType.SCOPE
+                            && other.fromPack().map(packName::equals).orElse(true))
+                    .anyMatch(other -> SubstepDelegationRule.scopeKey(packName, other.from(), other.toReference())
+                            .equals(key));
+            if (needed.contains(key) && !stillScoped) {
+                String reason = "a substep of " + edge.from() + " delegates to " + edge.toReference()
+                        + ", which would have no scope edge from the step's action";
+                throw CharterRefusal.withViolations(
+                        RefusalCode.VALIDATION_FAILED,
+                        "The relationship removal is refused: " + reason + ".",
+                        List.of(new RefusalViolation("/to", SubstepDelegationRule.UNSCOPED, reason)));
             }
         }
     }

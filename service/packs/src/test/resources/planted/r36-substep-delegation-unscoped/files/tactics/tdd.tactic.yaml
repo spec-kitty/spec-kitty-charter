@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: tdd
+name: Test-Driven Development
+purpose: Write the failing test first.
+steps:
+  - title: Write the test
+    description: Write a test that fails.

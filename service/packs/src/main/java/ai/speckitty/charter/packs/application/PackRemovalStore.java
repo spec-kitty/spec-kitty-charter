@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.Preset;
 import java.util.List;
 import java.util.Set;
@@ -168,6 +169,16 @@ public interface PackRemovalStore extends PackRevisions {
      * @return the declared nodes and the typed edges
      */
     Authored authored(PackIdentifier pack);
+
+    /**
+     * The facts of the pack's stored mission types: their steps and the substeps of each, which a relationship removal
+     * judges the {@code scope} edges a substep's candidates need against (FR-005).
+     *
+     * @param pack the pack's identity
+     * @return the facts, one per stored mission type
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code pack_unreadable} when the pack cannot be read
+     */
+    List<MissionTypeFacts> missionTypes(PackIdentifier pack);
 
     /**
      * Removes what the removal names and swaps the result in whole, so that a concurrent read sees the old pack or the new

@@ -8,8 +8,8 @@ import ai.speckitty.charter.api.model.MissionStepContract;
 import ai.speckitty.charter.api.model.MissionStepContractGate;
 import ai.speckitty.charter.api.model.MissionStepContractInput;
 import ai.speckitty.charter.api.model.MissionStepContractStep;
-import ai.speckitty.charter.api.model.MissionStepDelegation;
-import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
+import ai.speckitty.charter.api.model.MissionSubstepDelegation;
+import ai.speckitty.charter.api.model.MissionSubstepDelegationCandidate;
 import ai.speckitty.charter.api.model.Paradigm;
 import ai.speckitty.charter.api.model.Procedure;
 import ai.speckitty.charter.api.model.ProcedureAntiPattern;
@@ -332,13 +332,13 @@ final class ArtifactDtos {
                 .guidance(step.guidance().orElse(null));
     }
 
-    private static MissionStepDelegation delegation(
+    private static MissionSubstepDelegation delegation(
             ai.speckitty.charter.packs.domain.StepDelegation delegation,
             Set<ArtifactPosition> held,
             String packId,
             Hypermedia links) {
         String kind = delegation.kind().token();
-        return new MissionStepDelegation(
+        return new MissionSubstepDelegation(
                 kind,
                 delegation.candidates().stream()
                         .map(candidate -> {
@@ -349,7 +349,7 @@ final class ArtifactDtos {
                                             && position.id().equals(candidate))) {
                                 own.put(Relation.ARTIFACT, links.link(PACKS, packId, ARTIFACTS, kind, candidate));
                             }
-                            return new MissionStepDelegationCandidate(candidate, Hypermedia.wire(own));
+                            return new MissionSubstepDelegationCandidate(candidate, Hypermedia.wire(own));
                         })
                         .toList());
     }

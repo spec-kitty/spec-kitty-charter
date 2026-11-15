@@ -59,6 +59,15 @@
           "minItems": 1,
           "title": "Expected Output Artifacts",
           "type": "array"
+        },
+        "substeps": {
+          "description": "The step's substeps, in authored order: a flat list, one level deep (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9). A substep id stands once within the step.",
+          "items": {
+            "$ref": "#/$defs/Substep"
+          },
+          "minItems": 1,
+          "title": "Substeps",
+          "type": "array"
         }
       },
       "required": [
@@ -66,6 +75,117 @@
         "title"
       ],
       "title": "Step",
+      "type": "object"
+    },
+    "Substep": {
+      "additionalProperties": false,
+      "description": "One substep of a step: what to do, the command that does it with its inputs, the artifacts it delegates to and free guidance.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "maxLength": 64,
+          "description": "Unique within the step."
+        },
+        "description": {
+          "title": "Description",
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "title": "Command",
+          "type": "string",
+          "minLength": 1,
+          "description": "The command that runs the substep, when it has one."
+        },
+        "inputs": {
+          "description": "The command's declared inputs, in authored order.",
+          "items": {
+            "$ref": "#/$defs/SubstepInput"
+          },
+          "minItems": 1,
+          "title": "Inputs",
+          "type": "array"
+        },
+        "delegates_to": {
+          "$ref": "#/$defs/SubstepDelegation"
+        },
+        "guidance": {
+          "title": "Guidance",
+          "type": "string",
+          "minLength": 1,
+          "description": "Free guidance for the agent."
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "Substep",
+      "type": "object"
+    },
+    "SubstepInput": {
+      "additionalProperties": false,
+      "description": "A declared runtime input of a substep's command.",
+      "properties": {
+        "flag": {
+          "minLength": 1,
+          "title": "Flag",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "optional": {
+          "const": true,
+          "description": "Present only when the command runs without the input; absent means it is required.",
+          "title": "Optional",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "flag",
+        "source"
+      ],
+      "title": "SubstepInput",
+      "type": "object"
+    },
+    "SubstepDelegation": {
+      "additionalProperties": false,
+      "description": "The artifacts that could concretize a substep, as data: one kind, and its candidates written [<pack>::]<id>. The kind is a scope target of an action (a guidance kind or agent_profile), and the step's action has a scope edge to every candidate.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "directive",
+            "tactic",
+            "styleguide",
+            "toolguide",
+            "paradigm",
+            "procedure",
+            "agent_profile"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidates": {
+          "items": {
+            "type": "string",
+            "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "minItems": 1,
+          "title": "Candidates",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "candidates"
+      ],
+      "title": "SubstepDelegation",
       "type": "object"
     },
     "PathConventions": {

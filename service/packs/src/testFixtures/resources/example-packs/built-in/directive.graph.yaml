@@ -11,6 +11,15 @@ nodes:
 - urn: directive:DIRECTIVE_010
   kind: directive
   label: Specification Fidelity Requirement
+- urn: directive:DIRECTIVE_024
+  kind: directive
+  label: Locality of Change
+- urn: directive:DIRECTIVE_030
+  kind: directive
+  label: Test and Typecheck Quality Gate
+- urn: directive:DIRECTIVE_037
+  kind: directive
+  label: Living Documentation Sync
 edges:
 - source: directive:DIRECTIVE_010
   target: directive:DIRECTIVE_001

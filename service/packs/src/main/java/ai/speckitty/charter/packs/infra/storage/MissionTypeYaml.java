@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.mappings;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.optional;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
+import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.ArrayList;
@@ -67,10 +68,33 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                     optional(s, "guidelines_path"),
                     artifacts(s, "expected_input_artifacts"),
                     artifacts(s, "expected_output_artifacts"),
+                    substeps(s),
                     Optional.empty(),
                     Optional.empty()));
         }
         return steps;
+    }
+
+    private static List<MissionTypeDso.Substep> substeps(Map<?, ?> step) {
+        List<MissionTypeDso.Substep> substeps = new ArrayList<>();
+        for (Map<?, ?> s : mappings(step, "substeps")) {
+            List<MissionTypeDso.Input> inputs = new ArrayList<>();
+            for (Map<?, ?> i : mappings(s, "inputs")) {
+                inputs.add(new MissionTypeDso.Input(
+                        required(i, "flag"), required(i, "source"), Boolean.TRUE.equals(i.get("optional"))));
+            }
+            Optional<MissionTypeDso.Delegation> delegation = s.get("delegates_to") instanceof Map<?, ?> d
+                    ? Optional.of(new MissionTypeDso.Delegation(required(d, "kind"), strings(d, "candidates")))
+                    : Optional.empty();
+            substeps.add(new MissionTypeDso.Substep(
+                    required(s, "id"),
+                    required(s, "description"),
+                    optional(s, "command"),
+                    inputs,
+                    delegation,
+                    optional(s, "guidance")));
+        }
+        return substeps;
     }
 
     private static List<MissionTypeDso.Artifact> artifacts(Map<?, ?> owner, String key) {
@@ -120,6 +144,37 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                     out, "expected_input_artifacts", writeArtifacts(step.expectedInputArtifacts()));
             YamlDumpEmitter.mappingsInto(
                     out, "expected_output_artifacts", writeArtifacts(step.expectedOutputArtifacts()));
+            YamlDumpEmitter.mappingsInto(out, "substeps", writeSubsteps(step.substeps()));
+            written.add(out);
+        }
+        return written;
+    }
+
+    private static List<Map<String, Object>> writeSubsteps(List<MissionTypeDso.Substep> substeps) {
+        List<Map<String, Object>> written = new ArrayList<>();
+        for (MissionTypeDso.Substep substep : substeps) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("id", substep.id());
+            out.put("description", substep.description());
+            YamlDumpEmitter.scalarInto(out, "command", substep.command());
+            List<Map<String, Object>> inputs = new ArrayList<>();
+            for (MissionTypeDso.Input input : substep.inputs()) {
+                Map<String, Object> entry = YamlDumpEmitter.mapping();
+                entry.put("flag", input.flag());
+                entry.put("source", input.source());
+                if (input.optional()) {
+                    entry.put("optional", true);
+                }
+                inputs.add(entry);
+            }
+            YamlDumpEmitter.mappingsInto(out, "inputs", inputs);
+            substep.delegatesTo().ifPresent(delegation -> {
+                Map<String, Object> delegatesTo = YamlDumpEmitter.mapping();
+                delegatesTo.put("kind", delegation.kind());
+                YamlDumpEmitter.stringsInto(delegatesTo, "candidates", delegation.candidates());
+                out.put("delegates_to", delegatesTo);
+            });
+            YamlDumpEmitter.scalarInto(out, "guidance", substep.guidance());
             written.add(out);
         }
         return written;

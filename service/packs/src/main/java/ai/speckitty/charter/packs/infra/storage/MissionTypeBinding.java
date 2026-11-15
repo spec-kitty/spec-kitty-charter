@@ -11,6 +11,10 @@ import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
 import ai.speckitty.charter.missions.domain.PathConventions;
 import ai.speckitty.charter.missions.domain.StepDocument;
 import ai.speckitty.charter.missions.domain.StepSection;
+import ai.speckitty.charter.missions.domain.Substep;
+import ai.speckitty.charter.missions.domain.SubstepCandidate;
+import ai.speckitty.charter.missions.domain.SubstepDelegation;
+import ai.speckitty.charter.missions.domain.SubstepInput;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -246,7 +250,52 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                         .toList(),
                 step.expectedOutputArtifacts().stream()
                         .map(MissionTypeBinding::output)
-                        .toList());
+                        .toList(),
+                step.substeps().stream().map(MissionTypeBinding::substep).toList());
+    }
+
+    /**
+     * A substep as the domain holds it.
+     *
+     * @throws IllegalArgumentException when the delegation names a kind that is no artifact kind, or a candidate breaks
+     *     the {@code [<pack>::]<id>} form
+     */
+    private static Substep substep(MissionTypeDso.Substep substep) {
+        return new Substep(
+                substep.id(),
+                substep.description(),
+                substep.command(),
+                substep.inputs().stream()
+                        .map(input -> new SubstepInput(input.flag(), input.source(), input.optional()))
+                        .toList(),
+                substep.delegatesTo().map(MissionTypeBinding::delegation),
+                substep.guidance());
+    }
+
+    private static SubstepDelegation delegation(MissionTypeDso.Delegation delegation) {
+        ArtifactKind kind = ArtifactKind.fromToken(delegation.kind())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "a substep delegates to the unknown kind '" + delegation.kind() + "'"));
+        return new SubstepDelegation(
+                kind,
+                delegation.candidates().stream().map(SubstepCandidate::parse).toList());
+    }
+
+    private static MissionTypeDso.Substep substepDso(Substep substep) {
+        return new MissionTypeDso.Substep(
+                substep.id(),
+                substep.description(),
+                substep.command(),
+                substep.inputs().stream()
+                        .map(input -> new MissionTypeDso.Input(input.flag(), input.source(), input.optional()))
+                        .toList(),
+                substep.delegatesTo()
+                        .map(delegation -> new MissionTypeDso.Delegation(
+                                delegation.kind().token(),
+                                delegation.candidates().stream()
+                                        .map(SubstepCandidate::toString)
+                                        .toList())),
+                substep.guidance());
     }
 
     private static Optional<StepDocument> document(
@@ -334,6 +383,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 step.expectedOutputArtifacts().stream()
                         .map(MissionTypeBinding::artifactDso)
                         .toList(),
+                step.substeps().stream().map(MissionTypeBinding::substepDso).toList(),
                 step.prompt().map(MissionTypeBinding::markdownOf),
                 step.guidelines().map(MissionTypeBinding::markdownOf));
     }

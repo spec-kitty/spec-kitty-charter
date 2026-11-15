@@ -853,11 +853,16 @@ public class EffectiveReadService {
                 .sorted()
                 .map(bound -> winnerOf(session, bound, query, read).artifact())
                 .toList();
+        List<ArtifactKind> listed = packs.listedKinds();
+        Set<ArtifactRef> held = merged.winners().keySet().stream()
+                .filter(ref -> listed.contains(ref.kind()))
+                .collect(Collectors.toUnmodifiableSet());
         return new EffectiveMissionTypeWinner(
                 winner.packId(),
                 winner.artifact(),
                 contracts,
-                session.snapshot().fingerprint());
+                session.snapshot().fingerprint(),
+                held);
     }
 
     /**

@@ -1,0 +1,33 @@
+title: MissionSubstepDelegation
+description: >-
+  The artifacts a substep delegates to: one kind and its candidates, in stored order. Absent from the substep when it
+  delegates to none. The kind is a scope target of an action (a guidance kind or agent_profile), and the step's action
+  has a scope edge to every candidate (FR-005).
+type: object
+additionalProperties: false
+required:
+  - kind
+  - candidates
+properties:
+  kind:
+    type: string
+    pattern: '^[a-z0-9][a-z0-9_-]*$'
+    maxLength: 64
+    description: >-
+      The kind token of the candidates, for example directive or procedure. An open token: a client tolerates a kind it
+      does not know.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepDelegation.java
+      symbol: SubstepDelegation.kind
+  candidates:
+    type: array
+    minItems: 1
+    description: The candidates, in stored order.
+    items:
+      $ref: MissionSubstepDelegationCandidate.yaml
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepDelegation.java
+      symbol: SubstepDelegation.candidates
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepDelegation.java
+  symbol: SubstepDelegation

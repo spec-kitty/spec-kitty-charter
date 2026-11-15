@@ -41,7 +41,8 @@ final class MissionLinks {
             MissionTypesApi.PATH_GET_PACK_MISSION_STEP,
             MissionTypesApi.PATH_GET_PACK_MISSION_SKELETON,
             ArtifactsApi.PATH_LIST_PACK_ARTIFACTS,
-            ArtifactsApi.PATH_GET_PACK_ARTIFACT);
+            ArtifactsApi.PATH_GET_PACK_ARTIFACT,
+            MissionRelation.ARTIFACT);
 
     /** The path templates of an activation's reads. */
     private static final Templates ACTIVATION = new Templates(
@@ -49,7 +50,8 @@ final class MissionLinks {
             EffectiveMissionTypesApi.PATH_GET_EFFECTIVE_MISSION_STEP,
             EffectiveMissionTypesApi.PATH_GET_EFFECTIVE_MISSION_SKELETON,
             ActivationApi.PATH_LIST_EFFECTIVE_ARTIFACTS,
-            ActivationApi.PATH_GET_EFFECTIVE_ARTIFACT);
+            ActivationApi.PATH_GET_EFFECTIVE_ARTIFACT,
+            MissionRelation.EFFECTIVE_ARTIFACT);
 
     private final String basePath;
 
@@ -84,9 +86,15 @@ final class MissionLinks {
 
     /**
      * The path templates of one scope, each starting with the scope's own variable ({@code {packId}} or
-     * {@code {activationId}}).
+     * {@code {activationId}}), and the relation a link to the scope's read of one artifact goes under.
      */
-    private record Templates(String missionType, String step, String skeleton, String artifacts, String artifact) {}
+    private record Templates(
+            String missionType,
+            String step,
+            String skeleton,
+            String artifacts,
+            String artifact,
+            MissionRelation artifactRelation) {}
 
     /**
      * The links of the mission-type reads of one scope, a pack or an activation: the same reads under
@@ -143,6 +151,14 @@ final class MissionLinks {
         /** The scope's artifacts of kind {@code mission_step_contract}. */
         Link stepContracts() {
             return new Link(href(templates.artifacts(), id) + KIND_QUERY + MISSION_STEP_CONTRACT);
+        }
+
+        /**
+         * The relation of a link to the scope's read of one artifact: {@code artifact} in a pack, {@code
+         * effective-artifact} under an activation.
+         */
+        MissionRelation artifactRelation() {
+            return templates.artifactRelation();
         }
 
         /** The scope's read of one artifact of any kind: the generic item read, or the generic effective read. */

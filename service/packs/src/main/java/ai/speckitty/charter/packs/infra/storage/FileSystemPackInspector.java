@@ -534,15 +534,57 @@ public final class FileSystemPackInspector implements PackInspector {
             }
         }
 
-        /** The step-link facts of a mission type the load holds: its id and the ids of its steps and on-demand steps. */
+        /**
+         * The facts of a mission type the load holds: its id, the ids of its steps and on-demand steps, and the substeps
+         * of each.
+         */
         private void missionTypeFactsOf(String file, String kind, Object document) {
             if ("mission-type".equals(kind)
                     && document instanceof Map<?, ?> map
                     && map.get("id") instanceof String id) {
                 List<String> steps = new ArrayList<>(idsOf(map.get("steps")));
                 steps.addAll(idsOf(map.get("on_demand_steps")));
-                missionTypes.add(new MissionTypeFacts(file, id, steps));
+                List<MissionTypeFacts.SubstepFacts> substeps = new ArrayList<>(substepsOf("steps", map.get("steps")));
+                substeps.addAll(substepsOf("on_demand_steps", map.get("on_demand_steps")));
+                missionTypes.add(new MissionTypeFacts(file, id, steps, substeps));
             }
+        }
+
+        /** The substeps of each step of a schema-valid list, in written order. */
+        private static List<MissionTypeFacts.SubstepFacts> substepsOf(String list, @Nullable Object steps) {
+            List<MissionTypeFacts.SubstepFacts> out = new ArrayList<>();
+            if (!(steps instanceof List<?> items)) {
+                return out;
+            }
+            for (int i = 0; i < items.size(); i++) {
+                if (!(items.get(i) instanceof Map<?, ?> step && step.get("id") instanceof String stepId)) {
+                    continue;
+                }
+                if (!(step.get("substeps") instanceof List<?> substeps)) {
+                    continue;
+                }
+                for (int j = 0; j < substeps.size(); j++) {
+                    if (substeps.get(j) instanceof Map<?, ?> substep && substep.get("id") instanceof String substepId) {
+                        out.add(new MissionTypeFacts.SubstepFacts(
+                                list, i, stepId, j, substepId, delegationOf(substep.get("delegates_to"))));
+                    }
+                }
+            }
+            return out;
+        }
+
+        private static Optional<MissionTypeFacts.Delegation> delegationOf(@Nullable Object written) {
+            if (!(written instanceof Map<?, ?> delegation && delegation.get("kind") instanceof String kind)) {
+                return Optional.empty();
+            }
+            List<String> candidates = new ArrayList<>();
+            if (delegation.get("candidates") instanceof List<?> listed) {
+                listed.stream()
+                        .filter(String.class::isInstance)
+                        .map(String.class::cast)
+                        .forEach(candidates::add);
+            }
+            return Optional.of(new MissionTypeFacts.Delegation(kind, candidates));
         }
 
         /** The entries of a step enhancement that passed its schema; none when the key is absent. */

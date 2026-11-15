@@ -6,10 +6,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.api.ArtifactsApi;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
+import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeReadService;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
@@ -20,11 +22,16 @@ import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
+import ai.speckitty.charter.missions.domain.Substep;
+import ai.speckitty.charter.missions.domain.SubstepCandidate;
+import ai.speckitty.charter.missions.domain.SubstepDelegation;
+import ai.speckitty.charter.missions.domain.SubstepInput;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
@@ -123,6 +130,30 @@ class MissionTypeControllerTest {
     }
 
     @Test
+    void aStepServesItsSubstepsInAuthoredOrderEachHeldCandidateLinkedToItsPackRead() throws Exception {
+        mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.substeps[0].id").value("bootstrap"))
+                .andExpect(
+                        jsonPath("$.substeps[0].command").value("spec-kitty charter context --action specify --json"))
+                .andExpect(jsonPath("$.substeps[0].inputs[0].flag").value("--mission"))
+                .andExpect(jsonPath("$.substeps[0].inputs[0].source").value("mission_slug"))
+                .andExpect(jsonPath("$.substeps[0].inputs[0].optional").value(true))
+                .andExpect(jsonPath("$.substeps[0].delegatesTo").doesNotExist())
+                .andExpect(jsonPath("$.substeps[1].id").value("capture-intent"))
+                .andExpect(jsonPath("$.substeps[1].guidance").value("Ask first."))
+                .andExpect(jsonPath("$.substeps[1].delegatesTo.kind").value("directive"))
+                .andExpect(
+                        jsonPath("$.substeps[1].delegatesTo.candidates[0].id").value("D1"))
+                .andExpect(jsonPath("$.substeps[1].delegatesTo.candidates[0]._links.artifact.href")
+                        .value("/api/v1/packs/main/artifacts/directive/D1"))
+                .andExpect(
+                        jsonPath("$.substeps[1].delegatesTo.candidates[1].id").value("base::D1"))
+                .andExpect(jsonPath("$.substeps[1].delegatesTo.candidates[1]._links.artifact")
+                        .doesNotExist());
+    }
+
+    @Test
     void aSkeletonIsReadByItsEscapedNameAndLinksItsType() throws Exception {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
                 .andExpect(status().isOk())
@@ -189,7 +220,26 @@ class MissionTypeControllerTest {
                                         ArtifactClass.OUTPUT,
                                         "long.md",
                                         false,
-                                        Optional.of("templates/" + "y".repeat(256))))))
+                                        Optional.of("templates/" + "y".repeat(256)))),
+                        List.of(
+                                new Substep(
+                                        "bootstrap",
+                                        "Load the context",
+                                        Optional.of("spec-kitty charter context --action specify --json"),
+                                        List.of(new SubstepInput("--mission", "mission_slug", true)),
+                                        Optional.empty(),
+                                        Optional.empty()),
+                                new Substep(
+                                        "capture-intent",
+                                        "Capture the intent",
+                                        Optional.empty(),
+                                        List.of(),
+                                        Optional.of(new SubstepDelegation(
+                                                ArtifactKind.DIRECTIVE,
+                                                List.of(
+                                                        SubstepCandidate.parse("D1"),
+                                                        SubstepCandidate.parse("base::D1")))),
+                                        Optional.of("Ask first.")))))
                 .build();
         return new MissionTypeHolding(
                 type,
@@ -200,7 +250,8 @@ class MissionTypeControllerTest {
                         new MissionTypeHolding.StoredSkeleton("y".repeat(256), utf8("# Y\n"))),
                 List.of(new MissionTypeHolding.BoundContract("specify", "specify")),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
-                FINGERPRINT);
+                FINGERPRINT,
+                Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "D1")));
     }
 
     private static StoredFile utf8(String text) {

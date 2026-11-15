@@ -60,6 +60,7 @@ import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
+import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
@@ -77,6 +78,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -570,6 +572,12 @@ public final class DomainRepositoryService
             }
         }
         defined.addAll(declared);
+        List<MissionTypeFacts> types = new ArrayList<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            types.add(missionTypeFacts(stored.file(), stored.dso()));
+        }
+        List<SubstepDelegationRule.QualifiedCandidate> delegations =
+                SubstepDelegationRule.qualifiedCandidates(assembled.descriptor().name(), types);
         references.removeAll(
                 ownStepLinkTargets(graphs.documents(), assembled.descriptor().name(), steps));
         return new PackCompositionFacts(
@@ -582,7 +590,8 @@ public final class DomainRepositoryService
                 languages,
                 bindings,
                 PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps),
-                terms);
+                terms,
+                delegations);
     }
 
     /** The terms a glossary context holds, as bare URNs, in authored order; every other kind holds none. */
@@ -1011,6 +1020,7 @@ public final class DomainRepositoryService
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
         missionStepViolations(read, places, graphs).forEach(builder::violation);
+        substepDelegationViolations(read, places, graphs).forEach(builder::violation);
         return builder;
     }
 
@@ -1025,25 +1035,88 @@ public final class DomainRepositoryService
         if (!graphs.violations().isEmpty()) {
             return List.of();
         }
+        return MissionStepLinkRule.judge(read.descriptor().name(), heldTypes(read, places), edgesOf(graphs)).stream()
+                .map(fault -> new PackElementViolation(fault.file(), MissionStepLinkRule.CODE, fault.reason()))
+                .toList();
+    }
+
+    /**
+     * Each fault of {@link SubstepDelegationRule} over the mission types the assembly holds, the artifacts it holds and
+     * the edges of the readable graph documents, at the mission type file (FR-005). When a graph document could not be
+     * read the rule is not judged: the read reports that document, and a candidate would otherwise lack an edge the pack
+     * may well hold.
+     */
+    private static List<PackElementViolation> substepDelegationViolations(
+            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
+        if (!graphs.violations().isEmpty()) {
+            return List.of();
+        }
+        Set<String> held = new HashSet<>();
+        places.keySet().forEach(urn -> held.add(urn.toString()));
+        return SubstepDelegationRule.judge(read.descriptor().name(), heldTypes(read, places), held, edgesOf(graphs))
+                .stream()
+                .map(fault -> new PackElementViolation(fault.file(), fault.code(), fault.reason()))
+                .toList();
+    }
+
+    /**
+     * The facts of the mission types the assembly holds: a type the domain refuses is refused on its own and is no fact.
+     */
+    private static List<MissionTypeFacts> heldTypes(FilesystemPackStore.PackRead read, Map<Urn, String> places) {
         List<MissionTypeFacts> types = new ArrayList<>();
         for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
             MissionTypeDso type = stored.dso();
             if (stored.file().equals(places.get(new Urn(NodeKind.MISSION_TYPE, type.id())))) {
-                List<String> steps = new ArrayList<>();
-                type.steps().forEach(step -> steps.add(step.id()));
-                type.onDemandSteps().forEach(step -> steps.add(step.id()));
-                types.add(new MissionTypeFacts(stored.file(), type.id(), steps));
+                types.add(missionTypeFacts(stored.file(), type));
             }
         }
+        return types;
+    }
+
+    /**
+     * A stored mission type as the plain facts the pack rules judge: its steps, then its on-demand steps, and the
+     * substeps of each.
+     *
+     * @param file the type's pack-relative file
+     * @param type the stored type
+     * @return the facts
+     */
+    static MissionTypeFacts missionTypeFacts(String file, MissionTypeDso type) {
+        List<String> steps = new ArrayList<>();
+        List<MissionTypeFacts.SubstepFacts> substeps = new ArrayList<>();
+        Map<String, List<MissionTypeDso.Step>> lists = new LinkedHashMap<>();
+        lists.put("steps", type.steps());
+        lists.put("on_demand_steps", type.onDemandSteps());
+        lists.forEach((list, written) -> {
+            for (int i = 0; i < written.size(); i++) {
+                MissionTypeDso.Step step = written.get(i);
+                steps.add(step.id());
+                for (int j = 0; j < step.substeps().size(); j++) {
+                    MissionTypeDso.Substep substep = step.substeps().get(j);
+                    substeps.add(new MissionTypeFacts.SubstepFacts(
+                            list,
+                            i,
+                            step.id(),
+                            j,
+                            substep.id(),
+                            substep.delegatesTo()
+                                    .map(delegation -> new MissionTypeFacts.Delegation(
+                                            delegation.kind(), delegation.candidates()))));
+                }
+            }
+        });
+        return new MissionTypeFacts(file, type.id(), steps, substeps);
+    }
+
+    /** The edges of the readable graph documents, as written, in document order. */
+    private static List<MissionStepLinkRule.Edge> edgesOf(FilesystemPackStore.GraphRead graphs) {
         List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
                 edges.add(new MissionStepLinkRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
             }
         }
-        return MissionStepLinkRule.judge(read.descriptor().name(), types, edges).stream()
-                .map(fault -> new PackElementViolation(fault.file(), MissionStepLinkRule.CODE, fault.reason()))
-                .toList();
+        return edges;
     }
 
     /**

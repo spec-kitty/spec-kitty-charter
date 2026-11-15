@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions.infra.api;
 import ai.speckitty.charter.api.model.MissionExpectedArtifact;
 import ai.speckitty.charter.api.model.MissionPathConventions;
 import ai.speckitty.charter.api.model.MissionStep;
+import ai.speckitty.charter.api.model.MissionSubstep;
 import ai.speckitty.charter.api.model.MissionType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +40,8 @@ public class MissionJson {
                 .setMixInAnnotation(MissionType.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(MissionPathConventions.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(MissionStep.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(MissionExpectedArtifact.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(MissionExpectedArtifact.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(MissionSubstep.class, OmitAbsentMembers.class);
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */
