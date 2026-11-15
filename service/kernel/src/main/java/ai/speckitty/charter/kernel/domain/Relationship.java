@@ -59,7 +59,7 @@ public final class Relationship {
      * @throws IllegalArgumentException when any argument is {@code null}, or when {@code from} equals
      *     {@code to} (a self-loop)
      */
-    public Relationship(Urn from, Urn to, RelationType type, Optional<String> when, Optional<String> rationale) {
+    Relationship(Urn from, Urn to, RelationType type, Optional<String> when, Optional<String> rationale) {
         this(from, Optional.empty(), to, Optional.empty(), type, when, rationale);
     }
 
@@ -78,7 +78,7 @@ public final class Relationship {
      *     {@code from} equals {@code to} with neither endpoint pack-qualified (a self-loop; a qualified endpoint names
      *     another pack's artifact of the same id, which is legal)
      */
-    public Relationship(
+    Relationship(
             Urn from,
             Optional<String> fromPack,
             Urn to,
@@ -127,7 +127,73 @@ public final class Relationship {
      * @throws IllegalArgumentException when any argument is {@code null} or {@code from} equals {@code to}
      */
     public static Relationship of(Urn from, Urn to, RelationType type) {
-        return new Relationship(from, to, type, Optional.empty(), Optional.empty());
+        return of(from, Optional.empty(), to, Optional.empty(), type, Optional.empty(), Optional.empty());
+    }
+
+    /**
+     * A relationship between two bare components, with its authored annotations.
+     *
+     * @param from the component the relationship is authored from
+     * @param to the component the relationship is authored to
+     * @param type what the relationship means
+     * @param when the authored edge condition; empty when absent
+     * @param rationale the authored reason; empty when absent
+     * @return the relationship
+     * @throws IllegalArgumentException as {@link #of(Urn, Optional, Urn, Optional, RelationType, Optional, Optional)}
+     */
+    public static Relationship of(
+            Urn from, Urn to, RelationType type, Optional<String> when, Optional<String> rationale) {
+        return of(from, Optional.empty(), to, Optional.empty(), type, when, rationale);
+    }
+
+    /**
+     * A relationship whose kinds are known only when it is read, bound through {@link EndpointRule}: the one way to
+     * build a relationship from URNs, so none exists whose relation does not allow its endpoint kinds (ADR-0064
+     * decision 13). A reader that reports a refused edge calls {@link EndpointRule#bind} and keeps the fault.
+     *
+     * @param from the component the relationship is authored from
+     * @param fromPack the pack the source reference names; empty for a bare reference
+     * @param to the component the relationship is authored to
+     * @param toPack the pack the target reference names; empty for a bare reference
+     * @param type what the relationship means
+     * @param when the authored edge condition; empty when absent
+     * @param rationale the authored reason; empty when absent
+     * @return the relationship
+     * @throws IllegalArgumentException when an argument is {@code null}, a qualifier breaks the pack-name grammar, the
+     *     relationship is a bare self-loop, or the relation does not allow the endpoint kinds (the fault's message)
+     */
+    public static Relationship of(
+            Urn from,
+            Optional<String> fromPack,
+            Urn to,
+            Optional<String> toPack,
+            RelationType type,
+            Optional<String> when,
+            Optional<String> rationale) {
+        return switch (EndpointRule.bind(
+                requireArg(type, "type"),
+                requireArg(from, "from"),
+                fromPack,
+                requireArg(to, "to"),
+                toPack,
+                when,
+                rationale)) {
+            case EndpointRule.Bound bound -> bound.relationship();
+            case EndpointRule.Fault fault -> throw new IllegalArgumentException(fault.message());
+        };
+    }
+
+    /**
+     * The same relationship with its endpoints' qualifiers replaced; the kinds, and so the binding, are unchanged.
+     *
+     * @param newFromPack the pack the source reference names; empty for a bare reference
+     * @param newToPack the pack the target reference names; empty for a bare reference
+     * @return a copy carrying them
+     * @throws IllegalArgumentException when a qualifier breaks the pack-name grammar, or both are empty and the
+     *     endpoints are equal (a self-loop)
+     */
+    public Relationship qualified(Optional<String> newFromPack, Optional<String> newToPack) {
+        return new Relationship(from, newFromPack, to, newToPack, type, when, rationale);
     }
 
     /**

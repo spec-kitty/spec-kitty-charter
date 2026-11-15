@@ -3,11 +3,9 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.ConfigValue;
-import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.KindRef;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.List;
@@ -140,8 +138,7 @@ public final class Guard implements CharterArtifact {
     public List<Relationship> derivedRelationships() {
         if (implementation instanceof GuardImplementation.AssetBacked asset
                 && asset.pack().isEmpty()) {
-            return List.of(
-                    Relationship.of(urn(), new Urn(NodeKind.ASSET, asset.assetId()), RelationType.IMPLEMENTED_BY));
+            return List.of(Relationship.implementedBy(KindRef.guard(urn().id()), KindRef.asset(asset.assetId())));
         }
         return List.of();
     }

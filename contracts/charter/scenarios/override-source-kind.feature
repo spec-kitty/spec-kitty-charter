@@ -11,9 +11,11 @@ Feature: An overrides edge comes from an activatable artifact
   - putPackRelationship answers 422 validation_failed with the same violation code at /from and writes nothing.
   - A composing read of a closure that holds such a pack answers 500 pack_unreadable and names the graph document.
 
-  The rule judges the source kind only. An overrides edge from an activatable kind is unchanged, and so is an edge
-  of another relation from a template. Each refusal sits beside its passing twin, which differs only in the source
-  of the edge.
+  The rule judges the source kind only, and it is judged before the endpoint table (ADR-0064 decision 13), so an
+  overrides edge from a template keeps this code whatever its target. An overrides edge from an activatable kind is
+  unchanged. An edge of another relation from a template is the endpoint table's to judge: no relation but vocabulary
+  takes a template as its source, so a requires edge from it is refused relationship_endpoint_not_allowed. Each
+  refusal sits beside its passing twin, which differs only in the source of the edge.
 
   Every fixture is two org packs: a base pack holds a directive, and a second pack depends on it and holds another
   directive and the template t.md. The registrations use the archives obase (directive D) and ovr (directive E); the
@@ -128,8 +130,9 @@ Feature: An overrides edge comes from an activatable artifact
     And the field at "/problem/violations/1/code" is "overrides_source_not_activatable"
     And the field at "/problem/violations/1/pointer" is "overrides.graph.yaml"
 
-  # C27: the rule judges the overrides relation only; a template may still be the source of another relation.
-  Scenario: A requires edge from the template is registered
+  # C27: this rule judges the overrides relation only; a requires edge from the template is the endpoint table's
+  # fault (ADR-0064 decision 13), beside the same edge from the directive, which is registered.
+  Scenario: A requires edge from the template is refused by the endpoint table, beside the same edge from the directive
     Given the archive "requires" is a copy of the archive "ovr"
     And the archive "requires" holds the file "overrides.graph.yaml":
       """
@@ -142,6 +145,26 @@ Feature: An overrides edge comes from an activatable artifact
         relation: requires
       """
     When I PUT "/packs/ovr" with the archive "requires"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "relationship_endpoint_not_allowed"
+    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml"
+    And the field at "/problem/violations/0/detail" contains "a requires edge may not connect template to directive"
+    Given the archive "requires-twin" is a copy of the archive "ovr"
+    And the archive "requires-twin" holds the file "overrides.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:E
+        target: obase::directive:D
+        relation: requires
+      """
+    When I PUT "/packs/ovr" with the archive "requires-twin"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 

@@ -1,0 +1,8 @@
+schema_version: '1.0'
+id: p
+title: P
+description: A procedure.
+entry_condition: A change is ready.
+exit_condition: The change is shipped.
+steps:
+  - title: Ship it

@@ -8,6 +8,8 @@ Feature: The per-artifact pack writes answer each refusal they declare
   - a write to a pack no configured pack names: 404 pack_not_found;
   - a write the mutability policy of an ancestor pack does not permit: 409 governance_policy_violation (ADR-0012);
   - a list sent as null: 422 validation_failed;
+  - a relationship whose type does not allow its endpoint kinds: 422 validation_failed with the violation
+    relationship_endpoint_not_allowed at /type (ADR-0064 decision 13);
   - a stale If-Match: 412, and an If-Match that breaks its pattern: 400;
   - a removal from a pack in the broken closure of a stored activation: 422, and nothing is written
     (pack-removal.feature);
@@ -156,6 +158,30 @@ Feature: The per-artifact pack writes answer each refusal they declare
     And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
       """
       {"from": "directive:D", "to": "directive:E", "type": "requires"}
+      """
+    Then the response status is 201
+
+  # ADR-0064 decision 13: an overrides edge joins two artifacts of one kind; nothing is written, and the read of the
+  # pack keeps its ETag. The same edge between two directives is written.
+  Scenario: putPackRelationship of an overrides edge from a directive to a tactic is 422 at /type, and between two directives it is written
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D", "to": "tactic:t", "type": "overrides"}
+      """
+    Then the response status is 422
+    And the field at "/code" is "validation_failed"
+    And the field at "/violations" holds exactly 1 item(s)
+    And the field at "/violations/0/code" is "relationship_endpoint_not_allowed"
+    And the field at "/violations/0/pointer" is "/type"
+    And the field at "/violations/0/detail" is "an overrides edge may not connect directive to tactic"
+    When I GET "/packs/qa"
+    Then the response header "ETag" is the remembered header
+    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D", "to": "directive:E", "type": "overrides"}
       """
     Then the response status is 201
 

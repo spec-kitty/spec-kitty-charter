@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
@@ -307,7 +308,9 @@ class PackCommitStoreTest {
                 new Urn(NodeKind.TACTIC, "alpha-tactic"), new Urn(NodeKind.DIRECTIVE, "other"), RelationType.SUGGESTS);
 
         assertThatThrownBy(() -> registrations.registerRelationship(
-                        PACK, edge, writeStore.currentRevision(PACK).token()))
+                        PACK,
+                        RelationshipDraft.of(edge),
+                        writeStore.currentRevision(PACK).token()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
 
@@ -317,7 +320,9 @@ class PackCommitStoreTest {
         // fault; the same registration then lands.
         Files.delete(shard);
         registrations.registerRelationship(
-                PACK, edge, writeStore.currentRevision(PACK).token());
+                PACK,
+                RelationshipDraft.of(edge),
+                writeStore.currentRevision(PACK).token());
         assertThat(writeStore.registeredRelationships(PACK)).containsExactly(edge);
     }
 

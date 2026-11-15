@@ -1219,11 +1219,11 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     When I GET "/packs/renhancer/artifacts/directive/A"
     Then the response header "ETag" is the remembered header
 
-  # R-REL refuses on the source kind: the edge, its type and its target (mission_type:rdev) are those of the first
-  # scenario, and only the source differs, a directive of the pack in place of the held step enhancement. The target
-  # is written pack-qualified, as a reference to another pack must be; the refusal of the first scenario comes before
-  # the target is resolved, so its bare form is refused for the source alone.
-  Scenario: The twin: the same overrides edge from a directive of the pack is registered
+  # R-REL refuses on the source kind: the edge's type is that of the first scenario, and its source is a directive of
+  # the pack in place of the held step enhancement. An overrides edge joins two artifacts of one kind (ADR-0064
+  # decision 13), so the directive overrides the pack's other directive, not mission_type:rdev; R-REL is judged before
+  # the endpoint table, so the first scenario's refusal is the enhancement's whatever its target.
+  Scenario: The twin: an overrides edge from a directive of the pack is registered
     Given the org pack "rbase" with the file "pack.yaml":
       """
       pack_id: 01M6ZRYK0000000000000000RB
@@ -1337,7 +1337,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And I remember the header "ETag"
     And I PUT "/packs/renhancer/relationships" with the remembered ETag and the body:
       """
-      {"from": "directive:A", "to": "rbase::mission_type:rdev", "type": "overrides"}
+      {"from": "directive:A", "to": "directive:B", "type": "overrides"}
       """
     Then the response status is 201
     When I GET "/packs/renhancer/artifacts/directive/A"

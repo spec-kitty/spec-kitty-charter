@@ -149,7 +149,7 @@ class EdgeIndexTest {
     static Relationship edge(String from, RelationType type, String to) {
         PackQualifiedReference source = PackQualifiedReference.parse(from);
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 source.asUrn().orElseThrow(),
                 source.packName(),
                 target.asUrn().orElseThrow(),
@@ -607,15 +607,15 @@ class EdgeIndexTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:M", "action:M/a", "tactic:T", "directive:R", "directive:S"),
-                        edge("action:M/a", RelationType.REQUIRES, "directive:R"),
-                        edge("mission_type:M", RelationType.SUGGESTS, "directive:R"),
-                        edge("tactic:T", RelationType.SCOPE, "directive:S"))
+                        edge("action:M/a", RelationType.APPLIES, "directive:R"),
+                        edge("mission_type:M", RelationType.REQUIRES, "action:M/a"),
+                        edge("tactic:T", RelationType.REQUIRES, "directive:S"))
                 .merged();
 
         assertThat(merged.scopeOwners()).isEmpty();
         assertThat(merged.isProjectWide(urn("directive:R"))).isTrue();
         assertThat(merged.isProjectWide(urn("directive:S")))
-                .as("a scope edge from a tactic is no owner")
+                .as("an edge from a tactic is no owner")
                 .isTrue();
     }
 

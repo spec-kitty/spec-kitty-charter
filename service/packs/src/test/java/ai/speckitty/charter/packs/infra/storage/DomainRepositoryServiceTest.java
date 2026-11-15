@@ -469,10 +469,10 @@ class DomainRepositoryServiceTest {
                 generated_at: STATIC
                 nodes: []
                 edges:
-                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_010, relation: enhances}
-                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: enhances}
-                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: overrides}
-                - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
+                - {source: directive:alpha-directive, target: directive:DIRECTIVE_010, relation: enhances}
+                - {source: directive:alpha-directive, target: directive:DIRECTIVE_009, relation: enhances}
+                - {source: directive:alpha-directive, target: directive:DIRECTIVE_009, relation: overrides}
+                - {source: directive:alpha-directive, target: tactic:beta-tactic, relation: requires}
                 """);
 
         assertThat(overOne("pack-descriptor-only", pack)
@@ -670,7 +670,9 @@ class DomainRepositoryServiceTest {
                 pack.resolve(RelationshipShard.SHARD_PATH),
                 RelationshipShard.write(List.of(
                         Relationship.of(
-                                new Urn(NodeKind.DIRECTIVE, "D9"), new Urn(NodeKind.TACTIC, "t1"), RelationType.SCOPE),
+                                new Urn(NodeKind.DIRECTIVE, "D9"),
+                                new Urn(NodeKind.TACTIC, "t1"),
+                                RelationType.REFINES),
                         Relationship.of(
                                 new Urn(NodeKind.DIRECTIVE, "D"),
                                 new Urn(NodeKind.TACTIC, "t1"),
@@ -681,7 +683,7 @@ class DomainRepositoryServiceTest {
                 .containsExactly(
                         "directive:D requires tactic:t1",
                         "tactic:t1 suggests styleguide:s1",
-                        "directive:D9 scope tactic:t1");
+                        "directive:D9 refines tactic:t1");
     }
 
     /**
@@ -706,7 +708,7 @@ class DomainRepositoryServiceTest {
                 pack.resolve(RelationshipShard.SHARD_PATH),
                 RelationshipShard.write(List.of(
                         Relationship.of(
-                                new Urn(NodeKind.DIRECTIVE, "D"), new Urn(NodeKind.TACTIC, "t1"), RelationType.SCOPE),
+                                new Urn(NodeKind.DIRECTIVE, "D"), new Urn(NodeKind.TACTIC, "t1"), RelationType.REFINES),
                         Relationship.of(
                                 new Urn(NodeKind.DIRECTIVE, "D"),
                                 new Urn(NodeKind.TACTIC, "t1"),
@@ -719,7 +721,7 @@ class DomainRepositoryServiceTest {
                         "directive:D suggests tactic:t1",
                         "directive:D requires other::tactic:t1",
                         "other::directive:D requires tactic:t1",
-                        "directive:D scope tactic:t1");
+                        "directive:D refines tactic:t1");
     }
 
     /** A registered relationship shard alone gives its edges. */

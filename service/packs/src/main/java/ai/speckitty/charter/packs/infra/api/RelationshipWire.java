@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The one mapping between a relationship's wire shape ({@code RelationshipRegistration}) and the kernel
- * {@link Relationship}.
+ * {@link RelationshipDraft} the registration binds into a {@link Relationship}.
  * Every controller that reads or answers relationships goes through it, so an unknown URN kind or relation type is
  * refused the same way everywhere: {@link RefusalCode#VALIDATION_FAILED}.
  */
@@ -29,14 +30,15 @@ final class RelationshipWire {
     private RelationshipWire() {}
 
     /**
-     * The relationship of a relationship-route request body.
+     * The relationship a relationship-route request body asks for, not yet bound: the registration judges its endpoint
+     * kinds in its own order.
      *
      * @param wire the request body
-     * @return the kernel relationship
+     * @return the draft
      * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is longer than
-     *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, or the type is unknown
+     *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, the type is unknown, or the edge is a bare self-loop
      */
-    static Relationship fromWire(RelationshipRegistration wire) {
+    static RelationshipDraft fromWire(RelationshipRegistration wire) {
         try {
             return relationship(wire.getFrom(), wire.getTo(), wire.getType(), wire.getWhen(), wire.getRationale());
         } catch (IllegalArgumentException invalid) {
@@ -45,22 +47,22 @@ final class RelationshipWire {
     }
 
     /**
-     * The wire shape of a relationship.
+     * The wire shape of a registered relationship.
      *
-     * @param relationship the kernel relationship
+     * @param draft the relationship the request asked for
      * @return its response DTO
      */
-    static RelationshipRegistration toWire(Relationship relationship) {
+    static RelationshipRegistration toWire(RelationshipDraft draft) {
         RelationshipRegistration dto = new RelationshipRegistration(
-                relationship.fromReference().toString(),
-                relationship.toReference().toString(),
-                relationship.type().token());
-        dto.setRationale(relationship.rationale().orElse(null));
-        dto.setWhen(relationship.when().orElse(null));
+                draft.fromReference().toString(),
+                draft.toReference().toString(),
+                draft.type().token());
+        dto.setRationale(draft.rationale().orElse(null));
+        dto.setWhen(draft.when().orElse(null));
         return dto;
     }
 
-    private static Relationship relationship(
+    private static RelationshipDraft relationship(
             String from, String to, String type, @Nullable String when, @Nullable String rationale) {
         capped("from", from);
         capped("to", to);
@@ -88,9 +90,11 @@ final class RelationshipWire {
         if (!fromUrn.kind().edgeSource() || !toUrn.kind().edgeTargetOf(Optional.of(relationType))) {
             throw new IllegalArgumentException(PackPolicy.TERM_ENDPOINT + from + " " + type + " " + to);
         }
-        return new Relationship(
+        if (fromUrn.equals(toUrn) && toReference.packName().isEmpty()) {
+            throw new IllegalArgumentException("A relationship cannot be a self-loop: " + fromUrn);
+        }
+        return new RelationshipDraft(
                 fromUrn,
-                Optional.empty(),
                 toUrn,
                 toReference.packName(),
                 relationType,

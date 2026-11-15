@@ -243,8 +243,8 @@ class PackPolicyGraphTest {
     void aTermIsAnEdgeEndpointOnlyAsTheTargetOfAVocabularyEdge() {
         // Positive control: a term as the target of a vocabulary edge binds, bare or pack-qualified.
         GraphBuild valid = build(List.of(
-                edge("agent_profile:p", "term:spec-kitty-core/mission", "vocabulary", null),
-                edge("tactic:a", "rival::term:spec-kitty-core/mission", "vocabulary", null)));
+                edge("agent_profile:p", "term:spec-kitty-core/mission", "vocabulary"),
+                edge("tactic:a", "rival::term:spec-kitty-core/mission", "vocabulary")));
         assertThat(details(valid)).isEmpty();
         assertThat(valid.graph().relationships())
                 .extracting(relationship -> relationship.to().toString())
@@ -252,11 +252,11 @@ class PackPolicyGraphTest {
 
         // A term as a source, or as the target of any other relation or of a tension, is a finding (ADR-0049 d4).
         GraphBuild build = build(List.of(
-                edge("term:g/t", "directive:b", "requires", null),
-                edge("term:g/t", "glossary_context:g", "vocabulary", null),
-                edge("directive:b", "term:g/t", "overrides", null),
-                edge("tactic:a", "rival::term:g/t", "enhances", null),
-                edge("tactic:a", "term:g/t", "in_tension_with", null)));
+                edge("term:g/t", "directive:b", "requires"),
+                edge("term:g/t", "glossary_context:g", "vocabulary"),
+                edge("directive:b", "term:g/t", "overrides"),
+                edge("tactic:a", "rival::term:g/t", "enhances"),
+                edge("tactic:a", "term:g/t", "in_tension_with")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.graph().tensions()).isEmpty();
         assertThat(details(build))

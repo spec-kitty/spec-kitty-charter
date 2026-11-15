@@ -1,0 +1,22 @@
+{
+  "covers": [
+    "ADR-0064 D13",
+    "#514"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "relationship_endpoint_not_allowed",
+      "severity": "blocking",
+      "file": "overrides.graph.yaml",
+      "place": [
+        "edges",
+        "0"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false
+  }
+}

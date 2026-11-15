@@ -159,7 +159,7 @@ class GovernanceWalkTest {
     }
 
     private static Relationship worded(String from, RelationType type, String to, String when, String reason) {
-        return new Relationship(
+        return Relationship.of(
                 urn(from),
                 Optional.empty(),
                 urn(to),
@@ -472,7 +472,7 @@ class GovernanceWalkTest {
                         List.of("builtin"),
                         List.of(P),
                         edge(P, RelationType.REQUIRES, "directive:D"),
-                        new Relationship(
+                        Relationship.of(
                                 urn(P),
                                 Optional.empty(),
                                 urn("directive:D"),

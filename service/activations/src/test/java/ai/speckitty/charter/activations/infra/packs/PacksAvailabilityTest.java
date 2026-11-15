@@ -532,7 +532,7 @@ class PacksAvailabilityTest {
     }
 
     private static Relationship edge(String from, RelationType type, String to, String when, String rationale) {
-        return new Relationship(urn(from), urn(to), type, Optional.ofNullable(when), Optional.ofNullable(rationale));
+        return Relationship.of(urn(from), urn(to), type, Optional.ofNullable(when), Optional.ofNullable(rationale));
     }
 
     /**

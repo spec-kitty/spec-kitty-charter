@@ -85,7 +85,7 @@ class EffectivePromptQueryTest {
     /** The pack holds a copy of enhancement {@code id} of {@code target}, filling {@code slot} with {@code text}. */
     private void enhancer(String pack, String id, Urn target, String slot, String text) {
         edges.computeIfAbsent(pack, ignored -> new ArrayList<>())
-                .add(new Relationship(
+                .add(Relationship.of(
                         enhancement(id), target, RelationType.ENHANCES, Optional.empty(), Optional.empty()));
         fills.computeIfAbsent(pack, ignored -> new HashMap<>())
                 .computeIfAbsent(enhancement(id), ignored -> new ArrayList<>())
@@ -227,7 +227,7 @@ class EffectivePromptQueryTest {
         inForce.add(enhancement("elsewhere"));
         enhancer("org", "two-targets", STEP, REASONS, "Two targets.\n");
         edges.get("org")
-                .add(new Relationship(
+                .add(Relationship.of(
                         enhancement("two-targets"),
                         Urn.action("software-dev", "tasks"),
                         RelationType.ENHANCES,

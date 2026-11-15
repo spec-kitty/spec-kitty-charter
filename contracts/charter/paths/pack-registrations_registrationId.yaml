@@ -49,6 +49,8 @@ get:
               $ref: ../examples/PackRegistrationStatus.fragment-body-path-escape.yaml
             overrides-source-not-activatable:
               $ref: ../examples/PackRegistrationStatus.overrides-source-not-activatable.yaml
+            relationship-endpoint-not-allowed:
+              $ref: ../examples/PackRegistrationStatus.relationship-endpoint-not-allowed.yaml
     '400':
       $ref: ../../_shared/responses/Problem.yaml
     '401':

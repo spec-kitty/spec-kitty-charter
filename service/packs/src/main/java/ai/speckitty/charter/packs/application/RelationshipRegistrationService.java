@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -14,6 +15,7 @@ import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.List;
 import java.util.Objects;
@@ -75,17 +77,20 @@ public final class RelationshipRegistrationService {
      * atomically so the revision advances.
      *
      * @param pack the pack to register into
-     * @param relationship the relationship to register; its {@code from} must resolve within the pack, and its
+     * @param draft the relationship to register, not yet bound; its {@code from} must resolve within the pack, and its
      *     {@code to} in the compose of the pack when it is pack-qualified or held by another pack
      * @param ifMatch the {@code If-Match} precondition; a sub-resource write <strong>requires</strong> one
      * @return the registration outcome; {@link Registered#created()} is {@code true} when the pair was not registered
      *     before (in either orientation)
      * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown,
      *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack,
-     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value OverrideSourceRule#CODE} at
-     *     {@code /from} when the edge is an {@code overrides} edge whose source kind is not activatable (FR-014),
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) for a self-loop, then, in this order:
      *     {@link RefusalCode#PROMPT_FRAGMENT_INVALID} (422 here) when the edge would give a held step enhancement an
-     *     {@code overrides} edge, a second {@code enhances} edge or replace its one {@code enhances} edge, the
+     *     {@code overrides} edge or a second {@code enhances} edge, or replace its one {@code enhances} edge,
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value OverrideSourceRule#CODE} at
+     *     {@code /from} when the edge is an {@code overrides} edge whose source kind is not activatable (FR-014), and
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value RelationshipEndpointRule#CODE} at
+     *     {@code /type} when the relation does not allow the endpoint kinds (ADR-0064 decision 13); after them the
      *     compose's {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
      *     {@link RefusalCode#PACK_REFERENCE_ARTIFACT_MISSING} (422 here) when {@code to} cannot resolve, a composition
      *     refusal (500) when the configured packs do not compose, or the policy's
@@ -93,33 +98,33 @@ public final class RelationshipRegistrationService {
      * @throws PreconditionException {@link PreconditionException.Kind#MISSING} (428) when no precondition was supplied,
      *     {@link PreconditionException.Kind#STALE} (412) when {@code ifMatch} is stale
      */
-    public Registered registerRelationship(PackIdentifier pack, Relationship relationship, @Nullable String ifMatch) {
+    public Registered registerRelationship(PackIdentifier pack, RelationshipDraft draft, @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(relationship, "relationship");
+        Objects.requireNonNull(draft, "draft");
         // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
         // state: a concurrent writer cannot slip between them (a lost update).
         return writeStore.exclusively(pack, () -> {
             Pack current = packs.load(pack);
             precondition(pack, ifMatch);
-            if (!urnsOf(current).contains(relationship.from())) {
+            if (!urnsOf(current).contains(draft.from())) {
                 throw new CharterRefusal(
                         RefusalCode.REGISTRATION_CONFLICT,
-                        "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value()
-                                + ".");
+                        "Relationship from " + draft.from() + " does not resolve within pack " + pack.value() + ".");
             }
-            if (PackPolicy.joinsItself(
-                    current.descriptor().name(), relationship.fromReference(), relationship.toReference())) {
+            if (PackPolicy.joinsItself(current.descriptor().name(), draft.fromReference(), draft.toReference())) {
                 throw new CharterRefusal(
                         RefusalCode.VALIDATION_FAILED,
-                        "A relationship cannot be a self-loop: " + relationship.from() + " to "
-                                + relationship.toReference() + " in pack " + pack.value() + ".");
+                        "A relationship cannot be a self-loop: " + draft.from() + " to " + draft.toReference()
+                                + " in pack " + pack.value() + ".");
             }
             List<Relationship> existing = writeStore.registeredRelationships(pack);
             // Before anything is written: an edge that breaks the edge rules of a held step enhancement would make
-            // every composing read of the pack refuse (R-REL), and a target the compose cannot resolve the next
-            // offering read.
-            refuseInactivatableOverrider(relationship);
-            refuseStepEnhancementEdge(current, relationship, existing);
+            // every composing read of the pack refuse (R-REL), an edge the endpoint table refuses every read, and a
+            // target the compose cannot resolve the next offering read.
+            // The fault order (WP05): the step-enhancement rules, then the source rule of slice C, then the table.
+            refuseStepEnhancementEdge(current, draft, existing);
+            refuseInactivatableOverrider(draft);
+            Relationship relationship = bound(draft);
             targets.require(pack, relationship.toReference());
             policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
             boolean created = existing.stream().noneMatch(relationship::equals);
@@ -135,45 +140,67 @@ public final class RelationshipRegistrationService {
      * 2026-11-12 on #447): every composing read of the pack would refuse it, as the load does such an edge in a graph
      * document. The refusal is {@code validation_failed} with one violation at {@code /from}.
      */
-    private static void refuseInactivatableOverrider(Relationship relationship) {
-        OverrideSourceRule.refusal(relationship).ifPresent(reason -> {
-            throw CharterRefusal.withViolations(
-                    RefusalCode.VALIDATION_FAILED,
-                    "The relationship is refused: " + reason + ".",
-                    List.of(new RefusalViolation("/from", OverrideSourceRule.CODE, reason)));
-        });
+    private static void refuseInactivatableOverrider(RelationshipDraft draft) {
+        OverrideSourceRule.refusal(draft.from(), draft.toReference().toString(), draft.type())
+                .ifPresent(reason -> {
+                    throw CharterRefusal.withViolations(
+                            RefusalCode.VALIDATION_FAILED,
+                            "The relationship is refused: " + reason + ".",
+                            List.of(new RefusalViolation("/from", OverrideSourceRule.CODE, reason)));
+                });
+    }
+
+    /**
+     * Binds the draft through the endpoint table (ADR-0064 decision 13), or refuses it {@code validation_failed} with one
+     * violation {@value RelationshipEndpointRule#CODE} at {@code /type}: every composing read of the pack would refuse
+     * the edge, as the load does such an edge in a graph document.
+     */
+    private static Relationship bound(RelationshipDraft draft) {
+        return switch (draft.bind()) {
+            case EndpointRule.Bound bound -> bound.relationship();
+            case EndpointRule.Fault fault ->
+                throw CharterRefusal.withViolations(
+                        RefusalCode.VALIDATION_FAILED,
+                        "The relationship is refused: " + fault.message() + ".",
+                        List.of(new RefusalViolation("/type", RelationshipEndpointRule.CODE, fault.message())));
+        };
     }
 
     /**
      * Refuses an edge that would give a held step enhancement an {@code overrides} edge (an enhancement only adds), a
-     * second {@code enhances} edge, or no {@code enhances} edge at all (R-REL, FR-006). The pack loaded, so each held
-     * enhancement has its one {@code enhances} edge already, in a source document or in the registered shard; the
-     * shard is the only one of the two this write can change.
+     * second {@code enhances} edge, or no {@code enhances} edge at all (R-REL, FR-006), before the endpoint table judges
+     * its kinds, as the load's step-enhancement rules come first. The pack loaded, so each held enhancement has its one
+     * {@code enhances} edge already, in a source document or in the registered shard; the shard is the only one of the
+     * two this write can change.
      */
     private static void refuseStepEnhancementEdge(
-            Pack current, Relationship relationship, List<Relationship> registered) {
-        Urn from = relationship.from();
+            Pack current, RelationshipDraft draft, List<Relationship> registered) {
+        Urn from = draft.from();
         if (isHeldStepEnhancement(current, from)) {
-            if (relationship.type() == RelationType.OVERRIDES) {
+            if (draft.type() == RelationType.OVERRIDES) {
                 throw refused(from, "an enhancement only adds, so it cannot be the source of an overrides edge");
             }
             boolean registeredAlready = registered.stream()
-                    .anyMatch(edge -> edge.type() == RelationType.ENHANCES
-                            && edge.from().equals(from)
-                            && edge.equals(relationship));
-            if (relationship.type() == RelationType.ENHANCES && !registeredAlready) {
+                    .anyMatch(edge ->
+                            edge.type() == RelationType.ENHANCES && edge.from().equals(from) && samePair(edge, draft));
+            if (draft.type() == RelationType.ENHANCES && !registeredAlready) {
                 throw refused(from, "it has its enhances edge already and may have exactly one");
             }
         }
         for (Relationship edge : registered) {
             if (edge.type() == RelationType.ENHANCES
                     && isHeldStepEnhancement(current, edge.from())
-                    && edge.equals(relationship)
-                    && !(relationship.type() == RelationType.ENHANCES
-                            && relationship.from().equals(edge.from()))) {
+                    && samePair(edge, draft)
+                    && !(draft.type() == RelationType.ENHANCES && from.equals(edge.from()))) {
                 throw refused(edge.from(), "the relationship would replace its enhances edge and leave it with none");
             }
         }
+    }
+
+    /** Whether the draft names the registered edge's unordered pair, the identity of a relationship (ADR-0027). */
+    private static boolean samePair(Relationship edge, RelationshipDraft draft) {
+        return (edge.from().equals(draft.from()) && edge.to().equals(draft.to()))
+                || (edge.from().equals(draft.to()) && edge.to().equals(draft.from()));
     }
 
     private static boolean isHeldStepEnhancement(Pack pack, Urn urn) {

@@ -318,7 +318,7 @@ class RelationshipRemovalServiceTest {
     private static Packs derivedWithEdgesFrom(String... sources) {
         List<Relationship> edges = new java.util.ArrayList<>();
         for (String source : sources) {
-            edges.add(new Relationship(
+            edges.add(Relationship.of(
                     Urn.parse("directive:" + source).orElseThrow(),
                     Optional.of("base"),
                     Urn.parse("directive:DERIVED_ONE").orElseThrow(),
@@ -369,7 +369,7 @@ class RelationshipRemovalServiceTest {
     // ---- pack-qualified targets (WP20 item 3) ---------------------------------------------------------------------
 
     private static Relationship edgeToX(String targetPack) {
-        return new Relationship(
+        return Relationship.of(
                 Urn.parse("directive:D1").orElseThrow(),
                 Optional.empty(),
                 Urn.parse("directive:X").orElseThrow(),

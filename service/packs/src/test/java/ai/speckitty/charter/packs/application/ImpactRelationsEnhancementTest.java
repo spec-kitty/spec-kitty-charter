@@ -63,7 +63,7 @@ class ImpactRelationsEnhancementTest {
 
     private static Relationship enhances(String from, String to) {
         PackQualifiedReference target = PackQualifiedReference.parse(to);
-        return new Relationship(
+        return Relationship.of(
                 u(from),
                 Optional.empty(),
                 target.asUrn().orElseThrow(),

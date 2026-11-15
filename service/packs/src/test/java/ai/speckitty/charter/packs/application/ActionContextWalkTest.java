@@ -75,7 +75,7 @@ class ActionContextWalkTest {
                 List.of("tactic:T2", "tactic:T1", "tactic:Far"),
                 edge(START, RelationType.SCOPE, "tactic:T2"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
-                edge("tactic:T1", RelationType.SCOPE, "tactic:Far"));
+                edge("mission_type:M", RelationType.SCOPE, "tactic:Far"));
 
         Context context = walk(closure, 0, ActionContextWalkTest::everything);
 
@@ -143,7 +143,7 @@ class ActionContextWalkTest {
         Closure closure = closure(
                 List.of("tactic:T1", "tactic:S1", "tactic:S2"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
-                new Relationship(
+                Relationship.of(
                         urn("tactic:T1"),
                         urn("tactic:S1"),
                         RelationType.SUGGESTS,
@@ -195,7 +195,7 @@ class ActionContextWalkTest {
     }
 
     private static Relationship worded(String from, RelationType relation, String to) {
-        return new Relationship(urn(from), urn(to), relation, Optional.of("when " + to), Optional.of("because " + to));
+        return Relationship.of(urn(from), urn(to), relation, Optional.of("when " + to), Optional.of("because " + to));
     }
 
     // ---- step 4, requires of the suggested artifacts, transitive; never walked for suggests ------------------------
@@ -372,22 +372,22 @@ class ActionContextWalkTest {
     @Test
     void eachEntryBringsTheEnhancersInForceThatEnhanceItAndTheOnesItEnhancesAndPullsNoneIn() {
         Closure closure = closure(
-                List.of("tactic:T1", "tactic:T2", "skill:E1", "skill:Idle", "skill:Target"),
+                List.of("tactic:T1", "tactic:T2", "tactic:E1", "tactic:Idle", "tactic:Target"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 edge(START, RelationType.SCOPE, "tactic:T2"),
-                edge("skill:E1", RelationType.ENHANCES, "tactic:T1"),
-                edge("skill:Idle", RelationType.ENHANCES, "tactic:T1"),
-                edge("tactic:T2", RelationType.ENHANCES, "skill:Target"),
+                edge("tactic:E1", RelationType.ENHANCES, "tactic:T1"),
+                edge("tactic:Idle", RelationType.ENHANCES, "tactic:T1"),
+                edge("tactic:T2", RelationType.ENHANCES, "tactic:Target"),
                 edge("tactic:T2", RelationType.ENHANCES, "tactic:T1"));
 
         Context context =
-                walk(closure, 0, inForce("mission_type:M", "tactic:T1", "tactic:T2", "skill:E1", "skill:Target"));
+                walk(closure, 0, inForce("mission_type:M", "tactic:T1", "tactic:T2", "tactic:E1", "tactic:Target"));
 
         assertThat(listed(context)).as("an enhancer is never pulled in").containsExactly("tactic:T1", "tactic:T2");
         assertThat(entry(context, "tactic:T1").enhancedBy())
-                .as("skill:Idle is not in force")
-                .containsExactly(urn("skill:E1"), urn("tactic:T2"));
-        assertThat(entry(context, "tactic:T2").enhances()).containsExactly(urn("skill:Target"), urn("tactic:T1"));
+                .as("tactic:Idle is not in force")
+                .containsExactly(urn("tactic:E1"), urn("tactic:T2"));
+        assertThat(entry(context, "tactic:T2").enhances()).containsExactly(urn("tactic:T1"), urn("tactic:Target"));
         assertThat(entry(context, "tactic:T1").enhances()).isEmpty();
     }
 
@@ -494,7 +494,7 @@ class ActionContextWalkTest {
         return closure(
                 List.of("tactic:T1", "tactic:S", "directive:R", "glossary_context:G"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
-                new Relationship(
+                Relationship.of(
                         urn("tactic:T1"),
                         urn("tactic:S"),
                         RelationType.SUGGESTS,
@@ -638,26 +638,31 @@ class ActionContextWalkTest {
 
     private static Closure enhancingTheStep() {
         return closure(
-                List.of("tactic:T1", "skill:E2", "skill:E1", "skill:Idle", "tactic:Target", "tactic:IdleTarget"),
+                List.of(
+                        "tactic:T1",
+                        "step_enhancement:E2",
+                        "step_enhancement:E1",
+                        "step_enhancement:Idle",
+                        "tactic:Target"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
-                edge("skill:E2", RelationType.ENHANCES, START),
-                edge("skill:E1", RelationType.ENHANCES, START),
-                edge("skill:Idle", RelationType.ENHANCES, START),
-                edge(START, RelationType.ENHANCES, "tactic:Target"),
-                edge(START, RelationType.ENHANCES, "tactic:IdleTarget"));
+                edge("step_enhancement:E2", RelationType.ENHANCES, START),
+                edge("step_enhancement:E1", RelationType.ENHANCES, START),
+                edge("step_enhancement:Idle", RelationType.ENHANCES, START));
     }
 
     @Test
-    void theContextCarriesTheEnhancersInForceOfTheStartStepAndTheArtifactsInForceItEnhancesInUrnOrder() {
+    void theContextCarriesTheEnhancersInForceOfTheStartStepInUrnOrderAndAStepEnhancesNothing() {
         Context context = walk(
-                enhancingTheStep(), 0, inForce("mission_type:M", "tactic:T1", "skill:E1", "skill:E2", "tactic:Target"));
+                enhancingTheStep(),
+                0,
+                inForce("mission_type:M", "tactic:T1", "step_enhancement:E1", "step_enhancement:E2", "tactic:Target"));
 
         assertThat(context.actionEnhancedBy())
-                .as("skill:Idle is not in force")
-                .containsExactly(urn("skill:E1"), urn("skill:E2"));
+                .as("step_enhancement:Idle is not in force")
+                .containsExactly(urn("step_enhancement:E1"), urn("step_enhancement:E2"));
         assertThat(context.actionEnhances())
-                .as("tactic:IdleTarget is not in force")
-                .containsExactly(urn("tactic:Target"));
+                .as("an enhances edge from an action is refused (ADR-0064 decision 13)")
+                .isEmpty();
         assertThat(listed(context))
                 .as("none of them is pulled into the answer (rule E12)")
                 .containsExactly("tactic:T1");
@@ -676,7 +681,7 @@ class ActionContextWalkTest {
 
     @Test
     void aMissionTypeNotInForceAnswersNoEnhancerOfTheStartStepEither() {
-        Context context = walk(enhancingTheStep(), 0, inForce("skill:E1", "tactic:Target"));
+        Context context = walk(enhancingTheStep(), 0, inForce("step_enhancement:E1", "tactic:Target"));
 
         assertThat(context.missionTypeInForce()).isFalse();
         assertThat(context.actionEnhancedBy()).isEmpty();

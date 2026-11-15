@@ -250,14 +250,7 @@ public final class EdgeIndex implements ComposeResolver {
         }
         Place winner =
                 Objects.requireNonNull(view.winners.get(judged(lost.get()).urn()), "a lost place has a winner");
-        return new Relationship(
-                edge.from(),
-                edge.fromPack(),
-                edge.to(),
-                Optional.of(packOf(winner).descriptor().name()),
-                edge.type(),
-                edge.when(),
-                edge.rationale());
+        return edge.qualified(edge.fromPack(), Optional.of(packOf(winner).descriptor().name()));
     }
 
     /** Refuses an {@code overrides} edge that, re-pointed to the winner, ends at its own source (C36, A12). */
@@ -567,8 +560,7 @@ public final class EdgeIndex implements ComposeResolver {
         Optional<String> toPack = source.pack().equals(idOf(writer))
                 ? edge.toPack()
                 : edge.toPack().or(() -> Optional.of(writer.descriptor().name()));
-        return new Relationship(
-                edge.from(), edge.fromPack(), edge.to(), toPack, edge.type(), edge.when(), edge.rationale());
+        return edge.qualified(edge.fromPack(), toPack);
     }
 
     private void put(Place source, Relationship edge) {

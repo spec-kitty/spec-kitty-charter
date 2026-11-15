@@ -98,6 +98,11 @@ description: >-
   per edge at its pack-relative graph document inside 422 validation_failed, putPackRelationship answers 422
   validation_failed with the violation at /from and writes nothing, and a composing read of a closure holding such a
   pack answers 500 pack_unreadable naming the graph document. An overrides edge from an activatable kind is unchanged.
+  relationship_endpoint_not_allowed (ADR-0064 decision 13) is another: an edge whose relation does not allow its source
+  and target kinds (the endpoint table, for example procedure requires action, or overrides between two kinds) is
+  refused wherever it enters, in the same three places, with putPackRelationship's violation at /type. An overrides
+  edge from a kind that is not activatable keeps overrides_source_not_activatable; an enhances or overrides edge from
+  a step enhancement the pack holds keeps prompt_fragment_invalid.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -361,7 +366,8 @@ x-refusal:
       the request or the pack it registers breaks a schema or an invariant; a refused registration lists every fault as
       a violation at its pack-relative file. Its violation codes include the raised codes above and
       overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
-      putPackRelationship lists at /from
+      putPackRelationship lists at /from, and relationship_endpoint_not_allowed, an edge whose relation does not allow
+      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type
   registration_conflict:
     status: 409
     retryable: false

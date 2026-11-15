@@ -205,7 +205,7 @@ class GraphDocumentReaderTest {
         Urn directive = new Urn(NodeKind.DIRECTIVE, "d");
         DoctrineGraph graph = new DoctrineGraph(
                 List.of(new DrgNode(tactic, Optional.of(text)), new DrgNode(directive, Optional.empty())),
-                List.of(new Relationship(
+                List.of(Relationship.of(
                         tactic, directive, RelationType.REQUIRES, Optional.of(text), Optional.of(text))));
 
         String written = GraphShardWriter.write(graph);

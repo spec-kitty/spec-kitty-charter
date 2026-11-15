@@ -65,7 +65,8 @@ public final class RelationshipShard {
     /**
      * What a shard read yielded: the relationships that bound, and one finding for anything that did not
      * (a malformed document, or an edge whose endpoint is not a URN, whose relation is unknown, that is a self-loop,
-     * or that is a tension, which is authored in a pack's graph shards and never registered). A fault is a finding,
+     * whose relation does not allow its endpoint kinds, or that is a tension, which is authored in a pack's graph shards
+     * and never registered). A fault is a finding,
      * never a silent drop and never a throw (ADR-0027).
      *
      * @param relationships the relationships that bound, in document order

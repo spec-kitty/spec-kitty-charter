@@ -440,14 +440,14 @@ class ClosureViewSessionStepRefsTest {
 
     private static Closure steps() {
         Relationship scopes = relationship("action:M/s", RelationType.SCOPE, "directive:D");
-        Relationship enhancesStep = relationship("tactic:t", RelationType.ENHANCES, "action:M/s");
+        Relationship enhancesStep = relationship("step_enhancement:e", RelationType.ENHANCES, "action:M/s");
         Relationship requires = relationship("directive:D", RelationType.REQUIRES, "tactic:t");
         return new Closure()
                 .pack(
                         "beta",
                         PackLevel.BUILT_IN,
                         List.of(),
-                        List.of("mission_type:M", "action:M/s", "directive:D", "tactic:t"),
+                        List.of("mission_type:M", "action:M/s", "directive:D", "tactic:t", "step_enhancement:e"),
                         scopes,
                         enhancesStep,
                         requires);
@@ -457,7 +457,8 @@ class ClosureViewSessionStepRefsTest {
     void aStepIsNoWinnerOfTheMergedSnapshotAndAnArtifactIs() {
         MergedSnapshot merged = steps().session().merged();
 
-        assertThat(merged.winners().keySet()).containsExactlyInAnyOrder(ref("mission_type:M"), D_REF, ref("tactic:t"));
+        assertThat(merged.winners().keySet())
+                .containsExactlyInAnyOrder(ref("mission_type:M"), D_REF, ref("tactic:t"), ref("step_enhancement:e"));
     }
 
     @Test
@@ -594,7 +595,7 @@ class ClosureViewSessionStepRefsTest {
     // ---- the fixture: hand-built packs, merged for real ----
 
     private static Relationship relationship(String from, RelationType type, String to) {
-        return new Relationship(urn(from), urn(to), type, Optional.empty(), Optional.empty());
+        return Relationship.of(urn(from), urn(to), type, Optional.empty(), Optional.empty());
     }
 
     /** A closure of hand-built packs, merged for real: the facts each pack holds, in merge order. */

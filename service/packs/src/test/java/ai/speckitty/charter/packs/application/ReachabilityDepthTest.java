@@ -233,45 +233,51 @@ class ReachabilityDepthTest {
         assertThat(reachedBy(result)).doesNotContain(urn("directive:X"));
     }
 
-    /** M holds the steps plan and review; plan requires E and suggests F; T suggests M. */
+    /**
+     * M holds the steps plan and review; plan scopes E, which suggests F. No relation reaches a mission type but
+     * {@code overrides} (ADR-0064 decision 13), so a walk enters one only as a start, at hop 0.
+     */
     private static EdgeIndex missionType() {
         return index(
-                List.of(
-                        "directive:T",
-                        "mission_type:m",
-                        "action:m/plan",
-                        "action:m/review",
-                        "directive:E",
-                        "directive:F"),
-                edge("directive:T", RelationType.SUGGESTS, "mission_type:m"),
-                edge("action:m/plan", RelationType.REQUIRES, "directive:E"),
-                edge("action:m/plan", RelationType.SUGGESTS, "directive:F"));
+                List.of("mission_type:m", "action:m/plan", "action:m/review", "directive:E", "directive:F"),
+                edge("action:m/plan", RelationType.SCOPE, "directive:E"),
+                edge("directive:E", RelationType.SUGGESTS, "directive:F"));
     }
 
     @Test
-    void aStepPlaceInheritsTheHopCountOfItsMissionTypeAndItsSuggestsEdgeIsCountedFromThere() {
-        ReachResult result = reach(missionType(), "directive:T", 1);
+    void aStepPlaceInheritsTheHopCountOfItsMissionTypeAndASuggestsEdgeBeyondItIsCountedFromThere() {
+        ReachResult result = reach(missionType(), "mission_type:m", 1);
 
         assertThat(reachedBy(result))
                 .containsExactlyInAnyOrder(
-                        urn("directive:T"),
                         urn("mission_type:m"),
                         urn("action:m/plan"),
                         urn("action:m/review"),
-                        urn("directive:E"));
+                        urn("directive:E"),
+                        urn("directive:F"));
         assertThat(result.hops())
-                .containsEntry(urn("mission_type:m"), 1)
-                .containsEntry(urn("action:m/plan"), 1)
-                .containsEntry(urn("directive:E"), 1);
+                .containsEntry(urn("mission_type:m"), 0)
+                .containsEntry(urn("action:m/plan"), 0)
+                .containsEntry(urn("directive:E"), 0)
+                .containsEntry(urn("directive:F"), 1);
+        assertThat(result.beyondBound()).isEmpty();
+    }
+
+    @Test
+    void aSuggestsTargetBeyondTheStepsOfAMissionTypeIsNotEnteredPastTheBound() {
+        ReachResult result = reach(missionType(), "mission_type:m", 0);
+
+        assertThat(reachedBy(result))
+                .containsExactlyInAnyOrder(
+                        urn("mission_type:m"), urn("action:m/plan"), urn("action:m/review"), urn("directive:E"));
         assertThat(result.beyondBound()).containsExactly(urn("directive:F"));
     }
 
     @Test
-    void aMissionTypeBehindASuggestsEdgeIsNotEnteredPastTheBoundAndSoNeitherAreItsSteps() {
-        ReachResult result = reach(missionType(), "directive:T", 0);
-
-        assertThat(reachedBy(result)).containsExactly(urn("directive:T"));
-        assertThat(result.beyondBound()).containsExactly(urn("mission_type:m"));
+    void aSuggestsEdgeToAMissionTypeIsRefusedByTheEndpointTable() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> edge("directive:T", RelationType.SUGGESTS, "mission_type:m"))
+                .withMessageContaining("a suggests edge may not connect directive to mission_type");
     }
 
     @Test

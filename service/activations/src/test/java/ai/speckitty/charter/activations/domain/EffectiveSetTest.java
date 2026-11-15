@@ -748,7 +748,7 @@ class EffectiveSetTest {
                 throw new UnsupportedOperationException("the closure never writes");
             }
         };
-        Relationship enhances = new Relationship(
+        Relationship enhances = Relationship.of(
                 Urn.parse("step_enhancement:x").orElseThrow(),
                 Urn.parse("action:M/s").orElseThrow(),
                 RelationType.ENHANCES,

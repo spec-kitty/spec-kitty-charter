@@ -354,7 +354,7 @@ class OfferingReadServiceTest {
             written.put("enhancer", List.of("step_enhancement:spdd-plan", target));
             edges.put(
                     "enhancer",
-                    List.of(new Relationship(
+                    List.of(Relationship.of(
                             Urn.parse("step_enhancement:spdd-plan").orElseThrow(),
                             Optional.empty(),
                             PackQualifiedReference.parse(target).asUrn().orElseThrow(),

@@ -164,7 +164,7 @@ class ActivationImpactAdapterTest {
                 facts,
                 "base",
                 PackLevel.ORG,
-                List.of(new Relationship(
+                List.of(Relationship.of(
                         u("step_enhancement:x"),
                         Optional.empty(),
                         u("action:M/s"),

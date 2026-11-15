@@ -4,7 +4,7 @@ import ai.speckitty.charter.api.RelationshipsApi;
 import ai.speckitty.charter.api.model.RelationshipRegistered;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.Map;
@@ -49,13 +49,13 @@ public class RelationshipController implements RelationshipsApi {
     @Override
     public ResponseEntity<RelationshipRegistered> putPackRelationship(
             String packId, RelationshipRegistration body, @Nullable String ifMatch) {
-        Relationship relationship = RelationshipWire.fromWire(body);
+        RelationshipDraft draft = RelationshipWire.fromWire(body);
         RelationshipRegistrationService.Registered result =
-                registrations.registerRelationship(new PackIdentifier(packId), relationship, ifMatch);
+                registrations.registerRelationship(new PackIdentifier(packId), draft, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(new RelationshipRegistered(
-                        RelationshipWire.toWire(relationship),
+                        RelationshipWire.toWire(draft),
                         Hypermedia.wire(Map.of(Relation.ARTIFACTS, links.link("packs", packId, "artifacts")))));
     }
 }

@@ -72,12 +72,16 @@ class ArtifactRemovalServiceTest {
     }
 
     private static Relationship edge(String from, String to, String toPack) {
-        return new Relationship(
+        return edge(from, RelationType.REQUIRES, to, toPack);
+    }
+
+    private static Relationship edge(String from, RelationType type, String to, String toPack) {
+        return Relationship.of(
                 urn(from),
                 Optional.empty(),
                 urn(to),
                 Optional.ofNullable(toPack),
-                RelationType.REQUIRES,
+                type,
                 Optional.empty(),
                 Optional.empty());
     }
@@ -489,16 +493,17 @@ class ArtifactRemovalServiceTest {
      */
     @ParameterizedTest
     @CsvSource({
-        "registered.graph.yaml, directive:D2, action:documentation/discover",
-        "steps.graph.yaml, action:documentation/retrospect, directive:D2",
-        "steps.graph.yaml, directive:D2, action:documentation/discover",
+        "registered.graph.yaml, mission_type:software-dev, requires, action:documentation/discover",
+        "steps.graph.yaml, action:documentation/retrospect, scope, directive:D2",
+        "steps.graph.yaml, mission_type:software-dev, requires, action:documentation/discover",
     })
     void aGraphEdgeThatNamesAnActionNodeOfTheTypeRefusesItsRemoval(
-            String document, String from, String to, @TempDir Path host) {
+            String document, String from, String relation, String to, @TempDir Path host) {
         Rig rig = new Rig(host);
         String graph = RelationshipShard.SHARD_PATH.equals(document)
-                ? RelationshipShard.write(List.of(edge(from, to, null)))
-                : authoredEdge(from, to);
+                ? RelationshipShard.write(
+                        List.of(edge(from, RelationType.fromToken(relation).orElseThrow(), to, null)))
+                : authoredEdge(from, relation, to);
         rig.register("qa", rig.stage(qaWithDocumentation().file(document, graph)), Preconditions.none());
         Removals removals = new Removals(rig);
         Map<String, String> before = removals.filesOf("qa");
@@ -518,7 +523,9 @@ class ArtifactRemovalServiceTest {
         rig.register(
                 "qa",
                 rig.stage(qaWithDocumentation()
-                        .file("steps.graph.yaml", authoredEdge("action:software-dev/specify", "directive:D2"))),
+                        .file(
+                                "steps.graph.yaml",
+                                authoredEdge("action:software-dev/specify", "scope", "directive:D2"))),
                 Preconditions.none());
         Removals removals = new Removals(rig);
 
@@ -584,7 +591,7 @@ class ArtifactRemovalServiceTest {
         rig.register(
                 "qa",
                 rig.stage(qaWithDocumentation()
-                        .file("types.graph.yaml", authoredEdge("mission_type:documentation", "directive:D2"))),
+                        .file("types.graph.yaml", authoredEdge("mission_type:documentation", "scope", "directive:D2"))),
                 Preconditions.none());
         Removals removals = new Removals(rig);
         Map<String, String> before = removals.filesOf("qa");
@@ -643,8 +650,8 @@ class ArtifactRemovalServiceTest {
     }
 
     /**
-     * Registered edges that start at the type or at one of its skeletons go with the one removal, whatever they point
-     * at: the type's own action node, or the type itself.
+     * Registered edges that start at the type go with the one removal, whatever they point at: the type's own action
+     * node, or another artifact. A skeleton is a template, which is the source of no relation (ADR-0064 decision 13).
      */
     @Test
     void registeredEdgesFromTheTypeAndFromItsSkeletonsGoWithTheRemoval(@TempDir Path host) {
@@ -657,8 +664,9 @@ class ArtifactRemovalServiceTest {
                                 RelationshipShard.write(List.of(
                                         edge("mission_type:documentation", "action:documentation/discover", null),
                                         edge(
-                                                "template:documentation/spec-template.md",
                                                 "mission_type:documentation",
+                                                RelationType.SCOPE,
+                                                "directive:D2",
                                                 null))))),
                 Preconditions.none());
         Removals removals = new Removals(rig);
@@ -673,8 +681,12 @@ class ArtifactRemovalServiceTest {
     }
 
     private static String authoredEdge(String from, String to) {
+        return authoredEdge(from, "requires", to);
+    }
+
+    private static String authoredEdge(String from, String relation, String to) {
         return "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: '" + from + "', target: '"
-                + to + "', relation: requires}\n";
+                + to + "', relation: " + relation + "}\n";
     }
 
     private static String resource(String path) throws IOException {
@@ -909,7 +921,7 @@ class ArtifactRemovalServiceTest {
                         .file(
                                 "registered.graph.yaml",
                                 RelationshipShard.write(List.of(Relationship.of(
-                                        urn("directive:D2"), urn("agent_profile:jenny"), RelationType.REQUIRES))))),
+                                        urn("directive:D2"), urn("agent_profile:jenny"), RelationType.SUGGESTS))))),
                 Preconditions.none());
         Removals removals = new Removals(rig);
 

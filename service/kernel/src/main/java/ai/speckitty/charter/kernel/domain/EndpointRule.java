@@ -76,7 +76,7 @@ public final class EndpointRule {
             Optional<String> toPack,
             Optional<String> when,
             Optional<String> rationale) {
-        if (type == RelationType.OVERRIDES && !activatable(from.kind())) {
+        if (type == RelationType.OVERRIDES && inactivatableArtifact(from.kind())) {
             return new Fault(OVERRIDES_SOURCE_NOT_ACTIVATABLE, type.token(), from.kind(), to.kind());
         }
         if (!type.allows(from.kind(), to.kind())) {
@@ -99,7 +99,8 @@ public final class EndpointRule {
         return Optional.of(new Fault(ENDPOINT_NOT_ALLOWED, "in_tension_with", one.kind(), other.kind()));
     }
 
-    private static boolean activatable(NodeKind kind) {
-        return kind.artifactKind().map(ArtifactKind::activatable).orElse(false);
+    /** An artifact kind without activation state; a node-only kind (a step) is the table's to judge. */
+    private static boolean inactivatableArtifact(NodeKind kind) {
+        return kind.artifactKind().map(artifact -> !artifact.activatable()).orElse(false);
     }
 }

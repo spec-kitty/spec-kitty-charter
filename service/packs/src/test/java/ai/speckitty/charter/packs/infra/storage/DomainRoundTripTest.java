@@ -339,11 +339,11 @@ class DomainRoundTripTest {
         Urn a = new Urn(NodeKind.DIRECTIVE, "a");
         Urn b = new Urn(NodeKind.DIRECTIVE, "b");
         DoctrineGraph withReason = new DoctrineGraph(
-                List.of(), List.of(new Relationship(b, a, RelationType.REQUIRES, Optional.empty(), Optional.of("r"))));
+                List.of(), List.of(Relationship.of(b, a, RelationType.REQUIRES, Optional.empty(), Optional.of("r"))));
         DoctrineGraph withoutReason =
                 new DoctrineGraph(List.of(), List.of(Relationship.of(b, a, RelationType.REQUIRES)));
         DoctrineGraph otherType = new DoctrineGraph(
-                List.of(), List.of(new Relationship(b, a, RelationType.SUGGESTS, Optional.empty(), Optional.of("r"))));
+                List.of(), List.of(Relationship.of(b, a, RelationType.SUGGESTS, Optional.empty(), Optional.of("r"))));
 
         // Relationship equality is the unordered pair, so graph equality cannot see these losses; the read-back does.
         assertThat(withReason).isEqualTo(withoutReason);

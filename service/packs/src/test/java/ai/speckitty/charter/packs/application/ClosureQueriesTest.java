@@ -691,7 +691,7 @@ class ClosureQueriesTest {
                         MutabilityPolicySource.empty(),
                         List.of(),
                         List.of(
-                                new Relationship(
+                                Relationship.of(
                                         new Urn(NodeKind.DIRECTIVE, "A1"),
                                         Optional.empty(),
                                         tacticT,
@@ -699,7 +699,7 @@ class ClosureQueriesTest {
                                         RelationType.REQUIRES,
                                         Optional.empty(),
                                         Optional.empty()),
-                                new Relationship(
+                                Relationship.of(
                                         tacticE,
                                         Optional.empty(),
                                         tacticT,
