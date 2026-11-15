@@ -2,12 +2,27 @@ schema_version: '1.0'
 generated_at: STATIC
 generated_by: drg-migration-v1
 nodes:
+- urn: action:software-dev/accept
+  kind: action
+  label: accept
+- urn: action:software-dev/analyze
+  kind: action
+  label: analyze
+- urn: action:software-dev/charter
+  kind: action
+  label: charter
+- urn: action:software-dev/discovery
+  kind: action
+  label: discovery
 - urn: action:software-dev/implement
   kind: action
   label: implement
 - urn: action:software-dev/plan
   kind: action
   label: plan
+- urn: action:software-dev/retrospect
+  kind: action
+  label: retrospect
 - urn: action:software-dev/review
   kind: action
   label: review
@@ -17,6 +32,15 @@ nodes:
 - urn: action:software-dev/tasks
   kind: action
   label: tasks
+- urn: action:software-dev/tasks-finalize
+  kind: action
+  label: tasks-finalize
+- urn: action:software-dev/tasks-outline
+  kind: action
+  label: tasks-outline
+- urn: action:software-dev/tasks-packages
+  kind: action
+  label: tasks-packages
 edges:
 - source: action:software-dev/implement
   target: directive:DIRECTIVE_001

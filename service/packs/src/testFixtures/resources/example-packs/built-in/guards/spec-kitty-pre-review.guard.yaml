@@ -1,0 +1,7 @@
+schema_version: '1.0'
+id: spec-kitty-pre-review
+title: The pre-review checks pass
+description: The checks a work package runs before it moves to review (ADR-0054 decision 12).
+interface: guard/1
+implemented_by: builtin:spec-kitty-pre-review
+on_indeterminate: pass
