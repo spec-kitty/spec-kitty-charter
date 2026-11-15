@@ -172,7 +172,9 @@ class ProfileDtosTest {
 
     @Test
     void everyAccessorOfTheDomainProfileHasAMemberOnTheWire() {
-        Set<String> notFields = Set.of("hashCode", "toString", "equals", "kind", "packId", "id", "label");
+        // humanPerformed is derived from performer, not a field of its own
+        Set<String> notFields =
+                Set.of("hashCode", "toString", "equals", "kind", "packId", "id", "label", "humanPerformed");
         Map<String, String> renamed = Map.of("localId", "profileId", "selfReviewSteps", "selfReviewProtocol");
         Set<String> accessors = Arrays.stream(AgentProfile.class.getDeclaredMethods())
                 .filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
@@ -209,7 +211,7 @@ class ProfileDtosTest {
         assertThat(wire.get("model").asString()).isEqualTo("a-model");
         assertThat(wire.get("effort").asString()).isEqualTo("high");
         assertThat(wire.get("purpose").asString()).isEqualTo("Purpose");
-        assertThat(wire.get("sentinel").asBoolean()).isTrue();
+        assertThat(wire.get("performer").asString()).isEqualTo("human");
         assertThat(wire.get("initializationDeclaration").asString()).isEqualTo("I am Full.");
         assertThat(wire.get("specialization").get("secondaryAwareness").asString())
                 .isEqualTo("aware");
@@ -267,7 +269,7 @@ class ProfileDtosTest {
                         "schemaVersion",
                         "routingPriority",
                         "maxConcurrentTasks",
-                        "sentinel",
+                        "performer",
                         "initializationDeclaration");
         assertThat(names(wire.get("specialization"))).containsExactly("primaryFocus");
         for (String nullable :

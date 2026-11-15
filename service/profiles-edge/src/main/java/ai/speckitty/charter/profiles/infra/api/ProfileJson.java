@@ -60,8 +60,9 @@ public class ProfileJson {
     }
 
     /**
-     * The members of the profile the pack schema defaults: left out when the profile does not declare them. A mix-in's
-     * methods are matched to the model's accessors by name and carry only the annotation, so none is called.
+     * The members of the profile the pack schema defaults, and {@code performer}: left out when the profile does not
+     * declare them. A mix-in's methods are matched to the model's accessors by name and carry only the annotation, so
+     * none is called.
      */
     @SuppressWarnings("UnusedMethod")
     private abstract static class OptionalProfileMembers {
@@ -78,7 +79,7 @@ public class ProfileJson {
         abstract @Nullable Integer getMaxConcurrentTasks();
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        abstract @Nullable Boolean getSentinel();
+        abstract AgentProfile.@Nullable PerformerEnum getPerformer();
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         abstract @Nullable String getInitializationDeclaration();

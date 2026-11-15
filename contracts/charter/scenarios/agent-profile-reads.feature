@@ -76,7 +76,7 @@ Feature: A pack's agent profile is read with its governance
           description: Alternate a failing test and the code that passes it.
           use-case: Driving a feature test first.
       initialization-declaration: I am Java Jenny.
-      sentinel: false
+      performer: agent
       specialization-context:
         languages:
           - java
@@ -232,6 +232,7 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/kind" is "agent_profile"
     And the field at "/agentProfile/profileId" is "java-jenny"
     And the field at "/agentProfile/routingPriority" is 80
+    And the field at "/agentProfile/performer" is "agent"
     And the field at "/agentProfile/specializationContext/complexityPreference/1" is "medium"
     And the field at "/agentProfile/selfReviewProtocol/steps/0/command" is "mvn compile"
     And the field at "/agentProfile/directiveReferences/0/code" is "034"

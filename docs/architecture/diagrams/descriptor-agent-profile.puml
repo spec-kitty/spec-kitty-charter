@@ -15,7 +15,7 @@ class AgentProfile <<agent-profile.schema.yaml>> {
   - description : string
   - schema-version : "1.0" | "2"
   - avatar-image : string
-  - sentinel : bool = false
+  - performer : "agent" | "human" (operator: "human" only)
   - tags : string[]
   - capabilities : string[]
   - routing-priority : int 0..100

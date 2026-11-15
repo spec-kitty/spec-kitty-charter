@@ -1,0 +1,12 @@
+profile-id: human-operator
+name: Human Operator
+role: operator
+performer: human
+
+purpose: >
+  The human who operates the organization's missions: decides what is in scope, answers the
+  questions a step escalates, and accepts or rejects the work. An agent never takes this role.
+
+specialization:
+  primary-focus: >
+    Operator decisions: scope, escalated questions and acceptance of finished work.

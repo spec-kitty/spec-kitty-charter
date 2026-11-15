@@ -199,4 +199,4 @@ excluding:
 model: claude-opus
 effort: high
 avatar-image: avatars/java-jenny.png
-sentinel: false
+performer: agent

@@ -8,6 +8,7 @@ import ai.speckitty.charter.profiles.domain.Collaboration;
 import ai.speckitty.charter.profiles.domain.DirectiveReference;
 import ai.speckitty.charter.profiles.domain.Exclusion;
 import ai.speckitty.charter.profiles.domain.ModeDefault;
+import ai.speckitty.charter.profiles.domain.Performer;
 import ai.speckitty.charter.profiles.domain.SelfReviewStep;
 import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.profiles.domain.SpecializationContext;
@@ -55,7 +56,7 @@ final class FullProfile {
                 .modeDefault(new ModeDefault("mode-1", "describes", "used when"))
                 .modeDefault(new ModeDefault("mode-2", "describes too", "used then"))
                 .initializationDeclaration(Optional.of("I am Full."))
-                .sentinel(Optional.of(true))
+                .performer(Optional.of(Performer.HUMAN))
                 .specializationContext(new SpecializationContext(
                         List.of("java", "kotlin"),
                         List.of("spring"),
