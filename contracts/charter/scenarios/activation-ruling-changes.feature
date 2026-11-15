@@ -349,27 +349,27 @@ Feature: The A0 rulings on activation writes and on the packs
       name: left-pack
       pack_level: org
       """
-    And the org pack "left" with the file "tactics/left-way.tactic.yaml":
+    And the org pack "left" with the file "directives/LEFT-WAY.directive.yaml":
       """
       schema_version: '1.0'
-      id: left-way
-      name: left-way
-      steps:
-        - title: Only step
+      id: LEFT-WAY
+      title: LEFT-WAY
+      intent: LEFT-WAY
+      enforcement: advisory
       """
     And the org pack "left" with the file "enhancing.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: tactic:left-way
-        kind: tactic
-        label: left-way
+      - urn: directive:LEFT-WAY
+        kind: directive
+        label: LEFT-WAY
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: tactic:left-way
+      - source: directive:LEFT-WAY
         target: directive:software-dev/test-first
         relation: enhances
       """
@@ -381,27 +381,27 @@ Feature: The A0 rulings on activation writes and on the packs
       name: right-pack
       pack_level: org
       """
-    And the org pack "right" with the file "tactics/right-way.tactic.yaml":
+    And the org pack "right" with the file "directives/RIGHT-WAY.directive.yaml":
       """
       schema_version: '1.0'
-      id: right-way
-      name: right-way
-      steps:
-        - title: Only step
+      id: RIGHT-WAY
+      title: RIGHT-WAY
+      intent: RIGHT-WAY
+      enforcement: advisory
       """
     And the org pack "right" with the file "enhancing.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
       nodes:
-      - urn: tactic:right-way
-        kind: tactic
-        label: right-way
+      - urn: directive:RIGHT-WAY
+        kind: directive
+        label: RIGHT-WAY
       - urn: directive:software-dev/test-first
         kind: directive
         label: test-first
       edges:
-      - source: tactic:right-way
+      - source: directive:RIGHT-WAY
         target: directive:software-dev/test-first
         relation: enhances
       """
@@ -416,16 +416,16 @@ Feature: The A0 rulings on activation writes and on the packs
     Then the response status is 200
     When I GET "/packs/left/artifacts"
     Then the response status is 200
-    And the field at "/items/0/id" is "left-way"
+    And the field at "/items/0/id" is "LEFT-WAY"
     When I GET "/packs/right/artifacts"
     Then the response status is 200
-    And the field at "/items/0/id" is "right-way"
-    When I GET "/activations/a-1/artifacts?kind=tactic"
+    And the field at "/items/0/id" is "RIGHT-WAY"
+    When I GET "/activations/a-1/artifacts?kind=directive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:left-way
-      tactic:right-way
+      directive:LEFT-WAY
+      directive:RIGHT-WAY
       """
 
   # A15: a pack's policy locks only its own artifacts and those of the packs it builds on.

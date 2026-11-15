@@ -191,7 +191,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       edges:
       - source: mission_type:software-dev
         target: directive:GUARD
-        relation: requires
+        relation: scope
       - source: mission_step_contract:specify
         target: directive:GUARD
         relation: requires
@@ -550,7 +550,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 200
     And the field at "/items" holds exactly 1 item
     And the field at "/items/0/urn" is "directive:GUARD"
-    And the field at "/items/0/relation" is "requires"
+    And the field at "/items/0/relation" is "scope"
     And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/GUARD"
     When I GET "/packs/main/artifacts/mission_step_contract/specify/references"
     Then the response status is 200
@@ -848,7 +848,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       edges:
       - source: action:documentation/discover
         target: directive:GUARD
-        relation: requires
+        relation: scope
       """
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
