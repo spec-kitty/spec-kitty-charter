@@ -1,0 +1,9 @@
+description: >-
+  A strong entity tag of the kind taxonomy: the SHA-256 digest of the JSON body the service serves, sha256: followed
+  by 64 lower-case hex digits, in double quotes, in the pattern of the contract document's ETag. The taxonomy is the
+  model's, so the tag changes only with a build whose model differs. Opaque to consumers, who compare it and never
+  parse it.
+required: true
+schema:
+  type: string
+  pattern: '^"sha256:[0-9a-f]{64}"$'

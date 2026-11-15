@@ -1,0 +1,62 @@
+title: RelationRow
+description: >-
+  One relation of the model, with the kinds it may connect (ADR-0064 decision 13). The tension between two rules is
+  held beside the relationships (ADR-0028, ADR-0045), so its row is in_tension_with, held as a tension; every other
+  row is held as a relationship.
+type: object
+additionalProperties: false
+required:
+  - relation
+  - heldAs
+  - directed
+  - derived
+  - endpoints
+properties:
+  relation:
+    description: The relation's token, as graph documents write it.
+    allOf:
+      - $ref: TaxonomyRelation.yaml
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
+      symbol: RelationType.token
+  heldAs:
+    type: string
+    enum:
+      - relationship
+      - tension
+    description: >-
+      How the service holds an edge of the relation: relationship for a value of RelationType, tension for
+      in_tension_with, which is a Tension beside the relationships.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Tension.java
+      symbol: Tension
+  directed:
+    type: boolean
+    description: >-
+      Whether the relation holds from source to target only; false for in_tension_with, where the two rules pull
+      against each other and either orientation states the same tension.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
+      symbol: RelationType.directionality
+  derived:
+    type: boolean
+    description: >-
+      Whether the relation is only ever derived from an artifact's own field and never authored as an edge; true only
+      for implemented_by.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
+      symbol: RelationType.derived
+  endpoints:
+    type: array
+    minItems: 1
+    description: >-
+      The source and target kinds an edge of the relation may connect, sources in kind order and, under each source,
+      targets in kind order. An edge whose kinds are not listed is refused relationship_endpoint_not_allowed.
+    items:
+      $ref: EndpointPair.yaml
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
+      symbol: RelationType.endpoints
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java
+  symbol: KindTaxonomyReadService.RelationFacts

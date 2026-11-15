@@ -20,6 +20,7 @@ Feature: The worktree guard answers in front of every operation
       | getServiceInfo                    | GET    | /info                                                                                         |
       | getOpenApiDocument                | GET    | /openapi.yaml                                                                                 |
       | getOffering                       | GET    | /offering                                                                                     |
+      | getKindTaxonomy                   | GET    | /offering/kinds                                                                               |
       | registerPackFromSource            | POST   | /packs                                                                                        |
       | registerPackFromArchive           | PUT    | /packs/qa                                                                                     |
       | getPack                           | GET    | /packs/qa                                                                                     |
@@ -98,6 +99,7 @@ Feature: The worktree guard answers in front of every operation
       | getServiceInfo                    | GET    | /info                                                                                         |
       | getOpenApiDocument                | GET    | /openapi.yaml                                                                                 |
       | getOffering                       | GET    | /offering                                                                                     |
+      | getKindTaxonomy                   | GET    | /offering/kinds                                                                               |
       | registerPackFromSource            | POST   | /packs                                                                                        |
       | registerPackFromArchive           | PUT    | /packs/qa                                                                                     |
       | getPack                           | GET    | /packs/qa                                                                                     |

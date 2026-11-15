@@ -76,7 +76,7 @@ Feature: The offering lists the configured packs in force
           {"packId": "Kilo", "descriptorPackId": "01ARWG13C0000000000000K110", "level": "project", "name": "kilo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Kilo/artifacts"}}},
           {"packId": "charlie", "descriptorPackId": "01ARWG13C0000000000CHAR11E", "level": "project", "name": "charlie-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/charlie/artifacts"}}}
         ],
-        "_links": {"self": {"href": "/api/v1/offering"}}
+        "_links": {"self": {"href": "/api/v1/offering"}, "kinds": {"href": "/api/v1/offering/kinds"}}
       }
       """
 
@@ -115,7 +115,7 @@ Feature: The offering lists the configured packs in force
     And the response header "Charter-Source-Fingerprint" appears once
     And the response body is:
       """
-      {"packs": [], "_links": {"self": {"href": "/api/v1/offering"}}}
+      {"packs": [], "_links": {"self": {"href": "/api/v1/offering"}, "kinds": {"href": "/api/v1/offering/kinds"}}}
       """
 
   Scenario: The artifacts link of every pack answers its artifacts
@@ -365,3 +365,101 @@ Feature: The offering lists the configured packs in force
     When I GET "/offering" without the worktree token
     Then the response status is 401
     And the response has no "Charter-Source-Fingerprint" header
+
+  # R18 (#112): the kind taxonomy is the model's, so it is the same whatever packs are configured.
+  Scenario: The kind taxonomy lists every kind and every relation, each relation with the kinds it may connect
+    The kinds are the model's node kinds in their order, guard and lifecycle among them and no retired kind; the
+    relations are the relation types in their order, then in_tension_with, and none of the retired impacts, replaces
+    or delegates_to. Every relation names at least one pair of kinds it may connect. The
+    answer reads no pack file, so it carries no fingerprint, and its ETag is the digest of the body it serves.
+    When I GET "/offering/kinds"
+    Then the response status is 200
+    And the response has no "Charter-Source-Fingerprint" header
+    And the response header "Charter-Contract-Version" is the contract version
+    And the response header "Charter-Worktree" is "scenario-worktree"
+    And the response header "ETag" is the quoted sha256 digest of the response body
+    And the field "kind" of the elements of "kinds" is, in order:
+      """
+      directive
+      tactic
+      styleguide
+      toolguide
+      paradigm
+      procedure
+      agent_profile
+      glossary_pack
+      skill
+      anti_pattern
+      asset
+      template
+      action
+      mission_type
+      guard
+      lifecycle
+      step_enhancement
+      """
+    And the field "relation" of the elements of "relations" is, in order:
+      """
+      requires
+      suggests
+      applies
+      scope
+      vocabulary
+      instantiates
+      refines
+      specializes_from
+      enhances
+      overrides
+      reconciles_tension
+      rejects
+      implemented_by
+      in_tension_with
+      """
+    And every element of "relations" has a non-empty "endpoints"
+    And the field at "/relations/13/heldAs" is "tension"
+    And the field at "/relations/12/derived" is true
+    And the field at "/relations/12/endpoints/0/source" is "guard"
+    And the field at "/kinds/12/artifact" is false
+    And the field at "/kinds/14/authoredInGraphs" is false
+    And the field at "/kinds/0/_links/artifacts/href" is "/api/v1/packs/{packId}/artifacts?kind=directive"
+    And the field at "/kinds/0/_links/artifacts/templated" is true
+    And the field at "/kinds/12/_links/artifacts" is absent
+    And the field at "/_links/self/href" is "/api/v1/offering/kinds"
+
+  Scenario: A kind's artifacts template, expanded with a configured pack, answers that pack's artifacts of the kind
+    Given the org pack "qa" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C000000000000000QA
+      pack_version: 1.0.0
+      parent_pack: null
+      name: qa
+      pack_level: org
+      """
+    And the org pack "qa" with the file "tactics/rehearse.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: rehearse
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    When I GET "/offering"
+    And I follow the link "kinds"
+    Then the response status is 200
+    When I follow the templated link "artifacts" of the element 1 of "kinds" with:
+      | packId | qa |
+    Then the response status is 200
+    And the field at "/items/0/id" is "rehearse"
+    And the field at "/_links/self/href" is "/api/v1/packs/qa/artifacts?kind=tactic"
+
+  Scenario: The kind taxonomy answers 304 to an If-None-Match that matches its ETag, and sends the ETag again
+    When I GET "/offering/kinds"
+    Then the response status is 200
+    When I remember the header "ETag"
+    And I GET "/offering/kinds" with If-None-Match the remembered header "ETag"
+    Then the response status is 304
+    And the response header "ETag" is the remembered header
+    And the response body is empty
+    And the response has no "Charter-Source-Fingerprint" header
+    And the response header "Charter-Contract-Version" is the contract version
+    And the response header "Charter-Worktree" is "scenario-worktree"

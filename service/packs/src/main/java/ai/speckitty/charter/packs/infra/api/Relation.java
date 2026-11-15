@@ -19,6 +19,9 @@ public enum Relation {
     /** The configured packs in force. */
     OFFERING("offering"),
 
+    /** The kind taxonomy of the model ({@code getKindTaxonomy}). */
+    KINDS("kinds"),
+
     /** A pack's artifact list, or its template. */
     ARTIFACTS("artifacts"),
 

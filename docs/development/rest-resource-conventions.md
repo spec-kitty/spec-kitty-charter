@@ -124,8 +124,9 @@ A path names a resource, never an action. Every resource is one of four archetyp
   [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)). The lint rule
   `charter-headers-on-every-response` fails a response that does not declare them.
   - `Charter-Source-Fingerprint` is declared, `required: true`, on the `200` of every verified read, and on no
-    other response (#175): never on a refusal, a failure, a write, the root or `/openapi.yaml`. A reserved read of
-    the activation set declares it on its `200` too and, while it answers `501`, sends none.
+    other response (#175): never on a refusal, a failure, a write, the root, `/openapi.yaml` or the kind taxonomy
+    (`/offering/kinds`), which is the model's and reads no pack file. A reserved read of the activation set declares
+    it on its `200` too and, while it answers `501`, sends none.
   - The one exception is the servlet container's own 400s (a bad path encoding, an oversized
     header, a missing `Host`), which answer before the service sees the request and carry no
     `Charter-*` header.

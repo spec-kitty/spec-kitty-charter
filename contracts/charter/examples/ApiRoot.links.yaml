@@ -7,6 +7,8 @@ value:
       href: /api/v1/info
     offering:
       href: /api/v1/offering
+    kinds:
+      href: /api/v1/offering/kinds
     artifacts:
       href: /api/v1/packs/{packId}/artifacts{?kind}
       templated: true

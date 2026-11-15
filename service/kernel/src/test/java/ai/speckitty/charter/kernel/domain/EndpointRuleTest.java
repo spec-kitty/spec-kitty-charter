@@ -153,4 +153,22 @@ class EndpointRuleTest {
                 .contains(new Fault(
                         EndpointRule.ENDPOINT_NOT_ALLOWED, "in_tension_with", NodeKind.DIRECTIVE, NodeKind.SKILL));
     }
+
+    @Test
+    @DisplayName("a tension's allowed endpoints are every pair of guidance kinds, and bindTension judges by them")
+    void aTensionsEndpointsAreTheGuidancePairs() {
+        java.util.Set<EndpointPair> pairs = Tension.allowedEndpoints();
+
+        assertThat(pairs).hasSize(36);
+        for (NodeKind one : NodeKind.values()) {
+            for (NodeKind other : NodeKind.values()) {
+                boolean guidance = EndpointTable.GUIDANCE.contains(one) && EndpointTable.GUIDANCE.contains(other);
+                assertThat(pairs.contains(new EndpointPair(one, other)))
+                        .as("%s to %s", one, other)
+                        .isEqualTo(guidance);
+            }
+        }
+        assertThat(Tension.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
+        assertThat(Tension.derived()).isFalse();
+    }
 }

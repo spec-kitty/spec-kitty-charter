@@ -1,0 +1,29 @@
+title: TaxonomyKind
+description: >-
+  A node kind of the charter's model, in NodeKind order: every kind of NodeKind and, beside them, guard and lifecycle,
+  which are in force with their pack and are not authored in a graph (#156). NodeKind leaves those two out because no
+  graph read names them; the kind taxonomy names every kind, so it carries its own enum. A parity test keeps it equal
+  to the domain's kinds.
+type: string
+enum:
+  - directive
+  - tactic
+  - styleguide
+  - toolguide
+  - paradigm
+  - procedure
+  - agent_profile
+  - glossary_context
+  - term
+  - skill
+  - anti_pattern
+  - asset
+  - template
+  - action
+  - mission_type
+  - guard
+  - lifecycle
+  - step_enhancement
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+  symbol: NodeKind.token

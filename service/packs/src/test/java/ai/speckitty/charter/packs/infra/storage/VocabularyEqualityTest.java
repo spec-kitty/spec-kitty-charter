@@ -1,10 +1,20 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.Directionality;
+import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.packs.application.ArtifactReadService;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService.HeldAs;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService.KindFacts;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService.RelationFacts;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService.Taxonomy;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -25,6 +35,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -351,6 +362,168 @@ class VocabularyEqualityTest {
         assertThat(projected)
                 .contains("pack_level_missing", "pack_level_mismatch", "pack_unreadable", "drg_schema_error");
         assertThat(contract).containsAll(projected);
+    }
+
+    // ---- the kind taxonomy (R18, FR-003) -----------------------------------------------------------
+
+    @Test
+    void theServedKindTaxonomyIsTheDomainsKindsAndRelationsAndTheFileKindTable() {
+        assertTaxonomyIsTheModel(new KindTaxonomyReadService().taxonomy());
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenOneKindsPluralIsSkewed() {
+        // Positive control: the same check fails on a taxonomy whose directive row names another plural.
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<KindFacts> skewed = served.kinds().stream()
+                .map(kind -> kind.kind() == NodeKind.DIRECTIVE
+                        ? new KindFacts(
+                                kind.kind(),
+                                "directivez",
+                                kind.artifact(),
+                                kind.activatable(),
+                                kind.authoredInGraphs(),
+                                kind.listed())
+                        : kind)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(skewed, served.relations())))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("plural of directive");
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenARelationLosesAnEndpoint() {
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<RelationFacts> skewed = served.relations().stream()
+                .map(relation -> relation.relation().equals("rejects")
+                        ? new RelationFacts(
+                                relation.relation(),
+                                relation.heldAs(),
+                                relation.directed(),
+                                relation.derived(),
+                                relation.endpoints()
+                                        .subList(1, relation.endpoints().size()))
+                        : relation)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(served.kinds(), skewed)))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("endpoints of rejects");
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenARelationsDirectionIsFlipped() {
+        // Positive control for the relation flags: requires is directed in the model, and the skewed row says not.
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<RelationFacts> skewed = served.relations().stream()
+                .map(relation -> relation.relation().equals("requires")
+                        ? new RelationFacts(
+                                relation.relation(),
+                                relation.heldAs(),
+                                !relation.directed(),
+                                relation.derived(),
+                                relation.endpoints())
+                        : relation)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(served.kinds(), skewed)))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whether requires is directed");
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenAKindsListedFactIsFlipped() {
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<KindFacts> skewed = served.kinds().stream()
+                .map(kind -> kind.kind() == NodeKind.TEMPLATE
+                        ? new KindFacts(
+                                kind.kind(),
+                                kind.plural(),
+                                kind.artifact(),
+                                kind.activatable(),
+                                kind.authoredInGraphs(),
+                                !kind.listed())
+                        : kind)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(skewed, served.relations())))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whether template is listed");
+    }
+
+    /**
+     * The taxonomy holds every kind of {@code file-kinds.yaml}'s {@code node_kinds} in its order, each with the plural
+     * {@code fragment_kinds} names it by (the kernel's plural for the two kinds no fragment names), its artifact and
+     * activation facts as {@code artifact_kinds} and {@link ArtifactKind} hold them and whether the pack artifact list
+     * serves it ({@link ArtifactReadService#listed()}); and every {@link RelationType}, then the tension, each held as
+     * the model holds it, with the kernel's direction, derivation and endpoints ({@link RelationType}, {@link Tension}).
+     */
+    private static void assertTaxonomyIsTheModel(Taxonomy taxonomy) {
+        PackFileKind table = PackFileKind.bundled();
+        assertThat(taxonomy.kinds().stream().map(kind -> kind.kind().token()).toList())
+                .as("the kinds, in file-kinds.yaml node_kinds order")
+                .containsExactlyElementsOf(table.nodeKinds());
+        Map<String, String> pluralOf = new java.util.HashMap<>();
+        table.fragmentKinds().forEach((plural, token) -> pluralOf.put(token, plural));
+        List<String> artifactKinds = fileKindsArtifactKinds();
+        for (KindFacts kind : taxonomy.kinds()) {
+            String token = kind.kind().token();
+            Optional<ArtifactKind> artifact = ArtifactKind.fromToken(token);
+            assertThat(kind.plural())
+                    .as("the plural of " + token)
+                    .isEqualTo(pluralOf.getOrDefault(
+                            token, artifact.map(ArtifactKind::plural).orElse("")));
+            assertThat(kind.artifact())
+                    .as("whether " + token + " is an artifact")
+                    .isEqualTo(artifactKinds.contains(token));
+            assertThat(kind.activatable())
+                    .as("whether " + token + " is activatable")
+                    .isEqualTo(artifact.map(ArtifactKind::activatable).orElse(false));
+            assertThat(kind.authoredInGraphs())
+                    .as("whether " + token + " is authored in graphs")
+                    .isEqualTo(pluralOf.containsKey(token));
+            assertThat(kind.listed())
+                    .as("whether " + token + " is listed, so its row links the pack artifact list")
+                    .isEqualTo(artifact.filter(ArtifactReadService.listed()::contains)
+                            .isPresent());
+        }
+        assertThat(taxonomy.relations().stream().map(RelationFacts::relation).toList())
+                .as("the relations, in RelationType order, then the tension")
+                .containsExactlyElementsOf(Stream.concat(
+                                Arrays.stream(RelationType.values()).map(RelationType::token),
+                                Stream.of(TENSION_SPELLING))
+                        .toList());
+        for (RelationFacts relation : taxonomy.relations()) {
+            Optional<RelationType> type = RelationType.fromToken(relation.relation());
+            String name = relation.relation();
+            assertThat(relation.heldAs())
+                    .as("how " + name + " is held")
+                    .isEqualTo(type.isPresent() ? HeldAs.RELATIONSHIP : HeldAs.TENSION);
+            assertThat(relation.directed())
+                    .as("whether " + name + " is directed")
+                    .isEqualTo(type.map(RelationType::directionality).orElseGet(Tension::directionality)
+                            == Directionality.DIRECTED);
+            assertThat(relation.derived())
+                    .as("whether " + name + " is derived")
+                    .isEqualTo(type.map(RelationType::derived).orElseGet(Tension::derived));
+            Set<EndpointPair> expected = type.map(RelationType::endpoints).orElseGet(Tension::allowedEndpoints);
+            assertThat(relation.endpoints())
+                    .as("the endpoints of " + relation.relation())
+                    .isNotEmpty()
+                    .doesNotHaveDuplicates()
+                    .containsExactlyInAnyOrderElementsOf(expected);
+        }
+    }
+
+    private static List<String> fileKindsArtifactKinds() {
+        try (InputStream in = VocabularyEqualityTest.class.getResourceAsStream("/packs/file-kinds.yaml")) {
+            Object table = Yaml.load(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            return ((List<?>) ((Map<?, ?>) table).get("artifact_kinds"))
+                    .stream().map(String::valueOf).toList();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     /** A blocking code that projects onto a refusal; the validate-only codes do not and throw. */

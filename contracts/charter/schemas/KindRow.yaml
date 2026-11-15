@@ -1,0 +1,57 @@
+title: KindRow
+description: >-
+  One node kind of the model, with its facts: its plural, whether it is an artifact, whether an activation selects
+  or denies it, and whether a graph document may name it. A kind the pack artifact list serves links that list as a
+  template; a kind no list serves has no link.
+type: object
+additionalProperties: false
+required:
+  - kind
+  - plural
+  - artifact
+  - activatable
+  - authoredInGraphs
+  - _links
+properties:
+  kind:
+    description: The kind's token, as URNs and graph documents write it.
+    allOf:
+      - $ref: TaxonomyKind.yaml
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.token
+  plural:
+    type: string
+    description: >-
+      The plural a fragment node names the kind by and an activated_<plural> key uses, for example agent_profiles;
+      actions for action.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.plural
+  artifact:
+    type: boolean
+    description: Whether the kind is an artifact kind; false only for action, a node with no artifact of its own.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.artifactKind
+  activatable:
+    type: boolean
+    description: >-
+      Whether an activation selects, denies or requires the kind; false for action and for the kinds that resolve
+      specially or are in force with their pack (asset, template, guard, lifecycle).
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
+      symbol: ArtifactKind.activatable
+  authoredInGraphs:
+    type: boolean
+    description: >-
+      Whether a graph document or a relationship registration may name the kind as a node or an edge endpoint; false
+      for guard and lifecycle (#156).
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.authoredInGraphs
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java
+  symbol: KindTaxonomyReadService.KindFacts

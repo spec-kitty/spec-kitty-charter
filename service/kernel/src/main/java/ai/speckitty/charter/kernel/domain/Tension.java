@@ -2,6 +2,7 @@ package ai.speckitty.charter.kernel.domain;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Two rules pull against each other: the {@code tension} relationship of ADR-0028 (Decision 2). It is authored, never
@@ -62,6 +63,37 @@ public record Tension(
      */
     public Tension(Urn from, Urn to, Optional<String> when, Optional<String> rationale) {
         this(from, Optional.empty(), to, Optional.empty(), when, rationale);
+    }
+
+    /**
+     * The kinds a tension may join (ADR-0064 decision 13, the {@code in_tension_with} row): guidance on both sides. It
+     * is the table {@link EndpointRule#bindTension} judges a tension by.
+     *
+     * @return the allowed pairs, in the order of {@link NodeKind}
+     */
+    public static Set<EndpointPair> allowedEndpoints() {
+        return EndpointTable.tension();
+    }
+
+    /**
+     * The orientation a tension carries: it is the one symmetric relation (ADR-0036 decision 4), so either orientation
+     * states the same tension. Its identity still keeps the orientation as written, which is the canonical one the same
+     * decision names.
+     *
+     * @return {@link Directionality#BIDIRECTIONAL}
+     */
+    public static Directionality directionality() {
+        return Directionality.BIDIRECTIONAL;
+    }
+
+    /**
+     * Whether a tension is only ever derived from an artifact's own field: it is not, a tension is authored and never
+     * derived from the value impacts of either rule (ADR-0028 decision 2).
+     *
+     * @return {@code false}
+     */
+    public static boolean derived() {
+        return false;
     }
 
     /**

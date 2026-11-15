@@ -48,8 +48,8 @@ public class InfoController implements ServiceApi {
     }
 
     /**
-     * The API root: links only, to itself, the info, the offering, a pack's artifacts (an RFC 6570 template) and the
-     * contract document. It reads no pack file, so it carries no {@code Charter-Source-Fingerprint}.
+     * The API root: links only, to itself, the info, the offering, the kind taxonomy, a pack's artifacts (an RFC 6570
+     * template) and the contract document. It reads no pack file, so it carries no {@code Charter-Source-Fingerprint}.
      *
      * @return the root
      */
@@ -59,6 +59,7 @@ public class InfoController implements ServiceApi {
         root.put(Relation.SELF, links.link());
         root.put(Relation.INFO, links.link(INFO));
         root.put(Relation.OFFERING, links.link("offering"));
+        root.put(Relation.KINDS, links.link("offering", "kinds"));
         root.put(Relation.ARTIFACTS, links.templated("{?kind}", "packs", "{packId}", "artifacts"));
         root.put(Relation.ACTIVATIONS, links.link(Hypermedia.Method.POST, "activations"));
         root.put(Relation.SERVICE_DESC, links.link(OPENAPI));

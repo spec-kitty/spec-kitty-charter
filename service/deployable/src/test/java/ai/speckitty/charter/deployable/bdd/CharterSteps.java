@@ -52,7 +52,7 @@ public class CharterSteps {
      * registration jobs, not from a pack file, so it carries none (decision DM-01M6TV6VDNHNCVWRHHC74WATV0).
      */
     private static final Pattern UNFINGERPRINTED =
-            Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
+            Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+|/offering/kinds");
 
     private static final MediaType MARKDOWN = new MediaType("text", "markdown");
     /**
@@ -215,7 +215,8 @@ public class CharterSteps {
      * {@code Charter-Source-Fingerprint}, the digest that read verified: for {@code /info} the {@code sourceFingerprint}
      * of its own body, for another read the one {@code /info} gave right after it (the inputs had not changed). Every
      * other {@code GET} answer carries none: a refusal, the root, which reads no pack file, {@code /openapi.yaml},
-     * whose body is YAML, and the activation document and closure reads ({@link #UNFINGERPRINTED}). A write (a POST or PUT) is exempt: it reports the pack's post-write revision as an
+     * whose body is YAML, and the activation document and closure reads and the kind taxonomy, which reads no pack file
+     * ({@link #UNFINGERPRINTED}). A write (a POST or PUT) is exempt: it reports the pack's post-write revision as an
      * {@code ETag}, not a read's source fingerprint (ADR-0026), so the fingerprint header is simply not part of a
      * write's answer and is neither required nor forbidden on it.
      */
@@ -393,6 +394,43 @@ public class CharterSteps {
     @Then("the response header {string} is a sha256 digest")
     public void digestHeader(String name) {
         assertThat(http.response().getHeader(name)).isNotNull().matches(SHA256);
+    }
+
+    /** The {@code ETag} of a read whose tag is the digest of its body: the SHA-256 of the bytes served, quoted. */
+    @Then("the response header {string} is the quoted sha256 digest of the response body")
+    public void digestOfBody(String name) throws Exception {
+        byte[] body = http.response().getContentAsByteArray();
+        String digest = java.util.HexFormat.of()
+                .formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(body));
+        assertThat(http.response().getHeader(name)).isEqualTo("\"sha256:" + digest + "\"");
+    }
+
+    /** The values of one field of every element of an array of the answer, in order, one per line. */
+    @Then("the field {string} of the elements of {string} is, in order:")
+    public void fieldOfEveryElement(String field, String member, String expected) throws Exception {
+        JsonNode elements = JSON.readTree(http.body()).path(member);
+        assertThat(elements.isArray())
+                .as("%s is an array: %s", member, http.body())
+                .isTrue();
+        assertThat(elements.valueStream()
+                        .map(element -> element.path(field).asString())
+                        .toList())
+                .as("the %s of every element of %s", field, member)
+                .isEqualTo(expected.lines().map(String::strip).toList());
+    }
+
+    /** Every element of an array of the answer holds a non-empty array under {@code field}. */
+    @Then("every element of {string} has a non-empty {string}")
+    public void everyElementHasNonEmpty(String member, String field) throws Exception {
+        JsonNode elements = JSON.readTree(http.body()).path(member);
+        assertThat(elements.isArray() && !elements.isEmpty())
+                .as("the answer has elements in %s: %s", member, http.body())
+                .isTrue();
+        elements.valueStream()
+                .forEach(element -> assertThat(element.path(field).isArray()
+                                && !element.path(field).isEmpty())
+                        .as("%s of %s is a non-empty array", field, element)
+                        .isTrue());
     }
 
     @When("I remember the response body")
@@ -588,6 +626,16 @@ public class CharterSteps {
                 .as("the link %s is templated: %s", relation, link)
                 .isTrue();
         http.get(belowBase(expand(linkOf(JSON.readTree(http.body()), relation), values.asMap())));
+    }
+
+    /** Follows the templated link {@code relation} of the element at {@code index} of the array {@code member}. */
+    @When("I follow the templated link {string} of the element {int} of {string} with:")
+    public void followElementTemplated(String relation, int index, String member, DataTable values) throws Exception {
+        JsonNode element = JSON.readTree(http.body()).path(member).path(index);
+        assertThat(element.path(LINKS).path(relation).path("templated").asBoolean(false))
+                .as("the link %s of element %d of %s is templated: %s", relation, index, member, element)
+                .isTrue();
+        http.get(belowBase(expand(linkOf(element, relation), values.asMap())));
     }
 
     /**
