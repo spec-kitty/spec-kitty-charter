@@ -262,7 +262,8 @@ public final class EdgeIndex implements ComposeResolver {
         }
         Place winner =
                 Objects.requireNonNull(view.winners.get(judged(lost.get()).urn()), "a lost place has a winner");
-        return edge.qualified(edge.fromPack(), Optional.of(packOf(winner).descriptor().name()));
+        return edge.qualified(
+                edge.fromPack(), Optional.of(packOf(winner).descriptor().name()));
     }
 
     /** Refuses an {@code overrides} edge that, re-pointed to the winner, ends at its own source (C36, A12). */

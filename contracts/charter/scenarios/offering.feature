@@ -368,7 +368,9 @@ Feature: The offering lists the configured packs in force
 
   # R18 (#112): the kind taxonomy is the model's, so it is the same whatever packs are configured.
   Scenario: The kind taxonomy lists every kind and every relation, each relation with the kinds it may connect
-    The kinds are the model's node kinds in their order, guard and lifecycle among them and no retired kind; the
+    The kinds are the model's node kinds in their order, guard and lifecycle among them and no retired kind, with
+    glossary_context, whose artifact kind is glossary, and term, only ever the target of a vocabulary edge, which has
+    no plural and stands for no artifact kind (#106); the
     relations are the relation types in their order, then in_tension_with, and none of the retired impacts, replaces
     or delegates_to. Every relation names at least one pair of kinds it may connect. The
     answer reads no pack file, so it carries no fingerprint, and its ETag is the digest of the body it serves.
@@ -387,7 +389,8 @@ Feature: The offering lists the configured packs in force
       paradigm
       procedure
       agent_profile
-      glossary_pack
+      glossary_context
+      term
       skill
       anti_pattern
       asset
@@ -419,17 +422,25 @@ Feature: The offering lists the configured packs in force
     And the field at "/relations/13/heldAs" is "tension"
     And the field at "/relations/12/derived" is true
     And the field at "/relations/12/endpoints/0/source" is "guard"
-    And the field at "/kinds/12/artifact" is false
-    And the field at "/kinds/14/declarableInGraphs" is false
-    And the field at "/kinds/14/edgeTarget" is false
-    And the field at "/kinds/12/declarableInGraphs" is true
-    And the field at "/kinds/12/edgeTarget" is true
-    And the field at "/kinds/12/artifactKind" is absent
-    And the field at "/kinds/12/plural" is "actions"
-    And the field at "/kinds/13/artifactKind" is "mission_type"
+    And the field at "/kinds/13/artifact" is false
+    And the field at "/kinds/15/declarableInGraphs" is false
+    And the field at "/kinds/15/edgeTarget" is false
+    And the field at "/kinds/13/declarableInGraphs" is true
+    And the field at "/kinds/13/edgeTarget" is true
+    And the field at "/kinds/13/artifactKind" is absent
+    And the field at "/kinds/13/plural" is "actions"
+    And the field at "/kinds/14/artifactKind" is "mission_type"
+    And the field at "/kinds/7/artifactKind" is "glossary"
+    And the field at "/kinds/7/plural" is "glossaries"
+    And the field at "/kinds/8/artifact" is false
+    And the field at "/kinds/8/declarableInGraphs" is false
+    And the field at "/kinds/8/edgeTarget" is true
+    And the field at "/kinds/8/plural" is absent
+    And the field at "/kinds/8/artifactKind" is absent
     And the field at "/kinds/0/_links/artifacts/href" is "/api/v1/packs/{packId}/artifacts?kind=directive"
     And the field at "/kinds/0/_links/artifacts/templated" is true
-    And the field at "/kinds/12/_links/artifacts" is absent
+    And the field at "/kinds/13/_links/artifacts" is absent
+    And the field at "/kinds/8/_links/artifacts" is absent
     And the field at "/_links/self/href" is "/api/v1/offering/kinds"
 
   Scenario: A kind's artifacts template, expanded with a configured pack, answers that pack's artifacts of the kind

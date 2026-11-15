@@ -26,15 +26,15 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
- * SC-001 (#106): a client reads every one of the 139 terms of the example vocabulary by its address, one read each, in
+ * SC-001 (#106): a client reads every one of the 138 terms of the example vocabulary by its address, one read each, in
  * a pack. The term ids and names come from the file itself, not from a read, and each is read through the production
  * {@link GlossaryReads#term} path over the real store of charter's example packs (ADR-0070). The positive control is
- * the count: the file holds 139 terms, and a term missing from the read, or one it cannot answer, fails the test.
+ * the count: the file holds 138 terms, and a term missing from the read, or one it cannot answer, fails the test.
  */
 class ExampleVocabularyReadTest {
 
     private static final String CONTEXT = "spec-kitty-core";
-    private static final int TERMS = 139;
+    private static final int TERMS = 138;
     private static final Pattern TERM = Pattern.compile("(?m)^- id: (\\S+)\\n  name: (.+)$");
 
     /** The adapter over the packs slice's own read, over the real store of the three example packs. */

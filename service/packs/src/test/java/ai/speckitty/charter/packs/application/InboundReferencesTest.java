@@ -337,8 +337,7 @@ class InboundReferencesTest {
                         T_FILE,
                         "tactic:t-one"),
                 new NearMiss(
-                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE,
-                        "directive:A_ONE"));
+                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE, "directive:A_ONE"));
     }
 
     @ParameterizedTest(name = "{0} naming the removed artifact")

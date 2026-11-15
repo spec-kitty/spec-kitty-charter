@@ -39,15 +39,15 @@ import org.junit.jupiter.api.Test;
  * NFR-005 end to end over charter's example vocabulary (ADR-0070): the three vocabulary reads of an activation that
  * holds the built-in example pack's {@code spec-kitty-core} in force compose the application ring, the production
  * {@link PacksVocabulary} adapter and the packs slice's own read over the real store, and each reads the winning pack
- * exactly once, however many terms the context holds. The positive control is the size: all 139 terms of the file are
- * served, and the projections are of those 139 terms. The activations port is the one stub: it names the context in
+ * exactly once, however many terms the context holds. The positive control is the size: all 138 terms of the file are
+ * served, and the projections are of those 138 terms. The activations port is the one stub: it names the context in
  * force and the source fingerprint, as one activation session would.
  */
 class ExampleVocabularyInForceTest {
 
     private static final String FINGERPRINT = "sha256:" + "a".repeat(64);
     private static final String TAG = "sha256:" + "e".repeat(64);
-    private static final int TERMS = 139;
+    private static final int TERMS = 138;
     private static final PackIdentifier BUILT_IN = new PackIdentifier(ExamplePacks.BUILT_IN);
     private static final Held KITTY = new Held("spec-kitty-core", BUILT_IN, PackLevel.BUILT_IN, "locked");
 

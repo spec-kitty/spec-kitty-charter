@@ -26,7 +26,8 @@ import org.junit.jupiter.api.io.TempDir;
  *       refuses the retired files by name, in {@code removed-routes.feature}, which pins the retired routes, in
  *       {@code registration/retired-files.feature}, which pins the refusal of the retired files at registration, and in
  *       {@code activation-retired-keys.feature}, which pins the refusal of the retired charter keys at the activation
- *       seam.
+ *       seam, and in {@code packs/conformance/classifier-cases.yaml}, whose cases pin each retired rule of the
+ *       classifier (#559).
  * </ul>
  *
  * <p>A positive control plants a token in a scratch tree and checks the same scan finds it, so a scan that reads
@@ -148,7 +149,8 @@ class RetiredNamesScanTest {
     }
 
     /**
-     * The change fragments, the changelogs and the pins of the retired routes and files record the retirement by name.
+     * The change fragments, the changelogs and the pins of the retired routes and files, the classifier cases among
+     * them, record the retirement by name.
      */
     private static boolean isRecordOfTheRetirement(String relative) {
         return relative.startsWith("changes/")
@@ -156,7 +158,8 @@ class RetiredNamesScanTest {
                 || relative.endsWith("CHANGELOG.md")
                 || relative.endsWith("scenarios/removed-routes.feature")
                 || relative.endsWith("scenarios/registration/retired-files.feature")
-                || relative.endsWith("scenarios/activation-retired-keys.feature");
+                || relative.endsWith("scenarios/activation-retired-keys.feature")
+                || relative.endsWith("packs/conformance/classifier-cases.yaml");
     }
 
     /** What a build writes beside the sources is no source: it is generated, possibly from an older checkout. */

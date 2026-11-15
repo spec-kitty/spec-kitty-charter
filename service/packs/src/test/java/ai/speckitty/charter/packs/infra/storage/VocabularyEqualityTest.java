@@ -428,6 +428,39 @@ class VocabularyEqualityTest {
     }
 
     @Test
+    void theTaxonomyServesTheGlossaryContextAndTheTermAsTheGlossaryWorkModelsThem() {
+        // #106: the glossary context stands for the artifact kind glossary under its own URN token; the term is only
+        // ever the target of a vocabulary edge, so it has no plural, stands for no artifact kind and is never declared.
+        Map<NodeKind, KindFacts> byKind = new java.util.EnumMap<>(NodeKind.class);
+        new KindTaxonomyReadService().taxonomy().kinds().forEach(kind -> byKind.put(kind.kind(), kind));
+
+        assertThat(byKind.get(NodeKind.GLOSSARY_CONTEXT))
+                .extracting(
+                        KindFacts::plural,
+                        KindFacts::artifactKind,
+                        KindFacts::declarableInGraphs,
+                        KindFacts::edgeTarget,
+                        KindFacts::listed)
+                .containsExactly(Optional.of("glossaries"), Optional.of(ArtifactKind.GLOSSARY), true, true, true);
+        assertThat(byKind.get(NodeKind.TERM))
+                .extracting(
+                        KindFacts::plural,
+                        KindFacts::artifactKind,
+                        KindFacts::artifact,
+                        KindFacts::activatable,
+                        KindFacts::declarableInGraphs,
+                        KindFacts::edgeTarget,
+                        KindFacts::listed)
+                .containsExactly(Optional.empty(), Optional.empty(), false, false, false, true, false);
+        assertThat(RelationType.VOCABULARY.endpoints())
+                .contains(
+                        new EndpointPair(NodeKind.GLOSSARY_CONTEXT, NodeKind.TERM),
+                        new EndpointPair(NodeKind.GLOSSARY_CONTEXT, NodeKind.GLOSSARY_CONTEXT),
+                        new EndpointPair(NodeKind.DIRECTIVE, NodeKind.TERM))
+                .noneMatch(pair -> pair.source() == NodeKind.TERM);
+    }
+
+    @Test
     void theTaxonomyCheckFailsWhenOneKindsPluralIsSkewed() {
         // Positive control: the same check fails on a taxonomy whose directive row names another plural.
         Taxonomy served = new KindTaxonomyReadService().taxonomy();
@@ -595,9 +628,52 @@ class VocabularyEqualityTest {
         Map<String, String> pluralOf = new java.util.HashMap<>();
         table.fragmentKinds().forEach((plural, token) -> pluralOf.put(token, plural));
         List<String> artifactKinds = fileKindsArtifactKinds();
-        Set<String> edgeTargets;
+        Set<String> edgeTargets = shardEdgeTargets();
+        for (KindFacts kind : taxonomy.kinds()) {
+            assertKindIsTheModel(kind, pluralOf, artifactKinds, edgeTargets);
+        }
+        assertRelationsAreTheModel(taxonomy);
+    }
+
+    /** One row of the taxonomy against the file-kind table, the shard schema's edge target and the domain. */
+    private static void assertKindIsTheModel(
+            KindFacts kind, Map<String, String> pluralOf, List<String> artifactKinds, Set<String> edgeTargets) {
+        String token = kind.kind().token();
+        Optional<ArtifactKind> artifact = kind.kind().artifactKind();
+        assertThat(kind.plural())
+                .as("the plural of " + token)
+                .isEqualTo(Optional.ofNullable(pluralOf.get(token)).or(() -> artifact.map(ArtifactKind::plural)));
+        // A node kind stands for the artifact kind of its token, or, when the tokens differ (glossary_context
+        // stands for glossary, ADR-0053 decision 13), for the artifact kind of its fragment plural.
+        Optional<String> expectedArtifact = artifactKinds.contains(token)
+                ? Optional.of(token)
+                : Optional.ofNullable(pluralOf.get(token))
+                        .flatMap(ArtifactKind::fromPlural)
+                        .map(ArtifactKind::token)
+                        .filter(artifactKinds::contains);
+        assertThat(kind.artifactKind().map(ArtifactKind::token))
+                .as("the artifact kind of " + token)
+                .isEqualTo(expectedArtifact);
+        assertThat(kind.artifact()).as("whether " + token + " is an artifact").isEqualTo(expectedArtifact.isPresent());
+        assertThat(kind.activatable())
+                .as("whether " + token + " is activatable")
+                .isEqualTo(artifact.map(ArtifactKind::activatable).orElse(false));
+        assertThat(kind.declarableInGraphs())
+                .as("whether " + token + " is declarable in graphs: a fragment names it by a plural")
+                .isEqualTo(pluralOf.containsKey(token));
+        assertThat(kind.edgeTarget())
+                .as("whether " + token + " is an edge target: the shard schema's edge target admits it")
+                .isEqualTo(edgeTargets.contains(token));
+        assertThat(kind.listed())
+                .as("whether " + token + " is listed, so its row links the pack artifact list")
+                .isEqualTo(
+                        artifact.filter(ArtifactReadService.listed()::contains).isPresent());
+    }
+
+    /** The node kinds the shard schema's edge target admits. */
+    private static Set<String> shardEdgeTargets() {
         try {
-            edgeTargets = alternation(schema("graph-shard")
+            return alternation(schema("graph-shard")
                     .get("$defs")
                     .get("DRGEdge")
                     .get("properties")
@@ -607,32 +683,10 @@ class VocabularyEqualityTest {
         } catch (IOException e) {
             throw new java.io.UncheckedIOException(e);
         }
-        for (KindFacts kind : taxonomy.kinds()) {
-            String token = kind.kind().token();
-            Optional<ArtifactKind> artifact = kind.kind().artifactKind();
-            assertThat(kind.plural())
-                    .as("the plural of " + token)
-                    .isEqualTo(Optional.ofNullable(pluralOf.get(token)).or(() -> artifact.map(ArtifactKind::plural)));
-            assertThat(kind.artifactKind().map(ArtifactKind::token))
-                    .as("the artifact kind of " + token)
-                    .isEqualTo(artifactKinds.contains(token) ? Optional.of(token) : Optional.empty());
-            assertThat(kind.artifact())
-                    .as("whether " + token + " is an artifact")
-                    .isEqualTo(artifactKinds.contains(token));
-            assertThat(kind.activatable())
-                    .as("whether " + token + " is activatable")
-                    .isEqualTo(artifact.map(ArtifactKind::activatable).orElse(false));
-            assertThat(kind.declarableInGraphs())
-                    .as("whether " + token + " is declarable in graphs: a fragment names it by a plural")
-                    .isEqualTo(pluralOf.containsKey(token));
-            assertThat(kind.edgeTarget())
-                    .as("whether " + token + " is an edge target: the shard schema's edge target admits it")
-                    .isEqualTo(edgeTargets.contains(token));
-            assertThat(kind.listed())
-                    .as("whether " + token + " is listed, so its row links the pack artifact list")
-                    .isEqualTo(artifact.filter(ArtifactReadService.listed()::contains)
-                            .isPresent());
-        }
+    }
+
+    /** Every relation of the taxonomy, then the tension, held, directed, derived and connected as the kernel says. */
+    private static void assertRelationsAreTheModel(Taxonomy taxonomy) {
         assertThat(taxonomy.relations().stream().map(RelationFacts::relation).toList())
                 .as("the relations, in RelationType order, then the tension")
                 .containsExactlyElementsOf(Stream.concat(

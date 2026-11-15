@@ -24,9 +24,10 @@
 #
 # How a path is classified. Globs are matched case-sensitively, except where step 6 says otherwise; `*` matches within
 # one segment, `**/` matches zero or more whole segments, every other character is literal.
-#   1. `files`, then `exclusions`, then `retired`: the first rule that matches, in table order, decides. Within
-#      `files` table order matters: `core/presets/a.tactic.yaml` is a tactic, because `**/*.tactic.yaml` comes before
-#      `*/presets/*.yaml`.
+#   1. `files`, then `exclusions`, then `retired`: the first rule that matches, in table order, decides, except that a
+#      `retired` rule beats a `files` rule that also matches, unless an `exclusions` rule matches too:
+#      `core/mission_step_contract.graph.yaml` is retired, not a graph shard. Within `files` table order matters:
+#      `core/presets/a.tactic.yaml` is a tactic, because `**/*.tactic.yaml` comes before `*/presets/*.yaml`.
 #   2. `payloads`: the first that matches decides (a `mapped` payload, with no schema).
 #   3. A root case variant: a root rule is a `files` or `retired` rule whose glob is `*/<name>` with no `*` or `/` in
 #      `<name>`. A path `<pack>/<other>` where `<other>` equals `<name>` ignoring letter case is `retired` under that
@@ -47,7 +48,6 @@ cases:
   - {path: core/paradigms/a.paradigm.yaml, expect: mapped, rule: "**/*.paradigm.yaml", kind: paradigm, schema: schemas/paradigm.schema.json, content_form: yaml}
   - {path: core/procedures/a.procedure.yaml, expect: mapped, rule: "**/*.procedure.yaml", kind: procedure, schema: schemas/procedure.schema.json, content_form: yaml}
   - {path: core/agent-profiles/a.agent.yaml, expect: mapped, rule: "**/*.agent.yaml", kind: agent-profile, schema: schemas/agent-profile.schema.json, content_form: yaml}
-  - {path: core/step-contracts/a.step-contract.yaml, expect: mapped, rule: "**/*.step-contract.yaml", kind: mission-step-contract, schema: schemas/mission-step-contract.schema.json, content_form: yaml}
   - {path: core/assets/a.asset.yaml, expect: mapped, rule: "**/*.asset.yaml", kind: asset, schema: schemas/asset.schema.json, content_form: yaml}
   - {path: core/glossaries/a.glossary.yaml, expect: mapped, rule: "**/*.glossary.yaml", kind: glossary, schema: schemas/glossary.schema.json, content_form: yaml}
   - {path: core/skills/a.skill.yaml, expect: mapped, rule: "**/*.skill.yaml", kind: skill, schema: schemas/skill.schema.json, content_form: yaml}
@@ -105,6 +105,8 @@ cases:
   - {path: core/pack.md, expect: retired, rule: "*/pack.md"}
   - {path: core/PROVENANCE.md, expect: retired, rule: "*/PROVENANCE.md"}
   - {path: core/org-charter.yaml, expect: retired, rule: "*/org-charter.yaml"}
+  - {path: core/step-contracts/a.step-contract.yaml, expect: retired, rule: "**/*.step-contract.yaml"}
+  - {path: core/mission_step_contract.graph.yaml, expect: retired, rule: "**/mission_step_contract.graph.yaml"}
 
   # A root file that differs from a root rule's file only in letter case is refused under that rule.
   - {path: core/Readme.md, expect: retired, rule: "*/README.md"}

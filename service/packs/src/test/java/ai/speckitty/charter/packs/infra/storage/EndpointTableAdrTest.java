@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
  * the kernel answers ({@link RelationType#endpoints()}, {@link Tension#allowedEndpoints()}). The record and the code
  * cannot drift: a row changed in one and not the other fails here. The words of the table read as follows: {@code G}
  * is the six guidance kinds; "any kind authored in graphs" is every kind a graph fragment names by a plural
- * ({@code file-kinds.yaml}'s {@code fragment_kinds}); "the glossary kind" is {@code glossary_pack}; "activatable" is
+ * ({@code file-kinds.yaml}'s {@code fragment_kinds}), {@code glossary_context} among them; "activatable" is
  * {@link ArtifactKind#activatable()}; a parenthesis is a remark, and so is what follows the first comma after
  * {@code ↔}.
  */
@@ -153,7 +153,6 @@ class EndpointTableAdrTest {
                     PackFileKind.bundled().fragmentKinds().values().stream()
                             .map(token -> NodeKind.fromToken(token).orElseThrow())
                             .forEach(kinds::add);
-                case "the glossary kind" -> kinds.add(NodeKind.GLOSSARY_CONTEXT);
                 default ->
                     kinds.add(NodeKind.fromToken(word)
                             .orElseThrow(() -> new AssertionError("no kind is written \"" + word + "\"")));
