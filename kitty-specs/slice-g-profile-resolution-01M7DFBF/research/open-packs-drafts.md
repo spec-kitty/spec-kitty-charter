@@ -1,18 +1,21 @@
 # Open-packs drafts for slice G
 
 Slice G (spec-kitty-charter#538, ADR-0078) changes the model that `spec-kitty-open-packs` follows. This session
-cannot write to open-packs (charter.md; `docs/development/issue-tracker.md`, Rule 4), so each change is drafted here
-with an `open-packs#TBD-<slug>` placeholder. **These are drafts only.** The orchestrator files each one in
-`spec-kitty/spec-kitty-open-packs` as written, with the `follow-up` label, and replaces the placeholder with the issue
+cannot write to open-packs (charter.md; `docs/development/issue-tracker.md`, Rule 4), so each change is drafted here.
+**These are drafts only.** The orchestrator posts the update to open-packs#139 as a comment there (or edits its body);
+it is not a new issue. It files the new issue in `spec-kitty/spec-kitty-open-packs` as written, with the `follow-up`
+label and `priority:P3` (issue-tracker Rule 3), and replaces its `open-packs#TBD-<slug>` placeholder with the issue
 number here.
 
 Every count below was taken against open-packs at `1692a3b` (the charter's `openPacksRef`), on a scratch clone.
 
-| Placeholder | What it does | Size |
+| Target | What it does | Size |
 |---|---|---|
-| `open-packs#TBD-retire-sentinel` | `human-in-charge` moves to `performer: human`, `role: operator`; the role references follow | 1 profile, 5 references in 4 profiles, the docs that name the role |
-| `open-packs#TBD-specialization-acyclic` | The validator refuses a `specializes_from` cycle; the content already passes | Validator and docs; no content change |
-| `open-packs#TBD-role-pins` | Informational: `policy.yaml` may now pin a role | None required |
+| open-packs#139 (update, not a new issue) | `human-in-charge` moves to `performer: human`, `role: operator`; the role references follow | 1 profile, 5 references in 4 profiles, the docs that name the role |
+| `open-packs#TBD-specialization-acyclic` (new issue) | The validator refuses a `specializes_from` cycle; the content already passes | Validator and docs; no content change |
+
+`role_pins` in `policy.yaml` asks no open-packs work, so it has no draft of its own; the update to #139 mentions it
+for authors.
 
 ## Census (what slice G's schemas refuse in open-packs today)
 
@@ -31,20 +34,19 @@ does not change.
 ## Ordering
 
 Open-packs proves its content against `charter.lock.yaml` (ADR-0070), so the charter's `main` is not blocked. **The
-pin can move only with `open-packs#TBD-retire-sentinel` in the same pull request**: the new pin refuses
-`sentinel`, and the current pin refuses `performer`, so neither half passes CI alone. The other two drafts need no
-content change.
+pin can move only with the #139 change in the same pull request**: the new pin refuses `sentinel`, and the current
+pin refuses `performer`, so neither half passes CI alone. The other draft needs no content change.
 
 ---
 
-## open-packs#TBD-retire-sentinel
+## Update to open-packs#139
 
-**Title:** Retire `sentinel`: `human-in-charge` becomes `performer: human`, `role: operator`
+**Post as:** a comment on open-packs#139 (retire `human-in-charge`), or an edit of its body. Not a new issue.
 
-**Labels:** `follow-up`
+**Heading:** Retire `sentinel`: `human-in-charge` becomes `performer: human`, `role: operator`
 
-**Follows:** open-packs#139 (retire `human-in-charge`), which this issue carries out for the model slice G ruled.
-spec-kitty-charter#512, ADR-0078 decision 4.
+**Refs:** spec-kitty-charter#512, ADR-0078 decision 4. This update states how #139 is carried out under the model
+slice G ruled.
 
 ### Why
 
@@ -88,13 +90,22 @@ undeclared key. The role `operator` is reserved for a human-performed profile, a
   `human-in-charge` with `fit: primary`, and the fallback is never answered for `operator`.
 - No step of a mission type asks for `generic` (already true: 0 today).
 
+### For authors (no change asked)
+
+A pack's `policy.yaml` may now declare `role_pins: {<role>: <profile-id>}` (ADR-0078 decision 3). The pinned profile
+must be held in the pack's closure (`role_pin_unknown`) and fit the role as its `role` or an alt-role
+(`role_pin_not_fitting`). Two packs of one closure that pin one role to different profiles are refused
+(`role_pin_conflict`). A human-performed profile serves a role other than `operator` only through a pin: an org pack
+that wants every review done by a human pins `reviewer` to a human-performed profile that takes `reviewer`. No
+open-packs pack pins a role today, and none is asked to.
+
 ---
 
 ## open-packs#TBD-specialization-acyclic
 
 **Title:** Refuse a `specializes_from` cycle among agent profiles in the validator
 
-**Labels:** `follow-up`
+**Labels:** `follow-up`, `priority:P3`
 
 **Refs:** spec-kitty-charter#42, ADR-0078 decision 2.
 
@@ -120,22 +131,3 @@ language implementer shows the top-level fields it leaves absent from `implement
 Selection still judges each profile by its own declared fields. An author who does not want a field inherited
 declares it on the specialization.
 
----
-
-## open-packs#TBD-role-pins (informational)
-
-**Title:** A pack may pin a role in `policy.yaml` (`role_pins`)
-
-**Labels:** `follow-up`
-
-**Refs:** spec-kitty-charter#42, ADR-0030, ADR-0078 decision 3.
-
-Nothing to change; this records a capability. A pack's `policy.yaml` may declare `role_pins: {<role>: <profile-id>}`.
-The pinned profile must be held in the pack's closure (`role_pin_unknown`) and fit the role as its `role` or an
-alt-role (`role_pin_not_fitting`, with no exemption for a human-performed profile). Pins are tighten-only: two packs of
-one closure that pin one role to different profiles are refused (`role_pin_conflict`), whichever builds on the other.
-A pin narrows a role's candidates to the pinned profile and its specializations. A human-performed profile serves a
-role other than `operator` only through a pin.
-
-No open-packs pack pins a role today, and none is asked to. An org pack that wants every review done by a human would
-pin `reviewer` to a human-performed profile whose `role` or `alt-roles` take `reviewer`.

@@ -14,7 +14,8 @@
   `reason: not_selected`, and an ancestor (`specializes_from`) that is not in force is dropped and seeds
   nothing, which diverges from the cascade of the activation writes, which passes an ancestor through (operator ruling W1).
   The profile the walk starts from is exempt: it is answered whatever its state, and the state is on the read. The stored
-  winner is answered, and `enhances` is not resolved, so this is not the effective profile of #380. `_links` holds `self`
+  winner was answered when the operation was added; in this release `agentProfile` is the effective profile of #380
+  (see Breaking: the enhancers and the `specializes_from` ancestors are folded in). `_links` holds `self`
   (with `depth` when the request sent it), `artifact` (the pack-scoped read of the winner's pack) and `up` (the activation);
   an entry's `_links.artifact` is the pack-scoped read of its winner, for the kinds the generic artifact route serves. The
   refusals are judged in order: `activation_not_found`, then `artifact_not_found` for an id that no pack of the closure

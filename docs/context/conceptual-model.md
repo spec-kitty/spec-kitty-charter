@@ -301,7 +301,8 @@ specialize the pinned one also fit, so an org can refine it further, for example
 different parts of its structure. A pin restricts the candidates to the pinned profile and its
 specializations, and it is applied before the selection order runs. A specialization that survives
 is always more specialized than the pinned profile, so the pinned profile is never tied: it is the
-answer only when none of its specializations fits. A tie among its specializations returns every
+answer only when none of its specializations survives the filters and the tier, and then it is
+answered alone. A tie among its specializations returns every
 equal candidate and the client picks
 (ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decisions 8 and 9).
 

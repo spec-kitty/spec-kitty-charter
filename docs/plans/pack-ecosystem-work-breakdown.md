@@ -136,6 +136,7 @@ after ADR-0054.
 | C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 | #342 |
 | C12 | Render activated anti-patterns in review prompts instead of the hardcoded checklist | 0052 | S | none; may precede the cutover | #343 |
 | C13 | Make the switch gate block core's switch: the routing proxy reads `switch-gate.yaml` from the vendored `charter-scenarios.tar.gz` and refuses to route an operation to the service unless the register holds it `ready`, naming it; an operation with no entry is not switched (fail closed). Recorded 2026-11-12 from #72; not filed (issue-tracker Rule 5) | 0059 D1 (amended 2026-11-12), 0021 D5 | S | the proxy (roadmap step 6), contract 1.0.0 | none |
+| C14 | Adopt slice G's profile model: write `performer` instead of `sentinel`; regenerate `AgentProfile` and `EffectiveAgentProfileRead` from the contract; replace core's weighted profile selection with `selectAgentProfile` and `selectAgentProfileForStep`; drop core's own `resolve_profile` and `enhances` walks. Recorded 2026-11-15 from slice G (#573); not filed (issue-tracker Rule 5) | 0078 | M | contract release with slice G | none |
 
 Two upstream items sit outside both repositories: an issue on spec-kitty-events for generic step events (the notes'
 E4), and agreement there on who owns the lane names (ADR-0050 decision 21).

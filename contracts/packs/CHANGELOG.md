@@ -20,6 +20,10 @@ The first packs contract version, not yet released (#559).
 
 ### Added
 
+- Role pins (slice G, #42; ADR-0030, ADR-0078 decision 3): `policy.schema.json` gains `role_pins`, a map from a
+  role token (`^[a-z][a-z0-9-]*$`, never `generic`, at most 64 characters) to a profile id
+  (`^[a-z0-9][a-z0-9_-]*$`, 1 to 64 characters), in authored order. A pin is tighten-only along the closure; a roles
+  key (role locks) stays reserved and is refused as undeclared.
 - The packs contract as a versioned line of its own, published as a release
   (`contract-packs-v<version>`) with a checksum for every file.
 - Classifier conformance cases (`conformance/classifier-cases.yaml`): a pack file path and the
@@ -27,13 +31,16 @@ The first packs contract version, not yet released (#559).
   content form, `excluded`, `retired` or `unmodelled`), one case for every rule at least. The
   charter service runs them against its own classifier in CI.
 - `packs-contract/RELEASE.json` in the release archive: the version, the tag and the charter commit.
-- Role pins (slice G, #42; ADR-0030, ADR-0078 decision 3): `policy.schema.json` gains `role_pins`, a map from a
-  role token (`^[a-z][a-z0-9-]*$`, never `generic`, at most 64 characters) to a profile id
-  (`^[a-z0-9][a-z0-9_-]*$`, 1 to 64 characters), in authored order. A pin is tighten-only along the closure; a roles
-  key (role locks) stays reserved and is refused as undeclared.
 
 ### Changed
 
+- The agent profile's performer (slice G, #512; ADR-0078 decision 4): `agent-profile.schema.json` replaces
+  `sentinel` (boolean) with `performer` (`agent` or `human`, optional, no default). The role `operator` is reserved for
+  a human-performed profile: a profile whose `role` or `alt-roles` take it and that is not `performer: human` is
+  invalid, reported at `/role` or `/alt-roles/<n>`. There is no reader of `sentinel`: a profile that carries it is
+  refused as any undeclared key is.
+- A mission step's role (slice G, #446; ADR-0068 decision 4, ADR-0078): in `mission-type.schema.json` a step's
+  `role` is at most 64 characters and never the reserved `generic`, reported at `/steps/<n>/role`.
 - The artifact kind `glossary_pack` is replaced by `glossary` (#106; ADR-0049, ADR-0053): `glossary.schema.json`
   replaces `glossary-pack.schema.json`, and a glossary context lives at `glossaries/<id>.glossary.yaml`. A
   `*.glossary-pack.yaml` file is refused by name as retired. `file-kinds.yaml` gains the node kinds
@@ -58,14 +65,6 @@ The first packs contract version, not yet released (#559).
   `activated_mission_step_contracts`; `pack-manifest.schema.json` and `policy.schema.json` drop the kind
   `mission_step_contract`. `file-kinds.yaml` drops the node and artifact kind `mission_step_contract` and its
   `files` rule. There is no reader of the old shapes.
-
-- The agent profile's performer (slice G, #512; ADR-0078 decision 4): `agent-profile.schema.json` replaces
-  `sentinel` (boolean) with `performer` (`agent` or `human`, optional, no default). The role `operator` is reserved for
-  a human-performed profile: a profile whose `role` or `alt-roles` take it and that is not `performer: human` is
-  invalid, reported at `/role` or `/alt-roles/<n>`. There is no reader of `sentinel`: a profile that carries it is
-  refused as any undeclared key is.
-- A mission step's role (slice G, #446; ADR-0068 decision 4, ADR-0078): in `mission-type.schema.json` a step's
-  `role` is at most 64 characters and never the reserved `generic`, reported at `/steps/<n>/role`.
 
 ### Removed
 

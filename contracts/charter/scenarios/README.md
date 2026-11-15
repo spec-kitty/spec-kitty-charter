@@ -431,8 +431,8 @@ from ready to held, is a breaking change of the contract.
   descriptor declares, `prompt_slot_not_empty` only behind the descriptor's `schema_version: "1.0"` gate, each at the
   prompt file and beside its passing twin.
 - `profiles.feature`: the refusal of an agent profile enhancement that would drop fields of the profile it enhances
-  (`PR-CHARTER-REFUSAL-001`), `@WIP` until the effective profile is built (#380); its header states the provisional
-  target answer.
+  (`PR-CHARTER-REFUSAL-001`), on the effective profile read (#380, ADR-0078); it carries `@contract` and the
+  promise is wired.
 
 ## Registration steps
 
@@ -492,7 +492,7 @@ vocabulary above.
 - `@contract`: the scenario is part of the charter contract. The suite runs only scenarios with
   this tag, so a file placed here is not picked up until it is bound and tagged. A file whose steps are not bound
   carries no `@contract`: only `@WIP`, plus its cluster's tag for the four cluster folders (`@registration`,
-  `@trust`, `@integrity`, `@distribution`). `profiles.feature` carries `@WIP` alone. The two files of the whole-pack
+  `@trust`, `@integrity`, `@distribution`). The two files of the whole-pack
   registration (`registration/whole-pack-registration.feature` and `pack-removal.feature`) are the exception: they carry
   `@contract` on the feature, as `activation-ruling-changes.feature` does, and tag each scenario `@WIP` until the work
   package that serves it binds its steps and removes the tag (`pack-removal.feature` is bound).

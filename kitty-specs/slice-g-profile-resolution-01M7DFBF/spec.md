@@ -177,7 +177,7 @@ role answers the fallback, since any role may act.
   The depth is the longest chain. A `specializes_from` cycle is refused at registration (`specialization_cycle`).
 - `routing-priority` absent: 50, the schema default.
 - A pin whose profile is out of force under the activation: the pin narrows to its in-force specializations, or to
-  nothing. With nothing left, the fallback answers for a non-`operator` role. *(Ruled: D3.)*
+  nothing. With nothing left, the fallback answers for a non-`operator` role. *(Ruled: D3.)* (deferred: the build answers the fallback; ADR-0078, Known gap)
 - A conditional ETag on the selection read: `304` when unchanged, as for the other effective reads.
 
 ## Requirements *(mandatory)*
