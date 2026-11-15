@@ -2,13 +2,14 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,20 +27,17 @@ public final class StepEnhancement implements CharterArtifact {
     /** The one schema version of the shape. */
     public static final String SCHEMA_VERSION = "1.0";
 
-    private static final Pattern ID = Pattern.compile("^[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+$");
-    private static final Pattern SLOT = Pattern.compile("^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$");
-
     private static final ModularRuleset<StepEnhancement> RULES = ModularRuleset.<StepEnhancement>emptyRules()
             .must(Constraints.of(
-                    "A step enhancement identifier must match ^[a-z][a-z0-9]*(-[a-z0-9]+)*$.",
-                    enhancement -> ID.matcher(enhancement.id).matches()))
+                    "A step enhancement identifier must match ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ and be at most 64 characters.",
+                    enhancement -> IdentifierGrammar.isLetterFirstSlug(enhancement.id)))
             .must(Constraints.of(
                     "A step enhancement needs the schema version " + SCHEMA_VERSION + ".",
                     enhancement -> enhancement.schemaVersion.equals(SCHEMA_VERSION)))
             .must(Constraints.of(
-                    "A step enhancement's slot must match ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$.",
+                    "A step enhancement's slot must match " + SlotId.GRAMMAR + ", each part at most 64 characters.",
                     enhancement -> enhancement.promptFragments.stream()
-                            .allMatch(entry -> SLOT.matcher(entry.slot()).matches())));
+                            .allMatch(entry -> SlotId.tryParse(entry.slot()).isPresent())));
 
     /**
      * One prompt fragment the enhancement fills: the slot it fills and the companion that holds the text.

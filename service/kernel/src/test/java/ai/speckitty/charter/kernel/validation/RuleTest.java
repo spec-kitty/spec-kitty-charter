@@ -53,6 +53,24 @@ class RuleTest {
     }
 
     @Test
+    void aDescribedSharedRuleStatesItsBreachInTheCallersWordsAndKeepsItsPredicateCodeAndLocation() {
+        Constraint<String> named = Constraints.notBlank().described("A shelf needs a label that is not blank.");
+
+        Reason breached = named.applyTo(" ");
+        assertThat(breached.isFailing()).isTrue();
+        assertThat(breached.rule()).isEqualTo("A shelf needs a label that is not blank.");
+        assertThat(breached.detail()).isEqualTo("A shelf needs a label that is not blank.");
+        assertThat(breached.code()).isEqualTo(ReasonCode.INVARIANT);
+        assertThat(named.applyTo(null).isFailing()).isTrue();
+        // control: the shared rule is unchanged, and the described one still holds for a label
+        assertThat(Constraints.notBlank().applyTo(" ").detail()).isEqualTo("mustn't be blank");
+        assertThat(named.applyTo("north").isPassing()).isTrue();
+        // a detail set before or after the description still wins over it
+        assertThat(titled.described("titled").applyTo(new Book("b.md", " ")).detail())
+                .isEqualTo("The book 'b.md' has no title.");
+    }
+
+    @Test
     void forEachAppliesTheRuleToEveryPartAndKeepsEveryFindingInOrder() {
         Rule<Shelf> everyBookTitled = titled.forEach(Shelf::books);
 

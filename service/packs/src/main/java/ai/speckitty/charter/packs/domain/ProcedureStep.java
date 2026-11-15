@@ -1,16 +1,16 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * One step of a {@link Procedure}.
  *
  * <p>A step names the role that acts, never an agent profile (ADR-0032). The role is an open token: the domain
- * checks only its lexical form ({@code ^[a-z][a-z0-9-]*$}, as the schema does) and cannot tell a role from a profile
+ * checks only its lexical form (a letter-first kebab slug, as the schema does) and cannot tell a role from a profile
  * id, because it does not see the profile catalog. Profile ids are refused at the catalog boundary, when roles are
  * resolved against profiles; that resolution is out of scope here. An absent role means any role may act.
  *
@@ -27,16 +27,14 @@ public record ProcedureStep(
         Optional<String> onSuccess,
         Optional<String> onFailure) {
 
-    private static final Pattern ROLE_SHAPE = Pattern.compile("^[a-z][a-z0-9-]*$");
-
     private static final ModularRuleset<String> TITLE_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A procedure step needs a title that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A procedure step needs a title that is not blank."));
 
     private static final ModularRuleset<Optional<String>> ROLE_RULES = ModularRuleset.<Optional<String>>emptyRules()
             .must(Constraints.of(
-                    "A procedure step role must match ^[a-z][a-z0-9-]*$.",
-                    token -> token.map(text -> ROLE_SHAPE.matcher(text).matches())
-                            .orElse(true)));
+                    "A procedure step role must match ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ and be at most "
+                            + RoleBearer.ROLE_MAX_LENGTH + " characters.",
+                    token -> token.map(RoleBearer::isRole).orElse(true)));
 
     /**
      * Checks that required fields are present and the role, when present, is a role token.

@@ -117,11 +117,13 @@ class AgentProfileRolesTest {
                 new Case(
                         AgentProfile.ALT_ROLES_NOT_GENERIC,
                         base("generic-alt").role("reviewer").altRole("generic")),
-                new Case("lowercase letters, digits and hyphens", base("upper").role("Implementer")),
+                new Case("letter-first kebab slugs", base("upper").role("Implementer")),
+                new Case("letter-first kebab slugs", base("underscore").role("qa_lead")),
+                new Case("at most 64", base("long").role("r".repeat(65))),
+                new Case("letter-first kebab slugs", base("doubled").role("qa--lead")),
                 new Case(
-                        "lowercase letters, digits and hyphens",
-                        base("underscore").role("qa_lead")),
-                new Case("at most 64", base("long").role("r".repeat(65))));
+                        "letter-first kebab slugs",
+                        base("trailing").role("reviewer").altRole("qa-")));
         for (Case c : cases) {
             assertThatThrownBy(() -> c.builder().build())
                     .as(c.expected())

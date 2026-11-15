@@ -83,6 +83,17 @@ public record Constraint<T>(
     }
 
     /**
+     * This rule under another description, which a breach also says unless {@link #detailedBy} gives a detail. It
+     * lets a type state a shared rule, such as {@link Constraints#notBlank()}, in its own words.
+     *
+     * @param newDescription the description, and so the detail of a breach
+     * @return the described rule; this one is unchanged
+     */
+    public Constraint<T> described(String newDescription) {
+        return new Constraint<>(newDescription, predicate, code, location, detail);
+    }
+
+    /**
      * This rule with a breach located from the subject.
      *
      * @param where where a breach points
