@@ -3,135 +3,168 @@ value:
   kinds:
     - kind: directive
       plural: directives
+      artifactKind: directive
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=directive
           templated: true
     - kind: tactic
       plural: tactics
+      artifactKind: tactic
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=tactic
           templated: true
     - kind: styleguide
       plural: styleguides
+      artifactKind: styleguide
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=styleguide
           templated: true
     - kind: toolguide
       plural: toolguides
+      artifactKind: toolguide
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=toolguide
           templated: true
     - kind: paradigm
       plural: paradigms
+      artifactKind: paradigm
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=paradigm
           templated: true
     - kind: procedure
       plural: procedures
+      artifactKind: procedure
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=procedure
           templated: true
     - kind: agent_profile
       plural: agent_profiles
+      artifactKind: agent_profile
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=agent_profile
           templated: true
     - kind: glossary_pack
       plural: glossary_packs
+      artifactKind: glossary_pack
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links: {}
     - kind: skill
       plural: skills
+      artifactKind: skill
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=skill
           templated: true
     - kind: anti_pattern
       plural: anti_patterns
+      artifactKind: anti_pattern
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links: {}
     - kind: asset
       plural: assets
+      artifactKind: asset
       artifact: true
       activatable: false
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=asset
           templated: true
     - kind: template
       plural: templates
+      artifactKind: template
       artifact: true
       activatable: false
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links: {}
     - kind: action
       plural: actions
       artifact: false
       activatable: false
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links: {}
     - kind: mission_type
       plural: mission_types
+      artifactKind: mission_type
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=mission_type
           templated: true
     - kind: guard
       plural: guards
+      artifactKind: guard
       artifact: true
       activatable: false
-      authoredInGraphs: false
+      declarableInGraphs: false
+      edgeTarget: false
       _links: {}
     - kind: lifecycle
       plural: lifecycles
+      artifactKind: lifecycle
       artifact: true
       activatable: false
-      authoredInGraphs: false
+      declarableInGraphs: false
+      edgeTarget: false
       _links: {}
     - kind: step_enhancement
       plural: step_enhancements
+      artifactKind: step_enhancement
       artifact: true
       activatable: true
-      authoredInGraphs: true
+      declarableInGraphs: true
+      edgeTarget: true
       _links: {}
   relations:
     - relation: requires

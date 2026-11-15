@@ -281,6 +281,20 @@ public class CharterSteps {
                 .isFalse();
     }
 
+    @Then("the file {string} of the pack {string} contains {string}")
+    public void packFileContains(String path, String pack, String text) {
+        assertThat(new String(packs.bytesOf(pack, path), StandardCharsets.UTF_8))
+                .as("the file %s of the pack %s", path, pack)
+                .contains(text);
+    }
+
+    @Then("the file {string} of the pack {string} does not contain {string}")
+    public void packFileDoesNotContain(String path, String pack, String text) {
+        assertThat(new String(packs.bytesOf(pack, path), StandardCharsets.UTF_8))
+                .as("the file %s of the pack %s", path, pack)
+                .doesNotContain(text);
+    }
+
     @Given("the service fails unexpectedly while it reads the packs")
     public void failUnexpectedly() {
         packs.failUnexpectedly();

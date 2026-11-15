@@ -126,6 +126,9 @@ Keep it small; add a step only when a scenario cannot be written without it.
   two requests (a cursor's anchor that goes away between pages).
 - `Then the pack "<name>" holds no file "<path>"` — nothing is stored at the path inside the configured pack, neither a
   file nor a directory (a mission type's removal takes its step files, its skeletons and their directories).
+- `Then the file "<path>" of the pack "<name>" contains "<text>"` and `... does not contain "<text>"` — the stored
+  file of a configured pack holds, or does not hold, the text (a removal that rewrites an author-written graph
+  document drops the edges that go with a mission type and keeps the rest).
 - `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
   body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
@@ -355,6 +358,10 @@ from ready to held, is a breaking change of the contract.
   types selected and denied as a kind, the removed `activatedKinds` and `missionTypes` refused `422
   validation_failed`, a stored `schemaVersion: 1` document upgraded on read and stored as version 2 on the next write,
   and `[]` registering as absent for a selected kind.
+- `activation-retired-keys.feature`: an activation document carrying a retired charter key (`template_set`, #520, or a
+  selection of the retired kind of step contracts, #514) is refused `422 activation_invalid` with one `unknown_member` at
+  the key's pointer, each beside the same document registered without it; in its own file because it names the retired
+  kind, which `RetiredNamesScanTest` admits only where the retirement is pinned. `@contract`.
 - `activation-ruling-changes.feature`: one scenario per ruling of the ruleset review that PR A0 changes (A4, B1, B5,
   A10, A14, A15, B8; SC-005), each with a control in the same answer; the A10 report and `DELETE` half is `@WIP`.
 - `activation-cascade-depth.feature`: the optional `depth` of a cascading select and deactivate (IC-21, FR-043; #408): the
@@ -387,11 +394,15 @@ from ready to held, is a breaking change of the contract.
   FR-025): `PUT /packs/{packId}` and `POST /packs`, the status resource, the version rule, the preconditions, the
   impact check and the load's refusals, each refusal with a control. The file is `@contract` and each scenario is
   `@WIP` until the serving work package binds it (the comment above a scenario names which); see "Registration steps".
+- `registration/retired-files.feature`: a whole-pack registration whose archive carries a file of the kind slice F
+  retires (#514), or the graph fragment that held its nodes, is refused by name as `retired`, with a control; in its
+  own file because it names the retired kind's files, which `RetiredNamesScanTest` admits only where the retirement is
+  pinned. `@contract`.
 - `pack-removal.feature`: the artifact `DELETE` and the relationship `DELETE` (ADR-0065 D4, FR-005, FR-006), their
   `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, bound by WP19.
 - `mission-types.feature`: the mission type, step and skeleton reads (#99, #100, #96), and the `DELETE` of a mission
   type with its step files and skeletons as one removal, refused `409` while an edge names one of its action nodes
-  (D10).
+  (D10), but for its own step links and the scope edges from its own step actions, which go with it.
 - `effective-mission-types.feature`: the same mission type, step and skeleton reads under an activation (#99, FR-007):
   the layer-merge winner with the holding pack's skeletons and step files, links under the activation and an
   `artifact` link to the winner's pack read, and the refusals in order.

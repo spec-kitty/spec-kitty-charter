@@ -1,8 +1,8 @@
 title: MissionSubstepDelegation
 description: >-
   The artifacts a substep delegates to: one kind and its candidates, in stored order. Absent from the substep when it
-  delegates to none. The kind is a scope target of an action (a guidance kind or agent_profile), and the step's action
-  has a scope edge to every candidate (FR-005).
+  delegates to none. The kind is a guidance kind, a scope target of an action, never agent_profile (a mission type names
+  roles, not profiles: ADR-0032 decision 1), and the step's action has a scope edge to every candidate (FR-005).
 type: object
 additionalProperties: false
 required:

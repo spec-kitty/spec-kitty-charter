@@ -44,9 +44,13 @@ class OfferingControllerTest {
 
     private static final String DIGEST = "sha256:" + "7".repeat(64);
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
-    /** The application's mapper as far as these answers need it: a link's absent members are left out. */
+    /**
+     * The application's mapper as far as these answers need it: a link's absent members are left out, and so are a kind
+     * row's.
+     */
     private static final JsonMapper JSON = JsonMapper.builder()
             .addModule(new ProblemJson().problemJsonModule())
+            .addModule(new ArtifactJson().artifactJsonModule())
             .build();
 
     private static MockMvc mvc(List<ConfiguredPack> packs, PackDescriptorRepository descriptors) {

@@ -60,26 +60,42 @@ Feature: A relationship may be authored from a mission type
       """
     And the answer has no link "self"
 
-  Scenario: A retired relation is refused as an unknown type
+  Scenario Outline: A retired relation is refused as an unknown type, and nothing is written (<relation>)
     Slice F (operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5): impacts, replaces and delegates_to are retired, so a
-    registration that names one is refused and writes nothing. scope, registered from the same source, is the control.
+    registration that names one is refused as an unknown relation type, with one violation relationship_type_unknown at
+    /type, and writes nothing: the read of the pack keeps its ETag. scope, registered from the same source, is the control.
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
       """
     Then the response status is 201
-    When I remember the ETag
-    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
       """
-      {"from": "mission_type:research", "to": "directive:GUARD", "type": "impacts"}
+      {"from": "mission_type:research", "to": "directive:GUARD", "type": "<relation>"}
       """
     Then the response status is 422
     And the problem code is "validation_failed"
+    And the field at "/detail" is "unknown relation type: <relation>"
+    And the field at "/violations/0/pointer" is "/type"
+    And the field at "/violations/0/code" is "relationship_type_unknown"
+    And the field at "/violations/0/detail" is "unknown relation type: <relation>"
+    And the field at "/violations" holds exactly 1 item(s)
+    When I GET "/packs/qa"
+    Then the response header "ETag" is the remembered header
     When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
       """
       {"from": "mission_type:research", "to": "directive:GUARD", "type": "scope"}
       """
     Then the response status is 201
+
+    Examples:
+      | relation     |
+      | impacts      |
+      | replaces     |
+      | delegates_to |
 
   Scenario: A relationship from a mission type the pack does not hold is still a conflict
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:

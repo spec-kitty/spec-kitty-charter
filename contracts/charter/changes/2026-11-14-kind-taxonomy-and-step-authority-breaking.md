@@ -30,10 +30,11 @@
   of `graph-shard.schema.json` and `org-fragment.schema.json`, and an edge's `impacts` strength leaves both schemas,
   whose edge is closed. A graph document whose edge uses one is refused as an unknown relation, and an edge that
   writes `impacts` as an unknown member, as any unknown relation or member is (`drg_schema_error`), so a pack that
-  registered with one before is refused now. `putPackRelationship` with one as its `type` answers
-  `422 validation_failed`. `replaces` was
+  registered with one before is refused now. `putPackRelationship` with one as its `type`, or with any type that
+  names no relation, answers `422 validation_failed` with one violation `relationship_type_unknown` at `/type`
+  (example `CharterRefusal.relationship-type-unknown`). `replaces` was
   sometimes written to mean `overrides`: rewrite such an edge as `overrides`. Core's seam: map no relation to the
-  three, and drop the edge strength.
+  three, drop the edge strength, and read one more violation code of `validation_failed`.
 - The other refusals of this change are entries of their own in this version: the endpoint table
   (`relationship_endpoint_not_allowed`, and the same-kind rule of `overrides`), the step links and `template_set`
   (`mission_step_unlinked`), and the substeps (`substep_delegation_unresolved`, `substep_delegation_unscoped`, and the

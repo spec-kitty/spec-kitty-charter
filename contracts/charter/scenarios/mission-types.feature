@@ -620,8 +620,8 @@ Feature: A pack's mission types are read with their steps and skeletons
 
   Scenario: A mission type whose action node an author-written graph document names is not removed, and no file is rewritten
     FR-010, US6 AS1, D10: an edge that names one of the type's action nodes action:<type>/<step> refers to the type. The
-    edge is in a document the author wrote, so the DELETE refuses and the pack is byte-identical; another kind's
-    DELETE still goes.
+    edge is in a document the author wrote and is no edge that goes with the type (an applies edge, not a scope edge),
+    so the DELETE refuses and the pack is byte-identical; another kind's DELETE still goes.
     Given registration is switched on
     And the org pack "main" with the file "tactics/discard.tactic.yaml":
       """
@@ -642,7 +642,7 @@ Feature: A pack's mission types are read with their steps and skeletons
       edges:
       - source: action:documentation/discover
         target: directive:GUARD
-        relation: scope
+        relation: applies
       """
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
@@ -1055,12 +1055,14 @@ Feature: A pack's mission types are read with their steps and skeletons
     Then the response status is 200
     And the field at "/substeps" holds exactly 2 items
     And the field at "/substeps/0/id" is "zeta"
+    And the field at "/substeps/0/description" is "Load the context"
     And the field at "/substeps/0/command" is "spec-kitty charter context --action a --json"
     And the field at "/substeps/0/inputs/0/flag" is "--mission"
     And the field at "/substeps/0/inputs/0/source" is "mission_slug"
     And the field at "/substeps/0/inputs/0/optional" is true
     And the field at "/substeps/0/delegatesTo" is absent
     And the field at "/substeps/1/id" is "alpha"
+    And the field at "/substeps/1/description" is "Apply a tactic"
     And the field at "/substeps/1/inputs" holds exactly 0 items
     And the field at "/substeps/1/guidance" is "Prefer the smallest change."
     And the field at "/substeps/1/delegatesTo/kind" is "tactic"

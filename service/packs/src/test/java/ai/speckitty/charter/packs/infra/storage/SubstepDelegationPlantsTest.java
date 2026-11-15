@@ -188,7 +188,57 @@ class SubstepDelegationPlantsTest {
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.place()).containsExactly("steps", "0", "substeps", "0", "delegates_to", "kind");
         });
+    }
+
+    @Test
+    @DisplayName("a substep that authors the step contract's retired gate is refused as an unknown field, by its name")
+    void aSubstepFieldTheSchemaDoesNotDeclareIsRefusedAsUnknown(@TempDir Path host) throws IOException {
+        Path pack = planted(host, UNRESOLVED);
+        rewriteType(pack, "    delegates_to:\n", "    gate: review\n    delegates_to:\n");
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+
+        assertThat(validate(pack)).singleElement().satisfies(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.detail()).contains("unknown key 'gate'");
+        });
+        assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(TYPE);
+            assertThat(violation.reason())
+                    .contains("additionalProperties violated at")
+                    .contains("undeclared key 'gate'");
+        });
+    }
+
+    @Test
+    @DisplayName(
+            "a substep never delegates to an agent profile: refused in validate mode and at load (ADR-0032 decision 1)")
+    void anAgentProfileDelegationIsRefused(@TempDir Path host) throws IOException {
+        // Operator ruling DM-01M7DTN8JWR4G1P35NXGCMS65M: a mission type names roles, never profiles, though the scope
+        // row lets an action reach an agent_profile.
+        Path pack = planted(host, UNRESOLVED);
+        rewriteType(pack, "      kind: tactic\n", "      kind: agent_profile\n");
+        WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
+
+        assertThat(validate(pack)).singleElement().satisfies(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.detail()).contains("agent_profile");
+        });
+        assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(TYPE);
+            assertThat(violation.reason()).contains("enum violated at /steps/0/substeps/0/delegates_to/kind");
+        });
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(
+                                    violation -> assertThat(violation.pointer()).isEqualTo(TYPE));
+                });
     }
 
     private static void rewriteType(Path pack, String from, String to) throws IOException {

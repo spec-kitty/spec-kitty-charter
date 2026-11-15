@@ -11,8 +11,8 @@ import java.util.Set;
  * <p>A tension is not a {@link Relationship}. Between two artifacts there is at most one structural relationship and,
  * beside it, a tension (ADR-0028 Decision 3), so a tension is held beside the relationships of a
  * {@link DoctrineGraph} and is outside their unordered-pair identity (ADR-0027). It is compared as written, orientation
- * included (ADR-0036 Decision 4: the reader never turns an edge around). Today's pack files write it
- * {@code in_tension_with}; that spelling belongs to the pack policy and the writers, not to the kernel
+ * included (ADR-0036 Decision 4: the reader never turns an edge around). The pack files write it {@value #TOKEN}, and
+ * that one constant is the spelling everywhere: the pack policy, the writers, the endpoint fault and the kind taxonomy
  * (ADR-0045).
  *
  * @param from the rule the tension is authored from
@@ -29,6 +29,10 @@ public record Tension(
         Optional<String> toPack,
         Optional<String> when,
         Optional<String> rationale) {
+
+    /** The relation token the pack files write a tension with, the one spelling of it. */
+    public static final String TOKEN = "in_tension_with";
+
     /**
      * Checks that every field is present and that the tension joins two different rules.
      *

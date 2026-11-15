@@ -6,9 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The request-side caps of a relationship's endpoints (#443): a {@code from} or a {@code to} longer than 255 characters
@@ -72,5 +75,19 @@ class RelationshipWireTest {
                                 .isEqualTo(PackPolicy.TERM_ENDPOINT + refused[0] + " " + refused[2] + " " + refused[1]);
                     });
         }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"impacts", "replaces", "delegates_to", "no_such_relation"})
+    void anUnknownTypeIsOneViolationAtType(String type) {
+        assertThatThrownBy(() -> RelationshipWire.fromWire(
+                        new RelationshipRegistration("mission_type:research", "directive:D1", type)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refused.getMessage()).isEqualTo("unknown relation type: " + type);
+                    assertThat(refused.violations())
+                            .containsExactly(new RefusalViolation(
+                                    "/type", "relationship_type_unknown", "unknown relation type: " + type));
+                });
     }
 }

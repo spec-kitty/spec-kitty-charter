@@ -132,7 +132,7 @@ public final class EndpointRule {
         if (EndpointTable.tensionAllows(one.kind(), other.kind())) {
             return Optional.empty();
         }
-        return Optional.of(new Fault(ENDPOINT_NOT_ALLOWED, "in_tension_with", one.kind(), other.kind()));
+        return Optional.of(new Fault(ENDPOINT_NOT_ALLOWED, Tension.TOKEN, one.kind(), other.kind()));
     }
 
     /** An artifact kind without activation state; a node-only kind (a step) is the table's to judge. */

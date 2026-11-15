@@ -23,7 +23,10 @@ import org.junit.jupiter.api.io.TempDir;
  *   <li>the main sources of every service module ({@code service/*}{@code /src/main}): none of the tokens;
  *   <li>the contracts ({@code contracts/}): none of the tokens, but in the change fragments ({@code changes/}) and the
  *       changelogs, which record the retirement, in the {@code retired:} block of {@code packs/file-kinds.yaml}, which
- *       refuses the retired files by name, and in {@code removed-routes.feature}, which pins the retired routes.
+ *       refuses the retired files by name, in {@code removed-routes.feature}, which pins the retired routes, in
+ *       {@code registration/retired-files.feature}, which pins the refusal of the retired files at registration, and in
+ *       {@code activation-retired-keys.feature}, which pins the refusal of the retired charter keys at the activation
+ *       seam.
  * </ul>
  *
  * <p>A positive control plants a token in a scratch tree and checks the same scan finds it, so a scan that reads
@@ -144,12 +147,16 @@ class RetiredNamesScanTest {
         return hits;
     }
 
-    /** The change fragments, the changelogs and the pins of the retired routes record the retirement by name. */
+    /**
+     * The change fragments, the changelogs and the pins of the retired routes and files record the retirement by name.
+     */
     private static boolean isRecordOfTheRetirement(String relative) {
         return relative.startsWith("changes/")
                 || relative.contains("/changes/")
                 || relative.endsWith("CHANGELOG.md")
-                || relative.endsWith("scenarios/removed-routes.feature");
+                || relative.endsWith("scenarios/removed-routes.feature")
+                || relative.endsWith("scenarios/registration/retired-files.feature")
+                || relative.endsWith("scenarios/activation-retired-keys.feature");
     }
 
     /** What a build writes beside the sources is no source: it is generated, possibly from an older checkout. */

@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: c5d509d5fdfc991e44bffbd6d013df830c3810cc86525ceb703a4d5c61657117
+manifest_hash: 3a5661bbacd29876911ac601fddc301061095ac70d12c320802edcee2e3c7c82
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -84,7 +84,7 @@ constituents:
 - kind: mission_type
   id: software-dev
   path: missions/software-dev/software-dev.mission-type.yaml
-  content_hash: 1b1eec78143f0d793add7e70837db9dc1d8dc5b2f8641afec8903cb0c20a8c65
+  content_hash: 36fcaa2cf21e5365427e870900ca494ecc0ed60b70b30533c1f767655386b4d0
 - kind: template
   id: software-dev/plan-template.md
   path: missions/software-dev/templates/plan-template.md
@@ -110,17 +110,9 @@ constituents:
   path: paradigms/atomic-design.paradigm.yaml
   content_hash: 5a59b15a9a97ae09a8ce2a16e2baddf8c4ba5bcdcab8b72787515d8c590d7968
 - kind: paradigm
-  id: git-flow
-  path: paradigms/git-flow.paradigm.yaml
-  content_hash: 028fdf3402dc530dbbe9102d4d4d34de167eec345e2bd2c993d5790f871ee146
-- kind: paradigm
   id: trunk-based
   path: paradigms/trunk-based.paradigm.yaml
   content_hash: 7627bbcc5367c52889e626e9c9505261eae40afa7841417d7f779ac6ffe0cf00
-- kind: paradigm
-  id: execution-lanes
-  path: paradigms/execution-lanes.paradigm.yaml
-  content_hash: 2662a544ad5da339e6265daad1a863508f1fe2dea8e6fcaaee593b013af543e0
 - kind: procedure
   id: action-item-attribution-gate
   path: procedures/action-item-attribution-gate.procedure.yaml
@@ -133,6 +125,10 @@ constituents:
   id: example-mapping-workshop
   path: procedures/example-mapping-workshop.procedure.yaml
   content_hash: 29218f08124840eeadc071cd01f496da26bbef90cbe77d9bea3070c168f2f07f
+- kind: procedure
+  id: git-flow
+  path: procedures/git-flow.procedure.yaml
+  content_hash: 4b44d69a755a240970e128ba12a52c430ec5a7c392675a2bb01ad8a98d053d96
 - kind: skill
   id: review-checklist
   path: skills/review-checklist.skill.yaml
@@ -201,6 +197,10 @@ constituents:
   id: stopping-conditions
   path: tactics/stopping-conditions.tactic.yaml
   content_hash: f3000059ddf153954c87cd5fc05b246b38f6d0a25f8b07f50a2b3e2201a8b00e
+- kind: tactic
+  id: supply-chain-install-safety
+  path: tactics/supply-chain-install-safety.tactic.yaml
+  content_hash: 9a1062e074a22224ce4ec85b97d3db74eb562cdf958d6f0d0af053b4982e4e58
 - kind: template
   id: writing/meeting-discussion-notes.md
   path: templates/writing/meeting-discussion-notes.md
@@ -213,6 +213,10 @@ constituents:
   id: efficient-local-tooling
   path: toolguides/efficient-local-tooling.toolguide.yaml
   content_hash: d579be38e070b07bca1c4b2f4ffb864bcb42e2e58ee7f78c5acc22afe78cd5af
+- kind: toolguide
+  id: execution-lanes
+  path: toolguides/execution-lanes.toolguide.yaml
+  content_hash: 9732e16dcd12c422c432bfc86d3a54b4e90ff725404083356102873391aa2749
 presets:
 - id: default
   path: presets/default.yaml

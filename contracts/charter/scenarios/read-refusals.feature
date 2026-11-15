@@ -104,7 +104,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | getOpenApiDocument         | /openapi.yaml            |
 
   # ADR-0064 decision 13, #350: a procedure may require guidance, never a step's action.
-  Scenario: A closure whose pack has a procedure requiring a step's action is unreadable and names the graph document
+  Scenario: A closure whose pack has a procedure requiring a step's action is unreadable and names the graph document and the code
     Given the org pack "main" with the file "procedures/p.procedure.yaml":
       """
       schema_version: '1.0'
@@ -130,6 +130,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
     Then the response status is 500
     And the problem code is "pack_unreadable"
     And the field at "/detail" contains "procedure.graph.yaml"
+    And the field at "/detail" is "the file procedure.graph.yaml of main cannot be read: relationship_endpoint_not_allowed: a requires edge may not connect procedure to action"
 
   # The 200 beside the 500 above: the closure differs only in the target of the edge.
   Scenario: The positive control: the same closure with the procedure requiring the directive is read

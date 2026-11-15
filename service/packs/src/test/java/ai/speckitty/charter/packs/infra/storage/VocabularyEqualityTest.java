@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.missions.domain.SubstepDelegation;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.HeldAs;
@@ -340,6 +341,61 @@ class VocabularyEqualityTest {
         assertThat(build.graph().relationships()).isEmpty();
     }
 
+    // ---- substep delegation kinds -------------------------------------------------------------------
+
+    @Test
+    void theSubstepDelegationKindsAreTheScopeTargetsOfAnActionButAnAgentProfile() throws IOException {
+        assertDelegationKindsAreTheModel(texts(schema("mission-type")
+                .get("$defs")
+                .get("SubstepDelegation")
+                .get("properties")
+                .get("kind")
+                .get("enum")));
+    }
+
+    @Test
+    void theDelegationKindCheckFailsWhenTheSchemaAdmitsAnAgentProfile() throws IOException {
+        // Positive control: the enum as it stood before the ruling, with agent_profile.
+        List<String> skewed = new ArrayList<>(texts(schema("mission-type")
+                .get("$defs")
+                .get("SubstepDelegation")
+                .get("properties")
+                .get("kind")
+                .get("enum")));
+        skewed.add(NodeKind.AGENT_PROFILE.token());
+
+        assertThatThrownBy(() -> assertDelegationKindsAreTheModel(skewed))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("SubstepDelegation.kind enum");
+    }
+
+    /**
+     * The schema's {@code SubstepDelegation.kind} enum is the kinds a {@code scope} edge from an {@code action} may
+     * reach, less {@code agent_profile}: the scope row allows it, but a mission type names roles, never profiles
+     * (ADR-0032 decision 1, operator ruling DM-01M7DTN8JWR4G1P35NXGCMS65M). The domain's
+     * {@link SubstepDelegation#delegable} answers the same kinds.
+     */
+    private static void assertDelegationKindsAreTheModel(List<String> schemaEnum) {
+        Set<String> model = new TreeSet<>();
+        for (EndpointPair pair : RelationType.SCOPE.endpoints()) {
+            if (pair.source() == NodeKind.ACTION && pair.target() != NodeKind.AGENT_PROFILE) {
+                model.add(pair.target().token());
+            }
+        }
+        assertThat(RelationType.SCOPE.allows(NodeKind.ACTION, NodeKind.AGENT_PROFILE))
+                .as("the scope row lets an action reach an agent_profile; the exclusion is the ruling's")
+                .isTrue();
+        assertThat(new TreeSet<>(schemaEnum))
+                .as("the SubstepDelegation.kind enum")
+                .isEqualTo(model);
+        assertThat(new TreeSet<>(Arrays.stream(ArtifactKind.values())
+                        .filter(SubstepDelegation::delegable)
+                        .map(ArtifactKind::token)
+                        .toList()))
+                .as("the kinds SubstepDelegation.delegable answers")
+                .isEqualTo(model);
+    }
+
     // ---- the wire codes the load path projects onto ---------------------------------------------------
 
     @Test
@@ -379,10 +435,12 @@ class VocabularyEqualityTest {
                 .map(kind -> kind.kind() == NodeKind.DIRECTIVE
                         ? new KindFacts(
                                 kind.kind(),
-                                "directivez",
+                                Optional.of("directivez"),
+                                kind.artifactKind(),
                                 kind.artifact(),
                                 kind.activatable(),
-                                kind.authoredInGraphs(),
+                                kind.declarableInGraphs(),
+                                kind.edgeTarget(),
                                 kind.listed())
                         : kind)
                 .toList();
@@ -440,9 +498,11 @@ class VocabularyEqualityTest {
                         ? new KindFacts(
                                 kind.kind(),
                                 kind.plural(),
+                                kind.artifactKind(),
                                 kind.artifact(),
                                 kind.activatable(),
-                                kind.authoredInGraphs(),
+                                kind.declarableInGraphs(),
+                                kind.edgeTarget(),
                                 !kind.listed())
                         : kind)
                 .toList();
@@ -452,10 +512,78 @@ class VocabularyEqualityTest {
                 .hasMessageContaining("whether template is listed");
     }
 
+    @Test
+    void theTaxonomyCheckFailsWhenAKindsArtifactKindIsSkewed() {
+        // Positive control for artifactKind: the tactic row names the directive artifact kind.
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<KindFacts> skewed = served.kinds().stream()
+                .map(kind -> kind.kind() == NodeKind.TACTIC
+                        ? new KindFacts(
+                                kind.kind(),
+                                kind.plural(),
+                                Optional.of(ArtifactKind.DIRECTIVE),
+                                kind.artifact(),
+                                kind.activatable(),
+                                kind.declarableInGraphs(),
+                                kind.edgeTarget(),
+                                kind.listed())
+                        : kind)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(skewed, served.relations())))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("the artifact kind of tactic");
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenAKindsDeclarableFactIsFlipped() {
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<KindFacts> skewed = served.kinds().stream()
+                .map(kind -> kind.kind() == NodeKind.GUARD
+                        ? new KindFacts(
+                                kind.kind(),
+                                kind.plural(),
+                                kind.artifactKind(),
+                                kind.artifact(),
+                                kind.activatable(),
+                                !kind.declarableInGraphs(),
+                                kind.edgeTarget(),
+                                kind.listed())
+                        : kind)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(skewed, served.relations())))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whether guard is declarable in graphs");
+    }
+
+    @Test
+    void theTaxonomyCheckFailsWhenAKindsEdgeTargetFactIsFlipped() {
+        Taxonomy served = new KindTaxonomyReadService().taxonomy();
+        List<KindFacts> skewed = served.kinds().stream()
+                .map(kind -> kind.kind() == NodeKind.ACTION
+                        ? new KindFacts(
+                                kind.kind(),
+                                kind.plural(),
+                                kind.artifactKind(),
+                                kind.artifact(),
+                                kind.activatable(),
+                                kind.declarableInGraphs(),
+                                !kind.edgeTarget(),
+                                kind.listed())
+                        : kind)
+                .toList();
+
+        assertThatThrownBy(() -> assertTaxonomyIsTheModel(new Taxonomy(skewed, served.relations())))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("whether action is an edge target");
+    }
+
     /**
      * The taxonomy holds every kind of {@code file-kinds.yaml}'s {@code node_kinds} in its order, each with the plural
-     * {@code fragment_kinds} names it by (the kernel's plural for the two kinds no fragment names), its artifact and
-     * activation facts as {@code artifact_kinds} and {@link ArtifactKind} hold them and whether the pack artifact list
+     * {@code fragment_kinds} names it by (the kernel's plural for the two kinds no fragment names), its artifact kind,
+     * artifact and activation facts as {@code artifact_kinds} and {@link ArtifactKind} hold them, whether a graph
+     * document declares it ({@code fragment_kinds}) and whether an edge targets it (the shard schema's edge target) and whether the pack artifact list
      * serves it ({@link ArtifactReadService#listed()}); and every {@link RelationType}, then the tension, each held as
      * the model holds it, with the kernel's direction, derivation and endpoints ({@link RelationType}, {@link Tension}).
      */
@@ -467,22 +595,39 @@ class VocabularyEqualityTest {
         Map<String, String> pluralOf = new java.util.HashMap<>();
         table.fragmentKinds().forEach((plural, token) -> pluralOf.put(token, plural));
         List<String> artifactKinds = fileKindsArtifactKinds();
+        Set<String> edgeTargets;
+        try {
+            edgeTargets = alternation(schema("graph-shard")
+                    .get("$defs")
+                    .get("DRGEdge")
+                    .get("properties")
+                    .get("target")
+                    .get("pattern")
+                    .asString());
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
         for (KindFacts kind : taxonomy.kinds()) {
             String token = kind.kind().token();
-            Optional<ArtifactKind> artifact = ArtifactKind.fromToken(token);
+            Optional<ArtifactKind> artifact = kind.kind().artifactKind();
             assertThat(kind.plural())
                     .as("the plural of " + token)
-                    .isEqualTo(pluralOf.getOrDefault(
-                            token, artifact.map(ArtifactKind::plural).orElse("")));
+                    .isEqualTo(Optional.ofNullable(pluralOf.get(token)).or(() -> artifact.map(ArtifactKind::plural)));
+            assertThat(kind.artifactKind().map(ArtifactKind::token))
+                    .as("the artifact kind of " + token)
+                    .isEqualTo(artifactKinds.contains(token) ? Optional.of(token) : Optional.empty());
             assertThat(kind.artifact())
                     .as("whether " + token + " is an artifact")
                     .isEqualTo(artifactKinds.contains(token));
             assertThat(kind.activatable())
                     .as("whether " + token + " is activatable")
                     .isEqualTo(artifact.map(ArtifactKind::activatable).orElse(false));
-            assertThat(kind.authoredInGraphs())
-                    .as("whether " + token + " is authored in graphs")
+            assertThat(kind.declarableInGraphs())
+                    .as("whether " + token + " is declarable in graphs: a fragment names it by a plural")
                     .isEqualTo(pluralOf.containsKey(token));
+            assertThat(kind.edgeTarget())
+                    .as("whether " + token + " is an edge target: the shard schema's edge target admits it")
+                    .isEqualTo(edgeTargets.contains(token));
             assertThat(kind.listed())
                     .as("whether " + token + " is listed, so its row links the pack artifact list")
                     .isEqualTo(artifact.filter(ArtifactReadService.listed()::contains)

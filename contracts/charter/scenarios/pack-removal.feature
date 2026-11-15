@@ -9,7 +9,9 @@
 #
 # Steps WP19 adds (listed in scenarios/README.md, "Registration steps"): When I DELETE "<path>" with the remembered ETag.
 # Everything else is the existing vocabulary. A DELETE rewrites no file the author wrote, so "the pack is byte-identical"
-# is read as an unchanged sourceFingerprint of GET /info, which digests every pack file.
+# is read as an unchanged sourceFingerprint of GET /info, which digests every pack file. The one exception is a mission
+# type's removal, which drops its own step links and the scope edges from its own step actions from the author-written
+# documents that hold them (operator rulings DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6).
 #
 # Not covered here, by design: the 409 governance_policy_violation of the REMOVE operation. It fires only when an
 # ancestor of the pack holds the id and locks it, and a pack that holds an id its ancestor locks does not compose
@@ -837,6 +839,193 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the field "sourceFingerprint" of the response body is the remembered one
     When I DELETE "/packs/qa/relationships?from=action:rx/a&to=directive:D2" with the header "If-Match": "*"
     Then the response status is 204
+
+  # bound by: the landing fix pass of slice F (operator ruling DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6)
+  Scenario: A mission type whose substeps delegate is removed with its step links and its scope edges
+    Operator rulings DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6: the type's own requires edges
+    to its steps and the scope edges from its own step actions, bare or written with the pack's own name, go with it
+    from the author-written document that holds them; the document keeps every other edge.
+    Given the org pack "qa" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose two steps delegate to the tactic t.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: apply
+          description: Apply the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - t
+      - id: b
+        title: B
+        substeps:
+        - id: check
+          description: Check with the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - qa::t
+      """
+    And the org pack "qa" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: mission_type:rx
+        target: action:rx/b
+        relation: requires
+      - source: action:rx/a
+        target: tactic:t
+        relation: scope
+      - source: qa::action:rx/b
+        target: qa::tactic:t
+        relation: scope
+      - source: tactic:t
+        target: directive:D2
+        relation: requires
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I DELETE "/packs/qa/artifacts/mission_type/rx" with the remembered ETag
+    Then the response status is 204
+    And the pack "qa" holds no file "missions/rx/rx.mission-type.yaml"
+    And the file "mission_type.graph.yaml" of the pack "qa" does not contain "action:rx"
+    And the file "mission_type.graph.yaml" of the pack "qa" does not contain "mission_type:rx"
+    And the file "mission_type.graph.yaml" of the pack "qa" contains "directive:D2"
+    When I GET "/packs/qa/artifacts/mission_type/rx"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+
+  # bound by: review cycle 3 of the slice F landing (operator ruling DM-01M7F1ARDGCHPSB62QNY0EZW7Y)
+  # The scope edges are seeded in registered.graph.yaml, as in the FR-005 scenario above: putPackRelationship refuses
+  # an action source that the pack holds no artifact for, and a pack-qualified source, so no PUT reaches this state.
+  Scenario: A delegating mission type is removed with the registered scope edges from its own step actions
+    Operator ruling DM-01M7F1ARDGCHPSB62QNY0EZW7Y: registered.graph.yaml follows the same rule as the author-written
+    documents, so the registered scope edges from the type's own step actions, bare or written with the pack's own
+    name, go with it, and the shard keeps every other edge.
+    Given the org pack "qa" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose two steps delegate to the tactic t.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: apply
+          description: Apply the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - t
+      - id: b
+        title: B
+        substeps:
+        - id: check
+          description: Check with the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - t
+      """
+    And the org pack "qa" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: mission_type:rx
+        target: action:rx/b
+        relation: requires
+      """
+    And the org pack "qa" with the file "registered.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      generated_by: charter-registration
+      nodes: []
+      edges:
+      - source: action:rx/a
+        target: tactic:t
+        relation: scope
+      - source: qa::action:rx/b
+        target: tactic:t
+        relation: scope
+      - source: tactic:t
+        target: directive:D2
+        relation: requires
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I DELETE "/packs/qa/artifacts/mission_type/rx" with the remembered ETag
+    Then the response status is 204
+    And the pack "qa" holds no file "missions/rx/rx.mission-type.yaml"
+    And the file "registered.graph.yaml" of the pack "qa" does not contain "action:rx"
+    And the file "registered.graph.yaml" of the pack "qa" contains "directive:D2"
+    And the file "mission_type.graph.yaml" of the pack "qa" does not contain "mission_type:rx"
+    When I GET "/packs/qa/artifacts/mission_type/rx"
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+
+  Scenario: A delegating mission type that another authored edge still names is not removed, and nothing is rewritten
+    Control for DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6: only the type's own step links and the scope edges from its own step
+    actions go with it. An applies edge from its action is another authored reference, so the DELETE refuses 409 and
+    the pack is byte-identical.
+    Given the org pack "qa" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates to the tactic t.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: apply
+          description: Apply the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - t
+      """
+    And the org pack "qa" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: tactic:t
+        relation: scope
+      - source: action:rx/a
+        target: directive:D2
+        relation: applies
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/qa/artifacts/mission_type/rx" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    When I GET "/packs/qa/artifacts/mission_type/rx"
+    Then the response status is 200
 
   Scenario Outline: A relationship removal whose ends are malformed or missing is a 400 Problem without a code that says why (<query>)
     #411: the detail names the query parameter, and the value it carried when it carried one.

@@ -53,6 +53,7 @@ import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
@@ -806,15 +807,22 @@ public final class DomainRepositoryService
         };
     }
 
-    /** The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. */
+    /**
+     * The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. An edge its
+     * relation's endpoint table does not allow names the code {@value RelationshipEndpointRule#CODE} before its reason,
+     * so the detail of the read carries the code a registration and the relationship write answer for the same edge.
+     */
     private static Pack readable(
             PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
         Pack assembled = assemble(pack, read, graphs);
         if (!assembled.violations().isEmpty()) {
             PackElementViolation first = assembled.violations().getFirst();
+            String reason = RelationshipEndpointRule.CODE.equals(first.kind())
+                    ? first.kind() + ": " + first.reason()
+                    : first.reason();
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
-                    "the file " + first.file() + " of " + pack.value() + " cannot be read: " + first.reason());
+                    "the file " + first.file() + " of " + pack.value() + " cannot be read: " + reason);
         }
         return assembled;
     }

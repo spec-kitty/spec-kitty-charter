@@ -3,8 +3,9 @@
 - A mission type's step authors `substeps`: a flat, ordered list, one level deep, of `{id, description, command,
   inputs, delegates_to {kind, candidates}, guidance}`, the content a step contract's step held (operator ruling
   DM-01M7B1YH1GF15RD0G4ZPSA8KW9, FR-004). A substep id is a letter-first kebab slug, unique within its step; an input's
-  `optional` is written only as `true`; `delegates_to.kind` is a `scope` target of an action (a guidance kind or
-  `agent_profile`), and each candidate is written `[<pack>::]<id>`, each once. `getPackMissionStep` and
+  `optional` is written only as `true`; `delegates_to.kind` is a guidance kind, a `scope` target of an action,
+  never `agent_profile` (a mission type names roles, not profiles: ADR-0032 decision 1, operator ruling
+  DM-01M7DTN8JWR4G1P35NXGCMS65M), and each candidate is written `[<pack>::]<id>`, each once. `getPackMissionStep` and
   `getEffectiveMissionStep` answer `substeps` in authored order (`MissionSubstep`), each delegation candidate linked to
   its read when the scope holds it: `artifact` in a pack for a candidate written bare or with the pack's own name,
   `effective-artifact` under an activation (examples `MissionStep.specify`, `MissionStep.activation-implement`).

@@ -110,6 +110,9 @@ put:
         enhances edge (prompt_fragment_invalid), is refused as well: an enhancement only adds and has exactly one
         enhances edge, and the detail names the enhancement. This is the one operation that answers the code as the
         problem's own, 422 in place of the 500 of a read; nothing is written.
+        A type that names no relation, a retired impacts, replaces or delegates_to among them (ADR-0077 decision 6), is
+        refused validation_failed with one violation at /type whose code is relationship_type_unknown, and nothing is
+        written.
         An overrides edge whose from is not of an activatable kind (a template, an asset, a guard or a lifecycle;
         FR-014) is refused validation_failed with one violation at /from whose code is overrides_source_not_activatable:
         such an artifact has no activation state and cannot stand in for another. Nothing is written. The same edge
@@ -135,6 +138,8 @@ put:
               $ref: ../examples/CharterRefusal.overrides-source-not-activatable.yaml
             relationship-endpoint-not-allowed:
               $ref: ../examples/CharterRefusal.relationship-endpoint-not-allowed.yaml
+            relationship-type-unknown:
+              $ref: ../examples/CharterRefusal.relationship-type-unknown.yaml
     '428':
       $ref: ../../_shared/responses/Problem.yaml
     '500':

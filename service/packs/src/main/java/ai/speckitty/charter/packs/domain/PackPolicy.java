@@ -91,7 +91,7 @@ public final class PackPolicy {
      * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
      * a tension back with it.
      */
-    public static final String TENSION = "in_tension_with";
+    public static final String TENSION = Tension.TOKEN;
 
     /*
      * The key order of each document kind is the order of the bundled schema's `properties`

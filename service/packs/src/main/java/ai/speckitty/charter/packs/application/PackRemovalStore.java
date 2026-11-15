@@ -79,8 +79,9 @@ public interface PackRemovalStore extends PackRevisions {
          * @param artifacts the removed artifacts, if any
          * @param relationships the registered relationships that stay
          * @param presets the presets to rewrite
-         * @param droppedLinks a removed mission type's own step links, which go from the author-written graph documents
-         *     that hold them (operator ruling DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ); none for any other removal
+         * @param droppedLinks a removed mission type's own step links and the scope edges from its own step actions,
+         *     which go from the author-written graph documents that hold them (operator rulings
+         *     DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6); none for any other removal
          */
         public Removal {
             artifacts = List.copyOf(artifacts);

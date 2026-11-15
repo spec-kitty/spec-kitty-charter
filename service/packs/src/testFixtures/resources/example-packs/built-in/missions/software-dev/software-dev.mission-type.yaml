@@ -136,7 +136,7 @@ steps:
     delegates_to:
       kind: tactic
       candidates:
-      - architectural-gate-non-vacuity
+      - supply-chain-install-safety
   - id: write-plan
     description: Write plan.md to kitty-specs/{mission_slug}/
     command: Write plan.md in kitty-specs/{mission_slug}/
@@ -230,21 +230,21 @@ steps:
   - id: workspace
     description: Create or enter the work package workspace
     delegates_to:
-      kind: paradigm
+      kind: toolguide
       candidates:
       - execution-lanes
-    guidance: 'The execution-lanes paradigm describes the only supported git worktree mechanism. Spec Kitty chooses the topology at `finalize-tasks` by Mission size: small Missions run `single_branch` in the write checkout, and lane topologies use the lane worktrees `spec-kitty implement` provides. Do not create or reuse a lane worktree by hand.'
+    guidance: 'The execution-lanes toolguide describes the only supported git worktree mechanism. Spec Kitty chooses the topology at `finalize-tasks` by Mission size: small Missions run `single_branch` in the write checkout, and lane topologies use the lane worktrees `spec-kitty implement` provides. Do not create or reuse a lane worktree by hand.'
   - id: branching-paradigm
     description: Apply trunk-based development when selected by the project charter
     delegates_to:
       kind: paradigm
       candidates:
       - trunk-based
-    guidance: Use this branch-management paradigm for trunk-based and shared-branch CI workflows. Skip it when the charter selects the Git Flow paradigm instead.
+    guidance: Use this branch-management paradigm for trunk-based and shared-branch CI workflows. Skip it when the charter selects the Git Flow procedure instead.
   - id: branching-procedure
     description: Apply Git Flow when the project charter selects that branching workflow
     delegates_to:
-      kind: paradigm
+      kind: procedure
       candidates:
       - git-flow
     guidance: Skip this step unless the project charter selects Git Flow. Follow its feature, release, and hotfix branch workflow instead of trunk-based branching.
@@ -261,7 +261,7 @@ steps:
     delegates_to:
       kind: tactic
       candidates:
-      - architectural-gate-non-vacuity
+      - supply-chain-install-safety
   - id: quality-gate
     description: Run tests and type checks
     delegates_to:
@@ -317,7 +317,7 @@ steps:
     delegates_to:
       kind: tactic
       candidates:
-      - architectural-gate-non-vacuity
+      - supply-chain-install-safety
   - id: quality-gate
     description: Verify tests pass and type checks succeed
     delegates_to:

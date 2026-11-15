@@ -55,16 +55,13 @@ edges:
   target: directive:DIRECTIVE_030
   relation: scope
 - source: action:software-dev/implement
-  target: paradigm:execution-lanes
-  relation: scope
-- source: action:software-dev/implement
-  target: paradigm:git-flow
-  relation: scope
-- source: action:software-dev/implement
   target: paradigm:trunk-based
   relation: scope
 - source: action:software-dev/implement
   target: procedure:adversarial-squad-deployment
+  relation: scope
+- source: action:software-dev/implement
+  target: procedure:git-flow
   relation: scope
 - source: action:software-dev/implement
   target: styleguide:boring-code-review
@@ -73,7 +70,7 @@ edges:
   target: tactic:acceptance-test-first
   relation: scope
 - source: action:software-dev/implement
-  target: tactic:architectural-gate-non-vacuity
+  target: tactic:supply-chain-install-safety
   relation: scope
 - source: action:software-dev/implement
   target: tactic:autonomous-operation-protocol
@@ -87,6 +84,9 @@ edges:
 - source: action:software-dev/implement
   target: toolguide:efficient-local-tooling
   relation: scope
+- source: action:software-dev/implement
+  target: toolguide:execution-lanes
+  relation: scope
 - source: action:software-dev/plan
   target: directive:DIRECTIVE_003
   relation: scope
@@ -97,7 +97,7 @@ edges:
   target: tactic:adr-drafting-workflow
   relation: scope
 - source: action:software-dev/plan
-  target: tactic:architectural-gate-non-vacuity
+  target: tactic:supply-chain-install-safety
   relation: scope
 - source: action:software-dev/plan
   target: tactic:requirements-validation-workflow
@@ -121,7 +121,7 @@ edges:
   target: styleguide:boring-code-review
   relation: scope
 - source: action:software-dev/review
-  target: tactic:architectural-gate-non-vacuity
+  target: tactic:supply-chain-install-safety
   relation: scope
 - source: action:software-dev/review
   target: tactic:autonomous-operation-protocol

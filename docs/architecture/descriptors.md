@@ -406,7 +406,8 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 - **Substeps:** `substeps` is a flat, ordered list, one level deep ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 2). A substep is
   `{id, description, command?, inputs?, delegates_to?, guidance?}`: `id` a letter-first kebab slug unique within the
   step (`duplicate_step_id`), an input `{flag, source, optional?}` with `optional` only `true`, and `delegates_to`
-  `{kind, candidates}`, where `kind` is a guidance kind or `agent_profile` and each candidate is written
+  `{kind, candidates}`, where `kind` is a guidance kind, never `agent_profile` (a mission type names roles, not
+  profiles: ADR-0032 decision 1), and each candidate is written
   `[<pack>::]<id>`, once. Each candidate resolves to an artifact of `kind` (`substep_delegation_unresolved`) and the
   step's action has a `scope` edge to it (`substep_delegation_unscoped`).
 - **Expected artifacts:** a step's inputs are its preconditions and its outputs its

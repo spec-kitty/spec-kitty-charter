@@ -33,8 +33,9 @@ audience:
 
 - **The rulings.** The operator ruled slice F ([#537](https://github.com/spec-kitty/spec-kitty-charter/issues/537)) in
   an interview on 2026-11-13: eight specify rulings and three plan rulings, each recorded as a Decision Moment of the
-  mission `slice-f-kind-taxonomy-01M7B19K` (research R14). One more followed on 2026-11-14, during the build
-  (decision 4). The rulings are marked *(operator)* below.
+  mission `slice-f-kind-taxonomy-01M7B19K` (research R14). Three more followed on 2026-11-14, during the build
+  and at landing (decisions 2 and 4), and four on 2026-11-15, at the landing review (decisions 4 to 7): eighteen in
+  all. The rulings are marked *(operator)* below.
 - **One record.** Plan ruling `DM-01M7B3Q8R1C6J89MM3YWSMF8XZ` puts every slice F decision in this record. The
   records it touches carry a short note that points here.
 - **The squad.** A three-lens post-plan squad (domain, contract, migration) found 4 blockers and 14 majors in how the
@@ -95,9 +96,10 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
 1. **The kind taxonomy is served as data, at `GET /offering/kinds` (`getKindTaxonomy`)** *(operator,
    `DM-01M7B1YE4J84K0T4ZA27M48QKG`)*.
    - It answers two lists, in the model's order:
-     - `kinds`: every node kind, with its `plural`, whether it is an `artifact`, whether an activation selects it
-       (`activatable`), whether a graph document may name it (`authoredInGraphs`), and a templated `artifacts` link
-       for each kind the pack artifact list serves;
+     - `kinds`: every node kind, with its `plural` (absent when it has none), its `artifactKind` (absent for
+       `action`), whether it is an `artifact`, whether an activation selects it (`activatable`), whether a graph
+       document may declare it (`declarableInGraphs`) and whether an authored edge may target it (`edgeTarget`), and a
+       templated `artifacts` link, built from its `artifactKind`, for each kind the pack artifact list serves;
      - `relations`: every relation, with `directed`, `derived`, `heldAs` (`relationship`, or `tension` for
        `in_tension_with`) and its allowed `{source, target}` kind pairs.
    - It holds none of core's org facts (`effective_when_absent`, `selection_overlayable`, `org_requirable`). It is
@@ -114,7 +116,9 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
      `delegates_to {kind, candidates}` and `guidance`.
    - The grammar: a substep `id` is a letter-first kebab slug, unique within its step (`duplicate_step_id`
      otherwise). An input's `optional` is written only as `true`. `delegates_to.kind` is a `scope` target of an
-     action: a guidance kind or `agent_profile`. Each candidate is written `[<pack>::]<id>`, once, with the kind given
+     action and a guidance kind, never `agent_profile` *(operator, 2026-11-14, `DM-01M7DTN8JWR4G1P35NXGCMS65M`)*:
+     a mission type names roles, never profiles, so this keeps
+     [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decision 1. Each candidate is written `[<pack>::]<id>`, once, with the kind given
      once by `kind`.
    - **A delegation is data, and it needs its edge.** It stays the runtime handoff of ADR-0064 decision 11. Each
      candidate must resolve to an artifact of `kind` (`substep_delegation_unresolved`), and the step's
@@ -143,10 +147,15 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
      on-demand steps included. A pack that misses one, or holds such an edge to an action that is no step of the type,
      is refused (`mission_step_unlinked`): at load per pack, and again at compose on the winning type.
    - A relationship write keeps it so: putting a stray edge, or deleting the last edge that links a step, is refused.
-   - **A mission type's removal drops its own step links** *(operator, 2026-11-14,
-     `DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ`)*. `deletePackArtifact` of a mission type removes the type's own `requires`
-     edges to its steps from the author-written graph documents that hold them. It is the one case where a removal
-     rewrites such a document; any other authored reference to the type still refuses `registration_conflict`.
+   - **A mission type's removal drops its own step links and its steps' scope edges** *(operator, 2026-11-14,
+     `DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ` and `DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6`)*. `deletePackArtifact` of a mission type
+     removes the type's own `requires` edges to its steps, and the `scope` edges whose source is one of its own step
+     actions (`action:<type>/<step>`, bare or written with the pack's own name), from the graph documents that hold
+     them, so a type whose substeps delegate can be removed. It is the one case where a removal rewrites an
+     author-written document; any other authored reference to the type or its actions still answers `409`. The same
+     edges go from `registered.graph.yaml` too *(operator, 2026-11-15, `DM-01M7F1ARDGCHPSB62QNY0EZW7Y`)*: one rule
+     for authored and registered edges, or a delegating type whose scope edges were registered would still answer
+     `409`.
 5. **Each relation's endpoint kinds are a table in the kernel, typed and refused** *(operator,
    `DM-01M7B1YTXP6QR1NQB784H4VX3W`, `DM-01M7B1Z30AV54T9WM2WR61EK30`, `DM-01M7B1Z03VF9A36FBV65431HR3` and
    `DM-01M7B3QBD0W0KTBHPHX55RB33K`)*. The table is research R6's, as drafted. G is the six guidance kinds: directive,
@@ -175,12 +184,13 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
    - **Typed by kind markers.** Each kind has a sealed marker type, grouped by sealed interfaces such as `Guidance`
      and `Advisor`. A `KindRef<K>` is built only through per-kind leaf factories, so no reference to a group exists.
      `Relationship` has one static factory per rectangle of the table (`requires`, `requiresAsset`, `requiresStep`,
-     `enhancesStep`, ...), so a combination the table does not allow does not compile. Same-kind relations hold by
-     invariance.
+     `enhancesStep`, ...), so a combination the table does not allow does not compile through them. Same-kind
+     relations hold by invariance. The untyped `Relationship.of`, which takes URNs, is not checked at compile time:
+     it binds through `EndpointRule` and refuses a disallowed pair at run time.
    - **One checked bridge.** Code that holds only URNs binds through `EndpointRule.bind`, or `bindTension` for a
      tension, which looks the pair up in the table and answers the relationship or a fault naming the relation and
      both kinds. The raw constructor is package-private, and the ArchUnit rule `RELATIONSHIP_IS_BOUND` lets only
-     `kernel.domain` call it.
+     the `Relationship` and `EndpointRule` classes call it.
    - **The fault order is fixed**, so an edge that breaks two rules reports one: the step-enhancement rules first
      (`prompt_fragment_invalid`), then slice C's `overrides` source rule, which keeps its code
      `overrides_source_not_activatable`, then the table (`relationship_endpoint_not_allowed`).
@@ -192,13 +202,17 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
      the table. The pointers, the wire codes and the reason texts are unchanged.
    - **Refused at read and write.** A registration answers `422 validation_failed` with one violation per edge at its
      graph document; `putPackRelationship` answers it with the violation at `/type`; a composing read answers
-     `500 pack_unreadable`, naming the document; validate mode reports a blocking finding. Until
+     `500 pack_unreadable`, naming the document and then the code `relationship_endpoint_not_allowed` before the
+     reason *(operator, 2026-11-15, `DM-01M7F1AXQC17ARGCR0AV3DGPEX`)*; validate mode reports a blocking finding. Until
      [#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554) lands, the read check sits where graph
      documents are bound, `PackPolicy` and the load path; whichever lands second moves it, and the wire codes do not
      change (ADR-0075 decision 4).
 6. **`impacts`, `replaces` and `delegates_to` are retired** *(operator, `DM-01M7B1YXJHQCBSYJ145NJC77V5`)*.
    - They leave `RelationType`, the contract's `Relation` and the pack schemas. An edge that uses one is refused as an
-     unknown relation, and an edge's `impacts` strength is an unknown member.
+     unknown relation, and an edge's `impacts` strength is an unknown member. `putPackRelationship` with one as its
+     `type`, as with any type that names no relation, answers `422 validation_failed` with one violation
+     `relationship_type_unknown` at `/type`, as other `422` refusals carry one *(operator, 2026-11-15,
+     `DM-01M7F1B2F1Z82D4SM344JSJB4H`)*.
    - `replaces` was sometimes written to mean `overrides`. A `replaces` edge is rewritten as `overrides`, a content
      migration done in open-packs, not by the service. No corpus held one on 2026-11-13.
    - `kernel.domain.Relation`, which had no caller in the main code, is deleted; `RelationType` is the one relation
@@ -206,7 +220,10 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
 7. **`template_set` is dropped** *(operator, `DM-01M7B1YKY84DQHZFDXEWNJGB5E`)*. It leaves `charter.schema.json`
    outright, and a project charter that carries it is refused as an unknown field. A mission type that authors
    `template_set` or `action_sequence` is refused as an unknown field, by its name (#520). "Template" names only the
-   artifact kind.
+   artifact kind. A repository's `charter.yaml` is that repository's activation set, so the refusal is proven at
+   contract level through the activation seam *(operator, 2026-11-15, `DM-01M7F1B742YTQHEW5QYZJ8GTQD`)*: a
+   `createActivation` or `replaceActivation` body that carries `template_set` answers `422 activation_invalid` with
+   one `unknown_member` at the key's pointer.
 8. **Records and delivery** *(operator, `DM-01M7B3Q8R1C6J89MM3YWSMF8XZ`, `DM-01M7B3QE377FQXN0R02WNC829W`)*. One pull
    request from `slice-f-537-kind-taxonomy` into `main`, with ordered work packages: content first, then each rule.
    The contract break ships in a 0.x minor (ADR-0022), recorded in `### Breaking` change fragments.
@@ -235,8 +252,8 @@ These were made in the work packages and approved in their reviews; none changes
 
 - A client reads every kind and relation, with its endpoints, from one resource, and drops its hand-kept lists.
 - A step is authored once. The step reads carry its substeps, and the delegations link their reads.
-- Each relation means one thing: a disallowed edge does not compile in the domain and is refused at read and write
-  with a named code.
+- Each relation means one thing: a disallowed edge does not compile through the typed factories, is refused at run
+  time by `EndpointRule` when built from URNs, and is refused at read and write with a named code.
 - The mission-type chain is complete, so every step's action is reachable from its type.
 
 ### Negative
@@ -247,8 +264,8 @@ These were made in the work packages and approved in their reviews; none changes
   `org-fragment`, `pack-manifest`, `policy`, `preset` and `charter` change. A consumer of `contracts/packs`
   ([#559](https://github.com/spec-kitty/spec-kitty-charter/issues/559)) meets the same break.
 - **open-packs breaks until it follows.** It must fold its 28 step contracts into their steps, remove the files and
-  the 2 graph fragments, add 26 `requires` edges with 23 action nodes and 80 `scope` edges, author foundation's
-  work-package lifecycle and its `spec-kitty-pre-review` guard, and update its validator. The drafts are in the
+  the 2 graph fragments, add 26 `requires` edges with 23 action nodes and 79 `scope` edges for 80 candidate uses,
+  author foundation's work-package lifecycle and its `spec-kitty-pre-review` guard, and update its validator. The drafts are in the
   mission's research directory. Open-packs proves its content against a pinned charter release (ADR-0070), so `main`
   is not blocked.
 
@@ -260,9 +277,10 @@ These were made in the work packages and approved in their reviews; none changes
 - **Core aligns later.** Core keeps its step contracts and kind lists until it is incorporated; it aligns through the
   generated client, with no core-first ordering (charter.md). The project's own `.kittify/charter/charter.yaml` is
   generated by core's CLI and still lists a `template_set` library entry until core aligns.
-- **Sibling work in flight.** #554 moves the read check into its graph ruleset (decision 5). #106 renames `glossary_pack` to `glossary`; the
-  table follows `ArtifactKind`. #552 drops `MissionStepContractIdentifier` from its identifier list. Whichever lands
-  second rebases.
+- **Sibling work in flight.** #554 moves the read check into its graph ruleset (decision 5). #106 renames the artifact
+  kind `glossary_pack` to `glossary`, whose node kind is `glossary_context`, and adds the node kind `term`; the
+  endpoint table is keyed by `NodeKind`, not `ArtifactKind`, so its `vocabulary` targets become `glossary_context` and
+  `term`. #552 drops `MissionStepContractIdentifier` from its identifier list. Whichever lands second rebases.
 
 ## Alternatives considered
 

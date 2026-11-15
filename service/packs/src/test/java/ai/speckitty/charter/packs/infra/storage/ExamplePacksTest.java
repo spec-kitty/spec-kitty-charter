@@ -2,10 +2,13 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -82,6 +85,32 @@ class ExamplePacksTest {
         assertThat(loaded.pack().violations()).as(name).isEmpty();
         assertThat(loaded.unmodelled()).as(name).isEmpty();
         assertThat(loaded.warnings()).as(name).isEmpty();
+    }
+
+    /**
+     * The review step contract's one gate is the work-package lifecycle's guard (ADR-0077 decision 3, ADR-0054 decision
+     * 12): in the built-in example pack, {@code in_progress -> for_review} carries {@code spec-kitty-pre-review}, and the
+     * guard it names is one the pack holds.
+     */
+    @Test
+    void theExampleLifecyclesReviewTransitionCarriesThePreReviewGuard() {
+        Pack builtIn = new WholePackStore(new YamlSerializationStrategy())
+                .load(ExamplePacks.pack(ExamplePacks.BUILT_IN))
+                .pack();
+        Lifecycle workPackage = builtIn.artifacts(ArtifactKind.LIFECYCLE, Lifecycle.class).stream()
+                .filter(lifecycle -> lifecycle.localId().equals("work-package"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(workPackage.edgesFrom("in_progress"))
+                .filteredOn(transition -> transition.to().equals("for_review"))
+                .singleElement()
+                .satisfies(transition -> assertThat(transition.guards())
+                        .extracting(entry -> entry.ref().spelling())
+                        .contains("spec-kitty-pre-review"));
+        assertThat(builtIn.artifacts(ArtifactKind.GUARD).stream()
+                        .map(guard -> guard.urn().id()))
+                .contains("spec-kitty-pre-review");
     }
 
     /**

@@ -154,7 +154,15 @@ class ProjectCharterYamlSchemaTest {
     }
 
     @ParameterizedTest(name = "{0} is not a declared key")
-    @ValueSource(strings = {"activated_glossary", "activated_skill", "activated_antipatterns", "activation"})
+    @ValueSource(
+            strings = {
+                "activated_glossary",
+                "activated_skill",
+                "activated_antipatterns",
+                "activation",
+                // The step contract is retired (slice F, #514): its activation key is no key of the charter any more.
+                "activated_mission_step_contracts"
+            })
     void aMisspelledKeyIsStillRefused(String key) {
         assertThat(at(validate(MINIMAL + key + ": []\n"))).containsExactly("additionalProperties at / [" + key + "]");
     }

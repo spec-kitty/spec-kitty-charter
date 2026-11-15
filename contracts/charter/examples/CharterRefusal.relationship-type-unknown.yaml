@@ -1,0 +1,10 @@
+summary: The relationship body names the retired relation impacts, which is no relation type (ADR-0077 decision 6).
+value:
+  title: Validation failed
+  status: 422
+  code: validation_failed
+  detail: 'unknown relation type: impacts'
+  violations:
+  - pointer: /type
+    code: relationship_type_unknown
+    detail: 'unknown relation type: impacts'
