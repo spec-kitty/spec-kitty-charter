@@ -222,3 +222,25 @@ Derived, not asked (flagged for review):
   - **A substep never delegates to an `agent_profile`** (operator ruling, keeping ADR-0032 d1). This settles WP07's
     open question: a step's profile comes only from selection by its role.
   - F is at its pre-merge folds, then accept and consolidate. F may land before #106.
+- 2026-11-15, landing facts:
+  - #106 landed on `main` first, with ADR-0076 (`0076-the-activation-vocabulary-reads-and-projections.md`).
+  - Slice F landed on `main` at `67ddbe03d`, with ADR-0077 (`0077-kind-taxonomy-and-step-authority.md`).
+  - Slice G was replayed onto that `main` (with F and #106) on `slice-g-integration`: WP01 to WP06 and WP08, then
+    WP07's records. ADR-0078 was rechecked against `main` and the open pull requests and is free.
+
+### Review log
+
+| WP | Verdict | Cycles |
+| --- | --- | --- |
+| WP01 performer replaces `sentinel` | Approved | 1 |
+| WP02 role pins, closure role facts, registration rules | Approved | 1 |
+| WP03 selection domain | Approved | 1 |
+| WP04 lineage chain, enhancement merge, inheritance, drop refusal | Approved | 1 |
+| WP05 `selectAgentProfile` | Approved | 1 |
+| WP06 effective agent profile and the #380 scenario | Approved | 1 |
+| WP08 step-keyed selection | Rejected once (a step's `role` could still be the reserved `generic`), then approved | 2 |
+| WP07 records | This change | - |
+
+The LOW findings of the reviews are deferred: folded where cheap, otherwise dropped, and none filed (issue-tracker
+rule: below MEDIUM, no issue). The one known gap is recorded in ADR-0078 ("Flagged for review"): a pin that names an
+out-of-force profile answers the fallback instead of narrowing to its in-force specializations.
