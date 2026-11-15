@@ -8,6 +8,7 @@ import ai.speckitty.charter.api.model.AgentProfileSpecialization;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.GovernanceEdgeWords;
+import ai.speckitty.charter.api.model.LineageLink;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,8 @@ class ProfileJsonTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(EffectiveGovernanceEntry.class))
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onType(GovernanceEdgeWords.class))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onType(LineageLink.class))
                 .accepts(hints);
         for (String mixIn : List.of("OptionalProfileMembers", "OptionalSpecializationMembers", "OmitAbsentMembers")) {
             assertThat(hints.reflection()

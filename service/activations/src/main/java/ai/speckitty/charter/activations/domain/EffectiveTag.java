@@ -46,6 +46,9 @@ public record EffectiveTag(String token) {
      * of {@code v3} with either body. The glossary and vocabulary reads (#106) join {@code v3} unreleased too:
      * {@code getActivation} links {@code glossaries}, {@code vocabulary-terms}, {@code vocabulary-contextive} and
      * {@code vocabulary-taboos}, and no release served a tag of {@code v3} without them.
+     * Slice G (R8, #102) changes the body of {@code getEffectiveAgentProfile} for the same inputs too (the effective
+     * profile and its lineage), still before any release served {@code v3}, so it keeps {@code v3}: its inputs already
+     * cover the profile's enhancers and ancestors, which the closure's packs hold.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 
@@ -68,7 +71,11 @@ public record EffectiveTag(String token) {
          * route never shares a tag with {@code getEffectiveAgentProfile}.
          */
         ARTIFACT,
-        /** {@code getEffectiveAgentProfile}: the winner of one agent profile, with its governance. */
+        /**
+         * {@code getEffectiveAgentProfile}: the effective profile of one agent profile, with its lineage and its
+         * governance. The revision names what is in force, so which enhancers and ancestors are merged, and the closure
+         * fingerprint digests every file of the closure's packs, so every enhancer's and ancestor's body.
+         */
         PROFILE,
         /** {@code listEffectiveSkills}: the skill winners of the closure, each with its summary. */
         SKILLS,

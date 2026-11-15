@@ -87,7 +87,9 @@ class EffectiveProfileReadTest {
                 "s",
                 active("agent_profile:P", "main"),
                 entries,
-                kinds);
+                kinds,
+                List.of(),
+                List.of());
 
         entries.clear();
         kinds.clear();
@@ -99,27 +101,47 @@ class EffectiveProfileReadTest {
     @Test
     void everyFieldIsRequired() {
         EffectiveProfileRead ok = effectiveRead();
-        assertThatThrownBy(() -> new EffectiveProfileRead(null, "a", "r", "g", "s", ok.winner(), List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        null, "a", "r", "g", "s", ok.winner(), List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new EffectiveProfileRead(ok.profile(), null, "r", "g", "s", ok.winner(), List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), null, "r", "g", "s", ok.winner(), List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new EffectiveProfileRead(ok.profile(), "a", null, "g", "s", ok.winner(), List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", null, "g", "s", ok.winner(), List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new EffectiveProfileRead(ok.profile(), "a", "r", null, "s", ok.winner(), List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", null, "s", ok.winner(), List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new EffectiveProfileRead(ok.profile(), "a", "r", "g", null, ok.winner(), List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", null, ok.winner(), List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new EffectiveProfileRead(ok.profile(), "a", "r", "g", "s", null, List.of(), List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", "s", null, List.of(), List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new EffectiveProfileRead(ok.profile(), "a", "r", "g", "s", ok.winner(), null, List.of()))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", "s", ok.winner(), null, List.of(), List.of(), List.of()))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new EffectiveProfileRead(ok.profile(), "a", "r", "g", "s", ok.winner(), List.of(), null))
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", "s", ok.winner(), List.of(), null, List.of(), List.of()))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", "s", ok.winner(), List.of(), List.of(), null, List.of()))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EffectiveProfileRead(
+                        ok.profile(), "a", "r", "g", "s", ok.winner(), List.of(), List.of(), List.of(), null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void anAncestorIsAtLeastOneHopAway() {
+        assertThat(new EffectiveProfileRead.Lineage("implementer-ivan", "built-in", 1).depth())
+                .isEqualTo(1);
+        assertThatThrownBy(() -> new EffectiveProfileRead.Lineage("implementer-ivan", "built-in", 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EffectiveProfileRead.Lineage(null, "built-in", 1))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EffectiveProfileRead.Lineage("implementer-ivan", null, 1))
                 .isInstanceOf(NullPointerException.class);
     }
 

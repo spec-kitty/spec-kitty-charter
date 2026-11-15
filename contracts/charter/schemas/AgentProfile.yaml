@@ -1,9 +1,12 @@
 title: AgentProfile
 description: >-
-  One agent profile of a Charter Pack, as the pack stores it: a flat mirror of
-  contracts/packs/schemas/agent-profile.schema.json, one property per field of that schema, in camelCase (the oracle
-  of the mapping, plan fold C10). The body is the stored leaf: nothing is resolved from the profile's lineage,
-  enhances or excluding (ADR-0032); the lineage is answered as governance entries a client can follow. A list is an
+  One agent profile of a Charter Pack: a flat mirror of contracts/packs/schemas/agent-profile.schema.json, one property
+  per field of that schema, in camelCase (the oracle of the mapping, plan fold C10). The pack-scoped read
+  (getPackAgentProfile) answers the stored leaf: nothing is resolved from the profile's lineage, enhances or excluding
+  (ADR-0032), and the lineage is answered as governance entries a client can follow. The read under an activation
+  (getEffectiveAgentProfile) answers the effective profile in the same shape: merged with its in-force enhancers and
+  folded under its in-force ancestors (EffectiveAgentProfileRead; rulings D5 and D6 of ADR-0078); excluding is a field
+  like any other there, never applied. A list is an
   array, [] when the profile declares none (the stored profile does not tell an absent list from an empty one). A
   field the pack schema defaults (description, schemaVersion, routingPriority, maxConcurrentTasks,
   initializationDeclaration and the specialization's three prose fields), and performer, are omitted when the profile

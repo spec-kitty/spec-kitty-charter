@@ -10,6 +10,7 @@ import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -51,6 +52,12 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<String> nameChecks = new ArrayList<>();
     private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
     private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
+    /** By default the effective profile is the stored winner with no ancestor and no enhanced profile. */
+    private BiFunction<String, InForceQuery, Optional<ProfileResolution>> resolutionAnswer = (id, query) -> winnerAnswer
+            .apply(new EffectiveAsk(ArtifactKind.AGENT_PROFILE, id, 0, query))
+            .map(winner -> new ProfileResolution(winner.artifact(), List.of(), List.of()));
+
+    private final List<String> resolutionAsks = new ArrayList<>();
     private BiPredicate<ArtifactRef, InForceQuery> active =
             (ref, query) -> Optional.ofNullable(resolution.apply(query).states().get(ref))
                     .filter(state -> state.state() == EffectiveSet.State.ACTIVE)
@@ -269,6 +276,25 @@ public final class FakeAvailablePacks implements AvailablePacks {
     }
 
     /**
+     * Answers every effective profile read of a session with this function from now on; a function that throws a
+     * refusal answers as the packs slice does.
+     *
+     * @param next the answers of {@link PacksSession#profileResolution}, by id and query
+     */
+    public void profileResolutions(BiFunction<String, InForceQuery, Optional<ProfileResolution>> next) {
+        this.resolutionAnswer = next;
+    }
+
+    /**
+     * The profiles the sessions were asked the effective profile of, in order.
+     *
+     * @return the ids
+     */
+    public List<String> resolutionAsks() {
+        return List.copyOf(resolutionAsks);
+    }
+
+    /**
      * Answers every profile-candidates read of a session with this function from now on; a function that throws a
      * refusal answers as the packs slice does.
      *
@@ -456,6 +482,12 @@ public final class FakeAvailablePacks implements AvailablePacks {
             EffectiveAsk ask = new EffectiveAsk(kind, id, depth, query);
             effectiveAsks.add(ask);
             return winnerAnswer.apply(ask);
+        }
+
+        @Override
+        public Optional<ProfileResolution> profileResolution(String id, InForceQuery query) {
+            resolutionAsks.add(id);
+            return resolutionAnswer.apply(id, query);
         }
 
         @Override

@@ -1,0 +1,40 @@
+title: LineageLink
+description: >-
+  One in-force ancestor of an agent profile's specializes_from chain (R8, #102; ruling D6 of ADR-0078): its id, the pack
+  that holds the version in force and its depth, the length of the longest in-force specializes_from path from the
+  profile to it.
+type: object
+additionalProperties: false
+required:
+- id
+- pack
+- depth
+properties:
+  id:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The ancestor's declared profile-id.
+    x-source:
+      path: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
+      symbol: EffectiveProfileRead.Lineage.id
+  pack:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version of the ancestor in force: the winner of the layer
+      merge.
+    x-source:
+      path: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
+      symbol: EffectiveProfileRead.Lineage.pack
+  depth:
+    type: integer
+    minimum: 1
+    description: >-
+      The length of the longest specializes_from path from the profile to the ancestor through ancestors in force: 1 for
+      a parent.
+    x-source:
+      path: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
+      symbol: EffectiveProfileRead.Lineage.depth
+x-source:
+  path: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
+  symbol: EffectiveProfileRead.Lineage

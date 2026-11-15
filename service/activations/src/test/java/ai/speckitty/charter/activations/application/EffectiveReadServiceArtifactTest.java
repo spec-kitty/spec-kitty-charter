@@ -21,6 +21,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -283,6 +284,48 @@ class EffectiveReadServiceArtifactTest {
                 .as("an out-of-force suggestion carries the words of its edge, as an entry in force does")
                 .isEqualTo(new EffectiveArtifactAnswer.EdgeWords(Optional.of("when"), Optional.of("why")));
         assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void theProfileRouteAnswersTheEffectiveProfileWithItsLineageFromTheSameSession() {
+        CharterArtifact effective = entity(ArtifactKind.AGENT_PROFILE, "P", "effective");
+        packs.profileResolutions((id, query) -> Optional.of(new ProfileResolution(
+                effective, List.of(new ProfileResolution.Lineage("Q", "main", 1)), List.of("R"))));
+
+        EffectiveArtifactAnswer answer = answered(ArtifactKind.AGENT_PROFILE, "P", 1);
+
+        assertThat(answer.artifact())
+                .as("the effective profile, not the stored winner")
+                .isSameAs(effective);
+        EffectiveArtifactAnswer.Governance governance = answer.governance().orElseThrow();
+        assertThat(governance.lineage()).containsExactly(new ProfileResolution.Lineage("Q", "main", 1));
+        assertThat(governance.enhances()).containsExactly("R");
+        assertThat(packs.resolutionAsks()).containsExactly("P");
+        assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void theGenericRouteOfAProfileComposesNothingAndCarriesNoGovernance() {
+        packs.profileResolutions((id, query) -> {
+            throw new AssertionError("the generic route composes no effective profile");
+        });
+
+        Read<EffectiveArtifactAnswer> read = service.artifact(ID, "agent_profile", "P", 0, null);
+
+        assertThat(((Read.Found<EffectiveArtifactAnswer>) read).value().governance())
+                .isEmpty();
+        assertThat(packs.resolutionAsks()).isEmpty();
+    }
+
+    @Test
+    void anEnhancementThatDropsAFieldIsTheSessionsRefusalUnchanged() {
+        CharterRefusal dropped = new CharterRefusal(RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD, "team drops it");
+        packs.profileResolutions((id, query) -> {
+            throw dropped;
+        });
+
+        assertThatThrownBy(() -> service.artifact(ID, ArtifactKind.AGENT_PROFILE, "P", 0, null))
+                .isSameAs(dropped);
     }
 
     @Test

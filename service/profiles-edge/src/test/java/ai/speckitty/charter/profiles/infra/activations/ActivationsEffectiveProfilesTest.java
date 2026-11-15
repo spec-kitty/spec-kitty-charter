@@ -22,6 +22,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Suggestion;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
 import ai.speckitty.charter.activations.domain.PackRef;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -118,7 +119,9 @@ class ActivationsEffectiveProfilesTest {
                         P,
                         1,
                         new EffectiveArtifactAnswer.EdgeWords(
-                                Optional.of("when it helps"), Optional.of("why it helps")))));
+                                Optional.of("when it helps"), Optional.of("why it helps")))),
+                List.of(),
+                List.of());
     }
 
     private void answers(EffectiveArtifactAnswer answer, String etag) {
@@ -247,6 +250,8 @@ class ActivationsEffectiveProfilesTest {
                         leanProfile("main", "P"),
                         Optional.of(new EffectiveArtifactAnswer.Governance(
                                 List.of(entry(required, GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1)),
+                                List.of(),
+                                List.of(),
                                 List.of()))),
                 "t");
 
@@ -258,12 +263,37 @@ class ActivationsEffectiveProfilesTest {
     }
 
     @Test
+    void theLineageAndTheProfilesItEnhancesAreTheServicesInTheirOrder() {
+        answers(
+                answer(
+                        active(P),
+                        leanProfile("main", "P"),
+                        Optional.of(new EffectiveArtifactAnswer.Governance(
+                                List.of(),
+                                List.of(),
+                                List.of(
+                                        new ProfileResolution.Lineage("PARENT", "main", 1),
+                                        new ProfileResolution.Lineage("ROOT", "built-in", 2)),
+                                List.of("BASE")))),
+                "t");
+
+        EffectiveProfileRead read = found(null);
+
+        assertThat(read.lineage())
+                .containsExactly(
+                        new EffectiveProfileRead.Lineage("PARENT", "main", 1),
+                        new EffectiveProfileRead.Lineage("ROOT", "built-in", 2));
+        assertThat(read.enhances()).containsExactly("BASE");
+    }
+
+    @Test
     void aProfileWithNothingToWalkHasNoEntries() {
         answers(
                 answer(
                         active(P),
                         leanProfile("main", "P"),
-                        Optional.of(new EffectiveArtifactAnswer.Governance(List.of(), List.of()))),
+                        Optional.of(
+                                new EffectiveArtifactAnswer.Governance(List.of(), List.of(), List.of(), List.of()))),
                 "t");
 
         assertThat(found(null).governance()).isEmpty();
@@ -326,7 +356,8 @@ class ActivationsEffectiveProfilesTest {
                 answer(
                         active(P),
                         notAProfile,
-                        Optional.of(new EffectiveArtifactAnswer.Governance(List.of(), List.of()))),
+                        Optional.of(
+                                new EffectiveArtifactAnswer.Governance(List.of(), List.of(), List.of(), List.of()))),
                 "t");
         assertThatThrownBy(() -> adapter.read("a-1", "P", 1, null)).isInstanceOf(ClassCastException.class);
     }
@@ -370,6 +401,8 @@ class ActivationsEffectiveProfilesTest {
                                 EffectiveArtifactAnswer.EdgeWords.NONE,
                                 Optional.of("lane")),
                         entry(active(S), GovernanceFacts.Step.REQUIRES, RelationType.REQUIRES, P, 1)),
+                List.of(),
+                List.of(),
                 List.of());
         answers(answer(active(P), leanProfile("main", "P"), Optional.of(governance)), "t");
 

@@ -170,6 +170,7 @@ of `up`: the vocabulary reads of an activation link `activation`, as
 | `payload` | `…/packs/{packId}/artifacts/asset/{artifactId}/payload`; under an activation, `…/activations/{activationId}/artifacts/asset/{artifactId}/payload` | `GET` | An asset (`getPackAsset`): its bytes, served with its own media type; an effective asset (`getEffectiveAsset`): the bytes of the copy the layer merge keeps | In the contract on an asset and an effective asset |
 | `mission-type` | `…/artifacts/mission_type/{missionTypeId}` | `GET` | A step and a skeleton: the read of their mission type, under the same pack or activation | In the contract |
 | `skeleton` | `…/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}` | `GET` | An expected output artifact of a step whose `templatePath` names a stored skeleton of the type | In the contract |
+| `enhances` | `…/activations/{activationId}/artifacts/agent_profile/{artifactId}` | `GET` | An effective agent profile read (`getEffectiveAgentProfile`) of a profile that enhances another agent profile: the read of the profile it enhances under the same activation, the first by id when it enhances several (R8, ruling D5); absent on every other profile | In the contract |
 
 The pack document is linked as `doc`, not as the IANA `describedby`: the operator's ruling on the document read
 names `doc` (#451), and `describedby` points at a description of a resource's *kind* (a schema), not at a

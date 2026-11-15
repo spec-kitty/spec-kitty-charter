@@ -16,6 +16,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -152,6 +153,18 @@ final class ClosureViewSession implements PacksSession {
      * Whether the pure resolution of the query, kept for the request, puts the artifact in force: no slot check, so a
      * read can refuse an artifact out of force before the closure's slot check refuses (research R10).
      */
+    @Override
+    public Optional<ProfileResolution> profileResolution(String id, InForceQuery query) {
+        return view.resolvedProfile(id, statesOf(query))
+                .map(resolved -> new ProfileResolution(
+                        resolved.profile(),
+                        resolved.lineage().stream()
+                                .map(link -> new ProfileResolution.Lineage(
+                                        link.urn().id(), link.pack().value(), link.depth()))
+                                .toList(),
+                        resolved.enhances().stream().map(Urn::id).toList()));
+    }
+
     @Override
     public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
         return resolvedFor(query)

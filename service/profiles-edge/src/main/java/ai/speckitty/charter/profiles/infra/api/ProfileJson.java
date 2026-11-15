@@ -14,6 +14,7 @@ import ai.speckitty.charter.api.model.AgentProfileSpecializationContext;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.GovernanceEdgeWords;
+import ai.speckitty.charter.api.model.LineageLink;
 import ai.speckitty.charter.api.model.PackGovernanceEntry;
 import ai.speckitty.charter.api.model.ProfileSelectionCandidate;
 import ai.speckitty.charter.api.model.ProfileSelectionContext;
@@ -133,6 +134,7 @@ public class ProfileJson {
                             GovernanceEdgeWords.class,
                             EffectiveAgentProfileRead.class,
                             EffectiveGovernanceEntry.class,
+                            LineageLink.class,
                             ProfileSelectionRead.class,
                             ProfileSelectionContext.class,
                             ProfileSelectionCandidate.class);

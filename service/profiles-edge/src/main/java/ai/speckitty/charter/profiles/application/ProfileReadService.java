@@ -9,8 +9,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * The reads of one agent profile: the pack-scoped one (FR-002, FR-003), the profile as its pack stores it, with its
- * governance, and the one under an activation (FR-007), the winner of the layer merge with its state and the governance
- * with the state of each entry. It owns the reads' rules and nothing of where the data comes from ({@link ProfileSource},
+ * governance, and the one under an activation (FR-007, R8), the effective profile (merged with its in-force enhancers
+ * and folded under its in-force ancestors, rulings D5 to D7 of ADR-0078) with the state of its winner, its lineage and
+ * the governance with the state of each entry. It owns the reads' rules and nothing of where the data comes from ({@link ProfileSource},
  * {@link EffectiveProfiles}): the depth of the walk is 0 or 1, as the action context's is, and the answer is the profile
  * that was asked for.
  *
@@ -66,8 +67,8 @@ public final class ProfileReadService {
     }
 
     /**
-     * One agent profile under an activation: the winner of the layer merge with the facts the activation gives it, and its
-     * governance with the state of each entry.
+     * One agent profile under an activation: the effective profile with the facts the activation gives its winner, its
+     * lineage, and its governance with the state of each entry.
      *
      * @param activationId the activation's id, exactly as the request names it
      * @param profileId the profile's id, exactly as declared
@@ -77,7 +78,8 @@ public final class ProfileReadService {
      * @throws IllegalArgumentException when {@code depth} is outside 0 to {@value #MAX_DEPTH}; nothing is read. The
      *     REST edge refuses such a request before it gets here (a 400 without a code), so this is a caller's fault
      * @throws CharterRefusal as the port refuses: an unknown activation, a profile no pack of the closure holds, a pack
-     *     that cannot be read, a closure that cannot compose or merge, and a change of the inputs during the read
+     *     that cannot be read, a closure that cannot compose or merge, an in-force enhancement stored before the rule
+     *     that would drop part of a profile of the chain, and a change of the inputs during the read
      * @throws IllegalStateException when the port answers another profile or activation than the one asked for
      */
     public EffectiveProfiles.Outcome underActivation(

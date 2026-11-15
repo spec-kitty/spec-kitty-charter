@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
@@ -83,73 +84,7 @@ public class ActivationTestWiring {
         public PacksSession session(Optional<List<String>> packIds) {
             reads.incrementAndGet();
             ClosureSnapshot snapshot = fixture(fingerprint);
-            return new PacksSession() {
-                @Override
-                public ClosureSnapshot snapshot() {
-                    return snapshot;
-                }
-
-                @Override
-                public Reach reach(ReachPlan plan) {
-                    return Reach.empty();
-                }
-
-                @Override
-                public MergedSnapshot merged() {
-                    return MergedSnapshot.empty();
-                }
-
-                @Override
-                public InForceAnswer inForce(InForceQuery query) {
-                    return InForceAnswer.empty();
-                }
-
-                @Override
-                public GraphSnapshot graph(InForceQuery query) {
-                    return GraphSnapshot.empty();
-                }
-
-                @Override
-                public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
-                    return ActionContext.notInForce();
-                }
-
-                @Override
-                public Optional<EffectiveArtifactRead> effectiveArtifact(
-                        ArtifactKind kind, String id, int depth, InForceQuery query) {
-                    return Optional.empty();
-                }
-
-                @Override
-                public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
-                    return false;
-                }
-
-                @Override
-                public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
-                    return EffectivePrompt.NONE;
-                }
-
-                @Override
-                public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
-                    return List.of();
-                }
-
-                @Override
-                public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
-                    return Optional.empty();
-                }
-
-                @Override
-                public void requireAction(String missionType, String action) {
-                    // the fixture holds no mission type
-                }
-
-                @Override
-                public Optional<String> stepPlace(String missionType, String action) {
-                    return Optional.empty();
-                }
-            };
+            return new FixtureSession(snapshot);
         }
 
         /**
@@ -181,5 +116,80 @@ public class ActivationTestWiring {
     @Primary
     FixturePacks fixturePacks() {
         return new FixturePacks();
+    }
+
+    /** A session over the fixture's snapshot: it holds no closure, so every walk and read answers nothing. */
+    private record FixtureSession(ClosureSnapshot snapshot) implements PacksSession {
+
+        @Override
+        public ClosureSnapshot snapshot() {
+            return snapshot;
+        }
+
+        @Override
+        public Reach reach(ReachPlan plan) {
+            return Reach.empty();
+        }
+
+        @Override
+        public MergedSnapshot merged() {
+            return MergedSnapshot.empty();
+        }
+
+        @Override
+        public InForceAnswer inForce(InForceQuery query) {
+            return InForceAnswer.empty();
+        }
+
+        @Override
+        public GraphSnapshot graph(InForceQuery query) {
+            return GraphSnapshot.empty();
+        }
+
+        @Override
+        public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+            return ActionContext.notInForce();
+        }
+
+        @Override
+        public Optional<EffectiveArtifactRead> effectiveArtifact(
+                ArtifactKind kind, String id, int depth, InForceQuery query) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<ProfileResolution> profileResolution(String id, InForceQuery query) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean isInForce(ArtifactRef artifact, InForceQuery query) {
+            return false;
+        }
+
+        @Override
+        public EffectivePrompt prompt(String missionType, String action, InForceQuery query) {
+            return EffectivePrompt.NONE;
+        }
+
+        @Override
+        public List<EffectiveHeldWinner> heldWinners(ArtifactKind kind) {
+            return List.of();
+        }
+
+        @Override
+        public Optional<EffectiveHeldWinner> heldWinner(ArtifactKind kind, String id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public void requireAction(String missionType, String action) {
+            // the fixture holds no mission type
+        }
+
+        @Override
+        public Optional<String> stepPlace(String missionType, String action) {
+            return Optional.empty();
+        }
     }
 }

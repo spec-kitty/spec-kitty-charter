@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage.config;
 
 import ai.speckitty.charter.kernel.config.StartupRefusal;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
+import ai.speckitty.charter.packs.infra.storage.AgentProfileEnhancements;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
@@ -51,6 +53,17 @@ public class StorageConfiguration {
     @Bean
     SerializationStrategy serializationStrategy() {
         return new YamlSerializationStrategy();
+    }
+
+    /**
+     * The profile enhancement merge and the inheritance along {@code specializes_from} (rulings D5 to D7), which the
+     * effective profile read composes through.
+     *
+     * @return the merge over the agent profiles the store binds
+     */
+    @Bean
+    ProfileEnhancementGateway profileEnhancements() {
+        return AgentProfileEnhancements.INSTANCE;
     }
 
     /**
