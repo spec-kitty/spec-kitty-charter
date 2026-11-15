@@ -2,7 +2,7 @@
 title: "Journey 03: Ask in plain language, get the right recipe"
 description: A non-engineer developer asks for something in plain words; the client picks the mission type and the service picks a profile for each step's role.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-15T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -87,8 +87,9 @@ Gaps against the conceptual model:
   the service selecting the profile by role fit and specialization (ADR-0032).
 - Core's `generic-agent` fallback is hard-coded in the client; the model has a pack-declared,
   locked fallback that the service returns marked as a fallback.
-- Tie handling is an open question (ADR-0032); dispatch today shows alternatives with confidences,
-  which is closer to "return all candidates".
+- Ties are ruled: the service returns every equal candidate and marks the answer as a tie (ADR-0032
+  decision 8; `selectAgentProfile`, [ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/)).
+  Dispatch today shows alternatives with confidences, which is close to that.
 
 ## Scenarios
 

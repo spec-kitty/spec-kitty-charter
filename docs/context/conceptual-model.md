@@ -2,7 +2,7 @@
 title: Conceptual model
 description: What packs, the charter, its two levers, artifacts, mission types, profiles, values and the active charter mean, before any field, file or endpoint.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-15T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -284,9 +284,14 @@ profile for the role a step names, given the context of the work
    with a clear message: no profile matched, and no fallback profile was found for the applicable
    context. Because built-in's fallback is locked, this signals a misconfiguration. The client may
    still choose to run without a profile.
-5. **[Ties](/glossary/governance/#profile-tie): no hidden tie-break.** Whether the service returns
-   all equal candidates or picks one at random with a warning is an
-   [open question](#open-questions).
+5. **[Ties](/glossary/governance/#profile-tie): no hidden tie-break.** The service returns every
+   equal candidate, marks the answer as a tie, and the client picks
+   (ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decision 8).
+
+A pin and the profile's performer narrow the candidates before the order runs, and only a specialist that declares
+a context (a language or a framework) is judged against the context of the work. Specialization means the longest
+chain of profiles that a profile refines. A client asks the service for the profile of a role, or of one step,
+under its activation (ADR [0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/)).
 
 ### Role pin
 
@@ -294,18 +299,27 @@ A derived pack may **[pin](/glossary/governance/#role-pin)** the profile that fi
 step that names that role gets the pinned profile, whatever the mission type. Profiles that
 specialize the pinned one also fit, so an org can refine it further, for example into reviewers for
 different parts of its structure. A pin restricts the candidates to the pinned profile and its
-specializations, and it is applied before the selection order runs; when candidates are still tied,
-the pinned profile wins. With no pin, a tie returns every equal candidate and the client picks
-(ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decisions 8 and 9, ruled
-2026-11-12). Example: an org that wants every review done by a human pins the
-reviewer role to a locked human-reviewer profile; no step changes.
+specializations, and it is applied before the selection order runs. A specialization that survives
+is always more specialized than the pinned profile, so the pinned profile is never tied: it is the
+answer only when none of its specializations fits. A tie among its specializations returns every
+equal candidate and the client picks
+(ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) decisions 8 and 9).
+
+A pin can only tighten. The pin names a profile the pack's packs hold, and that profile fills the
+role, as its primary role or an alt-role. Two packs that pin one role to different profiles
+conflict, whichever builds on the other: a project cannot re-pin a role its org pinned
+(ADR [0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 3). Example: an org that wants every review done by a human pins the
+reviewer role to a locked, human-performed reviewer profile; no step changes.
 
 ### The operator
 
-**[Operator](/glossary/governance/#operator-role)** is a role like any other. A profile can be
-marked as performed by a human. In a procedure, the operator role marks where to ask the Human in
-Charge; in a mission step it could have a human implement or review a work package (sensible, not
-yet needed).
+**[Operator](/glossary/governance/#operator-role)** is the role a human fills. A profile names its
+**[performer](/glossary/governance/#performer)**, an agent or a human, and only a human-performed
+profile may take the operator role (ADR [0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 4). A step that asks for the operator is
+served by a human-performed profile or by nothing: it never gets the fallback profile, which is
+always agent-performed. A human-performed profile serves another role only when an org pins that
+role to it. In a procedure, the operator role marks where to ask the Human in Charge; in a mission
+step it could have a human implement or review a work package (sensible, not yet needed).
 
 ### Ethos and the opening statement
 
@@ -386,8 +400,6 @@ creed design (epic #77).
 
 ## Open questions
 
-- **Ties in profile selection:** return every equal candidate, or pick one at random with a warning
-  (ADR [0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
 - **Compatibility with existing required lists:** whether, how long and how the service keeps
   reading requirements written in the older form, and how a pack with both is treated
   (ADR [0031](/adr/0031-requirement-is-authored-as-a-preset/)).
@@ -468,6 +480,7 @@ Current packs and core compared with the model (open-packs and core, 2026-10-26)
 | Fallback profile | [Fallback profile](/glossary/governance/#fallback-profile) |
 | Role pin | [Role pin](/glossary/governance/#role-pin) |
 | Operator | [Operator (role)](/glossary/governance/#operator-role) |
+| Performer | [Performer](/glossary/governance/#performer) |
 | Ethos | [Ethos](/glossary/governance/#ethos) |
 | Value | [Value (charter)](/glossary/charter/#value-charter) |
 | Value impact | [Value impact](/glossary/charter/#value-impact) |

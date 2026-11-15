@@ -143,7 +143,7 @@ How a profile introduces itself to an agent at the start of work. Derived from t
 
 ## Operator (role)
 
-The role performed by a human, the Human in Charge; a role like any other. A profile can be marked as performed by a human. In a procedure it marks where to ask the human for input or action; a step (for mission steps: sensible, not yet needed) or a role pin can route work, such as every review, to a human.
+The role a human fills, the Human in Charge. Only a profile whose performer is `human` may take it, as its role or an alt-role, and a step that asks for it never gets the fallback profile: with no human-performed candidate the service answers that no profile matched (ADR-0078). In a procedure it marks where to ask the human for input or action; a step (for mission steps: sensible, not yet needed) or a role pin to a human-performed profile can route work, such as every review, to a human.
 
 **Meta:**
 
@@ -154,6 +154,16 @@ The role performed by a human, the Human in Charge; a role like any other. A pro
 ## Pack Level
 
 The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect. ADR-0048's composition is built: a pack may take a `parent_pack`, or `depends_on` a pack, only at its own level or one nearer built-in, and the resolver refuses a violation (`pack_level_violation`); `pack_level` is required when `depends_on` is non-empty.
+
+{#performer}
+
+## Performer
+
+Who carries out an agent profile: `agent` or `human`, declared as `performer` on the profile. It is optional, and selection reads an absent performer as `agent`. Only a human-performed profile may take the operator role; a human-performed profile serves another role only through a role pin, and a fallback profile is always agent-performed. It replaces core's `sentinel` flag (ADR-0078).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#precedence-rule}
 
@@ -185,7 +195,7 @@ An agent profile: a named specialist who fills one primary role and optionally a
 
 ## Profile selection
 
-How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin narrows the candidates to the pinned profile and its specializations, and settles a tie it is part of; any other tie returns every equal candidate.
+How the service picks the profile in force for a role, or for the role a step names, under an activation (ADR-0032, ADR-0069, ADR-0078). Filters run first: a role pin narrows the candidates to the pinned profile and its specializations, a human-performed profile serves only the operator role or a role pinned to it, the profile must fit the role (primary role or alt-role), and a specialization that declares a language or framework must fit the asked context. Then the best role fit wins (primary before alt-role), then the longest `specializes_from` chain, then the highest `routing-priority`. A tie returns every equal candidate; with no candidate, the declared fallback profile, never for the operator role; else a not-found refusal. Each answer is marked primary, alt or fallback.
 
 **Meta:**
 
@@ -195,11 +205,11 @@ How the service picks the profile for a step: role fit first (primary role beats
 
 ## Profile tie
 
-Two or more equally fitting profiles after profile selection. There is no hidden tie-break: when the pinned profile is among them, it is the answer; otherwise the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decisions 8 and 9).
+Two or more equally fitting profiles after profile selection. There is no hidden tie-break: the service returns every equal candidate, marks the answer as a tie, and the client picks (ADR-0032 decision 8). A pinned profile is never in a tie, since its surviving specializations always rank above it (ADR-0078).
 
 **Meta:**
 
-- **status:** `proposed`
+- **status:** `canonical`
 
 {#role}
 
@@ -215,7 +225,7 @@ What a mission step asks for and a profile fills, such as implementer, reviewer 
 
 ## Role pin
 
-A derived pack's setting that narrows the profiles filling a role to the pinned profile and the profiles that specialize it, before the selection order runs; the pinned profile wins a tie it is part of. Every step asking for that role is served from that narrowed set, whatever the mission type. Role pins, role locks and other integrity settings live in a policy file at the pack root.
+A pack's setting, `role_pins` in its `policy.yaml`, that narrows the profiles filling a role to the pinned profile and the profiles that specialize it, before the selection order runs. Every step asking for that role is served from that narrowed set, whatever the mission type. The pinned profile must be held in the pack's closure and fit the role. Pins only tighten: two packs of one closure that pin one role to different profiles conflict (ADR-0030, ADR-0078). Role locks and other integrity settings live in the same policy file.
 
 **Meta:**
 
