@@ -75,6 +75,19 @@ public final class ProfileSelection {
         return fallback(operator, candidates);
     }
 
+    /**
+     * Selects the profile of a step that names no role (FR-012): any role may act on it, and no pin or role fit narrows
+     * the candidates, so the answer is step 10's, the fallback in force (ADR-0068). The step-keyed selection of a step
+     * that names a role is {@link #select} with that role.
+     *
+     * @param candidates the candidates, pin and fallback in force
+     * @return the fallback, or no match when none is in force
+     */
+    public static SelectionAnswer selectForAnyRole(Candidates candidates) {
+        Objects.requireNonNull(candidates, "candidates");
+        return fallback(false, candidates);
+    }
+
     // Step 2: a pin keeps the pinned profile and its in-force specializations.
     private static Predicate<SelectionCandidate> pinned(Candidates candidates) {
         return candidate -> candidates.pinnedProfileId().isEmpty()

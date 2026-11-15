@@ -24,6 +24,7 @@ import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.profiles.domain.selection.Candidates;
 import ai.speckitty.charter.profiles.domain.selection.SelectionCandidate;
+import ai.speckitty.charter.profiles.domain.selection.SelectionContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,8 +48,16 @@ class EffectiveAgentProfilesControllerTest {
     private final List<String> asked = new ArrayList<>();
 
     /** A selection port for the tests of the profile read: asked, it is a fault. */
-    private static final SelectionCandidates NO_SELECTION = (activationId, role, context) -> {
-        throw new AssertionError("the profile read does not ask the selection port");
+    private static final SelectionCandidates NO_SELECTION = new SelectionCandidates() {
+        @Override
+        public Read read(String activationId, String role, SelectionContext context) {
+            throw new AssertionError("the profile read does not ask the selection port");
+        }
+
+        @Override
+        public StepRead readForStep(String activationId, String missionType, String action, SelectionContext context) {
+            throw new AssertionError("the profile read does not ask the selection port");
+        }
     };
 
     private MockMvc mvc(EffectiveProfiles port) {
@@ -147,23 +156,64 @@ class EffectiveAgentProfilesControllerTest {
     // ---- selectAgentProfile, served by the same controller (one tag, one generated interface)
 
     private SelectionCandidates selection() {
-        return (activationId, role, context) -> {
-            asked.add(activationId + "/" + role + "/" + context.language().orElse("-") + "/"
-                    + context.framework().orElse("-"));
-            AgentProfile rita = AgentProfile.builder()
-                    .id(new AgentProfileIdentifier("reviewer-rita"))
-                    .packId(new PackIdentifier("org-base"))
-                    .name("Reviewer Rita")
-                    .purpose("Review.")
-                    .role("reviewer")
-                    .specialization(new Specialization("Review", Optional.empty(), Optional.empty(), Optional.empty()))
-                    .build();
-            return new SelectionCandidates.Read(
-                    activationId,
-                    Candidates.unpinned(List.of(new SelectionCandidate(rita, "org-base", 1, 0)), Optional.empty()),
-                    SOURCE,
-                    "t-2");
+        return new SelectionCandidates() {
+            @Override
+            public Read read(String activationId, String role, SelectionContext context) {
+                asked.add(activationId + "/" + role + "/" + context.language().orElse("-") + "/"
+                        + context.framework().orElse("-"));
+                return rita(activationId, "t-2");
+            }
+
+            @Override
+            public StepRead readForStep(
+                    String activationId, String missionType, String action, SelectionContext context) {
+                asked.add(activationId + "/" + missionType + "/" + action + "/"
+                        + context.language().orElse("-") + "/"
+                        + context.framework().orElse("-"));
+                return new StepRead(Optional.of("reviewer"), rita(activationId, "t-3"));
+            }
         };
+    }
+
+    private static SelectionCandidates.Read rita(String activationId, String tag) {
+        AgentProfile rita = AgentProfile.builder()
+                .id(new AgentProfileIdentifier("reviewer-rita"))
+                .packId(new PackIdentifier("org-base"))
+                .name("Reviewer Rita")
+                .purpose("Review.")
+                .role("reviewer")
+                .specialization(new Specialization("Review", Optional.empty(), Optional.empty(), Optional.empty()))
+                .build();
+        return new SelectionCandidates.Read(
+                activationId,
+                Candidates.unpinned(List.of(new SelectionCandidate(rita, "org-base", 1, 0)), Optional.empty()),
+                SOURCE,
+                tag);
+    }
+
+    @Test
+    void aStepsSelectionIsTheSelectionOfItsRoleLinkedToTheStepWithItsOwnTag() throws Exception {
+        mvc(port(), selection())
+                .perform(get("/api/v1/activations/a-1/mission-types/software-dev/actions/review/profile-selection"
+                                + "?framework=spring")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Charter-Source-Fingerprint", SOURCE))
+                .andExpect(header().string("ETag", "\"t-3\""))
+                .andExpect(jsonPath("$.role").value("reviewer"))
+                .andExpect(jsonPath("$.context.framework").value("spring"))
+                .andExpect(jsonPath("$.candidates[0].id").value("reviewer-rita"))
+                .andExpect(jsonPath("$._links.self.href")
+                        .value("/api/v1/activations/a-1/mission-types/software-dev/actions/review/profile-selection"
+                                + "?framework=spring"));
+        mvc(port(), selection())
+                .perform(get("/api/v1/activations/a-1/mission-types/software-dev/actions/review/profile-selection")
+                        .header("If-None-Match", "\"t-3\"")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string("ETag", "\"t-3\""))
+                .andExpect(content().string(""));
+        assertThat(asked).containsExactly("a-1/software-dev/review/-/spring", "a-1/software-dev/review/-/-");
     }
 
     @Test

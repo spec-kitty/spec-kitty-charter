@@ -201,6 +201,10 @@ public class EffectiveReadMapper {
                     new Link(activations.prompt(
                             id, read.query().missionType(), read.query().action())));
         }
+        links.put(
+                "profile-selection",
+                new Link(activations.stepProfileSelection(
+                        id, read.query().missionType(), read.query().action())));
         return new EffectiveActionContext(
                 id,
                 read.stored().revision().token(),

@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.StepRoles;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * <p>It owns its steps: the order of {@link #steps()} is the run order, and the order of {@link #onDemandSteps()} is
  * kept as authored but is not a run order. Step ids are unique across both. Build one with {@link #builder()}.
  */
-public final class MissionType implements CharterArtifact {
+public final class MissionType implements CharterArtifact, StepRoles {
 
     private static final ModularRuleset<MissionType> RULES = ModularRuleset.<MissionType>emptyRules()
             .must(Constraints.of("A mission type needs at least one step.", type -> !type.steps.isEmpty()))
@@ -202,6 +203,17 @@ public final class MissionType implements CharterArtifact {
         return Stream.concat(steps.stream(), onDemandSteps.stream())
                 .filter(step -> step.id().equals(stepId))
                 .findFirst();
+    }
+
+    /**
+     * The role one step names (ADR-0032 decision 1), from the sequence or the on-demand steps.
+     *
+     * @param stepId the step's id
+     * @return the step's role; empty when the step declares none, or the type has no step of that id
+     */
+    @Override
+    public Optional<String> stepRole(String stepId) {
+        return step(stepId).flatMap(MissionStep::role);
     }
 
     /**

@@ -938,14 +938,16 @@ x-refusal:
     raised: true
     description: >-
       two packs of one closure, neither derived from the other, declare different fallbacks (ADR-0068); raised by the
-      selection read (selectAgentProfile) after activation_not_found and before any profile is matched
+      selection reads (selectAgentProfile, selectAgentProfileForStep) after activation_not_found, and the step read's
+      own 404s, and before any profile is matched
   no_profile_matched:
     status: 404
     retryable: false
     raised: true
     description: >-
       no profile in force fits the asked role and no fallback is in force, or the role is operator, which never falls
-      back (ADR-0068, ADR-0069, ruling D4); raised by the selection read (selectAgentProfile) after the conflicts
+      back (ADR-0068, ADR-0069, ruling D4), or the asked step names no role and no fallback is in force; raised by the
+      selection reads (selectAgentProfile, selectAgentProfileForStep) after the conflicts
   mission_type_not_in_force:
     status: 409
     retryable: false
@@ -975,8 +977,9 @@ x-refusal:
     raised: true
     description: >-
       two packs of one closure pin one role to different profiles; pins are tighten-only, whatever the packs'
-      derivation (ADR-0030, ruling D3). Raised by the registration and by the selection read (selectAgentProfile), for
-      the asked role, when two unrelated packs that pin differently meet in one activation
+      derivation (ADR-0030, ruling D3). Raised by the registration and by the selection reads (selectAgentProfile,
+      selectAgentProfileForStep), for the asked role or the role the asked step names, when two unrelated packs that
+      pin differently meet in one activation
   specialization_cycle:
     status: 422
     retryable: false

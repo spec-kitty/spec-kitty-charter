@@ -57,9 +57,35 @@ class ActivationsSelectionCandidatesTest {
                 stored,
                 "sha256:source",
                 "sha256:closure",
-                new EffectiveTag.SelectionQuery("implementer", Optional.of("java"), Optional.empty()),
+                Optional.of("implementer"),
                 candidates,
                 "sha256:" + "a".repeat(64));
+    }
+
+    @Test
+    void aStepsReadIsTheActivationsStepSelectionWithTheRoleItNames() {
+        when(service.stepProfileSelection(
+                        eq(ID),
+                        eq(new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "implement", Optional.of("java"), Optional.empty()))))
+                .thenReturn(read(new ProfileCandidates(
+                        List.of(candidate("implementer-ivan", "built-in", 0)),
+                        new ProfileCandidates.Pin.None(),
+                        new ProfileCandidates.Fallback.None())));
+
+        SelectionCandidates.StepRead read = new ActivationsSelectionCandidates(service)
+                .readForStep(
+                        ID.value(),
+                        "software-dev",
+                        "implement",
+                        new SelectionContext(Optional.of("java"), Optional.empty()));
+
+        assertThat(read.role()).contains("implementer");
+        assertThat(read.read().activationId()).isEqualTo(ID.value());
+        assertThat(read.read().candidates().candidates())
+                .extracting(SelectionCandidate::profileId)
+                .containsExactly("implementer-ivan");
+        assertThat(read.read().etag()).isEqualTo("sha256:" + "a".repeat(64));
     }
 
     @Test

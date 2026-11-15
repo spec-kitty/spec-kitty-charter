@@ -266,6 +266,15 @@ class ProfileSelectionTest {
             assertThat(ProfileSelection.select("facilitator", SelectionContext.NONE, unpinned(EXAMPLE_PACKS)))
                     .isEqualTo(FALLBACK);
         }
+
+        @Test
+        @DisplayName("a step that names no role answers the fallback, whatever the candidates take; none is no match")
+        void anyRoleFallsBack() {
+            assertThat(ProfileSelection.selectForAnyRole(unpinned(EXAMPLE_PACKS)))
+                    .isEqualTo(FALLBACK);
+            assertThat(ProfileSelection.selectForAnyRole(Candidates.unpinned(EXAMPLE_PACKS, Optional.empty())))
+                    .isEqualTo(new SelectionAnswer.NoMatch());
+        }
     }
 
     @Nested

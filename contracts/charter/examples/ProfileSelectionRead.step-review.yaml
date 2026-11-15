@@ -1,0 +1,23 @@
+summary: >-
+  The step review of software-dev names the role reviewer, so the step answers what the reviewer selection answers in
+  org-base's closure: the tie of reviewer-renata and reviewer-rita, built-in's first.
+value:
+  role: reviewer
+  context: {}
+  candidates:
+  - id: reviewer-renata
+    pack: built-in
+    fit: primary
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/agent_profile/reviewer-renata
+  - id: reviewer-rita
+    pack: org-base
+    fit: primary
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/agent_profile/reviewer-rita
+  tie: true
+  _links:
+    self:
+      href: /api/v1/activations/a-1/mission-types/software-dev/actions/review/profile-selection

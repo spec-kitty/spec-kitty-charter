@@ -118,6 +118,7 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getEffectiveActionContext         | /activations/a-1/mission-types/m/actions/s/context          |
       | getEffectiveStepPrompt            | /activations/a-1/mission-types/m/actions/s/prompt           |
       | selectAgentProfile                | /activations/a-1/roles/reviewer/profile-selection           |
+      | selectAgentProfileForStep         | /activations/a-1/mission-types/m/actions/s/profile-selection |
 
   Scenario: createActivation that fails unexpectedly is 500 internal_error
     Given the service fails unexpectedly while it reads the packs

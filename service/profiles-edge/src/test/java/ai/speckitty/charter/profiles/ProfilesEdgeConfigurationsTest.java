@@ -12,6 +12,7 @@ import ai.speckitty.charter.profiles.application.ProfileSelectionService;
 import ai.speckitty.charter.profiles.application.ProfileSource;
 import ai.speckitty.charter.profiles.application.SelectionCandidates;
 import ai.speckitty.charter.profiles.application.config.ProfilesApplicationConfiguration;
+import ai.speckitty.charter.profiles.domain.selection.SelectionContext;
 import ai.speckitty.charter.profiles.infra.activations.ActivationsEffectiveProfiles;
 import ai.speckitty.charter.profiles.infra.activations.ActivationsSelectionCandidates;
 import ai.speckitty.charter.profiles.infra.activations.config.ProfilesActivationsConfiguration;
@@ -32,8 +33,16 @@ import tools.jackson.databind.JacksonModule;
 /** Each ring's configuration is a Spring configuration that starts on its own, over the bean its ring asks for. */
 class ProfilesEdgeConfigurationsTest {
 
-    private static final SelectionCandidates NO_SELECTION = (activationId, role, context) -> {
-        throw new AssertionError("only the wiring is under test");
+    private static final SelectionCandidates NO_SELECTION = new SelectionCandidates() {
+        @Override
+        public Read read(String activationId, String role, SelectionContext context) {
+            throw new AssertionError("only the wiring is under test");
+        }
+
+        @Override
+        public StepRead readForStep(String activationId, String missionType, String action, SelectionContext context) {
+            throw new AssertionError("only the wiring is under test");
+        }
     };
 
     private static final ProfileSource SOURCE = (pack, profileId, depth) ->

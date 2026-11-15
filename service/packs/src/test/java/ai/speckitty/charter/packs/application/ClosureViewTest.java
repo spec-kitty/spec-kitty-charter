@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -749,12 +750,16 @@ class ClosureViewTest {
                 .schemaVersion("1.0")
                 .title("md of " + pack)
                 .description("md");
-        for (String step : steps) {
+        for (String declared : steps) {
+            // "s=reviewer" declares the step s with the role reviewer; "s" declares it with no role.
+            String step = declared.split("=", 2)[0];
+            Optional<String> role =
+                    declared.contains("=") ? Optional.of(declared.substring(step.length() + 1)) : Optional.empty();
             type.step(new MissionStep(
                     step,
                     step,
                     Optional.empty(),
-                    Optional.empty(),
+                    role,
                     Optional.empty(),
                     Optional.empty(),
                     List.of(),
@@ -769,7 +774,9 @@ class ClosureViewTest {
                         .artifact(type.build())
                         .build());
         PromptFacts held = facts.get(pack).prompts();
-        prompts(pack, new PromptFacts(held.declared(), held.fills(), Map.of(u("mission_type:md"), List.of(steps))));
+        List<String> ids =
+                Arrays.stream(steps).map(declared -> declared.split("=", 2)[0]).toList();
+        prompts(pack, new PromptFacts(held.declared(), held.fills(), Map.of(u("mission_type:md"), ids)));
     }
 
     /** The view over the fixture, whose winners are read from the stored packs. */
@@ -856,6 +863,41 @@ class ClosureViewTest {
         missionType("proj", "t");
 
         assertThat(storedView().stepPlace("md", "s")).isEmpty();
+    }
+
+    @Test
+    void aStepsRoleIsTheRoleTheVersionAtItsPlaceGivesIt() {
+        // proj's winning md declares s with the role implementer; base's replaced version names reviewer.
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s=reviewer");
+        missionType("proj", "s=implementer");
+
+        assertThat(storedView().stepRole("md", "s")).contains("implementer");
+    }
+
+    @Test
+    void theRoleOfAStepOnlyAReplacedVersionKeepsIsThatVersions() {
+        // A7: proj's winning md drops s, so its role is the one base's version, at the step's place, names.
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
+        missionType("base", "s=reviewer");
+        missionType("proj", "t=implementer");
+
+        assertThat(storedView().stepRole("md", "s")).contains("reviewer");
+    }
+
+    @Test
+    void aStepThatNamesNoRoleAndAStepWithNoPlaceHaveNone() {
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
+        missionType("base", "s");
+
+        assertThat(storedView().stepRole("md", "s"))
+                .as("a step that names no role")
+                .isEmpty();
+        assertThat(storedView().stepRole("md", "u"))
+                .as("a step no version declares")
+                .isEmpty();
     }
 
     /** The prompt in force of md/s at the step's place (operator ruling Q3, 2026-11-13). */

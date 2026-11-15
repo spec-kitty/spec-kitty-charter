@@ -33,7 +33,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * the one verified read agreed on and the tag of the representation as its {@code ETag}; a matching
  * {@code If-None-Match} is a {@code 304} that sends the tag alone, as the activation set's effective reads do. The
  * selection of the profile that fills a role ({@code selectAgentProfile}) is of the same tag, so it is served here too,
- * over its own use case and wire mapper.
+ * over its own use case and wire mapper, and so is the selection of a step's profile ({@code selectAgentProfileForStep}).
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -98,7 +98,29 @@ public class EffectiveAgentProfilesController implements EffectiveAgentProfilesA
             @Nullable String language,
             @Nullable String framework) {
         SelectionContext context = new SelectionContext(Optional.ofNullable(language), Optional.ofNullable(framework));
-        return switch (selection.select(activationId, role, context, ifNoneMatch)) {
+        return answer(selection.select(activationId, role, context, ifNoneMatch));
+    }
+
+    /**
+     * {@code selectAgentProfileForStep} (FR-012): the profile of one step under an activation, which is exactly what
+     * {@link #selectAgentProfile} answers for the role the step names, or the fallback in force for a step that names
+     * none. It shares the tag, so it is served here over the same use case and wire mapper; an unknown mission type or
+     * step is refused by the shared refusal handler as the action context refuses it.
+     */
+    @Override
+    public ResponseEntity<ProfileSelectionRead> selectAgentProfileForStep(
+            String activationId,
+            String missionType,
+            String action,
+            @Nullable String ifNoneMatch,
+            @Nullable String language,
+            @Nullable String framework) {
+        SelectionContext context = new SelectionContext(Optional.ofNullable(language), Optional.ofNullable(framework));
+        return answer(selection.selectForStep(activationId, missionType, action, context, ifNoneMatch));
+    }
+
+    private ResponseEntity<ProfileSelectionRead> answer(ProfileSelectionService.Outcome outcome) {
+        return switch (outcome) {
             case ProfileSelectionService.Outcome.NotModified notModified ->
                 ResponseEntity.status(HttpStatus.NOT_MODIFIED)
                         .eTag(EntityTags.quote(notModified.etag()))

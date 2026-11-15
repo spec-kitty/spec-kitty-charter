@@ -72,9 +72,10 @@ tags:
   - name: EffectiveAgentProfiles
     description: >-
       The agent profiles of an activation: the read of one profile under an activation, with its governance and the
-      state of each entry, and the selection of the profile that fills a role (selectAgentProfile). Its own tag, so
-      that the :profiles-edge slice implements it in controllers of its own beside the activation set's: the generic
-      effective read of an artifact never renders a profile body.
+      state of each entry, the selection of the profile that fills a role (selectAgentProfile) and of the profile of a
+      step, by the role it names (selectAgentProfileForStep). Its own tag, so that the :profiles-edge slice implements
+      it in controllers of its own beside the activation set's: the generic effective read of an artifact never
+      renders a profile body.
   - name: EffectiveAssets
     description: >-
       The assets of an activation (ADR-0074 decision 9 as amended 2026-11-12): the assets the activation's closure
@@ -253,6 +254,8 @@ paths:
     $ref: paths/activations_activationId_missionTypes_missionType_actions_action_context.yaml
   /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt:
     $ref: paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml
+  /activations/{activationId}/mission-types/{missionType}/actions/{action}/profile-selection:
+    $ref: paths/activations_activationId_missionTypes_missionType_actions_action_profile-selection.yaml
   /activations/{activationId}/roles/{role}/profile-selection:
     $ref: paths/activations_activationId_roles_role_profile-selection.yaml
 components:

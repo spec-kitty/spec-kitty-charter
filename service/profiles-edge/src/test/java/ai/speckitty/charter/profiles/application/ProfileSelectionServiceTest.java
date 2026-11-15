@@ -44,9 +44,41 @@ class ProfileSelectionServiceTest {
     }
 
     private SelectionCandidates port(Candidates candidates) {
-        return (activationId, role, context) -> {
-            asked.add(activationId + "/" + role + "/" + context.language().orElse("-"));
-            return new SelectionCandidates.Read(activationId, candidates, "sha256:source", TAG);
+        return port(candidates, Optional.of("reviewer"));
+    }
+
+    /** A port whose every step names the role given, or none. */
+    private SelectionCandidates port(Candidates candidates, Optional<String> stepRole) {
+        return new SelectionCandidates() {
+            @Override
+            public Read read(String activationId, String role, SelectionContext context) {
+                asked.add(activationId + "/" + role + "/" + context.language().orElse("-"));
+                return new Read(activationId, candidates, "sha256:source", TAG);
+            }
+
+            @Override
+            public StepRead readForStep(
+                    String activationId, String missionType, String action, SelectionContext context) {
+                asked.add(activationId + "/" + missionType + "/" + action + "/"
+                        + context.language().orElse("-"));
+                return new StepRead(stepRole, new Read(activationId, candidates, "sha256:source", TAG));
+            }
+        };
+    }
+
+    /** A port that refuses every read as the activations slice refuses an unknown activation. */
+    private static SelectionCandidates refusing() {
+        return new SelectionCandidates() {
+            @Override
+            public Read read(String activationId, String role, SelectionContext context) {
+                throw new CharterRefusal(RefusalCode.ACTIVATION_NOT_FOUND, "no such activation");
+            }
+
+            @Override
+            public StepRead readForStep(
+                    String activationId, String missionType, String action, SelectionContext context) {
+                throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no such step");
+            }
         };
     }
 
@@ -68,7 +100,8 @@ class ProfileSelectionServiceTest {
             assertThat(found.etag()).isEqualTo(TAG);
             assertThat(found.sourceFingerprint()).isEqualTo("sha256:source");
             assertThat(found.selection().activationId()).isEqualTo("a-1");
-            assertThat(found.selection().role()).isEqualTo("reviewer");
+            assertThat(found.selection().subject()).isEqualTo(new ProfileSelectionService.Subject.Role("reviewer"));
+            assertThat(found.selection().subject().role()).contains("reviewer");
             assertThat(found.selection().answer().tie()).isTrue();
             assertThat(found.selection().answer().picks())
                     .containsExactly(
@@ -114,15 +147,71 @@ class ProfileSelectionServiceTest {
     }
 
     @Test
-    void thePortsRefusalIsTheAnswer() {
-        ProfileSelectionService service = new ProfileSelectionService((activationId, role, context) -> {
-            throw new CharterRefusal(RefusalCode.ACTIVATION_NOT_FOUND, "no such activation");
+    void aStepAnswersTheSelectionOfTheRoleItNamesWithTheStepAsItsSubject() {
+        ProfileSelectionService service = new ProfileSelectionService(port(tie(), Optional.of("reviewer")));
+
+        ProfileSelectionService.Outcome outcome = service.selectForStep(
+                "a-1", "software-dev", "review", new SelectionContext(Optional.of("java"), Optional.empty()), null);
+
+        assertThat(outcome).isInstanceOfSatisfying(ProfileSelectionService.Outcome.Found.class, found -> {
+            assertThat(found.etag()).isEqualTo(TAG);
+            assertThat(found.selection().subject())
+                    .isEqualTo(new ProfileSelectionService.Subject.Step(
+                            "software-dev", "review", Optional.of("reviewer")));
+            assertThat(found.selection().answer().picks())
+                    .as("what the role read answers for reviewer")
+                    .isEqualTo(((ProfileSelectionService.Outcome.Found)
+                                    service.select("a-1", "reviewer", SelectionContext.NONE, null))
+                            .selection()
+                            .answer()
+                            .picks());
         });
+        assertThat(asked).startsWith("a-1/software-dev/review/java");
+        assertThat(service.selectForStep("a-1", "software-dev", "review", SelectionContext.NONE, "*"))
+                .isEqualTo(new ProfileSelectionService.Outcome.NotModified(TAG));
+    }
+
+    @Test
+    void aStepThatNamesNoRoleAnswersTheFallbackAndWithNoneIsNoProfileMatchedEvenAgainstAMatchingTag() {
+        ProfileSelectionService service = new ProfileSelectionService(port(tie(), Optional.empty()));
+
+        assertThat(service.selectForStep("a-1", "software-dev", "specify", SelectionContext.NONE, null))
+                .isInstanceOfSatisfying(ProfileSelectionService.Outcome.Found.class, found -> {
+                    assertThat(found.selection().answer().picks())
+                            .containsExactly(new Pick("generic-agent", "built-in", Fit.FALLBACK));
+                    assertThat(found.selection().subject().role()).isEmpty();
+                });
+        ProfileSelectionService unfallen = new ProfileSelectionService(
+                port(Candidates.unpinned(tie().candidates(), Optional.empty()), Optional.empty()));
+        assertThatThrownBy(() -> unfallen.selectForStep("a-1", "software-dev", "specify", SelectionContext.NONE, "*"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.NO_PROFILE_MATCHED);
+                    assertThat(refused.getMessage())
+                            .contains("software-dev/specify")
+                            .contains("names no role")
+                            .contains("no fallback profile is in force");
+                });
+        ProfileSelectionService operator = new ProfileSelectionService(port(tie(), Optional.of("operator")));
+        assertThatThrownBy(() -> operator.selectForStep("a-1", "software-dev", "sign-off", SelectionContext.NONE, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.getMessage())
+                                .contains("the role operator of the step software-dev/sign-off")
+                                .contains("never falls back"));
+    }
+
+    @Test
+    void thePortsRefusalIsTheAnswer() {
+        ProfileSelectionService service = new ProfileSelectionService(refusing());
 
         assertThatThrownBy(() -> service.select("nope", "reviewer", SelectionContext.NONE, "*"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+        assertThatThrownBy(() -> service.selectForStep("a-1", "software-dev", "deploy", SelectionContext.NONE, "*"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
         assertThatThrownBy(() -> new ProfileSelectionService(null)).isInstanceOf(NullPointerException.class);
     }
 }

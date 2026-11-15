@@ -541,17 +541,20 @@ class EffectiveReadMapperTest {
 
         EffectiveActionContext wire = missions.toContext(held, false);
 
-        assertThat(wire.getLinks()).containsOnlyKeys("self", "effective-artifact", "artifact");
+        assertThat(wire.getLinks()).containsOnlyKeys("self", "effective-artifact", "artifact", "profile-selection");
+        assertThat(wire.getLinks().get("profile-selection").getHref())
+                .as("the step's profile selection, whatever the mission type's state (FR-012)")
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/profile-selection");
         assertThat(wire.getLinks().get("effective-artifact").getHref())
                 .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement");
         assertThat(wire.getLinks().get("artifact").getHref())
                 .isEqualTo("/api/v1/packs/proj/artifacts/mission_type/software-dev/steps/implement");
         assertThat(missions.toContext(contextRead(empty), false).getLinks())
                 .as("no artifact link when the effective set names no holding pack")
-                .containsOnlyKeys("self", "effective-artifact");
+                .containsOnlyKeys("self", "effective-artifact", "profile-selection");
         assertThat(mapper.toContext(held, false).getLinks())
-                .as("no step link while mission types are not served")
-                .containsOnlyKeys("self");
+                .as("no step link while mission types are not served; the profile selection is the profiles slice's")
+                .containsOnlyKeys("self", "profile-selection");
     }
 
     // ---- the graph and the action context (IC-11)
@@ -621,13 +624,13 @@ class EffectiveReadMapperTest {
                 new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), false);
 
         assertThat(missions.toContext(inForce, false).getLinks())
-                .containsOnlyKeys("self", "effective-artifact", "artifact", "prompt");
+                .containsOnlyKeys("self", "effective-artifact", "artifact", "prompt", "profile-selection");
         assertThat(missions.toContext(inForce, true).getLinks().get("prompt").getHref())
                 .as("the prompt takes no depth")
                 .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/prompt");
         assertThat(mapper.toContext(inForce, false).getLinks())
                 .as("the prompt is linked whether or not mission types are served")
-                .containsOnlyKeys("self", "prompt");
+                .containsOnlyKeys("self", "prompt", "profile-selection");
         assertThat(missions.toContext(notInForce, false).getLinks()).doesNotContainKey("prompt");
     }
 

@@ -19,7 +19,8 @@ import org.springframework.stereotype.Component;
  * The {@link SelectionCandidates} over the activations slice: it asks {@link EffectiveReadService#profileSelection}
  * for the candidates of a role, the pin and the fallback in force, and narrows each entity to the slice's own
  * {@link AgentProfile}. Each candidate keeps the pack the activation names as its holder, the winner's pack, never a
- * default. It decides nothing: the refusals, their order and the tag are the activations slice's, unchanged.
+ * default. It decides nothing: the refusals, their order and the tag are the activations slice's, unchanged, and so is
+ * the role a step names ({@link EffectiveReadService#stepProfileSelection}).
  */
 @Component
 public final class ActivationsSelectionCandidates implements SelectionCandidates {
@@ -41,6 +42,18 @@ public final class ActivationsSelectionCandidates implements SelectionCandidates
         EffectiveReadService.SelectionRead read = effective.profileSelection(
                 new ActivationId(activationId),
                 new EffectiveTag.SelectionQuery(role, context.language(), context.framework()));
+        return readOf(read);
+    }
+
+    @Override
+    public StepRead readForStep(String activationId, String missionType, String action, SelectionContext context) {
+        EffectiveReadService.SelectionRead read = effective.stepProfileSelection(
+                new ActivationId(activationId),
+                new EffectiveTag.StepSelectionQuery(missionType, action, context.language(), context.framework()));
+        return new StepRead(read.role(), readOf(read));
+    }
+
+    private static Read readOf(EffectiveReadService.SelectionRead read) {
         return new Read(
                 read.stored().id().value(), candidates(read.candidates()), read.sourceFingerprint(), read.etag());
     }

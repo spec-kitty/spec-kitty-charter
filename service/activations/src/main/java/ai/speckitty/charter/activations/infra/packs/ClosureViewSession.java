@@ -261,14 +261,14 @@ final class ClosureViewSession implements PacksSession {
      * slice's values. A fallback the closure does not hold, which registration refuses, puts no fallback in force.
      */
     @Override
-    public ProfileCandidates profileCandidates(String role, InForceQuery query) {
+    public ProfileCandidates profileCandidates(Optional<String> role, InForceQuery query) {
         Objects.requireNonNull(role, "role");
         InForceStates states = statesOf(query);
         List<ProfileCandidates.Candidate> candidates = InForceProfiles.candidates(view, states).stream()
                 .map(ClosureViewSession::candidateOf)
                 .toList();
         ClosureRoleFacts facts = ClosureRoleFacts.of(view);
-        ProfileCandidates.Pin pin = switch (facts.pinFor(role)) {
+        ProfileCandidates.Pin pin = switch (role.map(facts::pinFor).orElseGet(ClosureRoleFacts.PinFact.None::new)) {
             case ClosureRoleFacts.PinFact.None _ -> new ProfileCandidates.Pin.None();
             case ClosureRoleFacts.PinFact.Pinned pinned ->
                 new ProfileCandidates.Pin.Pinned(
@@ -306,6 +306,12 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public Optional<String> stepPlace(String missionType, String action) {
         return view.stepPlace(missionType, action).map(PackIdentifier::value);
+    }
+
+    /** The step's role at its place, by the packs slice's one place rule ({@link ClosureView#stepRole}). */
+    @Override
+    public Optional<String> stepRole(String missionType, String action) {
+        return view.stepRole(missionType, action);
     }
 
     /**

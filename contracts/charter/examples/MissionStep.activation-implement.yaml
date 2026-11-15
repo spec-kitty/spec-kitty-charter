@@ -65,3 +65,5 @@ value:
       href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
     mission-type:
       href: /api/v1/activations/a-1/artifacts/mission_type/software-dev
+    profile-selection:
+      href: /api/v1/activations/a-1/mission-types/software-dev/actions/implement/profile-selection

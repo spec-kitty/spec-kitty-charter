@@ -29,6 +29,8 @@ files:
   - EffectiveAgentProfileRead.java-jenny.yaml
   - ProfileSelectionRead.match.yaml
   - ProfileSelectionRead.tie.yaml
+  - ProfileSelectionRead.step-review.yaml
+  - ProfileSelectionRead.step-no-role.yaml
   - EffectiveArtifactRead.directive.yaml
   - EffectiveArtifactList.first-page.yaml
   - EffectiveGraph.one-edge.yaml
