@@ -23,6 +23,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T11:28:09.854840Z",
+      "decision_id": "01M7FFDY3YP3VA3EA5VGRZF28V",
+      "final_answer": null,
+      "input_key": "registration_judged_contents",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a) inspector contents of the staged tree; inspector gains the missing facts",
+        "(b) adapter from the store read",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Which contents does registration's PACK run judge? (a) the inspector's PackContents of the staged tree, with the inspector gaining the facts it lacks (domain value-object breaches, reference faults); the store's reader then only builds the aggregate, and a fault it finds that PACK missed fails closed. (b) PackContents built by an adapter from the store's own read: no second read, but two derivations of PackContents kept equal by hand.",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.architecture.registration-contents",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
