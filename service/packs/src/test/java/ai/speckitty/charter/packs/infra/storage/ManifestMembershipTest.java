@@ -124,7 +124,14 @@ class ManifestMembershipTest {
 
         store.write(
                 new WholePackStore.LoadedPack(
-                        loaded.pack(), loaded.layout(), loaded.graphs(), loaded.unmodelled(), Optional.of(skewed)),
+                        loaded.pack(),
+                        loaded.layout(),
+                        loaded.graphs(),
+                        loaded.unmodelled(),
+                        Optional.of(skewed),
+                        loaded.policy(),
+                        loaded.warnings(),
+                        loaded.excluded()),
                 target);
 
         assertFreshAndDerived(target);

@@ -14,7 +14,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "A pack's mutability policy file (policy.yaml at the pack root, ADR-0063), named by the optional mutability_policy key of pack.yaml.\n\nFields\n------\nschema_version : int\n    The shape's version, the integer 1.\nkind_defaults : mapping | absent\n    The default level of each artifact kind the pack sets one for, keyed by the\n    artifact kind token (ADR-0012 decision 4). A kind left out is open.\nartifacts : mapping | absent\n    The level of single artifacts, keyed by bare URN (<kind>:<id>, never\n    pack-qualified). An entry wins over its kind's default.\n\nA target's level in one pack is its artifacts entry, else its kind default, else open. Along a composition closure the highest level wins, and a later pack raises a level but never lowers it (ADR-0012 decision 3, ADR-0063 decision 3).\n\nRole locks and pins (ADR-0030) are reserved: the schema is closed, so a roles or pins key, like any key it does not declare, makes the file unreadable, and a pack whose pack.yaml names an unreadable or missing policy file is unreadable.",
+  "description": "A pack's mutability policy file (policy.yaml at the pack root, ADR-0063), named by the optional mutability_policy key of pack.yaml.\n\nFields\n------\nschema_version : int\n    The shape's version, the integer 1.\nkind_defaults : mapping | absent\n    The default level of each artifact kind the pack sets one for, keyed by the\n    artifact kind token (ADR-0012 decision 4). A kind left out is open.\nartifacts : mapping | absent\n    The level of single artifacts, keyed by bare URN (<kind>:<id>, never\n    pack-qualified). An entry wins over its kind's default.\nrole_pins : mapping | absent\n    The profile each pinned role is fixed to, keyed by role token, in authored\n    order (ADR-0030, ADR-0032 decision 4).\n\nA target's level in one pack is its artifacts entry, else its kind default, else open. Along a composition closure the highest level wins, and a later pack raises a level but never lowers it (ADR-0012 decision 3, ADR-0063 decision 3).\n\nRole pins are declared in role_pins and are tighten-only: two packs of one closure that pin one role to different profiles conflict (role_pin_conflict). Role locks (ADR-0030) stay reserved: the schema is closed, so a roles key, like any key it does not declare, makes the file unreadable, and a pack whose pack.yaml names an unreadable or missing policy file is unreadable.",
   "properties": {
     "schema_version": {
       "const": 1,
@@ -87,6 +87,24 @@
         }
       },
       "title": "Artifacts",
+      "type": "object"
+    },
+    "role_pins": {
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_-]*$",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "description": "The profile-id each pinned role is fixed to, keyed by role token, in authored order (ADR-0030, ADR-0032 decision 4). The pinned profile is held in the pack's closure and fits the role, as its role or one of its alt-roles. Never the reserved role 'generic' (ADR-0068).",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "maxLength": 64,
+        "not": {
+          "const": "generic"
+        }
+      },
+      "title": "Role Pins",
       "type": "object"
     }
   },

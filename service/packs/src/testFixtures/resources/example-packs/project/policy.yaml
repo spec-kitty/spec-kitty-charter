@@ -1,0 +1,5 @@
+# The project example's policy (ADR-0063): it pins the reviewer role to built-in's reviewer-renata, held in its
+# closure through org-base (ADR-0030, ruling D3), and sets no level.
+schema_version: 1
+role_pins:
+  reviewer: reviewer-renata

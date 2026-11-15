@@ -298,10 +298,15 @@ enum:
   - fallback_profile_unknown
   - fallback_profile_not_locked
   - fallback_profile_not_role_neutral
+  - fallback_profile_not_agent
   - fallback_profile_missing
   - fallback_profile_conflict
   - no_profile_matched
   - mission_type_not_in_force
+  - role_pin_unknown
+  - role_pin_not_fitting
+  - role_pin_conflict
+  - specialization_cycle
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -916,6 +921,11 @@ x-refusal:
     retryable: false
     raised: true
     description: a pack's fallback profile does not declare the reserved role generic, or declares alt-roles (ADR-0068)
+  fallback_profile_not_agent:
+    status: 422
+    retryable: false
+    raised: true
+    description: a pack's fallback profile is human-performed; a fallback profile is agent-performed (ADR-0068, ruling D4)
   fallback_profile_missing:
     status: 422
     retryable: false
@@ -942,6 +952,30 @@ x-refusal:
       the activation's merged closure holds the mission type and the activation does not put it in force, so its steps
       have no prompt to render (OD-5, research R5); raised by getEffectiveStepPrompt alone, the one operation its
       operations map names, after the 404 codes and before any 304, where the action context answers 200 empty
+  role_pin_unknown:
+    status: 422
+    retryable: false
+    raised: true
+    description: a role pin of a pack's policy.yaml names no agent profile the pack's closure holds (ADR-0030, ruling D3)
+  role_pin_not_fitting:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      a role pin names a profile whose role is not the pinned role and whose alt-roles do not list it, whoever performs
+      the profile (ADR-0030, ruling D3)
+  role_pin_conflict:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      two packs of one closure pin one role to different profiles; pins are tighten-only, whatever the packs'
+      derivation (ADR-0030, ruling D3)
+  specialization_cycle:
+    status: 422
+    retryable: false
+    raised: true
+    description: the specializes_from edges among the agent profiles of a closure form a cycle (ruling D2)
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

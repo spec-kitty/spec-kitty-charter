@@ -391,8 +391,13 @@ public class RefusalHandler {
                 RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                 RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
                 RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
                 RefusalCode.FALLBACK_PROFILE_MISSING,
-                RefusalCode.FALLBACK_PROFILE_CONFLICT);
+                RefusalCode.FALLBACK_PROFILE_CONFLICT,
+                RefusalCode.ROLE_PIN_UNKNOWN,
+                RefusalCode.ROLE_PIN_NOT_FITTING,
+                RefusalCode.ROLE_PIN_CONFLICT,
+                RefusalCode.SPECIALIZATION_CYCLE);
 
         private static final Set<RefusalCode> CONFLICT_CODES = EnumSet.of(
                 RefusalCode.REGISTRATION_CONFLICT,

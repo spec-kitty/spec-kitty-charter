@@ -225,8 +225,10 @@ Feature: Failures outside the charter's refusals
     toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
     registration_conflict and governance_policy_violation, and the whole-pack registration service adds
     pack_version_conflict and artifact_referenced, and its impact check adds override_not_permitted, enhances_cycle,
-    conflicting_relations, self_override, override_cycle and, for a pack's fallback_profile (ADR-0068),
-    fallback_profile_unknown, fallback_profile_not_locked and fallback_profile_not_role_neutral (ReservedRefusalCodesTest holds the flag to the main code that
+    conflicting_relations, self_override, override_cycle, specialization_cycle for a cycle of specializes_from edges
+    among agent profiles (ruling D2), for a pack's fallback_profile (ADR-0068) fallback_profile_unknown,
+    fallback_profile_not_locked, fallback_profile_not_role_neutral and fallback_profile_not_agent, and for the role pins
+    of a pack's policy.yaml (ruling D3) role_pin_unknown, role_pin_not_fitting and role_pin_conflict (ReservedRefusalCodesTest holds the flag to the main code that
     names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
     registration_timed_out and pack_storage_full, the https_archive, filesystem and git source fetchers add
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
@@ -301,4 +303,9 @@ Feature: Failures outside the charter's refusals
       | fallback_profile_unknown    |
       | fallback_profile_not_locked |
       | fallback_profile_not_role_neutral |
+      | fallback_profile_not_agent  |
       | mission_type_not_in_force   |
+      | role_pin_unknown            |
+      | role_pin_not_fitting        |
+      | role_pin_conflict           |
+      | specialization_cycle        |

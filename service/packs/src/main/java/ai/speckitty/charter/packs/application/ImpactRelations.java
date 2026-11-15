@@ -332,10 +332,21 @@ final class ImpactRelations {
 
     /** A cycle among the edges of one relation, as the places along it, found by an iterative depth-first walk. */
     private Optional<List<Place>> cycleOf(RelationType type) {
-        Map<Place, List<Place>> graph = graphOf(type);
-        Set<Place> finished = new HashSet<>();
-        for (Place start : graph.keySet()) {
-            Optional<List<Place>> cycle = walkFrom(start, graph, finished);
+        return cycleIn(graphOf(type));
+    }
+
+    /**
+     * A cycle of a directed graph, as the nodes along it from the first one the walk meets twice, found by an iterative
+     * depth-first walk from each node in the graph's order, so a long chain cannot exhaust the stack.
+     *
+     * @param graph each node's successors; a node with no entry has none
+     * @param <N> the node type
+     * @return the first cycle found; empty when the graph is acyclic
+     */
+    static <N> Optional<List<N>> cycleIn(Map<N, List<N>> graph) {
+        Set<N> finished = new HashSet<>();
+        for (N start : graph.keySet()) {
+            Optional<List<N>> cycle = walkFrom(start, graph, finished);
             if (cycle.isPresent()) {
                 return cycle;
             }
@@ -343,23 +354,23 @@ final class ImpactRelations {
         return Optional.empty();
     }
 
-    private static Optional<List<Place>> walkFrom(Place start, Map<Place, List<Place>> graph, Set<Place> finished) {
+    private static <N> Optional<List<N>> walkFrom(N start, Map<N, List<N>> graph, Set<N> finished) {
         if (finished.contains(start)) {
             return Optional.empty();
         }
-        List<Place> path = new ArrayList<>(List.of(start));
-        Deque<Iterator<Place>> next =
+        List<N> path = new ArrayList<>(List.of(start));
+        Deque<Iterator<N>> next =
                 new ArrayDeque<>(List.of(graph.getOrDefault(start, List.of()).iterator()));
-        Set<Place> onPath = new HashSet<>(path);
+        Set<N> onPath = new HashSet<>(path);
         while (!next.isEmpty()) {
             if (!next.peek().hasNext()) {
                 next.pop();
-                Place done = path.removeLast();
+                N done = path.removeLast();
                 onPath.remove(done);
                 finished.add(done);
                 continue;
             }
-            Place step = next.peek().next();
+            N step = next.peek().next();
             if (onPath.contains(step)) {
                 return Optional.of(List.copyOf(path.subList(path.indexOf(step), path.size())));
             }

@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -17,15 +18,21 @@ import java.util.Objects;
  * {@code mutability_policy} names (ADR-0063), and a pack that names none has the {@link #empty()} source. Along a
  * composition closure the sources are combined by {@link PerPackPolicy}, where the highest level wins; the built-in
  * pack's own file and the {@code replaceable-builtins.yaml} migration remain out of scope (ADR-0012 §Decision 5).
+ *
+ * <p>The same file declares the pack's {@link RolePins} (ADR-0030, ADR-0032 decision 4). They resolve no level: the
+ * closure's role facts read them, and the levels never do.
  */
 public final class MutabilityPolicySource {
 
     private final Map<NodeKind, MutabilityLevel> kindDefaults;
     private final Map<Urn, MutabilityLevel> urnEntries;
+    private final RolePins rolePins;
 
-    private MutabilityPolicySource(Map<NodeKind, MutabilityLevel> kindDefaults, Map<Urn, MutabilityLevel> urnEntries) {
+    private MutabilityPolicySource(
+            Map<NodeKind, MutabilityLevel> kindDefaults, Map<Urn, MutabilityLevel> urnEntries, RolePins rolePins) {
         this.kindDefaults = Map.copyOf(kindDefaults);
         this.urnEntries = Map.copyOf(urnEntries);
+        this.rolePins = rolePins;
     }
 
     /**
@@ -44,6 +51,15 @@ public final class MutabilityPolicySource {
      */
     public Map<Urn, MutabilityLevel> urnEntries() {
         return urnEntries;
+    }
+
+    /**
+     * The role pins the file declares, in authored order.
+     *
+     * @return the pins; {@link RolePins#NONE} when the file pins no role
+     */
+    public RolePins rolePins() {
+        return rolePins;
     }
 
     /**
@@ -84,23 +100,26 @@ public final class MutabilityPolicySource {
     public boolean equals(Object other) {
         return other instanceof MutabilityPolicySource that
                 && kindDefaults.equals(that.kindDefaults)
-                && urnEntries.equals(that.urnEntries);
+                && urnEntries.equals(that.urnEntries)
+                && rolePins.equals(that.rolePins);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(kindDefaults, urnEntries);
+        return Objects.hash(kindDefaults, urnEntries, rolePins);
     }
 
     @Override
     public String toString() {
-        return "MutabilityPolicySource[kindDefaults=" + kindDefaults + ", urnEntries=" + urnEntries + "]";
+        return "MutabilityPolicySource[kindDefaults=" + kindDefaults + ", urnEntries=" + urnEntries + ", rolePins="
+                + rolePins.byRole() + "]";
     }
 
     /** Fluent builder for a {@link MutabilityPolicySource}. */
     public static final class Builder {
         private final Map<NodeKind, MutabilityLevel> kindDefaults = new EnumMap<>(NodeKind.class);
         private final Map<Urn, MutabilityLevel> urnEntries = new HashMap<>();
+        private final Map<String, String> rolePins = new LinkedHashMap<>();
 
         private Builder() {}
 
@@ -129,12 +148,24 @@ public final class MutabilityPolicySource {
         }
 
         /**
+         * Pins a role to a profile; pins keep the order they are declared in.
+         *
+         * @param role the role token
+         * @param profileId the profile-id the role is fixed to
+         * @return this builder
+         */
+        public Builder rolePin(String role, String profileId) {
+            rolePins.put(Objects.requireNonNull(role, "role"), Objects.requireNonNull(profileId, "profileId"));
+            return this;
+        }
+
+        /**
          * Builds the immutable source.
          *
          * @return the source
          */
         public MutabilityPolicySource build() {
-            return new MutabilityPolicySource(kindDefaults, urnEntries);
+            return new MutabilityPolicySource(kindDefaults, urnEntries, new RolePins(rolePins));
         }
     }
 }

@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -23,6 +24,9 @@ class PolicyYamlTest {
                 artifacts:
                   directive:DIRECTIVE_001: locked
                   tactic:acceptance-test-first: open
+                role_pins:
+                  reviewer: reviewer-renata
+                  implementer: java-jenny
                 """);
 
         assertThat(source.levelOf(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001")))
@@ -38,6 +42,9 @@ class PolicyYamlTest {
         assertThat(source.levelOf(new Urn(NodeKind.STYLEGUIDE, "s")))
                 .as("neither names it")
                 .isEqualTo(MutabilityLevel.OPEN);
+        assertThat(source.rolePins().byRole())
+                .as("the pins, in authored order")
+                .containsExactly(entry("reviewer", "reviewer-renata"), entry("implementer", "java-jenny"));
     }
 
     @Test
@@ -47,10 +54,13 @@ class PolicyYamlTest {
                 .entry(new Urn(NodeKind.AGENT_PROFILE, "generic-agent"), MutabilityLevel.LOCKED)
                 .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.OPEN)
                 .kindDefault(NodeKind.TEMPLATE, MutabilityLevel.EXTENDABLE)
+                .rolePin("reviewer", "reviewer-renata")
+                .rolePin("implementer", "java-jenny")
                 .build();
 
         assertThat(PolicyYaml.write(policy))
-                .as("kind defaults in kind order, artifacts by URN, so equal policies write equal text")
+                .as(
+                        "kind defaults in kind order, artifacts by URN, pins as authored, so equal policies write equal text")
                 .isEqualTo("""
                         schema_version: 1
                         kind_defaults:
@@ -59,7 +69,13 @@ class PolicyYamlTest {
                         artifacts:
                           agent_profile:generic-agent: locked
                           directive:DIRECTIVE_001: locked
+                        role_pins:
+                          reviewer: reviewer-renata
+                          implementer: java-jenny
                         """);
+        assertThat(PolicyYaml.read(PolicyYaml.write(policy)))
+                .as("the text reads back as the policy")
+                .isEqualTo(policy);
         assertThat(PolicyYaml.write(MutabilityPolicySource.empty()))
                 .as("the empty policy is its version alone")
                 .isEqualTo("schema_version: 1\n");
