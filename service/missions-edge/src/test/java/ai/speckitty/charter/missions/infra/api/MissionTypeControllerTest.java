@@ -111,7 +111,7 @@ class MissionTypeControllerTest {
     }
 
     @Test
-    void aStepLinksItsTypeItsStepContractAndTheServableSkeletonsOfItsOutputs() throws Exception {
+    void aStepLinksItsTypeAndTheServableSkeletonsOfItsOutputs() throws Exception {
         mvc.perform(get("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
@@ -121,8 +121,7 @@ class MissionTypeControllerTest {
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(jsonPath("$._links.mission-type.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev"))
-                .andExpect(jsonPath("$._links.step-contract.href")
-                        .value("/api/v1/packs/main/artifacts/mission_step_contract/specify"))
+                .andExpect(jsonPath("$._links.step-contract").doesNotExist())
                 .andExpect(jsonPath("$.expectedOutputArtifacts[0]._links.skeleton.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
                 .andExpect(
@@ -248,7 +247,6 @@ class MissionTypeControllerTest {
                         new MissionTypeHolding.StoredSkeleton("a~1b.md", utf8("# A\n")),
                         new MissionTypeHolding.StoredSkeleton("z\\b.md", utf8("# B\n")),
                         new MissionTypeHolding.StoredSkeleton("y".repeat(256), utf8("# Y\n"))),
-                List.of(new MissionTypeHolding.BoundContract("specify", "specify")),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
                 FINGERPRINT,
                 Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "D1")));

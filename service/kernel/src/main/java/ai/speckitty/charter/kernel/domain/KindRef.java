@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.kinds.GlossaryContext;
 import ai.speckitty.charter.kernel.domain.kinds.Guard;
 import ai.speckitty.charter.kernel.domain.kinds.Kind;
 import ai.speckitty.charter.kernel.domain.kinds.Lifecycle;
-import ai.speckitty.charter.kernel.domain.kinds.MissionStepContract;
 import ai.speckitty.charter.kernel.domain.kinds.MissionType;
 import ai.speckitty.charter.kernel.domain.kinds.Paradigm;
 import ai.speckitty.charter.kernel.domain.kinds.Procedure;
@@ -150,16 +149,6 @@ public final class KindRef<K extends Kind> {
      */
     public static KindRef<AgentProfile> agentProfile(String id) {
         return new KindRef<>(new Urn(NodeKind.AGENT_PROFILE, id), Optional.empty());
-    }
-
-    /**
-     * A reference to a {@code mission_step_contract} node.
-     *
-     * @param id the node's id
-     * @return the typed reference, in this pack
-     */
-    public static KindRef<MissionStepContract> missionStepContract(String id) {
-        return new KindRef<>(new Urn(NodeKind.MISSION_STEP_CONTRACT, id), Optional.empty());
     }
 
     /**

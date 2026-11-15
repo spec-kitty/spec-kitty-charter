@@ -29,13 +29,6 @@ class NodeKindTest {
                 row(NodeKind.PARADIGM, "paradigm", "paradigm", "paradigms", true, true),
                 row(NodeKind.PROCEDURE, "procedure", "procedure", "procedures", true, true),
                 row(NodeKind.AGENT_PROFILE, "agent_profile", "agent_profile", "agent_profiles", true, true),
-                row(
-                        NodeKind.MISSION_STEP_CONTRACT,
-                        "mission_step_contract",
-                        "mission_step_contract",
-                        "mission_step_contracts",
-                        true,
-                        true),
                 row(NodeKind.GLOSSARY_CONTEXT, "glossary_context", "glossary", "glossaries", true, true),
                 row(NodeKind.TERM, "term", null, null, false, true),
                 row(NodeKind.SKILL, "skill", "skill", "skills", true, true),

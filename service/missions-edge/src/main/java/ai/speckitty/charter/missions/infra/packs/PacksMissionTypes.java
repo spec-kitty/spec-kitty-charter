@@ -72,9 +72,6 @@ public final class PacksMissionTypes implements PackMissionTypes {
                                 StoredFile.of(template.content().bytes()),
                                 read))
                         .toList(),
-                held.stepContracts().stream()
-                        .map(contract -> new MissionTypeHolding.BoundContract(contract.localId(), contract.action()))
-                        .toList(),
                 files,
                 held.fingerprint(),
                 ownCandidates(type, held.packName()));

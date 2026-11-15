@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.activations.application.EffectiveMissionTypeWinner;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
-import ai.speckitty.charter.activations.application.EffectiveStepContractWinner;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -16,7 +15,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.missions.application.EffectiveMissionType;
-import ai.speckitty.charter.missions.application.EffectiveStepContract;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
@@ -28,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The adapter over the activations slice's winner of a mission type (#99, FR-007, D12): the winner is narrowed to the
- * missions domain's {@link MissionType}, the holder is the pack that holds it, the step contracts pass as the kernel
- * artifacts the activations slice read and the fingerprint is the read's source fingerprint. A refusal passes unchanged;
+ * missions domain's {@link MissionType}, the holder is the pack that holds it and the fingerprint is the read's source
+ * fingerprint. A refusal passes unchanged;
  * any other artifact held as the type is a bug.
  */
 class ActivationsMissionTypesTest {
@@ -42,12 +40,11 @@ class ActivationsMissionTypesTest {
     private final ActivationsMissionTypes adapter = new ActivationsMissionTypes(effective);
 
     @Test
-    void theWinnerIsTheMissionsSlicesOwnWithItsPackItsBoundContractsAndTheSourceFingerprint() {
+    void theWinnerIsTheMissionsSlicesOwnWithItsPackAndTheSourceFingerprint() {
         MissionType type = type();
-        CharterArtifact contract = new Stub(ArtifactKind.MISSION_STEP_CONTRACT, "specify-contract");
         when(effective.missionTypeWinner(ID, "software-dev"))
                 .thenReturn(new EffectiveMissionTypeWinner(
-                        "proj", type, List.of(contract), SOURCE, Set.of(new ArtifactRef(ArtifactKind.TACTIC, "tdd"))));
+                        "proj", type, SOURCE, Set.of(new ArtifactRef(ArtifactKind.TACTIC, "tdd"))));
 
         EffectiveMissionType winner = adapter.missionType("a-1", "software-dev");
 
@@ -55,7 +52,6 @@ class ActivationsMissionTypesTest {
 
         assertThat(winner.holder()).isEqualTo(PROJ);
         assertThat(winner.type()).isSameAs(type);
-        assertThat(winner.stepContracts()).containsExactly(contract);
         assertThat(winner.fingerprint()).isEqualTo(SOURCE);
     }
 
@@ -63,7 +59,7 @@ class ActivationsMissionTypesTest {
     void anArtifactThatIsNoMissionTypeIsABugAndARefusalPassesUnchanged() {
         when(effective.missionTypeWinner(ID, "software-dev"))
                 .thenReturn(new EffectiveMissionTypeWinner(
-                        "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), List.of(), SOURCE, Set.of()));
+                        "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), SOURCE, Set.of()));
         assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev"))
                 .isInstanceOf(IllegalStateException.class)
                 .as("the fault names the read that lacks its mission type")
@@ -73,43 +69,6 @@ class ActivationsMissionTypesTest {
         when(effective.missionTypeWinner(ID, "software-dev")).thenThrow(refused);
 
         assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev")).isSameAs(refused);
-    }
-
-    @Test
-    void aStepContractIsTheMissionsSlicesOwnWithItsPackItsBoundTypeAndTheHeldArtifacts() {
-        MissionType type = type();
-        CharterArtifact contract = new Stub(ArtifactKind.MISSION_STEP_CONTRACT, "specify");
-        when(effective.stepContractWinner(ID, "specify"))
-                .thenReturn(new EffectiveStepContractWinner(
-                        "main",
-                        contract,
-                        Optional.of(type),
-                        Set.of(new ArtifactRef(ArtifactKind.DIRECTIVE, "GUARD")),
-                        SOURCE));
-
-        EffectiveStepContract winner = adapter.stepContract("a-1", "specify");
-
-        assertThat(winner.holder()).isEqualTo(new PackIdentifier("main"));
-        assertThat(winner.contract()).isSameAs(contract);
-        assertThat(winner.missionType()).containsSame(type);
-        assertThat(winner.held()).containsExactly(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD"));
-        assertThat(winner.fingerprint()).isEqualTo(SOURCE);
-    }
-
-    @Test
-    void aStepContractWhoseTypeIsHeldNowhereHasNoneAndARefusalPassesUnchanged() {
-        when(effective.stepContractWinner(ID, "stray"))
-                .thenReturn(new EffectiveStepContractWinner(
-                        "main",
-                        new Stub(ArtifactKind.MISSION_STEP_CONTRACT, "stray"),
-                        Optional.empty(),
-                        Set.of(),
-                        SOURCE));
-        assertThat(adapter.stepContract("a-1", "stray").missionType()).isEmpty();
-        CharterRefusal refused = new CharterRefusal(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND, "no gather");
-        when(effective.stepContractWinner(ID, "gather")).thenThrow(refused);
-
-        assertThatThrownBy(() -> adapter.stepContract("a-1", "gather")).isSameAs(refused);
     }
 
     @Test

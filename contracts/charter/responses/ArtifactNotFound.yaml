@@ -4,7 +4,7 @@ description: >-
   pack_not_found, whatever kind the path names. Then a kind the service does not serve is
   kind_not_found. Then an id the pack does not hold is the not-found code of its kind:
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
-  toolguide_not_found, artifact_not_found for an agent_profile, mission_step_contract_not_found or, on
+  toolguide_not_found, artifact_not_found for an agent_profile or, on
   the references read of a mission_type, mission_type_not_found. A client error: the request named
   something that is not there. A configured
   pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read
@@ -63,5 +63,3 @@ content:
           status: 404
           code: toolguide_not_found
           detail: Pack qa has no toolguide git.
-      mission-step-contract-not-found:
-        $ref: ../examples/CharterRefusal.mission-step-contract-not-found.yaml

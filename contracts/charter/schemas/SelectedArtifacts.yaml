@@ -56,14 +56,6 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/SelectedArtifacts/properties/agent_profile'
-  mission_step_contract:
-    allOf:
-    - $ref: ArtifactIdList.yaml
-    description: >-
-      The mission_step_contract ids. Absent means none of the kind; [] means none; a list means exactly those.
-    x-source:
-      path: contracts/offering/schemas/ActivationConfig.schema.json
-      symbol: '#/$defs/SelectedArtifacts/properties/mission_step_contract'
   glossary:
     allOf:
     - $ref: ArtifactIdList.yaml

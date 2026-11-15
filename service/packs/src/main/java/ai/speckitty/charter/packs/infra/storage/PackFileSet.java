@@ -354,16 +354,21 @@ final class PackFileSet {
     }
 
     /**
-     * The graph shards in a pack's root directory: its {@code *.graph.yaml} regular files, sorted by the file name as a
-     * {@link String}, which is the same order on every OS.
+     * The graph shards in a pack's root directory: its {@code *.graph.yaml} regular files but a retired one, sorted by
+     * the file name as a {@link String}, which is the same order on every OS.
      *
      * @param directory the pack directory
      * @param packName the pack, named in a refusal
      * @return the shard paths
      */
     static List<Path> rootShards(Path directory, String packName) {
+        String prefix = nameOf(directory) + "/";
         try (Stream<Path> files = Files.list(directory)) {
-            return graphShards(files, packName, Files::isRegularFile);
+            return graphShards(files, packName, Files::isRegularFile).stream()
+                    // A retired graph fragment is refused by name with the other retired files, never read as a shard.
+                    .filter(shard -> !(PackFileKind.bundled().classify(prefix + shard.getFileName())
+                            instanceof PackFileKind.Retired))
+                    .toList();
         } catch (IOException e) {
             throw unlistable(packName, e);
         }

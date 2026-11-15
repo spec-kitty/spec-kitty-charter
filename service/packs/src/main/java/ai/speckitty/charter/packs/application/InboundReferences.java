@@ -169,8 +169,7 @@ public final class InboundReferences {
 
     /**
      * The scan of a {@code DELETE} of artifacts from one pack (FR-010 of #99, D10): the registration's scan, and a
-     * removed mission type is also referred to by every artifact bound to it (a step contract whose {@code mission}
-     * names it, {@link PackCompositionFacts#bindings()}) and by every edge that names one of its action nodes,
+     * removed mission type is also referred to by every edge that names one of its action nodes,
      * {@code action:<type>/<step>}, at either end. An edge that starts at a removed artifact is not a referrer, as in
      * the registration's scan; an edge that starts at an action node of a removed type is.
      *
@@ -332,19 +331,9 @@ public final class InboundReferences {
         return out;
     }
 
-    /**
-     * What else refers to a removed mission type: each artifact bound to a mission type refers to it, and each edge
-     * that starts at an action node refers to that node.
-     */
+    /** What else refers to a removed mission type: each edge that starts at an action node refers to that node. */
     private static List<Reference> removalReferencesOf(Member member) {
         List<Reference> out = new ArrayList<>();
-        member.facts()
-                .bindings()
-                .forEach((bound, missionType) -> Urn.parse(bound)
-                        .ifPresent(source -> out.add(new Reference(
-                                bound,
-                                Optional.of(source),
-                                new PackQualifiedReference(Optional.empty(), missionType)))));
         for (Relationship edge : member.facts().edges()) {
             if (edge.from().kind() == NodeKind.ACTION) {
                 out.add(new Reference(edge.fromReference().toString(), Optional.empty(), edge.fromReference()));

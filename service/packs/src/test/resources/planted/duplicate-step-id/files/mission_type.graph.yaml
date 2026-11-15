@@ -1,0 +1,8 @@
+schema_version: '1.0'
+generated_at: STATIC
+generated_by: planted
+nodes: []
+edges:
+- source: mission_type:rx
+  target: action:rx/a
+  relation: requires

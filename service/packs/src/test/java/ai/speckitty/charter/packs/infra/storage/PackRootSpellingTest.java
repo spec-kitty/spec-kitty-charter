@@ -73,7 +73,7 @@ class PackRootSpellingTest {
         assertThat(spelled.unreadableFiles()).isEmpty();
         assertThat(spelled.files()).isNotEmpty().isEqualTo(plain.files());
         assertThat(spelled.artifacts()).isNotEmpty().isEqualTo(plain.artifacts());
-        assertThat(spelled.stepContracts()).isEqualTo(plain.stepContracts());
+        assertThat(spelled.missionTypes()).isEqualTo(plain.missionTypes());
     }
 
     private static void assertOnlyTheTemplateIsMissing(PackContents validated) {

@@ -600,7 +600,6 @@ class ClosureViewTest {
                         held.presets(),
                         held.edges(),
                         held.languages(),
-                        held.bindings(),
                         prompts));
     }
 

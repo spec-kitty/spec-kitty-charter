@@ -14,7 +14,6 @@ public sealed interface Overridable extends Kind
                 Paradigm,
                 Procedure,
                 AgentProfile,
-                MissionStepContract,
                 GlossaryContext,
                 Skill,
                 AntiPattern,

@@ -18,7 +18,8 @@ final class RetiredFileFixture {
     /**
      * The retired families, glob to reason, in table order: the ADR-0044 decision 6 families first, then the pack-level
      * files #451 retires ({@code pack.md}, {@code PROVENANCE.md}), then the org charter #431 retires, then the
-     * glossary_pack file the glossary kind replaces (ADR-0049). A later
+     * glossary_pack file the glossary kind replaces (ADR-0049), then the step contract file and its graph fragment
+     * slice F retires. A later
      * retirement is appended after these, so the order the table is read in stays the order of this list.
      */
     static final SequencedMap<String, String> RULES = rules();
@@ -40,7 +41,9 @@ final class RetiredFileFixture {
             "pack.md", "*/pack.md",
             "PROVENANCE.md", "*/PROVENANCE.md",
             "org-charter.yaml", "*/org-charter.yaml",
-            "glossary_packs/core.glossary-pack.yaml", GLOSSARY_PACK);
+            "glossary_packs/core.glossary-pack.yaml", GLOSSARY_PACK,
+            "mission_step_contracts/specify.step-contract.yaml", "**/*.step-contract.yaml",
+            "mission_step_contract.graph.yaml", "**/mission_step_contract.graph.yaml");
 
     /** One retired file of every family at the layout the built-in pack held, under {@code missions/}. */
     static final SequencedMap<String, String> MISSIONS_LAYOUT = paths(
@@ -54,7 +57,8 @@ final class RetiredFileFixture {
             "missions/mission-steps/plan/specify/step.yaml", "*/missions/mission-steps/**/*",
             "missions/mission-steps/plan/specify/prompt.md", "*/missions/mission-steps/**/*",
             "missions/mission-steps/plan/specify/guidelines.md", "*/missions/mission-steps/**/*",
-            "glossaries/old.glossary-pack.yaml", GLOSSARY_PACK);
+            "glossaries/old.glossary-pack.yaml", GLOSSARY_PACK,
+            "missions/built_in_step_contracts/plan.step-contract.yaml", "**/*.step-contract.yaml");
 
     /**
      * Payloads elsewhere in a pack that only share a name with a retired family: an anchored rule never retires one.
@@ -154,6 +158,8 @@ final class RetiredFileFixture {
         out.put(
                 "**/*.glossary-pack.yaml",
                 "the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)");
+        out.put("**/*.step-contract.yaml", "folded into the mission-type steps' substeps (slice F)");
+        out.put("**/mission_step_contract.graph.yaml", "folded into the mission-type steps' substeps (slice F)");
         return out;
     }
 

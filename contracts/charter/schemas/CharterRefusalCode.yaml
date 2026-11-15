@@ -4,15 +4,15 @@ description: >-
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
-  kind_not_found, activation_not_found, artifact_not_found, preset_not_found, mission_step_contract_not_found,
+  kind_not_found, activation_not_found, artifact_not_found, preset_not_found,
   skeleton_not_found and pack_document_not_found are 404; validation_failed and
   activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required,
   artifact_locked and mission_type_not_in_force are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
-  toolguide, procedure, agent_profile and mission_step_contract; a mission_type item is read by getPackMissionType), on the generic artifact item read, listArtifactReferences, deletePackArtifact and getEffectiveArtifact,
-  the last three over the listed kinds, agent_profile, mission_type and mission_step_contract included; the pack (or the activation) is judged first, so an unknown pack
+  toolguide, procedure and agent_profile; a mission_type item is read by getPackMissionType), on the generic artifact item read, listArtifactReferences, deletePackArtifact and getEffectiveArtifact,
+  the last three over the listed kinds, agent_profile and mission_type included; the pack (or the activation) is judged first, so an unknown pack
   with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
   missing or invalid is pack_unreadable (500) on the offering and on every artifact read (operator
   ruling of 2026-10-31). A configured pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
@@ -37,8 +37,7 @@ description: >-
   mission type the pack or the activation's merged closure does not hold, after the pack or the activation is judged,
   and action_not_found by the step reads for a step the type does not hold, since a step is
   the action action:<type>/<step>. The references read of a mission_type answers mission_type_not_found as the
-  not-found code of its kind. mission_step_contract_not_found (404) is the not-found code of kind
-  mission_step_contract on the generic item and references reads, and skeleton_not_found (404) is answered by the
+  not-found code of its kind. skeleton_not_found (404) is answered by the
   skeleton reads for a name that does not decode to a skeleton of the type. pack_level_mismatch is no longer raised: no operation
   loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
   registration (validation_failed), as the definition of raised below counts it: a graph document (a root
@@ -294,7 +293,6 @@ enum:
   - prompt_slot_not_empty
   - prompt_fragment_invalid
   - prompt_slot_missing
-  - mission_step_contract_not_found
   - skeleton_not_found
   - fallback_profile_unknown
   - fallback_profile_not_locked
@@ -895,13 +893,6 @@ x-refusal:
       500. A registration, each impact-checked pack write (judged for every stored activation whose closure the write
       joins, the activation named in the detail) and each activation write (before the document is stored) answer 422.
       The detail names the enhancement, its pack, the slot and the pack that holds the prompt in force
-  mission_step_contract_not_found:
-    status: 404
-    retryable: false
-    raised: true
-    description: >-
-      the pack (or the activation's closure) holds no mission step contract with the asked id (the generic item,
-      references and delete reads, and getEffectiveMissionStepContract)
   skeleton_not_found:
     status: 404
     retryable: false

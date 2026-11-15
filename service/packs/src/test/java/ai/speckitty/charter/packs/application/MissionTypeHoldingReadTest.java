@@ -9,9 +9,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.ContractStep;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
-import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -30,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The composite read of one mission type (#99): the pack is judged first, then the type, and inside the same verified
- * read the read takes the type's skeletons, the step contracts bound to it and the stored files of its steps, so all of
+ * read the read takes the type's skeletons and the stored files of its steps, so all of
  * them carry the one fingerprint the read verified.
  */
 class MissionTypeHoldingReadTest {
@@ -55,9 +52,6 @@ class MissionTypeHoldingReadTest {
             .artifact(template("software-dev/a~1b.md", "software-dev"))
             .artifact(template("documentation/divio/howto-template.md", "documentation"))
             .artifact(template("software-dev.md", null))
-            .artifact(contract("specify", "specify", "software-dev"))
-            .artifact(contract("another", "specify", "software-dev"))
-            .artifact(contract("orphan", "gather", "research"))
             .build();
 
     private final PackCompanionFiles companions = (pack, type) -> {
@@ -69,16 +63,13 @@ class MissionTypeHoldingReadTest {
     };
 
     @Test
-    void holdsTheTypeItsSkeletonsTheContractsBoundToItAndItsStepFilesAtOneFingerprint() {
+    void holdsTheTypeItsSkeletonsAndItsStepFilesAtOneFingerprint() {
         MissionTypeHoldingRead.Holding holding = read(() -> D1).holding(PACK, "software-dev");
 
         assertThat(holding.missionType().localId()).isEqualTo("software-dev");
         assertThat(holding.skeletons())
                 .extracting(Template::localId)
                 .containsExactly("software-dev/a~1b.md", "software-dev/spec-template.md");
-        assertThat(holding.stepContracts())
-                .extracting(MissionStepContract::localId)
-                .containsExactly("another", "specify");
         assertThat(holding.stepFiles().get("specify").prompt()).isPresent();
         assertThat(asked).containsExactly("main software-dev");
         assertThat(holding.fingerprint()).isEqualTo(D1);
@@ -107,9 +98,9 @@ class MissionTypeHoldingReadTest {
 
         assertThat(revised.revision()).isEqualTo(REVISION);
         assertThat(revised.value().fingerprint()).isEqualTo(D1);
-        assertThat(revised.value().stepContracts())
-                .extracting(MissionStepContract::localId)
-                .containsExactly("another", "specify");
+        assertThat(revised.value().skeletons())
+                .extracting(Template::localId)
+                .containsExactly("software-dev/a~1b.md", "software-dev/spec-template.md");
         assertThat(revisionsAsked).containsExactly("main");
     }
 
@@ -133,13 +124,12 @@ class MissionTypeHoldingReadTest {
     }
 
     @Test
-    void anotherTypeHoldsOnlyItsOwnSkeletonsAndNoContract() {
+    void anotherTypeHoldsOnlyItsOwnSkeletons() {
         MissionTypeHoldingRead.Holding holding = read(() -> D1).holding(PACK, "documentation");
 
         assertThat(holding.skeletons())
                 .extracting(Template::localId)
                 .containsExactly("documentation/divio/howto-template.md");
-        assertThat(holding.stepContracts()).isEmpty();
     }
 
     @Test
@@ -218,18 +208,6 @@ class MissionTypeHoldingReadTest {
                 .packId(PACK)
                 .content(Payload.of(id.getBytes(StandardCharsets.UTF_8)))
                 .missionType(missionType)
-                .build();
-    }
-
-    private static MissionStepContract contract(String id, String action, String mission) {
-        return MissionStepContract.builder()
-                .id(new MissionStepContractIdentifier(id))
-                .packId(PACK)
-                .schemaVersion("1.0")
-                .action(action)
-                .mission(mission)
-                .step(new ContractStep(
-                        "first", "The first step", Optional.empty(), List.of(), Optional.empty(), Optional.empty()))
                 .build();
     }
 

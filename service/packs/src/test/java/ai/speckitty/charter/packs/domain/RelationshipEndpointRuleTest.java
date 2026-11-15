@@ -222,7 +222,6 @@ class RelationshipEndpointRuleTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
                 List.of());
     }
 }

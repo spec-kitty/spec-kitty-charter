@@ -31,7 +31,6 @@ import org.springframework.web.util.UriUtils;
 @Component
 final class MissionLinks {
 
-    private static final String MISSION_STEP_CONTRACT = "mission_step_contract";
     private static final int MAX_SKELETON_NAME = 255;
     private static final String KIND_QUERY = "?kind=";
 
@@ -138,19 +137,6 @@ final class MissionLinks {
             return name.indexOf('\\') >= 0 || name.length() > MAX_SKELETON_NAME
                     ? Optional.empty()
                     : Optional.of(skeleton(missionTypeId, name));
-        }
-
-        /**
-         * The scope's step contract: the generic item read of a pack, or {@code getEffectiveMissionStepContract} under an
-         * activation (its literal path is the generic read's with the kind spelled).
-         */
-        Link stepContract(String stepContractId) {
-            return artifact(MISSION_STEP_CONTRACT, stepContractId);
-        }
-
-        /** The scope's artifacts of kind {@code mission_step_contract}. */
-        Link stepContracts() {
-            return new Link(href(templates.artifacts(), id) + KIND_QUERY + MISSION_STEP_CONTRACT);
         }
 
         /**

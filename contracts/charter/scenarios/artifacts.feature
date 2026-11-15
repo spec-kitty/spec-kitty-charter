@@ -430,7 +430,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     When I GET "/packs/qa/artifacts?kind=<kind>"
     Then the response status is 400
     And the problem has no code
-    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, asset, skill, glossary, agent_profile, mission_type or mission_step_contract."
+    And the field at "/detail" is "The query parameter kind is \"<kind>\", which is not one of tactic, directive, styleguide, paradigm, toolguide, procedure, asset, skill, glossary, agent_profile or mission_type."
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:

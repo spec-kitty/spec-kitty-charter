@@ -198,7 +198,7 @@ terms:
   status: active
 - id: gate-binding
   name: gate binding
-  definition: A versioned doctrine declaration attaching a named gate handler to a status-transition edge (`{on_transition, handler, handler_kind, schema_version, fail_open, provenance}`), authored on the review `MissionStepContract`. A binding is a field/relationship, not a standalone artefact. Do NOT confuse with the five pre-existing `*gate*` senses (branch strategy gate / diff compliance gate / dependency gate / merge dependency gate / sonar quality gate) — those are unrelated one-off guards, not doctrine-resolved lane-edge checks.
+  definition: A versioned doctrine declaration attaching a named gate handler to a status-transition edge (`{on_transition, handler, handler_kind, schema_version, fail_open, provenance}`), carried by a guard of the work-package lifecycle. A binding is a field/relationship, not a standalone artefact. Do NOT confuse with the five pre-existing `*gate*` senses (branch strategy gate / diff compliance gate / dependency gate / merge dependency gate / sonar quality gate) — those are unrelated one-off guards, not doctrine-resolved lane-edge checks.
   status: active
 - id: gate-handler
   name: gate handler
@@ -555,10 +555,6 @@ terms:
   status: deprecated
   see_also:
   - term:spec-kitty-core/status-commit
-- id: step-contract
-  name: step contract
-  definition: A formal specification of what a mission step must accomplish, including its inputs, outputs, and success criteria. The reviewer uses the step contract to validate work package completion.
-  status: draft
 - id: strictness
   name: strictness
   definition: Glossary enforcement mode (off, medium, max)

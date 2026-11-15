@@ -39,7 +39,6 @@ class PackLevelSchemasTest {
             activated_paradigms: [{id: p}]
             activated_procedures: [{id: q}]
             activated_agent_profiles: [{id: a}]
-            activated_mission_step_contracts: [{id: m}]
             activated_anti_patterns: [{id: x}]
             activated_glossaries: [{id: g}]
             activated_skills: [{id: s}]

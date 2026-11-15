@@ -43,7 +43,6 @@ class PackPolicyTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
                 List.of());
     }
 
@@ -143,7 +142,6 @@ class PackPolicyTest {
                 descriptor,
                 List.of(shard),
                 fragment,
-                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),

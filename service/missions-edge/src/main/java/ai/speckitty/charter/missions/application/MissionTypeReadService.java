@@ -129,7 +129,6 @@ public final class MissionTypeReadService {
                         inSequence.isEmpty(),
                         files.prompt().map(file -> utf8(file, read)),
                         files.guidelines().map(file -> utf8(file, read)),
-                        boundContract(holding, stepId),
                         outputs,
                         holding.held()),
                 holding.fingerprint());
@@ -188,14 +187,6 @@ public final class MissionTypeReadService {
     /** A pack as a refusal of the pack-scoped reads names it. */
     private static String scopeOf(PackIdentifier pack) {
         return "pack " + pack.value();
-    }
-
-    /** The step contract whose action is the step, the lowest id in code-point order when several are. */
-    private static Optional<String> boundContract(MissionTypeHolding holding, String stepId) {
-        return holding.stepContracts().stream()
-                .filter(contract -> contract.action().equals(stepId))
-                .map(MissionTypeHolding.BoundContract::id)
-                .min(CodePoints::compare);
     }
 
     /**

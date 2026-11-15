@@ -27,12 +27,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@link EffectiveReadService#missionTypeWinner} (#99, FR-007, D12): what the activations slice owns of one mission type
- * under an activation, from one session: the winner of the layer merge and the pack that holds it, the merged closure's
- * step contracts bound to the type (each the winner of its own id, from whichever pack holds it) and the source
+ * under an activation, from one session: the winner of the layer merge, the pack that holds it and the source
  * fingerprint. The activation is judged first, then whether a pack of the closure holds the type.
  *
- * <p>The closure: main (org) and proj (project) both hold the type sd, proj's wins; the contract a is held by main and
- * bound to sd, b by proj and bound to sd, c by proj and bound to another type.
+ * <p>The closure: main (org) and proj (project) both hold the type sd, proj's wins; main holds the type other.
  */
 class EffectiveReadServiceMissionWinnerTest {
 
@@ -40,9 +38,6 @@ class EffectiveReadServiceMissionWinnerTest {
     private static final String SOURCE = "sha256:source";
     private static final ArtifactRef SD = new ArtifactRef(ArtifactKind.MISSION_TYPE, "sd");
     private static final ArtifactRef OTHER = new ArtifactRef(ArtifactKind.MISSION_TYPE, "other");
-    private static final ArtifactRef A = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, "a");
-    private static final ArtifactRef B = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, "b");
-    private static final ArtifactRef C = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, "c");
 
     private final InMemoryActivationRepository repository = new InMemoryActivationRepository();
     private FakeAvailablePacks packs;
@@ -54,21 +49,13 @@ class EffectiveReadServiceMissionWinnerTest {
                 .pack("main", "1.0.0")
                 .pack("proj", "1.0.0")
                 .held(ArtifactKind.MISSION_TYPE, "sd", "other")
-                .held(ArtifactKind.MISSION_STEP_CONTRACT, "a", "b", "c")
                 .fingerprint(SOURCE)
                 .closureFingerprint("sha256:closure")
                 .build());
         Map<ArtifactRef, MergedSnapshot.Winner> winners = new LinkedHashMap<>();
         winners.put(SD, winner("proj", PackLevel.PROJECT));
         winners.put(OTHER, winner("main", PackLevel.ORG));
-        winners.put(B, winner("proj", PackLevel.PROJECT));
-        winners.put(A, winner("main", PackLevel.ORG));
-        winners.put(C, winner("proj", PackLevel.PROJECT));
-        Map<ArtifactRef, ArtifactRef> bindings = new LinkedHashMap<>();
-        bindings.put(B, SD);
-        bindings.put(A, SD);
-        bindings.put(C, OTHER);
-        packs.merged(new MergedSnapshot(winners, Map.of(), List.of(), List.of(), bindings));
+        packs.merged(new MergedSnapshot(winners, Map.of(), List.of(), List.of()));
         packs.winners(ask -> Optional.ofNullable(winners.get(new ArtifactRef(ask.kind(), ask.id())))
                 .map(won -> new EffectiveArtifactRead(
                         entity(won.packId(), ask.kind(), ask.id()), won.packId(), won.level(), Optional.empty())));
@@ -83,22 +70,18 @@ class EffectiveReadServiceMissionWinnerTest {
     }
 
     @Test
-    void theWinnerIsTheProjectsCopyWithTheMergedStepContractsBoundToItAndTheSourceFingerprint() {
+    void theWinnerIsTheProjectsCopyWithTheSourceFingerprint() {
         EffectiveMissionTypeWinner winner = service.missionTypeWinner(ID, "sd");
 
         assertThat(winner.packId()).isEqualTo("proj");
         assertThat(winner.missionType().packId()).isEqualTo(new PackIdentifier("proj"));
         assertThat(winner.missionType().localId()).isEqualTo("sd");
-        assertThat(winner.stepContracts())
-                .as("each winner bound to sd, from whichever pack holds it, by id; c is bound to another type")
-                .extracting(contract -> contract.packId().value() + ":" + contract.localId())
-                .containsExactly("main:a", "proj:b");
         assertThat(winner.sourceFingerprint()).isEqualTo(SOURCE);
         assertThat(packs.calls()).as("one session").isEqualTo(1);
         assertThat(packs.effectiveAsks())
                 .extracting(ask -> ask.kind().token() + ":" + ask.id())
-                .as("the type and the contracts bound to it, nothing else")
-                .containsExactly("mission_type:sd", "mission_step_contract:a", "mission_step_contract:b");
+                .as("the type, nothing else")
+                .containsExactly("mission_type:sd");
     }
 
     @Test
@@ -131,55 +114,6 @@ class EffectiveReadServiceMissionWinnerTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
-    }
-
-    @Test
-    void aStepContractIsAnsweredWithItsBoundTypesWinnerAndTheHeldArtifactsOfTheListedKinds() {
-        EffectiveStepContractWinner winner = service.stepContractWinner(ID, "a");
-
-        assertThat(winner.packId()).isEqualTo("main");
-        assertThat(winner.stepContract().localId()).isEqualTo("a");
-        assertThat(winner.missionType())
-                .as("the winner of the type the merge binds a to")
-                .hasValueSatisfying(type -> assertThat(type.packId()).isEqualTo(new PackIdentifier("proj")));
-        assertThat(winner.held())
-                .as("the listed kinds only: the fake lists no mission kind")
-                .isEmpty();
-        assertThat(winner.sourceFingerprint()).isEqualTo(SOURCE);
-        assertThat(packs.calls()).as("one session").isEqualTo(1);
-
-        packs.listedKinds(List.of(ArtifactKind.MISSION_TYPE, ArtifactKind.DIRECTIVE));
-        assertThat(service.stepContractWinner(ID, "a").held()).containsExactlyInAnyOrder(SD, OTHER);
-    }
-
-    @Test
-    void aStepContractBoundToATypeTheClosureDoesNotHoldHasNoType() {
-        packs.merged(new MergedSnapshot(
-                Map.of(A, winner("main", PackLevel.ORG)),
-                Map.of(),
-                List.of(),
-                List.of(),
-                Map.of(A, new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"))));
-
-        assertThat(service.stepContractWinner(ID, "a").missionType()).isEmpty();
-        assertThat(packs.effectiveAsks())
-                .extracting(ask -> ask.kind().token() + ":" + ask.id())
-                .containsExactly("mission_step_contract:a");
-    }
-
-    @Test
-    void aStepContractNoPackOfTheClosureHoldsIsNotFoundAfterTheActivation() {
-        assertThatThrownBy(() -> service.stepContractWinner(ID, "gather"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
-                    assertThat(refusal.getMessage())
-                            .isEqualTo("No pack of the activation's closure holds the mission step contract gather.");
-                });
-        assertThat(packs.effectiveAsks()).isEmpty();
-        assertThatThrownBy(() -> service.stepContractWinner(new ActivationId("nope"), "gather"))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
     }
 
     @Test

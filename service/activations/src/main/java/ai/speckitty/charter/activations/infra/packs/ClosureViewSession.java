@@ -417,7 +417,7 @@ final class ClosureViewSession implements PacksSession {
 
     /**
      * The activation domain's merged closure for the packs slice's merge: the winners of an activatable kind, the edges
-     * among them re-homed through the winners, the layer overrides and the mission type each bound winner is bound to.
+     * among them re-homed through the winners and the layer overrides.
      *
      * @param merged the merged view
      * @return the snapshot, as values
@@ -429,26 +429,7 @@ final class ClosureViewSession implements PacksSession {
         closure.languages()
                 .forEach((urn, declared) ->
                         activatable(urn).filter(winners::containsKey).ifPresent(ref -> languages.put(ref, declared)));
-        return new MergedSnapshot(
-                winners,
-                languages,
-                edgesOf(merged, winners.keySet()),
-                overridesOf(closure),
-                bindingsOf(merged, winners));
-    }
-
-    /**
-     * The mission type each winner of an activatable kind is bound to, as the merge reads it from the pack that holds
-     * the version in force (a step contract to the type its {@code mission} names).
-     */
-    private static Map<ArtifactRef, ArtifactRef> bindingsOf(
-            ClosureView.MergedView merged, Map<ArtifactRef, MergedSnapshot.Winner> winners) {
-        Map<ArtifactRef, ArtifactRef> bindings = new LinkedHashMap<>();
-        merged.bindings()
-                .forEach((bound, missionType) -> activatable(bound)
-                        .filter(winners::containsKey)
-                        .ifPresent(ref -> activatable(missionType).ifPresent(type -> bindings.put(ref, type))));
-        return bindings;
+        return new MergedSnapshot(winners, languages, edgesOf(merged, winners.keySet()), overridesOf(closure));
     }
 
     /**

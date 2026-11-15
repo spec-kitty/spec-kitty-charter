@@ -4,12 +4,6 @@ import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.Directive;
 import ai.speckitty.charter.api.model.Link;
-import ai.speckitty.charter.api.model.MissionStepContract;
-import ai.speckitty.charter.api.model.MissionStepContractGate;
-import ai.speckitty.charter.api.model.MissionStepContractInput;
-import ai.speckitty.charter.api.model.MissionStepContractStep;
-import ai.speckitty.charter.api.model.MissionSubstepDelegation;
-import ai.speckitty.charter.api.model.MissionSubstepDelegationCandidate;
 import ai.speckitty.charter.api.model.Paradigm;
 import ai.speckitty.charter.api.model.Procedure;
 import ai.speckitty.charter.api.model.ProcedureAntiPattern;
@@ -25,7 +19,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.ConfigValue;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.packs.application.ArtifactPosition;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.GuideFormat;
 import java.net.URI;
@@ -34,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -49,17 +41,6 @@ final class ArtifactDtos {
     private static final String PACKS = "packs";
     private static final String ARTIFACTS = "artifacts";
     private static final String KIND = "kind";
-    private static final String MISSION_TYPE = "mission_type";
-    private static final String STEPS = "steps";
-
-    /**
-     * The relations of a step contract's links to the missions slice's reads, keyed as strings, as the activations
-     * slice keys its own: they are rows of the hypermedia guide's table and of {@code link-relations-are-known}, and
-     * {@link Relation} stays the relations this slice links its own reads with.
-     */
-    private static final String MISSION_TYPE_RELATION = "mission-type";
-
-    private static final String STEP_RELATION = "step";
 
     private ArtifactDtos() {}
 
@@ -69,11 +50,9 @@ final class ArtifactDtos {
      * @param item the artifact read, typed by its kind
      * @param guides the guide format a toolguide's guide is written in
      * @param links the envelope's links
-     * @param hypermedia the link builder, for the links inside a member (a step contract's delegation candidates)
      * @return the envelope; the other kind members are {@code null}, and left out of the JSON
      */
-    static Artifact artifact(
-            ArtifactReadService.Item item, GuideFormat guides, Map<String, Link> links, Hypermedia hypermedia) {
+    static Artifact artifact(ArtifactReadService.Item item, GuideFormat guides, Map<String, Link> links) {
         CharterArtifact artifact = item.artifact();
         Artifact envelope = new Artifact(
                 artifact.kind().token(), artifact.localId(), artifact.packId().value(), links);
@@ -86,8 +65,6 @@ final class ArtifactDtos {
             case ArtifactReadService.Item.OfToolguide toolguide ->
                 envelope.toolguide(toolguide(toolguide.artifact(), guides));
             case ArtifactReadService.Item.OfProcedure procedure -> envelope.procedure(procedure(procedure.artifact()));
-            case ArtifactReadService.Item.OfMissionStepContract contract ->
-                envelope.missionStepContract(stepContract(contract, hypermedia));
         };
     }
 
@@ -117,46 +94,6 @@ final class ArtifactDtos {
      */
     static Map<String, Link> itemLinks(String kind, String packId, String id, Hypermedia links) {
         return Hypermedia.wire(itemRelations(kind, packId, id, links));
-    }
-
-    /**
-     * The links of one artifact's item as the generic item read answers it: {@code self} and {@code collection}, and,
-     * for a mission step contract, {@code mission-type} when its pack holds the mission type its {@code mission} names
-     * and {@code step} when that type declares the step its {@code action} names.
-     *
-     * @param item the artifact read
-     * @param kind the kind's token, as the path names it
-     * @param packId the pack's identity, as the path names it
-     * @param id the artifact's identity
-     * @param links the link builder
-     * @return the wire links
-     */
-    static Map<String, Link> itemLinks(
-            ArtifactReadService.Item item, String kind, String packId, String id, Hypermedia links) {
-        Map<String, Link> wire = Hypermedia.wire(itemRelations(kind, packId, id, links));
-        if (item instanceof ArtifactReadService.Item.OfMissionStepContract contract) {
-            String mission = contract.artifact().mission();
-            if (contract.missionTypeHeld()) {
-                wire.put(MISSION_TYPE_RELATION, wireLink(links.link(PACKS, packId, ARTIFACTS, MISSION_TYPE, mission)));
-            }
-            if (contract.stepHeld()) {
-                wire.put(
-                        STEP_RELATION,
-                        wireLink(links.link(
-                                PACKS,
-                                packId,
-                                ARTIFACTS,
-                                MISSION_TYPE,
-                                mission,
-                                STEPS,
-                                contract.artifact().action())));
-            }
-        }
-        return wire;
-    }
-
-    private static Link wireLink(Hypermedia.LinkValue value) {
-        return new Link(value.href());
     }
 
     private static Map<Relation, Hypermedia.LinkValue> itemRelations(
@@ -290,75 +227,6 @@ final class ArtifactDtos {
                 paradigm.name(),
                 paradigm.summary(),
                 paradigm.principles().stream().map(ArtifactDtos::principle).toList());
-    }
-
-    // ---- mission step contract ----------------------------------------------------------------------------------
-
-    /**
-     * A mission step contract as the wire names it: its steps and gates in stored order, a list the file leaves out
-     * answered empty, and each delegation candidate with an {@code artifact} link to its pack-scoped read when its kind
-     * is listed and its pack holds it ({@link ArtifactReadService.Item.OfMissionStepContract#heldCandidates()}).
-     */
-    static MissionStepContract stepContract(ArtifactReadService.Item.OfMissionStepContract item, Hypermedia links) {
-        ai.speckitty.charter.packs.domain.MissionStepContract contract = item.artifact();
-        String packId = contract.packId().value();
-        return new MissionStepContract(
-                contract.id().value(),
-                contract.schemaVersion().orElseThrow(),
-                contract.action(),
-                contract.mission(),
-                contract.steps().stream()
-                        .map(step -> contractStep(step, item.heldCandidates(), packId, links))
-                        .toList(),
-                contract.gates().stream().map(ArtifactDtos::gate).toList());
-    }
-
-    private static MissionStepContractStep contractStep(
-            ai.speckitty.charter.packs.domain.ContractStep step,
-            Set<ArtifactPosition> held,
-            String packId,
-            Hypermedia links) {
-        return new MissionStepContractStep(
-                        step.id(),
-                        step.description(),
-                        step.inputs().stream()
-                                .map(input -> new MissionStepContractInput(input.flag(), input.source())
-                                        .optional(input.optional().orElse(null)))
-                                .toList())
-                .command(step.command().orElse(null))
-                .delegatesTo(step.delegatesTo()
-                        .map(delegation -> delegation(delegation, held, packId, links))
-                        .orElse(null))
-                .guidance(step.guidance().orElse(null));
-    }
-
-    private static MissionSubstepDelegation delegation(
-            ai.speckitty.charter.packs.domain.StepDelegation delegation,
-            Set<ArtifactPosition> held,
-            String packId,
-            Hypermedia links) {
-        String kind = delegation.kind().token();
-        return new MissionSubstepDelegation(
-                kind,
-                delegation.candidates().stream()
-                        .map(candidate -> {
-                            Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
-                            // A position names a listed kind only, so the held set is searched, not probed.
-                            if (held.stream()
-                                    .anyMatch(position -> position.kind() == delegation.kind()
-                                            && position.id().equals(candidate))) {
-                                own.put(Relation.ARTIFACT, links.link(PACKS, packId, ARTIFACTS, kind, candidate));
-                            }
-                            return new MissionSubstepDelegationCandidate(candidate, Hypermedia.wire(own));
-                        })
-                        .toList());
-    }
-
-    private static MissionStepContractGate gate(ai.speckitty.charter.packs.domain.GateBinding gate) {
-        return new MissionStepContractGate(gate.onTransition(), gate.handler(), gate.schemaVersion())
-                .handlerKind(gate.handlerKind().orElse(null))
-                .failOpen(gate.failOpen().orElse(null))
-                .provenance(gate.provenance().orElse(null));
     }
 
     // ---- toolguide ----------------------------------------------------------------------------------------------

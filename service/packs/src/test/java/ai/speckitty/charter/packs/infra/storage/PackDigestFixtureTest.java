@@ -37,6 +37,10 @@ import org.junit.jupiter.api.Test;
  * (ADR-0049, 2026-11-14): the fixture's glossary file became {@code glossaries/eta.glossary.yaml} in the new shape, in
  * the same position of the digested list; the fingerprint moved because the file's name and bytes are part of what
  * the digest hashes.
+ *
+ * <p>Recaptures: the mission step contract kind retired (slice F, 2026-11-14). Its fixture file
+ * {@code mission_step_contracts/m-first.step-contract.yaml} left the pack with its binding, so the digested list lost
+ * that one entry, the others keeping their order, and the fingerprint moved.
  */
 @DisplayName("A fixed pack keeps its fingerprint and its digested file order (NFR-001)")
 class PackDigestFixtureTest {
@@ -53,7 +57,6 @@ class PackDigestFixtureTest {
             "toolguides/tool.guide.md",
             "paradigms/epsilon.paradigm.yaml",
             "agent_profiles/zeta.agent.yaml",
-            "mission_step_contracts/m-first.step-contract.yaml",
             "glossaries/eta.glossary.yaml",
             "skills/theta.skill.yaml",
             "skills/theta.skill.md",
@@ -75,7 +78,7 @@ class PackDigestFixtureTest {
             "pack-manifest.yaml",
             "policy.yaml");
 
-    private static final String FINGERPRINT = "sha256:f7ba6e483fe94e450204faceb3b16c5e8a8c3bdc734acd748b43922da24e41bf";
+    private static final String FINGERPRINT = "sha256:a54fdc073920125440785ebd43247b05c563577a1c2720885b29e55eac31d335";
 
     @Test
     void theFixedPackKeepsItsDigestedFilesAndItsFingerprint() throws URISyntaxException {

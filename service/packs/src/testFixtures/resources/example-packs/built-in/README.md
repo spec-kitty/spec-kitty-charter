@@ -2,7 +2,7 @@
 
 The **built-in** pack ships with Spec Kitty itself: the baseline directives,
 tactics, styleguides, toolguides, paradigms, procedures, agent profiles, and
-mission-step contracts every project starts with before any org or project
+mission types every project starts with before any org or project
 layer is applied.
 
 It has no `parent_pack` (it is the root of every lineage chain).

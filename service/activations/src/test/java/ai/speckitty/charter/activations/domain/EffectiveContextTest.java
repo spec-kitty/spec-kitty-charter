@@ -246,7 +246,7 @@ class EffectiveContextTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(ref("mission_step_contract:other")),
+                List.of(ref("step_enhancement:other")),
                 List.of(),
                 List.of());
         EffectiveSet set = set(others, artifact("directive:D", State.ACTIVE, Reason.SELECTED));
@@ -274,7 +274,7 @@ class EffectiveContextTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(ref("mission_step_contract:other")),
+                List.of(ref("step_enhancement:other")),
                 List.of(),
                 List.of());
         EffectiveSet set = set(others, artifact("directive:D", State.ACTIVE, Reason.SELECTED));

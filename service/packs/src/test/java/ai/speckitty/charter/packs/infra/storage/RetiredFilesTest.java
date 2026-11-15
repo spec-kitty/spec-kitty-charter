@@ -173,8 +173,21 @@ class RetiredFilesTest {
             assertThat(withFiles.matchingRules("qa/old/a.tactic.yaml"))
                     .containsExactly("**/*.tactic.yaml", "**/old/*.yaml");
             for (String path : RetiredFileFixture.bothLayouts().keySet()) {
-                assertThat(TABLE.matchingRules("qa/" + path)).as(path).hasSize(1);
+                if (path.endsWith(".graph.yaml")) {
+                    // The one declared overlap with a files rule: the retired rule is consulted first and refuses it.
+                    assertThat(TABLE.matchingRules("qa/" + path))
+                            .as(path)
+                            .containsExactly("**/*.graph.yaml", "**/mission_step_contract.graph.yaml");
+                    assertThat(TABLE.classify("qa/" + path)).as(path).isInstanceOf(PackFileKind.Retired.class);
+                } else {
+                    assertThat(TABLE.matchingRules("qa/" + path)).as(path).hasSize(1);
+                }
             }
+            // The retired rules come before the files rules: a mission-type file in the old mission tier is refused by
+            // its family's name, not read as a misplaced mission type.
+            assertThat(TABLE.classify("qa/mission_types/research.mission-type.yaml"))
+                    .isEqualTo(new PackFileKind.Retired(
+                            "*/mission_types/*.yaml", RetiredFileFixture.RULES.get("*/mission_types/*.yaml")));
         }
 
         @ParameterizedTest
@@ -324,7 +337,27 @@ class RetiredFilesTest {
             List<PackFinding> findings = contents.unreadableFiles().stream()
                     .flatMap(bad -> PackPolicy.unreadable("qa", bad).stream())
                     .toList();
-            assertThat(findings).extracting(PackFinding::code).containsOnly(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            // A retired graph document is a graph document's fault, as any shard's is; every other file an artifact's.
+            assertThat(findings)
+                    .filteredOn(f -> !f.file().endsWith(".graph.yaml"))
+                    .extracting(PackFinding::code)
+                    .containsOnly(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(findings)
+                    .filteredOn(f -> f.file().equals("mission_step_contract.graph.yaml"))
+                    .singleElement()
+                    .satisfies(f -> {
+                        assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+                        assertThat(f.detail())
+                                .isEqualTo("qa/mission_step_contract.graph.yaml is retired: folded into the"
+                                        + " mission-type steps' substeps (slice F)");
+                    });
+            assertThat(findings)
+                    .filteredOn(f -> f.file().equals("mission_step_contracts/specify.step-contract.yaml"))
+                    .singleElement()
+                    .extracting(PackFinding::detail)
+                    .asString()
+                    .isEqualTo("qa/mission_step_contracts/specify.step-contract.yaml is retired: folded into the"
+                            + " mission-type steps' substeps (slice F)");
             assertThat(findings)
                     .filteredOn(f -> f.file().equals("missions/plan/mission-runtime.yaml"))
                     .singleElement()

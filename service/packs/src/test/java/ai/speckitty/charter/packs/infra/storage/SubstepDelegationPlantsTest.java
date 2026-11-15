@@ -155,7 +155,7 @@ class SubstepDelegationPlantsTest {
 
     @Test
     @DisplayName(
-            "a substep id repeated within a step: duplicate_step_id in validate mode, the type's one fault at load")
+            "a substep id repeated within a step: duplicate_step_id at the type's file, in validate mode and at load")
     void aRepeatedSubstepIdIsTheTypesOneFault(@TempDir Path host) throws IOException {
         Path pack = planted(host, UNRESOLVED);
         rewriteType(pack, "      - tdd\n", "      - tdd\n  - id: run\n    description: Run it again\n");
@@ -172,8 +172,10 @@ class SubstepDelegationPlantsTest {
                         .violations())
                 .singleElement()
                 .satisfies(violation -> {
-                    assertThat(violation.kind()).isEqualTo("domain");
-                    assertThat(violation.reason()).contains("A substep id stands once within its step.");
+                    assertThat(violation.kind()).isEqualTo("duplicate_step_id");
+                    assertThat(violation.file()).isEqualTo(TYPE);
+                    assertThat(violation.reason())
+                            .contains("substep id 'run' is declared more than once in the step 'a'");
                 });
     }
 

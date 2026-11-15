@@ -54,7 +54,6 @@ public final class WriteFacts {
                 facts.presets(),
                 facts.edges(),
                 facts.languages(),
-                facts.bindings(),
                 facts.prompts(),
                 facts.terms(),
                 facts.delegations());
@@ -107,7 +106,6 @@ public final class WriteFacts {
                         .toList(),
                 edgeless.edges(),
                 languagesWithout(edgeless.languages(), artifact),
-                bindingsWithout(edgeless.bindings(), artifact),
                 edgeless.prompts().without(artifact),
                 edgeless.terms().stream()
                         .filter(term -> !Urn.parse(term)
@@ -154,13 +152,6 @@ public final class WriteFacts {
                 && item.id().equals(artifact.id());
     }
 
-    /** The bindings of the artifacts that remain: a removed artifact is bound to nothing. */
-    private static Map<String, String> bindingsWithout(Map<String, String> bindings, Urn artifact) {
-        Map<String, String> remaining = new LinkedHashMap<>(bindings);
-        remaining.remove(artifact.toString());
-        return remaining;
-    }
-
     /** The languages of the artifacts that remain: a removed artifact declares none. */
     private static Map<String, List<String>> languagesWithout(Map<String, List<String>> languages, Urn artifact) {
         Map<String, List<String>> remaining = new LinkedHashMap<>(languages);
@@ -185,7 +176,6 @@ public final class WriteFacts {
                 facts.presets(),
                 remaining,
                 facts.languages(),
-                facts.bindings(),
                 facts.prompts(),
                 facts.terms(),
                 facts.delegations());

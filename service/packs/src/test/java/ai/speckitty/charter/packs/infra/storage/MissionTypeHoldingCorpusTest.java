@@ -9,7 +9,6 @@ import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
@@ -27,7 +26,7 @@ import org.junit.jupiter.api.Test;
  * The mission type read serves the example {@code software-dev} as stored (#99, T016, SC-001): the composite
  * read over the production store holds every step the example's type declares (in sequence, then on demand), and each
  * step's prompt and guidelines are the files of the example pack byte for byte, the bare {@code spdd} slot markers
- * included. It holds the skeletons the type's {@code templates/} directory holds and the step contracts bound to it.
+ * included. It holds the skeletons the type's {@code templates/} directory holds.
  * The expectations derive from the example pack, so a corpus change at a new pin needs no edit here.
  *
  * <p>Reads the charter-owned example packs ({@code ExamplePacks}, ADR-0070) and runs under {@code :packs:test}.
@@ -98,13 +97,6 @@ class MissionTypeHoldingCorpusTest {
                 .containsExactlyInAnyOrderElementsOf(templates.stream()
                         .map(name -> TYPE + "/" + name + "-template.md")
                         .toList());
-        List<String> bound = boundContractActions(mission.getParent().resolve("built_in_step_contracts"));
-        assertThat(bound)
-                .as("step contracts the example pack binds to the type")
-                .isNotEmpty();
-        assertThat(holding.stepContracts())
-                .extracting(MissionStepContract::action)
-                .containsExactlyInAnyOrderElementsOf(bound);
         assertThat(holding.fingerprint()).startsWith("sha256:");
     }
 
@@ -113,22 +105,6 @@ class MissionTypeHoldingCorpusTest {
         return PackFiles.filesEndingWith(steps, ".prompt.md").stream()
                 .map(name -> name.substring(0, name.length() - ".prompt.md".length()))
                 .toList();
-    }
-
-    /** The {@code action} of every step contract file of {@code directory} whose {@code mission} is the type. */
-    private static List<String> boundContractActions(Path directory) throws IOException {
-        List<String> actions = new ArrayList<>();
-        for (String name : PackFiles.filesEndingWith(directory, ".step-contract.yaml")) {
-            List<String> lines = Files.readAllLines(directory.resolve(name));
-            if (lines.contains("mission: " + TYPE)) {
-                lines.stream()
-                        .filter(line -> line.startsWith("action: "))
-                        .findFirst()
-                        .ifPresent(line ->
-                                actions.add(line.substring("action: ".length()).strip()));
-            }
-        }
-        return actions;
     }
 
     /** The bytes the read holds are the file's, and a file the example pack lacks is held as none. */

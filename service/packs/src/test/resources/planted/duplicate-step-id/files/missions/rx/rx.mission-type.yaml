@@ -1,0 +1,14 @@
+schema_version: '1.0'
+id: rx
+title: Rx
+description: A mission type.
+steps:
+- id: a
+  title: A
+  substeps:
+  - id: run
+    description: Run the step test first
+  - id: check
+    description: Check the result
+  - id: run
+    description: Run it again

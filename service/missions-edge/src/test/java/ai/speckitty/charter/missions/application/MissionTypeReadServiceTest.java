@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The mission-type reads of the missions slice (#99) over a fake {@link PackMissionTypes}: the type lists its steps then
- * its on-demand steps and its skeletons by name; a step serves its stored files, binds the step contract of its type
- * and action (the lowest id when several are) and the stored skeleton each output names; a skeleton is found by its D9
+ * its on-demand steps and its skeletons by name; a step serves its stored files and the stored skeleton each output
+ * names; a skeleton is found by its D9
  * name and served as text when its bytes are valid UTF-8, else as base64.
  */
 class MissionTypeReadServiceTest {
@@ -39,10 +39,7 @@ class MissionTypeReadServiceTest {
             "---\ndescription: Create it\n---\n# Specify\n\n<!-- spdd:reasons-block:start -->\n";
 
     private final List<String> asked = new ArrayList<>();
-    private MissionTypeHolding holding = holding(List.of(
-            new MissionTypeHolding.BoundContract("specify-b", "specify"),
-            new MissionTypeHolding.BoundContract("specify-a", "specify"),
-            new MissionTypeHolding.BoundContract("plan-only", "plan")));
+    private MissionTypeHolding holding = holding();
 
     private final MissionTypeReadService reads = new MissionTypeReadService(new PackMissionTypes() {
         @Override
@@ -102,16 +99,6 @@ class MissionTypeReadServiceTest {
         assertThat(step.onDemand()).isTrue();
         assertThat(step.prompt()).contains("# Retrospect\n");
         assertThat(step.guidelines()).isEmpty();
-    }
-
-    @Test
-    void aStepBindsTheStepContractOfItsTypeAndActionWithTheLowestIdWhenSeveralAre() {
-        assertThat(reads.step(PACK, "software-dev", "specify").value().stepContractId())
-                .contains("specify-a");
-        assertThat(reads.step(PACK, "software-dev", "plan").value().stepContractId())
-                .contains("plan-only");
-        assertThat(reads.step(PACK, "software-dev", "retrospect").value().stepContractId())
-                .isEmpty();
     }
 
     @Test
@@ -198,11 +185,10 @@ class MissionTypeReadServiceTest {
     }
 
     private MissionTypeHolding holdingWith(MissionTypeHolding.StoredSkeleton skeleton) {
-        return new MissionTypeHolding(
-                holding.type(), List.of(skeleton), holding.stepContracts(), holding.stepFiles(), FINGERPRINT, Set.of());
+        return new MissionTypeHolding(holding.type(), List.of(skeleton), holding.stepFiles(), FINGERPRINT, Set.of());
     }
 
-    private static MissionTypeHolding holding(List<MissionTypeHolding.BoundContract> contracts) {
+    private static MissionTypeHolding holding() {
         MissionType type = MissionType.builder()
                 .id(new MissionTypeIdentifier("software-dev"))
                 .packId(PACK)
@@ -230,7 +216,6 @@ class MissionTypeReadServiceTest {
                                 "divio/howto.md", StoredFile.of("# How\n".getBytes(StandardCharsets.UTF_8))),
                         new MissionTypeHolding.StoredSkeleton(
                                 "a~1b.md", StoredFile.of("# A\n".getBytes(StandardCharsets.UTF_8)))),
-                contracts,
                 Map.of(
                         "specify",
                         new MissionTypeHolding.StepFiles(

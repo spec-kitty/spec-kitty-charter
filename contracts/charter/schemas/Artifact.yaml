@@ -4,10 +4,9 @@ description: >-
   one kind-named member holding the artifact in its kind's own representation, the member kind
   names. The other members are absent. The oneOf below documents the exactly-one rule; the
   service fills the one member itself, whatever a generated client enforces of it. An agent profile also carries
-  governance, the entries its pack-scoped walk lists; no other kind does. A mission_step_contract is
-  answered by the generic item read (getPackArtifact) in member missionStepContract. A mission_type is answered in
+  governance, the entries its pack-scoped walk lists; no other kind does. A mission_type is answered in
   member missionType by its own read, getPackMissionType, whose literal path the service prefers over the generic
-  one. Both reads carry the pack revision as their ETag, like every pack read of one artifact; neither kind has a
+  one. It carries the pack revision as its ETag, like every pack read of one artifact; the kind has no
   write, so it is a concurrency token for a DELETE, not a cache validator. An asset is answered in member asset, a
   skill in member skill and a glossary context in member glossary, each by its own literal read; the templated item
   read never answers any of them.
@@ -41,8 +40,6 @@ oneOf:
       - agentProfile
   - required:
       - missionType
-  - required:
-      - missionStepContract
 properties:
   kind:
     type: string
@@ -50,11 +47,10 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide,
-      procedure, asset, skill, glossary, agent_profile, mission_type and mission_step_contract; a client tolerates a
-      kind it does not know (skips the item). It names the one member that holds the artifact: agent_profile names
-      agentProfile, the member of mission_type is missionType and the member of mission_step_contract is
-      missionStepContract. asset, skill and glossary are answered by their own literal reads, in members asset, skill
-      and glossary (a glossary context).
+      procedure, asset, skill, glossary, agent_profile and mission_type; a client tolerates a kind it does not know
+      (skips the item). It names the one member that holds the artifact: agent_profile names agentProfile and the
+      member of mission_type is missionType. asset, skill and glossary are answered by their own literal reads, in
+      members asset, skill and glossary (a glossary context).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -94,8 +90,6 @@ properties:
     $ref: AgentProfile.yaml
   missionType:
     $ref: MissionType.yaml
-  missionStepContract:
-    $ref: MissionStepContract.yaml
   governance:
     type: array
     description: >-

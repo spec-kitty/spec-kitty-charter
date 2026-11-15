@@ -10,9 +10,8 @@ get:
     pack_id, is a 404 pack_not_found, whatever the kind. Then a slug that names no kind the service
     serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind
     (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
-    toolguide_not_found or mission_step_contract_not_found; a procedure the pack does not hold is artifact_not_found).
-    The kinds this read serves are tactic, directive, styleguide, paradigm, toolguide, procedure and
-    mission_step_contract. An agent_profile is a kind of the pack that the
+    or toolguide_not_found; a procedure the pack does not hold is artifact_not_found).
+    The kinds this read serves are tactic, directive, styleguide, paradigm, toolguide and procedure. An agent_profile is a kind of the pack that the
     literal operation getPackAgentProfile answers, with the profile and its governance, and its not-found code is
     artifact_not_found; this templated read never carries a profile body. An asset and a skill are listed kinds
     too, answered by their own literal reads: this templated read refuses them 404 kind_not_found, naming the literal
@@ -25,12 +24,11 @@ get:
     operator ruling of 2026-10-31), whatever kind and id the request names, or a pack holding a file
     the fingerprint covers that cannot be read or a directory that cannot be listed, is a 500
     pack_unreadable. A pack whose pack.yaml reads but whose aggregate or revision then cannot be read is, to
-    the caller, a pack that is not there: a 404 pack_not_found, for every kind this read serves, a
-    mission_step_contract included. The answer is verified against
+    the caller, a pack that is not there: a 404 pack_not_found, for every kind this read serves. The answer is verified against
     the source fingerprint and carries it; inputs that change while it is read are stale_input. Every
     item this read serves carries the pack revision as its ETag (#487): for a kind with a write (a directive, a
     styleguide, a paradigm or a toolguide) it is the If-Match token of that write, and for a kind with no write (a
-    tactic, a procedure or a mission_step_contract) it names the revision the item was read at, the token a DELETE of
+    tactic or a procedure) it names the revision the item was read at, the token a DELETE of
     the item sends. The read takes no If-None-Match and never answers 304. There is no write on this templated
     path: a writable kind is replaced on its own path, PUT /packs/{packId}/artifacts/<kind>/{artifactId},
     and a PUT to the item of a kind that has no write (a tactic) is a 405 Problem without a code, not
@@ -55,7 +53,7 @@ get:
           description: >-
             The pack revision the item was read at, for optimistic concurrency on a later write or DELETE. Sent for
             every kind this read serves: the writable kinds (directive, styleguide, paradigm and toolguide), a
-            procedure, a tactic and a mission_step_contract. The read takes no If-None-Match and never answers 304.
+            procedure and a tactic. The read takes no If-None-Match and never answers 304.
             The agent_profile read, getPackAgentProfile, carries it too.
           required: true
           schema:
@@ -67,8 +65,6 @@ get:
           examples:
             tactic:
               $ref: ../examples/Artifact.tactic.yaml
-            mission-step-contract:
-              $ref: ../examples/Artifact.mission-step-contract.yaml
             procedure:
               $ref: ../examples/Artifact.procedure.yaml
     '400':
@@ -95,19 +91,18 @@ delete:
     lock. The pack is judged first: an identifier that matches no configured pack is 404 pack_not_found; then a slug
     that names no kind the service serves is 404 kind_not_found; then an id the pack does not hold is the
     not-found code of its kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found,
-    toolguide_not_found, mission_type_not_found or mission_step_contract_not_found), the code the item read answers on
+    toolguide_not_found or mission_type_not_found), the code the item read answers on
     the same path, and artifact_not_found for a procedure, as the item read answers it, and for an agent_profile,
     which getPackAgentProfile answers likewise. An asset and a skill are listed but not removed: a DELETE of one is
     404 kind_not_found, whether the pack holds it or not. An agent
     profile is removed as the writable kinds are, with the If-Match of the ETag getPackAgentProfile gave. A mission
     type is removed with its step prompt and guidelines files and its skeletons, the files
     under its templates/, as one removal under one impact check: every check below judges them together (#99, D10). The
-    literal mission type read path has no DELETE of its own, so a DELETE sent to it is this operation. A
-    step contract is removed as the five kinds are. Then, in this order: 409 artifact_referenced while another artifact
+    literal mission type read path has no DELETE of its own, so a DELETE sent to it is this operation. Then, in this
+    order: 409 artifact_referenced while another artifact
     or pack still refers to it, judged against the tree after the removal, from the edges, the preset items and the
     descriptor overrides entries of every configured pack, so a referrer the same request removes does not count and
-    the data-only fields of ADR-0064 D11 never do; a mission type is also referred to by every step contract whose
-    mission names it and by every edge that names one of its action nodes (action:<type>/<step>) at either end, and
+    the data-only fields of ADR-0064 D11 never do; a mission type is also referred to by every edge that names one of its action nodes (action:<type>/<step>) at either end, and
     its skeletons by the edges that name them; its packs member (at most 100) names the referring packs and its
     violations name every referring artifact, a preset item or a descriptor overrides entry included; 409
     governance_policy_violation (the REMOVE operation of the write gate, ADR-0030 D3), which fires only when an
@@ -117,7 +112,7 @@ delete:
     rewrites (register the whole pack instead). A mission type's own step links (mission_type:T requires
     action:T/<step>) are the one exception: they go with the type, and each author-written document that holds one is
     written again without it. A client sends in If-Match the ETag the item read answered (every
-    pack item read carries the pack revision, a mission type and a step contract included), or *, as for any kind. PR A is strict: when the
+    pack item read carries the pack revision, a mission type included), or *, as for any kind. PR A is strict: when the
     closures that contain the pack, after the removal, no longer compose or break a rule, the answer is 422 with the
     composition code or one of override_not_permitted, enhances_cycle, conflicting_relations, self_override and
     override_cycle, naming the packs, and nothing is written. A refused DELETE changes nothing: no file, edge or preset
@@ -156,8 +151,8 @@ delete:
       description: >-
         The pack, the kind or the artifact the path names is not there: 404 pack_not_found, kind_not_found or
         the not-found code of the kind (directive_not_found, tactic_not_found and so on, as on getPackArtifact;
-        artifact_not_found for a procedure or an agent_profile; mission_type_not_found for a mission type, as on getPackMissionType;
-        mission_step_contract_not_found for a step contract), each its own code. The pack is judged first, then the
+        artifact_not_found for a procedure or an agent_profile; mission_type_not_found for a mission type, as on
+        getPackMissionType), each its own code. The pack is judged first, then the
         kind, then the id.
       headers:
         Charter-Contract-Version:
@@ -194,7 +189,7 @@ delete:
       description: >-
         The removal conflicts with the state of the packs: artifact_referenced, another artifact or pack still refers to
         the artifact (packs names the referring packs, at most 100, and violations name every referring artifact), and
-        for a mission type a step contract bound to it or an edge that names one of its action nodes or skeletons;
+        for a mission type an edge that names one of its action nodes or skeletons;
         governance_policy_violation, an ancestor of the pack holds the id and locks it (the REMOVE operation of the
         write gate); or registration_conflict, the artifact is written in the pack's author-written graph documents
         (a source shard or drg/fragment.yaml), or for a mission type one of its skeletons or action nodes is, which a

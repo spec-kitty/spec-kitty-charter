@@ -322,19 +322,6 @@ class InboundReferencesTest {
               status: active
             """;
 
-    private static final String CONTRACT = """
-            id: c
-            schema_version: '1.0'
-            action: plan
-            mission: m
-            steps:
-            - id: first
-              description: d
-              delegates_to:
-                kind: directive
-                candidates: [A_ONE]
-            """;
-
     static Stream<NearMiss> nearMisses() {
         return Stream.of(
                 new NearMiss(
@@ -350,12 +337,7 @@ class InboundReferencesTest {
                         T_FILE,
                         "tactic:t-one"),
                 new NearMiss(
-                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE, "directive:A_ONE"),
-                new NearMiss(
-                        "mission-step-contract delegation",
-                        "mission_step_contracts/c.step-contract.yaml",
-                        CONTRACT,
-                        A_FILE,
+                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE,
                         "directive:A_ONE"));
     }
 

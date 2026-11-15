@@ -164,7 +164,7 @@ public record ClosureView(
             if (built == null) {
                 MergedClosure merged = LayerMerge.merge(packs, facts, policy);
                 refuseLockedStepEnhanced(policy);
-                built = new MergedView(merged, edges.merged(merged), bindingsOf(merged));
+                built = new MergedView(merged, edges.merged(merged));
             }
             return built;
         }
@@ -180,21 +180,6 @@ public record ClosureView(
                     .ifPresent(locked -> {
                         throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, locked.detail(), locked.packs());
                     });
-        }
-
-        /**
-         * The mission type each winner is bound to, as the pack that holds the version in force declares it: an artifact
-         * a later level replaced is bound as the replacing version is, which may be to no mission type.
-         */
-        private Map<Urn, Urn> bindingsOf(MergedClosure merged) {
-            Map<Urn, Urn> bindings = new LinkedHashMap<>();
-            merged.winners()
-                    .forEach((urn, winner) -> Optional.ofNullable(
-                                    facts.get(winner.packId().value()))
-                            .map(held -> held.bindings().get(urn.toString()))
-                            .flatMap(Urn::parse)
-                            .ifPresent(missionType -> bindings.put(urn, missionType)));
-            return bindings;
         }
     }
 
@@ -296,32 +281,18 @@ public record ClosureView(
      *
      * @param closure the winners, the layer overrides, the languages and the merged presets
      * @param edges the closure's edges with no edge from a losing place and every edge to one ending at the winner
-     * @param bindings the mission type each winner that is bound to one is bound to (A7 Q1): a step contract to its
-     *     mission
      */
-    public record MergedView(MergedClosure closure, EdgeIndex edges, Map<Urn, Urn> bindings) {
+    public record MergedView(MergedClosure closure, EdgeIndex edges) {
 
         /**
          * Checks the fields.
          *
          * @param closure the layer merge
          * @param edges the merged edges
-         * @param bindings the mission type each bound winner is bound to
          */
         public MergedView {
             Objects.requireNonNull(closure, "closure");
             Objects.requireNonNull(edges, "edges");
-            bindings = Map.copyOf(Objects.requireNonNull(bindings, "bindings"));
-        }
-
-        /**
-         * A merged view whose winners are bound to no mission type.
-         *
-         * @param closure the layer merge
-         * @param edges the merged edges
-         */
-        public MergedView(MergedClosure closure, EdgeIndex edges) {
-            this(closure, edges, Map.of());
         }
 
         /**
@@ -348,7 +319,7 @@ public record ClosureView(
         InForceResolution.Edges resolutionEdges() {
             Map<Urn, Set<Urn>> overrides = new LinkedHashMap<>();
             Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
-            Map<Urn, Urn> derived = new LinkedHashMap<>(bindings);
+            Map<Urn, Urn> derived = new LinkedHashMap<>();
             closure.winners().forEach((urn, winner) -> {
                 List<Relationship> written = edges.inPack(new PackIdentifier(winner.descriptorPackId()))
                         .resolve(urn)
@@ -819,7 +790,7 @@ public record ClosureView(
      * Q3, A7, DIV-243): the pack whose version of the mission type the step is read from, the winner of
      * {@code mission_type:<missionType>} when that version declares the step, else the merged winner of
      * {@code action:<missionType>/<action>} when its version does. The one rule places the step for the step read, the
-     * action context's links, a step contract's step link, the prompt read ({@link #effectivePrompt}) and the slot check
+     * action context's links, the prompt read ({@link #effectivePrompt}) and the slot check
      * ({@link #requireSlots}), so none names or judges another version. It answers from the merge and the facts this view
      * was verified with, and reads nothing.
      *

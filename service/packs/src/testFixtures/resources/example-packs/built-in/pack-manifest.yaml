@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: a0d8afa08109321dbfa87dcab30d5cc98f03ea313d8c632b36f4539b33a1b643
+manifest_hash: c5d509d5fdfc991e44bffbd6d013df830c3810cc86525ceb703a4d5c61657117
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -60,7 +60,7 @@ constituents:
 - kind: glossary
   id: spec-kitty-core
   path: glossaries/spec-kitty-core.glossary.yaml
-  content_hash: 342abf2c3f8dc9761134fafdf885f90203c320c086832baa5947daaa57f55583
+  content_hash: e0c94b2baef8d200da60c50c71af56fcdebc0328e98322b9fe474638f125b53c
 - kind: guard
   id: subtasks-ready
   path: guards/subtasks-ready.guard.yaml
@@ -77,26 +77,6 @@ constituents:
   id: work-package
   path: lifecycles/work-package.lifecycle.yaml
   content_hash: cb64c6c2724ca2b1a8f4c5bac8cc74ffd89caf2e43044efe6c3b392ee53b4d92
-- kind: mission_step_contract
-  id: implement
-  path: missions/built_in_step_contracts/implement.step-contract.yaml
-  content_hash: 6273f60e38eabe53cc90d0c734d47ca43ba1203ad1d69951ecb5e0a7a1537cec
-- kind: mission_step_contract
-  id: plan
-  path: missions/built_in_step_contracts/plan.step-contract.yaml
-  content_hash: 729a3ad149f06039772af72dcb9131ec78cc60916b5b0ba08c888a765636fdbf
-- kind: mission_step_contract
-  id: review
-  path: missions/built_in_step_contracts/review.step-contract.yaml
-  content_hash: c150f34e268fdaab1f680910fb0cea785b4af0e5c3e77f091f6f57f778f0d75e
-- kind: mission_step_contract
-  id: specify
-  path: missions/built_in_step_contracts/specify.step-contract.yaml
-  content_hash: 94b194e080cba0c22d30fe35016eb41f79676e50fd769327ca02070ba4186374
-- kind: mission_step_contract
-  id: tasks
-  path: missions/built_in_step_contracts/tasks.step-contract.yaml
-  content_hash: 5db598a1a48436ebe6736827d5a9abae6dc9280705323c9eb8c20c6d2c37333d
 - kind: step_enhancement
   id: plan-risk-notes
   path: missions/software-dev/enhancements/plan-risk-notes.step-enhancement.yaml
@@ -236,7 +216,7 @@ constituents:
 presets:
 - id: default
   path: presets/default.yaml
-  content_hash: 48a86c326162d12b7429c37d90908235013590a39cacc6a698e816ecce20047e
+  content_hash: 5e5e8ce2c9d15f9f748620d5c221271350f38df85ef761bbdbe8c62c9383d05b
 - id: minimal
   path: presets/minimal.yaml
   content_hash: a954e556493d039775a923fd81e7026340fe26287d97a90012f397830540b444

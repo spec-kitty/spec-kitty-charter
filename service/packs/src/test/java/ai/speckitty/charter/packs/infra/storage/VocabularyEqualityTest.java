@@ -274,7 +274,6 @@ class VocabularyEqualityTest {
                         "toolguide",
                         "paradigm",
                         "procedure",
-                        "mission-step-contract",
                         "asset",
                         "glossary",
                         "skill");

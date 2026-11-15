@@ -64,8 +64,8 @@ class PackSchemasTest {
     // ---- the bundle -------------------------------------------------------------------------
 
     @Test
-    void thereAreTwentySevenBundledSchemas() {
-        assertThat(bundledKinds()).hasSize(27);
+    void thereAreTwentySixBundledSchemas() {
+        assertThat(bundledKinds()).hasSize(26);
     }
 
     @ParameterizedTest

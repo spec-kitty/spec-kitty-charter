@@ -297,7 +297,6 @@ Feature: Failures outside the charter's refusals
       | prompt_slot_malformed       |
       | prompt_slot_not_empty       |
       | prompt_slot_missing         |
-      | mission_step_contract_not_found |
       | skeleton_not_found |
       | fallback_profile_unknown    |
       | fallback_profile_not_locked |

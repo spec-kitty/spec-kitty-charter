@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.kinds.GlossaryContext;
 import ai.speckitty.charter.kernel.domain.kinds.Guard;
 import ai.speckitty.charter.kernel.domain.kinds.Kind;
 import ai.speckitty.charter.kernel.domain.kinds.Lifecycle;
-import ai.speckitty.charter.kernel.domain.kinds.MissionStepContract;
 import ai.speckitty.charter.kernel.domain.kinds.MissionType;
 import ai.speckitty.charter.kernel.domain.kinds.Paradigm;
 import ai.speckitty.charter.kernel.domain.kinds.Procedure;
@@ -34,7 +33,6 @@ final class KindTypes {
             Map.entry(Paradigm.class, NodeKind.PARADIGM),
             Map.entry(Procedure.class, NodeKind.PROCEDURE),
             Map.entry(AgentProfile.class, NodeKind.AGENT_PROFILE),
-            Map.entry(MissionStepContract.class, NodeKind.MISSION_STEP_CONTRACT),
             Map.entry(GlossaryContext.class, NodeKind.GLOSSARY_CONTEXT),
             Map.entry(Term.class, NodeKind.TERM),
             Map.entry(Skill.class, NodeKind.SKILL),

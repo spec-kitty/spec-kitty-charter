@@ -98,7 +98,6 @@ final class PresetMapper {
             case PARADIGM -> ai.speckitty.charter.api.model.Preset::setActivatedParadigms;
             case PROCEDURE -> ai.speckitty.charter.api.model.Preset::setActivatedProcedures;
             case AGENT_PROFILE -> ai.speckitty.charter.api.model.Preset::setActivatedAgentProfiles;
-            case MISSION_STEP_CONTRACT -> ai.speckitty.charter.api.model.Preset::setActivatedMissionStepContracts;
             case GLOSSARY -> ai.speckitty.charter.api.model.Preset::setActivatedGlossaries;
             case SKILL -> ai.speckitty.charter.api.model.Preset::setActivatedSkills;
             case ANTI_PATTERN -> ai.speckitty.charter.api.model.Preset::setActivatedAntiPatterns;

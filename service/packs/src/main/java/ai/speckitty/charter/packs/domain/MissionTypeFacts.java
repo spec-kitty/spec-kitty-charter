@@ -34,8 +34,8 @@ public record MissionTypeFacts(String file, String id, List<String> stepIds, Lis
     }
 
     /**
-     * Whether a substep id stands twice within one step: the domain refuses such a type, so the load holds none, and no
-     * rule over the facts judges it (validate mode reports {@link PackFindingCode#DUPLICATE_STEP_ID} instead).
+     * Whether a substep id stands twice within one step: the load holds no such type, and no rule over the facts judges
+     * it; validate mode and the load both report {@link PackFindingCode#DUPLICATE_STEP_ID} at its file instead.
      *
      * @return {@code true} when a step repeats a substep id
      */

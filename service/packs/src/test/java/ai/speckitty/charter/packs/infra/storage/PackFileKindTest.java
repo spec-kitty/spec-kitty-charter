@@ -47,7 +47,6 @@ class PackFileKindTest {
             Map.entry("core/paradigms/a.paradigm.yaml", "paradigm"),
             Map.entry("core/procedures/a.procedure.yaml", "procedure"),
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
-            Map.entry("core/step-contracts/a.step-contract.yaml", "mission-step-contract"),
             Map.entry("core/assets/a.asset.yaml", "asset"),
             Map.entry("core/glossaries/a.glossary.yaml", "glossary"),
             Map.entry("core/skills/a.skill.yaml", "skill"),
@@ -324,10 +323,30 @@ class PackFileKindTest {
         assertThat(KINDS.classify("a/".repeat(20_000) + "d.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
     }
 
+    /**
+     * A hidden file a files rule maps keeps that kind, though a hidden-file exclusion matches it too: the files rules
+     * come before the exclusions, and only a retired rule beats a files rule (slice F review).
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "qa/assets/.x.asset.yaml, asset",
+        "qa/templates/.a.directive.yaml, directive",
+        "qa/missions/m/.m.mission-type.yaml, mission-type"
+    })
+    void aHiddenFileAFilesRuleMapsKeepsItsKindOverAHiddenFileExclusion(String path, String kind) {
+        assertThat(KINDS.classify(path))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Mapped.class,
+                        mapped -> assertThat(mapped.kind()).isEqualTo(kind));
+        assertThat(KINDS.matchingRules(path))
+                .as("a hidden-file exclusion matches it too, so the order decides")
+                .hasSizeGreaterThan(1);
+    }
+
     @Test
     void theVocabularyListsAreExposed() {
         assertThat(KINDS.nodeKinds())
-                .hasSize(19)
+                .hasSize(18)
                 .contains(
                         "directive",
                         "mission_type",
@@ -339,11 +358,11 @@ class PackFileKindTest {
                         "term");
         assertThat(KINDS.fragmentKinds())
                 .as("a fragment does not admit a guard or a lifecycle node yet (#156)")
-                .hasSize(16)
+                .hasSize(15)
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(27);
+        assertThat(KINDS.fileRules()).hasSize(26);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " README.md's (#260, #451)")

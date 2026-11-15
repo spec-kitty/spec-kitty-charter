@@ -164,7 +164,6 @@ class OverrideSourceRuleTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
                 List.of());
     }
 

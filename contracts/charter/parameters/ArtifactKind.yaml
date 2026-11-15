@@ -3,15 +3,14 @@ in: path
 required: true
 description: >-
   The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide,
-  procedure, asset, skill, glossary, agent_profile, mission_type or mission_step_contract. For agent_profile the
+  procedure, asset, skill, glossary, agent_profile or mission_type. For agent_profile the
   templated item read is not the one that answers: the literal operation getPackAgentProfile does. An asset, a skill
   and a glossary context are answered by their own literal reads too (getPackAsset, getPackSkill and
   getPackGlossaryContext); the templated item read refuses them 404 kind_not_found and names the literal path. A
   removal (deletePackArtifact) does not remove an asset, a skill or a glossary context: it refuses them 404
-  kind_not_found, as a kind it does not remove. A mission_step_contract is
-  served by the generic item read; the item of a mission_type is answered by getPackMissionType, whose
+  kind_not_found, as a kind it does not remove. The item of a mission_type is answered by getPackMissionType, whose
   literal path the service prefers, and its references read and its removal (deletePackArtifact, which
-  removes the listed kinds but an asset, a skill and a glossary context, mission_type and mission_step_contract included) take this parameter like
+  removes the listed kinds but an asset, a skill and a glossary context, mission_type included) take this parameter like
   any other kind. The
   parameter is a slug, not an enum: a value that is not a slug (Tactic, -tactic) is a 400 Problem
   without a code, before the pack is judged, and a slug that names no served kind is answered 404

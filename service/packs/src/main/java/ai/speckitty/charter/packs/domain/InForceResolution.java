@@ -72,7 +72,7 @@ public final class InForceResolution {
      * @param overrides each overrider with the artifacts its {@code overrides} edges name
      * @param enhances each enhancer with the artifacts its {@code enhances} edges name
      * @param bindings each artifact bound to a mission type, beyond the steps ({@code action:M/s} is bound to
-     *     {@code mission_type:M} by its URN)
+     *     {@code mission_type:M} by its URN): a step enhancer of a held step, bound to the step's mission type (OD-6)
      */
     public record Edges(Map<Urn, Set<Urn>> overrides, Map<Urn, Set<Urn>> enhances, Map<Urn, Urn> bindings) {
 

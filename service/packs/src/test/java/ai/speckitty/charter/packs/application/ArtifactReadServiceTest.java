@@ -18,7 +18,6 @@ import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.AssetIdentifier;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
@@ -28,8 +27,6 @@ import ai.speckitty.charter.packs.domain.GlossaryContextIdentifier;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
-import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -49,7 +46,6 @@ import ai.speckitty.charter.packs.domain.ProcedureStep;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.SkillForm;
 import ai.speckitty.charter.packs.domain.SkillIdentifier;
-import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -96,7 +92,7 @@ class ArtifactReadServiceTest {
     private static final PackIdentifier BARE = new PackIdentifier("bare");
     // The second pack of the shared two-pack fixture (SC-004): bravo, holding directive SHARED_1.
     private static final PackIdentifier SIBLING = new PackIdentifier("pack-b");
-    // The pack of the mission kinds' fixture (missionFixture): two mission types and three step contracts.
+    // The pack of the mission kinds' fixture (missionFixture): two mission types and a directive.
     private static final PackIdentifier MISSIONS = new PackIdentifier("missions");
     // The pack of the literal kinds' fixture (#105, #106, #107): two assets, one without a title, a skill and a
     // glossary
@@ -152,9 +148,6 @@ class ArtifactReadServiceTest {
         return D1;
     });
 
-    /** The step ids each mission type declares, by its id, as the store reads them from the mission type's file. */
-    private final Map<String, Set<String>> stepIds = new HashMap<>();
-
     /** The graph-document edges of each pack, the references an artifact writes (ADR-0064). */
     private final Map<PackIdentifier, List<PackEdge>> edges = new HashMap<>();
 
@@ -177,9 +170,7 @@ class ArtifactReadServiceTest {
                 new ProcedureReadService(store, read, revisions),
                 new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(),
-                pack -> edges.getOrDefault(pack, List.of()),
-                type -> stepIds.getOrDefault(type.localId(), Set.of()),
-                revisions);
+                pack -> edges.getOrDefault(pack, List.of()));
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -429,27 +420,25 @@ class ArtifactReadServiceTest {
         assertThat(verified.fingerprint()).isEqualTo(D1);
     }
 
-    /** NFR-002: one item read of a tactic or a step contract asks for the pack revision exactly once. */
+    /** NFR-002: one item read asks for the pack revision exactly once. */
     @ParameterizedTest
-    @CsvSource({"tactic, alpha", "mission_step_contract, specify"})
+    @CsvSource({"tactic, alpha", "procedure, refactoring"})
     void anItemReadsTheRevisionOnce(String kind, String id) {
-        missionFixture();
         AtomicInteger asked = new AtomicInteger();
         ArtifactReadService counting = serviceDigesting(() -> D1, pack -> {
             asked.incrementAndGet();
             return REVISION;
         });
 
-        counting.item(packOf(kind), kind, id);
+        counting.item(PACK, kind, id);
 
         assertThat(asked).hasValue(1);
     }
 
     /** FR-004: an item whose inputs change during the read is refused stale, so it answers no revision. */
     @ParameterizedTest
-    @CsvSource({"tactic, alpha", "mission_step_contract, specify"})
+    @CsvSource({"tactic, alpha", "procedure, refactoring"})
     void anItemWhoseInputsChangeIsStaleAndAnswersNoRevision(String kind, String id) {
-        missionFixture();
         AtomicInteger asked = new AtomicInteger();
         AtomicInteger count = new AtomicInteger();
         ArtifactReadService racing = serviceDigesting(() -> count.incrementAndGet() == 1 ? D1 : D2, pack -> {
@@ -457,7 +446,7 @@ class ArtifactReadServiceTest {
             return REVISION;
         });
 
-        assertThatThrownBy(() -> racing.item(packOf(kind), kind, id))
+        assertThatThrownBy(() -> racing.item(PACK, kind, id))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
@@ -466,28 +455,13 @@ class ArtifactReadServiceTest {
 
     /** One mapping for every kind on the item route: a revision the storage cannot read is a pack not found. */
     @ParameterizedTest
-    @CsvSource({"tactic, alpha", "directive, GUARD", "mission_step_contract, specify"})
+    @CsvSource({"tactic, alpha", "directive, GUARD", "procedure, refactoring"})
     void anUnreadableRevisionIsThePackNotFoundForEveryItemKind(String kind, String id) {
-        missionFixture();
         ArtifactReadService unreadable = serviceDigesting(() -> D1, pack -> {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the revision cannot be read");
         });
 
-        assertThat(codeOf(() -> unreadable.item(packOf(kind), kind, id))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-    }
-
-    /** The aggregate the step contract read loads can fail after pack.yaml was read; that too is a pack not found. */
-    @Test
-    void anUnreadableAggregateIsThePackNotFoundForAStepContract() {
-        ArtifactReadService missions = missionFixture();
-        aggregateUnreadable = true;
-
-        assertThat(codeOf(() -> missions.item(MISSIONS, "mission_step_contract", "specify")))
-                .isEqualTo(RefusalCode.PACK_NOT_FOUND);
-    }
-
-    private static PackIdentifier packOf(String kind) {
-        return kind.equals("mission_step_contract") ? MISSIONS : PACK;
+        assertThat(codeOf(() -> unreadable.item(PACK, kind, id))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @Test
@@ -595,26 +569,24 @@ class ArtifactReadServiceTest {
         assertThat(ArtifactReadService.listedKind("TACTIC")).isEmpty();
     }
 
-    // ---- the listed kinds: the served ones, then mission_type, then mission_step_contract (#99) ---------------
+    // ---- the listed kinds: the served ones, then mission_type (#99) ------------------------------------------
 
     @Test
-    void theListedKindsAreTheServedOnesThenTheMissionTypeThenTheMissionStepContract() {
+    void theListedKindsAreTheServedOnesThenTheMissionType() {
         assertThat(ArtifactReadService.LISTED)
-                .as("the served kinds first, in their order, so a kind appended to them stays before the two")
+                .as("the served kinds first, in their order, so a kind appended to them stays before the mission type")
                 .startsWith(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new))
-                .endsWith(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT)
-                .hasSize(ArtifactReadService.SERVED.size() + 2)
+                .endsWith(ArtifactKind.MISSION_TYPE)
+                .hasSize(ArtifactReadService.SERVED.size() + 1)
                 .doesNotHaveDuplicates();
         assertThat(ArtifactReadService.listedKind("mission_type")).contains(ArtifactKind.MISSION_TYPE);
-        assertThat(ArtifactReadService.listedKind("mission_step_contract"))
-                .contains(ArtifactKind.MISSION_STEP_CONTRACT);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
         assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("mission-type")).isEmpty();
     }
 
     @Test
-    void theTemplatedItemReadRendersTheFiveThenTheMissionStepContractButNoMissionTypeOrLiteralKind() {
+    void theTemplatedItemReadRendersTheServedKindsButNoMissionTypeOrLiteralKind() {
         assertThat(ArtifactReadService.ITEM_KINDS)
                 .containsExactly(
                         ArtifactKind.TACTIC,
@@ -622,8 +594,7 @@ class ArtifactReadServiceTest {
                         ArtifactKind.STYLEGUIDE,
                         ArtifactKind.PARADIGM,
                         ArtifactKind.TOOLGUIDE,
-                        ArtifactKind.PROCEDURE,
-                        ArtifactKind.MISSION_STEP_CONTRACT)
+                        ArtifactKind.PROCEDURE)
                 .doesNotContain(
                         ArtifactKind.MISSION_TYPE,
                         ArtifactKind.AGENT_PROFILE,
@@ -639,13 +610,12 @@ class ArtifactReadServiceTest {
                 .allSatisfy(kind -> assertThat(ArtifactReadService.ITEM_KINDS.contains(kind))
                         .as(kind.token())
                         .isNotEqualTo(ArtifactReadService.LITERAL_ITEM_KINDS.contains(kind)));
-        assertThat(ArtifactReadService.SERVED)
-                .doesNotContain(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
+        assertThat(ArtifactReadService.SERVED).doesNotContain(ArtifactKind.MISSION_TYPE);
     }
 
     @Test
     void eachListedKindHasItsNotFoundCode() {
-        // The five older kinds and the two mission kinds keep their own codes; the kinds served after them, the agent
+        // The five older kinds and the mission type keep their own codes; the kinds served after them, the agent
         // profile, the procedure, the asset, the skill and the glossary, answer artifact_not_found (procedures.feature
         // pins it end to end).
         Map<ArtifactKind, RefusalCode> expected = Map.ofEntries(
@@ -655,7 +625,6 @@ class ArtifactReadServiceTest {
                 Map.entry(ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND),
                 Map.entry(ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND),
                 Map.entry(ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND),
-                Map.entry(ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND),
                 Map.entry(ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.ASSET, RefusalCode.ARTIFACT_NOT_FOUND),
@@ -684,10 +653,7 @@ class ArtifactReadServiceTest {
                 .containsExactly(
                         tuple(position(ArtifactKind.DIRECTIVE, "GUARD"), "Title of GUARD"),
                         tuple(position(ArtifactKind.MISSION_TYPE, "documentation"), "Documentation"),
-                        tuple(position(ArtifactKind.MISSION_TYPE, "software-dev"), "Software Development"),
-                        tuple(position(ArtifactKind.MISSION_STEP_CONTRACT, "orphan"), "gather"),
-                        tuple(position(ArtifactKind.MISSION_STEP_CONTRACT, "specify"), "specify"),
-                        tuple(position(ArtifactKind.MISSION_STEP_CONTRACT, "unbound"), "deploy"));
+                        tuple(position(ArtifactKind.MISSION_TYPE, "software-dev"), "Software Development"));
     }
 
     @Test
@@ -702,82 +668,21 @@ class ArtifactReadServiceTest {
                         position(ArtifactKind.MISSION_TYPE, "documentation"),
                         position(ArtifactKind.MISSION_TYPE, "software-dev"));
         ArtifactReadService.Page first = missions.list(
-                        MISSIONS, Optional.of(ArtifactKind.MISSION_STEP_CONTRACT), Optional.empty(), 2)
+                        MISSIONS, Optional.of(ArtifactKind.MISSION_TYPE), Optional.empty(), 1)
                 .value();
         assertThat(first.items())
                 .extracting(ArtifactReadService.Summary::position)
-                .containsExactly(
-                        position(ArtifactKind.MISSION_STEP_CONTRACT, "orphan"),
-                        position(ArtifactKind.MISSION_STEP_CONTRACT, "specify"));
+                .containsExactly(position(ArtifactKind.MISSION_TYPE, "documentation"));
         assertThat(first.hasMore()).isTrue();
         assertThat(missions.list(
                                 MISSIONS,
-                                Optional.of(ArtifactKind.MISSION_STEP_CONTRACT),
+                                Optional.of(ArtifactKind.MISSION_TYPE),
                                 Optional.of(first.items().getLast().position()),
-                                2)
+                                1)
                         .value()
                         .items())
                 .extracting(ArtifactReadService.Summary::position)
-                .containsExactly(position(ArtifactKind.MISSION_STEP_CONTRACT, "unbound"));
-    }
-
-    @Test
-    void aStepContractItemCarriesItsRevisionAndNamesWhatThePackHoldsOfItsMissionTypeStepAndDelegates() {
-        ArtifactReadService missions = missionFixture();
-
-        var verified = missions.item(MISSIONS, "mission_step_contract", "specify");
-
-        assertThat(verified.fingerprint()).isEqualTo(D1);
-        assertThat(verified.value())
-                .isInstanceOfSatisfying(ArtifactReadService.Item.OfMissionStepContract.class, item -> {
-                    assertThat(item.artifact().id()).isEqualTo(new MissionStepContractIdentifier("specify"));
-                    assertThat(item.revision())
-                            .as("every item carries its revision")
-                            .isEqualTo(REVISION);
-                    assertThat(item.missionTypeHeld()).isTrue();
-                    assertThat(item.stepHeld()).isTrue();
-                    assertThat(item.heldCandidates())
-                            .as("GUARD is held; NOPE is not; the procedure is listed but the pack does not hold it")
-                            .containsExactly(position(ArtifactKind.DIRECTIVE, "GUARD"));
-                });
-    }
-
-    @Test
-    void aStepContractWhoseMissionTypeOrStepThePackDoesNotHoldStillReads() {
-        ArtifactReadService missions = missionFixture();
-
-        assertThat(missions.item(MISSIONS, "mission_step_contract", "orphan").value())
-                .isInstanceOfSatisfying(ArtifactReadService.Item.OfMissionStepContract.class, item -> {
-                    assertThat(item.missionTypeHeld())
-                            .as("research is not held")
-                            .isFalse();
-                    assertThat(item.stepHeld()).isFalse();
-                    assertThat(item.heldCandidates()).isEmpty();
-                });
-        assertThat(missions.item(MISSIONS, "mission_step_contract", "unbound").value())
-                .isInstanceOfSatisfying(ArtifactReadService.Item.OfMissionStepContract.class, item -> {
-                    assertThat(item.missionTypeHeld())
-                            .as("software-dev is held")
-                            .isTrue();
-                    assertThat(item.stepHeld())
-                            .as("but declares no step deploy")
-                            .isFalse();
-                });
-    }
-
-    @Test
-    void anUnknownStepContractIsItsKindsNotFoundAfterThePack() {
-        ArtifactReadService missions = missionFixture();
-
-        assertThatThrownBy(() -> missions.item(MISSIONS, "mission_step_contract", "nope"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
-                    assertThat(refused.getMessage()).isEqualTo("Pack missions has no mission_step_contract nope.");
-                });
-        assertThat(codeOf(() -> missions.item(ABSENT, "mission_step_contract", "specify")))
-                .isEqualTo(RefusalCode.PACK_NOT_FOUND);
-        assertThat(codeOf(() -> missions.item(BARE, "mission_step_contract", "specify")))
-                .isEqualTo(RefusalCode.PACK_UNREADABLE);
+                .containsExactly(position(ArtifactKind.MISSION_TYPE, "software-dev"));
     }
 
     /**
@@ -799,7 +704,7 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void theReferencesOfAMissionTypeAndOfAStepContractAreReadLikeAnyListedKinds() {
+    void theReferencesOfAMissionTypeAreReadLikeAnyListedKinds() {
         ArtifactReadService missions = missionFixture();
         // The compose is resolved over every configured pack: the pack without a pack.yaml would refuse it.
         stored.keySet().retainAll(Set.of(MISSIONS));
@@ -807,20 +712,13 @@ class ArtifactReadServiceTest {
                 MISSIONS,
                 List.of(
                         new PackEdge("mission_type:software-dev", "directive:GUARD", RelationType.REQUIRES),
-                        new PackEdge("mission_step_contract:specify", "directive:GUARD", RelationType.REQUIRES),
                         new PackEdge("directive:GUARD", "mission_type:software-dev", RelationType.SUGGESTS)));
 
         assertThat(missions.references(MISSIONS, "mission_type", "software-dev").value())
                 .extracting(reference -> reference.urn().toString(), reference -> reference.relation())
                 .containsExactly(tuple("directive:GUARD", RelationType.REQUIRES));
-        assertThat(missions.references(MISSIONS, "mission_step_contract", "specify")
-                        .value())
-                .extracting(reference -> reference.urn().toString(), reference -> reference.relation())
-                .containsExactly(tuple("directive:GUARD", RelationType.REQUIRES));
         assertThat(codeOf(() -> missions.references(MISSIONS, "mission_type", "nope")))
                 .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
-        assertThat(codeOf(() -> missions.references(MISSIONS, "mission_step_contract", "nope")))
-                .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
         assertThat(codeOf(() -> missions.references(ABSENT, "mission_type", "nope")))
                 .isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
@@ -1104,10 +1002,8 @@ class ArtifactReadServiceTest {
     }
 
     /**
-     * The mission kinds' fixture: pack {@code missions} holds directive GUARD, the mission types software-dev (steps
-     * specify and plan) and documentation, and three step contracts: specify (software-dev's specify, delegating to
-     * directives GUARD and NOPE and to a procedure), orphan (action gather of research, a type the pack does not hold)
-     * and unbound (action deploy of software-dev, a step the type does not declare). Stored out of order.
+     * The mission kinds' fixture: pack {@code missions} holds directive GUARD and the mission types software-dev and
+     * documentation. Stored out of order.
      */
     private ArtifactReadService missionFixture() {
         stored.put(
@@ -1115,56 +1011,16 @@ class ArtifactReadServiceTest {
                 Pack.builder()
                         .id(MISSIONS)
                         .descriptor(descriptor(MISSIONS))
-                        .artifact(stepContract(
-                                "unbound", "deploy", "software-dev", new ContractStepSpec("first", Optional.empty())))
                         .artifact(new MissionTypeStub(MISSIONS, "software-dev", "Software Development"))
-                        .artifact(stepContract(
-                                "specify",
-                                "specify",
-                                "software-dev",
-                                new ContractStepSpec(
-                                        "capture",
-                                        Optional.of(
-                                                new StepDelegation(ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE")))),
-                                new ContractStepSpec(
-                                        "map",
-                                        Optional.of(new StepDelegation(
-                                                ArtifactKind.PROCEDURE, List.of("example-mapping-workshop"))))))
-                        .artifact(stepContract(
-                                "orphan", "gather", "research", new ContractStepSpec("first", Optional.empty())))
                         .artifact(new MissionTypeStub(MISSIONS, "documentation", "Documentation"))
                         .directive(directiveIn(MISSIONS, "GUARD"))
                         .build());
-        stepIds.put("software-dev", Set.of("specify", "plan"));
-        stepIds.put("documentation", Set.of("discover"));
         return service;
-    }
-
-    private record ContractStepSpec(String id, Optional<StepDelegation> delegatesTo) {}
-
-    private static MissionStepContract stepContract(
-            String id, String action, String mission, ContractStepSpec... steps) {
-        MissionStepContract.Builder builder = MissionStepContract.builder()
-                .id(new MissionStepContractIdentifier(id))
-                .packId(MISSIONS)
-                .schemaVersion("1.0")
-                .action(action)
-                .mission(mission);
-        for (ContractStepSpec step : steps) {
-            builder.step(new ContractStep(
-                    step.id(),
-                    "Description of " + step.id(),
-                    Optional.empty(),
-                    List.of(),
-                    step.delegatesTo(),
-                    Optional.empty()));
-        }
-        return builder.build();
     }
 
     /**
      * A mission type as the packs rings hold it: an artifact of kind {@code mission_type}, labelled by its title. The
-     * packs rings never name the missions domain, so the fixture does not either; its steps come from {@link #stepIds}.
+     * packs rings never name the missions domain, so the fixture does not either.
      */
     private record MissionTypeStub(PackIdentifier packId, String localId, String label) implements CharterArtifact {
 

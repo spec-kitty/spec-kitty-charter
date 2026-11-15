@@ -376,7 +376,6 @@ public class RefusalHandler {
                 RefusalCode.PRESET_NOT_FOUND,
                 RefusalCode.RELATIONSHIP_NOT_FOUND,
                 RefusalCode.REGISTRATION_NOT_FOUND,
-                RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
                 RefusalCode.SKELETON_NOT_FOUND,
                 RefusalCode.NO_PROFILE_MATCHED);
 

@@ -9,7 +9,6 @@ kind_defaults:
   paradigm: open
   procedure: open
   agent_profile: open
-  mission_step_contract: open
   glossary: open
   skill: open
   anti_pattern: open

@@ -267,24 +267,6 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void aStepContractIsModelledThroughItsBindingAndWrittenUnderItsFileToken() throws IOException {
-        put("missions/built_in_step_contracts/review.step-contract.yaml", "mission-step-contract", """
-                schema_version: "1.0"
-                id: review
-                action: review
-                mission: software-dev
-                steps:
-                  - id: bootstrap
-                    description: Load charter context for this action
-                """);
-
-        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
-
-        assertThat(outcomes.get("missions/built_in_step_contracts/review.step-contract.yaml"))
-                .isEqualTo(new Written("review.step-contract.yaml"));
-    }
-
-    @Test
     void aMissionTypeKeepsItsSubstepsInAuthoredOrderWithEveryField() throws IOException {
         // FR-004: the substeps are a flat list read and written in authored order, every field kept (ADR-0036).
         put("missions/rx/rx.mission-type.yaml", "mission-type", """

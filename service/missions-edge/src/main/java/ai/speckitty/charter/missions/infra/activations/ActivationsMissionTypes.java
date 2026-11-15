@@ -2,12 +2,10 @@ package ai.speckitty.charter.missions.infra.activations;
 
 import ai.speckitty.charter.activations.application.EffectiveMissionTypeWinner;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
-import ai.speckitty.charter.activations.application.EffectiveStepContractWinner;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.application.ActivationMissionTypes;
 import ai.speckitty.charter.missions.application.EffectiveMissionType;
-import ai.speckitty.charter.missions.application.EffectiveStepContract;
 import ai.speckitty.charter.missions.application.EffectiveStepPlace;
 import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
@@ -18,10 +16,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * The one bean of {@link ActivationMissionTypes}: it asks the activations slice's application ring
- * ({@link EffectiveReadService#missionTypeWinner}, {@link EffectiveReadService#stepContractWinner},
- * {@link EffectiveReadService#stepPlace}) and turns its answers into the missions slice's own. A winning type is narrowed to the missions domain's
- * {@link ai.speckitty.charter.missions.domain.MissionType}; a step contract stays a kernel artifact, which only the
- * packs adapter may narrow. It decides nothing: the refusals and their order are the activations slice's, unchanged.
+ * ({@link EffectiveReadService#missionTypeWinner}, {@link EffectiveReadService#stepPlace}) and turns its answers into
+ * the missions slice's own. A winning type is narrowed to the missions domain's
+ * {@link ai.speckitty.charter.missions.domain.MissionType}. It decides nothing: the refusals and their order are the activations slice's, unchanged.
  */
 @Component
 public final class ActivationsMissionTypes implements ActivationMissionTypes {
@@ -46,29 +43,10 @@ public final class ActivationsMissionTypes implements ActivationMissionTypes {
                 MissionTypeNarrowing.narrowed(
                         winner.missionType(),
                         "The read of the mission type " + missionTypeId + " under activation " + activationId),
-                winner.stepContracts(),
                 winner.sourceFingerprint(),
                 winner.held().stream()
                         .map(ref -> new HeldArtifact(ref.kind(), ref.id()))
                         .collect(Collectors.toUnmodifiableSet()));
-    }
-
-    @Override
-    public EffectiveStepContract stepContract(String activationId, String stepContractId) {
-        EffectiveStepContractWinner winner =
-                effective.stepContractWinner(new ActivationId(activationId), stepContractId);
-        return new EffectiveStepContract(
-                new PackIdentifier(winner.packId()),
-                winner.stepContract(),
-                winner.missionType()
-                        .map(type -> MissionTypeNarrowing.narrowed(
-                                type,
-                                "The read of the step contract " + stepContractId + " under activation "
-                                        + activationId)),
-                winner.held().stream()
-                        .map(ref -> new HeldArtifact(ref.kind(), ref.id()))
-                        .collect(Collectors.toUnmodifiableSet()),
-                winner.sourceFingerprint());
     }
 
     @Override

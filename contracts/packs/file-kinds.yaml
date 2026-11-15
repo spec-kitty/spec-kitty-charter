@@ -22,12 +22,18 @@
 #                    required), consulted only when no `files` or `exclusions` rule matches.
 #   retired          Rules for files of a retired layout (`match`, `reason`, both required;
 #                    ADR-0044 decision 6). A retired file is refused by name in the store's load and
-#                    in validate mode, YAML and Markdown alike, is never a companion, is bucketed
-#                    `retired:<match>` by the whole-pack gate and is digested in the fingerprint
-#                    tail. Optional; consulted after `exclusions` and before `payloads`, and
-#                    no file may match a `retired` rule and a `files` or `exclusions` rule, but
-#                    for one known overlap, pinned by RetiredFilesTest: a README directly in the
-#                    old built-in `missions/mission-steps/` is excluded (not held, not refused), never read.
+#                    in validate mode, YAML and Markdown alike, is never a companion, is never read
+#                    as a graph shard, is bucketed `retired:<match>` by the whole-pack gate and is
+#                    digested in the fingerprint tail. Optional; consulted after `files` and
+#                    `exclusions` and before `payloads`, but a `retired` rule beats a `files` rule
+#                    that also matches (an `exclusions` rule still beats it). No file may match a
+#                    `retired` rule and a `files` or `exclusions` rule, but for three known
+#                    overlaps, pinned by RetiredFilesTest: a README directly in the old built-in
+#                    `missions/mission-steps/` is excluded (not held, not refused), never read; a
+#                    `*.mission-type.yaml` directly under the old `mission_types/` is refused by its
+#                    family (`*/mission_types/*.yaml`), not read as a misplaced mission type; and the
+#                    graph fragment of the folded step contracts is a `**/*.graph.yaml` its retired
+#                    rule refuses.
 #   ignored          The last-resort rules (`match`, `reason`, both required; any other key fails the table;
 #                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that no
 #                    kind claims as a companion is excluded by the first `ignored` rule that matches it, with
@@ -82,7 +88,6 @@ node_kinds:
   - paradigm
   - procedure
   - agent_profile
-  - mission_step_contract
   - glossary_context
   - term
   - skill
@@ -103,7 +108,6 @@ artifact_kinds:
   - paradigm
   - procedure
   - agent_profile
-  - mission_step_contract
   - glossary
   - skill
   - anti_pattern
@@ -122,7 +126,6 @@ fragment_kinds:
   paradigms: paradigm
   procedures: procedure
   agent_profiles: agent_profile
-  mission_step_contracts: mission_step_contract
   glossaries: glossary_context
   skills: skill
   anti_patterns: anti_pattern
@@ -153,8 +156,6 @@ files:
     schema: procedure
   - match: "**/*.agent.yaml"
     schema: agent-profile
-  - match: "**/*.step-contract.yaml"
-    schema: mission-step-contract
   - match: "**/*.asset.yaml"
     schema: asset
   # Glossary contexts (ADR-0049, ADR-0053 decision 11): one file per context, glossaries/<id>.glossary.yaml; a file
@@ -270,12 +271,15 @@ exclusions:
       .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
 
 # Retired families: the mission tier (#194, ADR-0044 decision 6) and, after it, the pack-level files #451 retires
-# (pack.md, PROVENANCE.md) and the org charter #431 retires (org-charter.yaml). Files of these families are refused by
+# (pack.md, PROVENANCE.md), the org charter #431 retires (org-charter.yaml), the glossary_pack shape ADR-0049 replaces and
+# the step contracts slice F folds. Files of these families are refused by
 # name, in the load and in validate mode, so a stale one cannot hide. A root file that differs only in letter case from a root-anchored `files`
-# or `retired` rule's file (Readme.md, Pack.md, PROVENANCE.MD) is refused by name under that rule as well (FR-022). Each rule is anchored to a layout the pinned packs held (the mission tier at
-# the pack root, as qa and cave-kitty had it, or under missions/, as the built-in pack had it), so a payload elsewhere
-# that merely shares a name (an asset called governance-profile.yaml, a template under templates/mission-steps/) is
-# never retired. Removed when the service is incorporated into core and no supported pack holds the old layout.
+# or `retired` rule's file (Readme.md, Pack.md, PROVENANCE.MD) is refused by name under that rule as well (FR-022). Each rule
+# but the last three is anchored to a layout the pinned packs held (the mission tier at the pack root, as qa and cave-kitty
+# had it, or under missions/, as the built-in pack had it), so a payload elsewhere that merely shares a name (an asset
+# called governance-profile.yaml, a template under templates/mission-steps/) is never retired. The glossary_pack rule
+# and the two rules of the folded step contracts are not anchored: such a file or its graph fragment is refused
+# wherever it stands, an asset of that name included. Removed when the service is incorporated into core and no supported pack holds the old layout.
 retired:
   - match: "*/mission_types/*.yaml"
     reason: the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)
@@ -317,6 +321,12 @@ retired:
   # old rule read it, never left unclassified and silently ignored.
   - match: "**/*.glossary-pack.yaml"
     reason: the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)
+  # The mission step contract (slice F, #514): its substeps and delegations moved onto the mission-type steps, so a
+  # step-contract file and the graph fragment that held its nodes are refused by name wherever they stand.
+  - match: "**/*.step-contract.yaml"
+    reason: folded into the mission-type steps' substeps (slice F)
+  - match: "**/mission_step_contract.graph.yaml"
+    reason: folded into the mission-type steps' substeps (slice F)
 
 # Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
 payloads:

@@ -161,8 +161,7 @@ class ActivationRoutingTest {
             "agent_profile/java-jenny/references",
             "asset/run/references",
             "skill/land-pr/references",
-            "mission_type/software-dev/references",
-            "mission_step_contract/implement/references"
+            "mission_type/software-dev/references"
         }) {
             HandlerMethod routed = handler("GET", READ + path);
 

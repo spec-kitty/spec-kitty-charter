@@ -294,7 +294,6 @@ class CompositionFactsCacheTest {
                 List.of(),
                 List.of(),
                 Map.of(),
-                Map.of(),
                 new PromptFacts(
                         Map.of(
                                 Urn.action("software-dev", "plan"),

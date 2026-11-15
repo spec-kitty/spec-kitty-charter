@@ -158,7 +158,6 @@ class WriteFactsTest {
                 facts.presets(),
                 facts.edges(),
                 facts.languages(),
-                facts.bindings(),
                 new PromptFacts(
                         Map.of(
                                 Urn.action("software-dev", "plan"),
@@ -223,7 +222,6 @@ class WriteFactsTest {
                 facts.presets(),
                 facts.edges(),
                 facts.languages(),
-                facts.bindings(),
                 facts.prompts(),
                 List.of("term:g/lane", "term:h/lane", "term:g/track"));
     }

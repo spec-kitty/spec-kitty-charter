@@ -27,7 +27,6 @@ class ArtifactKindTest {
                         "paradigm",
                         "procedure",
                         "agent_profile",
-                        "mission_step_contract",
                         "glossary",
                         "skill",
                         "anti_pattern",

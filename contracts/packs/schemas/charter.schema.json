@@ -321,13 +321,6 @@
           "title": "Selected Agent Profiles",
           "type": "array"
         },
-        "selected_mission_step_contracts": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Selected Mission Step Contracts",
-          "type": "array"
-        },
         "selected_glossaries": {
           "items": {
             "type": "string"
@@ -849,21 +842,6 @@
       ],
       "default": null,
       "title": "Activated Agent Profiles"
-    },
-    "activated_mission_step_contracts": {
-      "anyOf": [
-        {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Activated Mission Step Contracts"
     },
     "activated_glossaries": {
       "anyOf": [

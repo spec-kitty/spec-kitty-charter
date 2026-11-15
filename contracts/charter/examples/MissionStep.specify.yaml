@@ -68,5 +68,3 @@ value:
       href: /api/v1/packs/core/artifacts/mission_type/software-dev/steps/specify
     mission-type:
       href: /api/v1/packs/core/artifacts/mission_type/software-dev
-    step-contract:
-      href: /api/v1/packs/core/artifacts/mission_step_contract/specify
