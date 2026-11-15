@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.infra.packs;
 
 import ai.speckitty.charter.activations.application.EffectiveHeldWinner;
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.application.ProfileCandidates;
 import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
@@ -24,10 +25,12 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActionContextWalk;
+import ai.speckitty.charter.packs.application.ClosureRoleFacts;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.EffectivePromptQuery;
 import ai.speckitty.charter.packs.application.GovernanceWalk;
 import ai.speckitty.charter.packs.application.GraphProjection;
+import ai.speckitty.charter.packs.application.InForceProfiles;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
@@ -237,6 +240,53 @@ final class ClosureViewSession implements PacksSession {
         // The packs slice judges the names, whether or not the mission type is in force, so no in-force resolution and
         // no walk is paid for.
         view.requireAction(missionType, action);
+    }
+
+    /**
+     * The profile candidates of one role: the packs slice's in-force profiles ({@link InForceProfiles}) and its closure
+     * role facts ({@link ClosureRoleFacts}), over this session's view and its kept resolution, mapped to the activation
+     * slice's values. A fallback the closure does not hold, which registration refuses, puts no fallback in force.
+     */
+    @Override
+    public ProfileCandidates profileCandidates(String role, InForceQuery query) {
+        Objects.requireNonNull(role, "role");
+        InForceStates states = statesOf(query);
+        List<ProfileCandidates.Candidate> candidates = InForceProfiles.candidates(view, states).stream()
+                .map(ClosureViewSession::candidateOf)
+                .toList();
+        ClosureRoleFacts facts = ClosureRoleFacts.of(view);
+        ProfileCandidates.Pin pin = switch (facts.pinFor(role)) {
+            case ClosureRoleFacts.PinFact.None _ -> new ProfileCandidates.Pin.None();
+            case ClosureRoleFacts.PinFact.Pinned pinned ->
+                new ProfileCandidates.Pin.Pinned(
+                        pinned.profileId(), pinned.pack().value());
+            case ClosureRoleFacts.PinFact.Conflict conflict ->
+                new ProfileCandidates.Pin.Conflict(values(conflict.packs()));
+        };
+        ProfileCandidates.Fallback fallback = switch (facts.fallbackInForce()) {
+            case ClosureRoleFacts.FallbackFact.None _ -> new ProfileCandidates.Fallback.None();
+            case ClosureRoleFacts.FallbackFact.Declared declared ->
+                InForceProfiles.held(view, declared.profileId(), states)
+                        .<ProfileCandidates.Fallback>map(held -> new ProfileCandidates.Fallback.Held(
+                                candidateOf(held), declared.pack().value()))
+                        .orElseGet(ProfileCandidates.Fallback.None::new);
+            case ClosureRoleFacts.FallbackFact.Conflict conflict ->
+                new ProfileCandidates.Fallback.Conflict(values(conflict.packs()));
+        };
+        return new ProfileCandidates(candidates, pin, fallback);
+    }
+
+    private static ProfileCandidates.Candidate candidateOf(InForceProfiles.Profile profile) {
+        return new ProfileCandidates.Candidate(
+                profile.profile(),
+                profile.holder().packId().value(),
+                profile.closurePosition(),
+                profile.depth(),
+                Set.copyOf(profile.ancestors()));
+    }
+
+    private static List<String> values(List<PackIdentifier> packs) {
+        return packs.stream().map(PackIdentifier::value).toList();
     }
 
     /** The step's place by the packs slice's one rule ({@link ClosureView#stepPlace}). */

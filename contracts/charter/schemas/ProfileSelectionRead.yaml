@@ -1,0 +1,53 @@
+title: ProfileSelectionRead
+description: >-
+  Which agent profile fills one role under an activation (selectAgentProfile; ADR-0032 decision 1, ADR-0069 decision
+  4, ruling D1 of slice G): the asked role and context, and the profiles that answer it, each with how it fits. One
+  candidate is the answer; several are a tie the service does not break, in the order of their packs in the closure,
+  then by id; a candidate with fit fallback is the fallback in force, answered alone because no profile fits.
+
+  _links holds self, this request with the context it asked.
+type: object
+additionalProperties: false
+required:
+- role
+- context
+- candidates
+- tie
+- _links
+properties:
+  role:
+    type: string
+    pattern: '^(?:[a-fh-z][a-z0-9-]{0,63}|g(?:[a-df-z0-9-][a-z0-9-]{0,62})?|ge(?:[a-mo-z0-9-][a-z0-9-]{0,61})?|gen(?:[a-df-z0-9-][a-z0-9-]{0,60})?|gene(?:[a-qs-z0-9-][a-z0-9-]{0,59})?|gener(?:[a-hj-z0-9-][a-z0-9-]{0,58})?|generi(?:[abd-z0-9-][a-z0-9-]{0,57})?|generic[a-z0-9-][a-z0-9-]{0,56})$'
+    description: The asked role, a role token other than the reserved generic.
+    x-derived:
+      rule: The {role} path segment.
+      inputs:
+      - openapi.yaml#/paths
+  context:
+    $ref: ProfileSelectionContext.yaml
+  candidates:
+    type: array
+    minItems: 1
+    items:
+      $ref: ProfileSelectionCandidate.yaml
+    description: >-
+      The answer: one profile, every tied profile in the order of its pack in the closure then by id, or the fallback
+      alone.
+    x-derived:
+      rule: >-
+        Selection over the agent profiles the activation puts in force, minus the enhancers, with the pin and the
+        fallback in force (ADR-0069 decision 4, as ADR-0078 rules it).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  tie:
+    type: boolean
+    description: True when more than one profile is answered and the service leaves the choice to the client.
+    x-derived:
+      rule: True exactly when candidates holds more than one profile.
+      inputs:
+      - schemas/ProfileSelectionRead.yaml#/properties/candidates
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/selection/ProfileSelection.java
+  symbol: ProfileSelection.select
