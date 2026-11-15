@@ -70,14 +70,14 @@ class KindBindingsTest {
     @DisplayName("the mission type is appended after the procedure, placed at its own path (#194, ADR-0044)")
     void theMissionTypeIsAppendedAfterTheProcedure() {
         List<ArtifactKind> kinds = KindBindings.kinds();
-        // Append-only: the eleven kinds bound before it keep their positions, so a pack without mission types keeps
+        // Append-only: the ten kinds bound before it keep their positions, so a pack without mission types keeps
         // its digest.
-        assertThat(kinds).hasSize(15);
-        assertThat(kinds.get(14)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
-        assertThat(kinds.get(11)).isEqualTo(ArtifactKind.MISSION_TYPE);
-        assertThat(kinds.get(10)).isEqualTo(ArtifactKind.PROCEDURE);
-        assertThat(kinds.get(9)).isEqualTo(ArtifactKind.ASSET);
-        assertThat(YamlFormats.all().get(11)).isSameAs(MissionTypeYaml.INSTANCE);
+        assertThat(kinds).hasSize(14);
+        assertThat(kinds.get(13)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
+        assertThat(kinds.get(10)).isEqualTo(ArtifactKind.MISSION_TYPE);
+        assertThat(kinds.get(9)).isEqualTo(ArtifactKind.PROCEDURE);
+        assertThat(kinds.get(8)).isEqualTo(ArtifactKind.ASSET);
+        assertThat(YamlFormats.all().get(10)).isSameAs(MissionTypeYaml.INSTANCE);
         assertThat(KindBindings.of(ArtifactKind.MISSION_TYPE)).containsSame(MissionTypeBinding.INSTANCE);
         assertThat(YamlFormats.of(MissionTypeBinding.INSTANCE)).isSameAs(MissionTypeYaml.INSTANCE);
         assertThat(MissionTypeBinding.INSTANCE.fileName("research"))
@@ -96,12 +96,13 @@ class KindBindingsTest {
     @Test
     @DisplayName("the guard and the lifecycle are appended after the kinds bound before them, the step enhancement"
             + " last, each placed at its own path (ADR-0054, ADR-0050)")
-    void theGuardAndTheLifecycleAreAppendedAfterTheTwelveKindsBoundBeforeThem() {
+    void theGuardAndTheLifecycleAreAppendedAfterTheElevenKindsBoundBeforeThem() {
         List<ArtifactKind> kinds = KindBindings.kinds();
-        // Append-only: the twelve kinds bound before them keep their positions, so a pack without either keeps its
-        // digest; the step enhancement is appended after them (positions 12-13 are the guard and the lifecycle).
-        assertThat(kinds.subList(12, 14)).containsExactly(ArtifactKind.GUARD, ArtifactKind.LIFECYCLE);
-        assertThat(YamlFormats.all().subList(12, 14)).containsExactly(GuardYaml.INSTANCE, LifecycleYaml.INSTANCE);
+        // Append-only: the eleven kinds bound before them keep their positions (the retired step contract, slice F,
+        // left its place), so a pack without either keeps its digest; the step enhancement is appended after them
+        // (positions 11-12 are the guard and the lifecycle).
+        assertThat(kinds.subList(11, 13)).containsExactly(ArtifactKind.GUARD, ArtifactKind.LIFECYCLE);
+        assertThat(YamlFormats.all().subList(11, 13)).containsExactly(GuardYaml.INSTANCE, LifecycleYaml.INSTANCE);
         assertThat(GuardBinding.INSTANCE.fileName("review-ref")).isEqualTo("guards/review-ref.guard.yaml");
         assertThat(LifecycleBinding.INSTANCE.fileName("work-package"))
                 .isEqualTo("lifecycles/work-package.lifecycle.yaml");

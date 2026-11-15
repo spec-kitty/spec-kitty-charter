@@ -73,6 +73,8 @@ public final class PackPolicy {
 
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
+    /** The code a step that repeats a substep id is recorded under, by validate mode and by the load alike (FR-004). */
+    private static final String DUPLICATE_STEP_ID_CODE = "duplicate_step_id";
 
     /** The finding text of an authored edge to or from a guard or a lifecycle (#156), before the endpoint. */
     public static final String NOT_AUTHORED =
@@ -190,7 +192,6 @@ public final class PackPolicy {
         for (FileRead.Unreadable<?> file : contents.unreadableFiles()) {
             findings.addAll(unreadable(name, file));
         }
-        findings.addAll(stepRules(contents.stepContracts()));
         findings.addAll(artifactRules(contents.artifacts()));
         findings.addAll(assetRules(contents.assets()));
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
@@ -302,6 +303,7 @@ public final class PackPolicy {
             case MISSION_STEP_UNLINKED -> MissionStepLinkRule.CODE;
             case SUBSTEP_DELEGATION_UNRESOLVED -> SubstepDelegationRule.UNRESOLVED;
             case SUBSTEP_DELEGATION_UNSCOPED -> SubstepDelegationRule.UNSCOPED;
+            case DUPLICATE_STEP_ID -> DUPLICATE_STEP_ID_CODE;
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
@@ -441,7 +443,22 @@ public final class PackPolicy {
         return findings;
     }
 
-    /** The mission types the load holds: one whose step repeats a substep id is refused in its domain. */
+    /**
+     * The load's record of a mission type whose step repeats a substep id (FR-004): one violation of the kind
+     * {@code duplicate_step_id} per repeated id, at the type's file, with the text validate mode gives the finding. The
+     * load holds no such type.
+     *
+     * @param type the facts of one stored mission type
+     * @return its violations; empty when no step repeats a substep id
+     */
+    public static List<PackElementViolation> substepIdViolations(MissionTypeFacts type) {
+        return substepIdRules(List.of(type)).stream()
+                .map(finding -> new PackElementViolation(
+                        finding.file(), violationKind(PackFindingCode.DUPLICATE_STEP_ID), finding.detail()))
+                .toList();
+    }
+
+    /** The mission types the load holds: one whose step repeats a substep id is refused, as its own violation. */
     private static List<MissionTypeFacts> heldTypes(PackContents contents) {
         return contents.missionTypes().stream()
                 .filter(type -> !type.repeatsASubstepId())
@@ -652,29 +669,6 @@ public final class PackPolicy {
                         List.of(DEPENDS_ON, Integer.toString(i), "range"),
                         "pack.yaml of " + name + ": depends_on[" + i + "] range '" + range
                                 + "' is not a PEP 440 version specifier"));
-            }
-        }
-        return findings;
-    }
-
-    /**
-     * A step id declared twice in one contract: one finding per repeated id, at its second occurrence. Core's
-     * "duplicate step IDs" check refuses the whole contract once; the place says where the first repeat is.
-     */
-    private static List<PackFinding> stepRules(List<PackContents.StepContractFacts> contracts) {
-        List<PackFinding> findings = new ArrayList<>();
-        for (PackContents.StepContractFacts contract : contracts) {
-            Set<String> seen = new LinkedHashSet<>();
-            Set<String> reported = new LinkedHashSet<>();
-            for (int i = 0; i < contract.stepIds().size(); i++) {
-                String id = contract.stepIds().get(i);
-                if (!seen.add(id) && reported.add(id)) {
-                    findings.add(new PackFinding(
-                            PackFindingCode.DUPLICATE_STEP_ID,
-                            contract.file(),
-                            List.of("steps", Integer.toString(i), "id"),
-                            contract.file() + ": step id '" + id + "' is declared more than once"));
-                }
             }
         }
         return findings;

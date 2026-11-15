@@ -23,7 +23,6 @@ final class KindBindings {
             ToolguideBinding.INSTANCE,
             ParadigmBinding.INSTANCE,
             AgentProfileBinding.INSTANCE,
-            MissionStepContractBinding.INSTANCE,
             GlossaryBinding.INSTANCE,
             SkillBinding.INSTANCE,
             AssetBinding.INSTANCE,

@@ -76,7 +76,6 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveMissionType           | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep           | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton       | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
-      | getEffectiveMissionStepContract   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
@@ -155,7 +154,6 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveMissionType           | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev                   |
       | getEffectiveMissionStep           | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/steps/implement   |
       | getEffectiveMissionSkeleton       | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_type/software-dev/skeletons/spec.md |
-      | getEffectiveMissionStepContract   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/mission_step_contract/implement             |
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |

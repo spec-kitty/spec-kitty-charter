@@ -16,7 +16,7 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version lists tactic, directive, styleguide, paradigm, toolguide, procedure, asset,
-      skill, glossary, agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know
+      skill, glossary, agent_profile and mission_type; a client tolerates a kind it does not know
       (skips the item).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
@@ -31,7 +31,7 @@ properties:
     type: string
     description: >-
       The artifact's human-readable name: the name of a tactic or a paradigm, the title of a
-      directive, a styleguide, a toolguide, a procedure or a mission type, the action of a mission step contract.
+      directive, a styleguide, a toolguide, a procedure or a mission type.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
       symbol: CharterArtifact.label

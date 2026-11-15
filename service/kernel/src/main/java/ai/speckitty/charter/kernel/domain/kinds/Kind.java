@@ -15,7 +15,6 @@ public sealed interface Kind
                 Paradigm,
                 Procedure,
                 AgentProfile,
-                MissionStepContract,
                 GlossaryContext,
                 Skill,
                 AntiPattern,

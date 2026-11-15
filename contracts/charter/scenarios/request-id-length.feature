@@ -32,12 +32,11 @@ Feature: An id a request carries is capped in length
     Then the response status is 404
     And the problem code is "<code>"
 
-    Examples: a pack id at 63, an artifact id at 128, an activation id at 64, a step contract id at 128
+    Examples: a pack id at 63, an artifact id at 128 and an activation id at 64
       | over                                                                                                                                                                               | at                                                                                                                                                                                | code                 |
       | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | /packs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts                                                                                                 | pack_not_found       |
       | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | /packs/alpha/artifacts/directive/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD                 | directive_not_found  |
       | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa                                                                                                     | activation_not_found |
-      | /activations/a-1/artifacts/mission_step_contract/ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | /activations/a-1/artifacts/mission_step_contract/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc | activation_not_found |
 
   Scenario: A registration body id of 129 characters is a 400 without a code, and one of 128 is judged by the domain
     When I POST "/packs/alpha/artifacts/directive" as JSON with the body:

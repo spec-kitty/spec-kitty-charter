@@ -130,7 +130,8 @@ class ProjectCharterYamlSchemaTest {
     /**
      * Every key of the flat activation vocabulary is declared, as the charter's model names it (core's {@code
      * ACTIVATION_YAML_KEYS} at core {@code 512567ee}, with its glossary key renamed {@code activated_glossaries},
-     * ADR-0049): the closed root would refuse an undeclared one as an unknown key.
+     * ADR-0049, and without {@code activated_mission_step_contracts}, whose kind slice F retires; core aligns later):
+     * the closed root would refuse an undeclared one as an unknown key.
      */
     @ParameterizedTest(name = "{0} is declared")
     @ValueSource(
@@ -143,7 +144,6 @@ class ProjectCharterYamlSchemaTest {
                 "activated_paradigms",
                 "activated_procedures",
                 "activated_agent_profiles",
-                "activated_mission_step_contracts",
                 "activated_glossaries",
                 "activated_skills",
                 "mission_type_activations",

@@ -203,12 +203,6 @@ public enum RefusalCode {
     PROMPT_SLOT_MISSING("prompt_slot_missing"),
 
     /**
-     * The asked pack, or the asked activation's merged closure, has no mission step contract with the asked identity: the
-     * not-found code of kind {@code mission_step_contract}. Answered as 404. Raised by the item read of a pack and by
-     * {@code getEffectiveMissionStepContract} (#99).
-     */
-    MISSION_STEP_CONTRACT_NOT_FOUND("mission_step_contract_not_found"),
-    /**
      * The skeleton name does not decode to a skeleton of the asked mission type (RFC 6901 escaping, D9). Answered as
      * 404. Raised by {@code getPackMissionSkeleton} and {@code getEffectiveMissionSkeleton} (#99).
      */
@@ -262,7 +256,6 @@ public enum RefusalCode {
             PRESET_NOT_FOUND,
             RELATIONSHIP_NOT_FOUND,
             REGISTRATION_NOT_FOUND,
-            MISSION_STEP_CONTRACT_NOT_FOUND,
             SKELETON_NOT_FOUND);
 
     private final String token;
@@ -287,8 +280,7 @@ public enum RefusalCode {
      *     {@link #PACK_DOCUMENT_NOT_FOUND}, {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
      *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #KIND_NOT_FOUND},
      *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND}, {@link #PRESET_NOT_FOUND},
-     *     {@link #RELATIONSHIP_NOT_FOUND}, {@link #REGISTRATION_NOT_FOUND}, {@link #MISSION_STEP_CONTRACT_NOT_FOUND} and
-     *     {@link #SKELETON_NOT_FOUND}
+     *     {@link #RELATIONSHIP_NOT_FOUND}, {@link #REGISTRATION_NOT_FOUND} and {@link #SKELETON_NOT_FOUND}
      */
     public boolean notFound() {
         return NOT_FOUND.contains(this);

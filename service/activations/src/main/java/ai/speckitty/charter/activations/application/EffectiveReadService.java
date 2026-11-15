@@ -25,7 +25,6 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.TermHolder;
@@ -818,15 +817,15 @@ public class EffectiveReadService {
 
     /**
      * The winner of one mission type under an activation (#99, FR-007), for the missions slice's reads of the type, its
-     * steps and its skeletons: the version the layer merge keeps, the pack that holds it, and the merged closure's step
-     * contracts bound to the type, each the winner of its own id, all from one {@link PacksSession}. The type is
+     * steps and its skeletons: the version the layer merge keeps and the pack that holds it, from one
+     * {@link PacksSession}. The type is
      * answered whatever its state, as {@link #artifact} answers it; what the holding pack stores beside it (its skeletons
      * and step files) is the packs slice's to read, and the source fingerprint is what a caller checks that read
      * against. The activation is judged first, then the type.
      *
      * @param id the activation's id
      * @param missionTypeId the mission type's id, exactly as declared
-     * @return the winning type, its pack, the step contracts bound to it and the source fingerprint of the read
+     * @return the winning type, its pack and the source fingerprint of the read
      * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
      *     is no longer configured or a winner's pack cannot read it, or as the merge or the in-force resolution refuses;
      *     {@code mission_type_not_found} when no pack of the closure holds the type; {@code stale_input} when the packs
@@ -846,28 +845,17 @@ public class EffectiveReadService {
         InForceQuery query = EffectiveSet.queryOf(stored.document());
         String read = "The read of the mission type " + missionTypeId + " under activation " + id.value();
         EffectiveArtifactRead winner = winnerOf(session, type, query, read);
-        List<CharterArtifact> contracts = merged.bindings().entrySet().stream()
-                .filter(binding -> binding.getValue().equals(type))
-                .map(Map.Entry::getKey)
-                .filter(bound -> bound.kind() == ArtifactKind.MISSION_STEP_CONTRACT)
-                .sorted()
-                .map(bound -> winnerOf(session, bound, query, read).artifact())
-                .toList();
         List<ArtifactKind> listed = packs.listedKinds();
         Set<ArtifactRef> held = merged.winners().keySet().stream()
                 .filter(ref -> listed.contains(ref.kind()))
                 .collect(Collectors.toUnmodifiableSet());
         return new EffectiveMissionTypeWinner(
-                winner.packId(),
-                winner.artifact(),
-                contracts,
-                session.snapshot().fingerprint(),
-                held);
+                winner.packId(), winner.artifact(), session.snapshot().fingerprint(), held);
     }
 
     /**
      * The place of one step under an activation (research R8, A7, DIV-243), for the missions slice's read of a step that
-     * the winning mission type does not declare, and of a step contract's step: the pack whose version of the mission
+     * the winning mission type does not declare: the pack whose version of the mission
      * type the step is read from ({@link PacksSession#stepPlace}), which keeps the step when only a version the winner
      * replaced declares it, and the source fingerprint, from one {@link PacksSession}. The names are judged first as the
      * action context judges them ({@link PacksSession#requireAction}), so the step, the context and the prompt reads
@@ -896,50 +884,6 @@ public class EffectiveReadService {
                         "No version of the mission type " + missionTypeId
                                 + " in the activation's closure declares the step " + stepId + "."));
         return new StepPlace(place, session.snapshot().fingerprint());
-    }
-
-    /**
-     * The winner of one step contract under an activation (#99, D11), for the missions slice's literal read of it: the
-     * version the layer merge keeps and the pack that holds it, the winner of the mission type the merge binds it to when
-     * the closure holds that type, the artifacts of a listed kind the closure holds, and the source fingerprint, all
-     * from one {@link PacksSession}. The contract is answered whatever its state, as {@link #artifact} answers it. The
-     * activation is judged first, then the contract.
-     *
-     * @param id the activation's id
-     * @param stepContractId the step contract's id, exactly as declared
-     * @return the winning contract, its pack, its bound type, the held artifacts and the source fingerprint
-     * @throws CharterRefusal with {@code activation_not_found}; {@code pack_unreadable} when a pack the activation names
-     *     is no longer configured or a winner's pack cannot read it, or as the merge or the in-force resolution refuses;
-     *     {@code mission_step_contract_not_found} when no pack of the closure holds the contract; {@code stale_input}
-     *     when the packs changed since the session was verified
-     */
-    public EffectiveStepContractWinner stepContractWinner(ActivationId id, String stepContractId) {
-        Objects.requireNonNull(stepContractId, "stepContractId");
-        StoredActivation stored = found(id);
-        PacksSession session = open(stored);
-        MergedSnapshot merged = session.merged();
-        ArtifactRef contract = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, stepContractId);
-        if (!merged.winners().containsKey(contract)) {
-            throw new CharterRefusal(
-                    RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
-                    "No pack of the activation's closure holds the mission step contract " + stepContractId + ".");
-        }
-        InForceQuery query = EffectiveSet.queryOf(stored.document());
-        String read = "The read of the step contract " + stepContractId + " under activation " + id.value();
-        EffectiveArtifactRead winner = winnerOf(session, contract, query, read);
-        Optional<CharterArtifact> type = Optional.ofNullable(merged.bindings().get(contract))
-                .filter(merged.winners()::containsKey)
-                .map(bound -> winnerOf(session, bound, query, read).artifact());
-        List<ArtifactKind> listed = packs.listedKinds();
-        Set<ArtifactRef> held = merged.winners().keySet().stream()
-                .filter(ref -> listed.contains(ref.kind()))
-                .collect(Collectors.toUnmodifiableSet());
-        return new EffectiveStepContractWinner(
-                winner.packId(),
-                winner.artifact(),
-                type,
-                held,
-                session.snapshot().fingerprint());
     }
 
     /**

@@ -488,28 +488,22 @@ class EffectiveReadMapperTest {
 
     // ---- the mission kinds and the steps (#99 WP06)
 
-    private final EffectiveReadMapper missions = new EffectiveReadMapper(
-            activations,
-            () -> List.of(ArtifactKind.DIRECTIVE, ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT));
+    private final EffectiveReadMapper missions =
+            new EffectiveReadMapper(activations, () -> List.of(ArtifactKind.DIRECTIVE, ArtifactKind.MISSION_TYPE));
 
     @Test
     void anItemOfAMissionKindLinksItsReadUnderTheActivationAndThePackRead() {
         ArtifactRef type = new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev");
-        ArtifactRef contract = new ArtifactRef(ArtifactKind.MISSION_STEP_CONTRACT, "specify");
         Page page = page(
                 new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
                 Optional.empty(),
-                List.of(item(contract, List.of(), Optional.empty()), item(type, List.of(), Optional.empty())));
+                List.of(item(type, List.of(), Optional.empty())));
 
         EffectiveArtifactList wire = missions.toList(page, false);
 
         assertThat(wire.getItems().get(0).getLinks().get("effective-artifact").getHref())
-                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_step_contract/specify");
-        assertThat(wire.getItems().get(0).getLinks().get("artifact").getHref())
-                .isEqualTo("/api/v1/packs/main/artifacts/mission_step_contract/specify");
-        assertThat(wire.getItems().get(1).getLinks().get("effective-artifact").getHref())
                 .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev");
-        assertThat(wire.getItems().get(1).getLinks().get("artifact").getHref())
+        assertThat(wire.getItems().get(0).getLinks().get("artifact").getHref())
                 .isEqualTo("/api/v1/packs/main/artifacts/mission_type/software-dev");
     }
 
@@ -517,8 +511,8 @@ class EffectiveReadMapperTest {
     void aStepNodeLinksItsStepReadUnderTheActivationWhileMissionTypesAreServed() {
         NodeRef step = new NodeRef(NodeKind.ACTION, "software-dev/implement");
         NodeRef type = new NodeRef(NodeKind.MISSION_TYPE, "software-dev");
-        NodeRef contract = new NodeRef(NodeKind.MISSION_STEP_CONTRACT, "implement");
-        GraphSnapshot graph = new GraphSnapshot(List.of(step, contract, type), List.of(), List.of());
+        NodeRef directive = new NodeRef(NodeKind.DIRECTIVE, "GUARD");
+        GraphSnapshot graph = new GraphSnapshot(List.of(step, directive, type), List.of(), List.of());
 
         EffectiveGraph wire = missions.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph));
 
@@ -526,7 +520,7 @@ class EffectiveReadMapperTest {
         assertThat(wire.getNodes().get(0).getLinks().get("effective-artifact").getHref())
                 .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement");
         assertThat(wire.getNodes().get(1).getLinks().get("effective-artifact").getHref())
-                .isEqualTo("/api/v1/activations/a-1/artifacts/mission_step_contract/implement");
+                .isEqualTo("/api/v1/activations/a-1/artifacts/directive/GUARD");
         assertThat(wire.getNodes().get(2).getLinks()).containsOnlyKeys("effective-artifact");
         assertThat(wire.getNodes().get(2).getLinks().get("effective-artifact").getHref())
                 .isEqualTo("/api/v1/activations/a-1/artifacts/mission_type/software-dev");

@@ -101,17 +101,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
       symbol: Preset.artifacts
-  activatedMissionStepContracts:
-    type: array
-    minItems: 1
-    description: >-
-      The mission step contracts applying the preset selects, in the order the file lists them (activated_mission_step_contracts). Left out when the
-      preset lists none.
-    items:
-      $ref: PresetItem.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
-      symbol: Preset.artifacts
   activatedGlossaries:
     type: array
     minItems: 1

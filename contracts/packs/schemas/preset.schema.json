@@ -112,15 +112,6 @@
       "title": "Activated Agent Profiles",
       "type": "array"
     },
-    "activated_mission_step_contracts": {
-      "description": "The mission step contracts this preset activates, in authored order. Absent when the preset selects none; never empty.",
-      "items": {
-        "$ref": "#/$defs/item"
-      },
-      "minItems": 1,
-      "title": "Activated Mission Step Contracts",
-      "type": "array"
-    },
     "activated_anti_patterns": {
       "description": "The anti patterns this preset activates, in authored order. Absent when the preset selects none; never empty.",
       "items": {

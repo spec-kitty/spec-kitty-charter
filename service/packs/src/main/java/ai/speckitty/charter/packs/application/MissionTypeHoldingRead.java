@@ -5,7 +5,6 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -22,8 +21,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * What a pack holds of one mission type, in one verified read (#99): the type itself, the skeletons under its
- * {@code templates/} directory, the step contracts whose {@code mission} is the type, and the stored bytes of each
- * step's prompt and guidelines files. The missions slice builds its mission-type, step and skeleton reads from it, so
+ * {@code templates/} directory, and the stored bytes of each step's prompt and guidelines files. The missions slice builds its mission-type, step and skeleton reads from it, so
  * a read and its links name the same inputs, and the fingerprint it carries is the one those inputs give.
  *
  * <p>The packs rings cannot name the missions domain, so the type is held as a {@link CharterArtifact} and its step
@@ -50,7 +48,6 @@ public final class MissionTypeHoldingRead {
      *
      * @param missionType the mission type, an artifact of kind {@code mission_type}
      * @param skeletons the templates under the type's {@code templates/} directory, by id in code-point order
-     * @param stepContracts the step contracts of the pack whose {@code mission} is the type, by id in code-point order
      * @param stepFiles the stored prompt and guidelines files of each step, by step id
      * @param fingerprint the source fingerprint the read verified
      * @param packName the name the pack's descriptor declares
@@ -58,7 +55,6 @@ public final class MissionTypeHoldingRead {
     public record Holding(
             CharterArtifact missionType,
             List<Template> skeletons,
-            List<MissionStepContract> stepContracts,
             Map<String, PackCompanionFiles.StepFiles> stepFiles,
             String fingerprint,
             String packName) {
@@ -68,7 +64,6 @@ public final class MissionTypeHoldingRead {
          *
          * @param missionType the mission type
          * @param skeletons its skeletons
-         * @param stepContracts the step contracts bound to it
          * @param stepFiles its step files
          * @param fingerprint the verified fingerprint
          * @param packName the name the pack's descriptor declares, which a candidate written with it names the pack by
@@ -76,7 +71,6 @@ public final class MissionTypeHoldingRead {
         public Holding {
             Objects.requireNonNull(missionType, "missionType");
             skeletons = List.copyOf(skeletons);
-            stepContracts = List.copyOf(stepContracts);
             stepFiles = Map.copyOf(stepFiles);
             Objects.requireNonNull(fingerprint, "fingerprint");
             Objects.requireNonNull(packName, "packName");
@@ -111,7 +105,7 @@ public final class MissionTypeHoldingRead {
      *
      * @param pack the pack's identity
      * @param missionTypeId the mission type's id
-     * @return the type, its skeletons, its step contracts and its step files, with the verified fingerprint
+     * @return the type, its skeletons and its step files, with the verified fingerprint
      * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, with
      *     {@link RefusalCode#PACK_UNREADABLE} when the pack has no readable {@code pack.yaml} or a file cannot be read,
      *     with {@link RefusalCode#MISSION_TYPE_NOT_FOUND} when the pack holds no such type, or with
@@ -158,28 +152,21 @@ public final class MissionTypeHoldingRead {
                 .filter(template -> template.missionType().equals(Optional.of(missionTypeId)))
                 .sorted(Comparator.comparing(Template::localId, MissionTypeHoldingRead::byCodePoint))
                 .toList();
-        List<MissionStepContract> contracts =
-                held.artifacts(ArtifactKind.MISSION_STEP_CONTRACT, MissionStepContract.class).stream()
-                        .filter(contract -> contract.mission().equals(missionTypeId))
-                        .sorted(Comparator.comparing(MissionStepContract::localId, MissionTypeHoldingRead::byCodePoint))
-                        .toList();
         return new Held(
                 type,
                 skeletons,
-                contracts,
                 companions.stepFiles(pack, type),
                 held.descriptor().name());
     }
 
     private static Holding holdingOf(Held held, String fingerprint) {
-        return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), fingerprint, held.packName());
+        return new Holding(held.type(), held.skeletons(), held.files(), fingerprint, held.packName());
     }
 
     /** What the verified read loaded, before it carries its fingerprint. */
     private record Held(
             CharterArtifact type,
             List<Template> skeletons,
-            List<MissionStepContract> contracts,
             Map<String, PackCompanionFiles.StepFiles> files,
             String packName) {}
 

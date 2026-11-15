@@ -265,16 +265,6 @@ class ArtifactRemovalServiceTest {
             - id: specify
               title: Specification
             """;
-    private static final String STEP_CONTRACT = """
-            schema_version: '1.0'
-            id: specify
-            action: specify
-            mission: software-dev
-            steps:
-              - id: bootstrap
-                description: Load charter context for this action
-            """;
-
     /** The registered {@code requires} edge from a mission type to the action of one of its steps (FR-011). */
     private static Relationship link(String type, String step) {
         return Relationship.of(urn("mission_type:" + type), urn("action:" + type + "/" + step), RelationType.REQUIRES);
@@ -300,31 +290,10 @@ class ArtifactRemovalServiceTest {
         return all;
     }
 
-    /** The org pack {@code qa} with a mission type, its registered links and a step contract bound to its step. */
+    /** The org pack {@code qa} with a mission type and its registered links. */
     private static Packs qaWithMissionKinds() {
         return qa().file("missions/software-dev/software-dev.mission-type.yaml", MISSION_TYPE)
-                .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS))
-                .file("mission_step_contracts/specify.step-contract.yaml", STEP_CONTRACT);
-    }
-
-    @Test
-    void aStepContractIsRemovedLikeTheOtherListedKindsAndItsMissionTypeStays(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        rig.register("qa", rig.stage(qaWithMissionKinds()), Preconditions.none());
-        Removals removals = new Removals(rig);
-
-        removals.remove("qa", "mission_step_contract", "specify");
-
-        assertThat(removals.filesOf("qa"))
-                .doesNotContainKey("mission_step_contracts/specify.step-contract.yaml")
-                .as("the control: the mission type stays")
-                .containsKey("missions/software-dev/software-dev.mission-type.yaml");
-        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.MISSION_STEP_CONTRACT))
-                .isEmpty();
-        assertThat(refusal(() -> removals.remove("qa", "mission_step_contract", "specify"))
-                        .code())
-                .as("gone, so the next delete is its kind's not-found")
-                .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
+                .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS));
     }
 
     private static final String DOCUMENTATION = """
@@ -385,11 +354,10 @@ class ArtifactRemovalServiceTest {
         assertThat(trail).as("one removal, one move of the revision").hasSize(1);
         assertThat(removals.filesOf("qa"))
                 .doesNotContainKeys(DOCUMENTATION_FILES.toArray(String[]::new))
-                .as("the control: the other type, its skeleton and its step contract stay")
+                .as("the control: the other type and its skeleton stay")
                 .containsKeys(
                         "missions/software-dev/software-dev.mission-type.yaml",
-                        "missions/software-dev/templates/spec-template.md",
-                        "mission_step_contracts/specify.step-contract.yaml");
+                        "missions/software-dev/templates/spec-template.md");
         assertThat(rig.packs.resolve("qa").resolve("missions/documentation"))
                 .as("the directories the removal emptied go too")
                 .doesNotExist();
@@ -491,33 +459,6 @@ class ArtifactRemovalServiceTest {
         assertThat(Preset.ACTIVATION_KINDS).doesNotContain(ArtifactKind.TEMPLATE);
     }
 
-    /** D10: a step contract whose mission names the type binds it, so the type is not removed until the contract is. */
-    @Test
-    void aStepContractThatBindsTheMissionTypeRefusesItsRemovalUntilTheContractIsGone(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
-        Removals removals = new Removals(rig);
-        Map<String, String> before = removals.filesOf("qa");
-
-        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "software-dev"));
-
-        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refused.violations())
-                .extracting(RefusalViolation::detail)
-                .anySatisfy(detail -> assertThat(detail)
-                        .contains("mission_step_contract:specify")
-                        .contains("mission_type:software-dev"));
-        assertThat(removals.filesOf("qa")).as("the refusal changed nothing").isEqualTo(before);
-
-        removals.remove("qa", "mission_step_contract", "specify");
-        removals.remove("qa", "mission_type", "software-dev");
-        assertThat(removals.filesOf("qa"))
-                .as("the control: once no contract binds it, it goes with its skeleton")
-                .doesNotContainKeys(
-                        "missions/software-dev/software-dev.mission-type.yaml",
-                        "missions/software-dev/templates/spec-template.md");
-    }
-
     /**
      * D10: a graph edge that names one of the type's action nodes, at either end, in the registered shard or in a
      * document the author wrote, refuses the type's removal; an edge on another type's action node does not. Another
@@ -568,31 +509,6 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa"))
                 .doesNotContainKey("missions/documentation/documentation.mission-type.yaml")
                 .containsKey("steps.graph.yaml");
-    }
-
-    /** D10: a step contract of another pack that builds on the pack binds its mission type as one of its own would. */
-    @Test
-    void aStepContractOfAnotherPackThatBindsTheMissionTypeRefusesItsRemovalAndIsNamed(@TempDir Path host) {
-        Rig rig = new Rig(host);
-        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
-        rig.register(
-                "other",
-                rig.stage(otherPack()
-                        .file(
-                                "mission_step_contracts/discover.step-contract.yaml",
-                                STEP_CONTRACT.replace("specify", "discover").replace("software-dev", "documentation"))),
-                Preconditions.none());
-        Removals removals = new Removals(rig);
-        Map<String, String> before = removals.filesOf("qa");
-
-        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
-
-        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
-        assertThat(refused.violations())
-                .extracting(RefusalViolation::detail)
-                .anySatisfy(detail -> assertThat(detail).contains("mission_step_contract:discover"));
-        assertThat(removals.filesOf("qa")).isEqualTo(before);
     }
 
     /** D10: an edge of another pack that points at a skeleton of the type is a referrer of the one removal. */

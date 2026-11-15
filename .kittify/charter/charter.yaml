@@ -48,7 +48,6 @@ governance:
     - test-quality-triage
     selected_procedures: []
     selected_agent_profiles: []
-    selected_mission_step_contracts: []
     selected_glossary_packs: []
     selected_assets: []
     available_tools:

@@ -13,7 +13,6 @@ import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +50,7 @@ class PackPolicyRulesTest {
 
     private static PackContents contents(
             FileRead<PackDescriptor> descriptor,
-            List<StepContractFacts> steps,
+            List<MissionTypeFacts> types,
             List<ArtifactFacts> artifacts,
             List<AssetFacts> assets) {
         return new PackContents(
@@ -60,10 +59,12 @@ class PackPolicyRulesTest {
                 List.of(),
                 EMPTY_FRAGMENT,
                 List.of(),
-                steps,
                 artifacts,
                 assets,
-                List.of());
+                List.of(),
+                StepEnhancementFacts.none(),
+                List.of(),
+                types);
     }
 
     private static PackContents withDescriptor(Optional<String> requiresCore) {
@@ -208,7 +209,6 @@ class PackPolicyRulesTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
                 List.of());
 
         assertThat(PackPolicy.judge(contents).findings())
@@ -225,7 +225,6 @@ class PackPolicyRulesTest {
                 descriptor,
                 List.of(),
                 fragment,
-                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -338,55 +337,70 @@ class PackPolicyRulesTest {
 
     // ---- duplicate_step_id -----------------------------------------------------------------------
 
-    private static final String CONTRACT = "mission_step_contracts/specify.step-contract.yaml";
+    private static final String TYPE = "missions/rx/rx.mission-type.yaml";
 
-    private static List<PackFinding> stepFindings(StepContractFacts... contracts) {
+    /** A mission type whose one step {@code s}, the first of its steps, declares the substeps with these ids. */
+    private static MissionTypeFacts type(String file, String... substepIds) {
+        List<MissionTypeFacts.SubstepFacts> substeps = new ArrayList<>();
+        for (int i = 0; i < substepIds.length; i++) {
+            substeps.add(new MissionTypeFacts.SubstepFacts("steps", 0, "s", i, substepIds[i], Optional.empty()));
+        }
+        // No step id is listed, so the step-link rule has nothing to judge here.
+        return new MissionTypeFacts(file, "rx", List.of(), substeps);
+    }
+
+    private static List<PackFinding> stepFindings(MissionTypeFacts... types) {
         return judge(contents(
-                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
-                List.of(contracts),
-                List.of(),
-                List.of()));
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())), List.of(types), List.of(), List.of()));
     }
 
     @Test
-    void aRepeatedStepIdIsBlockingAtTheSecondOccurrenceWithThePinnedText() {
-        List<PackFinding> findings = stepFindings(new StepContractFacts(CONTRACT, List.of("a", "b", "a")));
+    void aRepeatedSubstepIdIsBlockingAtTheSecondOccurrenceWithThePinnedText() {
+        List<PackFinding> findings = stepFindings(type(TYPE, "a", "b", "a"));
 
         assertThat(findings)
                 .containsExactly(new PackFinding(
                         PackFindingCode.DUPLICATE_STEP_ID,
-                        CONTRACT,
-                        List.of("steps", "2", "id"),
-                        CONTRACT + ": step id 'a' is declared more than once"));
+                        TYPE,
+                        List.of("steps", "0", "substeps", "2", "id"),
+                        TYPE + ": substep id 'a' is declared more than once in the step 's'"));
         assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
     }
 
     @Test
     void aTriplicatedIdGivesOneFindingAndEachDuplicatedIdItsOwn() {
-        List<PackFinding> findings =
-                stepFindings(new StepContractFacts(CONTRACT, List.of("a", "b", "a", "b", "a", "c")));
+        List<PackFinding> findings = stepFindings(type(TYPE, "a", "b", "a", "b", "a", "c"));
 
         assertThat(findings)
                 .extracting(PackFinding::place, PackFinding::detail)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(
-                                List.of("steps", "2", "id"), CONTRACT + ": step id 'a' is declared more than once"),
+                                List.of("steps", "0", "substeps", "2", "id"),
+                                TYPE + ": substep id 'a' is declared more than once in the step 's'"),
                         org.assertj.core.groups.Tuple.tuple(
-                                List.of("steps", "3", "id"), CONTRACT + ": step id 'b' is declared more than once"));
+                                List.of("steps", "0", "substeps", "3", "id"),
+                                TYPE + ": substep id 'b' is declared more than once in the step 's'"));
     }
 
     @Test
-    void distinctStepIdsAndIdsAcrossContractsGiveNoFinding() {
-        assertThat(stepFindings(
-                        new StepContractFacts(CONTRACT, List.of("a", "b")),
-                        new StepContractFacts("mission_step_contracts/plan.step-contract.yaml", List.of("a", "b"))))
+    void distinctSubstepIdsAndIdsAcrossTypesGiveNoFinding() {
+        assertThat(stepFindings(type(TYPE, "a", "b"), type("missions/plan/plan.mission-type.yaml", "a", "b")))
                 .isEmpty();
     }
 
     @Test
-    void stepIdsAreComparedExactly() {
-        assertThat(stepFindings(new StepContractFacts(CONTRACT, List.of("a", "A", "a "))))
-                .isEmpty();
+    void substepIdsAreComparedExactly() {
+        assertThat(stepFindings(type(TYPE, "a", "A", "a "))).isEmpty();
+    }
+
+    @Test
+    void theLoadRecordsTheSameCodeAtTheTypesFile() {
+        assertThat(PackPolicy.substepIdViolations(type(TYPE, "a", "b", "a")))
+                .containsExactly(new PackElementViolation(
+                        TYPE,
+                        "duplicate_step_id",
+                        TYPE + ": substep id 'a' is declared more than once in the step 's'"));
+        assertThat(PackPolicy.substepIdViolations(type(TYPE, "a", "b"))).isEmpty();
     }
 
     // ---- duplicate_artifact_id -------------------------------------------------------------------
@@ -734,7 +748,7 @@ class PackPolicyRulesTest {
     void theValidateOnlyRulesAreJudged() {
         PackContents contents = contents(
                 new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
-                List.of(new StepContractFacts(CONTRACT, List.of("a", "a"))),
+                List.of(type(TYPE, "a", "a")),
                 List.of(new ArtifactFacts("t/a.yaml", "tactic", "x"), new ArtifactFacts("t/b.yaml", "tactic", "x")),
                 List.of(asset("../logo.png", "text/plain", false)));
 

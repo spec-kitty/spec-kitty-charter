@@ -115,7 +115,6 @@ class EffectivePromptQueryTest {
                             List.of(),
                             edges.getOrDefault(pack, List.of()),
                             Map.of(),
-                            Map.of(),
                             new PromptFacts(
                                     declared.getOrDefault(pack, Map.of()), fills.getOrDefault(pack, Map.of()))));
         }

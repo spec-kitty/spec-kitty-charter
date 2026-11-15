@@ -6,11 +6,9 @@ import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.MissionSkeleton;
 import ai.speckitty.charter.api.model.MissionStep;
 import ai.speckitty.charter.missions.application.EffectiveMissionTypeReadService;
-import ai.speckitty.charter.missions.application.EffectiveStepContractView;
 import ai.speckitty.charter.missions.application.Fingerprinted;
 import ai.speckitty.charter.missions.application.MissionTypeView;
 import ai.speckitty.charter.missions.application.SkeletonView;
-import ai.speckitty.charter.missions.application.StepContractView;
 import java.util.EnumMap;
 import java.util.Objects;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * {@code GET /activations/{activationId}/artifacts/mission_type/{missionTypeId}}, its {@code steps/{stepId}} and
- * {@code skeletons/{skeletonName}} sub-resources (#99, FR-007), and
- * {@code GET /activations/{activationId}/artifacts/mission_step_contract/{contractId}} (D11): the reads under an
- * activation of {@link EffectiveMissionTypeReadService}. It is a controller of its own, of its own tag
+ * {@code skeletons/{skeletonName}} sub-resources (#99, FR-007): the reads under an activation of {@link EffectiveMissionTypeReadService}. It is a controller of its own, of its own tag
  * ({@code EffectiveMissionTypes}), beside {@link MissionTypeController}, as {@code EffectiveAgentProfilesController} is
  * for a profile. The literal paths are more specific than the activation set's templated read of an artifact, which
- * carries no body, so Spring routes a {@code mission_type} or {@code mission_step_contract} item here.
+ * carries no body, so Spring routes a {@code mission_type} item here.
  *
  * <p>The bodies are the pack-scoped reads' ({@link MissionBodies}), linked under the activation; the envelope's
  * {@code packId} is the pack that holds the winner, and its {@code artifact} link is that pack's read of it. A step only
@@ -60,27 +56,6 @@ public class EffectiveMissionTypesController implements EffectiveMissionTypesApi
         own.put(MissionRelation.ARTIFACT, links.pack(holder).missionType(missionTypeId));
         return MissionBodies.ok(held.read())
                 .body(MissionBodies.missionType(held.read().value(), holder, scope, own));
-    }
-
-    @Override
-    public ResponseEntity<Artifact> getEffectiveMissionStepContract(String activationId, String contractId) {
-        EffectiveMissionTypeReadService.Held<EffectiveStepContractView> held =
-                reads.stepContract(activationId, contractId);
-        EffectiveStepContractView view = held.read().value();
-        StepContractView contract = view.contract();
-        String holder = held.holder().value();
-        MissionLinks.Scope scope = links.activation(activationId);
-        EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
-        own.put(MissionRelation.SELF, scope.stepContract(contract.id()));
-        own.put(MissionRelation.COLLECTION, scope.stepContracts());
-        if (view.missionTypeHeld()) {
-            own.put(MissionRelation.MISSION_TYPE, scope.missionType(contract.mission()));
-        }
-        if (view.stepHeld()) {
-            own.put(MissionRelation.STEP, scope.step(contract.mission(), contract.action()));
-        }
-        own.put(MissionRelation.ARTIFACT, links.pack(holder).stepContract(contract.id()));
-        return MissionBodies.ok(held.read()).body(MissionBodies.stepContract(view, holder, scope, own));
     }
 
     @Override

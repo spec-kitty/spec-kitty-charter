@@ -40,7 +40,6 @@ operations:
   getEffectiveGraph: {switch: ready}
   getEffectiveMissionSkeleton: {switch: ready}
   getEffectiveMissionStep: {switch: ready}
-  getEffectiveMissionStepContract: {switch: ready}
   getEffectiveMissionType: {switch: ready}
   getEffectiveSkill: {switch: ready}
   getEffectiveStepPrompt: {switch: ready}

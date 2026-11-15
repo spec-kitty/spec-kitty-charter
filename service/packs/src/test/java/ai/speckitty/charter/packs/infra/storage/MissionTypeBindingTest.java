@@ -194,7 +194,6 @@ class MissionTypeBindingTest {
     @ValueSource(
             strings = {
                 "research.mission-type.yaml",
-                "mission_types/research.mission-type.yaml",
                 "missions/research/nested/research.mission-type.yaml",
                 "missions/other/research.mission-type.yaml"
             })

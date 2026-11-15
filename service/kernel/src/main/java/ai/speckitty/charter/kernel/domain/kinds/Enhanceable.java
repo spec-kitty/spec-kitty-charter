@@ -14,7 +14,6 @@ public sealed interface Enhanceable extends Kind
                 Paradigm,
                 Procedure,
                 AgentProfile,
-                MissionStepContract,
                 GlossaryContext,
                 Skill,
                 AntiPattern {}

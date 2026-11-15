@@ -19,8 +19,6 @@ activated_procedures:
 activated_agent_profiles:
   - id: implementer
     must_have: true
-activated_mission_step_contracts:
-  - id: specify
 activated_anti_patterns:
   - id: big-ball-of-mud
 activated_glossaries:

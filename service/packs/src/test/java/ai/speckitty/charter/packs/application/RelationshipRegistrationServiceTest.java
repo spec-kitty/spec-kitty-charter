@@ -17,12 +17,9 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.AssetIdentifier;
-import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
-import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -502,51 +499,6 @@ class RelationshipRegistrationServiceTest {
         current.directives().forEach(builder::directive);
         builder.directive(directive(id));
         store.packs.put(PACK, builder.build());
-    }
-
-    /**
-     * #191: mission step contracts are in the aggregate now, so a relationship from a contract of the pack resolves (it
-     * was a conflict while the kind was not loaded), and one from a contract the pack does not hold stays a conflict.
-     */
-    @Test
-    void aRelationshipFromAMissionStepContractOfThePackResolves() {
-        store.packs.put(PACK, store.packs.get(PACK).with(contract("implement")));
-        Urn implement = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "implement");
-        Urn ghost = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "ghost");
-        Urn external = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "upstream");
-        int before = store.commits;
-
-        assertThatThrownBy(() -> service.registerRelationship(
-                        PACK,
-                        RelationshipDraft.of(Relationship.of(ghost, external, RelationType.OVERRIDES)),
-                        store.currentRevision(PACK).token()))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
-        assertThat(store.commits).isEqualTo(before);
-
-        assertThatCode(() -> service.registerRelationship(
-                        PACK,
-                        RelationshipDraft.of(Relationship.of(implement, external, RelationType.OVERRIDES)),
-                        store.currentRevision(PACK).token()))
-                .doesNotThrowAnyException();
-        assertThat(store.commits).isEqualTo(before + 1);
-    }
-
-    private static MissionStepContract contract(String id) {
-        return MissionStepContract.builder()
-                .id(new MissionStepContractIdentifier(id))
-                .packId(PACK)
-                .schemaVersion("1.0")
-                .action(id)
-                .mission("software-dev")
-                .step(new ContractStep(
-                        "bootstrap",
-                        "Load charter context",
-                        Optional.empty(),
-                        List.of(),
-                        Optional.empty(),
-                        Optional.empty()))
-                .build();
     }
 
     // ---- R-REL: the edge rules of a held step enhancement, judged before anything is written

@@ -72,7 +72,6 @@ class PromptFactsTest {
                 List.of(),
                 List.of(),
                 Map.of(),
-                Map.of(),
                 prompts);
 
         assertThat(PackCompositionFacts.NONE.prompts()).isSameAs(PromptFacts.NONE);
@@ -84,7 +83,6 @@ class PromptFactsTest {
                                 MutabilityPolicySource.empty(),
                                 List.of(),
                                 List.of(),
-                                Map.of(),
                                 Map.of())
                         .prompts())
                 .isSameAs(PromptFacts.NONE);

@@ -62,7 +62,6 @@ class SlotComposeTest {
                                 List.of(),
                                 held.edges(),
                                 Map.of(),
-                                Map.of(),
                                 held.prompts()));
             }
             return facts;

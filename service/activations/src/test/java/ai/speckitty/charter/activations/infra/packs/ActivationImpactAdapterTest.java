@@ -250,7 +250,6 @@ class ActivationImpactAdapterTest {
                         List.of(),
                         edges,
                         Map.of(),
-                        Map.of(),
                         prompts));
     }
 

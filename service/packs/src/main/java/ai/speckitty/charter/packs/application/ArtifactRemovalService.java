@@ -46,8 +46,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>A mission type is removed with its skeletons, the templates under its {@code templates/}, and its step prompts and
  * guidelines, its companions, as one removal under one impact check: every check above judges all of them together,
- * and a step contract bound to the type or an edge that names one of its action nodes {@code action:<type>/<step>}
- * refers to it (D10 of #99). A step contract is removed as any other artifact is.
+ * and an edge that names one of its action nodes {@code action:<type>/<step>} refers to it (D10 of #99).
  *
  * <p>A saved selection of the artifact in an activation is not consulted: it reads as stale and is dropped on the next
  * write of the activation.
@@ -69,8 +68,7 @@ public final class ArtifactRemovalService {
             ArtifactKind.TOOLGUIDE,
             ArtifactKind.PROCEDURE,
             ArtifactKind.AGENT_PROFILE,
-            ArtifactKind.MISSION_TYPE,
-            ArtifactKind.MISSION_STEP_CONTRACT);
+            ArtifactKind.MISSION_TYPE);
 
     private final PackRepository packs;
     private final PackRemovalStore store;
@@ -244,7 +242,7 @@ public final class ArtifactRemovalService {
      * Before the compose: another artifact or pack that still refers to a removed artifact is a {@code 409}, not a
      * composition {@code 422}. The scan judges the tree after the removal: the pack's own presets lose the items that
      * name the artifacts, and the edges that start at them are gone, so neither counts. A removed mission type is also
-     * referred to by a step contract bound to it and by an edge that names one of its action nodes
+     * referred to by an edge that names one of its action nodes
      * ({@link InboundReferences#scanRemoval}).
      */
     private void requireNoReferrer(PackIdentifier pack, Urn artifact, List<Urn> removed, List<Relationship> outgoing) {

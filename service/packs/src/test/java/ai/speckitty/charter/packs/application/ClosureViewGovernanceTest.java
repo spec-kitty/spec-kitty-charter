@@ -145,7 +145,6 @@ class ClosureViewGovernanceTest {
                         plain.presets(),
                         plain.edges(),
                         Map.of(),
-                        Map.of(),
                         PromptFacts.NONE,
                         terms));
     }
@@ -402,7 +401,6 @@ class ClosureViewGovernanceTest {
                         held.presets(),
                         held.edges(),
                         held.languages(),
-                        held.bindings(),
                         new PromptFacts(Map.of(), Map.of(), Map.of(Urn.missionType("M"), List.of("s")))));
         stored.put(
                 "builtin",

@@ -16,7 +16,6 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -173,8 +172,7 @@ public final class FileSystemPackInspector implements PackInspector {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         if (scope == Scope.LOAD_PATH) {
-            return new PackContents(
-                    root, descriptor, shards, fragment, List.of(), List.of(), List.of(), List.of(), List.of());
+            return new PackContents(root, descriptor, shards, fragment, List.of(), List.of(), List.of(), List.of());
         }
         FullRead full = new FullRead(
                 directory, name, shards.stream().map(FileRead::file).toList(), table);
@@ -185,7 +183,6 @@ public final class FileSystemPackInspector implements PackInspector {
                 shards,
                 fragment,
                 full.files,
-                full.stepContracts,
                 full.artifacts,
                 full.assets,
                 full.unreadable,
@@ -317,7 +314,6 @@ public final class FileSystemPackInspector implements PackInspector {
         private final Set<String> loadPath = new HashSet<>();
         final List<ClassifiedFile> files = new ArrayList<>();
         final List<FileRead.Unreadable<?>> unreadable = new ArrayList<>();
-        final List<StepContractFacts> stepContracts = new ArrayList<>();
         final List<MissionTypeFacts> missionTypes = new ArrayList<>();
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
@@ -517,9 +513,6 @@ public final class FileSystemPackInspector implements PackInspector {
             if (!ArtifactKinds.KINDS.contains(kind) || !(document instanceof Map<?, ?> map)) {
                 return;
             }
-            if ("mission-step-contract".equals(kind)) {
-                stepContracts.add(new StepContractFacts(file, stepIds(map)));
-            }
             if (StepEnhancementBinding.INSTANCE.schemaName().equals(kind) && map.get("id") instanceof String id) {
                 enhancements.add(new StepEnhancementFacts.Enhancement(file, typeDirectory(file), id, entriesOf(map)));
             }
@@ -638,10 +631,6 @@ public final class FileSystemPackInspector implements PackInspector {
             String path = String.valueOf(manifest.get("path"));
             String mime = String.valueOf(manifest.get("mime"));
             return new AssetFacts(file, id, path, mime, containedInAssetsRoot(directory.resolve("assets"), path));
-        }
-
-        private static List<String> stepIds(Map<?, ?> contract) {
-            return idsOf(contract.get("steps"));
         }
 
         /** The {@code id} of each map of a list, in order; none for anything that is not a list. */

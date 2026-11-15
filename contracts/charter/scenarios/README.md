@@ -322,7 +322,8 @@ from ready to held, is a breaking change of the contract.
 - `removed-routes.feature`: every per-kind route of the earlier contract answers the 404 of a path no operation
   defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
-  not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
+  not `kind_not_found`: the path names a served kind, and the method is what the path does not define. The routes of
+  the retired step contract kind (slice F) answer `404 kind_not_found`, and a list filter that names it is a 400.
 - `pack-id-length.feature`: the id length caps of the pack schemas (#440): a directive id of exactly 64 characters
   is read, and one of 65 refuses the pack as `500 pack_unreadable`; an executable entry of 255 characters is read
   and one of 256 refuses it; an expected artifact key of 256 refuses it; and a directive `PUT` whose id is 65
@@ -388,13 +389,12 @@ from ready to held, is a breaking change of the contract.
   `@WIP` until the serving work package binds it (the comment above a scenario names which); see "Registration steps".
 - `pack-removal.feature`: the artifact `DELETE` and the relationship `DELETE` (ADR-0065 D4, FR-005, FR-006), their
   `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, bound by WP19.
-- `mission-types.feature`: the mission type, step, skeleton and step contract reads (#99, #100, #96), and the `DELETE`
-  of both kinds: a step contract as the five kinds, a mission type with its step files and skeletons as one removal,
-  refused `409` while a step contract binds it or an edge names one of its action nodes (D10).
+- `mission-types.feature`: the mission type, step and skeleton reads (#99, #100, #96), and the `DELETE` of a mission
+  type with its step files and skeletons as one removal, refused `409` while an edge names one of its action nodes
+  (D10).
 - `effective-mission-types.feature`: the same mission type, step and skeleton reads under an activation (#99, FR-007):
-  the layer-merge winner with the holding pack's skeletons and step files, the merged closure's step contracts, links
-  under the activation and an `artifact` link to the winner's pack read, the refusals in order, and the generic
-  activation read of a step contract.
+  the layer-merge winner with the holding pack's skeletons and step files, links under the activation and an
+  `artifact` link to the winner's pack read, and the refusals in order.
 - `trust/`, `integrity/`, `distribution/`, and the rest of the pack registration and distribution scenarios of
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says

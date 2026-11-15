@@ -21,10 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * What the store tells the packs rings about a mission type it loaded (#99): the step ids it declares
- * ({@link ai.speckitty.charter.packs.domain.MissionTypeSteps}), its steps then its on-demand steps, and the stored bytes
- * of each step's prompt and guidelines files ({@link PackCompanionFiles}), byte for byte, slot markers and frontmatter
- * included. Any artifact that is not a mission type has neither.
+ * What the store tells the packs rings about a mission type it loaded (#99): the stored bytes of each step's prompt and
+ * guidelines files ({@link PackCompanionFiles}), byte for byte, slot markers and frontmatter
+ * included. Any artifact that is not a mission type has none.
  */
 class MissionTypeStoredFilesTest {
 
@@ -110,16 +109,10 @@ class MissionTypeStoredFilesTest {
     }
 
     @Test
-    void theStepIdsOfAMissionTypeAreItsStepsAndItsOnDemandSteps() {
-        assertThat(service.stepIds(missionType())).containsExactlyInAnyOrder("specify", "plan", "retrospect");
-    }
-
-    @Test
-    void anArtifactThatIsNotAMissionTypeHasNoStepIdsAndNoStepFiles() {
+    void anArtifactThatIsNotAMissionTypeHasNoStepFiles() {
         CharterArtifact directive =
                 service.load(ID).artifacts(ArtifactKind.DIRECTIVE).getFirst();
 
-        assertThat(service.stepIds(directive)).isEmpty();
         assertThat(service.stepFiles(ID, directive)).isEmpty();
     }
 

@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,17 +49,28 @@ class PackValidationTest {
     }
 
     private static PackContents facts(
-            PackRoot root, List<StepContractFacts> steps, List<FileRead.Unreadable<?>> unreadable) {
+            PackRoot root, List<MissionTypeFacts> types, List<FileRead.Unreadable<?>> unreadable) {
         return new PackContents(
                 root,
                 new FileRead.Read<>("pack.yaml", DESCRIPTOR),
                 List.of(),
                 EMPTY_FRAGMENT,
                 List.of(new ClassifiedFile("pack.yaml", Optional.of("pack-descriptor"), Optional.empty())),
-                steps,
                 List.of(),
                 List.of(),
-                unreadable);
+                unreadable,
+                StepEnhancementFacts.none(),
+                List.of(),
+                types);
+    }
+
+    /** A mission type whose one step {@code s} declares the substeps with these ids; no step id, so no step link. */
+    private static MissionTypeFacts type(String file, String... substepIds) {
+        List<MissionTypeFacts.SubstepFacts> substeps = new ArrayList<>();
+        for (int i = 0; i < substepIds.length; i++) {
+            substeps.add(new MissionTypeFacts.SubstepFacts("steps", 0, "s", i, substepIds[i], Optional.empty()));
+        }
+        return new MissionTypeFacts(file, "rx", List.of(), substeps);
     }
 
     private static PackRoot root(Optional<PackLevel> level) {
@@ -70,8 +80,8 @@ class PackValidationTest {
     @Test
     void aValidationReadsTheWholePackAndReturnsTheVerdictOfWhatWasRead() {
         PackRoot root = root(Optional.of(PackLevel.ORG));
-        List<StepContractFacts> steps = List.of(new StepContractFacts("c.step-contract.yaml", List.of("a", "b", "a")));
-        FakeInspector inspector = new FakeInspector(facts(root, steps, List.of()));
+        List<MissionTypeFacts> types = List.of(type("rx.mission-type.yaml", "a", "b", "a"));
+        FakeInspector inspector = new FakeInspector(facts(root, types, List.of()));
 
         PackVerdict verdict = new PackValidation(inspector).validate(root);
 
@@ -81,9 +91,9 @@ class PackValidationTest {
         assertThat(verdict.findings())
                 .containsExactly(new PackFinding(
                         PackFindingCode.DUPLICATE_STEP_ID,
-                        "c.step-contract.yaml",
-                        List.of("steps", "2", "id"),
-                        "c.step-contract.yaml: step id 'a' is declared more than once"));
+                        "rx.mission-type.yaml",
+                        List.of("steps", "0", "substeps", "2", "id"),
+                        "rx.mission-type.yaml: substep id 'a' is declared more than once in the step 's'"));
     }
 
     @Test
@@ -91,7 +101,7 @@ class PackValidationTest {
         PackRoot root = root(Optional.of(PackLevel.ORG));
         PackContents contents = facts(
                 root,
-                List.of(new StepContractFacts("c.step-contract.yaml", List.of("x", "x"))),
+                List.of(type("rx.mission-type.yaml", "x", "x")),
                 List.of(new FileRead.Unreadable<Object>(
                         "tactics/a.tactic.yaml",
                         new ParseFailure("tactics/a.tactic.yaml", "while parsing"),
@@ -154,7 +164,6 @@ class PackValidationTest {
                 new FileRead.Absent<>("pack.yaml"),
                 List.of(),
                 new FileRead.Absent<>("drg/fragment.yaml"),
-                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),

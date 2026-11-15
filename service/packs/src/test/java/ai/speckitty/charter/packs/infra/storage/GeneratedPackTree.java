@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  * <caption>Name shapes and their verdicts</caption>
  * <tr><th>Shape</th><th>Verdict</th></tr>
  * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm,
- *     agent, step-contract, glossary, skill, procedure, asset</td><td>loaded</td></tr>
+ *     agent, glossary, skill, procedure, asset</td><td>loaded</td></tr>
  * <tr><td>an asset sidecar of a loaded shape names a payload {@code assets/<dirs><stem>.bin}, planted with it</td>
  *     <td>payload</td></tr>
  * <tr><td>{@code assets/<dirs><stem>.bin.asset.yaml} beside its payload {@code assets/<dirs><stem>.bin}</td>
@@ -115,7 +115,6 @@ final class GeneratedPackTree {
         TOOLGUIDE("toolguide", "tg-"),
         PARADIGM("paradigm", "p-"),
         AGENT_PROFILE("agent", "ap-"),
-        MISSION_STEP_CONTRACT("step-contract", "msc-"),
         GLOSSARY("glossary", "gp-"),
         SKILL("skill", "sk-"),
         PROCEDURE("procedure", "pr-"),
@@ -867,15 +866,8 @@ final class GeneratedPackTree {
 
     private static String contentOf(Kind kind, String id) {
         return switch (kind) {
-            case TACTIC,
-                    DIRECTIVE,
-                    STYLEGUIDE,
-                    TOOLGUIDE,
-                    PARADIGM,
-                    AGENT_PROFILE,
-                    MISSION_STEP_CONTRACT,
-                    GLOSSARY,
-                    SKILL -> doctrineContentOf(kind, id);
+            case TACTIC, DIRECTIVE, STYLEGUIDE, TOOLGUIDE, PARADIGM, AGENT_PROFILE, GLOSSARY, SKILL ->
+                doctrineContentOf(kind, id);
             case PROCEDURE, MISSION_TYPE, GUARD, LIFECYCLE, STEP_ENHANCEMENT -> missionContentOf(kind, id);
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
@@ -894,8 +886,6 @@ final class GeneratedPackTree {
             case PARADIGM -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsummary: S\n";
             case AGENT_PROFILE ->
                 "profile-id: " + id + "\nname: N\nrole: r\npurpose: P\nspecialization:\n  primary-focus: F\n";
-            case MISSION_STEP_CONTRACT ->
-                "id: " + id + "\nschema_version: '1.0'\naction: a\nmission: m\nsteps:\n  - id: s\n    description: D\n";
             case GLOSSARY ->
                 "schema_version: '1.0'\nid: " + id
                         + "\nname: N\ndescription: D\nterms:\n  - id: s\n    name: S\n    definition: D\n    status: active\n";

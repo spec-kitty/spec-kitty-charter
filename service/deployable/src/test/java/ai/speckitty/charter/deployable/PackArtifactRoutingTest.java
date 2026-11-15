@@ -115,8 +115,7 @@ class PackArtifactRoutingTest {
                 "GET",
                 List.of(
                         new Route("directive/X", ArtifactController.class, "getPackArtifact"),
-                        new Route("procedure/P", ArtifactController.class, "getPackArtifact"),
-                        new Route("mission_step_contract/implement", ArtifactController.class, "getPackArtifact")));
+                        new Route("procedure/P", ArtifactController.class, "getPackArtifact")));
     }
 
     @Test

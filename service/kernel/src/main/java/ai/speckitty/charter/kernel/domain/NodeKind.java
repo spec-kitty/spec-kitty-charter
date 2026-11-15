@@ -29,9 +29,6 @@ public enum NodeKind {
     PROCEDURE("procedure", ArtifactKind.PROCEDURE, "procedures", true, true),
     /** A node of the artifact kind {@link ArtifactKind#AGENT_PROFILE}. */
     AGENT_PROFILE("agent_profile", ArtifactKind.AGENT_PROFILE, "agent_profiles", true, true),
-    /** A node of the artifact kind {@link ArtifactKind#MISSION_STEP_CONTRACT}. */
-    MISSION_STEP_CONTRACT(
-            "mission_step_contract", ArtifactKind.MISSION_STEP_CONTRACT, "mission_step_contracts", true, true),
     /**
      * A glossary context, the artifact of the kind {@link ArtifactKind#GLOSSARY}, for example
      * {@code glossary_context:spec-kitty-core}. Its URN token is not its kind's token {@code glossary} on purpose

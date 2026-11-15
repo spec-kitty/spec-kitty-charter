@@ -23,8 +23,8 @@ public enum PackFindingCode {
     /** An artifact file breaks its schema; validate mode only. */
     ARTIFACT_SCHEMA_ERROR(Severity.BLOCKING),
     /**
-     * A step of a mission type declares a substep id twice (FR-004), or, until the step contract is retired, a step
-     * contract declares a step id twice; validate mode only. The load refuses such a mission type in its domain.
+     * A step of a mission type declares a substep id twice (FR-004). Validate mode reports it at the repeat; the load
+     * holds no such mission type and records the same code at the type's file.
      */
     DUPLICATE_STEP_ID(Severity.BLOCKING),
     /** Two artifacts share an id; validate mode only. */

@@ -23,10 +23,8 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
-import ai.speckitty.charter.packs.domain.MissionTypeSteps;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -94,7 +92,7 @@ import org.springframework.stereotype.Service;
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
- * {@link MutabilityPolicyRepository}, {@link MissionTypeSteps}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
+ * {@link MutabilityPolicyRepository}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -124,7 +122,6 @@ public final class DomainRepositoryService
                 PackEdgeRepository,
                 PackRepository,
                 MutabilityPolicyRepository,
-                MissionTypeSteps,
                 PackCompanionFiles,
                 PackDocumentRepository {
 
@@ -377,26 +374,6 @@ public final class DomainRepositoryService
                 .toList();
     }
 
-    // ---- MissionTypeSteps ------------------------------------------------------------------------------------
-
-    /**
-     * The step ids a mission type declares: the packs rings hold a mission type as a {@link CharterArtifact}, and this
-     * store, which binds the missions domain, reads them off the {@link MissionType} it loaded.
-     *
-     * @param missionType an artifact of kind {@code mission_type}, as the pack aggregate holds it
-     * @return the ids of its steps and its on-demand steps; empty for any other artifact
-     */
-    @Override
-    public Set<String> stepIds(CharterArtifact missionType) {
-        if (!(missionType instanceof MissionType type)) {
-            return Set.of();
-        }
-        Set<String> ids = new LinkedHashSet<>();
-        type.steps().stream().map(MissionStep::id).forEach(ids::add);
-        type.onDemandSteps().stream().map(MissionStep::id).forEach(ids::add);
-        return Set.copyOf(ids);
-    }
-
     // ---- PackCompanionFiles ----------------------------------------------------------------------------------
 
     /**
@@ -549,7 +526,6 @@ public final class DomainRepositoryService
         }
         Set<String> defined = new LinkedHashSet<>();
         Map<String, List<String>> languages = new LinkedHashMap<>();
-        Map<String, String> bindings = new LinkedHashMap<>();
         Map<Urn, List<String>> steps = new LinkedHashMap<>();
         List<String> terms = new ArrayList<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
@@ -561,8 +537,6 @@ public final class DomainRepositoryService
                 if (!declaredLanguages.isEmpty()) {
                     languages.put(artifact.urn().toString(), declaredLanguages);
                 }
-                missionTypeOf(artifact)
-                        .ifPresent(missionType -> bindings.put(artifact.urn().toString(), missionType.toString()));
                 if (artifact instanceof MissionType type) {
                     List<String> declaredSteps = new ArrayList<>();
                     type.steps().forEach(step -> declaredSteps.add(step.id()));
@@ -588,7 +562,6 @@ public final class DomainRepositoryService
                 assembled.presets(),
                 typedEdges(graphs.documents(), assembled),
                 languages,
-                bindings,
                 PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps),
                 terms,
                 delegations);
@@ -619,16 +592,6 @@ public final class DomainRepositoryService
             }
         }
         return prompts;
-    }
-
-    /**
-     * The mission type an artifact is bound to (A7 Q1): a mission step contract is bound to the mission its
-     * {@code mission} names; every other kind is bound to none.
-     */
-    private static Optional<Urn> missionTypeOf(CharterArtifact artifact) {
-        return artifact instanceof MissionStepContract contract
-                ? Optional.of(Urn.missionType(contract.mission()))
-                : Optional.empty();
     }
 
     /**
@@ -993,7 +956,10 @@ public final class DomainRepositoryService
      *   <li>hands the existing assembly a judged copy of the read: each {@code companion} violation of a
      *       step enhancement file kept under the kind {@code prompt_fragment_invalid}, the store hard-coding the
      *       generic kind, and each file whose id repeats (the second in path order) left out of the held enhancements,
-     *       so that {@code Pack.guardKind}'s same-id rule never breaches at {@code build()} (operator ruling A2);
+     *       so that {@code Pack.guardKind}'s same-id rule never breaches at {@code build()} (operator ruling A2), and
+     *       each mission type whose step repeats a substep id left out of the held types: it is recorded under the kind
+     *       {@code duplicate_step_id} at its file, after the violations of the existing assembly, the code and file
+     *       validate mode reports (FR-004), never as the domain's generic refusal;
      * </ol>
      *
      * and last appends each rule fault as a violation at its file, after the violations of the store, of every bound
@@ -1016,7 +982,18 @@ public final class DomainRepositoryService
             List<PackFinding> warnings) {
         List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
                 stepEnhancementFacts(read, graphs), graphs.violations().isEmpty());
-        Pack.Builder builder = assembly(pack, judged(read, faults), places);
+        List<PackElementViolation> repeats = new ArrayList<>();
+        Set<String> repeating = new LinkedHashSet<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            List<PackElementViolation> found =
+                    PackPolicy.substepIdViolations(missionTypeFacts(stored.file(), stored.dso()));
+            if (!found.isEmpty()) {
+                repeating.add(stored.file());
+                repeats.addAll(found);
+            }
+        }
+        Pack.Builder builder = assembly(pack, judged(read, faults, repeating), places);
+        repeats.forEach(builder::violation);
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
         missionStepViolations(read, places, graphs).forEach(builder::violation);
@@ -1199,9 +1176,12 @@ public final class DomainRepositoryService
         return new StepEnhancementFacts(enhancements, companions, Set.of(), Set.of(), edges);
     }
 
-    /** The read the existing assembly gets: the remapped companion violations, the repeated ids left out. */
+    /**
+     * The read the existing assembly gets: the remapped companion violations, the repeated enhancement ids and the
+     * mission types that repeat a substep id left out.
+     */
     private static FilesystemPackStore.PackRead judged(
-            FilesystemPackStore.PackRead read, List<StepEnhancementFault.Finding> faults) {
+            FilesystemPackStore.PackRead read, List<StepEnhancementFault.Finding> faults, Set<String> repeating) {
         Set<String> withheld = new LinkedHashSet<>();
         for (StepEnhancementFault.Finding fault : faults) {
             if (fault.rule() == StepEnhancementFault.STEM_REPEATED) {
@@ -1221,6 +1201,11 @@ public final class DomainRepositoryService
                 ArtifactKind.STEP_ENHANCEMENT,
                 (key, held) -> held.stream()
                         .filter(stored -> !withheld.contains(stored.file()))
+                        .toList());
+        elements.computeIfPresent(
+                ArtifactKind.MISSION_TYPE,
+                (key, held) -> held.stream()
+                        .filter(stored -> !repeating.contains(stored.file()))
                         .toList());
         return new FilesystemPackStore.PackRead(
                 read.descriptor(),

@@ -1,6 +1,7 @@
 summary: >-
   An activation with an artifact in each bucket of the read: a stale id, a deny entry the floor does not apply, a
-  language-filtered directive, an overridden one and its override, a step of a mission type not in force, an override
+  language-filtered directive, an overridden one and its override, an enhancer of a step of a mission type not in
+  force, an override
   of a locked artifact, an enhancer without a target in force, a pin and a must-have item no pack holds, and a required
   enhancer that cannot stand in force. self is the report.
 value:
@@ -33,7 +34,7 @@ value:
           - kind: directive
             artifactId: DIRECTIVE_011
     missionTypeNotInForce:
-      - kind: mission_step_contract
+      - kind: step_enhancement
         artifactId: research-gather
     overrideNotApplied:
       - kind: directive

@@ -6,8 +6,7 @@ get:
     that version declares the step, with its prompt and guidelines files as the pack that holds the winner stores them;
     else, when the closure holds the step, the version of the pack that holds the merged winner of
     action:<missionTypeId>/<stepId>, when that version declares it, with that pack's files. A winning mission type keeps
-    the unique steps of the versions it replaced (A7), and the action context places the step by the same rule. Its
-    step-contract link names the layer-merge winner of the step contract of the merged closure bound to the step. Every
+    the unique steps of the versions it replaced (A7), and the action context places the step by the same rule. Every
     link stays under the activation, but the skeleton links of a step read from a replaced version, which name the place
     pack's getPackMissionSkeleton, the read that serves that version's skeletons. An unknown activation is a 404
     activation_not_found, then an unknown mission type a 404 mission_type_not_found, then a step no version of the
@@ -16,9 +15,9 @@ get:
     getEffectiveMissionType. No ETag.
 
     Where this read differs from getPackMissionStep: here the step is the version at the step's place (the winning type's,
-    or a replaced version's that keeps it) and its prompt and guidelines files are those of that place's pack, while its
-    step-contract link names the merged closure's winner, which another pack of the closure may hold;
-    getPackMissionStep answers the requested pack's own copy and links that pack's own step contract.
+    or a replaced version's that keeps it) and its prompt and guidelines files are those of that place's pack, and a
+    substep's delegation candidate links its read under the activation when the merged closure holds it;
+    getPackMissionStep answers the requested pack's own copy and links the candidates that pack holds.
   tags:
     - EffectiveMissionTypes
   parameters:

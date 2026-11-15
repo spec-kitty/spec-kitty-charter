@@ -356,9 +356,6 @@ class PackFileSetExactnessTest {
         typed.put(Kind.TOOLGUIDE, ids(read.dsos(ToolguideBinding.INSTANCE), ToolguideDso::id));
         typed.put(Kind.PARADIGM, ids(read.dsos(ParadigmBinding.INSTANCE), ParadigmDso::id));
         typed.put(Kind.AGENT_PROFILE, ids(read.dsos(AgentProfileBinding.INSTANCE), AgentProfileDso::profileId));
-        typed.put(
-                Kind.MISSION_STEP_CONTRACT,
-                ids(read.dsos(MissionStepContractBinding.INSTANCE), MissionStepContractDso::id));
         typed.put(Kind.GLOSSARY, ids(read.dsos(GlossaryBinding.INSTANCE), GlossaryDso::id));
         typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
         typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));

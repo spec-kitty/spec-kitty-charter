@@ -1339,36 +1339,6 @@
         "--json",
         "<pack>"
       ],
-      "exit_code": 1,
-      "raw": {
-        "advisories": [],
-        "errors": [
-          {
-            "artifact_id": "c",
-            "artifact_type": "mission_step_contracts",
-            "category": "schema_invalid",
-            "file": "mission_step_contracts/c.step-contract.yaml",
-            "message": "schema validation failed: Value error, duplicate step IDs: ['first']",
-            "severity": "error"
-          }
-        ],
-        "ok": false
-      },
-      "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
-      "version": "4.0.0rc8"
-    },
-    "plant": "duplicate-step-id"
-  },
-  {
-    "core": {
-      "command": [
-        "spec-kitty",
-        "charter",
-        "pack",
-        "validate",
-        "--json",
-        "<pack>"
-      ],
       "exit_code": 0,
       "raw": {
         "advisories": [],

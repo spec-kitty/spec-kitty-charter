@@ -118,14 +118,6 @@
           ],
           "description": "The agent_profile ids. Absent means no exclusion of the kind."
         },
-        "mission_step_contract": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/DeniedArtifactIdList"
-            }
-          ],
-          "description": "The mission_step_contract ids. Absent means no exclusion of the kind."
-        },
         "glossary": {
           "allOf": [
             {
@@ -271,14 +263,6 @@
             }
           ],
           "description": "The agent_profile ids. Absent means none of the kind; [] means none; a list means exactly those."
-        },
-        "mission_step_contract": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/ArtifactIdList"
-            }
-          ],
-          "description": "The mission_step_contract ids. Absent means none of the kind; [] means none; a list means exactly those."
         },
         "glossary": {
           "allOf": [

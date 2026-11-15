@@ -24,8 +24,6 @@ public enum ArtifactKind {
     PROCEDURE("procedure", "procedures", true),
     /** An agent profile: an agent's identity, specialization and governance references. */
     AGENT_PROFILE("agent_profile", "agent_profiles", true),
-    /** A mission step contract: the structural sub-steps of one mission step and what each delegates to. */
-    MISSION_STEP_CONTRACT("mission_step_contract", "mission_step_contracts", true),
     /**
      * A glossary context: a ubiquitous-language bounded context and its terms, one per
      * {@code glossaries/<id>.glossary.yaml} (ADR-0049). Its kind token is {@code glossary}, while the URN of a context

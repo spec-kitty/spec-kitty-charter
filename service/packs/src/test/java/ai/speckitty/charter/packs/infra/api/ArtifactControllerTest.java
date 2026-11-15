@@ -63,7 +63,6 @@ import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -164,9 +163,7 @@ class ArtifactControllerTest {
                 new ProcedureReadService(store, read, revisions),
                 new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(),
-                pack -> List.of(),
-                type -> Set.of(),
-                revisions);
+                pack -> List.of());
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 

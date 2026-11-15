@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -87,7 +88,7 @@ class FileSystemPackInspectorTest {
         assertThat(read(contents.fragment()).file()).isEqualTo("drg/fragment.yaml");
         assertThat(read(contents.fragment()).value().shape()).isEqualTo(RawGraph.Shape.FRAGMENT);
         assertThat(contents.files()).isEmpty();
-        assertThat(contents.stepContracts()).isEmpty();
+        assertThat(contents.missionTypes()).isEmpty();
         assertThat(contents.artifacts()).isEmpty();
         assertThat(contents.assets()).isEmpty();
     }
@@ -559,21 +560,24 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
-    void stepIdsAndArtifactIdsAreFactsOfTheFilesThatPassedTheirSchema(@TempDir Path dir) throws IOException {
-        write(dir, "contracts/a.step-contract.yaml", """
-                id: c1
+    void substepIdsAndArtifactIdsAreFactsOfTheFilesThatPassedTheirSchema(@TempDir Path dir) throws IOException {
+        write(dir, "missions/rx/rx.mission-type.yaml", """
                 schema_version: '1.0'
-                action: plan
-                mission: m
+                id: rx
+                title: Rx
+                description: A mission type.
                 steps:
-                - id: s1
-                  description: d
-                - id: s2
-                  description: d
-                - id: s1
-                  description: d
+                - id: a
+                  title: A
+                  substeps:
+                  - id: s1
+                    description: d
+                  - id: s2
+                    description: d
+                  - id: s1
+                    description: d
                 """);
-        write(dir, "contracts/broken.step-contract.yaml", "id: c2\n");
+        write(dir, "missions/broken/broken.mission-type.yaml", "id: broken\n");
         write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
         write(dir, "tactics/sub/y.tactic.yaml", TACTIC.formatted("y"));
         write(dir, "tactics/bad.tactic.yaml", "id: nope\n");
@@ -595,14 +599,16 @@ class FileSystemPackInspectorTest {
 
         PackContents contents = full(dir);
 
-        assertThat(contents.stepContracts())
-                .containsExactly(new PackContents.StepContractFacts(
-                        "contracts/a.step-contract.yaml", java.util.List.of("s1", "s2", "s1")));
+        assertThat(contents.missionTypes())
+                .singleElement()
+                .satisfies(type -> assertThat(type.substeps())
+                        .extracting(MissionTypeFacts.SubstepFacts::id)
+                        .containsExactly("s1", "s2", "s1"));
         assertThat(contents.artifacts())
                 .as("a file that failed its schema owns no id; an agent profile has no id, as in core")
                 .containsExactly(
-                        new PackContents.ArtifactFacts("contracts/a.step-contract.yaml", "mission_step_contract", "c1"),
                         new PackContents.ArtifactFacts("directives/d.directive.yaml", "directive", "DIRECTIVE_001"),
+                        new PackContents.ArtifactFacts("missions/rx/rx.mission-type.yaml", "mission_type", "rx"),
                         new PackContents.ArtifactFacts("tactics/sub/y.tactic.yaml", "tactic", "y"),
                         new PackContents.ArtifactFacts("tactics/x.tactic.yaml", "tactic", "x"));
     }

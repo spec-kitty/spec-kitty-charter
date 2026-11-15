@@ -35,7 +35,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * generated interface declares (a page size out of range), which bean validation refuses.
  *
  * <p>Every link is built by {@link Hypermedia}: an item's {@code self} and {@code collection} (no {@code edit} in this
- * minor, R-24), with a step contract's {@code mission-type} and {@code step} when its pack holds them, and a page's
+ * minor, R-24), and a page's
  * {@code self} (the request with the query it gave), {@code first} (without the cursor) and, when more artifacts follow,
  * {@code next}.
  */
@@ -103,10 +103,7 @@ public class ArtifactController implements ArtifactsApi {
                 ResponseEntity.ok().headers(CharterHeaders.fingerprint(verified.fingerprint()));
         answer.eTag(verified.value().revision().token());
         return answer.body(ArtifactDtos.artifact(
-                verified.value(),
-                guides,
-                ArtifactDtos.itemLinks(verified.value(), kind, packId, artifactId, links),
-                links));
+                verified.value(), guides, ArtifactDtos.itemLinks(kind, packId, artifactId, links)));
     }
 
     @Override

@@ -17,7 +17,6 @@ import org.jspecify.annotations.Nullable;
  * @param shards the root {@code *.graph.yaml} files, in name order
  * @param fragment what {@code drg/fragment.yaml} gave
  * @param files every file of the pack with its classification; filled by a full read only
- * @param stepContracts the step ids each step contract declares; filled by a full read only
  * @param artifacts the kind and id each artifact declares; filled by a full read only
  * @param assets the path and MIME type each asset declares; filled by a full read only
  * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact, an
@@ -34,7 +33,6 @@ public record PackContents(
         List<FileRead<RawGraph>> shards,
         FileRead<RawGraph> fragment,
         List<ClassifiedFile> files,
-        List<StepContractFacts> stepContracts,
         List<ArtifactFacts> artifacts,
         List<AssetFacts> assets,
         List<FileRead.Unreadable<?>> unreadableFiles,
@@ -49,7 +47,6 @@ public record PackContents(
      * @param shards the root shards
      * @param fragment what {@code drg/fragment.yaml} gave
      * @param files the classified files
-     * @param stepContracts the step contract facts
      * @param artifacts the artifact facts
      * @param assets the asset facts
      * @param unreadableFiles the other files that could not be read
@@ -63,7 +60,6 @@ public record PackContents(
         Objects.requireNonNull(fragment, "fragment");
         shards = List.copyOf(shards);
         files = List.copyOf(files);
-        stepContracts = List.copyOf(stepContracts);
         artifacts = List.copyOf(artifacts);
         assets = List.copyOf(assets);
         unreadableFiles = List.copyOf(unreadableFiles);
@@ -81,7 +77,6 @@ public record PackContents(
      * @param shards the root shards
      * @param fragment what {@code drg/fragment.yaml} gave
      * @param files the classified files
-     * @param stepContracts the step contract facts
      * @param artifacts the artifact facts
      * @param assets the asset facts
      * @param unreadableFiles the other files that could not be read
@@ -93,7 +88,6 @@ public record PackContents(
             List<FileRead<RawGraph>> shards,
             FileRead<RawGraph> fragment,
             List<ClassifiedFile> files,
-            List<StepContractFacts> stepContracts,
             List<ArtifactFacts> artifacts,
             List<AssetFacts> assets,
             List<FileRead.Unreadable<?>> unreadableFiles,
@@ -104,7 +98,6 @@ public record PackContents(
                 shards,
                 fragment,
                 files,
-                stepContracts,
                 artifacts,
                 assets,
                 unreadableFiles,
@@ -122,7 +115,6 @@ public record PackContents(
      * @param shards the root shards
      * @param fragment what {@code drg/fragment.yaml} gave
      * @param files the classified files
-     * @param stepContracts the step contract facts
      * @param artifacts the artifact facts
      * @param assets the asset facts
      * @param unreadableFiles the other files that could not be read
@@ -133,7 +125,6 @@ public record PackContents(
             List<FileRead<RawGraph>> shards,
             FileRead<RawGraph> fragment,
             List<ClassifiedFile> files,
-            List<StepContractFacts> stepContracts,
             List<ArtifactFacts> artifacts,
             List<AssetFacts> assets,
             List<FileRead.Unreadable<?>> unreadableFiles) {
@@ -143,7 +134,6 @@ public record PackContents(
                 shards,
                 fragment,
                 files,
-                stepContracts,
                 artifacts,
                 assets,
                 unreadableFiles,
@@ -480,25 +470,6 @@ public record PackContents(
             if (kind.isPresent() == exclusionClass.isPresent()) {
                 throw new IllegalArgumentException("exactly one of kind and exclusionClass must be set: " + file);
             }
-        }
-    }
-
-    /**
-     * The step ids one step contract declares.
-     *
-     * @param file the pack-relative path
-     * @param stepIds the step ids, in file order
-     */
-    public record StepContractFacts(String file, List<String> stepIds) {
-        /**
-         * Checks the fields and copies the ids.
-         *
-         * @param file the pack-relative path
-         * @param stepIds the step ids
-         */
-        public StepContractFacts {
-            Objects.requireNonNull(file, "file");
-            stepIds = List.copyOf(stepIds);
         }
     }
 

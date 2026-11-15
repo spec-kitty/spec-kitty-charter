@@ -9,6 +9,10 @@ Feature: The per-kind routes are gone, with no alias
   without a code: a GET on a write path, and a PUT on the item of a kind that has no write (a tactic), which
   is not kind_not_found, since the path names a served kind.
 
+  The mission step contract is retired (slice F): its substeps are the mission-type steps' own. The item and references
+  reads that served it, in a pack and under an activation, and the literal read under an activation, answer 404
+  kind_not_found, the answer of a kind the service does not serve; a list filter that names it is a 400 without a code.
+
   Background:
     Given the org pack "qa" with the file "pack.yaml":
       """
@@ -97,3 +101,36 @@ Feature: The per-kind routes are gone, with no alias
     When I GET "/packs/qa/artifacts/tactic/rehearse"
     Then the response status is 200
     And the field at "/tactic/name" is "Rehearse"
+
+  Scenario Outline: A retired step contract route answers 404 kind_not_found (<path>)
+    Slice F: the kind is gone from the service, so a path that names it is a kind the service does not serve, judged
+    after the pack or the activation is found.
+    Given the stored file of the activation "a-1" holds:
+      """
+      {"packs":[{"packId":"qa"}],"schemaVersion":2}
+      """
+    When I GET "<path>"
+    Then the response status is 404
+    And the problem code is "kind_not_found"
+
+    Examples:
+      | path                                                                |
+      | /packs/qa/artifacts/mission_step_contract/specify                   |
+      | /packs/qa/artifacts/mission_step_contract/specify/references        |
+      | /activations/a-1/artifacts/mission_step_contract/specify            |
+      | /activations/a-1/artifacts/mission_step_contract/specify/references |
+
+  Scenario Outline: A list filter that names the retired step contract is a 400 without a code (<path>)
+    Given the stored file of the activation "a-1" holds:
+      """
+      {"packs":[{"packId":"qa"}],"schemaVersion":2}
+      """
+    When I GET "<path>"
+    Then the response status is 400
+    And the problem has no code
+    And the field at "/detail" contains "mission_step_contract"
+
+    Examples:
+      | path                                                  |
+      | /packs/qa/artifacts?kind=mission_step_contract        |
+      | /activations/a-1/artifacts?kind=mission_step_contract |

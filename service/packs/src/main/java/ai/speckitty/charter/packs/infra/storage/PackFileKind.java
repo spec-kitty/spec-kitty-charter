@@ -22,7 +22,10 @@ import org.jspecify.annotations.Nullable;
  * the schema that validates it, or none for a schema-less payload) and its {@link ContentForm}, excluded for a reviewed
  * reason, retired (a file of a layout the service no longer reads, refused by name, ADR-0044 decision 6), or not classified at
  * all. The {@code files} rules are consulted first, then the {@code exclusions}, then the {@code retired} rules, then the
- * {@code payloads}, and last the {@code ignored} fallback, which excludes what nothing else takes (#451). A top-level key the table does not define is refused when it loads, never ignored.
+ * {@code payloads}, and last the {@code ignored} fallback, which excludes what nothing else takes (#451). One precedence
+ * departs from that order: a {@code retired} rule beats a {@code files} rule that also matches the file (an exclusion
+ * that matches still wins), so a retired family is refused by name even where a files glob would take its file. A
+ * top-level key the table does not define is refused when it loads, never ignored.
  *
  * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
  * rule declares a form other than {@code yaml} or {@code markdown} (its schema validates the parsed YAML document, or
@@ -294,7 +297,8 @@ final class PackFileKind {
 
     /**
      * Every {@code files}, {@code exclusions} or {@code retired} rule glob that matches {@code path}; the table
-     * promises at most one, but for the one README overlap of an exclusion and a retired rule its header names.
+     * promises at most one, but for the overlaps its header names: one README of an exclusion and a retired rule, and
+     * the retired graph fragment of a retired rule and the graph documents' {@code files} rule.
      * The payload rules and the {@code ignored} fallback are left out: they overlap the other two by design (a sidecar under {@code assets/} matches a
      * {@code files} rule and a payload rule), and only the first match counts.
      */
@@ -407,11 +411,21 @@ final class PackFileKind {
 
     private Classification classify(String path, Function<Compiled, Pattern> glob) {
         // `compiled` holds the files rules, then the exclusions, then the retired rules, each compiled once when the
-        // table was built.
-        for (int i = 0; i < compiled.size(); i++) {
-            if (glob.apply(compiled.get(i)).matcher(path).matches()) {
-                return ruleAt(i);
+        // table was built. The files rules are consulted first, then the exclusions, then the retired rules, but for
+        // one precedence: a retired rule beats a files rule, so a retired family whose files a files rule's glob also
+        // takes (the folded step contracts' graph fragment is a *.graph.yaml) is refused by name. An exclusion still
+        // beats a retired rule (the README directly in the old built-in missions/mission-steps/).
+        int exclusionsStart = fileRules.size();
+        int retiredStart = exclusionsStart + exclusionRules.size();
+        int matched = firstMatch(path, glob, 0, compiled.size());
+        if (matched >= 0 && matched < exclusionsStart) {
+            int retired = firstMatch(path, glob, retiredStart, compiled.size());
+            if (retired >= 0 && firstMatch(path, glob, exclusionsStart, retiredStart) < 0) {
+                return ruleAt(retired);
             }
+        }
+        if (matched >= 0) {
+            return ruleAt(matched);
         }
         for (int i = 0; i < payloadsCompiled.size(); i++) {
             if (glob.apply(payloadsCompiled.get(i)).matcher(path).matches()) {
@@ -420,6 +434,16 @@ final class PackFileKind {
             }
         }
         return Unclassified.INSTANCE;
+    }
+
+    /** The index of the first rule of {@link #compiled} in [from, to) that matches the path; -1 when none does. */
+    private int firstMatch(String path, Function<Compiled, Pattern> glob, int from, int to) {
+        for (int i = from; i < to; i++) {
+            if (glob.apply(compiled.get(i)).matcher(path).matches()) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** The classification of the {@code i}th rule of {@link #compiled}. */

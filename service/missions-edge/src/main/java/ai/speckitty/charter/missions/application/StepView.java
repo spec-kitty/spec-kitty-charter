@@ -8,16 +8,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * One step as its read serves it: its stored fields, its stored prompt and guidelines as text, the step contract bound
- * to it and the skeleton each expected output names.
+ * One step as its read serves it: its stored fields, its stored prompt and guidelines as text, and the skeleton each
+ * expected output names.
  *
  * @param missionTypeId the id of the step's mission type
  * @param step the step, for its stored fields
  * @param onDemand whether it is one of the type's on-demand steps
  * @param prompt the stored text of its prompt file; empty when it has none
  * @param guidelines the stored text of its guidelines file; empty when it has none
- * @param stepContractId the step contract whose {@code mission} and {@code action} are the type and the step, the lowest
- *     id when several are; empty when none is
  * @param outputs its expected output artifacts, in stored order, each with the skeleton it names
  * @param heldCandidates the delegation candidates of its substeps that the scope holds and serves, by kind and the
  *     candidate as written: a candidate links its read only when it is one
@@ -28,7 +26,6 @@ public record StepView(
         boolean onDemand,
         Optional<String> prompt,
         Optional<String> guidelines,
-        Optional<String> stepContractId,
         List<OutputView> outputs,
         Set<HeldArtifact> heldCandidates) {
 
@@ -40,7 +37,6 @@ public record StepView(
      * @param onDemand whether it is on demand
      * @param prompt the prompt text
      * @param guidelines the guidelines text
-     * @param stepContractId the bound step contract's id
      * @param outputs the expected outputs
      * @param heldCandidates the held candidates
      */
@@ -49,7 +45,6 @@ public record StepView(
         Objects.requireNonNull(step, "step");
         Objects.requireNonNull(prompt, "prompt");
         Objects.requireNonNull(guidelines, "guidelines");
-        Objects.requireNonNull(stepContractId, "stepContractId");
         outputs = List.copyOf(outputs);
         heldCandidates = Set.copyOf(heldCandidates);
     }

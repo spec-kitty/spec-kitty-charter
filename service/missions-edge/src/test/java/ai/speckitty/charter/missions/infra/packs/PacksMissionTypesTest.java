@@ -21,9 +21,6 @@ import ai.speckitty.charter.missions.domain.SubstepDelegation;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.domain.ContractStep;
-import ai.speckitty.charter.packs.domain.MissionStepContract;
-import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -39,8 +36,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The adapter over the packs slice's composite read (#99): the mission type the store bound is narrowed to the missions
- * domain's {@link MissionType}, a skeleton is named by its path under the type's {@code templates/}, a step contract by
- * its id and action, a step's files keep their bytes, and the fingerprint is the read's. Any other artifact held as the
+ * domain's {@link MissionType}, a skeleton is named by its path under the type's {@code templates/}, a step's files keep
+ * their bytes, and the fingerprint is the read's. Any other artifact held as the
  * mission type is a bug, never a refusal.
  */
 class PacksMissionTypesTest {
@@ -69,18 +66,6 @@ class PacksMissionTypesTest {
                 .build();
     }
 
-    private static MissionStepContract specifyContract() {
-        return MissionStepContract.builder()
-                .id(new MissionStepContractIdentifier("specify-contract"))
-                .packId(PACK)
-                .schemaVersion("1.0")
-                .action("specify")
-                .mission("software-dev")
-                .step(new ContractStep(
-                        "first", "The first step", Optional.empty(), List.of(), Optional.empty(), Optional.empty()))
-                .build();
-    }
-
     @Test
     void theHoldingIsTheMissionsSlicesOwnAtTheReadsFingerprint() {
         MissionType type = softwareDev();
@@ -94,7 +79,6 @@ class PacksMissionTypesTest {
                         .content(Payload.of(new byte[] {(byte) 0xff, 1}))
                         .missionType("software-dev")
                         .build())
-                .artifact(specifyContract())
                 .build();
         PackCompanionFiles files = (id, held) -> Map.of(
                 "specify",
@@ -113,8 +97,6 @@ class PacksMissionTypesTest {
         assertThat(routed.skeletons())
                 .containsExactly(new MissionTypeHolding.StoredSkeleton(
                         "divio/x.md", StoredFile.of(new byte[] {(byte) 0xff, 1})));
-        assertThat(routed.stepContracts())
-                .containsExactly(new MissionTypeHolding.BoundContract("specify-contract", "specify"));
         assertThat(routed.stepFiles().get("specify").prompt())
                 .contains(StoredFile.of("# Specify\n".getBytes(StandardCharsets.UTF_8)));
         assertThat(routed.stepFiles().get("specify").guidelines()).isEmpty();

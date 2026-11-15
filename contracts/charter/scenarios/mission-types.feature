@@ -1,12 +1,11 @@
 @contract @mission-types
-Feature: A pack's mission types are read with their steps, step contracts and skeletons
+Feature: A pack's mission types are read with their steps and skeletons
   A client reads a pack's mission type in the Artifact envelope (getPackMissionType), with its steps in stored order
   then its on-demand steps, each marked and linked, and its skeletons, each linked (FR-002). It follows a step link to
-  the step (getPackMissionStep): its stored fields, its prompt and guidelines files byte for byte, and links to its
-  mission type, its step contract and the skeleton of each expected output artifact that names one (FR-003). The step
-  contract is a served kind of the generic item read (FR-001, FR-004), and a skeleton is read by its one-segment name,
-  the path under the type's templates/ escaped as in RFC 6901 (FR-005, D9). Both kinds are listed, filtered and
-  referenced like the other served kinds. Refusals come in order: the pack, then the mission type, then the step or
+  the step (getPackMissionStep): its stored fields, its prompt and guidelines files byte for byte, its substeps, and
+  links to its mission type and the skeleton of each expected output artifact that names one (FR-003). A skeleton is
+  read by its one-segment name, the path under the type's templates/ escaped as in RFC 6901 (FR-005, D9). The mission
+  type is listed, filtered and referenced like the other served kinds. Refusals come in order: the pack, then the mission type, then the step or
   the skeleton (FR-009).
 
   Background:
@@ -129,52 +128,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
       1. State the goal.
       """
-    And the org pack "main" with the file "mission_step_contracts/specify.step-contract.yaml":
-      """
-      schema_version: '1.0'
-      id: specify
-      action: specify
-      mission: software-dev
-      gates:
-        - on_transition: in_progress->for_review
-          handler: spec-kitty-pre-review
-          handler_kind: mission_step_contract
-          schema_version: '1.0'
-          fail_open: true
-          provenance: built-in
-      steps:
-        - id: bootstrap
-          description: Load charter context for this action
-          command: spec-kitty charter context --action specify --json
-          inputs:
-            - flag: --mission
-              source: mission_slug
-              optional: true
-        - id: capture_intent
-          description: Capture confirmed user intent
-          delegates_to:
-            kind: directive
-            candidates:
-              - GUARD
-              - NOPE
-          guidance: Ask before you write.
-        - id: map_examples
-          description: Capture concrete rules and examples
-          delegates_to:
-            kind: procedure
-            candidates:
-              - example-mapping-workshop
-      """
-    And the org pack "main" with the file "mission_step_contracts/orphan.step-contract.yaml":
-      """
-      schema_version: '1.0'
-      id: orphan
-      action: gather
-      mission: research
-      steps:
-        - id: first
-          description: The first step
-      """
     And the org pack "main" with the file "directives/guard.directive.yaml":
       """
       schema_version: '1.0'
@@ -283,8 +236,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
 
   Scenario: A step in sequence is served with its prompt and guidelines byte for byte and its links
     FR-003, US1 AS3. The prompt is the stored file, its frontmatter and the bare spdd slot markers included; the
-    guidelines likewise. The step links its mission type, the step contract whose mission and action are the type and
-    the step, and, on its expected output artifact, the skeleton its templatePath names.
+    guidelines likewise. The step links its mission type and, on its expected output artifact, the skeleton its
+    templatePath names.
     When I GET "/packs/main/artifacts/directive/GUARD"
     Then the response status is 200
     And I remember the header "ETag"
@@ -327,16 +280,11 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the field at "/expectedOutputArtifacts/0/_links/skeleton/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
     And the field at "/_links/self/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"
     And the field at "/_links/mission-type/href" is "/api/v1/packs/main/artifacts/mission_type/software-dev"
-    And the field at "/_links/step-contract/href" is "/api/v1/packs/main/artifacts/mission_step_contract/specify"
-    When I follow the link "step-contract"
-    Then the response status is 200
-    And the field at "/kind" is "mission_step_contract"
-    And the field at "/missionStepContract/action" is "specify"
     When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
     Then the response status is 200
     And the field at "/name" is "spec-template.md"
 
-  Scenario: A step without guidelines answers no guidelines member, and a step no contract binds has no step-contract link
+  Scenario: A step without guidelines answers no guidelines member
     Edge case of the spec: a step without a guidelines.md answers no guidelines member, never an empty string. The plan
     step has expected inputs and an expected output without a templatePath, so that output carries no skeleton link.
     When I GET "/packs/main/artifacts/mission_type/software-dev/steps/plan"
@@ -355,7 +303,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the field at "/expectedOutputArtifacts/0/artifactKey" is "output.plan.main"
     And the field at "/expectedOutputArtifacts/0/templatePath" is absent
     And the field at "/expectedOutputArtifacts/0/_links/skeleton" is absent
-    And the answer has no link "step-contract"
     When I follow the link "mission-type"
     Then the response status is 200
     And the field at "/id" is "software-dev"
@@ -430,94 +377,8 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       }
       """
 
-  Scenario: A step contract is read through the generic item read, linked to its mission type, its step and its delegates
-    FR-001, FR-004, US2 AS1. A delegation candidate of a served kind that the pack holds links to its pack-scoped read;
-    one the pack does not hold (NOPE), including a procedure the pack does not hold, has no link. A step
-    without inputs answers an empty list. Its ETag is the pack revision, as a directive's is (#487). A step contract whose mission names a mission
-    type the pack does not hold still reads, without mission-type and step links.
-    When I GET "/packs/main/artifacts/directive/GUARD"
-    Then the response status is 200
-    And I remember the header "ETag"
-    When I GET "/packs/main/artifacts/mission_step_contract/specify"
-    Then the response status is 200
-    And the response header "Charter-Source-Fingerprint" appears once
-    And the response header "ETag" appears once
-    And the response header "ETag" is the remembered header
-    And the response body is:
-      """
-      {
-        "kind": "mission_step_contract",
-        "id": "specify",
-        "packId": "main",
-        "missionStepContract": {
-          "id": "specify",
-          "schemaVersion": "1.0",
-          "action": "specify",
-          "mission": "software-dev",
-          "steps": [
-            {
-              "id": "bootstrap",
-              "description": "Load charter context for this action",
-              "command": "spec-kitty charter context --action specify --json",
-              "inputs": [{"flag": "--mission", "source": "mission_slug", "optional": true}]
-            },
-            {
-              "id": "capture_intent",
-              "description": "Capture confirmed user intent",
-              "inputs": [],
-              "delegatesTo": {
-                "kind": "directive",
-                "candidates": [
-                  {"id": "GUARD", "_links": {"artifact": {"href": "/api/v1/packs/main/artifacts/directive/GUARD"}}},
-                  {"id": "NOPE", "_links": {}}
-                ]
-              },
-              "guidance": "Ask before you write."
-            },
-            {
-              "id": "map_examples",
-              "description": "Capture concrete rules and examples",
-              "inputs": [],
-              "delegatesTo": {
-                "kind": "procedure",
-                "candidates": [
-                  {"id": "example-mapping-workshop", "_links": {}}
-                ]
-              }
-            }
-          ],
-          "gates": [
-            {
-              "onTransition": "in_progress->for_review",
-              "handler": "spec-kitty-pre-review",
-              "handlerKind": "mission_step_contract",
-              "schemaVersion": "1.0",
-              "failOpen": true,
-              "provenance": "built-in"
-            }
-          ]
-        },
-        "_links": {
-          "self": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/specify"},
-          "collection": {"href": "/api/v1/packs/main/artifacts?kind=mission_step_contract"},
-          "mission-type": {"href": "/api/v1/packs/main/artifacts/mission_type/software-dev"},
-          "step": {"href": "/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"}
-        }
-      }
-      """
-    When I follow the link "step"
-    Then the response status is 200
-    And the field at "/id" is "specify"
-    When I GET "/packs/main/artifacts/mission_step_contract/orphan"
-    Then the response status is 200
-    And the field at "/missionStepContract/mission" is "research"
-    And the field at "/missionStepContract/steps/0/inputs" holds exactly 0 items
-    And the field at "/_links/self/href" is "/api/v1/packs/main/artifacts/mission_step_contract/orphan"
-    And the answer has no link "mission-type"
-    And the answer has no link "step"
-
-  Scenario: The list filtered by mission_type and by mission_step_contract names the pack's items, each linked to its read
-    FR-001, US1 AS2, US2 AS3. Ids in code-point order; a mission type's title is its title, a step contract's its action.
+  Scenario: The list filtered by mission_type names the pack's items, each linked to its read
+    FR-001, US1 AS2, US2 AS3. Ids in code-point order; a mission type's title is its title.
     When I GET "/packs/main/artifacts?kind=mission_type"
     Then the response status is 200
     And the response body is:
@@ -535,39 +396,10 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       }
       """
     And following the link "self" of every element of "items" answers 200
-    When I GET "/packs/main/artifacts?kind=mission_step_contract"
-    Then the response status is 200
-    And the response body is:
-      """
-      {
-        "items": [
-          {"kind": "mission_step_contract", "id": "orphan", "title": "gather", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/orphan"}}},
-          {"kind": "mission_step_contract", "id": "specify", "title": "specify", "_links": {"self": {"href": "/api/v1/packs/main/artifacts/mission_step_contract/specify"}}}
-        ],
-        "page": {"hasNextPage": false, "nextPageCursor": null, "pageSize": 50},
-        "_links": {
-          "self": {"href": "/api/v1/packs/main/artifacts?kind=mission_step_contract"},
-          "first": {"href": "/api/v1/packs/main/artifacts?kind=mission_step_contract"}
-        }
-      }
-      """
-    And following the link "self" of every element of "items" answers 200
-
-  Scenario: The references of a mission type and of a step contract are read like any served kind's
-    FR-001: /references answers for both kinds; an unknown id is the not-found code of its kind. The mission type's
+  Scenario: The references of a mission type are read like any served kind's
+    FR-001: /references answers for the kind; an unknown id is the not-found code of its kind. The mission type's
     references are its scope edge and the requires edge to each of its steps (operator ruling
-    DM-01M7B1YQR5ZKQPDW6DX64KPNRN). The step contract's edge joins it to the other step contract, the one kind a step
-    contract may enhance (ADR-0064 decision 13).
-    Given the org pack "main" with the file "contracts.graph.yaml":
-      """
-      schema_version: '1.0'
-      generated_at: STATIC
-      nodes: []
-      edges:
-      - source: mission_step_contract:specify
-        target: mission_step_contract:orphan
-        relation: enhances
-      """
+    DM-01M7B1YQR5ZKQPDW6DX64KPNRN).
     When I GET "/packs/main/artifacts/mission_type/software-dev/references"
     Then the response status is 200
     And the field at "/items" holds exactly 4 items
@@ -578,24 +410,16 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the field at "/items/3/urn" is "directive:GUARD"
     And the field at "/items/3/relation" is "scope"
     And the field at "/items/3/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/GUARD"
-    When I GET "/packs/main/artifacts/mission_step_contract/specify/references"
-    Then the response status is 200
-    And the field at "/items" holds exactly 1 item
-    And the field at "/items/0/urn" is "mission_step_contract:orphan"
-    And the field at "/items/0/relation" is "enhances"
     When I GET "/packs/main/artifacts/mission_type/nope/references"
     Then the response status is 404
     And the problem code is "mission_type_not_found"
-    When I GET "/packs/main/artifacts/mission_step_contract/nope/references"
-    Then the response status is 404
-    And the problem code is "mission_step_contract_not_found"
 
-  Scenario: The refusals come in order: the pack, then the mission type, then the step, the skeleton or the step contract
+  Scenario: The refusals come in order: the pack, then the mission type, then the step or the skeleton
     FR-009, US1 AS4, US2 AS2, US3 AS3. An unknown pack is pack_not_found whatever the rest of the path names; an unknown
     mission type of a known pack is mission_type_not_found, also under a step or a skeleton; an unknown step is
     action_not_found (a step is the action action:<type>/<step>); a name that does not decode to a skeleton of the type
     is skeleton_not_found; a nested path spelled with a real slash after skeletons/ names no operation, so it is a 404
-    without a code; an unknown step contract is mission_step_contract_not_found.
+    without a code.
     When I GET "/packs/nope/artifacts/mission_type/software-dev/steps/specify"
     Then the response status is 404
     And the problem code is "pack_not_found"
@@ -636,12 +460,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I GET "/packs/main/artifacts/mission_type/documentation/skeletons/divio/howto-template.md"
     Then the response status is 404
     And the problem has no code
-    When I GET "/packs/main/artifacts/mission_step_contract/nope"
-    Then the response status is 404
-    And the response body is:
-      """
-      {"title": "Mission step contract not found", "status": 404, "code": "mission_step_contract_not_found", "detail": "Pack main has no mission_step_contract nope."}
-      """
 
   Scenario: A configured pack without pack.yaml is pack_unreadable on every mission type read
     Operator ruling of 2026-10-31, FR-009: a configured pack without a readable pack.yaml cannot be read, whatever its
@@ -677,41 +495,9 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 500
     And the problem code is "pack_unreadable"
     And the response has no "Charter-Source-Fingerprint" header
-    When I GET "/packs/bare/artifacts/mission_step_contract/nope"
-    Then the response status is 500
-    And the problem code is "pack_unreadable"
-
-  Scenario: A step contract is removed as the five kinds are, and its mission type stays
-    FR-010, US6 AS1, D10. A DELETE sends If-Match: * or the ETag the item read answered (the pack revision, #487), as
-    for any kind. The removal answers 204 with the pack's new revision; the next DELETE of the id is its kind's
-    not-found code.
-    Given registration is switched on
-    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
-      """
-      schema_version: '1.0'
-      id: discover
-      action: discover
-      mission: documentation
-      steps:
-        - id: first
-          description: The first step
-      """
-    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
-    Then the response status is 204
-    And the response header "ETag" appears once
-    And the pack "main" holds no file "mission_step_contracts/discover.step-contract.yaml"
-    When I GET "/packs/main/artifacts/mission_step_contract/discover"
-    Then the response status is 404
-    And the problem code is "mission_step_contract_not_found"
-    When I GET "/packs/main/artifacts/mission_type/documentation"
-    Then the response status is 200
-    And the field at "/missionType/id" is "documentation"
-    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
-    Then the response status is 404
-    And the problem code is "mission_step_contract_not_found"
 
   Scenario: Every pack read of one thing carries the pack revision, which moves when the pack changes
-    #487, FR-005, FR-006. The mission type, step, skeleton, step contract and tactic reads answer the pack revision as
+    #487, FR-005, FR-006. The mission type, step, skeleton and tactic reads answer the pack revision as
     their ETag, equal to a directive's, and a different one once a DELETE has changed the
     pack. It is a concurrency token, not a cache validator: no read takes If-None-Match.
     Given registration is switched on
@@ -723,15 +509,13 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
+    And the org pack "main" with the file "tactics/discard.tactic.yaml":
       """
+      id: discard
       schema_version: '1.0'
-      id: discover
-      action: discover
-      mission: documentation
+      name: Discard
       steps:
-        - id: first
-          description: The first step
+        - title: Only step
       """
     When I GET "/packs/main/artifacts/directive/GUARD"
     Then the response status is 200
@@ -748,15 +532,11 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "ETag" is the remembered header
-    When I GET "/packs/main/artifacts/mission_step_contract/specify"
-    Then the response status is 200
-    And the response header "ETag" appears once
-    And the response header "ETag" is the remembered header
     When I GET "/packs/main/artifacts/tactic/rehearse"
     Then the response status is 200
     And the response header "ETag" appears once
     And the response header "ETag" is the remembered header
-    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
+    When I DELETE "/packs/main/artifacts/tactic/discard" with the header "If-Match": "*"
     Then the response status is 204
     When I GET "/packs/main/artifacts/mission_type/software-dev"
     Then the response status is 200
@@ -767,10 +547,6 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And the response header "ETag" differs from the remembered header
     When I GET "/packs/main/artifacts/mission_type/software-dev/skeletons/spec-template.md"
     Then the response status is 200
-    And the response header "ETag" differs from the remembered header
-    When I GET "/packs/main/artifacts/mission_step_contract/specify"
-    Then the response status is 200
-    And the response header "ETag" appears once
     And the response header "ETag" differs from the remembered header
     When I GET "/packs/main/artifacts/tactic/rehearse"
     Then the response status is 200
@@ -842,37 +618,19 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the response status is 404
     And the problem code is "mission_type_not_found"
 
-  Scenario: A mission type a step contract binds is not removed until the contract is gone
-    FR-010, US6 AS1, D10: a step contract whose mission names the type refers to it, as any referrer of the five kinds
-    does, and the refusal names it and changes nothing.
-    Given registration is switched on
-    And the org pack "main" with the file "mission_step_contracts/discover.step-contract.yaml":
-      """
-      schema_version: '1.0'
-      id: discover
-      action: discover
-      mission: documentation
-      steps:
-        - id: first
-          description: The first step
-      """
-    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
-    Then the response status is 409
-    And the problem code is "artifact_referenced"
-    And the field at "/packs/0/packId" is "main"
-    And the field at "/violations/0/detail" contains "mission_step_contract:discover"
-    When I GET "/packs/main/artifacts/mission_type/documentation/skeletons/divio~1howto-template.md"
-    Then the response status is 200
-    When I DELETE "/packs/main/artifacts/mission_step_contract/discover" with the header "If-Match": "*"
-    Then the response status is 204
-    When I DELETE "/packs/main/artifacts/mission_type/documentation" with the header "If-Match": "*"
-    Then the response status is 204
-
   Scenario: A mission type whose action node an author-written graph document names is not removed, and no file is rewritten
     FR-010, US6 AS1, D10: an edge that names one of the type's action nodes action:<type>/<step> refers to the type. The
     edge is in a document the author wrote, so the DELETE refuses and the pack is byte-identical; another kind's
     DELETE still goes.
     Given registration is switched on
+    And the org pack "main" with the file "tactics/discard.tactic.yaml":
+      """
+      id: discard
+      schema_version: '1.0'
+      name: Discard
+      steps:
+        - title: Only step
+      """
     And the org pack "main" with the file "actions.graph.yaml":
       """
       schema_version: '1.0'
@@ -896,7 +654,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     Then the field "sourceFingerprint" of the response body is the remembered one
     When I GET "/packs/main/artifacts/mission_type/documentation"
     Then the response status is 200
-    When I DELETE "/packs/main/artifacts/mission_step_contract/orphan" with the header "If-Match": "*"
+    When I DELETE "/packs/main/artifacts/tactic/discard" with the header "If-Match": "*"
     Then the response status is 204
 
   Scenario Outline: A mission type id that is no slug is a 400 Problem without a code that says why (<case>)

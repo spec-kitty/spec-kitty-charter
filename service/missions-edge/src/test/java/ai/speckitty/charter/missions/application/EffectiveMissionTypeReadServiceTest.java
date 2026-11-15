@@ -3,8 +3,6 @@ package ai.speckitty.charter.missions.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -20,10 +18,10 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * The mission-type reads under an activation (#99, FR-007, D12) over fakes of the three ports: each read asks the
+ * The mission-type reads under an activation (#99, FR-007, D12) over fakes of the two ports: each read asks the
  * activations port once for the winner, then the packs port once for what the pack that holds the winner stores beside
  * it, at the same fingerprint or {@code stale_input}; the view is built as the pack read builds it, with the holding
- * pack's skeletons and step files and the merged closure's step contracts (never the holding pack's own), names the
+ * pack's skeletons and step files, names the
  * pack that holds the winner for the mission type, and names the activation in the refusals of a step or a skeleton.
  */
 class EffectiveMissionTypeReadServiceTest {
@@ -41,9 +39,6 @@ class EffectiveMissionTypeReadServiceTest {
     private Optional<RefusalCode> placeRefusal = Optional.empty();
     private Optional<RefusalCode> placeReadRefusal = Optional.empty();
 
-    private EffectiveStepContract stepContract = new EffectiveStepContract(
-            new PackIdentifier("main"), new Contract("specify-contract"), Optional.empty(), Set.of(), FINGERPRINT);
-
     private final ActivationMissionTypes activations = new ActivationMissionTypes() {
         @Override
         public EffectiveMissionType missionType(String activation, String type) {
@@ -52,18 +47,7 @@ class EffectiveMissionTypeReadServiceTest {
             if (!type.equals("software-dev")) {
                 throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, "no " + type);
             }
-            return new EffectiveMissionType(
-                    PROJ,
-                    type(),
-                    List.of(new Contract("specify-contract"), new Contract("review-contract")),
-                    fingerprint,
-                    Set.of());
-        }
-
-        @Override
-        public EffectiveStepContract stepContract(String activation, String id) {
-            asked.add(activation + " contract " + id);
-            return stepContract;
+            return new EffectiveMissionType(PROJ, type(), fingerprint, Set.of());
         }
 
         // main keeps review, which proj's winning type drops (A7); no version declares any other step it lacks.
@@ -103,9 +87,7 @@ class EffectiveMissionTypeReadServiceTest {
             return new PackRead<>(held, held.fingerprint(), "sha256:" + "e".repeat(64));
         }
     };
-    private final StepContracts contracts = (contract, read) -> view(contract.localId(), "specify");
-    private final EffectiveMissionTypeReadService reads =
-            new EffectiveMissionTypeReadService(activations, packs, contracts);
+    private final EffectiveMissionTypeReadService reads = new EffectiveMissionTypeReadService(activations, packs);
 
     @Test
     void theTypeIsTheWinnersViewWithThePackThatHoldsItAndTheFingerprintOfTheRead() {
@@ -123,7 +105,7 @@ class EffectiveMissionTypeReadServiceTest {
     }
 
     @Test
-    void aStepIsTheWinnersWithTheHoldingPacksFilesAndTheMergedStepContract() {
+    void aStepIsTheWinnersWithTheHoldingPacksFiles() {
         EffectiveMissionTypeReadService.StepRead read = reads.step("a-1", "software-dev", "specify");
         Fingerprinted<StepView> step = read.read();
 
@@ -132,9 +114,6 @@ class EffectiveMissionTypeReadServiceTest {
                 .isEmpty();
         assertThat(step.fingerprint()).isEqualTo(FINGERPRINT);
         assertThat(step.value().prompt()).contains("# Specify\n");
-        assertThat(step.value().stepContractId())
-                .as("the merged closure's contract, not the holding pack's own")
-                .contains("specify-contract");
         assertThat(asked).containsExactly("a-1 software-dev", "proj:software-dev");
     }
 
@@ -206,105 +185,6 @@ class EffectiveMissionTypeReadServiceTest {
     }
 
     @Test
-    void aStepContractLinksItsTypeAndItsStepWhenTheWinningTypeDeclaresItAndItsHeldCandidates() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"),
-                new Contract("specify-contract"),
-                Optional.of(type()),
-                Set.of(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD"), new HeldArtifact(ArtifactKind.TACTIC, "t")),
-                FINGERPRINT);
-
-        EffectiveMissionTypeReadService.Held<EffectiveStepContractView> held =
-                reads.stepContract("a-1", "specify-contract");
-
-        assertThat(held.holder()).isEqualTo(new PackIdentifier("main"));
-        assertThat(held.read().fingerprint()).isEqualTo(FINGERPRINT);
-        EffectiveStepContractView view = held.read().value();
-        assertThat(view.contract().id()).isEqualTo("specify-contract");
-        assertThat(view.missionTypeHeld()).isTrue();
-        assertThat(view.stepHeld()).as("the winning type declares specify").isTrue();
-        assertThat(view.heldCandidates())
-                .as("the candidates the closure holds, of the delegation's own kind")
-                .containsExactly(new HeldArtifact(ArtifactKind.DIRECTIVE, "GUARD"));
-        assertThat(asked).as("one read of the activation").containsExactly("a-1 contract specify-contract");
-    }
-
-    @Test
-    void aStepContractWhoseStepOnlyAReplacedVersionKeepsLinksTheStepTheStepReadAnswers() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
-
-        EffectiveStepContractView view =
-                reads.stepContract("a-1", "review").read().value();
-
-        assertThat(view.missionTypeHeld()).isTrue();
-        assertThat(view.stepHeld())
-                .as("the winning type drops review, and main's version at its place keeps it (A7, L1)")
-                .isTrue();
-        assertThat(asked).containsExactly("a-1 contract review", "a-1 place software-dev/review");
-    }
-
-    @Test
-    void theTwinAStepContractWhoseStepNoVersionHoldsLinksNoStep() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"), new Contract("deploy"), Optional.of(type()), Set.of(), FINGERPRINT);
-
-        EffectiveStepContractView view =
-                reads.stepContract("a-1", "deploy").read().value();
-
-        assertThat(view.missionTypeHeld()).isTrue();
-        assertThat(view.stepHeld()).as("the step read answers 404 for deploy").isFalse();
-    }
-
-    @Test
-    void aStepContractPassesARefusalOfThePlaceReadOtherThanActionNotFoundThroughUnchanged() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
-        placeReadRefusal = Optional.of(RefusalCode.STALE_INPUT);
-
-        assertThatThrownBy(() -> reads.stepContract("a-1", "review"))
-                .as("only action_not_found means no step; any other refusal of the place read is the answer (L-a)")
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT);
-                    assertThat(refusal.getMessage()).isEqualTo("the place read: stale_input");
-                });
-    }
-
-    @Test
-    void aStepContractWhosePlaceIsReadAtAnotherFingerprintIsStaleInput() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"), new Contract("review"), Optional.of(type()), Set.of(), FINGERPRINT);
-        placeFingerprint = "sha256:" + "f".repeat(64);
-
-        assertThatThrownBy(() -> reads.stepContract("a-1", "review"))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
-    }
-
-    @Test
-    void anOnDemandStepIsAStepTheWinningTypeDeclares() {
-        stepContract = new EffectiveStepContract(
-                new PackIdentifier("main"),
-                new Contract("retro"),
-                Optional.of(typeWithARetrospective()),
-                Set.of(),
-                FINGERPRINT);
-
-        assertThat(reads.stepContract("a-1", "retro").read().value().stepHeld()).isTrue();
-    }
-
-    @Test
-    void aStepContractWhoseTypeTheClosureDoesNotHoldLinksNeither() {
-        EffectiveStepContractView view =
-                reads.stepContract("a-1", "specify-contract").read().value();
-
-        assertThat(view.missionTypeHeld()).isFalse();
-        assertThat(view.stepHeld()).isFalse();
-        assertThat(view.heldCandidates()).isEmpty();
-    }
-
-    @Test
     void anUnknownSkeletonNamesTheActivationInItsRefusal() {
         assertThatThrownBy(() -> reads.skeleton("a-1", "software-dev", "nope.md"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -315,7 +195,7 @@ class EffectiveMissionTypeReadServiceTest {
     }
 
     @Test
-    void aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFilesAndTheMergedStepContract() {
+    void aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFiles() {
         EffectiveMissionTypeReadService.StepRead read = reads.step("a-1", "software-dev", "review");
         Fingerprinted<StepView> step = read.read();
 
@@ -324,9 +204,6 @@ class EffectiveMissionTypeReadServiceTest {
         assertThat(step.value().prompt())
                 .as("the prompt the place's pack stores, as the prompt read serves it (R8)")
                 .contains("# Review at main\n");
-        assertThat(step.value().stepContractId())
-                .as("the merged closure's contract bound to the step, never the place pack's own")
-                .contains("review-contract");
         assertThat(step.fingerprint()).isEqualTo(FINGERPRINT);
         assertThat(asked)
                 .as("the winner, which drops review, then the step's place, then what the place's pack stores")
@@ -432,60 +309,11 @@ class EffectiveMissionTypeReadServiceTest {
                 .build();
     }
 
-    /** The type with an on-demand step, retrospect. */
-    private static MissionType typeWithARetrospective() {
-        return MissionType.builder()
-                .id(new MissionTypeIdentifier("software-dev"))
-                .packId(PROJ)
-                .schemaVersion("1.0")
-                .title("Software Development")
-                .description("Build software")
-                .step(type().steps().getFirst())
-                .onDemandStep(new MissionStep(
-                        "retrospect",
-                        "Retrospective",
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        List.of(),
-                        List.of(),
-                        List.of()))
-                .build();
-    }
-
-    /**
-     * A contract's view: specify-contract binds specify and delegates to two directives, one held; review binds review,
-     * which the type does not declare; retro binds the on-demand step retrospect.
-     */
-    private static StepContractView view(String id, String unused) {
-        String action = switch (id) {
-            case "review", "review-contract" -> "review";
-            case "deploy" -> "deploy";
-            case "retro" -> "retrospect";
-            default -> "specify";
-        };
-        return new StepContractView(
-                id,
-                "1.0",
-                action,
-                "software-dev",
-                List.of(new StepContractView.Step(
-                        "capture",
-                        "Capture",
-                        Optional.empty(),
-                        List.of(),
-                        Optional.of(new StepContractView.Delegation(ArtifactKind.DIRECTIVE, List.of("GUARD", "NOPE"))),
-                        Optional.empty())),
-                List.of());
-    }
-
-    /** What proj stores beside its copy: a skeleton, the step's prompt, and a contract of its own that lost the merge. */
+    /** What proj stores beside its copy: a skeleton and the step's prompt. */
     private static MissionTypeHolding holding(String fingerprint) {
         return new MissionTypeHolding(
                 type(),
                 List.of(new MissionTypeHolding.StoredSkeleton("spec.md", utf8("# Spec\n"))),
-                List.of(new MissionTypeHolding.BoundContract("a-proj-contract", "specify")),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
                 fingerprint,
                 Set.of());
@@ -493,7 +321,7 @@ class EffectiveMissionTypeReadServiceTest {
 
     /**
      * What main stores beside its copy, the version proj's replaced: specify and review, which proj's drops, with
-     * review's prompt, and a contract of its own that lost the merge.
+     * review's prompt.
      */
     private static MissionTypeHolding replaced(String fingerprint) {
         MissionType type = MissionType.builder()
@@ -517,41 +345,11 @@ class EffectiveMissionTypeReadServiceTest {
         return new MissionTypeHolding(
                 type,
                 List.of(),
-                List.of(new MissionTypeHolding.BoundContract("a-main-contract", "review")),
                 Map.of(
                         "review",
                         new MissionTypeHolding.StepFiles(Optional.of(utf8("# Review at main\n")), Optional.empty())),
                 fingerprint,
                 Set.of());
-    }
-
-    /** A step contract as the activations slice hands it on: a kernel artifact, which the contracts port narrows. */
-    private record Contract(String localId) implements CharterArtifact {
-
-        @Override
-        public ArtifactKind kind() {
-            return ArtifactKind.MISSION_STEP_CONTRACT;
-        }
-
-        @Override
-        public PackIdentifier packId() {
-            return new PackIdentifier("main");
-        }
-
-        @Override
-        public Optional<String> schemaVersion() {
-            return Optional.empty();
-        }
-
-        @Override
-        public String label() {
-            return localId;
-        }
-
-        @Override
-        public Optional<String> description() {
-            return Optional.empty();
-        }
     }
 
     private static StoredFile utf8(String text) {

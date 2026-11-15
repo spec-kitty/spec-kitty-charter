@@ -249,9 +249,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
 
   Scenario: US3 AS4 - the steps of a mission type are in force only while the mission type is
-    US3 AS4, FR-040, FR-041, A7 Q1: software-dev is selected and its step contract is in force; research is not
-    selected, so its step contract, though selected, is not in force: inactive with mission_type_not_in_force. The
-    step contract of software-dev is the control, active in the same answer. There is no activatedKinds.
+    US3 AS4, FR-040, FR-041, A7 Q1, OD-6: a step enhancement of a step is bound to the step's mission type.
+    software-dev is selected and the enhancement of its step is in force; research is not selected, so the enhancement
+    of its step, though selected, is not in force: inactive with mission_type_not_in_force. The enhancement of
+    software-dev's step is the control, active in the same answer. There is no activatedKinds.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -270,16 +271,23 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: implement
           title: implement
           role: implementer
+          prompt_path: steps/implement.prompt.md
       """
     And the org pack "main" with the file "software-dev.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: mission_type:software-dev
         target: action:software-dev/implement
         relation: requires
+      - source: step_enhancement:sd-implement
+        target: action:software-dev/implement
+        relation: enhances
       """
     And the org pack "main" with the file "missions/research/research.mission-type.yaml":
       """
@@ -291,52 +299,77 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+          prompt_path: steps/gather.prompt.md
       """
     And the org pack "main" with the file "research.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:research/gather
+        kind: action
+        label: gather
       edges:
       - source: mission_type:research
         target: action:research/gather
         relation: requires
+      - source: step_enhancement:research-gather
+        target: action:research/gather
+        relation: enhances
       """
-    And the org pack "main" with the file "mission_step_contracts/sd-implement.step-contract.yaml":
+    And the org pack "main" with the file "missions/software-dev/steps/implement.prompt.md":
       """
+      # Implement
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/sd-implement.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
       id: sd-implement
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: sd-implement.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/sd-implement.prompt-fragment.md":
+      """
+      Name the risk first.
+      """
+    And the org pack "main" with the file "missions/research/steps/gather.prompt.md":
+      """
+      # Gather
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.step-enhancement.yaml":
+      """
       schema_version: '1.0'
-      action: implement
-      mission: software-dev
-      steps:
-        - id: first
-          description: The first step
-      """
-    And the org pack "main" with the file "mission_step_contracts/research-gather.step-contract.yaml":
-      """
       id: research-gather
-      schema_version: '1.0'
-      action: gather
-      mission: research
-      steps:
-        - id: first
-          description: The first step
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: research-gather.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.prompt-fragment.md":
+      """
+      Name the source first.
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"mission_step_contract":["research-gather","sd-implement"],"mission_type":["software-dev"]}}
+      {"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"mission_type":["software-dev"],"step_enhancement":["research-gather","sd-implement"]}}
       """
-    When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=active"
+    When I GET "/activations/a-1/artifacts?kind=step_enhancement&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      mission_step_contract:sd-implement
+      step_enhancement:sd-implement
       """
-    When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=inactive"
+    When I GET "/activations/a-1/artifacts?kind=step_enhancement&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
     And the field at "/items/0/reason" is "mission_type_not_in_force"
 
@@ -1001,8 +1034,8 @@ Feature: The effective reads answer what an activation puts in force, and why th
 
   Scenario: A step of a denied mission type is not in force (the binding)
     A7 Q1, research R13 stratum 4: a step, and any artifact bound to a mission type, is in force only while the mission
-    type is. research is denied and its step contract is selected, so the step contract is inactive with
-    mission_type_not_in_force and is in missionTypeNotInForce. The step contract of software-dev, which is selected,
+    type is. research is denied and the enhancement of its step is selected, so the enhancement is inactive with
+    mission_type_not_in_force and is in missionTypeNotInForce. The enhancement of software-dev's step, which is selected,
     is the control, in force in the same answer.
     Given the org pack "main" with the file "pack.yaml":
       """
@@ -1022,16 +1055,23 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: implement
           title: implement
           role: implementer
+          prompt_path: steps/implement.prompt.md
       """
     And the org pack "main" with the file "software-dev.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: mission_type:software-dev
         target: action:software-dev/implement
         relation: requires
+      - source: step_enhancement:sd-implement
+        target: action:software-dev/implement
+        relation: enhances
       """
     And the org pack "main" with the file "missions/research/research.mission-type.yaml":
       """
@@ -1043,64 +1083,90 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+          prompt_path: steps/gather.prompt.md
       """
     And the org pack "main" with the file "research.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:research/gather
+        kind: action
+        label: gather
       edges:
       - source: mission_type:research
         target: action:research/gather
         relation: requires
+      - source: step_enhancement:research-gather
+        target: action:research/gather
+        relation: enhances
       """
-    And the org pack "main" with the file "mission_step_contracts/sd-implement.step-contract.yaml":
+    And the org pack "main" with the file "missions/software-dev/steps/implement.prompt.md":
       """
+      # Implement
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/sd-implement.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
       id: sd-implement
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: sd-implement.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/software-dev/enhancements/sd-implement.prompt-fragment.md":
+      """
+      Name the risk first.
+      """
+    And the org pack "main" with the file "missions/research/steps/gather.prompt.md":
+      """
+      # Gather
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.step-enhancement.yaml":
+      """
       schema_version: '1.0'
-      action: implement
-      mission: software-dev
-      steps:
-        - id: first
-          description: The first step
-      """
-    And the org pack "main" with the file "mission_step_contracts/research-gather.step-contract.yaml":
-      """
       id: research-gather
-      schema_version: '1.0'
-      action: gather
-      mission: research
-      steps:
-        - id: first
-          description: The first step
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: research-gather.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.prompt-fragment.md":
+      """
+      Name the source first.
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "mission_step_contract": ["sd-implement", "research-gather"]}, "deactivated": {"mission_type": ["research"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["sd-implement", "research-gather"]}, "deactivated": {"mission_type": ["research"]}}
       """
-    When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=active"
+    When I GET "/activations/a-1/artifacts?kind=step_enhancement&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      mission_step_contract:sd-implement
+      step_enhancement:sd-implement
       """
-    When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=inactive"
+    When I GET "/activations/a-1/artifacts?kind=step_enhancement&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
     And the field at "/items/0/reason" is "mission_type_not_in_force"
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
     And the field at "/report/missionTypeNotInForce" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
 
   Scenario: A required step whose mission type is not in force is dropped and reported (DM-01M6RFGFW3S0YJ222QMHD2W11B)
-    Decision DM-01M6RFGFW3S0YJ222QMHD2W11B: the governing preset requires the step contract research-gather and the
-    directive D. research is not in force, so the step contract stays out (inactive, mission_type_not_in_force, with
+    Decision DM-01M6RFGFW3S0YJ222QMHD2W11B: the governing preset requires the step enhancement research-gather, bound
+    to research by its step, and the directive D. research is not in force, so the enhancement stays out (inactive,
+    mission_type_not_in_force, with
     required true) and is in requiredNotInForce. D, required and unbound, is the control: in force with reason
     required in the same answer.
     Given the org pack "main" with the file "pack.yaml":
@@ -1121,26 +1187,42 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+          prompt_path: steps/gather.prompt.md
       """
     And the org pack "main" with the file "research.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:research/gather
+        kind: action
+        label: gather
       edges:
       - source: mission_type:research
         target: action:research/gather
         relation: requires
+      - source: step_enhancement:research-gather
+        target: action:research/gather
+        relation: enhances
       """
-    And the org pack "main" with the file "mission_step_contracts/research-gather.step-contract.yaml":
+    And the org pack "main" with the file "missions/research/steps/gather.prompt.md":
       """
-      id: research-gather
+      # Gather
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.step-enhancement.yaml":
+      """
       schema_version: '1.0'
-      action: gather
-      mission: research
-      steps:
-        - id: first
-          description: The first step
+      id: research-gather
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: research-gather.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.prompt-fragment.md":
+      """
+      Name the source first.
       """
     And the org pack "main" with the file "directives/D.directive.yaml":
       """
@@ -1158,7 +1240,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       activated_directives:
         - id: D
           must_have: true
-      activated_mission_step_contracts:
+      activated_step_enhancements:
         - id: research-gather
           must_have: true
       """
@@ -1173,11 +1255,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:D
       """
     And the field at "/items/0/reason" is "required"
-    When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=inactive"
+    When I GET "/activations/a-1/artifacts?kind=step_enhancement&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
     And the field at "/items/0/reason" is "mission_type_not_in_force"
     And the field at "/items/0/required" is true
@@ -1185,7 +1267,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/report/requiredNotInForce" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
     And the field at "/report/requiredNotInForce/0/reason" is "mission_type_not_in_force"
 
@@ -1881,26 +1963,42 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+          prompt_path: steps/gather.prompt.md
       """
-    And the org pack "main" with the file "mission_step_contracts/research-gather.step-contract.yaml":
+    And the org pack "main" with the file "missions/research/steps/gather.prompt.md":
       """
-      id: research-gather
+      # Gather
+
+      <!-- spdd:reasons-block:start -->
+      <!-- spdd:reasons-block:end -->
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.step-enhancement.yaml":
+      """
       schema_version: '1.0'
-      action: gather
-      mission: research
-      steps:
-        - id: first
-          description: The first step
+      id: research-gather
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: research-gather.prompt-fragment.md
+      """
+    And the org pack "main" with the file "missions/research/enhancements/research-gather.prompt-fragment.md":
+      """
+      Name the source first.
       """
     And the org pack "main" with the file "all.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:research/gather
+        kind: action
+        label: gather
       edges:
       - source: mission_type:research
         target: action:research/gather
         relation: requires
+      - source: step_enhancement:research-gather
+        target: action:research/gather
+        relation: enhances
       - source: directive:OVR
         target: directive:OV
         relation: overrides
@@ -1929,7 +2027,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"deactivated":{"directive":["D1"]},"languages":["python"],"packs":[{"packId":"main","version":"9.9.9"}],"schemaVersion":2,"selected":{"directive":["ENH","GHOST","LKO","OV","OVR"],"mission_step_contract":["research-gather"],"styleguide":["js-style"]}}
+      {"deactivated":{"directive":["D1"]},"languages":["python"],"packs":[{"packId":"main","version":"9.9.9"}],"schemaVersion":2,"selected":{"directive":["ENH","GHOST","LKO","OV","OVR"],"step_enhancement":["research-gather"],"styleguide":["js-style"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=active"
     Then the response status is 200
@@ -1962,7 +2060,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/missionTypeNotInForce" holds exactly the ids:
       """
-      mission_step_contract:research-gather
+      step_enhancement:research-gather
       """
     And the field at "/report/overrideNotApplied" holds exactly the ids:
       """
@@ -3367,6 +3465,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
 
     Examples:
       | query           | detail                                                                                                                                                                                                                  |
-      | kind=template   | The query parameter kind is \"template\", which is not one of directive, tactic, styleguide, toolguide, paradigm, procedure, agent_profile, mission_step_contract, glossary, skill, anti_pattern, mission_type or step_enhancement. |
+      | kind=template   | The query parameter kind is \"template\", which is not one of directive, tactic, styleguide, toolguide, paradigm, procedure, agent_profile, glossary, skill, anti_pattern, mission_type or step_enhancement. |
       | state=retired   | The query parameter state is \"retired\", which is not one of active, inactive or excluded.                                                                                                                             |
       | pageCursor=YQ   | The query parameter pageCursor is \"YQ\", which is not a cursor this list gave.                                                                                                                                         |

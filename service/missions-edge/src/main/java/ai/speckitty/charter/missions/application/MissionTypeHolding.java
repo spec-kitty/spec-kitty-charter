@@ -10,13 +10,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * What a scope holds of one mission type, read at one fingerprint: the type, its skeletons, the step contracts whose
- * {@code mission} is the type, and the stored files of its steps. The mission-type reads build their views and links
+ * What a scope holds of one mission type, read at one fingerprint: the type, its skeletons and the stored files of its
+ * steps. The mission-type reads build their views and links
  * from it alone, so a link points only at what the same read found.
  *
  * @param type the mission type
  * @param skeletons the stored files under the type's {@code templates/} directory
- * @param stepContracts the step contracts whose {@code mission} is the type
  * @param stepFiles the stored prompt and guidelines files of each step, by step id; a step without an entry has none
  * @param fingerprint the source fingerprint the read verified
  * @param held the delegation candidates of the type's substeps the scope holds, of a listed kind (a kind the service
@@ -26,7 +25,6 @@ import java.util.stream.Stream;
 public record MissionTypeHolding(
         MissionType type,
         List<StoredSkeleton> skeletons,
-        List<BoundContract> stepContracts,
         Map<String, StepFiles> stepFiles,
         String fingerprint,
         Set<HeldArtifact> held) {
@@ -36,7 +34,6 @@ public record MissionTypeHolding(
      *
      * @param type the mission type
      * @param skeletons its skeletons
-     * @param stepContracts the step contracts bound to it
      * @param stepFiles its step files
      * @param fingerprint the verified fingerprint
      * @param held the held delegation candidates
@@ -44,7 +41,6 @@ public record MissionTypeHolding(
     public MissionTypeHolding {
         Objects.requireNonNull(type, "type");
         skeletons = List.copyOf(skeletons);
-        stepContracts = List.copyOf(stepContracts);
         stepFiles = Map.copyOf(stepFiles);
         Objects.requireNonNull(fingerprint, "fingerprint");
         held = Set.copyOf(held);
@@ -109,26 +105,6 @@ public record MissionTypeHolding(
                         read + " holds the template " + templateId + " outside the type's templates/ directory.");
             }
             return new StoredSkeleton(templateId.substring(prefix.length()), content);
-        }
-    }
-
-    /**
-     * One step contract whose {@code mission} is the type.
-     *
-     * @param id the step contract's id
-     * @param action the step its {@code action} names
-     */
-    public record BoundContract(String id, String action) {
-
-        /**
-         * Checks the fields.
-         *
-         * @param id the id
-         * @param action the action
-         */
-        public BoundContract {
-            Objects.requireNonNull(id, "id");
-            Objects.requireNonNull(action, "action");
         }
     }
 

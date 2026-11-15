@@ -273,8 +273,7 @@ class PackManifestRoundTripTest {
                 List.of(
                         new PackManifestDso.Constituent("agent_profile", "a", "agents/a.agent.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent("glossary", "g", "g/g.glossary.yaml", "0".repeat(64)),
-                        new PackManifestDso.Constituent(
-                                "mission_step_contract", "m", "m/m.step-contract.yaml", "0".repeat(64)),
+                        new PackManifestDso.Constituent("mission_type", "m", "m/m.mission-type.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent("procedure", "p", "p.procedure.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent("template", "t.md", "templates/t.md", "0".repeat(64)),
                         new PackManifestDso.Constituent("template", "gone.md", "templates/gone.md", "0".repeat(64)),
@@ -285,13 +284,13 @@ class PackManifestRoundTripTest {
         Map<String, String> written = Map.of(
                 "agent-profile/a", "a.agent.yaml",
                 "glossary/g", "g.glossary.yaml",
-                "mission-step-contract/m", "m.step-contract.yaml");
+                "mission-type/m", "m.mission-type.yaml");
 
         assertThat(DomainRoundTrip.pairing(manifest, target, written))
                 .containsExactlyInAnyOrderEntriesOf(Map.of(
                         "agents/a.agent.yaml", "a.agent.yaml",
                         "g/g.glossary.yaml", "g.glossary.yaml",
-                        "m/m.step-contract.yaml", "m.step-contract.yaml",
+                        "m/m.mission-type.yaml", "m.mission-type.yaml",
                         "templates/t.md", "templates/t.md",
                         "presets/p.yaml", "presets/p.yaml"));
     }
