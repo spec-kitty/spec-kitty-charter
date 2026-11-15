@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13)
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13) and of decision 8 (2026-11-15, #555)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -86,10 +86,42 @@ The other decisions follow the reversed direction. Each is confirmed, or changed
     `FallbackProfileRule` and `PackMutabilityPolicy`.
   - `pack-validation`'s rules call the ports, and `deployable` wires them. `pack-check` composes none
     of them.
-- **Decision 8 (the round trip).** The round trip moves from the `packs` test source set into `packs`
-  main code (`packs.infra.storage`, beside the codecs it needs). A composition root calls it through a
-  public entry: the whole-pack gate and the drift test through the service's wiring, and
-  `pack-check --round-trip` through its main. It does not move into `pack-validation`.
+- **Decision 8 (the round trip).** Replaced on 2026-11-15; see the next amendment.
+
+### Amendment 2026-11-15 (operator, #555): the round trip splits into a flow and a verdict
+
+The operator ruled on 2026-11-15 (ruling 2, recorded on [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549))
+that the round trip splits in two. Decision 8, and its consequence in the 2026-11-13 amendment, are replaced by this:
+
+- **The production flow is `packs` main code.**
+  - What it does: read, domain, write, read back.
+  - Where it lives: `PackRoundTrip`, the public entry, in `packs.infra.storage`, beside the codecs it needs, with the
+    adapter it runs (`DomainRoundTrip`) and the census.
+  - It stays on the storage path (`DomainRepositoryService`), not on `POST /packs` registration admission, which
+    #556's ports cover.
+  - It reads both sides of every modelled file in its content form, with the pack readers' own settings, and verifies
+    the manifest's derived fields. It returns a `PackRoundTripResult` (`packs.domain.roundtrip`) and judges nothing.
+- **The validation harness is `pack-validation` main code** (`packvalidation.roundtrip`), as a rule over the flow's
+  result.
+  - `WholePackRoundTripRule` is a kernel `Rule<PackRoundTripResult>`. It returns one reason per problem: code
+    `round_trip_red` for a run that differs from its expectation, and `round_trip_written_unpaired` for an extra written
+    file. Each code owns its severity, `VIOLATION` (ruling 4).
+  - The rule is built from the per-file observation (`RoundTripObservation`), equality of meaning
+    (`MeaningComparator`, ADR-0036) and the expected baseline (`WholePackExpectation`).
+  - No rule parses a pack file: the flow read both sides, so there is no second derivation. The baseline lists are not
+    pack content, and `WholePackExpectation` reads them with snakeyaml-engine, which the module allowlist admits.
+- **Who calls it.**
+  - The whole-pack gate (`:pack-validation:wholePackRoundTrip`) and the drift test (`:pack-validation:driftTest`) are
+    `pack-validation` tests. Each is a composition root: it runs the flow through its public entry, then the rule.
+  - `pack-check --round-trip` does the same through its main (#478).
+  - The expected-red lists name example-pack files, so they move to `:packs` test fixtures (`whole-pack/`), beside the
+    example packs.
+- **One test-scope edge back.**
+  - `:packs`' per-kind codec tests keep the ADR-0036 oracle: they reach `pack-validation` through
+    `testImplementation`, and parse their texts with the readers' own settings first.
+  - Main code still depends one way only, `pack-validation` on `packs`.
+- **#547 holds.** Every census file that is not excluded needs an outcome, and every `file-kinds.yaml` schema is modelled
+  or listed with a reason. The planted `org-fragment` and `glossary` breaks still fail both checks, now through the rule.
 
 ## Context
 
@@ -208,9 +240,11 @@ The other decisions follow the reversed direction. Each is confirmed, or changed
 
    It runs over the descriptors of a set of packs with their levels. It needs every `pack.yaml`, never the graph, and
    it is part of the CLI.
-8. **The round trip moves into the module.**
-   - The whole-pack round trip (ADR-0036) moves from the test source set into `pack-validation`.
-   - The drift test and the whole-pack gate call it.
+8. **The round trip moves into main code** *(amended 2026-11-15, operator ruling 2: the flow in `packs`, the verdict in
+   `pack-validation`; see the amendment above)*.
+   - The whole-pack round trip (ADR-0036) moves from the test source set into main code: the production flow into
+     `packs` (`PackRoundTrip`), and the verdict over its result into `pack-validation` (`WholePackRoundTripRule`).
+   - The drift test and the whole-pack gate call both.
    - It fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)).
 9. **`pack-check` is its own module and jar** *(operator)*.
    - **What it is.** `service/pack-check` is a thin `main` over `pack-validation`, with no Spring and no CLI framework.
@@ -236,7 +270,7 @@ The other decisions follow the reversed direction. Each is confirmed, or changed
 - **ADR-0017:** schema validation is a rule of `pack-validation`; as amended on 2026-11-13 (#553), it stays a check
   of the codecs in `packs.infra.storage`, whose findings reach the `PACK` ruleset through `PackContents`.
 - **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`; as amended on
-  2026-11-13 (#553), main code of `packs`.
+  2026-11-15 (#555), the flow in `packs` and the verdict in `pack-validation`. Done in #555.
 - **ADR-0046:** the release carries `pack-check`.
 - **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`.
 - **ADR-0070:** builds on the amendment of decision 4 in PR #548. open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.

@@ -81,8 +81,8 @@ How to build the charter service and run every check CI runs.
 | `:deployable:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
 | `:deployable:test` (switch gate) | After the last scenario, the switch gate ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1, amended 2026-11-12) holds `contracts/charter/scenarios/switch-gate.yaml` to the run: it fails when an operation has no entry, when a `ready` operation has a declared status no scenario asserts on it, when a `held` one would pass, or when a success answer is exercised by no scenario (R-20). The scenarios of each answer are written to `service/deployable/build/reports/switch-gate/switch-gate.md` |
 | `:packs:test`, `:deployable:test` (example packs) | The corpus tests over the charter-owned example packs ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)): every artifact file reads back equal after a write, and the coverage tests (`ExamplePackCoverageTest`, `ExampleCoverageTest`) fail when the examples stop exercising a kind, field or edge the model has |
-| `:packs:wholePackRoundTrip` | The whole-pack round-trip gate over the example packs (not part of `check`; CI requires it, see [below](#the-whole-pack-round-trip-gate)) |
-| `:packs:driftTest` | Not required and not run by `check` (which only compiles and lints it): the nightly [open-packs drift watch](#the-open-packs-drift-watch) |
+| `:pack-validation:wholePackRoundTrip` | The whole-pack round-trip gate over the example packs (not part of `check`; CI requires it, see [below](#the-whole-pack-round-trip-gate)) |
+| `:pack-validation:driftTest` | Not required and not run by `check` (which only compiles and lints it): the nightly [open-packs drift watch](#the-open-packs-drift-watch) |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -242,7 +242,7 @@ Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-ki
 ## The open-packs drift watch
 
 ```bash
-./gradlew :packs:driftTest -PopenPacksDir=<path>   # any spec-kitty-open-packs checkout, usually main
+./gradlew :pack-validation:driftTest -PopenPacksDir=<path>   # any spec-kitty-open-packs checkout, usually main
 ```
 
 `driftTest` is its own source set ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)):
@@ -256,19 +256,21 @@ opens or comments on an `open-packs-drift` issue when it is red.
 ## The whole-pack round-trip gate
 
 ```bash
-./gradlew :packs:wholePackRoundTrip          # reads the example packs; no open-packs checkout
+./gradlew :pack-validation:wholePackRoundTrip          # reads the example packs; no open-packs checkout
 ```
 
 The gate ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187), epic
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of every example pack
-(`built-in`, `org-base` and `project`, one run each of a single parameterized test, #547) into the domain, writes it to a fresh directory through the storage service, reads it back, and compares each
-written file with its source **by meaning**, as [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
+(`built-in`, `org-base` and `project`, one run each of a single parameterized test, #547) into the domain, writes it to a fresh directory through the storage service, and reads it back. That flow is production code, `PackRoundTrip` in
+`:packs` main. `pack-validation`'s `WholePackRoundTripRule` then compares each written file with its source **by meaning**
+([ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 8, as amended
+on 2026-11-15), as [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
 defines it: quoting, comments, layout and key order do not count, and for a declared field an absent value, `null`
 and an empty list or map are the same (inside an open map such as a styleguide's `tooling` they are data); a missing,
 extra or changed key or value counts. Numbers compare by value. Graph-shard edges compare as a set (order and
 identical repeats do not count) and nodes by URN.
 
-It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.yaml` lists what does not round-trip
+It lands red first. `service/packs/src/testFixtures/resources/whole-pack/expected-red.yaml`, beside the example packs, lists what does not round-trip
 yet: a single file of a modelled kind with every place it differs (`files:`, its path starting with the example
 pack's name, `at:` listing each difference path, joined by ` ; `, or holding the whole detail of a refused file), with
 a reason and the issue that owns it. It also lists each `file-kinds.yaml` schema that has no reader and writer
@@ -297,7 +299,7 @@ Three checks look at the example packs together, and at the file-kind table (#54
 
 A file of a modelled kind can fail the round trip because the pack's own data is inconsistent. That is neither a
 service defect (expected red) nor a file the gate does not compare (an exclusion). Such a file goes in
-`service/packs/src/test/resources/whole-pack/known-failures.yaml`, the third list next to `expected-red.yaml` and
+`service/packs/src/testFixtures/resources/whole-pack/known-failures.yaml`, the third list next to `expected-red.yaml` and
 `exclusions.yaml`. It ships empty. One entry per file, with four fields:
 
 - `path`: the file, its example pack's name first (`built-in/…`);
@@ -336,7 +338,7 @@ Where the gate still differs from ADR-0036, on purpose and only towards false re
   `excluding`), not derived from the schemas; a kind that brings an open map adds it there.
 
 The report, per kind and per file, is written per example pack to
-`service/packs/build/reports/whole-pack/<pack>.md`. CI runs the gate
+`service/pack-validation/build/reports/whole-pack/<pack>.md`. CI runs the gate
 in its own workflow, `.github/workflows/whole-pack.yml`, and requires it: `CI gate / gate` calls the workflow for its
 `wholepack` group whenever a pull request changes `contracts/`, `service/`, the build or the workflow, so every such
 pull request has to keep the packs round-tripping (epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186),
@@ -702,7 +704,7 @@ resolve while they run. Some entries are therefore resolved by no CI job today, 
 ./gradlew --write-verification-metadata sha256 -Pcharter.native=true help
 ./gradlew --write-verification-metadata sha256 verifyAll -PrequireSymlinks=true
 ./gradlew --write-verification-metadata sha256 pitest
-./gradlew --write-verification-metadata sha256 :packs:wholePackRoundTrip :packs:timingBudgets \
+./gradlew --write-verification-metadata sha256 :pack-validation:wholePackRoundTrip :packs:timingBudgets \
   :deployable:bootJar :charter-reports:aggregateJavadoc :contracts:bundleContract
 ./gradlew --write-verification-metadata sha256 :deployable:nativeCompile -Pcharter.native=true
 ```

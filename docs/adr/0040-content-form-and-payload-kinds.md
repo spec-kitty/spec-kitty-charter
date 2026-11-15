@@ -520,7 +520,8 @@ and compares a `bytes` file by bytes.
   `PackFileKind.java`, `PackFileSet.java`, `FilesystemPackStore.java`, `Companions.java`,
   `AssetBinding.java`, `TemplateBinding.java`, `WholePackStore.java`.
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRevision.java`.
-- `service/packs/src/test/resources/whole-pack/known-failures.yaml` (the six pinned refusals).
+- `service/packs/src/testFixtures/resources/whole-pack/known-failures.yaml` (the six pinned refusals; under
+  `src/test/resources` until #555).
 - [spec-kitty-open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75) (the
   fix for the six built-in sidecars).
 - [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/),

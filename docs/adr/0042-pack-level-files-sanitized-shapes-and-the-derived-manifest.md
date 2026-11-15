@@ -700,7 +700,7 @@ and no second pack-level bytes kind.
 - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/`: `PresetFiles.java`,
   `PresetYaml.java`, `PackManifests.java`, `PackManifestYaml.java`, `WholePackStore.java`,
   `PackFileSet.java`, `FileSystemPackInspector.java`.
-- `service/packs/src/test/resources/whole-pack/known-failures.yaml`.
+- `service/packs/src/testFixtures/resources/whole-pack/known-failures.yaml` (under `src/test/resources` until #555).
 - [RFC 8785: JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785).
 - [ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/),
   [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/),
