@@ -23,6 +23,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -1086,20 +1087,32 @@ public class EffectiveReadService {
         EffectiveSet set = EffectiveSet.of(stored.document(), closure, merged, session.inForce(query));
         Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
         set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
+        // The profiles slice's route answers the effective profile (R8): composed after the effective set, so a
+        // closure that does not resolve is refused with its own code before any enhancement is judged.
+        Optional<ProfileResolution> resolution = profileRoute
+                ? Optional.of(session.profileResolution(ref.id(), query)
+                        .orElseThrow(() -> new IllegalStateException("The merged closure holds " + ref.urn()
+                                + ", and the session composed no effective profile of it.")))
+                : Optional.empty();
         return new EffectiveArtifactAnswer(
                 stored,
                 closure.fingerprint(),
                 closure.closureFingerprint(),
                 inSet(byRef, ref),
-                read.artifact(),
-                profileRoute
-                        ? read.governance().map(governance -> governed(governance, byRef, set))
-                        : Optional.empty());
+                resolution.map(ProfileResolution::profile).orElse(read.artifact()),
+                resolution.flatMap(
+                        resolved -> read.governance().map(governance -> governed(governance, resolved, byRef, set))));
     }
 
-    /** A profile's governance with the state of each artifact it lists, from the one effective set of the request. */
+    /**
+     * A profile's governance with the state of each artifact it lists, from the one effective set of the request, and
+     * its lineage and the profiles it enhances, as the session composed them.
+     */
     private static EffectiveArtifactAnswer.Governance governed(
-            GovernanceFacts governance, Map<ArtifactRef, EffectiveArtifact> byRef, EffectiveSet set) {
+            GovernanceFacts governance,
+            ProfileResolution resolution,
+            Map<ArtifactRef, EffectiveArtifact> byRef,
+            EffectiveSet set) {
         List<EffectiveArtifactAnswer.Entry> entries = governance.entries().stream()
                 .map(entry -> new EffectiveArtifactAnswer.Entry(
                         inSet(byRef, entry.ref()),
@@ -1118,7 +1131,7 @@ public class EffectiveReadService {
                                 candidate.hops(),
                                 new EffectiveArtifactAnswer.EdgeWords(candidate.when(), candidate.reason()))))
                 .toList();
-        return new EffectiveArtifactAnswer.Governance(entries, suggested);
+        return new EffectiveArtifactAnswer.Governance(entries, suggested, resolution.lineage(), resolution.enhances());
     }
 
     private static EffectiveArtifact inSet(Map<ArtifactRef, EffectiveArtifact> byRef, ArtifactRef ref) {

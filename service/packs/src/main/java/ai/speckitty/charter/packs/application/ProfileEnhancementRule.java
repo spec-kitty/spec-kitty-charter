@@ -11,13 +11,10 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /**
  * The profile enhancement rule of rulings D5 and D7 (#380), judged over the declaring pack's own closure with the write
@@ -79,33 +76,17 @@ final class ProfileEnhancementRule {
             return Optional.empty();
         }
         Map<Urn, MergedClosure.Winner> winners = merged.closure().winners();
-        Map<Urn, List<Urn>> enhancersOf = new TreeMap<>();
-        merged.resolutionEdges().enhances().forEach((source, targets) -> {
-            if (source.kind() == PROFILE) {
-                targets.stream()
-                        .filter(target -> target.kind() == PROFILE)
-                        .forEach(target -> enhancersOf
-                                .computeIfAbsent(target, ignored -> new ArrayList<>())
-                                .add(source));
-            }
-        });
-        List<String> order = closure.closurePackIds();
-        for (Map.Entry<Urn, List<Urn>> enhanced : enhancersOf.entrySet()) {
+        for (Map.Entry<Urn, List<MergedClosure.Winner>> enhanced :
+                ProfileEnhancers.of(merged, closure.closurePackIds()).entrySet()) {
             Optional<CharterArtifact> base = profileOf(enhanced.getKey(), winners, profiles);
             if (base.isEmpty()) {
                 continue;
             }
-            Map<Urn, MergedClosure.Winner> enhancing = new LinkedHashMap<>();
-            enhanced.getValue().stream()
-                    .map(urn -> Objects.requireNonNull(winners.get(urn), "an enhancer is a winner"))
-                    .sorted(Comparator.comparingInt(
-                                    (MergedClosure.Winner winner) -> order.indexOf(winner.descriptorPackId()))
-                            .thenComparing(MergedClosure.Winner::urn))
-                    .forEach(winner -> enhancing.put(winner.urn(), winner));
             List<ProfileEnhancementGateway.Enhancing> enhancers = new ArrayList<>();
-            enhancing.forEach((urn, winner) -> profileOf(urn, winners, profiles)
-                    .ifPresent(profile -> enhancers.add(new ProfileEnhancementGateway.Enhancing(
-                            profile, winner.packId().value()))));
+            enhanced.getValue()
+                    .forEach(winner -> profileOf(winner.urn(), winners, profiles)
+                            .ifPresent(profile -> enhancers.add(new ProfileEnhancementGateway.Enhancing(
+                                    profile, winner.packId().value()))));
             Optional<ProfileEnhancementGateway.Dropped> dropped = judge.firstDrop(base.get(), enhancers);
             if (dropped.isPresent()) {
                 return Optional.of(new Breach(

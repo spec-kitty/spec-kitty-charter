@@ -11,8 +11,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * What the read of one agent profile under an activation answers: the winner of the layer merge as its pack stores it,
- * the facts the activation gives it, and the governance with the facts of each entry. It is the slice's own copy of what
+ * What the read of one agent profile under an activation answers: the effective profile (R8; rulings D5 to D7 of
+ * ADR-0078), the facts the activation gives its winner, its lineage, and the governance with the facts of each entry. It is the slice's own copy of what
  * the activations slice reads, in the slice's own vocabulary, so the application ring and the REST adapter never name the
  * activations slice.
  *
@@ -21,7 +21,8 @@ import java.util.Optional;
  * exempt), and each entry says the state the activation gives the winner of that artifact, with the pack and level that
  * hold it. It records no {@code held}: every entry has a winner.
  *
- * @param profile the winning profile, as the winner's pack stores it
+ * @param profile the effective profile: the winner merged with its in-force enhancers and folded under its in-force
+ *     ancestors, each merged with its own; for a profile that enhances another, the winner as its pack stores it
  * @param activationId the activation's id
  * @param revision the activation's revision token
  * @param governanceFingerprint the digest of the packs of the activation's closure alone
@@ -31,6 +32,8 @@ import java.util.Optional;
  * @param governance the entries, in URN order: the artifacts in force the walk lists and the artifacts out of force that
  *     a listed artifact suggests
  * @param linkableKinds the kinds that have a pack-scoped read, so that an entry is linked only when it can be followed
+ * @param lineage the in-force {@code specializes_from} ancestors, nearest first; empty for a root
+ * @param enhances the ids of the agent profiles the profile enhances, in id order; empty when it enhances none
  */
 public record EffectiveProfileRead(
         AgentProfile profile,
@@ -40,7 +43,9 @@ public record EffectiveProfileRead(
         String sourceFingerprint,
         Facts winner,
         List<Entry> governance,
-        List<ArtifactKind> linkableKinds) {
+        List<ArtifactKind> linkableKinds,
+        List<Lineage> lineage,
+        List<String> enhances) {
 
     /**
      * Checks and copies the fields.
@@ -53,6 +58,8 @@ public record EffectiveProfileRead(
      * @param winner the profile's facts
      * @param governance the entries
      * @param linkableKinds the linkable kinds
+     * @param lineage the ancestors
+     * @param enhances the enhanced profiles
      */
     public EffectiveProfileRead {
         Objects.requireNonNull(profile, "profile");
@@ -63,6 +70,33 @@ public record EffectiveProfileRead(
         Objects.requireNonNull(winner, "winner");
         governance = List.copyOf(Objects.requireNonNull(governance, "governance"));
         linkableKinds = List.copyOf(Objects.requireNonNull(linkableKinds, "linkableKinds"));
+        lineage = List.copyOf(Objects.requireNonNull(lineage, "lineage"));
+        enhances = List.copyOf(Objects.requireNonNull(enhances, "enhances"));
+    }
+
+    /**
+     * One ancestor of the profile's lineage chain (ruling D6).
+     *
+     * @param id the ancestor's id
+     * @param pack the configured identifier of the pack that holds the version in force
+     * @param depth the length of the longest in-force {@code specializes_from} path from the profile, at least 1
+     */
+    public record Lineage(String id, String pack, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param id the ancestor
+         * @param pack the holding pack
+         * @param depth the longest path length
+         */
+        public Lineage {
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(pack, "pack");
+            if (depth < 1) {
+                throw new IllegalArgumentException("an ancestor is at least one hop from the profile: " + depth);
+            }
+        }
     }
 
     /**

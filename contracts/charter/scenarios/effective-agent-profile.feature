@@ -4,9 +4,11 @@
 # service as it stood, where /activations/charter/artifacts/agent_profile/java-jenny was answered by the generic read of
 # an artifact, which carries no body and no governance; the operation was then built in :profiles-edge.
 #
-# The read answers the stored winner of the layer merge with the facts the activation gives it, its profile as the
-# winner's pack stores it and its governance walked under the activation: an artifact in force is listed, a suggestion
-# out of force is listed with its state, and an ancestor that is not in force is dropped with what only it requires (W1).
+# The read answers the winner of the layer merge with the facts the activation gives it, the effective profile (R8,
+# #102: merged with its in-force enhancers and folded under its in-force ancestors, rulings D5 and D6; profiles.feature
+# shows the merge and the inheritance), its lineage and its governance walked under the activation: an artifact in force
+# is listed, a suggestion out of force is listed with its state, and an ancestor that is not in force is dropped with
+# what only it requires (W1).
 # The profile the walk starts from is exempt from that predicate (W4). The scenarios follow the links: the artifact link
 # of the answer and of every governance entry (artifact, and effective-artifact since WP08), and the activation.
 #
@@ -26,7 +28,7 @@
 @contract @activations @agent-profiles
 Feature: An agent profile is read under an activation, with its governance and the state of each entry
   GET /activations/{activationId}/artifacts/agent_profile/{artifactId} answers the winner of the profile under the
-  activation: the pack and level that hold it, its state and reason, the profile as that pack stores it and the artifacts
+  activation: the pack and level that hold it, its state and reason, the effective profile, its lineage and the artifacts
   its governance walk lists, each with the facts of its own winner. The walk is judged by the activation: what is in force
   is listed, a suggestion out of force is listed with its state, and an ancestor that is not in force is dropped. The
   activation is judged first, then whether a pack of the closure holds the profile, both before any If-None-Match. The ETag
@@ -177,9 +179,10 @@ Feature: An agent profile is read under an activation, with its governance and t
   Scenario: java-jenny is read under a charter-like activation, with its body, its governance and every link resolving
     java-jenny is selected, and so is its parent. The answer names the pack and the level that hold the version in force
     and says the profile is in force and selected. Its governance lists the parent (lineage), what the profile requires
-    and what only the parent requires, each in force with the pack that holds it. At the default depth no suggestion is
-    walked. Every entry links the pack-scoped read of its winner, and the answer links the profile's own, the same body,
-    and the activation. The answer carries the verified fingerprint and a strong ETag.
+    and what only the parent requires, each in force with the pack that holds it, and its lineage is the parent, one hop
+    away. At the default depth no suggestion is walked. Every entry links the pack-scoped read of its winner, and the
+    answer links the profile's own, the stored body, and the activation. java-jenny declares every field her parent
+    does, so the effective body is hers. The answer carries the verified fingerprint and a strong ETag.
     When I GET "/activations/charter/artifacts/agent_profile/java-jenny"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
@@ -199,6 +202,10 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/agentProfile/name" is "Java Jenny"
     And the field at "/agentProfile/routingPriority" is 80
     And the field at "/agentProfile/directiveReferences/0/code" is "034"
+    And the field at "/lineage" holds exactly 1 item
+    And the field at "/lineage/0/id" is "implementer-ivan"
+    And the field at "/lineage/0/pack" is "built-in"
+    And the field at "/lineage/0/depth" is 1
     And the field at "/_links/self/href" is "/api/v1/activations/charter/artifacts/agent_profile/java-jenny"
     And the field at "/_links/artifact/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the field at "/_links/up/href" is "/api/v1/activations/charter"
@@ -284,6 +291,7 @@ Feature: An agent profile is read under an activation, with its governance and t
     When I GET "/activations/no-parent/artifacts/agent_profile/java-jenny"
     Then the response status is 200
     And the field at "/state" is "active"
+    And the field at "/lineage" holds exactly 0 items
     And the effective governance holds exactly the entries:
       """
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
@@ -297,7 +305,7 @@ Feature: An agent profile is read under an activation, with its governance and t
   Scenario: A profile the activation does not select is still answered, with its state, and its governance is walked
     The start of the walk is exempt from the in-force predicate (W4): the answer is not a 404, it says the profile is
     inactive and not selected, and it lists what the profile requires that is in force. The parent is not in force, so it
-    is dropped. The artifact link still reads the profile in the pack that holds it.
+    is dropped, from the governance and from the lineage. The artifact link still reads the profile in the pack that holds it.
     Given the activation "only-directives" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "built-in"}], "selected": {
@@ -310,6 +318,7 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/reason" is "not_selected"
     And the field at "/packId" is "built-in"
     And the field at "/agentProfile/profileId" is "java-jenny"
+    And the field at "/lineage" holds exactly 0 items
     And the effective governance holds exactly the entries:
       """
       directive:DIRECTIVE_010 requires via agent_profile:java-jenny hops 1 active/selected in built-in linked edge {}
@@ -322,7 +331,8 @@ Feature: An agent profile is read under an activation, with its governance and t
   Scenario: The copy that won the layer merge is the one answered, and its links read the winner's pack
     The project pack replaces java-jenny at the project level. The answer names it, its body is the project copy's, the
     artifact link reads the project pack, and the governance of the winner is walked from the merged closure: the edges of
-    the built-in pack still apply. The stored winner is answered; nothing of enhances is resolved.
+    the built-in pack still apply. The project copy is the profile the effective profile is composed from; with its parent
+    out of force and no enhancer, it is answered as the project pack stores it.
     Given the project pack "house" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S

@@ -5,8 +5,9 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The port of the activation-scoped profile read (ADR-0037 as amended 2026-11-09): where the winner of a profile under an
- * activation, with its state and its governance, comes from. The adapter is {@code profiles.infra.activations}, the one
+ * The port of the activation-scoped profile read (ADR-0037 as amended 2026-11-09): where the effective profile under an
+ * activation (R8; rulings D5 to D7 of ADR-0078), with the state of its winner, its lineage and its governance, comes
+ * from. The adapter is {@code profiles.infra.activations}, the one
  * place of the slice that asks the activations slice; the application ring names no activations type.
  */
 public interface EffectiveProfiles {
@@ -20,7 +21,9 @@ public interface EffectiveProfiles {
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the profile read, or that the client holds the current representation
      * @throws CharterRefusal with {@code ACTIVATION_NOT_FOUND}, {@code ARTIFACT_NOT_FOUND}, {@code PACK_UNREADABLE}, the
-     *     code of a closure that cannot compose or merge, or {@code STALE_INPUT}
+     *     code of a closure that cannot compose or merge, {@code PROFILE_ENHANCEMENT_DROPS_FIELD} for an in-force
+     *     enhancement of a profile of the chain that would drop part of it, naming the enhancing pack first, or
+     *     {@code STALE_INPUT}
      */
     Outcome read(String activationId, String profileId, int depth, @Nullable String ifNoneMatch);
 

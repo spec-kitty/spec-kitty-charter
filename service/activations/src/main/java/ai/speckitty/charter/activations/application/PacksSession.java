@@ -9,6 +9,7 @@ import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -125,6 +126,21 @@ public interface PacksSession {
      *     changed since the session was verified
      */
     Optional<EffectiveArtifactRead> effectiveArtifact(ArtifactKind kind, String id, int depth, InForceQuery query);
+
+    /**
+     * The effective agent profile under a document's request (R8, #102; rulings D5 to D7 of ADR-0078): the winner
+     * merged with its in-force enhancers and folded under its in-force {@code specializes_from} ancestors, each merged
+     * with its own, and the lineage chain. It answers from this session's read and its in-force resolution, as
+     * {@link #effectiveArtifact} does.
+     *
+     * @param id the profile's id, exactly as declared
+     * @param query what the document selects, denies and filters
+     * @return the effective profile; empty when no pack of the closure holds it, and for a session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #effectiveArtifact} does, and with
+     *     {@code profile_enhancement_drops_field} when an in-force enhancement of a profile of the chain would drop part
+     *     of it, naming the enhancing pack
+     */
+    Optional<ProfileResolution> profileResolution(String id, InForceQuery query);
 
     /**
      * Whether one artifact is in force under a document's request, from the in-force resolution alone, before the slot

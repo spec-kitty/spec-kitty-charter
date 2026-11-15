@@ -1,13 +1,23 @@
 title: EffectiveAgentProfileRead
 description: >-
-  One agent profile under an activation (ADR-0020 D7, FR-007): the winner of the layer merge as its pack stores it in
-  agentProfile, with the facts the activation gives it (the pack and level that hold it, and its state, reason, policy
-  and required, as EffectiveArtifactRead carries them) and, in governance, the artifacts its walk lists with the facts
-  of each. The stored winner is answered: enhances is not resolved, so this is not the effective profile of #380.
+  One agent profile under an activation (ADR-0020 D7, FR-007; R8, #102): the effective profile in agentProfile, with the
+  facts the activation gives its winner (the pack and level that hold the version in force, and its state, reason,
+  policy and required, as EffectiveArtifactRead carries them), its lineage and, in governance, the artifacts its walk
+  lists with the facts of each. The effective profile is the winner of the layer merge merged with its in-force
+  enhancers and folded under its in-force specializes_from ancestors, each merged with its own (rulings D5, D6 and D7
+  of ADR-0078). Each profile of the chain is first merged with its own in-force enhancers, in closure order, the nearest
+  pack last: an enhancer's identity fields (profileId, name, purpose, role, altRoles, performer, routingPriority) are its
+  own and never merged, and every other top-level field it declares replaces the value so far and must keep all of it.
+  Then the chain is folded root to leaf by per-field replacement: a top-level field a descendant declares replaces the
+  ancestor's, and a field it leaves absent is inherited from the nearest ancestor that declares it. Identity fields are
+  never inherited, so they, and the required specialization, are always the profile's own. A profile that enhances
+  another agent profile answers its own stored body and links what it enhances.
 
   _links holds self (this request, with depth when the request sent one), artifact (the pack-scoped read of the profile
-  in the pack that holds the version in force, whose body is the same agentProfile) and up (the activation). The
-  schema is closed; it carries the members of EffectiveArtifactRead and adds agentProfile and governance.
+  in the pack that holds the version in force, whose body is the stored profile, before any enhancer is merged or any
+  field inherited), up (the activation) and, for a profile that enhances another agent profile, enhances (the read of
+  the profile it enhances under the activation, the first by id when it enhances several). The schema is closed; it
+  carries the members of EffectiveArtifactRead and adds agentProfile, lineage and governance.
 type: object
 additionalProperties: false
 required:
@@ -23,6 +33,7 @@ required:
 - policy
 - reason
 - agentProfile
+- lineage
 - governance
 - _links
 properties:
@@ -147,6 +158,18 @@ properties:
       - schemas/ActivationConfig.yaml
   agentProfile:
     $ref: AgentProfile.yaml
+  lineage:
+    type: array
+    description: >-
+      The profile's ancestors in force along specializes_from, nearest first: by depth, the length of the longest
+      in-force path, then by id. An ancestor that is not in force is not listed, nor counted in a depth. Empty for a
+      root.
+    items:
+      $ref: LineageLink.yaml
+    x-derived:
+      rule: The lineage step of the governance walk over the activation's merged closure, judged by the effective set.
+      inputs:
+      - schemas/ActivationConfig.yaml
   governance:
     type: array
     description: >-

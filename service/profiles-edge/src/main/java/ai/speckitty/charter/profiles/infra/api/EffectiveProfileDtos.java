@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
+import ai.speckitty.charter.api.model.LineageLink;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -23,15 +24,18 @@ import org.springframework.web.util.UriUtils;
 
 /**
  * The wire form of the profile read under an activation: the facts of the winner as the activation's other reads give
- * them, the profile in {@code agentProfile} (mapped by {@link ProfileDtos}, the same closed schema as the pack-scoped
- * read) and the governance entries, each with the facts of its own winner and a link to the pack-scoped read of it. It is
- * the profiles edge's own and names nothing of the activations adapter or the packs adapter: the links are built under
- * the base path the controllers are mapped under, the way {@link ProfileDtos} and the activations mappers build theirs.
+ * them, the effective profile in {@code agentProfile} (mapped by {@link ProfileDtos}, the same closed schema as the
+ * pack-scoped read), the {@code lineage} and the governance entries, each with the facts of its own winner and a link to
+ * the pack-scoped read of it. It is the profiles edge's own and names nothing of the activations adapter or the packs
+ * adapter: the links are built under the base path the controllers are mapped under, the way {@link ProfileDtos} and the
+ * activations mappers build theirs.
  *
  * <p>The links of the answer are {@code self} (the request that was made: the {@code depth} is repeated only when the
- * request sent one), {@code artifact} (the pack-scoped read of the profile in the pack that holds the version in force)
- * and {@code up} (the activation). An entry links {@code effective-artifact}, its winner's read under the activation, and
- * {@code artifact}, the pack-scoped read of its winner, only for a kind that read serves.
+ * request sent one), {@code artifact} (the pack-scoped read of the profile in the pack that holds the version in force,
+ * the stored body), {@code up} (the activation) and, for a profile that enhances another agent profile, {@code enhances}
+ * (the read under the activation of the profile it enhances, the first by id). An entry links
+ * {@code effective-artifact}, its winner's read under the activation, and {@code artifact}, the pack-scoped read of its
+ * winner, only for a kind that read serves.
  */
 @Component
 public class EffectiveProfileDtos {
@@ -77,6 +81,9 @@ public class EffectiveProfileDtos {
                 EffectiveAgentProfileRead.PolicyEnum.fromValue(winner.policy()),
                 EffectiveAgentProfileRead.ReasonEnum.fromValue(winner.reason()),
                 ProfileDtos.profile(read.profile()),
+                read.lineage().stream()
+                        .map(link -> new LineageLink(link.id(), link.pack(), link.depth()))
+                        .toList(),
                 read.governance().stream().map(entry -> entry(entry, read)).toList(),
                 links(read, depth));
         references(winner.satisfiedBy()).ifPresent(wire::setSatisfiedBy);
@@ -91,6 +98,16 @@ public class EffectiveProfileDtos {
         links.put("self", new Link(depth.isPresent() ? self + "?" + DEPTH + "=" + depth.getAsInt() : self));
         links.put("artifact", new Link(href(PACKS, read.winner().pack().value(), ARTIFACTS, PROFILE, id)));
         links.put("up", new Link(href(ACTIVATIONS, read.activationId())));
+        if (!read.enhances().isEmpty()) {
+            links.put(
+                    "enhances",
+                    new Link(href(
+                            ACTIVATIONS,
+                            read.activationId(),
+                            ARTIFACTS,
+                            PROFILE,
+                            read.enhances().getFirst())));
+        }
         return links;
     }
 

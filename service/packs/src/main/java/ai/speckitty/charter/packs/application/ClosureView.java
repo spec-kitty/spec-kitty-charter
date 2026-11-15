@@ -25,11 +25,14 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -216,6 +219,16 @@ public record ClosureView(
         }
 
         /**
+         * The profile enhancement merge and the inheritance along {@code specializes_from} (rulings D5 to D7) that
+         * {@link #resolvedProfile} composes the effective agent profile with.
+         *
+         * @return the merge; empty for a source built without one, whose views compose no effective profile
+         */
+        default Optional<ProfileEnhancementGateway> profileMerge() {
+            return Optional.empty();
+        }
+
+        /**
          * A source for a view built without the closure's packs: it has nothing to read from, so a read is a wiring fault
          * ({@link IllegalStateException}), never an unreadable pack.
          *
@@ -272,6 +285,32 @@ public record ClosureView(
             Objects.requireNonNull(artifact, "artifact");
             Objects.requireNonNull(holder, "holder");
             Objects.requireNonNull(governance, "governance");
+        }
+    }
+
+    /**
+     * The effective agent profile under an activation (R8, #102; rulings D5 to D7 of ADR-0078), as
+     * {@link #resolvedProfile} answers it.
+     *
+     * @param profile the effective profile: the stored winner of a profile that enhances another, else the winner merged
+     *     with its in-force enhancers and folded under its in-force ancestors, each merged with its own
+     * @param lineage the in-force ancestors, nearest first, each with the pack that holds it and its longest depth
+     * @param enhances the agent profiles it enhances, in URN order; empty for a profile that enhances none
+     */
+    public record ResolvedProfile(
+            CharterArtifact profile, List<ProfileGovernance.LineageLink> lineage, List<Urn> enhances) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param profile the effective profile
+         * @param lineage the ancestors
+         * @param enhances the enhanced profiles
+         */
+        public ResolvedProfile {
+            Objects.requireNonNull(profile, "profile");
+            lineage = List.copyOf(Objects.requireNonNull(lineage, "lineage"));
+            enhances = List.copyOf(Objects.requireNonNull(enhances, "enhances"));
         }
     }
 
@@ -783,6 +822,107 @@ public record ClosureView(
                 ? Optional.of(governance(won.urn(), depth, states))
                 : Optional.empty();
         return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
+    }
+
+    /**
+     * The effective agent profile under an activation (R8, #102; rulings D5, D6 and D7 of ADR-0078). The chain is the
+     * profile's in-force {@code specializes_from} ancestors, as the lineage step of the governance walk answers them
+     * ({@link ProfileGovernance.Governance#lineage()}), the deepest first, then by the closure position of the pack that
+     * holds each and by URN, and the profile last. Each profile of the chain is merged with its own in-force enhancers in
+     * closure order, the nearest pack last ({@link ProfileEnhancers}), then the chain is folded root to leaf by per-field
+     * replacement, identity fields never inherited ({@link ProfileEnhancementGateway#compose}). A profile that enhances
+     * another agent profile answers its own stored body: it is merged into what it enhances, and never itself composed.
+     *
+     * @param id the profile's id
+     * @param states what {@link #inForce} answered for the request
+     * @return the effective profile with its lineage; empty when no pack of the closure holds the profile
+     * @throws CharterRefusal as {@link #effectiveArtifact} does, and with {@code PROFILE_ENHANCEMENT_DROPS_FIELD} when an
+     *     in-force enhancement of a profile of the chain would drop part of it: content stored before the rule, so the
+     *     packs are at fault. The refusal names the enhancing pack
+     * @throws IllegalStateException when the view was built without the profile merge
+     */
+    public Optional<ResolvedProfile> resolvedProfile(String id, InForceStates states) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(states, "states");
+        MergedView view = merged();
+        Optional<MergedClosure.Winner> winner =
+                urnOf(ArtifactKind.AGENT_PROFILE, id).flatMap(view.closure()::winnerOf);
+        if (winner.isEmpty()) {
+            return Optional.empty();
+        }
+        MergedClosure.Winner won = winner.get();
+        List<ProfileGovernance.LineageLink> lineage =
+                governance(won.urn(), 0, states).lineage();
+        List<Urn> enhances = ProfileEnhancers.targetsOf(view, won.urn());
+        if (!enhances.isEmpty()) {
+            return Optional.of(new ResolvedProfile(profileOf(won), lineage, enhances));
+        }
+        ProfileEnhancementGateway merge = mergeInputs
+                .winners()
+                .profileMerge()
+                .orElseThrow(() -> new IllegalStateException(
+                        "this view was built without the profile merge and cannot compose " + won.urn()));
+        Map<Urn, List<MergedClosure.Winner>> enhancers = ProfileEnhancers.of(view, closurePackIds);
+        Predicate<Urn> inForce = effective(states);
+        List<ProfileEnhancementGateway.Layer> chain = new ArrayList<>();
+        for (MergedClosure.Winner profile : chainOf(view, lineage, won)) {
+            List<ProfileEnhancementGateway.Enhancing> enhancing =
+                    enhancers.getOrDefault(profile.urn(), List.of()).stream()
+                            .filter(enhancer -> inForce.test(enhancer.urn()))
+                            .map(enhancer -> new ProfileEnhancementGateway.Enhancing(
+                                    profileOf(enhancer), enhancer.packId().value()))
+                            .toList();
+            chain.add(new ProfileEnhancementGateway.Layer(profileOf(profile), enhancing));
+        }
+        return switch (merge.compose(chain)) {
+            case ProfileEnhancementGateway.Effective effective ->
+                Optional.of(new ResolvedProfile(effective.profile(), lineage, List.of()));
+            case ProfileEnhancementGateway.Dropped dropped ->
+                throw new CharterRefusal(
+                        RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                        dropped.detail(),
+                        List.of(refusalPack(new PackIdentifier(dropped.pack()))));
+        };
+    }
+
+    /** The chain of a profile, root to leaf: its ancestors, the deepest first, then the profile. */
+    private List<MergedClosure.Winner> chainOf(
+            MergedView view, List<ProfileGovernance.LineageLink> lineage, MergedClosure.Winner profile) {
+        Comparator<MergedClosure.Winner> closureOrder = Comparator.comparingInt(
+                        (MergedClosure.Winner held) -> closurePackIds.indexOf(held.descriptorPackId()))
+                .thenComparing(MergedClosure.Winner::urn);
+        record Ancestor(MergedClosure.Winner winner, int depth) {}
+        List<MergedClosure.Winner> chain = lineage.stream()
+                .flatMap(link ->
+                        view.closure().winnerOf(link.urn()).map(held -> new Ancestor(held, link.depth())).stream())
+                .sorted(Comparator.comparingInt((Ancestor ancestor) -> -ancestor.depth())
+                        .thenComparing(Ancestor::winner, closureOrder))
+                .map(Ancestor::winner)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        chain.add(profile);
+        return chain;
+    }
+
+    /** The entity of a winner, read from the pack that holds it. */
+    private CharterArtifact profileOf(MergedClosure.Winner winner) {
+        return mergeInputs
+                .winners()
+                .read(winner.packId(), ArtifactKind.AGENT_PROFILE, winner.urn().id())
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "pack `" + winner.packId().value() + "` holds " + winner.urn() + " and cannot read it"));
+    }
+
+    /** A refusal's pack: its descriptor id and name, as the closure composed it. */
+    private RefusalPack refusalPack(PackIdentifier pack) {
+        return mergeInputs.packs().stream()
+                .filter(held -> held.configured().id().equals(pack))
+                .findFirst()
+                .map(held -> new RefusalPack(
+                        held.descriptor().packId(),
+                        pack.value(),
+                        held.descriptor().name()))
+                .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value()));
     }
 
     /**

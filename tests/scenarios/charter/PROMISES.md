@@ -4,7 +4,7 @@
 
 <!-- Pointer index for the nine promises of core's charter-offering acceptance suite. The scenarios
 themselves were removed by #374; each row says what accounts for the promise now. Updated:
-2026-11-05. -->
+2026-11-15. -->
 
 Every scenario named here is in `contracts/charter/scenarios/`. A `@contract` scenario runs in
 `CharterContractSuite`; a `@WIP` scenario or a reserved pin holds the place of a surface that is not
@@ -21,7 +21,7 @@ built.
 
 | Promise | Guarantee | Verdict | Where it lives now |
 |---|---|---|---|
-| `PR-CHARTER-REFUSAL-001` | An `enhances` merge that would silently drop part of an agent profile is refused. | Gap: [#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380) | `profiles.feature` `@WIP` "An agent profile enhancement that would drop fields of the profile it enhances is refused", with its provisional target answer. The service does not resolve a profile's `enhances` yet (ADR-0032). |
+| `PR-CHARTER-REFUSAL-001` | An `enhances` merge that would silently drop part of an agent profile is refused. | Wired | `profiles.feature` "An agent profile enhancement that would drop fields of the profile it enhances is refused": the effective profile read (`getEffectiveAgentProfile`) of content stored before the rule answers `500 profile_enhancement_drops_field`, naming the enhancing pack first and the field; `registration/whole-pack-registration.feature` "An enhancement that drops part of the profile it enhances is refused, and one that only adds is accepted" refuses the same at registration (`422`). Rulings D5 and D7 of ADR-0078 ([#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380)). |
 | `PR-CHARTER-REFUSAL-002` | A reference to a name that does not exist is refused and named. | Mapped; the rest decided against | `composition.feature` "A pack-qualified reference to an artifact the named pack does not hold is refused naming both packs", "A bare cross-pack reference is refused naming the holding pack" and the outline "A relationship whose target the compose cannot resolve is refused 422 before anything is written"; `relationships.feature` "A relationship from a mission type the pack does not hold is still a conflict". A bare `to` that no pack holds is accepted as external, by ADR-0026 decision 1.3. |
 | `PR-CHARTER-REFUSAL-003` | A broken charter fails closed instead of running half-applied. | Retired to the activation surface | The service reads `charter.yaml` only as an input to the source fingerprint, never as governance; the active charter is local (ADR-0033). The activation document's refusal is reserved: `errors.feature` "activation_invalid is reserved for the activation set" and the 501 pins of `activations.feature`. |
 
