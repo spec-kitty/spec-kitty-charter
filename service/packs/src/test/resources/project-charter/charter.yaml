@@ -65,7 +65,6 @@ directives:
   directives: []
 catalog:
   mission: software-dev
-  template_set: software-dev-default
   languages:
   - java
   - python
@@ -298,12 +297,6 @@ catalog:
     summary: Test first - a failing contract scenario under contracts/charter/scenarios/ or a failing unit test precedes production code.
     source_path: ''
     local_path: _LIBRARY/styleguide-testing-style-guide.md
-  - id: TEMPLATE_SET:software-dev-default
-    kind: template_set
-    title: software-dev-default
-    summary: Build high-quality software with structured workflows and test-driven development
-    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/missions/software-dev/mission.yaml
-    local_path: _LIBRARY/template-set-software-dev-default.md
   - id: TOOLGUIDE:gherkin
     kind: toolguide
     title: The Gherkin Scenario Language

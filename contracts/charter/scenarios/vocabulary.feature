@@ -249,7 +249,7 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
       """
 
   Scenario: Every term of the built-in example vocabulary is served, and the projections are of them (NFR-005)
-    The built-in example pack holds spec-kitty-core with 139 terms of every status. The read count per winning pack is
+    The built-in example pack holds spec-kitty-core with 138 terms of every status. The read count per winning pack is
     pinned by ExampleVocabularyInForceTest; here the whole service serves every term.
     Given the example pack "built-in" of the charter
     And the activation "a-9" holds:
@@ -258,7 +258,7 @@ Feature: The vocabulary in force under an activation is read as terms, a Context
       """
     When I GET "/activations/a-9/vocabulary/terms"
     Then the response status is 200
-    And the field at "/terms" holds exactly 139 items
+    And the field at "/terms" holds exactly 138 items
     When I remember the URNs and the avoid entries of the terms
     And I GET "/activations/a-9/vocabulary/contextive"
     Then the response status is 200

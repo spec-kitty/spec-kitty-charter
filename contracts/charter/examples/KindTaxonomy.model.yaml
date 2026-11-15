@@ -78,12 +78,21 @@ value:
         artifacts:
           href: /api/v1/packs/{packId}/artifacts?kind=agent_profile
           templated: true
-    - kind: glossary_pack
-      plural: glossary_packs
-      artifactKind: glossary_pack
+    - kind: glossary_context
+      plural: glossaries
+      artifactKind: glossary
       artifact: true
       activatable: true
       declarableInGraphs: true
+      edgeTarget: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=glossary
+          templated: true
+    - kind: term
+      artifact: false
+      activatable: false
+      declarableInGraphs: false
       edgeTarget: true
       _links: {}
     - kind: skill
@@ -346,21 +355,36 @@ value:
       directed: true
       derived: false
       endpoints:
-        - {source: directive, target: glossary_pack}
-        - {source: tactic, target: glossary_pack}
-        - {source: styleguide, target: glossary_pack}
-        - {source: toolguide, target: glossary_pack}
-        - {source: paradigm, target: glossary_pack}
-        - {source: procedure, target: glossary_pack}
-        - {source: agent_profile, target: glossary_pack}
-        - {source: glossary_pack, target: glossary_pack}
-        - {source: skill, target: glossary_pack}
-        - {source: anti_pattern, target: glossary_pack}
-        - {source: asset, target: glossary_pack}
-        - {source: template, target: glossary_pack}
-        - {source: action, target: glossary_pack}
-        - {source: mission_type, target: glossary_pack}
-        - {source: step_enhancement, target: glossary_pack}
+        - {source: directive, target: glossary_context}
+        - {source: directive, target: term}
+        - {source: tactic, target: glossary_context}
+        - {source: tactic, target: term}
+        - {source: styleguide, target: glossary_context}
+        - {source: styleguide, target: term}
+        - {source: toolguide, target: glossary_context}
+        - {source: toolguide, target: term}
+        - {source: paradigm, target: glossary_context}
+        - {source: paradigm, target: term}
+        - {source: procedure, target: glossary_context}
+        - {source: procedure, target: term}
+        - {source: agent_profile, target: glossary_context}
+        - {source: agent_profile, target: term}
+        - {source: glossary_context, target: glossary_context}
+        - {source: glossary_context, target: term}
+        - {source: skill, target: glossary_context}
+        - {source: skill, target: term}
+        - {source: anti_pattern, target: glossary_context}
+        - {source: anti_pattern, target: term}
+        - {source: asset, target: glossary_context}
+        - {source: asset, target: term}
+        - {source: template, target: glossary_context}
+        - {source: template, target: term}
+        - {source: action, target: glossary_context}
+        - {source: action, target: term}
+        - {source: mission_type, target: glossary_context}
+        - {source: mission_type, target: term}
+        - {source: step_enhancement, target: glossary_context}
+        - {source: step_enhancement, target: term}
     - relation: instantiates
       heldAs: relationship
       directed: true
@@ -426,7 +450,7 @@ value:
         - {source: paradigm, target: paradigm}
         - {source: procedure, target: procedure}
         - {source: agent_profile, target: agent_profile}
-        - {source: glossary_pack, target: glossary_pack}
+        - {source: glossary_context, target: glossary_context}
         - {source: skill, target: skill}
         - {source: anti_pattern, target: anti_pattern}
         - {source: step_enhancement, target: action}
@@ -442,7 +466,7 @@ value:
         - {source: paradigm, target: paradigm}
         - {source: procedure, target: procedure}
         - {source: agent_profile, target: agent_profile}
-        - {source: glossary_pack, target: glossary_pack}
+        - {source: glossary_context, target: glossary_context}
         - {source: skill, target: skill}
         - {source: anti_pattern, target: anti_pattern}
         - {source: mission_type, target: mission_type}

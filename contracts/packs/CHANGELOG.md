@@ -42,3 +42,21 @@ The first packs contract version, not yet released (#559).
   of the old shape.
 - The "Matching" header of `file-kinds.yaml` states the order the sections are consulted in, and
   that a file no rule takes is refused as `unmodelled`; it said such a file was left unclassified.
+- Precedence (slice F, #537; ADR-0077): a `retired` rule beats a `files` rule that also matches, unless an
+  `exclusions` rule matches too. Step 1 of the classifier cases says so, and the case
+  `core/mission_step_contract.graph.yaml` is `retired`, not a graph shard.
+- The schemas slice F changes (#537; ADR-0064 decision 13, ADR-0077): `mission-type.schema.json` carries each step's
+  `substeps` (`id`, `description`, optional `command`, `inputs`, `delegates_to` and `guidance`), the structure the
+  step contract held; `graph-shard.schema.json` and `org-fragment.schema.json` drop the node kind
+  `mission_step_contract`, the fragment plural `mission_step_contracts`, the edge field `impacts` and the relations
+  `impacts`, `replaces` and `delegates_to`; `charter.schema.json` drops `selected_mission_step_contracts`,
+  `activated_mission_step_contracts` and `template_set`; `preset.schema.json` drops
+  `activated_mission_step_contracts`; `pack-manifest.schema.json` and `policy.schema.json` drop the kind
+  `mission_step_contract`. `file-kinds.yaml` drops the node and artifact kind `mission_step_contract` and its
+  `files` rule. There is no reader of the old shapes.
+
+### Removed
+
+- `mission-step-contract.schema.json` (slice F, #514, #537; ADR-0077): a step's substeps are authored in the mission
+  type. A `*.step-contract.yaml` file and a `mission_step_contract.graph.yaml` fragment are refused by name as
+  retired, wherever they stand; the classifier case `core/step-contracts/a.step-contract.yaml` is `retired`.
