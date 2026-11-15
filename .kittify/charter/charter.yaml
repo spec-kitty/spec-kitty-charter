@@ -62,7 +62,6 @@ directives:
   directives: []
 catalog:
   mission: software-dev
-  template_set: software-dev-default
   languages:
   - java
   - python

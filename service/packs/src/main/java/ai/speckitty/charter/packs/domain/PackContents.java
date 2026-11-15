@@ -26,6 +26,7 @@ import org.jspecify.annotations.Nullable;
  *     a full read only, empty in the load-path scope
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
  *     full read only. A prompt the codec refuses is listed in {@code unreadableFiles} instead and has no parse (A5).
+ * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
  */
 public record PackContents(
         PackRoot root,
@@ -38,7 +39,8 @@ public record PackContents(
         List<AssetFacts> assets,
         List<FileRead.Unreadable<?>> unreadableFiles,
         StepEnhancementFacts stepEnhancements,
-        List<PromptSlotFacts> promptSlots) {
+        List<PromptSlotFacts> promptSlots,
+        List<MissionTypeFacts> missionTypes) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -53,6 +55,7 @@ public record PackContents(
      * @param unreadableFiles the other files that could not be read
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
+     * @param missionTypes the mission type facts
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -66,6 +69,7 @@ public record PackContents(
         unreadableFiles = List.copyOf(unreadableFiles);
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
         promptSlots = List.copyOf(promptSlots);
+        missionTypes = List.copyOf(missionTypes);
     }
 
     /**
@@ -105,6 +109,7 @@ public record PackContents(
                 assets,
                 unreadableFiles,
                 stepEnhancements,
+                List.of(),
                 List.of());
     }
 
@@ -143,6 +148,7 @@ public record PackContents(
                 assets,
                 unreadableFiles,
                 StepEnhancementFacts.none(),
+                List.of(),
                 List.of());
     }
 

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.edge;
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.linked;
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -84,13 +85,17 @@ class GraphProjectionTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:M", "action:M/a", "action:M/b", "tactic:T"),
-                        edge("action:M/a", RelationType.SCOPE, "tactic:T"));
+                        linked("M", List.of("a", "b"), edge("action:M/a", RelationType.SCOPE, "tactic:T")));
 
         GraphProjection graph = project(closure, inForce("mission_type:M", "tactic:T"));
 
         assertThat(graph.nodes())
                 .containsExactly(urn("action:M/a"), urn("action:M/b"), urn("mission_type:M"), urn("tactic:T"));
-        assertThat(graph.edges()).containsExactly(link("action:M/a", RelationType.SCOPE, "tactic:T"));
+        assertThat(graph.edges())
+                .containsExactly(
+                        link("action:M/a", RelationType.SCOPE, "tactic:T"),
+                        link("mission_type:M", RelationType.REQUIRES, "action:M/a"),
+                        link("mission_type:M", RelationType.REQUIRES, "action:M/b"));
     }
 
     @Test
@@ -99,7 +104,7 @@ class GraphProjectionTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:M", "action:M/a", "tactic:T"),
-                        edge("action:M/a", RelationType.SCOPE, "tactic:T"));
+                        linked("M", List.of("a"), edge("action:M/a", RelationType.SCOPE, "tactic:T")));
 
         GraphProjection graph = project(closure, inForce("tactic:T"));
 
@@ -110,7 +115,7 @@ class GraphProjectionTest {
     @Test
     void anActionDeclaredWhereNoPackHoldsItsStepIsNoNode() {
         Closure closure = new Closure()
-                .pack("alpha", List.of("mission_type:M", "action:M/a"))
+                .pack("alpha", List.of("mission_type:M", "action:M/a"), linked("M", List.of("a")))
                 .pack("beta", PackLevel.PROJECT, List.of("action:M/stray"));
 
         GraphProjection graph = project(closure, inForce("mission_type:M"));
@@ -121,7 +126,7 @@ class GraphProjectionTest {
     @Test
     void aStepAnotherLevelOverridesIsANodeAndItsLayerOverrideIsListed() {
         Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/a"))
+                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/a"), linked("M", List.of("a")))
                 .pack("project", PackLevel.PROJECT, List.of("action:M/a"));
 
         GraphProjection graph = project(closure, inForce("mission_type:M"));

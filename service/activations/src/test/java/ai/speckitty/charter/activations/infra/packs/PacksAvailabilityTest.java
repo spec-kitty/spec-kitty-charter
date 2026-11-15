@@ -559,6 +559,7 @@ class PacksAvailabilityTest {
                         Map.of(),
                         List.of(),
                         MutabilityPolicySource.empty(),
+                        Relationship.of(urn("mission_type:M"), urn("action:M/step"), RelationType.REQUIRES),
                         edge("directive:D1", RelationType.SUGGESTS, "tactic:T", "the change is large", "T checks it"));
     }
 

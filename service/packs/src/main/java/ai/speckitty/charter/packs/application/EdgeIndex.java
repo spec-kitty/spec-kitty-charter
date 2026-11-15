@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -128,6 +130,8 @@ public final class EdgeIndex implements ComposeResolver {
     private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
+    /** The edges a pack writes at another pack's source ({@code <pack>::} source), by identity. */
+    private final Set<Relationship> foreign = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** The steps the closure holds, worked out once on first use: the index never changes, so neither does the set. */
     private volatile @Nullable Set<Urn> heldSteps;
@@ -189,7 +193,8 @@ public final class EdgeIndex implements ComposeResolver {
      * @param merged the layer merge of this index's closure
      * @return the merged index
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when an {@code overrides} edge, re-pointed to the winner, ends
-     *     at its own source
+     *     at its own source, or when another pack's {@code requires} edge at a mission type in force names an action
+     *     that is no step of the type ({@value MissionStepLinkRule#CODE})
      */
     public EdgeIndex merged(MergedClosure merged) {
         return merged(merged, visits);
@@ -214,10 +219,17 @@ public final class EdgeIndex implements ComposeResolver {
         EdgeIndex view = new EdgeIndex(closure, placesInForce, visits);
         outgoing.forEach((place, edges) -> {
             if (view.wins(place)) {
-                edges.forEach(edge -> view.put(place, repointed(edge, view)));
+                edges.forEach(edge -> {
+                    Relationship placed = repointed(edge, view);
+                    view.put(place, placed);
+                    if (foreign.contains(edge)) {
+                        view.foreign.add(placed);
+                    }
+                });
             }
         });
         view.refuseSelfOverrides();
+        view.refuseStrayMissionTypeEdges(ownSteps());
         return view;
     }
 
@@ -272,6 +284,64 @@ public final class EdgeIndex implements ComposeResolver {
                 }
             }
         }
+    }
+
+    /**
+     * The steps of each mission type as its own packs link them: the targets of the {@code requires} edges each pack that
+     * holds the type writes from it. The load refuses a pack whose type file and own edges disagree
+     * ({@link MissionStepLinkRule}), so these are the steps the type files declare, and a merged type keeps the steps of
+     * every version it layers over.
+     */
+    private Map<Urn, Set<String>> ownSteps() {
+        Map<Urn, Set<String>> steps = new LinkedHashMap<>();
+        outgoing.forEach((place, edges) -> {
+            if (place.urn().kind() == NodeKind.MISSION_TYPE) {
+                for (Relationship edge : edges) {
+                    if (!foreign.contains(edge)
+                            && isStepLink(edge)
+                            && edge.toPack().isEmpty()) {
+                        steps.computeIfAbsent(place.urn(), ignored -> new LinkedHashSet<>())
+                                .add(edge.to().id());
+                    }
+                }
+            }
+        });
+        return steps;
+    }
+
+    /**
+     * Refuses a {@code requires} edge that another pack writes at a mission type in force and that names an action that
+     * is no step of the type (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN). Each pack's own edges are judged when it
+     * loads; an edge written at another pack's type is judged here, once the merge has placed it.
+     */
+    private void refuseStrayMissionTypeEdges(Map<Urn, Set<String>> steps) {
+        outgoing.forEach((place, edges) -> {
+            if (place.urn().kind() != NodeKind.MISSION_TYPE) {
+                return;
+            }
+            Set<String> known = steps.getOrDefault(place.urn(), Set.of());
+            for (Relationship edge : edges) {
+                if (foreign.contains(edge)
+                        && isStepLink(edge)
+                        && !known.contains(edge.to().id())) {
+                    PackUnderResolution holder = packOf(place);
+                    throw new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE,
+                            "the mission type in force `" + place.urn() + "` of pack `"
+                                    + holder.descriptor().name()
+                                    + "` is required to `" + edge.to() + "` by another pack's edge, which names no"
+                                    + " step of the type (" + MissionStepLinkRule.CODE + ")",
+                            List.of(new RefusalPack(
+                                    holder.descriptor().packId(),
+                                    holder.configured().id().value(),
+                                    holder.descriptor().name())));
+                }
+            }
+        });
+    }
+
+    private static boolean isStepLink(Relationship edge) {
+        return edge.type() == RelationType.REQUIRES && edge.to().kind() == NodeKind.ACTION;
     }
 
     @Override
@@ -552,7 +622,13 @@ public final class EdgeIndex implements ComposeResolver {
         Optional<Place> source = edge.fromPack().isEmpty()
                 ? Optional.of(new Place(writerId, edge.from()))
                 : holdingPack(edge.fromReference(), writerId).map(pack -> new Place(pack, edge.from()));
-        source.ifPresent(place -> put(place, homed(writer, place, edge)));
+        source.ifPresent(place -> {
+            Relationship placed = homed(writer, place, edge);
+            put(place, placed);
+            if (!place.pack().equals(writerId)) {
+                foreign.add(placed);
+            }
+        });
     }
 
     /** A copy of the edge held at its source; a bare target written for another pack's source names the writer. */

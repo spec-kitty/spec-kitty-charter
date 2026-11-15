@@ -60,7 +60,10 @@ Feature: A step enhancement is held, registers, and is selectable like any other
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -166,7 +169,10 @@ Feature: A step enhancement is held, registers, and is selectable like any other
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "enhancer" holds the file "pack.yaml":
       """
@@ -263,7 +269,10 @@ Feature: A step enhancement is held, registers, and is selectable like any other
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -372,7 +381,10 @@ Feature: A step enhancement is held, registers, and is selectable like any other
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """

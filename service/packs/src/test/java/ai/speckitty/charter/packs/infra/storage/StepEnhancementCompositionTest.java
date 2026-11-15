@@ -64,7 +64,10 @@ class StepEnhancementCompositionTest {
             - urn: action:software-dev/plan
               kind: action
               label: plan
-            edges: []
+            edges:
+            - source: mission_type:software-dev
+              target: action:software-dev/plan
+              relation: requires
             """;
 
     @TempDir

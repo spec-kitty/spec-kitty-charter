@@ -88,6 +88,15 @@ class MissionTypeStoredFilesTest {
         Files.writeString(type.resolve("steps/specify.prompt.md"), SPECIFY_PROMPT);
         Files.writeString(type.resolve("steps/specify.guidelines.md"), SPECIFY_GUIDELINES);
         Files.writeString(type.resolve("steps/retrospect.prompt.md"), RETROSPECT_PROMPT);
+        Files.writeString(pack.resolve("mission_type.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: 'mission_type:software-dev', target: 'action:software-dev/specify', relation: requires}
+                - {source: 'mission_type:software-dev', target: 'action:software-dev/plan', relation: requires}
+                - {source: 'mission_type:software-dev', target: 'action:software-dev/retrospect', relation: requires}
+                """);
         Files.createDirectories(pack.resolve("directives"));
         Files.writeString(pack.resolve("directives/SD.directive.yaml"), """
                 schema_version: '1.0'

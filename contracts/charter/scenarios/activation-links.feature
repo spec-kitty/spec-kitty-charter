@@ -57,6 +57,9 @@ Feature: An activation is discoverable by links
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope

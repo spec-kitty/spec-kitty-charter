@@ -70,6 +70,16 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
           blocking: true
           template_path: templates/spec-template.md
       """
+    And the org pack "main" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/specify
+        relation: requires
+      """
     And the org pack "main" with the file "missions/software-dev/steps/specify.prompt.md":
       """
       # Specify at org
@@ -95,6 +105,16 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       steps:
       - id: discover
         title: Discover
+      """
+    And the org pack "main" with the file "documentation.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:documentation
+        target: action:documentation/discover
+        relation: requires
       """
     And the org pack "main" with the file "mission_step_contracts/specify.step-contract.yaml":
       """
@@ -134,6 +154,19 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
         title: Implementation
         role: implementer
       """
+    And the project pack "proj" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/specify
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      """
     And the project pack "proj" with the file "missions/software-dev/steps/specify.prompt.md":
       """
       # Specify at project
@@ -169,6 +202,16 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       steps:
       - id: gather
         title: Gather
+      """
+    And the org pack "elsewhere" with the file "research.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the activation "a-1" holds:
       """
@@ -638,7 +681,10 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       - urn: action:software-dev/review
         kind: action
         label: review
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/review
+        relation: requires
       """
     And the org pack "main" with the file "mission_step_contracts/review.step-contract.yaml":
       """

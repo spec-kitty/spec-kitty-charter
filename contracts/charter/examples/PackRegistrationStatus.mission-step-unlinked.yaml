@@ -1,0 +1,21 @@
+summary: A registration refused because a step of a mission type has no requires edge from its type (FR-011).
+value:
+  registrationId: 01M7B19K00000000000000MS1A
+  state: refused
+  packId: acme
+  acceptedAt: '2026-11-14T10:00:00Z'
+  finishedAt: '2026-11-14T10:00:01Z'
+  problem:
+    title: Validation failed
+    status: 422
+    code: validation_failed
+    detail: 'The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.'
+    violations:
+    - pointer: missions/rx/rx.mission-type.yaml
+      code: mission_step_unlinked
+      detail: >-
+        missions/rx/rx.mission-type.yaml: the step b of mission_type:rx has no requires edge from its type: author
+        mission_type:rx requires action:rx/b
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M7B19K00000000000000MS1A

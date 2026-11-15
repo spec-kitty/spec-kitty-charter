@@ -100,6 +100,16 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
           artifact_class: output
           path_pattern: out.md
       """
+    And the org pack "alpha" with the file "long-key.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:long-key
+        target: action:long-key/only
+        relation: requires
+      """
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"

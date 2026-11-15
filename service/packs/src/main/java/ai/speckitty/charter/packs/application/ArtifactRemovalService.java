@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -155,16 +156,26 @@ public final class ArtifactRemovalService {
         List<Relationship> outgoing = registered.stream()
                 .filter(edge -> removed.contains(edge.from()))
                 .toList();
-        requireNoReferrer(pack, artifact, removed, outgoing);
+        // A removed mission type's own step links go with it, from the author-written documents that hold them, so they
+        // refer to nothing after the removal (operator ruling of 2026-11-14 on WP06).
+        PackRemovalStore.Authored authored = store.authored(pack);
+        String packName = current.descriptor().name();
+        List<Relationship> dropped = authored.edges().stream()
+                .filter(edge ->
+                        removed.stream().anyMatch(type -> MissionStepLinkRule.isOwnStepLink(packName, type, edge)))
+                .toList();
+        List<Relationship> gone = new ArrayList<>(outgoing);
+        gone.addAll(dropped);
+        requireNoReferrer(pack, artifact, removed, gone);
         for (Urn each : removed) {
             gate.authorize(current, WritePolicyGate.Operation.REMOVE, each);
         }
-        requireNotAuthored(pack, removed);
-        impact.check(pack, facts -> without(facts, removed, outgoing));
+        requireNotAuthored(authored, removed, packName);
+        impact.check(pack, facts -> without(facts, removed, gone));
         List<Relationship> retained =
                 registered.stream().filter(edge -> !outgoing.contains(edge)).toList();
         PackRevision after = store.remove(
-                pack, PackRemovalStore.Removal.ofArtifacts(removed, retained, rewritten(current, removed)));
+                pack, PackRemovalStore.Removal.ofArtifacts(removed, retained, rewritten(current, removed), dropped));
         trail.moved(before, after);
         return after;
     }
@@ -259,12 +270,13 @@ public final class ArtifactRemovalService {
 
     /**
      * A graph document the author wrote that declares a removed artifact's node, or one of a removed mission type's
-     * action nodes, or holds an edge from one, is never rewritten.
+     * action nodes, or holds an edge from one, is never rewritten; a removed mission type's own step links are the one
+     * exception, dropped with the type (operator ruling of 2026-11-14 on WP06).
+     *
      */
-    private void requireNotAuthored(PackIdentifier pack, List<Urn> removed) {
-        PackRemovalStore.Authored authored = store.authored(pack);
+    private static void requireNotAuthored(PackRemovalStore.Authored authored, List<Urn> removed, String packName) {
         Optional<Urn> named = removed.stream()
-                .filter(authored::names)
+                .filter(urn -> authored.names(urn, packName))
                 .findFirst()
                 .or(() -> authored.declared().stream()
                         .filter(node -> StepHolding.missionTypeOf(node)

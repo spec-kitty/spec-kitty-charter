@@ -1,0 +1,18 @@
+{
+  "covers": [
+    "FR-011"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "mission_step_unlinked",
+      "severity": "blocking",
+      "file": "missions/rx/rx.mission-type.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false
+  }
+}

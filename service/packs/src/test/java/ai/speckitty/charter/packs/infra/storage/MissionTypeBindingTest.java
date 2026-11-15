@@ -523,6 +523,14 @@ class MissionTypeBindingTest {
         Path pack = PackFixtures.copyOf(PACK, host);
         Files.writeString(
                 pack.resolve(FILE), Files.readString(pack.resolve(FILE)).replace(from, to.replace("\\n", "\n")));
+        if (from.startsWith("- id: ")) {
+            // the step the type no longer declares loses its requires edge, so the graph still matches the type
+            Path graph = pack.resolve("mission_type.graph.yaml");
+            String edge = "- source: mission_type:research\n  target: action:research/" + from.substring(6)
+                    + "\n  relation: requires\n";
+            assertThat(Files.readString(graph)).contains(edge);
+            Files.writeString(graph, Files.readString(graph).replace(edge, ""));
+        }
 
         PackContents validated = new FileSystemPackInspector()
                 .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);

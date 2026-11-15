@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.edge;
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.linked;
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,11 +45,14 @@ class ActionContextWalkTest {
         return true;
     }
 
-    /** A closure of one pack that holds mission type {@code M}, the step {@code a}, the artifacts and the edges. */
+    /**
+     * A closure of one pack that holds mission type {@code M}, the step {@code a} it links, the artifacts and the
+     * edges.
+     */
     private static Closure closure(List<String> artifacts, Relationship... edges) {
         List<String> held = new ArrayList<>(List.of("mission_type:M", START));
         held.addAll(artifacts);
-        return new Closure().pack("alpha", held, edges);
+        return new Closure().pack("alpha", held, linked("M", List.of("a"), edges));
     }
 
     private static Context walk(Closure closure, int depth, Predicate<Urn> inForce) {
@@ -430,7 +434,7 @@ class ActionContextWalkTest {
         // OD-9: the predicate is "a pack defines the mission type and declares the action", so the walk and the
         // name check cannot use "the mission type is held and the action is declared somewhere".
         Closure closure = new Closure()
-                .pack("alpha", PackLevel.ORG, List.of("mission_type:M", "action:M/a"))
+                .pack("alpha", PackLevel.ORG, List.of("mission_type:M", "action:M/a"), linked("M", List.of("a")))
                 .pack("beta", PackLevel.PROJECT, List.of("action:M/stray", "tactic:T"));
 
         assertThatThrownBy(() -> new ActionContextWalk(closure.merged())
@@ -445,7 +449,11 @@ class ActionContextWalkTest {
         // OD-9, closure form: the project pack overrides action:M/a without defining M, and the walk starts from the
         // winner and follows its edges.
         Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/a", "tactic:Old"))
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("mission_type:M", "action:M/a", "tactic:Old"),
+                        linked("M", List.of("a")))
                 .pack(
                         "project",
                         PackLevel.PROJECT,

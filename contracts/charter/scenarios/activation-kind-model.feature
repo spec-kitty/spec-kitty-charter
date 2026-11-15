@@ -144,6 +144,18 @@ Feature: One kind model on the activation document
         kind: action
         label: implement
       edges:
+      - source: mission_type:locked-type
+        target: action:locked-type/start
+        relation: requires
+      - source: mission_type:required-type
+        target: action:required-type/start
+        relation: requires
+      - source: mission_type:research
+        target: action:research/explore
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:SD
         relation: scope

@@ -159,6 +159,18 @@ class EdgeIndexTest {
                 Optional.empty());
     }
 
+    /**
+     * The {@code requires} edges a pack writes from mission type {@code type} to each of its steps (FR-011), then
+     * {@code edges}: the links a held mission type in force needs for the merge to accept it.
+     */
+    static Relationship[] linked(String type, List<String> steps, Relationship... edges) {
+        List<Relationship> out = new ArrayList<>();
+        steps.forEach(
+                step -> out.add(edge("mission_type:" + type, RelationType.REQUIRES, "action:" + type + "/" + step)));
+        out.addAll(Arrays.asList(edges));
+        return out.toArray(Relationship[]::new);
+    }
+
     private static List<String> written(CharterArtifact node) {
         return node.derivedRelationships().stream()
                 .map(relationship ->
@@ -354,6 +366,83 @@ class EdgeIndexTest {
         assertThat(merged.neighbour(kept)).contains(new EdgeIndex.Place(pack("project"), urn("directive:D")));
     }
 
+    /** The base layer: mission type rdev with its steps a and b, each linked from the type. */
+    private static Closure baseRdev() {
+        return new Closure()
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("mission_type:rdev", "action:rdev/a", "action:rdev/b"),
+                        edge("mission_type:rdev", RelationType.REQUIRES, "action:rdev/a"),
+                        edge("mission_type:rdev", RelationType.REQUIRES, "action:rdev/b"));
+    }
+
+    @Test
+    void aWinningTypesOwnStepLinksAreLeftToTheLoadAndMerge() {
+        Closure closure = baseRdev()
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("org"),
+                        List.of("mission_type:rdev", "action:rdev/a"),
+                        edge("mission_type:rdev", RelationType.REQUIRES, "action:rdev/a"));
+
+        assertThat(closure.merged().holds(new EdgeIndex.Place(pack("project"), urn("mission_type:rdev"))))
+                .isTrue();
+    }
+
+    @Test
+    void anotherPacksEdgeToAStepOfTheTypeInForceMerges() {
+        Closure closure = baseRdev()
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("org"),
+                        List.of("directive:D"),
+                        edge("org::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/b"));
+
+        assertThat(closure.merged().holds(new EdgeIndex.Place(pack("org"), urn("mission_type:rdev"))))
+                .isTrue();
+    }
+
+    @Test
+    void anotherPacksEdgeToAnActionThatIsNoStepOfTheTypeInForceRefusesTheMerge() {
+        Closure closure = baseRdev()
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("org"),
+                        List.of("directive:D"),
+                        edge("org::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/c"));
+
+        assertThatThrownBy(closure::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.getMessage())
+                    .contains(
+                            "mission_type:rdev", "action:rdev/c", "names no step of the type", "mission_step_unlinked");
+        });
+    }
+
+    @Test
+    void aWinningTypeKeepsTheStepsOfTheVersionItLayersOverForAnotherPacksEdge() {
+        Closure closure = baseRdev()
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("org"),
+                        List.of("mission_type:rdev", "action:rdev/a"),
+                        edge("mission_type:rdev", RelationType.REQUIRES, "action:rdev/a"))
+                .pack(
+                        "team",
+                        PackLevel.PROJECT,
+                        List.of("project"),
+                        List.of("directive:T"),
+                        edge("project::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/b"));
+
+        assertThat(closure.merged().holds(new EdgeIndex.Place(pack("project"), urn("mission_type:rdev"))))
+                .isTrue();
+    }
+
     @Test
     void c36AnOverridesEdgeThatResolvesToItsOwnSourceRefusesTheMerge() {
         Closure closure = new Closure()
@@ -394,7 +483,11 @@ class EdgeIndexTest {
     @Test
     void theStepsOfAMissionTypeAreThoseOfTheWinnersOnTheMergedView() {
         Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one", "action:M/two"))
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("mission_type:M", "action:M/one", "action:M/two"),
+                        linked("M", List.of("one", "two")))
                 .pack("project", PackLevel.PROJECT, List.of("action:M/one"));
 
         assertThat(closure.index().stepsOf(urn("mission_type:M")))
@@ -412,7 +505,7 @@ class EdgeIndexTest {
     @Test
     void anActionDeclaredWithoutItsMissionTypeInAnyPackIsNotAStepOfThatMissionType() {
         Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one"))
+                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one"), linked("M", List.of("one")))
                 .pack("project", PackLevel.PROJECT, List.of("action:M/two"));
 
         assertThat(closure.merged().stepsOf(urn("mission_type:M")))
@@ -433,8 +526,16 @@ class EdgeIndexTest {
     @Test
     void aWinningMissionTypeKeepsTheUniqueStepsOfTheVersionItReplaced() {
         Closure closure = new Closure()
-                .pack("org", PackLevel.ORG, List.of("mission_type:M", "action:M/one", "action:M/two"))
-                .pack("project", PackLevel.PROJECT, List.of("mission_type:M", "action:M/one"));
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("mission_type:M", "action:M/one", "action:M/two"),
+                        linked("M", List.of("one", "two")))
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("mission_type:M", "action:M/one"),
+                        linked("M", List.of("one")));
 
         assertThat(closure.merged().stepsOf(urn("mission_type:M")))
                 .containsExactly(
@@ -567,6 +668,7 @@ class EdgeIndexTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:M", "action:M/a", "action:qa/x", "directive:D", "directive:Q"),
+                        edge("mission_type:M", RelationType.REQUIRES, "action:M/a"),
                         edge("action:M/a", RelationType.SCOPE, "directive:D"),
                         edge("mission_type:M", RelationType.SCOPE, "directive:D"),
                         edge("action:qa/x", RelationType.SCOPE, "directive:Q"),
@@ -593,6 +695,7 @@ class EdgeIndexTest {
                         "qa",
                         List.of("builtin"),
                         List.of("mission_type:qa", "action:qa/x"),
+                        edge("mission_type:qa", RelationType.REQUIRES, "action:qa/x"),
                         edge("action:qa/x", RelationType.SCOPE, "directive:D"))
                 .merged();
 
@@ -626,6 +729,7 @@ class EdgeIndexTest {
                         "org",
                         PackLevel.ORG,
                         List.of("mission_type:M", "action:M/a", "directive:Old"),
+                        edge("mission_type:M", RelationType.REQUIRES, "action:M/a"),
                         edge("action:M/a", RelationType.SCOPE, "directive:Old"))
                 .pack("project", PackLevel.PROJECT, List.of("action:M/a"))
                 .merged();
@@ -640,6 +744,7 @@ class EdgeIndexTest {
                 .pack(
                         "alpha",
                         List.of("mission_type:M", "action:M/a", "directive:D", "tactic:T"),
+                        edge("mission_type:M", RelationType.REQUIRES, "action:M/a"),
                         edge("action:M/a", RelationType.SCOPE, "directive:D"),
                         edge("mission_type:M", RelationType.SCOPE, "tactic:T"),
                         edge("directive:D", RelationType.REQUIRES, "tactic:T"))
@@ -650,8 +755,8 @@ class EdgeIndexTest {
         merged.isProjectWide(urn("tactic:T"));
 
         assertThat(visits.get())
-                .as("one pass over the three edges, then the memo")
-                .isEqualTo(3);
+                .as("one pass over the four edges, then the memo")
+                .isEqualTo(4);
     }
 
     @Test

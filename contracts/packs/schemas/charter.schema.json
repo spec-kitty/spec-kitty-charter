@@ -75,14 +75,10 @@
       "additionalProperties": false
     },
     "CharterCatalog": {
-      "description": "The DERIVED-but-committed ``catalog`` projection (charter contract G2).\n\nMirrors the retired ``references.yaml`` body verbatim: ``mission``,\n``template_set``, ``languages``, ``references``. Kept honest by the\ncatalog<->activation parity check (``consistency_check.py``) plus\nfreshness (data-model.md Landmine 2 extension).\n\n``languages`` is nullable (issue #3292 fix): ``None`` distinguishes \"no\nactive-language signal was found at compile time\" from a genuinely\npersisted empty list. ``charter.activation.language_scope.infer_repo_languages``\n(the single authority both this compiler and the active charter\nservice's language gate consume) treats a ``None``/absent field as \"keep looking,\nthen admit all\" and a present-but-empty list as authoritative \"admit\nnone\" — collapsing the former into the latter on write is exactly the\ncompile-then-read feedback loop #3292 closes. See that function's\ndocstring for the full resolution contract.",
+      "description": "The DERIVED-but-committed ``catalog`` projection (charter contract G2).\n\nMirrors the retired ``references.yaml`` body: ``mission``, ``languages``,\n``references`` (``template_set`` is retired, operator ruling DM-01M7B1YKY84DQHZFDXEWNJGB5E). Kept honest by the\ncatalog<->activation parity check (``consistency_check.py``) plus\nfreshness (data-model.md Landmine 2 extension).\n\n``languages`` is nullable (issue #3292 fix): ``None`` distinguishes \"no\nactive-language signal was found at compile time\" from a genuinely\npersisted empty list. ``charter.activation.language_scope.infer_repo_languages``\n(the single authority both this compiler and the active charter\nservice's language gate consume) treats a ``None``/absent field as \"keep looking,\nthen admit all\" and a present-but-empty list as authoritative \"admit\nnone\" — collapsing the former into the latter on write is exactly the\ncompile-then-read feedback loop #3292 closes. See that function's\ndocstring for the full resolution contract.",
       "properties": {
         "mission": {
           "title": "Mission",
-          "type": "string"
-        },
-        "template_set": {
-          "title": "Template Set",
           "type": "string"
         },
         "languages": {
@@ -109,8 +105,7 @@
         }
       },
       "required": [
-        "mission",
-        "template_set"
+        "mission"
       ],
       "title": "CharterCatalog",
       "type": "object",
@@ -353,18 +348,6 @@
           },
           "title": "Available Tools",
           "type": "array"
-        },
-        "template_set": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Template Set"
         },
         "authority_paths": {
           "items": {

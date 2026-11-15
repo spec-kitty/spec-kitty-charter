@@ -107,6 +107,16 @@ Feature: Applying a preset to an activation
           title: Start
           role: implementer
       """
+    And the org pack "main" with the file "old-type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:old-type
+        target: action:old-type/start
+        relation: requires
+      """
     And the org pack "main" with the file "missions/software-dev/software-dev.mission-type.yaml":
       """
       schema_version: "1.0"
@@ -117,6 +127,16 @@ Feature: Applying a preset to an activation
         - id: implement
           title: Implement
           role: implementer
+      """
+    And the org pack "main" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       """
     And the org pack "main" with the file "presets/team.yaml":
       """
@@ -544,7 +564,10 @@ Feature: Applying a preset to an activation
       - urn: action:planning/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:planning
+        target: action:planning/plan
+        relation: requires
       """
     And the org pack "plan-enhancer" with the file "pack.yaml":
       """

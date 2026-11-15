@@ -384,7 +384,13 @@ class ClosureViewGovernanceTest {
      * stored as {@link #STORED_PROMPT}.
      */
     private void aStepWithAStoredPrompt() {
-        pack("builtin", PackLevel.BUILT_IN, List.of(), List.of(), List.of("mission_type:M", "action:M/s"));
+        pack(
+                "builtin",
+                PackLevel.BUILT_IN,
+                List.of(),
+                List.of(),
+                List.of("mission_type:M", "action:M/s"),
+                edge("mission_type:M", RelationType.REQUIRES, "action:M/s"));
         PackCompositionFacts held = facts.get("builtin");
         facts.put(
                 "builtin",

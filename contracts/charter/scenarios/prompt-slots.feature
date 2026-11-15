@@ -36,6 +36,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           role: planner
           prompt_path: steps/plan.prompt.md
       """
+    And the archive "versioned" holds the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      """
     And the archive "versioned" holds the file "missions/software-dev/steps/plan.prompt.md":
       """
       # Plan
@@ -61,6 +71,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           title: Plan
           role: planner
           prompt_path: steps/plan.prompt.md
+      """
+    And the archive "unversioned" holds the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "unversioned" holds the file "missions/software-dev/steps/plan.prompt.md":
       """
@@ -228,6 +248,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           role: planner
           prompt_path: steps/plan.prompt.md
       """
+    And the org pack "slots" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      """
     And the org pack "slots" with the file "missions/software-dev/steps/plan.prompt.md":
       """
       # Plan
@@ -260,6 +290,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           role: planner
           prompt_path: steps/plan.prompt.md
       """
+    And the org pack "slots" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      """
     And the org pack "slots" with the file "missions/software-dev/steps/plan.prompt.md":
       """
       # Plan
@@ -290,6 +330,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           title: Plan
           role: planner
           prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "slots" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "slots" with the file "missions/software-dev/steps/plan.prompt.md":
       """
@@ -324,6 +374,16 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
           title: Plan
           role: planner
           prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "slots" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "slots" with the file "missions/software-dev/steps/plan.prompt.md":
       """

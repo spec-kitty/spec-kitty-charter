@@ -103,6 +103,17 @@ public interface PackWriteStore extends PackRevisions {
     List<Relationship> registeredRelationships(PackIdentifier pack);
 
     /**
+     * The typed edges of the graph documents the author wrote, the registered shard left out, in document order: what a
+     * relationship write judges a mission type's own step links against (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN).
+     *
+     * @param pack the pack's identity
+     * @return the authored edges; empty when the pack's documents hold none
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a graph document cannot
+     *     be read
+     */
+    List<Relationship> authoredRelationships(PackIdentifier pack);
+
+    /**
      * Runs one registration's whole read-check-commit sequence while holding the pack's write lock, so its
      * precondition, the state it builds on and its commit cannot be interleaved with another write to the same pack.
      * The lock is reentrant; {@link #commit} takes it too.

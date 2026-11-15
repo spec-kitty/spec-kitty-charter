@@ -38,7 +38,6 @@ class ProjectCharterYamlSchemaTest {
     private static final String MINIMAL = """
             catalog:
               mission: software-dev
-              template_set: software-dev-default
             """;
 
     private static List<SchemaViolation> validate(String file, String yaml) {
@@ -69,6 +68,22 @@ class ProjectCharterYamlSchemaTest {
     @DisplayName("a charter.yaml without the keys is accepted")
     void absentIsAccepted() {
         assertThat(validate(MINIMAL)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a catalog that carries the retired template_set is refused as an unknown field, by name (FR-010)")
+    void theRetiredTemplateSetIsRefusedByName() {
+        List<SchemaViolation> violations = validate("""
+                catalog:
+                  mission: software-dev
+                  template_set: software-dev-default
+                """);
+
+        assertThat(violations).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).containsExactly("catalog");
+            assertThat(violation.keyword()).isEqualTo("additionalProperties");
+            assertThat(violation.property()).contains("template_set");
+        });
     }
 
     static Stream<Arguments> acceptedValues() {

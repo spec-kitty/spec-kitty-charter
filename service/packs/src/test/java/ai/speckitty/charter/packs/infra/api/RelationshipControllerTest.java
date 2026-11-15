@@ -260,6 +260,12 @@ class RelationshipControllerTest {
         }
 
         @Override
+        public List<Relationship> authoredRelationships(PackIdentifier pack) {
+
+            return List.of();
+        }
+
+        @Override
         public List<Relationship> registeredRelationships(PackIdentifier id) {
             return List.copyOf(edges);
         }

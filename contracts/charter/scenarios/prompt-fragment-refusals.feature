@@ -72,7 +72,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:research/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "enhancer" holds the file "pack.yaml":
       """
@@ -728,7 +734,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """
@@ -829,7 +841,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """
@@ -930,7 +948,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """
@@ -1028,7 +1052,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """
@@ -1152,7 +1182,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """
@@ -1279,7 +1315,13 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       - urn: action:rres/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:rres
+        target: action:rres/gather
+        relation: requires
+      - source: mission_type:rdev
+        target: action:rdev/plan
+        relation: requires
       """
     And the org pack "renhancer" with the file "pack.yaml":
       """

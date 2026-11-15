@@ -117,7 +117,10 @@ put:
         An edge whose type does not allow its from and to kinds (the endpoint table of ADR-0064 decision 13; for
         example a procedure that requires a step's action, or an overrides edge between two kinds) is refused
         validation_failed with one violation at /type whose code is relationship_endpoint_not_allowed, after the two
-        refusals above, and nothing is written.
+        refusals above, and nothing is written. A requires edge from a mission type of the pack to an action that is
+        not one of its steps (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN) is refused validation_failed with one
+        violation at /to whose code is mission_step_unlinked; a step and its link are added by registering the whole
+        pack.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -270,8 +273,9 @@ delete:
         PR A is strict: a closure that contains the pack, after the removal, fails to compose or breaks a rule, so the
         removal is refused and nothing is written. The code is one of the eleven pack composition codes or of
         override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
-        member naming the root pack of the closure and the packs involved; validation_failed when the pack that would
-        result does not revalidate. The composition codes answer 422 here, in place of 500.
+        member naming the root pack of the closure and the packs involved; validation_failed with the violation
+        mission_step_unlinked at /to when the edge is the last that links a mission type's step to its type, judged
+        after the RELATIONSHIP write gate; validation_failed when the pack that would result does not revalidate. The composition codes answer 422 here, in place of 500.
         A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
         the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
         named in the detail, and nothing is written.

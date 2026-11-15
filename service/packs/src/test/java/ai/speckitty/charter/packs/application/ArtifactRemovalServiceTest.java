@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
@@ -90,6 +91,7 @@ class ArtifactRemovalServiceTest {
     private static final class Removals {
         final Rig rig;
         final ArtifactRemovalService service;
+        final WritePolicyGate gate;
 
         Removals(Rig rig) {
             this(rig, null);
@@ -105,6 +107,7 @@ class ArtifactRemovalServiceTest {
                             rig.repository,
                             rig.repository,
                             read);
+            this.gate = effective;
             this.service = new ArtifactRemovalService(
                     rig.repository,
                     rig.writeStore,
@@ -272,9 +275,35 @@ class ArtifactRemovalServiceTest {
                 description: Load charter context for this action
             """;
 
-    /** The org pack {@code qa} with a mission type and a step contract bound to its step. */
+    /** The registered {@code requires} edge from a mission type to the action of one of its steps (FR-011). */
+    private static Relationship link(String type, String step) {
+        return Relationship.of(urn("mission_type:" + type), urn("action:" + type + "/" + step), RelationType.REQUIRES);
+    }
+
+    /** The links of {@code software-dev}: its one step. */
+    private static final List<Relationship> SOFTWARE_DEV_LINKS = List.of(link("software-dev", "specify"));
+
+    /** The links of {@code documentation}: its step and its on-demand step. */
+    private static final List<Relationship> DOCUMENTATION_LINKS =
+            List.of(link("documentation", "discover"), link("documentation", "retrospect"));
+
+    /** The registered shard of {@code qa}: the links of its mission types, then {@code extra}. */
+    private static String linkShard(List<Relationship> links, Relationship... extra) {
+        List<Relationship> all = new ArrayList<>(links);
+        all.addAll(List.of(extra));
+        return RelationshipShard.write(all);
+    }
+
+    private static List<Relationship> bothTypesLinks() {
+        List<Relationship> all = new ArrayList<>(SOFTWARE_DEV_LINKS);
+        all.addAll(DOCUMENTATION_LINKS);
+        return all;
+    }
+
+    /** The org pack {@code qa} with a mission type, its registered links and a step contract bound to its step. */
     private static Packs qaWithMissionKinds() {
         return qa().file("missions/software-dev/software-dev.mission-type.yaml", MISSION_TYPE)
+                .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS))
                 .file("mission_step_contracts/specify.step-contract.yaml", STEP_CONTRACT);
     }
 
@@ -316,11 +345,13 @@ class ArtifactRemovalServiceTest {
 
     /**
      * The org pack {@code qa} with the mission kinds and a second mission type, {@code documentation}, that nothing
-     * binds: its step files and three skeletons, one nested, beside a skeleton of {@code software-dev}.
+     * binds: its step files and three skeletons, one nested, beside a skeleton of {@code software-dev}. The registered
+     * shard links both types to their steps.
      */
     private static Packs qaWithDocumentation() {
         return qaWithMissionKinds()
                 .file("missions/software-dev/templates/spec-template.md", "# Spec\n")
+                .file(RelationshipShard.SHARD_PATH, linkShard(bothTypesLinks()))
                 .file("missions/documentation/documentation.mission-type.yaml", DOCUMENTATION)
                 .file("missions/documentation/steps/discover.prompt.md", "# Discover\n\nAsk.\n")
                 .file("missions/documentation/steps/discover.guidelines.md", "# Discover guidelines\n")
@@ -489,20 +520,23 @@ class ArtifactRemovalServiceTest {
 
     /**
      * D10: a graph edge that names one of the type's action nodes, at either end, in the registered shard or in a
-     * document the author wrote, refuses the type's removal; an edge on another type's action node does not.
+     * document the author wrote, refuses the type's removal; an edge on another type's action node does not. Another
+     * type may not require the action of a step it does not hold (FR-011), so the edge that names the action as its
+     * target is a step enhancement's.
      */
     @ParameterizedTest
     @CsvSource({
-        "registered.graph.yaml, mission_type:software-dev, requires, action:documentation/discover",
+        "registered.graph.yaml, step_enhancement:sharpen, enhances, action:documentation/discover",
         "steps.graph.yaml, action:documentation/retrospect, scope, directive:D2",
-        "steps.graph.yaml, mission_type:software-dev, requires, action:documentation/discover",
+        "steps.graph.yaml, step_enhancement:sharpen, enhances, action:documentation/discover",
     })
     void aGraphEdgeThatNamesAnActionNodeOfTheTypeRefusesItsRemoval(
             String document, String from, String relation, String to, @TempDir Path host) {
         Rig rig = new Rig(host);
         String graph = RelationshipShard.SHARD_PATH.equals(document)
-                ? RelationshipShard.write(
-                        List.of(edge(from, RelationType.fromToken(relation).orElseThrow(), to, null)))
+                ? linkShard(
+                        bothTypesLinks(),
+                        edge(from, RelationType.fromToken(relation).orElseThrow(), to, null))
                 : authoredEdge(from, relation, to);
         rig.register("qa", rig.stage(qaWithDocumentation().file(document, graph)), Preconditions.none());
         Removals removals = new Removals(rig);
@@ -603,18 +637,174 @@ class ArtifactRemovalServiceTest {
     }
 
     /**
-     * An author-written edge from the type to its own action node: the scan does not count an edge from a removed
-     * artifact, so the answer is the authored document's registration_conflict, not artifact_referenced.
+     * The type's own step links, written by the author, go with the type (operator ruling of 2026-11-14 on WP06): the
+     * removal succeeds, and the document that held them is written again without them, keeping its other edges.
      */
     @Test
-    void anAuthorWrittenEdgeFromTheTypeToItsOwnActionNodeIsARegistrationConflict(@TempDir Path host) {
+    void theTypesOwnAuthorWrittenStepLinksGoWithTheType(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS))
+                        .file(
+                                "types.graph.yaml",
+                                authoredEdge("mission_type:documentation", "action:documentation/discover")
+                                        + "- {source: 'mission_type:documentation', target:"
+                                        + " 'action:documentation/retrospect', relation: requires}\n"
+                                        + "- {source: 'mission_type:software-dev', target:"
+                                        + " 'action:software-dev/specify', relation: requires, when: 'always',"
+                                        + " reason: 'the step of the type'}\n")),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        Map<String, String> after = removals.filesOf("qa");
+        assertThat(after).doesNotContainKey("missions/documentation/documentation.mission-type.yaml");
+        assertThat(after.get("types.graph.yaml"))
+                .doesNotContain("mission_type:documentation")
+                .contains("mission_type:software-dev", "action:software-dev/specify", "always", "the step of the type");
+    }
+
+    /**
+     * A step link whose source is written with the pack's own name is the type's own link, as the load counts it: it
+     * goes with the type, and the document keeps its other edges.
+     */
+    @Test
+    void anOwnStepLinkWrittenWithThePacksOwnNameGoesWithTheType(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS))
+                        .file(
+                                "types.graph.yaml",
+                                authoredEdge("qa::mission_type:documentation", "action:documentation/discover")
+                                        + "- {source: 'mission_type:documentation', target:"
+                                        + " 'action:documentation/retrospect', relation: requires}\n"
+                                        + "- {source: 'mission_type:software-dev', target:"
+                                        + " 'action:software-dev/specify', relation: requires}\n")),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        assertThat(removals.filesOf("qa").get("types.graph.yaml"))
+                .doesNotContain("mission_type:documentation")
+                .contains("mission_type:software-dev");
+    }
+
+    // ---- relationship writes keep every step linked (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN) ----------------
+
+    @Test
+    void deletingTheLastLinkOfAStepIsRefusedAndNothingIsWritten(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        RelationshipRemovalService relationships =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, removals.gate, rig.impact);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> relationships.remove(
+                new PackIdentifier("qa"),
+                PackQualifiedReference.parse("mission_type:documentation"),
+                PackQualifiedReference.parse("action:documentation/discover"),
+                "*"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo("/to");
+            assertThat(violation.code()).isEqualTo("mission_step_unlinked");
+        });
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+    }
+
+    /**
+     * The registered shard holds a step's only link with the source written with the pack's own name; removing the
+     * bare pair would leave the step without its link, so it is refused as the bare link's removal is.
+     */
+    @Test
+    void deletingTheOnlyLinkOfAStepWrittenWithThePacksOwnNameIsRefused(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Relationship ownName = Relationship.of(
+                urn("mission_type:documentation"),
+                Optional.of("qa"),
+                urn("action:documentation/discover"),
+                Optional.empty(),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(
+                                RelationshipShard.SHARD_PATH,
+                                linkShard(SOFTWARE_DEV_LINKS, ownName, link("documentation", "retrospect")))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        RelationshipRemovalService relationships =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, removals.gate, rig.impact);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> relationships.remove(
+                new PackIdentifier("qa"),
+                PackQualifiedReference.parse("mission_type:documentation"),
+                PackQualifiedReference.parse("action:documentation/discover"),
+                "*"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations())
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.code()).isEqualTo("mission_step_unlinked"));
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+    }
+
+    @Test
+    void aStrayStepLinkIsRefusedWhileReRegisteringAnOwnLinkIsAccepted(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        RelationshipRegistrationService relationships = new RelationshipRegistrationService(
+                rig.repository, rig.writeStore, removals.gate, (source, target) -> {});
+        PackIdentifier qa = new PackIdentifier("qa");
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> relationships.registerRelationship(
+                qa,
+                RelationshipDraft.of(link("documentation", "nope")),
+                rig.writeStore.currentRevision(qa).token()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo("/to");
+            assertThat(violation.code()).isEqualTo("mission_step_unlinked");
+        });
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+        relationships.registerRelationship(
+                qa,
+                RelationshipDraft.of(
+                        link("documentation", "discover").annotated(Optional.empty(), Optional.of("again"))),
+                rig.writeStore.currentRevision(qa).token());
+    }
+
+    /**
+     * Another edge the author wrote from the type, not one of its own step links, still makes the removal a
+     * registration_conflict, and no file is rewritten.
+     */
+    @Test
+    void anotherAuthorWrittenEdgeFromTheTypeIsARegistrationConflict(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register(
                 "qa",
                 rig.stage(qaWithDocumentation()
                         .file(
                                 "types.graph.yaml",
-                                authoredEdge("mission_type:documentation", "action:documentation/discover"))),
+                                authoredEdge("mission_type:documentation", "action:documentation/discover")
+                                        + "- {source: 'mission_type:documentation', target:"
+                                        + " 'action:documentation/retrospect', relation: requires}\n"
+                                        + "- {source: 'mission_type:documentation', target:"
+                                        + " 'mission_type:software-dev', relation: overrides}\n")),
                 Preconditions.none());
         Removals removals = new Removals(rig);
         Map<String, String> before = removals.filesOf("qa");
@@ -661,23 +851,19 @@ class ArtifactRemovalServiceTest {
                 rig.stage(qaWithDocumentation()
                         .file(
                                 RelationshipShard.SHARD_PATH,
-                                RelationshipShard.write(List.of(
-                                        edge("mission_type:documentation", "action:documentation/discover", null),
-                                        edge(
-                                                "mission_type:documentation",
-                                                RelationType.SCOPE,
-                                                "directive:D2",
-                                                null))))),
+                                linkShard(
+                                        bothTypesLinks(),
+                                        edge("mission_type:documentation", RelationType.SCOPE, "directive:D2", null)))),
                 Preconditions.none());
         Removals removals = new Removals(rig);
-        assertThat(rig.writeStore.registeredRelationships(QA)).hasSize(2);
+        assertThat(rig.writeStore.registeredRelationships(QA)).hasSize(4);
 
         removals.remove("qa", "mission_type", "documentation");
 
         assertThat(removals.filesOf("qa")).doesNotContainKeys(DOCUMENTATION_FILES.toArray(String[]::new));
         assertThat(rig.writeStore.registeredRelationships(QA))
-                .as("both edges started at a removed artifact")
-                .isEmpty();
+                .as("the three edges that started at the removed type went; the other type's link stays")
+                .containsExactlyElementsOf(SOFTWARE_DEV_LINKS);
     }
 
     private static String authoredEdge(String from, String to) {

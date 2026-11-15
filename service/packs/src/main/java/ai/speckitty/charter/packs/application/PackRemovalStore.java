@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Preset;
 import java.util.List;
 import java.util.Set;
@@ -40,14 +41,18 @@ public interface PackRemovalStore extends PackRevisions {
 
         /**
          * Whether the author wrote the artifact into a graph document: declared its node, or wrote an edge that starts at
-         * it.
+         * it. A mission type's own step links ({@link MissionStepLinkRule#isOwnStepLink}) do not count: the removal drops
+         * them with the type (operator ruling DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ).
          *
          * @param artifact the artifact
+         * @param packName the name composition knows the pack by
          * @return whether a document the {@code DELETE} would have to rewrite names it
          */
-        public boolean names(Urn artifact) {
+        public boolean names(Urn artifact, String packName) {
             return declared.contains(artifact)
-                    || edges.stream().anyMatch(edge -> edge.from().equals(artifact));
+                    || edges.stream()
+                            .anyMatch(edge -> edge.from().equals(artifact)
+                                    && !MissionStepLinkRule.isOwnStepLink(packName, artifact, edge));
         }
     }
 
@@ -61,7 +66,11 @@ public interface PackRemovalStore extends PackRevisions {
      * @param presets the presets to rewrite, whole, with the items that name the artifacts left out; one that holds no
      *     list any longer is written with none
      */
-    record Removal(List<Urn> artifacts, List<Relationship> relationships, List<Preset> presets) {
+    record Removal(
+            List<Urn> artifacts,
+            List<Relationship> relationships,
+            List<Preset> presets,
+            List<Relationship> droppedLinks) {
 
         /**
          * Checks the parts and copies the lists.
@@ -69,11 +78,14 @@ public interface PackRemovalStore extends PackRevisions {
          * @param artifacts the removed artifacts, if any
          * @param relationships the registered relationships that stay
          * @param presets the presets to rewrite
+         * @param droppedLinks a removed mission type's own step links, which go from the author-written graph documents
+         *     that hold them (operator ruling DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ); none for any other removal
          */
         public Removal {
             artifacts = List.copyOf(artifacts);
             relationships = List.copyOf(relationships);
             presets = List.copyOf(presets);
+            droppedLinks = List.copyOf(droppedLinks);
         }
 
         /**
@@ -85,7 +97,7 @@ public interface PackRemovalStore extends PackRevisions {
          * @return the removal
          */
         public static Removal ofArtifact(Urn artifact, List<Relationship> relationships, List<Preset> presets) {
-            return ofArtifacts(List.of(artifact), relationships, presets);
+            return ofArtifacts(List.of(artifact), relationships, presets, List.of());
         }
 
         /**
@@ -94,13 +106,18 @@ public interface PackRemovalStore extends PackRevisions {
          * @param artifacts the artifacts, the one the request names first
          * @param relationships the registered relationships that stay
          * @param presets the presets to rewrite
+         * @param droppedLinks the removed mission types' own step links that go from the author-written documents
          * @return the removal
          */
-        public static Removal ofArtifacts(List<Urn> artifacts, List<Relationship> relationships, List<Preset> presets) {
+        public static Removal ofArtifacts(
+                List<Urn> artifacts,
+                List<Relationship> relationships,
+                List<Preset> presets,
+                List<Relationship> droppedLinks) {
             if (artifacts.isEmpty()) {
                 throw new IllegalArgumentException("a removal of artifacts names at least one");
             }
-            return new Removal(artifacts, relationships, presets);
+            return new Removal(artifacts, relationships, presets, droppedLinks);
         }
 
         /**
@@ -110,7 +127,7 @@ public interface PackRemovalStore extends PackRevisions {
          * @return the removal
          */
         public static Removal ofRelationship(List<Relationship> relationships) {
-            return new Removal(List.of(), relationships, List.of());
+            return new Removal(List.of(), relationships, List.of(), List.of());
         }
     }
 

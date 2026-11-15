@@ -70,7 +70,13 @@ public enum PackFindingCode {
      * {@link RelationshipEndpointRule}). It is the violation code {@value RelationshipEndpointRule#CODE} of the graph
      * document at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
      */
-    RELATIONSHIP_ENDPOINT_NOT_ALLOWED(Severity.BLOCKING);
+    RELATIONSHIP_ENDPOINT_NOT_ALLOWED(Severity.BLOCKING),
+    /**
+     * A step of a mission type with no authored {@code requires} edge from its type, or such an edge to an action that
+     * is not one of its steps ({@link MissionStepLinkRule}). It is the violation code {@value MissionStepLinkRule#CODE}
+     * at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    MISSION_STEP_UNLINKED(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {

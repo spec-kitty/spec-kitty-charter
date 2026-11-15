@@ -194,6 +194,18 @@ Feature: The effective action context lists what applies to the action under the
         kind: action
         label: specify
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/specify
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/review
+        relation: requires
       - source: action:software-dev/implement
         target: directive:DIRECTIVE_001
         relation: scope
@@ -409,6 +421,15 @@ Feature: The effective action context lists what applies to the action under the
         kind: action
         label: gather
       edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       - source: action:software-dev/implement
         target: directive:A
         relation: scope
@@ -522,6 +543,9 @@ Feature: The effective action context lists what applies to the action under the
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope

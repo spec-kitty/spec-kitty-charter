@@ -245,7 +245,10 @@ Feature: The effective graph and the effective action context answer what the ac
       - urn: action:software-dev/implement
         kind: action
         label: implement
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       """
     And the built-in pack "core" with the file "directives/E.directive.yaml":
       """
@@ -286,7 +289,10 @@ Feature: The effective graph and the effective action context answer what the ac
       - urn: action:software-dev/implement
         kind: action
         label: implement
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       """
     And the project pack "proj" with the file "directives/E.directive.yaml":
       """
@@ -384,6 +390,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: directive:E
         target: directive:T
         relation: enhances
@@ -416,6 +425,7 @@ Feature: The effective graph and the effective action context answer what the ac
       action:software-dev/implement scope directive:T
       action:software-dev/implement scope directive:T2
       directive:E enhances directive:T
+      mission_type:software-dev requires action:software-dev/implement
       """
     When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context"
     Then the response status is 200
@@ -527,6 +537,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope
@@ -783,6 +796,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope
@@ -945,6 +961,12 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: gather
       edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:research/gather
         target: directive:D
         relation: scope
@@ -1019,7 +1041,13 @@ Feature: The effective graph and the effective action context answer what the ac
       - urn: action:research/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       """
     And the org pack "main" with the file "directives/D.directive.yaml":
       """
@@ -1078,7 +1106,10 @@ Feature: The effective graph and the effective action context answer what the ac
       - urn: action:software-dev/implement
         kind: action
         label: implement
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       """
     And the org pack "main" with the file "directives/D.directive.yaml":
       """
@@ -1169,6 +1200,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: directive:E
         target: directive:T
         relation: enhances
@@ -1256,6 +1290,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope
@@ -1339,6 +1376,9 @@ Feature: The effective graph and the effective action context answer what the ac
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: action:software-dev/implement
         target: directive:D
         relation: scope
