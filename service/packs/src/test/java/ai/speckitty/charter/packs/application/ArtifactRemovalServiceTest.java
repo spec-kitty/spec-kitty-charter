@@ -463,12 +463,13 @@ class ArtifactRemovalServiceTest {
      * D10: a graph edge that names one of the type's action nodes, at either end, in the registered shard or in a
      * document the author wrote, refuses the type's removal; an edge on another type's action node does not. Another
      * type may not require the action of a step it does not hold (FR-011), so the edge that names the action as its
-     * target is a step enhancement's.
+     * target is a step enhancement's. A scope edge from one of the type's own actions is no referrer: it goes with the type
+     * (operator ruling DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6), so the source-side case is an applies edge.
      */
     @ParameterizedTest
     @CsvSource({
         "registered.graph.yaml, step_enhancement:sharpen, enhances, action:documentation/discover",
-        "steps.graph.yaml, action:documentation/retrospect, scope, directive:D2",
+        "steps.graph.yaml, action:documentation/retrospect, applies, directive:D2",
         "steps.graph.yaml, step_enhancement:sharpen, enhances, action:documentation/discover",
     })
     void aGraphEdgeThatNamesAnActionNodeOfTheTypeRefusesItsRemoval(
@@ -609,6 +610,61 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa").get("types.graph.yaml"))
                 .doesNotContain("mission_type:documentation")
                 .contains("mission_type:software-dev");
+    }
+
+    /**
+     * The scope edges from the type's own step actions go with the type too (operator ruling
+     * DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6), their source bare or written with the pack's own name: the removal succeeds, and the
+     * document keeps the other type's edges.
+     */
+    @Test
+    void theScopeEdgesFromTheTypesOwnActionsGoWithTheType(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(RelationshipShard.SHARD_PATH, linkShard(SOFTWARE_DEV_LINKS))
+                        .file(
+                                "types.graph.yaml",
+                                authoredEdge("mission_type:documentation", "action:documentation/discover")
+                                        + "- {source: 'mission_type:documentation', target:"
+                                        + " 'action:documentation/retrospect', relation: requires}\n"
+                                        + "- {source: 'action:documentation/discover', target: 'directive:D2',"
+                                        + " relation: scope}\n"
+                                        + "- {source: 'qa::action:documentation/retrospect', target: 'directive:D2',"
+                                        + " relation: scope}\n"
+                                        + "- {source: 'mission_type:software-dev', target:"
+                                        + " 'action:software-dev/specify', relation: requires}\n"
+                                        + "- {source: 'action:software-dev/specify', target: 'directive:D2',"
+                                        + " relation: scope}\n")),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "documentation");
+
+        assertThat(removals.filesOf("qa").get("types.graph.yaml"))
+                .doesNotContain("documentation")
+                .contains("action:software-dev/specify", "directive:D2", "scope");
+    }
+
+    /** Another edge from one of the type's own actions is no scope edge, so it still refuses, and nothing is written. */
+    @Test
+    void anotherEdgeFromTheTypesOwnActionStillRefuses(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithDocumentation()
+                        .file(
+                                "types.graph.yaml",
+                                authoredEdge("action:documentation/discover", "applies", "directive:D2"))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
     }
 
     // ---- relationship writes keep every step linked (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN) ----------------
@@ -752,6 +808,39 @@ class ArtifactRemovalServiceTest {
         assertThat(rig.writeStore.registeredRelationships(new PackIdentifier("qa")))
                 .doesNotContain(RX_OTHER_SCOPE)
                 .contains(RX_SCOPE, link("rx", "a"));
+    }
+
+    /**
+     * The registered shard follows the same rule as the author-written documents (operator ruling
+     * DM-01M7F1ARDGCHPSB62QNY0EZW7Y): removing the delegating type drops the scope edges from its own step action, bare
+     * or written with the pack's own name, so the removal succeeds and the shard keeps no edge from {@code action:rx/}.
+     */
+    @Test
+    void removingADelegatingTypeDropsItsOwnScopeEdgesFromTheRegisteredShard(@TempDir Path host) {
+        Relationship ownName = Relationship.of(
+                urn("action:rx/a"),
+                Optional.of("qa"),
+                urn("tactic:t"),
+                Optional.empty(),
+                RelationType.SCOPE,
+                Optional.empty(),
+                Optional.empty());
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qaWithADelegatingType()
+                        .file(
+                                RelationshipShard.SHARD_PATH,
+                                linkShard(List.of(link("rx", "a")), RX_SCOPE, RX_OTHER_SCOPE, ownName))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_type", "rx");
+
+        assertThat(rig.writeStore.registeredRelationships(new PackIdentifier("qa")))
+                .noneSatisfy(edge -> assertThat(edge.from().toString()).startsWith("action:rx/"));
+        assertThat(removals.filesOf("qa").getOrDefault(RelationshipShard.SHARD_PATH, ""))
+                .doesNotContain("action:rx/");
     }
 
     @Test

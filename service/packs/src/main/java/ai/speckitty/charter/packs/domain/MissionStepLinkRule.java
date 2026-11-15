@@ -23,7 +23,8 @@ import java.util.Set;
  * <p>The rule judges the mission types a pack holds, over the edges of its graph documents. An edge from a mission type
  * the pack does not hold, or from another pack's (written with that pack's name), is the compose's to judge once the
  * merge has placed it ({@code EdgeIndex}). A step that has no edge is a fault of the mission type file; an edge that names an
- * action that is not a step of its type is a fault of the graph document that holds it. The code is
+ * action that is not a step of its type is a fault of the graph document that holds it; a {@code requires} edge from the
+ * type to a kind other than {@code action} is no step link, and the endpoint table judges it. The code is
  * {@value #CODE}. It is pure.
  */
 public final class MissionStepLinkRule {
@@ -92,7 +93,9 @@ public final class MissionStepLinkRule {
         types.forEach(type -> held.putIfAbsent(type.id(), type));
         for (Edge edge : edges) {
             Optional<MissionTypeFacts> type = ownMissionType(edge, packName).map(held::get);
-            if (type.isEmpty()) {
+            if (type.isEmpty() || !namesAnAction(edge.target())) {
+                // Only a requires edge to an action is a step link, as the compose and the registration count one; an
+                // edge to any other kind is the endpoint table's to judge.
                 continue;
             }
             String typeId = type.get().id();
@@ -142,6 +145,38 @@ public final class MissionStepLinkRule {
                 && edge.to().id().startsWith(type.id() + "/");
     }
 
+    /**
+     * Whether an edge is a {@code scope} edge from one of a mission type's own step actions:
+     * {@code action:T/<step> scope <target>}, its source written bare or with the pack's own name, to any target. The
+     * removal of the type drops it with the type's own step links (operator ruling DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6, which
+     * extends DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ), so a type whose substeps delegate can be removed.
+     *
+     * @param packName the name composition knows the pack by
+     * @param type the mission type
+     * @param edge the edge
+     * @return whether the edge scopes from one of the type's actions, as the pack writes it
+     */
+    public static boolean isOwnStepScope(String packName, Urn type, Relationship edge) {
+        return type.kind() == NodeKind.MISSION_TYPE
+                && edge.type() == RelationType.SCOPE
+                && edge.from().kind() == NodeKind.ACTION
+                && edge.from().id().startsWith(type.id() + "/")
+                && edge.fromPack().map(packName::equals).orElse(true);
+    }
+
+    /**
+     * Whether the removal of a mission type drops an edge with the type: one of its own step links
+     * ({@link #isOwnStepLink}) or a {@code scope} edge from one of its own step actions ({@link #isOwnStepScope}).
+     *
+     * @param packName the name composition knows the pack by
+     * @param type the mission type
+     * @param edge the edge
+     * @return whether the edge goes with the type
+     */
+    public static boolean goesWithType(String packName, Urn type, Relationship edge) {
+        return isOwnStepLink(packName, type, edge) || isOwnStepScope(packName, type, edge);
+    }
+
     /** The type id of a {@code requires} edge from a mission type of the pack: bare or written with the pack's name. */
     private static Optional<String> ownMissionType(Edge edge, String packName) {
         if (!RelationType.REQUIRES.token().equals(edge.relation())) {
@@ -152,6 +187,14 @@ public final class MissionStepLinkRule {
                 .flatMap(PackQualifiedReference::asUrn)
                 .filter(urn -> urn.kind() == NodeKind.MISSION_TYPE)
                 .map(Urn::id);
+    }
+
+    /** Whether a target, bare or written with a pack name, names an action. */
+    private static boolean namesAnAction(String target) {
+        return reference(target)
+                .flatMap(PackQualifiedReference::asUrn)
+                .filter(urn -> urn.kind() == NodeKind.ACTION)
+                .isPresent();
     }
 
     /**

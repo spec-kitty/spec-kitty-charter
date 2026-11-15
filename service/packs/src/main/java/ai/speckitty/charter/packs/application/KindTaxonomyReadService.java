@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
@@ -49,18 +50,22 @@ public final class KindTaxonomyReadService {
      * One node kind and its facts.
      *
      * @param kind the kind
-     * @param plural its plural
+     * @param plural its plural; empty for a kind that has none
+     * @param artifactKind the artifact kind it stands for; empty for a kind that is no artifact kind
      * @param artifact whether it is an artifact kind
      * @param activatable whether an activation selects, denies or requires it
-     * @param authoredInGraphs whether a graph document may name it
+     * @param declarableInGraphs whether a graph document may declare a node of it
+     * @param edgeTarget whether an authored edge may name it as its target
      * @param listed whether the pack artifact list serves it, so a row links that list
      */
     public record KindFacts(
             NodeKind kind,
-            String plural,
+            Optional<String> plural,
+            Optional<ArtifactKind> artifactKind,
             boolean artifact,
             boolean activatable,
-            boolean authoredInGraphs,
+            boolean declarableInGraphs,
+            boolean edgeTarget,
             boolean listed) {}
 
     /**
@@ -138,10 +143,12 @@ public final class KindTaxonomyReadService {
     private static KindFacts kind(NodeKind kind) {
         return new KindFacts(
                 kind,
-                kind.plural(),
+                kind.hasPlural() ? Optional.of(kind.plural()) : Optional.empty(),
+                kind.artifactKind(),
                 kind.artifactKind().isPresent(),
                 kind.artifactKind().map(ArtifactKind::activatable).orElse(false),
                 kind.declarableInGraphs(),
+                kind.edgeTarget(),
                 kind.artifactKind()
                         .filter(ArtifactReadService.listed()::contains)
                         .isPresent());

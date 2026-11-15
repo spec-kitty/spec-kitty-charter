@@ -1,0 +1,10 @@
+id: execution-lanes
+schema_version: '1.0'
+tool: spec-kitty
+title: Execution Lanes
+summary: |
+  Operational guidance for Spec Kitty's default multi-lane implementation workspaces. Each lane branch runs its work packages in sequence in a lane worktree provided by spec-kitty implement, while mission status remains on the resolved status surface. Small missions use single_branch by default, and shared mainline state is reached only through review, consolidation, and quality gates.
+guide_path: execution-lanes.guide.md
+commands:
+- spec-kitty implement
+last_updated: '2026-11-08'

@@ -372,8 +372,9 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     /**
      * Each author-written graph document that holds one of the links a removal drops, written again without them
-     * (operator ruling DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ): a removed mission type goes with the edges that link it to its
-     * steps, and nothing else of the document changes but its layout, which is written from scratch.
+     * (operator rulings DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6): a removed mission type goes
+     * with the edges that link it to its steps and the scope edges from its own step actions, and nothing else of the
+     * document changes but its layout, which is written from scratch.
      */
     private Map<String, String> withoutLinks(Path directory, List<Relationship> dropped) {
         Path parent = directory.getParent();

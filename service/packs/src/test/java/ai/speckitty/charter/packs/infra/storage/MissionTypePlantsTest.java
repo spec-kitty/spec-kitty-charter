@@ -183,7 +183,9 @@ class MissionTypePlantsTest {
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.file()).isEqualTo(TYPE);
-            assertThat(finding.detail()).contains(field(plant));
+            assertThat(finding.detail())
+                    .as("an unknown field, by its name")
+                    .contains("unknown key '" + field(plant) + "'");
         });
     }
 
@@ -196,14 +198,18 @@ class MissionTypePlantsTest {
 
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
-            assertThat(violation.reason()).contains(field(plant));
+            assertThat(violation.reason())
+                    .as("an unknown field, by its name")
+                    .contains("additionalProperties violated at the document: undeclared key '" + field(plant) + "'");
         });
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
                         assertThat(violation.pointer()).isEqualTo(TYPE);
-                        assertThat(violation.detail()).contains(field(plant));
+                        assertThat(violation.detail())
+                                .as("an unknown field, by its name")
+                                .contains("undeclared key '" + field(plant) + "'");
                     });
                 });
     }

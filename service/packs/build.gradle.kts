@@ -219,6 +219,9 @@ fun Task.readsTheUnitTestInputs() {
     inputs.file(layout.projectDirectory.file("src/test/resources/project-charter/charter.yaml"))
         .withPathSensitivity(PathSensitivity.RELATIVE)
         .withPropertyName("projectCharterYaml")
+    // EndpointTableAdrTest parses the endpoint table of ADR-0077 decision 5 (FR-012's independent oracle).
+    inputs.file(repositoryDir.file("docs/adr/0077-kind-taxonomy-and-step-authority.md"))
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("endpointTableAdr")
     inputs.property("requireSymlinks", requireSymlinks)
     // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a
     // cached result from a run without it never stands in for one with it.

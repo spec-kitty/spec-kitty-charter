@@ -86,7 +86,7 @@ public final class RelationshipEndpointRule {
         }
     }
 
-    private static final String TENSION = "in_tension_with";
+    private static final String TENSION = PackPolicy.TENSION;
 
     private RelationshipEndpointRule() {}
 

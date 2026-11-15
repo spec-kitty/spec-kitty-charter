@@ -5,4 +5,7 @@ nodes:
 - urn: toolguide:efficient-local-tooling
   kind: toolguide
   label: Efficient Local Tooling
+- urn: toolguide:execution-lanes
+  kind: toolguide
+  label: Execution Lanes
 edges: []

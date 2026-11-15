@@ -1,0 +1,38 @@
+schema_version: "1.0"
+id: supply-chain-install-safety
+name: Supply-Chain Install Safety Checklist
+purpose: >
+  Provide the concrete, ecosystem-neutral checklist that turns
+  DIRECTIVE_051's threat-class pillars into checks an implementer runs
+  before accepting a dependency change and evidence a reviewer requires
+  before approving one. Apply whenever a mission adds, upgrades, or removes
+  a dependency during `plan`, `implement`, or `review`. The checklist is
+  executed, not merely acknowledged: each step produces a recorded result.
+steps:
+  - title: Run the registry existence/authenticity check
+    description: >
+      Confirm the resolved package and version exist on the ecosystem's
+      approved official registry and not an unexpected mirror, proxy, or
+      typosquatted namespace. Record the resolved registry host as evidence.
+    examples:
+      - "Evidence line: \"registry check: <package>@<version> resolves on
+        <approved registry host> — OK\""
+  - title: Confirm no automatic install-time hook script execution occurred
+    description: >
+      Install-time hook scripts are deny-by-default. Verify none were
+      auto-executed for the new or changed dependency, and record the
+      disposition.
+  - title: Confirm a lockfile-driven, reproducible install
+    description: >
+      Commit and rely on the ecosystem's lockfile, use the frozen/CI install
+      mode in automation, and review lockfile diffs the same way manifest
+      diffs are reviewed.
+  - title: Capture review evidence in the required shape
+    description: >
+      Before recommending approval, confirm the change's evidence trail
+      includes a result for every control DIRECTIVE_051 names. A missing or
+      unexamined control is a gap to close before approval.
+failure_modes:
+  - "Treating the checklist as aspirational prose instead of running each
+    check and recording the result."
+  - "Using v1's advisory posture as license to skip evidence entirely."

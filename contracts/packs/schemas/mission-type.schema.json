@@ -155,7 +155,7 @@
     },
     "SubstepDelegation": {
       "additionalProperties": false,
-      "description": "The artifacts that could concretize a substep, as data: one kind, and its candidates written [<pack>::]<id>. The kind is a scope target of an action (a guidance kind or agent_profile), and the step's action has a scope edge to every candidate.",
+      "description": "The artifacts that could concretize a substep, as data: one kind, and its candidates written [<pack>::]<id>. The kind is a guidance kind, a scope target of an action; never agent_profile, since a mission type names roles, not profiles (ADR-0032 decision 1). The step's action has a scope edge to every candidate.",
       "properties": {
         "kind": {
           "enum": [
@@ -164,8 +164,7 @@
             "styleguide",
             "toolguide",
             "paradigm",
-            "procedure",
-            "agent_profile"
+            "procedure"
           ],
           "title": "Kind",
           "type": "string"

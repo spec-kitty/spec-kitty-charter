@@ -1,0 +1,22 @@
+schema_version: '1.0'
+id: git-flow
+title: Git Flow Branching Workflow
+description: |
+  Coordinate Git Flow's long-lived integration and release branches, with feature and hotfix branches feeding controlled release points. Use this procedure when a project's charter requires Git Flow. It is not the default implementation workspace model; the execution-lanes toolguide describes the supported lane worktrees.
+entry_condition: |
+  The project has selected Git Flow and a change, release, or production fix is ready to begin.
+exit_condition: |
+  The change has passed its quality gates and reached the Git Flow branches required for its branch type, with review and commit attribution preserved.
+steps:
+- title: Identify the branch type and base
+  description: |
+    Start feature work from the development integration branch. Start a release branch from development when the release scope is ready. Start a hotfix branch from the production mainline when an urgent production fix is required.
+- title: Implement on the topic branch
+  description: |
+    Keep the work on its feature, release, or hotfix branch. Use the execution-lanes toolguide for isolated Spec Kitty lane worktrees rather than treating Git Flow as the workspace mechanism.
+- title: Verify and attribute the change
+  description: |
+    Run the relevant tests and type checks before integration. Stage only intended files and retain explicit agent co-author attribution on commits.
+- title: Integrate according to Git Flow
+  description: |
+    Merge completed feature work into development. Merge a release into the production mainline and back into development. Merge a hotfix into both the production mainline and development. Route each integration through the project's review and pull-request gates.

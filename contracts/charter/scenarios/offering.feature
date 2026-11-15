@@ -420,7 +420,13 @@ Feature: The offering lists the configured packs in force
     And the field at "/relations/12/derived" is true
     And the field at "/relations/12/endpoints/0/source" is "guard"
     And the field at "/kinds/12/artifact" is false
-    And the field at "/kinds/14/authoredInGraphs" is false
+    And the field at "/kinds/14/declarableInGraphs" is false
+    And the field at "/kinds/14/edgeTarget" is false
+    And the field at "/kinds/12/declarableInGraphs" is true
+    And the field at "/kinds/12/edgeTarget" is true
+    And the field at "/kinds/12/artifactKind" is absent
+    And the field at "/kinds/12/plural" is "actions"
+    And the field at "/kinds/13/artifactKind" is "mission_type"
     And the field at "/kinds/0/_links/artifacts/href" is "/api/v1/packs/{packId}/artifacts?kind=directive"
     And the field at "/kinds/0/_links/artifacts/templated" is true
     And the field at "/kinds/12/_links/artifacts" is absent

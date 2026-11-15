@@ -42,39 +42,35 @@ final class EndpointTable {
         return Collections.unmodifiableMap(table);
     }
 
+    /** One relation's row; a switch expression over every relation, so a relation added without its row fails to compile. */
     private static Set<EndpointPair> rows(RelationType type) {
-        Set<EndpointPair> pairs = new LinkedHashSet<>();
-        switch (type) {
-            case REQUIRES -> {
-                product(pairs, advisors(), union(GUIDANCE, EnumSet.of(NodeKind.ASSET, NodeKind.TEMPLATE)));
-                pairs.add(new EndpointPair(NodeKind.ASSET, NodeKind.ASSET));
-                pairs.add(new EndpointPair(NodeKind.MISSION_TYPE, NodeKind.ACTION));
-            }
+        Set<EndpointPair> pairs = switch (type) {
+            case REQUIRES ->
+                rectangles(
+                        product(advisors(), union(GUIDANCE, EnumSet.of(NodeKind.ASSET, NodeKind.TEMPLATE))),
+                        pair(NodeKind.ASSET, NodeKind.ASSET),
+                        pair(NodeKind.MISSION_TYPE, NodeKind.ACTION));
             case SUGGESTS ->
                 product(
-                        pairs,
                         advisors(),
                         union(GUIDANCE, EnumSet.of(NodeKind.ASSET, NodeKind.TEMPLATE, NodeKind.AGENT_PROFILE)));
-            case APPLIES ->
-                product(pairs, EnumSet.of(NodeKind.ACTION), EnumSet.of(NodeKind.DIRECTIVE, NodeKind.TACTIC));
+            case APPLIES -> product(EnumSet.of(NodeKind.ACTION), EnumSet.of(NodeKind.DIRECTIVE, NodeKind.TACTIC));
             case SCOPE ->
                 product(
-                        pairs,
                         EnumSet.of(NodeKind.MISSION_TYPE, NodeKind.ACTION),
                         union(GUIDANCE, EnumSet.of(NodeKind.AGENT_PROFILE)));
-            case VOCABULARY -> product(pairs, graphAuthored(), EnumSet.of(NodeKind.GLOSSARY_CONTEXT, NodeKind.TERM));
-            case INSTANTIATES -> pairs.add(new EndpointPair(NodeKind.ACTION, NodeKind.TEMPLATE));
-            case REFINES, RECONCILES_TENSION -> product(pairs, GUIDANCE, GUIDANCE);
-            case SPECIALIZES_FROM -> pairs.add(new EndpointPair(NodeKind.AGENT_PROFILE, NodeKind.AGENT_PROFILE));
-            case ENHANCES -> {
-                pairs.add(new EndpointPair(NodeKind.STEP_ENHANCEMENT, NodeKind.ACTION));
-                diagonal(pairs, activatableExcept(NodeKind.MISSION_TYPE, NodeKind.STEP_ENHANCEMENT));
-            }
-            case OVERRIDES -> diagonal(pairs, activatableExcept(NodeKind.STEP_ENHANCEMENT));
-            case REJECTS -> product(pairs, GUIDANCE, EnumSet.of(NodeKind.ANTI_PATTERN));
-            case IMPLEMENTED_BY -> pairs.add(new EndpointPair(NodeKind.GUARD, NodeKind.ASSET));
-            default -> throw new IllegalStateException("No endpoint row for " + type);
-        }
+            case VOCABULARY -> product(graphDeclarable(), EnumSet.of(NodeKind.GLOSSARY_CONTEXT, NodeKind.TERM));
+            case INSTANTIATES -> pair(NodeKind.ACTION, NodeKind.TEMPLATE);
+            case REFINES, RECONCILES_TENSION -> product(GUIDANCE, GUIDANCE);
+            case SPECIALIZES_FROM -> pair(NodeKind.AGENT_PROFILE, NodeKind.AGENT_PROFILE);
+            case ENHANCES ->
+                rectangles(
+                        pair(NodeKind.STEP_ENHANCEMENT, NodeKind.ACTION),
+                        diagonal(activatableExcept(NodeKind.MISSION_TYPE, NodeKind.STEP_ENHANCEMENT)));
+            case OVERRIDES -> diagonal(activatableExcept(NodeKind.STEP_ENHANCEMENT));
+            case REJECTS -> product(GUIDANCE, EnumSet.of(NodeKind.ANTI_PATTERN));
+            case IMPLEMENTED_BY -> pair(NodeKind.GUARD, NodeKind.ASSET);
+        };
         return Collections.unmodifiableSet(pairs);
     }
 
@@ -99,16 +95,15 @@ final class EndpointTable {
     }
 
     private static Set<EndpointPair> tensionPairs() {
-        Set<EndpointPair> pairs = new LinkedHashSet<>();
-        product(pairs, GUIDANCE, GUIDANCE);
-        return Collections.unmodifiableSet(pairs);
+        return Collections.unmodifiableSet(product(GUIDANCE, GUIDANCE));
     }
 
     private static Set<NodeKind> advisors() {
         return union(GUIDANCE, EnumSet.of(NodeKind.AGENT_PROFILE, NodeKind.SKILL));
     }
 
-    private static Set<NodeKind> graphAuthored() {
+    /** The kinds a vocabulary edge may start at: every kind a graph document may declare as a node. */
+    private static Set<NodeKind> graphDeclarable() {
         Set<NodeKind> kinds = EnumSet.noneOf(NodeKind.class);
         Arrays.stream(NodeKind.values()).filter(NodeKind::declarableInGraphs).forEach(kinds::add);
         return kinds;
@@ -132,17 +127,36 @@ final class EndpointTable {
         return kinds;
     }
 
-    private static void product(Set<EndpointPair> pairs, Set<NodeKind> sources, Set<NodeKind> targets) {
+    private static Set<EndpointPair> product(Set<NodeKind> sources, Set<NodeKind> targets) {
+        Set<EndpointPair> pairs = new LinkedHashSet<>();
         for (NodeKind source : sources) {
             for (NodeKind target : targets) {
                 pairs.add(new EndpointPair(source, target));
             }
         }
+        return pairs;
     }
 
-    private static void diagonal(Set<EndpointPair> pairs, Set<NodeKind> kinds) {
+    private static Set<EndpointPair> diagonal(Set<NodeKind> kinds) {
+        Set<EndpointPair> pairs = new LinkedHashSet<>();
         for (NodeKind kind : kinds) {
             pairs.add(new EndpointPair(kind, kind));
         }
+        return pairs;
+    }
+
+    private static Set<EndpointPair> pair(NodeKind source, NodeKind target) {
+        Set<EndpointPair> pairs = new LinkedHashSet<>();
+        pairs.add(new EndpointPair(source, target));
+        return pairs;
+    }
+
+    @SafeVarargs
+    private static Set<EndpointPair> rectangles(Set<EndpointPair>... parts) {
+        Set<EndpointPair> pairs = new LinkedHashSet<>();
+        for (Set<EndpointPair> part : parts) {
+            pairs.addAll(part);
+        }
+        return pairs;
     }
 }

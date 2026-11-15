@@ -99,7 +99,8 @@ description: >-
   pack answers 500 pack_unreadable naming the graph document. An overrides edge from an activatable kind is unchanged.
   relationship_endpoint_not_allowed (ADR-0064 decision 13) is another: an edge whose relation does not allow its source
   and target kinds (the endpoint table, for example procedure requires action, or overrides between two kinds) is
-  refused wherever it enters, in the same three places, with putPackRelationship's violation at /type. An overrides
+  refused wherever it enters, in the same three places, with putPackRelationship's violation at /type and the
+  composing read's detail naming the code before the reason. An overrides
   edge from a kind that is not activatable keeps overrides_source_not_activatable; an enhances or overrides edge from
   a step enhancement the pack holds keeps prompt_fragment_invalid.
   mission_step_unlinked (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN, FR-011) is a third: every step and on-demand
@@ -381,7 +382,9 @@ x-refusal:
       a violation at its pack-relative file. Its violation codes include the raised codes above and
       overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
       putPackRelationship lists at /from, relationship_endpoint_not_allowed, an edge whose relation does not allow
-      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type, mission_step_unlinked, a
+      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type, relationship_type_unknown,
+      a putPackRelationship type that names no relation, a retired one among them (ADR-0077 decision 6), listed at
+      /type, mission_step_unlinked, a
       mission type step without its requires edge, or a requires edge from the type to an action that is not its step,
       and substep_delegation_unresolved and substep_delegation_unscoped, a substep's delegation candidate that is no
       artifact of its kind or that the step's action has no scope edge to (FR-005)

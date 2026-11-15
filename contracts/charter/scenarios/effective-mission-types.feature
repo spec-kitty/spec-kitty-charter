@@ -784,6 +784,9 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       - id: a
         title: A
         substeps:
+        - id: load
+          description: Load the context
+          command: spec-kitty charter context --action a --json
         - id: run
           description: Apply a tactic
           delegates_to:
@@ -814,11 +817,16 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       """
     When I GET "/activations/sd-1/artifacts/mission_type/rx/steps/a"
     Then the response status is 200
-    And the field at "/substeps" holds exactly 1 item
-    And the field at "/substeps/0/id" is "run"
-    And the field at "/substeps/0/delegatesTo/candidates/0/id" is "own"
-    And the field at "/substeps/0/delegatesTo/candidates/0/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/own"
-    And the field at "/substeps/0/delegatesTo/candidates/1/id" is "sdebase::tdd"
-    And the field at "/substeps/0/delegatesTo/candidates/1/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/tdd"
+    And the field at "/substeps" holds exactly 2 items
+    And the field at "/substeps/0/id" is "load"
+    And the field at "/substeps/0/description" is "Load the context"
+    And the field at "/substeps/0/command" is "spec-kitty charter context --action a --json"
+    And the field at "/substeps/0/delegatesTo" is absent
+    And the field at "/substeps/1/id" is "run"
+    And the field at "/substeps/1/description" is "Apply a tactic"
+    And the field at "/substeps/1/delegatesTo/candidates/0/id" is "own"
+    And the field at "/substeps/1/delegatesTo/candidates/0/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/own"
+    And the field at "/substeps/1/delegatesTo/candidates/1/id" is "sdebase::tdd"
+    And the field at "/substeps/1/delegatesTo/candidates/1/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/tdd"
     When I GET "/activations/sd-1/artifacts/tactic/tdd"
     Then the response status is 200

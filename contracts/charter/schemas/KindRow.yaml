@@ -1,16 +1,17 @@
 title: KindRow
 description: >-
-  One node kind of the model, with its facts: its plural, whether it is an artifact, whether an activation selects
-  or denies it, and whether a graph document may name it. A kind the pack artifact list serves links that list as a
-  template; a kind no list serves has no link.
+  One node kind of the model, with its facts: its plural, the artifact kind it stands for, whether it is an artifact,
+  whether an activation selects or denies it, whether a graph document may declare it and whether an authored edge may
+  target it. A kind the pack artifact list serves links that list as a template, filtered by its artifactKind; a kind no
+  list serves has no link.
 type: object
 additionalProperties: false
 required:
   - kind
-  - plural
   - artifact
   - activatable
-  - authoredInGraphs
+  - declarableInGraphs
+  - edgeTarget
   - _links
 properties:
   kind:
@@ -24,10 +25,21 @@ properties:
     type: string
     description: >-
       The plural a fragment node names the kind by and an activated_<plural> key uses, for example agent_profiles;
-      actions for action.
+      actions for action. Every kind of the model has one today; the member is optional because the glossary work
+      (#106) adds the term kind, which is only ever an edge's target and has no plural, and its row omits it.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
       symbol: NodeKind.plural
+  artifactKind:
+    type: string
+    pattern: '^[a-z][a-z_]*$'
+    maxLength: 64
+    description: >-
+      The token of the artifact kind the kind stands for, the value the pack artifact list's ?kind= filter takes; absent
+      for a kind that is no artifact kind (action). An open token: a client tolerates one it does not know.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.artifactKind
   artifact:
     type: boolean
     description: Whether the kind is an artifact kind; false only for action, a node with no artifact of its own.
@@ -42,14 +54,22 @@ properties:
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.activatable
-  authoredInGraphs:
+  declarableInGraphs:
     type: boolean
     description: >-
-      Whether a graph document or a relationship registration may name the kind as a node or an edge endpoint; false
-      for guard and lifecycle (#156).
+      Whether a graph document or a relationship registration may declare a node of the kind; false for guard and
+      lifecycle (#156).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
-      symbol: NodeKind.authoredInGraphs
+      symbol: NodeKind.declarableInGraphs
+  edgeTarget:
+    type: boolean
+    description: >-
+      Whether an authored edge or a relationship registration may name the kind as its target; false for guard and
+      lifecycle (#156).
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
+      symbol: NodeKind.edgeTarget
   _links:
     $ref: Links.yaml
 x-source:

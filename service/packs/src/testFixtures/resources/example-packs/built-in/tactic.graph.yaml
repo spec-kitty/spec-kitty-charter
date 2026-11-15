@@ -35,6 +35,9 @@ nodes:
 - urn: tactic:stopping-conditions
   kind: tactic
   label: Define Stopping Conditions
+- urn: tactic:supply-chain-install-safety
+  kind: tactic
+  label: Supply-Chain Install Safety Checklist
 - urn: tactic:tdd-red-green-refactor
   kind: tactic
   label: Test Driven Development (TDD)

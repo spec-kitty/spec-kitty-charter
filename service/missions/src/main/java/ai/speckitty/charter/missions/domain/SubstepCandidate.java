@@ -29,9 +29,16 @@ public record SubstepCandidate(Optional<String> packName, String id) {
      * and {@code ::}, then the id. It is the one statement of the grammar: {@link #parse} reads a candidate by it, and
      * the {@code candidates} pattern of the mission-type schema is pinned to it by test.
      */
-    public static final String GRAMMAR = "^([a-z0-9][a-z0-9_-]*::)?" + ID_GRAMMAR + "$";
+    public static final String GRAMMAR = "^(" + packNameGrammar() + "::)?" + ID_GRAMMAR + "$";
 
     private static final Pattern WRITTEN = Pattern.compile(GRAMMAR);
+
+    /** The kernel's pack-name grammar without its anchors, so a candidate's qualifier is written by that one grammar. */
+    private static String packNameGrammar() {
+        String anchored = PackQualifiedReference.PACK_NAME_GRAMMAR;
+        return anchored.substring(1, anchored.length() - 1);
+    }
+
     private static final Pattern ID = Pattern.compile(ID_GRAMMAR);
 
     private static final ModularRuleset<String> WRITTEN_RULES = ModularRuleset.<String>emptyRules()

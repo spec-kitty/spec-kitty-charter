@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -80,8 +82,8 @@ class SubstepTest {
     @ParameterizedTest(name = "a substep delegates to a {0}")
     @EnumSource(
             value = ArtifactKind.class,
-            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE", "AGENT_PROFILE"})
-    void theScopeTargetsOfAnActionAreDelegable(ArtifactKind kind) {
+            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE"})
+    void theGuidanceKindsAreDelegable(ArtifactKind kind) {
         assertThat(SubstepDelegation.delegable(kind)).isTrue();
         assertThatCode(() -> new SubstepDelegation(kind, List.of(SubstepCandidate.parse("x"))))
                 .doesNotThrowAnyException();
@@ -90,12 +92,25 @@ class SubstepTest {
     @ParameterizedTest(name = "a substep does not delegate to a {0}")
     @EnumSource(
             value = ArtifactKind.class,
-            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE", "AGENT_PROFILE"},
+            names = {"DIRECTIVE", "TACTIC", "STYLEGUIDE", "TOOLGUIDE", "PARADIGM", "PROCEDURE"},
             mode = EnumSource.Mode.EXCLUDE)
     void noOtherKindIsDelegable(ArtifactKind kind) {
         assertThat(SubstepDelegation.delegable(kind)).isFalse();
         assertThatThrownBy(() -> new SubstepDelegation(kind, List.of(SubstepCandidate.parse("x"))))
                 .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
+    @DisplayName("a substep never delegates to an agent profile, though a scope edge from an action may reach one")
+    void anAgentProfileIsNoDelegationKind() {
+        // ADR-0032 decision 1, operator ruling DM-01M7DTN8JWR4G1P35NXGCMS65M: a mission type names roles, never
+        // profiles.
+        assertThat(RelationType.SCOPE.allows(NodeKind.ACTION, NodeKind.AGENT_PROFILE))
+                .isTrue();
+        assertThatThrownBy(
+                        () -> new SubstepDelegation(ArtifactKind.AGENT_PROFILE, List.of(SubstepCandidate.parse("x"))))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("never to an agent_profile");
     }
 
     @Test

@@ -12,7 +12,8 @@ import java.util.Objects;
  * The {@code delegates_to} of a {@link Substep}: the artifacts that could concretize it, as data (operator ruling
  * DM-01M7B1YH1GF15RD0G4ZPSA8KW9). The charter's selections decide which candidate applies. Each candidate also has a
  * {@code scope} edge from the step's action, which the pack load checks, so the kind is one a {@code scope} edge from an
- * {@code action} may reach: a guidance kind or {@code agent_profile} (squad finding M4).
+ * {@code action} may reach (squad finding M4), except {@code agent_profile}: a mission type names roles, never profiles
+ * (ADR-0032 decision 1, operator ruling DM-01M7DTN8JWR4G1P35NXGCMS65M), so a substep delegates to a guidance kind only.
  *
  * @param kind the kind of every candidate
  * @param candidates the candidates, in authored order; at least one, each once
@@ -21,8 +22,8 @@ public record SubstepDelegation(ArtifactKind kind, List<SubstepCandidate> candid
 
     private static final ModularRuleset<ArtifactKind> KIND_RULES = ModularRuleset.<ArtifactKind>emptyRules()
             .must(Constraints.of(
-                    "A substep delegates to a kind a scope edge from an action may reach: a guidance kind or"
-                            + " agent_profile.",
+                    "A substep delegates to a guidance kind, which a scope edge from an action may reach; never to"
+                            + " an agent_profile, since a mission type names roles, not profiles.",
                     SubstepDelegation::delegable));
     private static final ModularRuleset<List<SubstepCandidate>> CANDIDATE_RULES =
             ModularRuleset.<List<SubstepCandidate>>emptyRules()
@@ -47,12 +48,13 @@ public record SubstepDelegation(ArtifactKind kind, List<SubstepCandidate> candid
 
     /**
      * Whether a substep may delegate to artifacts of this kind: a {@code scope} edge from an {@code action} may reach it
-     * (the endpoint table, ADR-0064 decision 13).
+     * (the endpoint table, ADR-0064 decision 13), and it is not {@code agent_profile}, which the {@code scope} row allows
+     * but a mission type never names (ADR-0032 decision 1, operator ruling DM-01M7DTN8JWR4G1P35NXGCMS65M).
      *
      * @param kind the kind
-     * @return {@code true} for a guidance kind or {@code agent_profile}
+     * @return {@code true} for a guidance kind
      */
     public static boolean delegable(ArtifactKind kind) {
-        return RelationType.SCOPE.allows(NodeKind.ACTION, NodeKind.of(kind));
+        return kind != ArtifactKind.AGENT_PROFILE && RelationType.SCOPE.allows(NodeKind.ACTION, NodeKind.of(kind));
     }
 }

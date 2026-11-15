@@ -46,7 +46,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>A mission type is removed with its skeletons, the templates under its {@code templates/}, and its step prompts and
  * guidelines, its companions, as one removal under one impact check: every check above judges all of them together,
- * and an edge that names one of its action nodes {@code action:<type>/<step>} refers to it (D10 of #99).
+ * and an edge that names one of its action nodes {@code action:<type>/<step>} refers to it (D10 of #99), except the
+ * edges that go with it: its own step links and the {@code scope} edges from its own step actions.
  *
  * <p>A saved selection of the artifact in an activation is not consulted: it reads as stale and is dropped on the next
  * write of the activation.
@@ -150,17 +151,17 @@ public final class ArtifactRemovalService {
         Urn artifact = requireHeld(current, pack, kindToken, artifactId);
         List<Urn> removed = removedWith(current, artifact);
         PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
+        String packName = current.descriptor().name();
         List<Relationship> registered = store.registeredRelationships(pack);
         List<Relationship> outgoing = registered.stream()
-                .filter(edge -> removed.contains(edge.from()))
+                .filter(edge -> removed.contains(edge.from()) || goesWithAType(packName, removed, edge))
                 .toList();
-        // A removed mission type's own step links go with it, from the author-written documents that hold them, so they
-        // refer to nothing after the removal (operator ruling of 2026-11-14 on WP06).
+        // A removed mission type's own step links, and the scope edges from its own step actions, go with it from the
+        // author-written documents that hold them, so they refer to nothing after the removal (operator rulings
+        // DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6).
         PackRemovalStore.Authored authored = store.authored(pack);
-        String packName = current.descriptor().name();
         List<Relationship> dropped = authored.edges().stream()
-                .filter(edge ->
-                        removed.stream().anyMatch(type -> MissionStepLinkRule.isOwnStepLink(packName, type, edge)))
+                .filter(edge -> goesWithAType(packName, removed, edge))
                 .toList();
         List<Relationship> gone = new ArrayList<>(outgoing);
         gone.addAll(dropped);
@@ -195,17 +196,33 @@ public final class ArtifactRemovalService {
         return List.copyOf(removed);
     }
 
-    /** The facts with every removed artifact gone, and the registered edges that start at any of them. */
+    /** Whether an edge goes with one of the removed mission types ({@link MissionStepLinkRule#goesWithType}). */
+    private static boolean goesWithAType(String packName, List<Urn> removed, Relationship edge) {
+        return removed.stream().anyMatch(type -> MissionStepLinkRule.goesWithType(packName, type, edge));
+    }
+
+    /**
+     * The facts with every removed artifact gone, and the edges that go with them: those that start at one, and a
+     * removed mission type's scope edges from its own step actions.
+     */
     private static PackCompositionFacts without(
-            PackCompositionFacts facts, List<Urn> removed, List<Relationship> outgoing) {
+            PackCompositionFacts facts, List<Urn> removed, List<Relationship> gone) {
         PackCompositionFacts after = facts;
         for (Urn each : removed) {
             after = WriteFacts.withoutArtifact(
                     after,
                     each,
-                    outgoing.stream().filter(edge -> edge.from().equals(each)).toList());
+                    gone.stream().filter(edge -> startsAt(edge, each)).toList());
         }
         return after;
+    }
+
+    /** Whether an edge starts at the artifact, or, for a mission type, at one of its action nodes. */
+    private static boolean startsAt(Relationship edge, Urn artifact) {
+        return edge.from().equals(artifact)
+                || StepHolding.missionTypeOf(edge.from())
+                        .filter(artifact::equals)
+                        .isPresent();
     }
 
     // ---- 404
@@ -268,8 +285,9 @@ public final class ArtifactRemovalService {
 
     /**
      * A graph document the author wrote that declares a removed artifact's node, or one of a removed mission type's
-     * action nodes, or holds an edge from one, is never rewritten; a removed mission type's own step links are the one
-     * exception, dropped with the type (operator ruling of 2026-11-14 on WP06).
+     * action nodes, or holds an edge from one, is never rewritten; a removed mission type's own step links and the scope
+     * edges from its own step actions are the one exception, dropped with the type (operator rulings
+     * DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6).
      *
      */
     private static void requireNotAuthored(PackRemovalStore.Authored authored, List<Urn> removed, String packName) {

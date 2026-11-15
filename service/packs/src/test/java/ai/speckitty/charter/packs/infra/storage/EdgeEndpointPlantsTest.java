@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.StagedPack;
@@ -97,6 +98,26 @@ class EdgeEndpointPlantsTest {
                         assertThat(violation.pointer()).isEqualTo(document);
                         assertThat(violation.code()).isEqualTo(RelationshipEndpointRule.CODE);
                     });
+                });
+    }
+
+    @ParameterizedTest(name = "{0}: a composing read")
+    @CsvSource({
+        "r30-edge-procedure-requires-action, procedure.graph.yaml, a requires edge may not connect procedure to action",
+        "r31-edge-overrides-across-kinds, overrides.graph.yaml, an overrides edge may not connect directive to tactic"
+    })
+    @DisplayName("a composing read: pack_unreadable naming the graph document, then the code, then the reason")
+    void aComposingReadNamesTheCode(String plant, String document, String reason, @TempDir Path host) {
+        Path pack = planted(host, plant);
+        DomainRepositoryService reads = new DomainRepositoryService(
+                () -> List.of(new PackLocation("qa", PackLevel.ORG, pack)), new YamlSerializationStrategy());
+
+        assertThatThrownBy(() -> reads.compositionFacts(new PackIdentifier("qa")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage())
+                            .isEqualTo("the file " + document + " of qa cannot be read: "
+                                    + RelationshipEndpointRule.CODE + ": " + reason);
                 });
     }
 

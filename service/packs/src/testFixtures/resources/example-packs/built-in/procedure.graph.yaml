@@ -11,4 +11,7 @@ nodes:
 - urn: procedure:example-mapping-workshop
   kind: procedure
   label: Example Mapping Workshop
+- urn: procedure:git-flow
+  kind: procedure
+  label: Git Flow Branching Workflow
 edges: []

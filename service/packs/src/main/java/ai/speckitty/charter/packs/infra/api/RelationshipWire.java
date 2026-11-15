@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -27,6 +28,12 @@ final class RelationshipWire {
      */
     static final int MAX_ENDPOINT_LENGTH = 255;
 
+    /**
+     * The violation code of a {@code type} that names no relation, a retired one ({@code impacts}, {@code replaces},
+     * {@code delegates_to}) among them; the violation points at {@code /type} of the relationship.
+     */
+    static final String TYPE_UNKNOWN = "relationship_type_unknown";
+
     private RelationshipWire() {}
 
     /**
@@ -36,7 +43,8 @@ final class RelationshipWire {
      * @param wire the request body
      * @return the draft
      * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is longer than
-     *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, the type is unknown, or the edge is a bare self-loop
+     *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, the type is unknown (one violation
+     *     {@value #TYPE_UNKNOWN} at {@code /type}), or the edge is a bare self-loop
      */
     static RelationshipDraft fromWire(RelationshipRegistration wire) {
         try {
@@ -81,8 +89,7 @@ final class RelationshipWire {
                 throw new IllegalArgumentException(PackPolicy.NOT_AUTHORED + endpoint);
             }
         }
-        RelationType relationType = RelationType.fromToken(type)
-                .orElseThrow(() -> new IllegalArgumentException("unknown relation type: " + type));
+        RelationType relationType = RelationType.fromToken(type).orElseThrow(() -> unknownType(type));
         if (relationType.derived()) {
             throw new IllegalArgumentException(
                     "relation type " + type + " is derived from an artifact's own field, never registered");
@@ -116,6 +123,13 @@ final class RelationshipWire {
         } catch (IllegalArgumentException malformed) {
             throw new IllegalArgumentException("not a URN of a known kind: " + reference, malformed);
         }
+    }
+
+    /** A type that names no relation: the one violation at {@code /type}, so a client need not parse the detail. */
+    private static CharterRefusal unknownType(String type) {
+        String detail = "unknown relation type: " + type;
+        return CharterRefusal.withViolations(
+                RefusalCode.VALIDATION_FAILED, detail, List.of(new RefusalViolation("/type", TYPE_UNKNOWN, detail)));
     }
 
     private static CharterRefusal refused(IllegalArgumentException invalid) {

@@ -2,8 +2,15 @@
 
 - `getKindTaxonomy`, `GET /offering/kinds` (R18, #112; ADR-0077 decision 1, operator ruling
   DM-01M7B1YE4J84K0T4ZA27M48QKG): the kind taxonomy of the charter's model, built from the kernel's enums and the
-  same whatever packs are configured. `kinds` lists every node kind in the model's order (`KindRow`: `kind`, `plural`,
-  `artifact`, `activatable`, `authoredInGraphs`, and a templated `artifacts` link for a kind the pack list serves);
+  same whatever packs are configured. `kinds` lists every node kind in the model's order (`KindRow`: `kind`; `plural`,
+  absent for a kind with none; `artifactKind`, the token the pack list's `?kind=` takes, absent for a kind that is no
+  artifact kind (`action`); `artifact`; `activatable`; `declarableInGraphs`, whether a graph document may declare it;
+  `edgeTarget`, whether an authored edge may target it; and a templated `artifacts` link, built from `artifactKind`,
+  for a kind the pack list serves). The two graph facts are published apart, not as one `authoredInGraphs`, because
+  the parallel glossary work (#106) adds a kind that is only an edge target and has no plural; today both are false
+  only for `guard` and `lifecycle`. The service checks them apart as well: the domain's single `authoredInGraphs`
+  is removed, a node declaration and an edge's source are checked against `declarableInGraphs` and an edge's target
+  against `edgeTarget`, so no answer changes while the two agree for every kind;
   `relations` lists every relation, then `in_tension_with` (`RelationRow`: `relation`, `heldAs`, `directed`, `derived`
   and its allowed `{source, target}` pairs, `EndpointPair`). New schemas `KindTaxonomy`, `KindRow`, `RelationRow`,
   `EndpointPair`, `TaxonomyKind` and `TaxonomyRelation`; the header `KindTaxonomyETag`, a strong `ETag` that is the

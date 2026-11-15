@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.EndpointPair;
 import ai.speckitty.charter.api.model.KindRow;
 import ai.speckitty.charter.api.model.KindTaxonomy;
 import ai.speckitty.charter.api.model.RelationRow;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
 import java.util.EnumMap;
 import java.util.List;
@@ -69,15 +70,22 @@ final class KindTaxonomyAnswer {
         if (kind.listed()) {
             rowLinks.put(
                     Relation.ARTIFACTS,
-                    links.templated(Map.of("kind", kind.kind().token()), "packs", "{packId}", "artifacts"));
+                    links.templated(
+                            Map.of("kind", kind.artifactKind().orElseThrow().token()),
+                            "packs",
+                            "{packId}",
+                            "artifacts"));
         }
-        return new KindRow(
+        KindRow row = new KindRow(
                 KindRow.KindEnum.fromValue(kind.kind().token()),
-                kind.plural(),
                 kind.artifact(),
                 kind.activatable(),
-                kind.authoredInGraphs(),
+                kind.declarableInGraphs(),
+                kind.edgeTarget(),
                 Hypermedia.wire(rowLinks));
+        kind.plural().ifPresent(row::setPlural);
+        kind.artifactKind().map(ArtifactKind::token).ifPresent(row::setArtifactKind);
+        return row;
     }
 
     private static RelationRow row(KindTaxonomyReadService.RelationFacts relation) {
