@@ -2,8 +2,8 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054), Amendment 2026-11-05 (ADR-0064), Amendment 2026-11-07 (decision 6 built) and Amendment 2026-11-08 (ADR-0066: prompt fragments; ADR-0053 decision 21: sibling enhancers compose)'
+updated: 2026-11-14T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054), Amendment 2026-11-05 (ADR-0064), Amendment 2026-11-07 (decision 6 built) and Amendment 2026-11-08 (ADR-0066: prompt fragments; ADR-0053 decision 21: sibling enhancers compose), Amendment 2026-11-13 (ADR-0077: the step contract retires)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -131,6 +131,15 @@ each is annotated:
 - decision 23: two sibling packs that both override one step are refused; two that both enhance it compose
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21, amended).
 
+### Amendment 2026-11-13
+
+The operator's slice F rulings of 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) retire `mission_step_contract`. The original text stands, and
+each changed point is annotated:
+
+- decision 4: the bundle has no `step_contracts/` directory; a step's substeps are authored in the mission-type file.
+- decision 5: the kind is retired outright, its content folded into the step's `substeps` ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 2 and 3).
+- the Context's composite state: a step with `substeps` is the composite state; recursive substeps stay with #513.
+
 ## Context
 
 - **ADR-0044 consolidated the mission type** into one sanitized file: an ordered `steps` list, `on_demand_steps`,
@@ -223,12 +232,14 @@ up the formal meaning of a term used here.
    <pack>/mission_types/<type>/<type>.mission-type.yaml
    <pack>/mission_types/<type>/steps/<step>.prompt.md
    <pack>/mission_types/<type>/steps/<step>.guidelines.md
-   <pack>/mission_types/<type>/step_contracts/<id>.step-contract.yaml
+   <pack>/mission_types/<type>/step_contracts/<id>.step-contract.yaml   (retired 2026-11-13, ADR-0077)
    <pack>/mission_types/<type>/templates/...
    ```
 
 5. **`mission_step_contract` stays a kind** (M2); its files move into the type's bundle. The contract file name
    above keeps today's file suffix if it differs; only the directory changes.
+   *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 3): the kind is retired outright, and a `*.step-contract.yaml` file is refused as
+   a retired file kind. Its substeps are authored in the step.*
 6. **Activation** (M4). A mission type is the cascade source, and is otherwise an ordinary kind: presets, the
    deny list and listing apply to it as to any kind. No kind token has a special path (core's
    `CHARTER_KIND_TOKENS` mission-type path and `MissionTypeNotAnArtifactKind` go; DIV-501 closes).

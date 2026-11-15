@@ -2,7 +2,7 @@
 title: Ruleset scenario trace
 description: Maps each counter-example of the layer-merge ruleset review and each acceptance scenario of its user stories to its decision, the scenario that pins it and its pull request.
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -153,7 +153,7 @@ effective graph and the effective action context.
 | US5 AS1 | An edge whose endpoint is not in force is absent from the effective graph | `effective-graph-and-context.feature`: `US5 AS1 - an edge whose endpoint is not in force is absent from the graph` | C | built |
 | US5 AS2 | A layer override resolves edges to the winner and is listed in `layerOverrides` | `effective-graph-and-context.feature`: `US5 AS2 - the edge from an overridden version is gone, the edge to it ends at the winner, and the override is listed`; `US5 AS2 - the override of a held step is listed, the override of a template and of an artifact out of force are not` | C | built |
 | US5 AS3 | `T` read from its side shows `E enhances T` | `effective-graph-and-context.feature`: `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not` | C | built |
-| US5 AS4 | The action context of a mission type in force holds what the step contract names, with active enhancers | `effective-graph-and-context.feature`: `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests` | C | built |
+| US5 AS4 | The action context of a mission type in force holds what the action reaches, with active enhancers (the spec said "what the step contract names"; the step contract is retired, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) | `effective-graph-and-context.feature`: `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests` | C | built |
 | US5 AS5 | A mission type not in force gives an empty context and the reason; an unknown action is `404 action_not_found` | `effective-graph-and-context.feature`: `US5 AS5 - the context of a mission type not in force is empty and the skipped report says why`; `US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force` | C | built |
 | US6 AS1 | A settlement that names `b` puts `b`'s `D` in force and raises no `pack_sibling_conflict` | `layer-merge.feature`: `US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)` | B | built |
 | US6 AS2 | The same conflict without the entry refuses with `500 pack_unreadable` naming `pack_sibling_conflict` | `layer-merge.feature`: `US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers` | B | built |

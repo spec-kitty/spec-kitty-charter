@@ -61,8 +61,8 @@ Where each level is configured: `built-in` ships with Spec Kitty (source home mo
 consumers); the `project` pack sits under `.kittify/charter-packs/`.
 
 The singular project directories for four kinds are a deliberate asymmetry, declared once in
-core's `PROJECT_KIND_DIRS`. Built-in step contracts live under
-core's `packs/built-in/missions/built_in_step_contracts/`, and `mission_step_contract`, `template`
+core's `PROJECT_KIND_DIRS`. Core's built-in step contracts live under
+core's `packs/built-in/missions/built_in_step_contracts/` (the kind is retired in the service, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)), and `template`
 and `anti_pattern` have no built-in content directory of their own. "Content directory" means
 the directory of a kind's layered repository; for example `packs/built-in/templates/` exists
 but is not a content directory in this sense. Per-kind facts are in the
@@ -152,7 +152,7 @@ A fragment has no header fields: core overwrites `pack_name`, `source_kind`, `so
 `layer_index` and `provenance_marker` from the operator's configuration, so a fragment that
 carries one is refused as an unknown key (DIV-008). An org pack must ship the fragment, or the load
 refuses it with `pack_unreadable`. The `kind` of a fragment node has one name per concept:
-the plural of an artifact kind (`mission_step_contracts`, `anti_patterns`, `assets` and so on),
+the plural of an artifact kind (`anti_patterns`, `assets` and so on),
 or `mission_types` or `actions`. `mission_steps` and `mission_type` are refused (DIV-011).
 
 Edges in a fragment land in the same merged graph cascade reads.
@@ -326,7 +326,8 @@ kebab-case.
   `tactic-references`, `toolguide-references`, `styleguide-references`,
   `self-review-protocol`, `model`, `effort`.
 - **CRG:** `agent_profile:<id>`. Lineage is a `specializes_from` edge in the graph, never a
-  profile field; `delegates_to` edges declare runtime handoff.
+  profile field. A runtime handoff is a substep's `delegates_to` data, not an edge: the `delegates_to` relation is
+  retired ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)).
 - **Roles:** `role` is the primary role and `alt-roles` an optional list of further roles, each
   a lowercase token of letters, digits and hyphens, starting with a letter, at most 64
   characters; alt-roles are distinct, never repeat `role` and are never `generic`. A step that
@@ -339,15 +340,11 @@ kebab-case.
 - **Selection:** `routing-priority` is the specificity level
   ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
 
-### Mission step contract — `*.step-contract.yaml`
+### Mission step contract — retired
 
-The structural sub-steps of one mission step and what each delegates to. The step's role and
-expected artifacts live on the mission step in its mission-type file, not here
-([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) decision 2).
-
-- **Fields:** `schema_version`, `id`, `action`, `mission`, `steps[]`. Each step has `id`,
-  `description` and either a `command` or a `delegates_to` block (`kind` plus `candidates`).
-- **CRG:** `mission_step_contract:<id>`, tied to `action:<mission>/<action>`.
+A `*.step-contract.yaml` file and a `mission_step_contract.graph.yaml` fragment are refused by name as retired file
+kinds ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 3). Their content, the structural sub-steps of one mission step and what each delegates to, is
+authored as the step's `substeps` in its mission-type file (see the mission type below).
 
 ### Glossary context — `glossaries/<id>.glossary.yaml`
 
@@ -362,7 +359,7 @@ One ubiquitous-language bounded context and its terms, the artifact of the kind 
   a `vocabulary` edge may target it, but no graph document declares it as a node. Each `see_also` entry, bare or
   `<pack>::` qualified, derives a `vocabulary` edge from the context to the term it names.
 - **Retired:** the old file is refused by name, by the rule `**/*.glossary-pack.yaml`, wherever it lies in the pack
-  (`glossary_packs/` included); there is no reader of the old shape. `glossary_pack:<id>` is not a node kind any more. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-context) draws the built shape.
+  (`glossary_packs/` included); there is no reader of the old shape. `glossary_pack:<id>` is not a node kind any more. The [skill and glossary diagram](/architecture/descriptor-schemas/#pack-skill-and-glossary-context) draws the built shape.
 
 ### Pack skill — `*.skill.yaml` plus body
 
@@ -402,9 +399,16 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 - **Steps:** `steps` is the one run order; `on_demand_steps` are invoked by a command, outside
   the sequence, and keep their authored order. Step ids are unique across both lists. A step is
   `{id, title, description?, role?, prompt_path?, guidelines_path?, expected_input_artifacts?,
-  expected_output_artifacts?}`. `description` is a one-line summary of at most 160
+  expected_output_artifacts?, substeps?}`. `description` is a one-line summary of at most 160
   characters; `role` is a role token, never a profile
-  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
+  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)). An authored `action_sequence` or
+  `template_set` is refused as an unknown field by its name ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 7).
+- **Substeps:** `substeps` is a flat, ordered list, one level deep ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 2). A substep is
+  `{id, description, command?, inputs?, delegates_to?, guidance?}`: `id` a letter-first kebab slug unique within the
+  step (`duplicate_step_id`), an input `{flag, source, optional?}` with `optional` only `true`, and `delegates_to`
+  `{kind, candidates}`, where `kind` is a guidance kind or `agent_profile` and each candidate is written
+  `[<pack>::]<id>`, once. Each candidate resolves to an artifact of `kind` (`substep_delegation_unresolved`) and the
+  step's action has a `scope` edge to it (`substep_delegation_unscoped`).
 - **Expected artifacts:** a step's inputs are its preconditions and its outputs its
   postconditions. An input is `{artifact_key, path_pattern, blocking?}`; an output adds
   `artifact_class` (`input`, `output`, `evidence`, `workflow` or `runtime`) and `template_path`
@@ -427,13 +431,15 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
   `governance-profile.yaml`, `expected-artifacts.yaml`, `actions/<a>/index.yaml`,
   `mission-steps/**` and `command-templates/*` are refused by name (DIV-502).
 - **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node
-  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12). Every step and
+  on-demand step has an authored `mission_type:<id> requires action:<id>/<step>` edge, and no such edge names an action
+  that is no step of the type (`mission_step_unlinked`, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 4).
 
 > **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
 > the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`
 > kind, and a `guard` kind implemented by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/); the proposed `gate` kind was not taken). With
 > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) it renames `missions/` to `mission_types/` and
-> moves the step contracts into the type's bundle. This section describes the shape the service reads today; the [mission type lifecycle diagram](/architecture/descriptor-schemas/#mission-type) draws the decided shape.
+> moves the step contracts into the type's bundle (since retired: a step's substeps are in the step, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)). This section describes the shape the service reads today; the [mission type lifecycle diagram](/architecture/descriptor-schemas/#mission-type) draws the decided shape.
 
 ### Anti-pattern and template
 

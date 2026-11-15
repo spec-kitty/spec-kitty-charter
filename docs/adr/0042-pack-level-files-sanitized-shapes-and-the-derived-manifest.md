@@ -2,7 +2,7 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431); decision 5 amended 2026-11-12 (manifest membership derived and restamped on every write, #110)'
 decision_date: '2026-10-28'
 type: ADR
@@ -268,7 +268,8 @@ A preset is `presets/<id>.yaml`, validated by the closed schema
   at least one; *(amended 2026-11-07: refused, there is no kind gate)*;
 - ten optional lists: `activated_directives`, `activated_tactics`, `activated_styleguides`,
   `activated_toolguides`, `activated_paradigms`, `activated_procedures`,
-  `activated_agent_profiles`, `activated_mission_step_contracts`, `activated_anti_patterns` and
+  `activated_agent_profiles`, `activated_mission_step_contracts` *(retired 2026-11-13 with its kind, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/))*,
+  `activated_anti_patterns` and
   `activated_mission_types` *(amended 2026-11-07: and `activated_skills` and `activated_glossary_packs`; a preset may
   name any kind)*. Each holds at least one item;
 - an item is a closed object: `id` (required, not empty) and `must_have` (optional, `const: true`).

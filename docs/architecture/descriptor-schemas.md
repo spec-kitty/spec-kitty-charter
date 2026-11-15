@@ -23,7 +23,7 @@ audience:
 
 The structural authority for every descriptor file is the set of JSON Schemas in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas)
-(23 schemas), canonical here and edited in place under
+(22 schemas), canonical here and edited in place under
 [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and
 [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) (first imported from core's models;
 the import's changes are tabled in the
@@ -31,11 +31,11 @@ the import's changes are tabled in the
 files and how they nest are drawn in the [pack write model](#pack-write-model). Six diagrams on this
 page draw the decided design of ADR-0048 to ADR-0052 (each names its ADRs in its title), not
 today's schemas or code: the pack write model, the descriptor kinds, the charter kinds, the
-mission-step contract, skill and glossary schemas, the mission type, and the pack, CRG and charter
+skill and glossary schemas, the mission type, and the pack, CRG and charter
 configuration schemas. The agent-profile and directive-example diagrams are not decided design: they
 show today's schema and an instance. Where a decided-design diagram differs from a schema, the
 difference is the decision, not an error. Yellow «pending» classes and `[pending ADR-00xx OQn]` marks show an open question that
-no ruling has settled yet. Each of the 23 schemas also has its own page, with a diagram, under
+no ruling has settled yet. Each of the 22 schemas also has its own page, with a diagram, under
 [Pack schemas](/architecture/pack-schemas/). Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
 
@@ -67,7 +67,7 @@ artifact files and the asset manifest, with their multiplicities. The org charte
 design ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to
 [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)), not the files the
 service reads today. Source: `diagrams/pack-write-model.puml`. A node of a fragment names its kind with one
-canonical plural (`mission_step_contracts`, not `mission_steps`); see [Domain](/context/domain/). An
+canonical plural (`agent_profiles`, not `agents`; `mission_steps` is refused); see [Domain](/context/domain/). An
 artifact file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may carry an optional
 `provenance`; an edge may not. `charter.schema.json` is not drawn: it validates the project's
 `charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level `preset` and `pack-manifest`
@@ -114,9 +114,9 @@ Example instance (`packs/built-in/directives/018-doctrine-versioning-requirement
 
 Source: `src/charter/offering/schemas/agent-profile.schema.yaml` (schema-version 2).
 
-## Mission-step contract, pack skill, glossary context
+## Pack skill and glossary context
 
-![Mission-step contract, skill and glossary context schemas](diagrams/descriptor-mission-skill-glossary.svg)
+![Skill and glossary context schemas](diagrams/descriptor-mission-skill-glossary.svg)
 
 > **Built:** the glossary context is the service's shape. The kind `glossary` replaced `glossary_pack` outright
 > ([ADR-0049](/adr/0049-glossary-contexts-and-terms/),
@@ -124,12 +124,10 @@ Source: `src/charter/offering/schemas/agent-profile.schema.yaml` (schema-version
 > `contracts/packs/schemas/glossary.schema.json`, described on the
 > [Glossary context](/architecture/pack-schemas/glossary/) page.
 >
-> **Decided design:** the mission-step contract half draws
-> [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/). Today's code and schemas still
-> have the old shape. In core, the mission-step contract has no JSON Schema file; its Pydantic model
-> (`src/charter/offering/missions/step_contracts.py`) is the schema, and the skill schema is
-> `src/charter/offering/schemas/skill.schema.yaml`. This repository holds a closed JSON Schema for each
-> (`contracts/packs/schemas/`).
+> In core, the skill schema is `src/charter/offering/schemas/skill.schema.yaml`. This repository holds a closed JSON
+> Schema for each (`contracts/packs/schemas/`). The mission step contract the diagram once drew beside them is
+> retired: a step's substeps are authored in the mission type
+> ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)).
 
 ## Mission type
 
@@ -208,7 +206,7 @@ every level.
   `mission_type`, which a preset activates in its own `activated_mission_types` list)
 - `- activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`,
   `activated_paradigms`, `activated_procedures`, `activated_agent_profiles`,
-  `activated_mission_step_contracts`, `activated_anti_patterns`, `activated_mission_types`: each
+  `activated_anti_patterns`, `activated_mission_types`: each
   `[1..]` items
 - an item: `+ id` (not empty), `- must_have` (only `true`: present means must-have)
 

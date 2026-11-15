@@ -86,7 +86,7 @@ class ClosureViewTest {
                 Optional.empty());
     }
 
-    /** The {@code requires} edge a pack writes from mission type {@code type} to its step {@code step} (FR-009). */
+    /** The {@code requires} edge a pack writes from mission type {@code type} to its step {@code step} (FR-011). */
     private static Relationship link(String type, String step) {
         return edge("mission_type:" + type, RelationType.REQUIRES, "action:" + type + "/" + step);
     }

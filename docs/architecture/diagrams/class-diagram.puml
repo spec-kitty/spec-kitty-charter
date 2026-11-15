@@ -211,7 +211,6 @@ package "packs.infra.storage  «EDGE»" #FDF4EE {
   class ParadigmDso <<DSO>> #FBEEE6
   class ToolguideDso <<DSO>> #FBEEE6
   class DrgEdge <<DSO>> #FBEEE6 {
-    +impacts
     +when
     +reason
   }
@@ -371,7 +370,7 @@ note bottom of DrgEdge
   Storage-only serialization object for a relationship
   (record equality = round-trip fidelity). The strategy maps
   <b>Relationship</b> ↔ <b>DrgEdge</b> at the YAML boundary; keeps
-  impacts / when / reason. The domain never sees DrgEdge.
+  when / reason. The domain never sees DrgEdge.
 end note
 
 ' --- web edge -> application edge (Tactic only) ---

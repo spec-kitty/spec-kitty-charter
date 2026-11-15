@@ -171,4 +171,92 @@ class EndpointRuleTest {
         assertThat(Tension.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
         assertThat(Tension.derived()).isFalse();
     }
+
+    // ---- the source rule of #447, folded into the bridge (operator ruling DM-01M7B1Z03VF9A36FBV65431HR3) ----------
+    // These cases moved here from the packs module's OverrideSourceRuleTest when the rule was folded in.
+
+    private static final String TARGET = "base::directive:D";
+
+    private static Urn sourceOf(ArtifactKind kind) {
+        return new Urn(NodeKind.of(kind), "t");
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = ArtifactKind.class,
+            names = {"TEMPLATE", "ASSET", "GUARD", "LIFECYCLE"})
+    @DisplayName("an overrides edge from each kind that is not activatable is refused, naming the edge as written")
+    void anOverridesEdgeFromEachKindThatIsNotActivatableIsRefused(ArtifactKind kind) {
+        Urn from = sourceOf(kind);
+
+        assertThat(EndpointRule.overridesSourceRefusal(RelationType.OVERRIDES, from, from.toString(), TARGET))
+                .hasValueSatisfying(reason -> assertThat(reason)
+                        .contains(from.toString())
+                        .contains(TARGET)
+                        .contains("not an activatable kind"));
+        assertThat(EndpointRule.bind(
+                        RelationType.OVERRIDES,
+                        from,
+                        Optional.empty(),
+                        new Urn(NodeKind.DIRECTIVE, "D"),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()))
+                .isInstanceOfSatisfying(Fault.class, fault -> {
+                    assertThat(fault.code()).isEqualTo(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
+                    assertThat(fault.reason(from.toString(), TARGET))
+                            .isEqualTo(EndpointRule.overridesSourceRefusal(
+                                            RelationType.OVERRIDES, from, from.toString(), TARGET)
+                                    .orElseThrow());
+                });
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = ArtifactKind.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"TEMPLATE", "ASSET", "GUARD", "LIFECYCLE"})
+    @DisplayName("an overrides edge from each activatable kind passes the source rule")
+    void anOverridesEdgeFromEachActivatableKindPasses(ArtifactKind kind) {
+        assertThat(kind.activatable()).isTrue();
+        Urn from = sourceOf(kind);
+
+        assertThat(EndpointRule.overridesSourceRefusal(RelationType.OVERRIDES, from, from.toString(), TARGET))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the four kinds the source rule refuses are exactly the kinds that are not activatable")
+    void theFourKindsTheRuleRefusesAreExactlyTheKindsThatAreNotActivatable() {
+        assertThat(ArtifactKind.values())
+                .filteredOn(kind -> !kind.activatable())
+                .containsExactlyInAnyOrder(
+                        ArtifactKind.TEMPLATE, ArtifactKind.ASSET, ArtifactKind.GUARD, ArtifactKind.LIFECYCLE);
+    }
+
+    @Test
+    @DisplayName("the source rule judges overrides only, and the source only")
+    void theSourceRuleJudgesOverridesAndTheSourceOnly() {
+        Urn template = new Urn(NodeKind.TEMPLATE, "t.md");
+        for (RelationType relation : RelationType.values()) {
+            if (relation != RelationType.OVERRIDES) {
+                assertThat(EndpointRule.overridesSourceRefusal(relation, template, template.toString(), TARGET))
+                        .as(relation.token())
+                        .isEmpty();
+            }
+        }
+        assertThat(EndpointRule.overridesSourceRefusal(
+                        RelationType.OVERRIDES, new Urn(NodeKind.DIRECTIVE, "E"), "directive:E", "template:t.md"))
+                .as("an overrides edge to a template")
+                .isEmpty();
+        assertThat(EndpointRule.overridesSourceRefusal(RelationType.OVERRIDES, template, "main::template:t.md", TARGET))
+                .as("a source written with a pack name is named as written")
+                .hasValueSatisfying(reason -> assertThat(reason).contains("main::template:t.md"));
+    }
+
+    @Test
+    @DisplayName("the source rule's code is the one spelling of #447")
+    void theSourceRulesCodeIsOneToken() {
+        assertThat(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE).isEqualTo("overrides_source_not_activatable");
+    }
 }

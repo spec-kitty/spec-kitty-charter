@@ -2,7 +2,7 @@
 title: "ADR-0071: Procedures are a served read kind"
 description: "The service reads procedures by pack and under an activation, on the seam of the kinds already served, with artifact_not_found and a revision ETag."
 doc_status: active
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-11'
 type: ADR
@@ -56,6 +56,7 @@ read the procedure it named.
    pack revision as their `ETag` too, so every pack read of one thing does and the asymmetry is gone. For the
    mission-type family the tag is a concurrency token naming the pack, not a cache validator: the answer can carry
    content resolved from dependency packs that the revision does not cover, so no pack read takes `If-None-Match`.
+   *(Note 2026-11-13: `mission_step_contract` is retired, its substeps authored in the mission-type step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
 
 6. **An action context or graph entry of a procedure links its reads** (`effective-artifact`, and `artifact` where the
    entry names its pack), as entries of every listed kind do. It is a response addition for clients that already

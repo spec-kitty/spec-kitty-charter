@@ -275,7 +275,10 @@ delete:
         override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
         member naming the root pack of the closure and the packs involved; validation_failed with the violation
         mission_step_unlinked at /to when the edge is the last that links a mission type's step to its type, judged
-        after the RELATIONSHIP write gate; validation_failed when the pack that would result does not revalidate. The composition codes answer 422 here, in place of 500.
+        after the RELATIONSHIP write gate; validation_failed with the violation substep_delegation_unscoped at /to when
+        the edge is the last scope edge from a step's action to a candidate one of its substeps delegates to;
+        validation_failed when the pack that would result does not revalidate. The composition codes answer 422 here,
+        in place of 500.
         A stored activation whose closure the write joins and whose step enhancement in force would fill a slot
         the prompt in force of its step does not declare is refused with prompt_slot_missing (C38), the activation
         named in the detail, and nothing is written.

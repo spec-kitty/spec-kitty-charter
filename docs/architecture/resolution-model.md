@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -100,7 +100,10 @@ flowchart LR
    effective reads and for the write cascade ([The layer merge](#the-layer-merge)); `/offering` composes and never
    merges.
 3. **Activate.** In core, a per-kind activation key that is absent means what the kind's
-   `effective_when_absent` says (`all` for most kinds; `required` for `skill`). In the service's
+   `effective_when_absent` says (`all` for most kinds; `required` for `skill`). The service serves its own kind facts
+   instead: which kinds exist, which an activation selects (`activatable`) and which kinds each relation may connect
+   are read from the kind taxonomy, `GET /offering/kinds` ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)
+   decision 1), which carries none of core's `effective_when_absent`, `selection_overlayable` or `org_requirable`. In the service's
    activation document an absent key means none, `skill` included
    ([DIV-203](/conformance/divergence-register/)), and the required floor is the must-have items of
    the governing presets in the activation's closure ([DIV-205](/conformance/divergence-register/)). A present key
@@ -191,7 +194,8 @@ The set is solved in four strata, each a fixed point over the one below (researc
    it, never by an enhancement (operator rulings Q6 and Q8 of 2026-11-06); otherwise it is put in force, whatever the language filter says (DIV-225, DIV-226). This
    repeats until no required artifact is unsatisfied on the final set.
 4. **Enhancers and bindings.** A least fixed point: an enhancer is in force only when its support chain reaches an
-   artifact that enhances nothing and is in force, and a step contract only while its mission type is (DIV-224, A8).
+   artifact that enhances nothing and is in force (DIV-224, A8). *(The step contract, held in force only while its
+   mission type was, is retired: [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
    A step enhancer is grounded exactly when the mission type of its single `enhances` target is in force (OD-6,
    decision `01M702A8XYB588PSGTXRKQ4NKK`, DIV-241); one whose target step no pack holds is pruned for its target. A
    required or locked artifact this removes stays out and is reported once, in `requiredNotInForce`.

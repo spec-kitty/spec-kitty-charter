@@ -2,7 +2,7 @@
 title: "Journey 07: Add a mission type with roles and specialist profiles"
 description: How a pack author adds a mission type whose steps ask for roles, ships specialist profiles that fill those roles, and declares a fallback profile.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -37,8 +37,8 @@ need a planner, an implementer and a reviewer. The author also ships two special
 
 ## Steps
 
-1. The author writes the mission type: its steps, each with a step contract and a step template
-   (the prompt). Each step names the **role** it asks for: `planner`, `implementer`, `reviewer`.
+1. The author writes the mission type: its steps, each with its substeps and a step template
+   (the prompt), and one `requires` edge from the type to each step's action in the pack's graph. Each step names the **role** it asks for: `planner`, `implementer`, `reviewer`.
    No step names a profile.
 2. The author lists the mission type's recipe ingredients by id: the directives and tactics added
    to the plate while a mission of this type runs. Activating the mission type is the consent to

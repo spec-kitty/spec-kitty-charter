@@ -2,7 +2,7 @@
 title: "ADR-0024: Charter kinds share a thin CharterArtifact interface over per-kind entities and ports"
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: 'Accepted, with Amendment 2026-10-26 and Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0035 and ADR-0037 (2026-10-27)'
 decision_date: '2026-10-24'
 type: ADR
@@ -33,7 +33,7 @@ Decision 4 stands, and this amendment says what ends the deferral. The next goal
 round trip ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every
 Charter Pack file into the domain and write it back. That adds eight kinds (procedure,
 agent_profile, mission_step_contract, glossary_pack, skill, anti_pattern, asset, template) and the
-pack-level files.
+pack-level files. *(Note 2026-11-13: `mission_step_contract` is retired, its substeps authored in the mission-type step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
 
 An architecture review on 2026-10-26 (architect-alphonso) measured the per-kind cost. Each of the
 five modelled kinds is a slice of 7 to 9 files and 800 to 1,230 lines. Most of that is real

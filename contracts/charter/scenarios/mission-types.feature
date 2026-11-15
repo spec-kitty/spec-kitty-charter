@@ -949,6 +949,7 @@ Feature: A pack's mission types are read with their steps and skeletons
     Then the response status is 500
     And the problem code is "pack_unreadable"
     And the field at "/detail" contains "missions/rx/rx.mission-type.yaml"
+    And the field at "/detail" contains "the step b of mission_type:rx has no requires edge"
     Given the org pack "rxlone" with the file "mission_type.graph.yaml":
       """
       schema_version: '1.0'

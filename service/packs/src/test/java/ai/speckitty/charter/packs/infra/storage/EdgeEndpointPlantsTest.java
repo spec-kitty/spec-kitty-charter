@@ -121,6 +121,36 @@ class EdgeEndpointPlantsTest {
         assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
     }
 
+    @ParameterizedTest(name = "the load: {0} {1} {2}")
+    @CsvSource({
+        "step_enhancement:ghost, enhances, directive:D, an enhances edge may not connect step_enhancement to directive",
+        "other::step_enhancement:e, enhances, directive:D, an enhances edge may not connect step_enhancement to directive"
+    })
+    @DisplayName("the store's load refuses an edge from a step enhancement the pack does not hold, or another pack's")
+    void theLoadRefusesAnEnhancementEdgeNoOtherRuleJudges(
+            String source, String relation, String target, String reason, @TempDir Path host) throws IOException {
+        Path pack = planted(host, "r31-edge-overrides-across-kinds");
+        Files.writeString(
+                pack.resolve("overrides.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                generated_by: planted
+                nodes: []
+                edges:
+                - source: %s
+                  target: %s
+                  relation: %s
+                """.formatted(source, target, relation), StandardCharsets.UTF_8);
+
+        WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(pack);
+
+        assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo("overrides.graph.yaml");
+            assertThat(violation.kind()).isEqualTo(RelationshipEndpointRule.CODE);
+            assertThat(violation.reason()).isEqualTo(reason);
+        });
+    }
+
     private static List<PackFinding> validate(Path pack) {
         return new PackValidation(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))

@@ -1,49 +1,13 @@
 @startuml descriptor-mission-skill-glossary
 ' Sources:
-'   src/charter/offering/missions/step_contracts.py   (MissionStepContract; no JSON schema file)
 '   src/charter/offering/schemas/skill.schema.yaml + pack_skills/models.py (PackSkill)
 '   contracts/packs/schemas/glossary.schema.json (GlossaryContext, Term; ADR-0049, built in #106)
 ' Notation: + required, - optional (Pydantic default shown after =).
 ' Built: the glossary context (ADR-0049, ADR-0053 d11 to d14); the kind glossary replaced glossary_pack outright (#106).
-' Decided design: ADR-0050 (step contract moves into the mission-type bundle, loses gates), accepted 2026-11-02;
-' not built yet. PackSkill is unchanged.
+' PackSkill is unchanged. The mission step contract this diagram drew is retired (ADR-0077): a step's substeps are in
+' the mission type, drawn in descriptor-mission-type-lifecycle.puml.
 !include _style.iuml
-title Mission-step contract, pack skill and glossary context descriptor schemas — glossary built (ADR-0049), step contract decided (ADR-0050)
-
-class MissionStepContract <<step_contracts.py>> {
-  + id : string
-  + schema_version : string
-  + action : string
-  + mission : string
-  + steps : ContractStep[1..]
-}
-note right of MissionStepContract
-  Kept as a kind (ADR-0050 d5). File moves into the bundle:
-  mission_types/<type>/step_contracts/<id>.step-contract.yaml (d4);
-  today's suffix is kept if it differs (d5).
-  gates and GateBinding are removed (follow-ups); a binding migrates
-  to a guard on a lifecycle transition (ADR-0050 d12).
-end note
-class ContractStep {
-  + id : string
-  + description : string
-  - command : string
-  - inputs : StepInput[] = []
-  - delegates_to : DelegatesTo
-  - guidance : string
-}
-class StepInput {
-  + flag : string
-  + source : string
-  - optional : bool = false
-}
-class DelegatesTo {
-  + kind : ArtifactKind
-  + candidates : string[1..]
-}
-MissionStepContract *-- "1..*" ContractStep
-ContractStep *-- "*" StepInput
-ContractStep *-- "0..1" DelegatesTo
+title Pack skill and glossary context descriptor schemas — glossary built (ADR-0049)
 
 class PackSkill <<skill.schema.yaml>> {
   + schema_version : "1.0"

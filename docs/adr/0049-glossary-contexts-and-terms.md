@@ -213,7 +213,7 @@ Nothing below is applied in this record.
 
 - **Pack schemas** (#114): `glossary.schema.json` replaces `glossary-pack.schema.json`. Every place that spells
   `glossary_pack` changes: the reference `type` enums of the directive, tactic, paradigm, procedure and
-  mission-step-contract schemas; `graph-shard.schema.json` (the URN alternation, the kind enum and its per-kind
+  mission-step-contract schemas (the last retired 2026-11-13, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)); `graph-shard.schema.json` (the URN alternation, the kind enum and its per-kind
   branch); `org-fragment.schema.json` (URN patterns and the fragment plural `glossary_packs`);
   `pack-manifest.schema.json`; `preset.schema.json` (`activated_kinds`); `charter.schema.json`
   (`selected_glossary_packs`, `activated_glossary_packs`); `org-charter.schema.json` (`required_glossary_packs`);

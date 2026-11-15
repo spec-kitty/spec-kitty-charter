@@ -147,7 +147,7 @@ class ActivationImpactAdapterTest {
         return Urn.parse(urn).orElseThrow();
     }
 
-    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-009). */
+    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-011). */
     private static final Relationship LINK =
             Relationship.of(u("mission_type:M"), u("action:M/s"), RelationType.REQUIRES);
 

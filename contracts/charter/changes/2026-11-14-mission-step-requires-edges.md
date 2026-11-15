@@ -2,7 +2,7 @@
 
 - Every step and on-demand step of a mission type is linked by an authored `mission_type:<type> requires
   action:<type>/<step>` edge, and no such edge names an action that is not one of the type's steps (operator ruling
-  DM-01M7B1YQR5ZKQPDW6DX64KPNRN, #515). A registration answers `422 validation_failed` with one violation per unlinked
+  DM-01M7B1YQR5ZKQPDW6DX64KPNRN). A registration answers `422 validation_failed` with one violation per unlinked
   step at the mission type file and one per stray edge at its graph document, code `mission_step_unlinked` (example
   `PackRegistrationStatus.mission-step-unlinked`). A composing read answers `500 pack_unreadable`, also when another
   pack writes a `requires` edge at the mission type in force that names no step of the type. `putPackRelationship` of

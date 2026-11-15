@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
@@ -59,6 +59,7 @@ first kind that needs both. It changes decisions 4 and 6 and no other decision.
   location of an existing file resolve through the binding. An agent profile is `*.agent.yaml`,
   validated by `agent-profile`, with its id under `profile-id`. No schema file is renamed:
   `contracts/packs` is consumed by core. A mission step contract (#191) uses the same seam.
+  *(Note 2026-11-13: `mission_step_contract` is retired, its substeps authored in the mission-type step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
   *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02, for the glossary schema only: the glossary schema is renamed and reshaped.)*
 - **Decision 6 is reversed: a kind of another slice is in this registry.** A kind whose domain
   belongs to another slice is bound in `packs.infra.storage` like any other kind. The store depends

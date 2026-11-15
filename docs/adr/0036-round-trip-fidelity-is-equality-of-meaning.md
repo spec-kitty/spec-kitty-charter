@@ -2,7 +2,7 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431)
 decision_date: '2026-10-27'
 type: ADR
@@ -399,7 +399,7 @@ below.)*
 | `**/*.paradigm.yaml` | paradigm | YAML | none | yes |
 | `**/*.procedure.yaml` | procedure | YAML | none | yes |
 | `**/*.agent.yaml` | agent-profile | YAML; the object form of `excluding` is an open map | none | yes |
-| `**/*.step-contract.yaml` | mission-step-contract | YAML | none | yes |
+| `**/*.step-contract.yaml` | mission-step-contract *(retired 2026-11-13, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/): refused as a retired file kind)* | YAML | none | yes |
 | `**/*.asset.yaml` | asset | YAML; the payload it names compares by bytes | none | yes |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the payload is an `asset-payload` file of the `bytes` form under `assets/`, classified by its own rule whether or not a sidecar names it; a sidecar whose payload is missing is refused.)* | | | | |
 | `**/charter.yaml` | charter | YAML; open maps such as `overrides`, `activation_context` | none | yes (a project file; not expected in a pack) |

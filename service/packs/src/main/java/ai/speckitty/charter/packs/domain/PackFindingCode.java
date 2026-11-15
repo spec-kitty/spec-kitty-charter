@@ -64,7 +64,8 @@ public enum PackFindingCode {
     FILE_NOT_HELD(Severity.WARNING),
     /**
      * An {@code overrides} edge of a graph document whose source is not of an activatable kind (FR-014,
-     * {@link OverrideSourceRule}). It is the violation code {@value OverrideSourceRule#CODE} of the graph document at
+     * {@link RelationshipEndpointRule}). It is the violation code
+     * {@value ai.speckitty.charter.kernel.domain.EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} of the graph document at
      * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
      */
     OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING),

@@ -2,7 +2,7 @@
 title: Conceptual model
 description: What packs, the charter, its two levers, artifacts, mission types, profiles, values and the active charter mean, before any field, file or endpoint.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -207,7 +207,9 @@ not declare its own relationships, and a relationship is written on its own, apa
 artifacts it joins. Some artifacts name others for another purpose, such as the doctrine a profile
 is handed; that is data, not a relationship. Only a few relations are derived from an artifact's
 data instead of authored, such as a guard's implementation
-(ADR [0061](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
+(ADR [0061](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). Each relation joins only
+the kinds the model allows it to: its **[endpoint kinds](/glossary/charter/#endpoint-kinds)**, which
+the **[kind taxonomy](/glossary/charter/#kind-taxonomy)** serves (ADR [0077](/adr/0077-kind-taxonomy-and-step-authority/)).
 
 - **[Supports](/glossary/charter/#supports-supports-crg-relation)**: a resource helps check a rule
   (an asset supports a directive). It is distinct from *suggests*, which is a soft recommendation.
@@ -223,10 +225,10 @@ data instead of authored, such as a guard's implementation
 A **[mission type](/glossary/charter/#mission-type)** is the recipe of the work. Once a mission type
 is on the plate, Missions of that type can be run.
 
-- **[Mission steps](/glossary/charter/#mission-step)** say how to make the dish. A
-  **[step contract](/glossary/charter/#step-contract)** holds the structural sub-steps of one
-  mission step and what each delegates to; the step's role and expected artifacts live on the
-  mission step itself. A
+- **[Mission steps](/glossary/charter/#mission-step)** say how to make the dish. A step's
+  **[substeps](/glossary/charter/#substep)** are its structural sub-steps and what each delegates
+  to, written in the mission type beside the step, with the step's role and expected artifacts
+  (ADR [0077](/adr/0077-kind-taxonomy-and-step-authority/)). A
   **[step template](/glossary/charter/#step-template)** is the prompt fed to the agent when that
   step runs.
 - **Steps name roles, never profiles.** The earlier mix of roles and profiles in steps is dropped
@@ -455,7 +457,7 @@ Current packs and core compared with the model (open-packs and core, 2026-10-26)
 | Tension | [Tension](/glossary/charter/#tension-tension-crg-relation) |
 | Mission type | [Mission type](/glossary/charter/#mission-type) |
 | Mission step | [Mission step](/glossary/charter/#mission-step) |
-| Step contract | [Step contract](/glossary/charter/#step-contract) |
+| Substep | [Substep](/glossary/charter/#substep) |
 | Step template | [Step template](/glossary/charter/#step-template) |
 | Recipe ingredients | [Recipe ingredients](/glossary/charter/#recipe-ingredients) |
 | Role | [Role](/glossary/governance/#role) |

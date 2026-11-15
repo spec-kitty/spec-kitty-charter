@@ -6,7 +6,7 @@
 ' Not drawn: a named-pack instance graph (built-in, foundation ...); most of it is open (ADR-0048 OQ1, OQ2, OQ3, OQ8).
 ' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Mission type as a declared state machine — decided design (ADR-0050, ADR-0051)
+title Mission type as a declared state machine — decided design (ADR-0050, ADR-0051, ADR-0077)
 
 class MissionType <<mission_type kind>> {
   + id : string
@@ -23,13 +23,22 @@ class MissionType <<mission_type kind>> {
 class Step {
   + id : string  (never `end`; d11) <color:#8A6D00>[pending ADR-0050 OQ1]</color>
   - role, prompt, guidelines, expected_input_artifacts, ...  (ADR-0044, unchanged)
-  - mission_step_contract : ref  (a composite state)
+  - substeps : Substep[1..]  (a composite state; ADR-0077 d2)
   - transitions : Transition[]  (absent = to the next step; the last goes to end; d9) <color:#8A6D00>[pending ADR-0050 OQ1]</color>
   - on_enter : ActionPoint  (Moore-style; d15)
   - on_exit : ActionPoint  (Moore-style; d15)
   - work_package_lifecycle : lifecycle-id <color:#8A6D00>[pending ADR-0050 OQ5: field name]</color>
   - terms : string[]  (term: URNs) <color:#8A6D00>[pending ADR-0050 OQ10: d26]</color>
   - rejects : RejectsRef[]  (ADR-0052 d9)
+}
+class Substep <<a step's substeps, one level (ADR-0077 d2)>> {
+  + id : string  (letter-first kebab slug, unique in the step)
+  + description : string
+  - command : string
+  - inputs : SubstepInput[]  ({flag, source, optional: true})
+  - delegates_to : {kind, candidates[1..]}  (kind: a guidance kind or agent_profile;
+     each candidate [<pack>::]<id>, with a scope edge from the step's action)
+  - guidance : string
 }
 class Transition {
   + to : step-id | end <color:#8A6D00>[pending ADR-0050 OQ1]</color>
@@ -88,6 +97,7 @@ class Term <<node-only URN; ADR-0049 d4>> {
 }
 
 MissionType *-- "1..*" Step : steps
+Step *-- "0..*" Substep : substeps
 Step *-- "0..*" Transition : transitions
 Transition ..> Step : to
 Transition ..> End : to (terminal) <color:#8A6D00>[pending ADR-0050 OQ1]</color>

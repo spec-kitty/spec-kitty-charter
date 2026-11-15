@@ -2,7 +2,7 @@
 title: "ADR-0045: A tension is held beside the relationships, and a graph node keeps every declared field"
 description: Decides the domain representation of the ADR-0028 tension relationship and of the graph-node fields, so a graph document round-trips without loss of meaning.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Proposed
 decision_date: '2026-10-31'
 type: ADR
@@ -161,6 +161,7 @@ production caller today.
 ### Risks
 
 - **The `impacts` relation stays.** It keeps today's reading and rules until it is retired (ADR-0028).
+  *(Note 2026-11-13: it is retired, with its strength, by [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6.)*
   Reviewers should not read its −1 to +1 range as tension.
 
 ## Alternatives considered

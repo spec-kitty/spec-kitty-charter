@@ -2,7 +2,7 @@
 title: "ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules"
 description: Splits the old signed impacts edge into a per-value impacts list on an artifact and an authored tension relationship that may sit beside one structural relationship.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted; decision 5 answered for the domain and the pack files by ADR-0045 (2026-10-31, proposed)
 decision_date: '2026-10-26'
 type: ADR
@@ -76,6 +76,7 @@ this repository.
    entry names a value, a strength and a rationale. The rationale is required (ADR-0014 D-5).
 2. **`tension` is the relationship between two rules.** It replaces `in_tension_with` and the
    signed `impacts` edge. It is authored, never derived from the value impacts of either rule.
+   *(Note 2026-11-13: the `impacts` relation and its edge strength are retired outright, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6.)*
 3. **`tension` may coexist with one structural relationship on the same pair.** Between two
    artifacts there is at most one structural relationship (`requires`, `suggests` and the rest,
    ADR-0027) and, beside it, at most one `tension`. ADR-0027's revisit trigger has fired for

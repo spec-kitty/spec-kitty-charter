@@ -196,7 +196,6 @@ public final class PackPolicy {
         findings.addAll(assetRules(contents.assets()));
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.addAll(promptSlotFindings(contents));
-        findings.addAll(overrideSourceFindings(name, contents));
         findings.addAll(endpointFindings(name, contents));
         findings.addAll(missionStepFindings(name, contents));
         findings.addAll(substepIdRules(contents.missionTypes()));
@@ -298,7 +297,7 @@ public final class PackPolicy {
             case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID.token();
             case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED.token();
             case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
-            case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> OverrideSourceRule.CODE;
+            case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE;
             case RELATIONSHIP_ENDPOINT_NOT_ALLOWED -> RelationshipEndpointRule.CODE;
             case MISSION_STEP_UNLINKED -> MissionStepLinkRule.CODE;
             case SUBSTEP_DELEGATION_UNRESOLVED -> SubstepDelegationRule.UNRESOLVED;
@@ -309,39 +308,15 @@ public final class PackPolicy {
         };
     }
 
-    // ---- the source of an overrides edge ------------------------------------------------------------
-
-    /**
-     * Judges the edges of every graph document that was read by {@link OverrideSourceRule} (FR-014), as the load does:
-     * one blocking finding per {@code overrides} edge whose source kind is not activatable, at its document and its
-     * place {@code /edges/<index>}. A document that could not be read is refused on its own and not judged here.
-     */
-    private static List<PackFinding> overrideSourceFindings(String packName, PackContents contents) {
-        List<PackFinding> findings = new ArrayList<>();
-        for (FileRead<RawGraph> document : documents(contents)) {
-            if (!(document instanceof FileRead.Read<RawGraph> read)) {
-                continue;
-            }
-            RawGraph raw = read.value();
-            for (int i = 0; i < raw.edges().size(); i++) {
-                RawEdge edge = raw.edges().get(i);
-                for (OverrideSourceRule.Fault fault : OverrideSourceRule.judge(List.of(
-                        new OverrideSourceRule.Edge(raw.file(), edge.source(), edge.target(), edge.relation())))) {
-                    findings.add(new PackFinding(
-                            PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
-                            fault.file(),
-                            List.of(EDGES, Integer.toString(i)),
-                            origin(packName, fault.file()) + ": " + fault.reason()));
-                }
-            }
-        }
-        return findings;
-    }
+    // ---- the endpoint rule: the source of an overrides edge, then the table --------------------------------------
 
     /**
      * Judges the edges of every graph document that was read by {@link RelationshipEndpointRule}, as the load does: one
-     * blocking finding per edge whose relation does not allow its endpoint kinds, at its document and its place
-     * {@code /edges/<index>}. A document that could not be read is refused on its own and not judged here.
+     * blocking finding per refused edge, at its document and its place {@code /edges/<index>}. An {@code overrides}
+     * edge whose source kind is not activatable (FR-014) is {@link PackFindingCode#OVERRIDES_SOURCE_NOT_ACTIVATABLE};
+     * an edge whose relation does not allow its endpoint kinds is {@link PackFindingCode#RELATIONSHIP_ENDPOINT_NOT_ALLOWED}.
+     * The source findings come first, then the table's, each in edge order, as the load lists them. A document that
+     * could not be read is refused on its own and not judged here.
      */
     private static List<PackFinding> endpointFindings(String packName, PackContents contents) {
         RelationshipEndpointRule.Scope scope = new RelationshipEndpointRule.Scope(
@@ -351,7 +326,8 @@ public final class PackPolicy {
                 contents.stepEnhancements().enhancements().stream()
                         .map(StepEnhancementFacts.Enhancement::id)
                         .collect(Collectors.toSet()));
-        List<PackFinding> findings = new ArrayList<>();
+        List<PackFinding> sources = new ArrayList<>();
+        List<PackFinding> table = new ArrayList<>();
         for (FileRead<RawGraph> document : documents(contents)) {
             if (!(document instanceof FileRead.Read<RawGraph> read)) {
                 continue;
@@ -359,17 +335,26 @@ public final class PackPolicy {
             RawGraph raw = read.value();
             for (int i = 0; i < raw.edges().size(); i++) {
                 RawEdge edge = raw.edges().get(i);
-                Optional<String> reason = RelationshipEndpointRule.refusal(
-                        new OverrideSourceRule.Edge(raw.file(), edge.source(), edge.target(), edge.relation()), scope);
-                if (reason.isPresent()) {
-                    findings.add(new PackFinding(
-                            PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
-                            raw.file(),
-                            List.of(EDGES, Integer.toString(i)),
-                            origin(packName, raw.file()) + ": " + reason.get()));
+                Optional<RelationshipEndpointRule.Refusal> refusal = RelationshipEndpointRule.refusal(
+                        new RelationshipEndpointRule.Edge(raw.file(), edge.source(), edge.target(), edge.relation()),
+                        scope);
+                if (refusal.isPresent()) {
+                    boolean byTable =
+                            RelationshipEndpointRule.CODE.equals(refusal.get().code());
+                    (byTable ? table : sources)
+                            .add(new PackFinding(
+                                    byTable
+                                            ? PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
+                                            : PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                                    raw.file(),
+                                    List.of(EDGES, Integer.toString(i)),
+                                    origin(packName, raw.file()) + ": "
+                                            + refusal.get().reason()));
                 }
             }
         }
+        List<PackFinding> findings = new ArrayList<>(sources);
+        findings.addAll(table);
         return findings;
     }
 

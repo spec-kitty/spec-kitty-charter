@@ -12,7 +12,6 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
-import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -89,7 +88,8 @@ public final class RelationshipRegistrationService {
      *     {@link RefusalCode#VALIDATION_FAILED} (422) for a self-loop, then, in this order:
      *     {@link RefusalCode#PROMPT_FRAGMENT_INVALID} (422 here) when the edge would give a held step enhancement an
      *     {@code overrides} edge or a second {@code enhances} edge, or replace its one {@code enhances} edge,
-     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value OverrideSourceRule#CODE} at
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation
+     *     {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} at
      *     {@code /from} when the edge is an {@code overrides} edge whose source kind is not activatable (FR-014), and
      *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value RelationshipEndpointRule#CODE} at
      *     {@code /type} when the relation does not allow the endpoint kinds (ADR-0064 decision 13), then
@@ -128,7 +128,6 @@ public final class RelationshipRegistrationService {
             // target the compose cannot resolve the next offering read.
             // The fault order (WP05): the step-enhancement rules, then the source rule of slice C, then the table.
             refuseStepEnhancementEdge(current, draft, existing);
-            refuseInactivatableOverrider(draft);
             Relationship relationship = bound(draft);
             refuseStrayStepLink(pack, current.descriptor().name(), relationship, existing);
             targets.require(pack, relationship.toReference());
@@ -142,28 +141,25 @@ public final class RelationshipRegistrationService {
     }
 
     /**
-     * Refuses an {@code overrides} edge whose source is not of an activatable kind (FR-014, operator ruling of
-     * 2026-11-12 on #447): every composing read of the pack would refuse it, as the load does such an edge in a graph
-     * document. The refusal is {@code validation_failed} with one violation at {@code /from}.
-     */
-    private static void refuseInactivatableOverrider(RelationshipDraft draft) {
-        OverrideSourceRule.refusal(draft.from(), draft.toReference().toString(), draft.type())
-                .ifPresent(reason -> {
-                    throw CharterRefusal.withViolations(
-                            RefusalCode.VALIDATION_FAILED,
-                            "The relationship is refused: " + reason + ".",
-                            List.of(new RefusalViolation("/from", OverrideSourceRule.CODE, reason)));
-                });
-    }
-
-    /**
-     * Binds the draft through the endpoint table (ADR-0064 decision 13), or refuses it {@code validation_failed} with one
-     * violation {@value RelationshipEndpointRule#CODE} at {@code /type}: every composing read of the pack would refuse
-     * the edge, as the load does such an edge in a graph document.
+     * Binds the draft through the kernel's endpoint rule, or refuses it {@code validation_failed} with the bridge's
+     * fault: every composing read of the pack would refuse the edge, as the load does such an edge in a graph document.
+     * An {@code overrides} edge whose source is not of an activatable kind (FR-014, operator ruling of 2026-11-12 on
+     * #447) is the violation {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} at {@code /from}; an edge whose
+     * relation does not allow its endpoint kinds (ADR-0064 decision 13) is {@value RelationshipEndpointRule#CODE} at
+     * {@code /type}.
      */
     private static Relationship bound(RelationshipDraft draft) {
         return switch (draft.bind()) {
             case EndpointRule.Bound bound -> bound.relationship();
+            case EndpointRule.Fault fault
+            when EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE.equals(fault.code()) -> {
+                String reason = fault.reason(
+                        draft.from().toString(), draft.toReference().toString());
+                throw CharterRefusal.withViolations(
+                        RefusalCode.VALIDATION_FAILED,
+                        "The relationship is refused: " + reason + ".",
+                        List.of(new RefusalViolation("/from", fault.code(), reason)));
+            }
             case EndpointRule.Fault fault ->
                 throw CharterRefusal.withViolations(
                         RefusalCode.VALIDATION_FAILED,

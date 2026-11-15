@@ -36,7 +36,7 @@ class Reference <<directive/paradigm/procedure_reference>> {
 enum RefKind {
   directive, tactic, styleguide, toolguide,
   paradigm, procedure, agent_profile,
-  mission_step_contract, template, asset,
+  template, asset,
   glossary, anti_pattern, skill
 }
 
@@ -66,7 +66,7 @@ class TacticStep {
 }
 class TacticReference {
   + name : string
-  + type : RefKind minus agent_profile, mission_step_contract
+  + type : RefKind minus agent_profile
   + id : string
   + when : string
 }

@@ -2,8 +2,8 @@
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted (2026-10-31), with Amendment 2026-11-05 (ADR-0064); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
+updated: 2026-11-14T00:00:00Z
+decision_status: Accepted (2026-10-31), with Amendments 2026-11-05 (ADR-0064) and 2026-11-13 (ADR-0077); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
 decision_date: '2026-10-30'
 type: ADR
 kind: ADR
@@ -105,6 +105,16 @@ annotated:
   `scope` edges, which already equal them, and a step's references are graph edges from its `action` node
   ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 2, Q2 ruling).
 
+### Amendment 2026-11-13
+
+The operator's slice F rulings of 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) change two points. The original text stands, and each is annotated:
+
+- decision 2: `mission_step_contract` is retired outright. A step's substeps are authored in the step, as a flat,
+  ordered `substeps` list that keeps every field the step contract held ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 2 and 3), and every step,
+  on-demand steps included, is linked from its type by an authored `requires` edge (decision 4).
+- decision 3: a step gains `substeps`; `template_set`, already dropped here, is refused by its name, and leaves the
+  project charter schema too ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 7).
+
 ## Context
 
 Issue #194 asks the whole-pack round trip to cover the mission tier. At `openPacksRef` `5df92a5d` three packs hold it
@@ -172,13 +182,17 @@ The store holds one file per mission type. Its steps are sub-items of two plural
 is a domain type, not an artifact kind and not a node kind: it has no file, binding or fragment plural of its own.
 The graph keeps `action:<type>/<step>` as a step's node until edge authority is ruled
 ([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)). *Amended 2026-11-05: edge authority is decided by
-[ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)); edges live only in the graph documents, where `action:<type>/<step>` stays a step's node.* `mission_step_contract` stays a separate
+[ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)); edges live only in the graph documents, where `action:<type>/<step>` stays a step's node.* *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)): the step contract is retired, and its
+substeps are authored in the step.* `mission_step_contract` stays a separate
 kind: it holds the structural sub-steps of one mission step and what each delegates to. A step's role and expected
 artifacts live on the mission step only. A mission type is a pack-manifest constituent kind.
 
 ### 3. The mission-type shape (D2, D5)
 
 *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: references gain a `terms` list and a `rejects` list, and the machine behavior this decision dropped gets a declared home.)*
+
+*Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 2 and 7): a step and an on-demand step may carry `substeps`, and an authored
+`template_set` or `action_sequence` is refused as an unknown field by its name.*
 
 `contracts/packs/schemas/mission-type.schema.json`, closed at every level:
 
