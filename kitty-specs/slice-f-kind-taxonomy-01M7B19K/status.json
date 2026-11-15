@@ -1,0 +1,207 @@
+{
+  "event_count": 152,
+  "last_event_id": "01M7F6N07EZ0SARPKZBYWTQ8GK",
+  "materialized_at": "2026-11-15T08:54:44.206888+00:00",
+  "mission_number": "",
+  "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 11,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6M003EFRNS7KFX97VK4R6",
+      "last_transition_at": "2026-11-15T08:54:11.203480+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP01-example-packs-content-first/review-cycle-1.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP01-example-packs-content-first/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 9243,
+      "shell_pid_created_at": "1794600840.85"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6M36CXMBWANRDXEK801VZ",
+      "last_transition_at": "2026-11-15T08:54:14.476977+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP02-scenarios-and-fixtures-content-first/review-cycle-1.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP02-scenarios-and-fixtures-content-first/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 17378,
+      "shell_pid_created_at": "1794604074.24"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6M6F5G1KTRCTWPWKNGSEB",
+      "last_transition_at": "2026-11-15T08:54:17.829788+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP03-kernel-kind-typing/review-cycle-4.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP03-kernel-kind-typing/review-cycle-4.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 11350,
+      "shell_pid_created_at": "1794602964.91"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6M9V3HQQKRMPEM4ZFENBS",
+      "last_transition_at": "2026-11-15T08:54:21.283840+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP04-retire-relations/review-cycle-1.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP04-retire-relations/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 3995,
+      "shell_pid_created_at": "1794605583.48"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MD00TR9GJ0401TSDHXM5",
+      "last_transition_at": "2026-11-15T08:54:24.512960+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP05-endpoint-refusal/review-cycle-2.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP05-endpoint-refusal/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 22479,
+      "shell_pid_created_at": "1794614351.8"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MG3QREZF1RQZRVAVZJ14",
+      "last_transition_at": "2026-11-15T08:54:27.703145+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP06-mission-type-rules/review-cycle-3.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP06-mission-type-rules/review-cycle-3.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 10710,
+      "shell_pid_created_at": "1794646827.04"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MKA8CD2313QXCSH4KPVA",
+      "last_transition_at": "2026-11-15T08:54:30.984909+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP07-substeps-on-the-step/review-cycle-2.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP07-substeps-on-the-step/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 2823,
+      "shell_pid_created_at": "1794649970.37"
+    },
+    "WP08": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MPKK7JGGW35NBT2M4AJ3",
+      "last_transition_at": "2026-11-15T08:54:34.355123+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP08-retire-mission-step-contract/review-cycle-2.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP08-retire-mission-step-contract/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 20584,
+      "shell_pid_created_at": "1794659462.27"
+    },
+    "WP09": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MSSX4BSMD6MW7YMMSRZ9",
+      "last_transition_at": "2026-11-15T08:54:37.629383+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP09-kind-taxonomy-read/review-cycle-2.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP09-kind-taxonomy-read/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 12159,
+      "shell_pid_created_at": "1794669287.18"
+    },
+    "WP10": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6MWZWQXZBQMW7G4237GB7",
+      "last_transition_at": "2026-11-15T08:54:40.892067+00:00",
+      "review_result": {
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP10-adr-docs-changelog/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 25370,
+      "shell_pid_created_at": "1794730084.01"
+    },
+    "WP11": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7F6N07EZ0SARPKZBYWTQ8GK",
+      "last_transition_at": "2026-11-15T08:54:44.206888+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/slice-f-kind-taxonomy-01M7B19K-coord/kitty-specs/slice-f-kind-taxonomy-01M7B19K/tasks/WP11-open-packs-drafts/review-cycle-2.md",
+        "reference": "review-cycle://slice-f-kind-taxonomy-01M7B19K/WP11-open-packs-drafts/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "shell_pid": 25903,
+      "shell_pid_created_at": "1794681611.14"
+    }
+  }
+}
