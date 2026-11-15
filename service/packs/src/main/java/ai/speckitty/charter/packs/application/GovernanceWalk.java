@@ -7,11 +7,14 @@ import ai.speckitty.charter.packs.application.ActionContextWalk.SuggestionCandid
 import ai.speckitty.charter.packs.application.ActionContextWalk.WalkStep;
 import ai.speckitty.charter.packs.application.EdgeIndex.Link;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -53,6 +56,12 @@ import java.util.function.Predicate;
  * <p>Within a step the parent of a node is, among the nodes the step walks from, the one with the fewest hops from the
  * profile, so {@code hops} is the length of the shortest path the step's walk allows, whatever lineage depth the step's
  * seeds sit at. The {@code suggests} step's {@code depth} counts hops from the nearest seed of that step.
+ *
+ * <p>The lineage step also answers the ordered lineage chain ({@link Result#lineage()}): each held ancestor it listed
+ * with its depth, the length of the <em>longest</em> in-force {@code specializes_from} path from the profile, nearest
+ * first (ruling D2). The depth is derived from the step's own listing, over the {@code specializes_from} links between
+ * the profile and the ancestors the step listed, so no second {@code specializes_from} traversal runs (C-002), and the
+ * entries are as they were.
  */
 public final class GovernanceWalk {
 
@@ -135,14 +144,42 @@ public final class GovernanceWalk {
     }
 
     /**
+     * One ancestor of the lineage chain.
+     *
+     * @param urn the ancestor, {@code agent_profile:<id>}
+     * @param depth the length of the longest in-force {@code specializes_from} path from the profile to it, at least 1
+     */
+    public record LineageLink(Urn urn, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param urn the ancestor
+         * @param depth the longest path length
+         */
+        public LineageLink {
+            Objects.requireNonNull(urn, "urn");
+            if (depth < 1) {
+                throw new IllegalArgumentException("an ancestor is at least one specializes_from hop away: " + depth);
+            }
+        }
+    }
+
+    /**
      * What the walk answers.
      *
      * @param profile the start node
      * @param entries the entries, sorted by full URN string
      * @param suggestionCandidates the out-of-force artifacts the {@code suggests} step reached that the closure holds,
      *     in URN order; empty when every node is in force
+     * @param lineage the held ancestors the lineage step listed, each with its longest in-force depth, nearest first
+     *     (by depth, then by URN); an ancestor listed with {@code held} false is not among them
      */
-    public record Result(Urn profile, List<Entry> entries, List<SuggestionCandidate> suggestionCandidates) {
+    public record Result(
+            Urn profile,
+            List<Entry> entries,
+            List<SuggestionCandidate> suggestionCandidates,
+            List<LineageLink> lineage) {
 
         /**
          * Checks and copies the fields.
@@ -150,11 +187,13 @@ public final class GovernanceWalk {
          * @param profile the start node
          * @param entries the entries
          * @param suggestionCandidates the out-of-force suggestions
+         * @param lineage the lineage chain
          */
         public Result {
             Objects.requireNonNull(profile, "profile");
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
             suggestionCandidates = List.copyOf(Objects.requireNonNull(suggestionCandidates, "suggestionCandidates"));
+            lineage = List.copyOf(Objects.requireNonNull(lineage, "lineage"));
         }
     }
 
@@ -223,6 +262,51 @@ public final class GovernanceWalk {
                 .map(item -> new Entry(
                         item.urn(), item.step(), item.via(), item.hops(), item.when(), item.reason(), item.held()))
                 .toList();
-        return new Result(profile, entries, run.suggestions());
+        Set<Urn> heldAncestors = new HashSet<>();
+        entries.stream()
+                .filter(entry -> entry.step() == Step.LINEAGE && entry.held())
+                .forEach(entry -> heldAncestors.add(entry.urn()));
+        return new Result(profile, entries, run.suggestions(), lineageOf(profile, heldAncestors));
+    }
+
+    /**
+     * The lineage chain over what the lineage step listed: the {@code specializes_from} links between the profile and
+     * the held ancestors, which are in force since the step listed them, give each ancestor the longest path from the
+     * profile. The links are relaxed as many rounds as there are ancestors, which settles every longest path of an
+     * acyclic lineage; a link into the profile is not followed, and a cycle among the ancestors, which registration
+     * refuses ({@code specialization_cycle}), stops at that bound, so the answer always ends.
+     */
+    private List<LineageLink> lineageOf(Urn profile, Set<Urn> ancestors) {
+        List<Link> links = new ArrayList<>();
+        List<Urn> sources = new ArrayList<>(ancestors);
+        sources.add(profile);
+        for (Urn source : sources) {
+            for (Link link : outgoing.getOrDefault(source, List.of())) {
+                if (link.relation() == RelationType.SPECIALIZES_FROM
+                        && link.held()
+                        && ancestors.contains(link.target())) {
+                    links.add(link);
+                }
+            }
+        }
+        Map<Urn, Integer> depths = new HashMap<>();
+        depths.put(profile, 0);
+        int bound = ancestors.size();
+        boolean changed = true;
+        for (int round = 0; round < bound && changed; round++) {
+            changed = false;
+            for (Link link : links) {
+                Integer from = depths.get(link.source());
+                if (from != null && from < bound && from + 1 > depths.getOrDefault(link.target(), 0)) {
+                    depths.put(link.target(), from + 1);
+                    changed = true;
+                }
+            }
+        }
+        return ancestors.stream()
+                .map(ancestor -> new LineageLink(
+                        ancestor, Objects.requireNonNull(depths.get(ancestor), "a listed ancestor is reached")))
+                .sorted(Comparator.comparingInt(LineageLink::depth).thenComparing(LineageLink::urn))
+                .toList();
     }
 }

@@ -262,7 +262,14 @@ public enum RefusalCode {
      * The {@code specializes_from} edges among the agent profiles of a closure form a cycle (ruling D2). Answered as
      * 422, naming the packs.
      */
-    SPECIALIZATION_CYCLE("specialization_cycle");
+    SPECIALIZATION_CYCLE("specialization_cycle"),
+    /**
+     * An agent profile that enhances another would drop part of it (ruling D5, #380): a list item, a sub-field or a
+     * value of a field it declares is missing or changed, or it declares an {@code excluding} (ruling D7). The detail
+     * names the enhancing pack first and the field. Answered as 500 on a read, since the stored packs are at fault, and
+     * as 422 by the operations that judge a write over the closures its pack joins.
+     */
+    PROFILE_ENHANCEMENT_DROPS_FIELD("profile_enhancement_drops_field");
 
     /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
     private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(

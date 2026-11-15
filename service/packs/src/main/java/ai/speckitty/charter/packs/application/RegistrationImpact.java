@@ -212,7 +212,8 @@ public final class RegistrationImpact {
      * @throws CharterRefusal a composition code, or {@code override_not_permitted}, {@code enhances_cycle},
      *     {@code conflicting_relations}, {@code self_override}, {@code override_cycle} or {@code specialization_cycle}
      *     (422), naming the closure's roots and the packs involved, a {@code fallback_profile_*} or {@code role_pin_*}
-     *     code (422) for a pack's fallback profile or role pins, {@code prompt_slot_missing} (422) when a stored activation whose closure the
+     *     code (422) for a pack's fallback profile or role pins, {@code profile_enhancement_drops_field} (422) for an
+     *     agent profile enhancement that drops part of the profile it enhances, {@code prompt_slot_missing} (422) when a stored activation whose closure the
      *     pack joins would put a step enhancement in force without its slot ({@link ActivationImpact#requireComposable}),
      *     or {@code pack_unreadable} when a pack of a closure cannot be read
      */
@@ -353,7 +354,8 @@ public final class RegistrationImpact {
         Views composing = Views.over(stored);
         List<Finding> findings = new ArrayList<>();
         for (ConfiguredPack pack : stored.catalog().configured()) {
-            censusOf(pack, composing, stored, session.packs()).ifPresent(findings::add);
+            censusOf(pack, composing, stored, session.packs(), session.enhancements())
+                    .ifPresent(findings::add);
         }
         return findings;
     }
@@ -362,7 +364,8 @@ public final class RegistrationImpact {
             ConfiguredPack pack,
             Views composing,
             StagedPackViews.View stored,
-            Optional<ai.speckitty.charter.packs.domain.PackRepository> packsOfCensus) {
+            Optional<ai.speckitty.charter.packs.domain.PackRepository> packsOfCensus,
+            Optional<ai.speckitty.charter.packs.domain.ProfileEnhancementGateway> enhancementsOfCensus) {
         String name = pack.id().value();
         try {
             OfferingReadService.ComposedClosure composed = composing.offering().composedWithFacts(List.of(pack.id()));
@@ -381,7 +384,12 @@ public final class RegistrationImpact {
             if (fallback.isPresent()) {
                 return fallback;
             }
-            return RolePinRule.check(pack.id(), own, profiles)
+            Optional<Finding> pins = RolePinRule.check(pack.id(), own, profiles)
+                    .map(breach -> new Finding(name, breach.code(), breach.detail()));
+            if (pins.isPresent()) {
+                return pins;
+            }
+            return ProfileEnhancementRule.check(own, profiles, enhancementsOfCensus)
                     .map(breach -> new Finding(name, breach.code(), breach.detail()));
         } catch (CharterRefusal refused) {
             return Optional.of(new Finding(name, refused.code(), String.valueOf(refused.getMessage())));
@@ -422,14 +430,15 @@ public final class RegistrationImpact {
         activations.registered(packId, notices);
     }
 
-    // ---- the fallback profile (ADR-0068) and the role pins (ruling D3) -------------------------------------------
+    // ---- the fallback profile (ADR-0068), the role pins (ruling D3) and the profile enhancements (ruling D5) ----
 
     /**
      * Judges the {@code fallback_profile} and the role pins of every staged pack whose closure holds the written pack,
      * the write in place (ADR-0068 decisions 2 to 4, rulings D3 and D4): the written pack itself, and each pack that
      * builds on it, whose declared fallback or pinned profile may be held in the written pack and so be removed,
-     * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin. Each is judged
-     * over its own closure, the fallback first.
+     * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin or an enhancement
+     * that drops part of the profile it enhances (rulings D5, D7). Each is judged over its own closure, the fallback
+     * first, then the pins, then the enhancements.
      */
     private static void judgeFallbacksAndPins(
             ClosureRoots.Found found,
@@ -467,6 +476,15 @@ public final class RegistrationImpact {
                         "In the closure rooted at " + roots.label() + ": "
                                 + pins.get().detail(),
                         withRoots(involved(pins.get().packs(), staged), roots, staged));
+            }
+            Optional<ProfileEnhancementRule.Breach> enhancement =
+                    ProfileEnhancementRule.check(own, profiles, session.enhancements());
+            if (enhancement.isPresent()) {
+                throw new CharterRefusal(
+                        enhancement.get().code(),
+                        "In the closure rooted at " + roots.label() + ": "
+                                + enhancement.get().detail(),
+                        withRoots(involved(enhancement.get().packs(), staged), roots, staged));
             }
         }
     }

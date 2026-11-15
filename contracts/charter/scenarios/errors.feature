@@ -228,7 +228,9 @@ Feature: Failures outside the charter's refusals
     conflicting_relations, self_override, override_cycle, specialization_cycle for a cycle of specializes_from edges
     among agent profiles (ruling D2), for a pack's fallback_profile (ADR-0068) fallback_profile_unknown,
     fallback_profile_not_locked, fallback_profile_not_role_neutral and fallback_profile_not_agent, and for the role pins
-    of a pack's policy.yaml (ruling D3) role_pin_unknown, role_pin_not_fitting and role_pin_conflict (ReservedRefusalCodesTest holds the flag to the main code that
+    of a pack's policy.yaml (ruling D3) role_pin_unknown, role_pin_not_fitting and role_pin_conflict, and for an agent
+    profile enhancement that would drop part of the profile it enhances (rulings D5 and D7)
+    profile_enhancement_drops_field (ReservedRefusalCodesTest holds the flag to the main code that
     names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
     registration_timed_out and pack_storage_full, the https_archive, filesystem and git source fetchers add
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
@@ -309,3 +311,4 @@ Feature: Failures outside the charter's refusals
       | role_pin_not_fitting        |
       | role_pin_conflict           |
       | specialization_cycle        |
+      | profile_enhancement_drops_field |

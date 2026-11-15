@@ -85,14 +85,42 @@ public final class ProfileGovernance {
     }
 
     /**
+     * One ancestor of the profile's lineage chain, with the pack that holds it.
+     *
+     * @param urn the ancestor, {@code agent_profile:<id>}
+     * @param pack the merge winner's pack: the copy whose edges the walk followed
+     * @param depth the length of the longest in-force {@code specializes_from} path from the profile, at least 1
+     */
+    public record LineageLink(Urn urn, PackIdentifier pack, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param urn the ancestor
+         * @param pack the holding pack
+         * @param depth the longest path length
+         */
+        public LineageLink {
+            Objects.requireNonNull(urn, "urn");
+            Objects.requireNonNull(pack, "pack");
+        }
+    }
+
+    /**
      * What a profile's governance walk answers, with holders.
      *
      * @param profile the profile's URN
      * @param entries the entries, sorted by full URN string
      * @param suggestionCandidates the out-of-force artifacts the {@code suggests} step reached that the closure holds
      *     (activation-scoped only), in URN order
+     * @param lineage the held ancestors, each with its pack and longest in-force depth, nearest first
+     *     ({@link GovernanceWalk.Result#lineage()})
      */
-    public record Governance(Urn profile, List<Entry> entries, List<SuggestionCandidate> suggestionCandidates) {
+    public record Governance(
+            Urn profile,
+            List<Entry> entries,
+            List<SuggestionCandidate> suggestionCandidates,
+            List<LineageLink> lineage) {
 
         /**
          * Checks and copies the fields.
@@ -100,14 +128,16 @@ public final class ProfileGovernance {
          * @param profile the profile
          * @param entries the entries
          * @param suggestionCandidates the out-of-force suggestions
+         * @param lineage the lineage chain
          */
         public Governance {
             Objects.requireNonNull(profile, "profile");
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
             suggestionCandidates = List.copyOf(Objects.requireNonNull(suggestionCandidates, "suggestionCandidates"));
+            lineage = List.copyOf(Objects.requireNonNull(lineage, "lineage"));
         }
 
-        /** The walk's result with each held entry given the holder {@code holderOf} names. */
+        /** The walk's result with each held entry, and each ancestor of the chain, given the holder {@code holderOf} names. */
         static Governance of(GovernanceWalk.Result result, Function<Urn, Optional<ClosureView.Holder>> holderOf) {
             List<Entry> entries = result.entries().stream()
                     .map(walked -> new Entry(
@@ -120,7 +150,13 @@ public final class ProfileGovernance {
                             walked.held(),
                             walked.held() ? holderOf.apply(walked.urn()) : Optional.empty()))
                     .toList();
-            return new Governance(result.profile(), entries, result.suggestionCandidates());
+            List<LineageLink> lineage = result.lineage().stream()
+                    .flatMap(link -> holderOf
+                            .apply(link.urn())
+                            .map(holder -> new LineageLink(link.urn(), holder.packId(), link.depth()))
+                            .stream())
+                    .toList();
+            return new Governance(result.profile(), entries, result.suggestionCandidates(), lineage);
         }
     }
 
