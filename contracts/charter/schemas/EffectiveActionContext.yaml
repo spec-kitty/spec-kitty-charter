@@ -29,6 +29,8 @@ description: >-
   the one the context starts from. prompt, the effective prompt
   of the same action (getEffectiveStepPrompt), is present exactly when the activation puts the mission type in force:
   for one it does not, that read answers 409 mission_type_not_in_force, so the context does not offer it.
+  profile-selection, the profile selection of the action's step under the activation (selectAgentProfileForStep), is
+  always present: it answers whether or not the mission type is in force.
 type: object
 additionalProperties: false
 required:

@@ -298,6 +298,7 @@ rules:
               - skipped
               - effective-context
               - prompt
+              - profile-selection
               - select
               - unselect
               - exclude

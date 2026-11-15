@@ -237,7 +237,7 @@ public interface PacksSession {
      * verified at. The default answers {@link ProfileCandidates#NONE}: a session that holds no closure puts nothing in
      * force.
      *
-     * @param role the asked role
+     * @param role the asked role; empty for a step that names none, which no pack can pin
      * @param query what the document selects, denies and filters
      * @return the candidates, the pin and the fallback; a conflict is answered, not refused, so the caller orders the
      *     refusals
@@ -245,7 +245,22 @@ public interface PacksSession {
      *     when a winner's pack cannot read a profile, and with {@code stale_input} when the packs changed since the
      *     session was verified
      */
-    default ProfileCandidates profileCandidates(String role, InForceQuery query) {
+    default ProfileCandidates profileCandidates(Optional<String> role, InForceQuery query) {
         return ProfileCandidates.NONE;
+    }
+
+    /**
+     * The role one step names at its place ({@link #stepPlace}; ADR-0032 decision 1): the role the version of the
+     * mission type at the step's place gives the step. It judges no name: the caller has run {@link #requireAction} and
+     * found the step's place. It answers from this session's read, the version read against the digest the session was
+     * verified at. The default answers none: a session that holds no closure holds no step.
+     *
+     * @param missionType the mission type of the step
+     * @param action the step
+     * @return the step's role; empty when the step names none, or no version at either place declares the step
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #stepPlace} does
+     */
+    default Optional<String> stepRole(String missionType, String action) {
+        return Optional.empty();
     }
 }

@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.StepRoles;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
@@ -950,6 +951,32 @@ public record ClosureView(
         }
         MergedClosure closure = merged().closure();
         return step.flatMap(held -> StepHolding.placeOf(held, closure, mergeInputs.facts()));
+    }
+
+    /**
+     * The role a step names at its place ({@link #stepPlace}; ADR-0032 decision 1): the role the version of the mission
+     * type at the step's place gives the step, so the step-keyed profile selection reads the step the step read, the
+     * action context and the prompt read answer. A step names a role and never a profile, and a substep never delegates
+     * to one (slice F), so the role is the only source of a step's profile. The version is read from the place's pack
+     * against the closure digest this view was verified at.
+     *
+     * @param missionType the mission type
+     * @param action the step
+     * @return the step's role; empty when the step declares none, or no version at either place declares the step
+     * @throws CharterRefusal as {@link #merged()} does, with {@code PACK_UNREADABLE} when the place's pack cannot read the
+     *     mission type, and with {@code STALE_INPUT} when the packs changed since this view was verified
+     */
+    public Optional<String> stepRole(String missionType, String action) {
+        return stepPlace(missionType, action).flatMap(place -> {
+            CharterArtifact type = mergeInputs
+                    .winners()
+                    .read(place, ArtifactKind.MISSION_TYPE, missionType)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE,
+                            "pack `" + place.value() + "` holds the step " + missionType + "/" + action
+                                    + " and cannot read its mission type"));
+            return type instanceof StepRoles roles ? roles.stepRole(action) : Optional.empty();
+        });
     }
 
     /**

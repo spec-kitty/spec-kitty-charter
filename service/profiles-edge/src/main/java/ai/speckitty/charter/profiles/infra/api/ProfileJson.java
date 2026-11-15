@@ -39,7 +39,8 @@ import tools.jackson.databind.module.SimpleModule;
  * the answer of the read under an activation and its entries ({@code satisfiedBy} and, on the answer, {@code suggestion}
  * are the optional members, as the activation set's own reads have them; the activation adapter's JSON module owns the
  * suggestion and the reference they hold; an entry's {@code edge} is required and always written). The context of a
- * profile selection has optional members only: an asked dimension is written, an unasked one left out. The rule
+ * profile selection has optional members only: an asked dimension is written, an unasked one left out; and the role of
+ * a selection, its one optional member, is left out for a step that names none (FR-012). The rule
  * reaches the generated DTOs only through the mix-ins, which a native executable reads by reflection ({@link Hints}).
  */
 @Configuration(proxyBeanMethods = false)
@@ -62,7 +63,8 @@ public class ProfileJson {
                 .setMixInAnnotation(GovernanceEdgeWords.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveAgentProfileRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveGovernanceEntry.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(ProfileSelectionContext.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(ProfileSelectionContext.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(ProfileSelectionRead.class, OmitAbsentMembers.class);
     }
 
     /**

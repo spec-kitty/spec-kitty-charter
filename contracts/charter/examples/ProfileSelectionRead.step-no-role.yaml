@@ -1,0 +1,16 @@
+summary: >-
+  The step specify of software-dev names no role, so any role may act on it and the fallback in force answers; the
+  answer carries no role.
+value:
+  context: {}
+  candidates:
+  - id: generic-agent
+    pack: built-in
+    fit: fallback
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/agent_profile/generic-agent
+  tie: false
+  _links:
+    self:
+      href: /api/v1/activations/a-1/mission-types/software-dev/actions/specify/profile-selection

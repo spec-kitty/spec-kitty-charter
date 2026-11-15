@@ -48,7 +48,8 @@ public record EffectiveTag(String token) {
      * {@code vocabulary-taboos}, and no release served a tag of {@code v3} without them.
      * Slice G (R8, #102) changes the body of {@code getEffectiveAgentProfile} for the same inputs too (the effective
      * profile and its lineage), still before any release served {@code v3}, so it keeps {@code v3}: its inputs already
-     * cover the profile's enhancers and ancestors, which the closure's packs hold.
+     * cover the profile's enhancers and ancestors, which the closure's packs hold. Its step-keyed selection (FR-012) adds
+     * a {@code profile-selection} link to the action context, again before any release served {@code v3}.
      */
     private static final String DOMAIN = "charter-effective-read\0v3\n";
 
@@ -119,7 +120,13 @@ public record EffectiveTag(String token) {
          * activation puts in force, and the closure fingerprint digests every file of the closure's packs: the profiles'
          * bodies, the policies with their role pins and the descriptors with their fallbacks.
          */
-        SELECTION
+        SELECTION,
+        /**
+         * {@code selectAgentProfileForStep}: the profiles that fill the role of one step in one context (FR-012). The
+         * step's role is read from the closure, whose fingerprint digests the mission types that declare it, so the query
+         * names the step and the context, and the tag never matches the role-keyed read's.
+         */
+        STEP_SELECTION
     }
 
     /**
@@ -255,6 +262,42 @@ public record EffectiveTag(String token) {
     }
 
     /**
+     * The query of {@code selectAgentProfileForStep}, as it selects a representation: the step and the asked context, an
+     * absent dimension the same representation however the request spelled its absence.
+     *
+     * @param missionType the mission type of the path
+     * @param action the step of the path
+     * @param language the asked language, if the request sent one
+     * @param framework the asked framework, if the request sent one
+     */
+    public record StepSelectionQuery(
+            String missionType, String action, Optional<String> language, Optional<String> framework) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param action the step
+         * @param language the asked language
+         * @param framework the asked framework
+         */
+        public StepSelectionQuery {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(action, "action");
+            Objects.requireNonNull(language, "language");
+            Objects.requireNonNull(framework, "framework");
+        }
+
+        /** The query as one unambiguous line: an absent part is {@code -}, a present one is marked {@code +}. */
+        private String normalized() {
+            return "missionType=" + missionType
+                    + "\naction=" + action
+                    + "\nlanguage=" + language.map(value -> "+" + value).orElse("-")
+                    + "\nframework=" + framework.map(value -> "+" + value).orElse("-");
+        }
+    }
+
+    /**
      * The query of {@code listEffectiveArtifacts}, as it selects a representation: a filter that is absent is the same
      * representation however the request spelled its absence.
      *
@@ -381,6 +424,20 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag selection(Revision revision, ClosureSnapshot closure, SelectionQuery query) {
         return of(Read.SELECTION, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of one step-keyed profile selection: the step and the asked context, over the revision (what is in force)
+     * and the closure's fingerprint (the mission type that names the step's role, and every profile's body, policy and
+     * descriptor of the closure's packs).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the step and the context
+     * @return the tag
+     */
+    public static EffectiveTag stepSelection(Revision revision, ClosureSnapshot closure, StepSelectionQuery query) {
+        return of(Read.STEP_SELECTION, revision, closure, query.normalized());
     }
 
     /**

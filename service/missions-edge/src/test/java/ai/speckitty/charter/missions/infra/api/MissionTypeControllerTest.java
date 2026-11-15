@@ -122,6 +122,8 @@ class MissionTypeControllerTest {
                 .andExpect(jsonPath("$._links.mission-type.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev"))
                 .andExpect(jsonPath("$._links.step-contract").doesNotExist())
+                .andExpect(jsonPath("$._links.profile-selection")
+                        .doesNotExist()) // a pack selects no profile; only an activation's step links it (FR-012)
                 .andExpect(jsonPath("$.expectedOutputArtifacts[0]._links.skeleton.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/skeletons/divio~1x.md"))
                 .andExpect(

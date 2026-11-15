@@ -252,7 +252,8 @@ public class EffectiveReadService {
      * @param stored the stored activation
      * @param sourceFingerprint the source fingerprint of the read
      * @param governanceFingerprint the digest of the closure's own packs
-     * @param query the role and the asked context
+     * @param role the role selection reads: the asked role, or the role the asked step names; empty for a step that
+     *     names none, which any role may act
      * @param candidates the profiles in force, the pin and the fallback, with no conflict among them
      * @param etag the tag of the representation, unquoted
      */
@@ -260,7 +261,7 @@ public class EffectiveReadService {
             StoredActivation stored,
             String sourceFingerprint,
             String governanceFingerprint,
-            EffectiveTag.SelectionQuery query,
+            Optional<String> role,
             ProfileCandidates candidates,
             String etag) {
 
@@ -270,7 +271,7 @@ public class EffectiveReadService {
          * @param stored the stored activation
          * @param sourceFingerprint the source fingerprint
          * @param governanceFingerprint the closure's digest
-         * @param query the role and the context
+         * @param role the role
          * @param candidates the candidates
          * @param etag the tag
          */
@@ -278,7 +279,7 @@ public class EffectiveReadService {
             Objects.requireNonNull(stored, "stored");
             Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
             Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
-            Objects.requireNonNull(query, "query");
+            Objects.requireNonNull(role, "role");
             Objects.requireNonNull(candidates, "candidates");
             Objects.requireNonNull(etag, "etag");
         }
@@ -623,10 +624,57 @@ public class EffectiveReadService {
         StoredActivation stored = found(id);
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
-        ProfileCandidates candidates = session.profileCandidates(query.role(), EffectiveSet.queryOf(stored.document()));
-        requireNoConflict(id, query.role(), candidates);
-        String etag = EffectiveTag.selection(stored.revision(), closure, query).token();
-        return new SelectionRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, candidates, etag);
+        return selectionOf(
+                id,
+                stored,
+                session,
+                Optional.of(query.role()),
+                EffectiveTag.selection(stored.revision(), closure, query));
+    }
+
+    /**
+     * {@code selectAgentProfileForStep}, the activation's half (FR-012): the step is judged as the action context and the
+     * prompt read judge it, its role is read at the step's place, and the candidates of that role are read and judged as
+     * {@link #profileSelection} reads and judges them. A step names a role and never a profile, and a substep never
+     * delegates to one (slice F), so the role is the only source of the step's profile. A step that names no role reads
+     * no pin: any role may act, so the profiles slice answers the fallback in force.
+     *
+     * @param id the activation's id
+     * @param query the step and the asked context
+     * @return the step's role, the candidates, conflict-free, and the tag
+     * @throws CharterRefusal with {@code activation_not_found}; {@code mission_type_not_found} or
+     *     {@code action_not_found} when the merged closure holds no such mission type or step, and
+     *     {@code action_not_found} when it holds the step and no version of the mission type at its place declares it;
+     *     then as {@link #profileSelection} does
+     */
+    public SelectionRead stepProfileSelection(ActivationId id, EffectiveTag.StepSelectionQuery query) {
+        Objects.requireNonNull(query, "query");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        session.requireAction(query.missionType(), query.action());
+        if (session.stepPlace(query.missionType(), query.action()).isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.ACTION_NOT_FOUND,
+                    "No version of the mission type " + query.missionType()
+                            + " in the activation's closure declares the step " + query.action() + ".");
+        }
+        return selectionOf(
+                id,
+                stored,
+                session,
+                session.stepRole(query.missionType(), query.action()),
+                EffectiveTag.stepSelection(stored.revision(), closure, query));
+    }
+
+    /** The candidates of a role from one session, judged for conflicts, then tagged (research R10's order). */
+    private static SelectionRead selectionOf(
+            ActivationId id, StoredActivation stored, PacksSession session, Optional<String> role, EffectiveTag tag) {
+        ClosureSnapshot closure = session.snapshot();
+        ProfileCandidates candidates = session.profileCandidates(role, EffectiveSet.queryOf(stored.document()));
+        requireNoConflict(id, role.orElse(""), candidates);
+        return new SelectionRead(
+                stored, closure.fingerprint(), closure.closureFingerprint(), role, candidates, tag.token());
     }
 
     /** The conflicts selection cannot read past (ADR-0068 decision 7, ruling D3): the fallback's, then the pin's. */

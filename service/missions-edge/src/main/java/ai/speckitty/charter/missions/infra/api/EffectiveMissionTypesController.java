@@ -66,7 +66,12 @@ public class EffectiveMissionTypesController implements EffectiveMissionTypesApi
         // A step only a replaced version keeps is read from its place, whose skeletons the place's pack serves (A7).
         MissionLinks.Scope skeletons =
                 read.place().map(place -> links.pack(place.value())).orElse(scope);
-        return MissionBodies.ok(read.read()).body(MissionBodies.step(read.read().value(), scope, skeletons));
+        MissionStep step = MissionBodies.step(read.read().value(), scope, skeletons);
+        // Only a step read under an activation links its profile selection, the profile of the role it names (FR-012).
+        step.putLinksItem(
+                MissionRelation.PROFILE_SELECTION.wireKey(),
+                links.stepProfileSelection(activationId, missionTypeId, stepId));
+        return MissionBodies.ok(read.read()).body(step);
     }
 
     @Override

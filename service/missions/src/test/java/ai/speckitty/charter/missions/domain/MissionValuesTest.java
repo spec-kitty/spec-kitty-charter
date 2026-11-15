@@ -145,6 +145,34 @@ class MissionValuesTest {
     }
 
     @Test
+    @DisplayName(
+            "a step never asks for the reserved role generic, and a role is at most 64 characters (ADR-0068 d4, #446)")
+    void stepRolesAreNeverGenericAndAreCapped() {
+        assertThatThrownBy(() -> step(Optional.of("generic")))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("generic");
+        assertThatThrownBy(() -> step(Optional.of("r".repeat(MissionStep.ROLE_MAX_LENGTH + 1))))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThat(step(Optional.of("r".repeat(MissionStep.ROLE_MAX_LENGTH))).role())
+                .as("the cap itself is a role")
+                .isPresent();
+        assertThat(step(Optional.of("generic-reviewer")).role()).contains("generic-reviewer");
+    }
+
+    private static MissionStep step(Optional<String> role) {
+        return new MissionStep(
+                "plan",
+                "Plan",
+                Optional.empty(),
+                role,
+                Optional.empty(),
+                Optional.empty(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    @Test
     @DisplayName("a step document keeps its sections in order")
     void stepDocumentsKeepOrder() {
         StepDocument document = new StepDocument(

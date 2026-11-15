@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
  * {@link ProfileCandidates} and the activation's half of {@code selectAgentProfile}
  * ({@link EffectiveReadService#profileSelection}): one session answers the candidates of the asked role under the
  * stored document; the fallback conflict, then the pin conflict, is refused naming the packs, whatever the candidates;
- * and the tag is the {@link EffectiveTag#selection} of the role and the context, which no other read shares.
+ * and the tag is the {@link EffectiveTag#selection} of the role and the context, which no other read shares. The
+ * step-keyed half ({@link EffectiveReadService#stepProfileSelection}, FR-012) judges the step as the action context does,
+ * reads the role at the step's place, and reads the candidates of that role, or of none for a step that names none.
  */
 class ProfileCandidatesTest {
 
@@ -35,6 +37,8 @@ class ProfileCandidatesTest {
     private static final String CLOSURE = "sha256:closure";
     private static final EffectiveTag.SelectionQuery REVIEWER =
             new EffectiveTag.SelectionQuery("reviewer", Optional.empty(), Optional.empty());
+    private static final EffectiveTag.StepSelectionQuery REVIEW =
+            new EffectiveTag.StepSelectionQuery("software-dev", "review", Optional.empty(), Optional.empty());
 
     private final InMemoryActivationRepository repository = new InMemoryActivationRepository();
     private FakeAvailablePacks packs;
@@ -156,13 +160,13 @@ class ProfileCandidatesTest {
                 .as("each candidate keeps the pack that holds it")
                 .containsExactly("built-in", "org-base");
         assertThat(read.stored()).isEqualTo(stored);
-        assertThat(read.query()).isEqualTo(REVIEWER);
+        assertThat(read.role()).contains("reviewer");
         assertThat(read.sourceFingerprint()).isEqualTo(SOURCE);
         assertThat(read.governanceFingerprint()).isEqualTo(CLOSURE);
         assertThat(read.etag())
                 .isEqualTo(EffectiveTag.selection(stored.revision(), closure(CLOSURE), REVIEWER)
                         .token());
-        assertThat(packs.candidateAsks()).containsExactly("reviewer");
+        assertThat(packs.candidateAsks()).containsExactly(Optional.of("reviewer"));
         assertThat(packs.calls()).as("one session for the whole read").isEqualTo(1);
     }
 
@@ -211,6 +215,109 @@ class ProfileCandidatesTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    // ---- the step-keyed read
+
+    @Test
+    void theStepsRoleIsReadAtItsPlaceAndItsCandidatesAreTheRolesWithTheStepsTag() {
+        ProfileCandidates tie = tie();
+        packs.places((type, step) -> Optional.of("built-in"));
+        packs.stepRoles((type, step) -> "review".equals(step) ? Optional.of("reviewer") : Optional.empty());
+        packs.profileCandidates((role, query) -> tie);
+
+        EffectiveReadService.SelectionRead read = service.stepProfileSelection(ID, REVIEW);
+
+        assertThat(read.role()).contains("reviewer");
+        assertThat(read.candidates()).isSameAs(tie);
+        assertThat(read.sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(read.governanceFingerprint()).isEqualTo(CLOSURE);
+        assertThat(read.etag())
+                .isEqualTo(EffectiveTag.stepSelection(stored.revision(), closure(CLOSURE), REVIEW)
+                        .token());
+        assertThat(packs.nameChecks())
+                .as("the step is judged as the action context judges it")
+                .containsExactly("software-dev/review");
+        assertThat(packs.candidateAsks()).containsExactly(Optional.of("reviewer"));
+        assertThat(packs.calls()).as("one session for the whole read").isEqualTo(1);
+    }
+
+    @Test
+    void aStepThatNamesNoRoleReadsTheCandidatesOfNoRole() {
+        packs.places((type, step) -> Optional.of("built-in"));
+        packs.profileCandidates((role, query) -> tie());
+
+        EffectiveReadService.SelectionRead read = service.stepProfileSelection(
+                ID, new EffectiveTag.StepSelectionQuery("software-dev", "specify", Optional.empty(), Optional.empty()));
+
+        assertThat(read.role()).isEmpty();
+        assertThat(packs.candidateAsks()).containsExactly(Optional.<String>empty());
+    }
+
+    @Test
+    void aStepNoVersionAtItsPlaceDeclaresIsActionNotFoundBeforeAnyCandidateIsRead() {
+        assertThatThrownBy(() -> service.stepProfileSelection(ID, REVIEW))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND);
+                    assertThat(refused.getMessage()).contains("software-dev").contains("review");
+                });
+        assertThat(packs.candidateAsks()).isEmpty();
+    }
+
+    @Test
+    void anUnknownStepIsTheRefusalOfTheNameCheck() {
+        packs.contexts(ask -> {
+            throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no step " + ask.action());
+        });
+
+        assertThatThrownBy(() -> service.stepProfileSelection(ID, REVIEW))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+        assertThat(packs.candidateAsks()).isEmpty();
+    }
+
+    @Test
+    void aFallbackConflictRefusesTheStepKeyedReadToo() {
+        packs.places((type, step) -> Optional.of("built-in"));
+        packs.profileCandidates((role, query) -> new ProfileCandidates(
+                tie().candidates(),
+                new ProfileCandidates.Pin.None(),
+                new ProfileCandidates.Fallback.Conflict(List.of("team-a", "team-c"))));
+
+        assertThatThrownBy(() -> service.stepProfileSelection(ID, REVIEW))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.FALLBACK_PROFILE_CONFLICT));
+    }
+
+    @Test
+    void theStepSelectionTagNamesTheStepAndTheContextAndNeverMatchesTheRoleKeyedRead() {
+        ClosureSnapshot closure = closure(CLOSURE);
+        Set<EffectiveTag> tags = Set.of(
+                EffectiveTag.stepSelection(stored.revision(), closure, REVIEW),
+                EffectiveTag.stepSelection(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "implement", Optional.empty(), Optional.empty())),
+                EffectiveTag.stepSelection(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.StepSelectionQuery("research", "review", Optional.empty(), Optional.empty())),
+                EffectiveTag.stepSelection(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "review", Optional.of("java"), Optional.empty())),
+                EffectiveTag.stepSelection(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "review", Optional.empty(), Optional.of("java"))),
+                EffectiveTag.selection(stored.revision(), closure, REVIEWER));
+
+        assertThat(tags).as("each step, context and read is a tag of its own").hasSize(6);
     }
 
     // ---- the tag

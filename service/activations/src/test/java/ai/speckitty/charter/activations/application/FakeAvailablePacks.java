@@ -66,11 +66,12 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private Function<PromptAsk, EffectivePrompt> promptAnswer = ask -> EffectivePrompt.NONE;
     private final List<PromptAsk> promptAsks = new ArrayList<>();
     private BiFunction<String, String, Optional<String>> placeAnswer = (missionType, action) -> Optional.empty();
+    private BiFunction<String, String, Optional<String>> roleAnswer = (missionType, action) -> Optional.empty();
     private Function<ArtifactKind, List<EffectiveHeldWinner>> heldAnswer = kind -> List.of();
     private final List<ArtifactKind> heldAsks = new ArrayList<>();
-    private BiFunction<String, InForceQuery, ProfileCandidates> candidatesAnswer =
+    private BiFunction<Optional<String>, InForceQuery, ProfileCandidates> candidatesAnswer =
             (role, query) -> ProfileCandidates.NONE;
-    private final List<String> candidateAsks = new ArrayList<>();
+    private final List<Optional<String>> candidateAsks = new ArrayList<>();
     private List<ArtifactKind> listedKinds = List.of(
             ArtifactKind.TACTIC,
             ArtifactKind.DIRECTIVE,
@@ -257,6 +258,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
     }
 
     /**
+     * Answers every step role of a session with this function from now on, where by default no step names one.
+     *
+     * @param next the answers of {@link PacksSession#stepRole}, by mission type and step
+     */
+    public void stepRoles(BiFunction<String, String, Optional<String>> next) {
+        this.roleAnswer = next;
+    }
+
+    /**
      * The effective prompts the sessions were asked, in order.
      *
      * @return the questions
@@ -300,7 +310,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
      *
      * @param next the answers of {@link PacksSession#profileCandidates}, by role and query
      */
-    public void profileCandidates(BiFunction<String, InForceQuery, ProfileCandidates> next) {
+    public void profileCandidates(BiFunction<Optional<String>, InForceQuery, ProfileCandidates> next) {
         this.candidatesAnswer = next;
     }
 
@@ -309,7 +319,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
      *
      * @return the roles
      */
-    public List<String> candidateAsks() {
+    public List<Optional<String>> candidateAsks() {
         return List.copyOf(candidateAsks);
     }
 
@@ -464,7 +474,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
         }
 
         @Override
-        public ProfileCandidates profileCandidates(String role, InForceQuery query) {
+        public ProfileCandidates profileCandidates(Optional<String> role, InForceQuery query) {
             candidateAsks.add(role);
             return candidatesAnswer.apply(role, query);
         }
@@ -506,6 +516,11 @@ public final class FakeAvailablePacks implements AvailablePacks {
         @Override
         public Optional<String> stepPlace(String missionType, String action) {
             return placeAnswer.apply(missionType, action);
+        }
+
+        @Override
+        public Optional<String> stepRole(String missionType, String action) {
+            return roleAnswer.apply(missionType, action);
         }
 
         @Override

@@ -1,15 +1,15 @@
 title: ProfileSelectionRead
 description: >-
   Which agent profile fills one role under an activation (selectAgentProfile; ADR-0032 decision 1, ADR-0069 decision
-  4, ruling D1 of slice G): the asked role and context, and the profiles that answer it, each with how it fits. One
-  candidate is the answer; several are a tie the service does not break, in the order of their packs in the closure,
-  then by id; a candidate with fit fallback is the fallback in force, answered alone because no profile fits.
+  4, ruling D1 of slice G), or acts on one step by the role it names (selectAgentProfileForStep, FR-012): the role and
+  the asked context, and the profiles that answer it, each with how it fits. One candidate is the answer; several are
+  a tie the service does not break, in the order of their packs in the closure, then by id; a candidate with fit
+  fallback is the fallback in force, answered alone because no profile fits, or because the step names no role.
 
   _links holds self, this request with the context it asked.
 type: object
 additionalProperties: false
 required:
-- role
 - context
 - candidates
 - tie
@@ -18,11 +18,16 @@ properties:
   role:
     type: string
     pattern: '^(?:[a-fh-z][a-z0-9-]{0,63}|g(?:[a-df-z0-9-][a-z0-9-]{0,62})?|ge(?:[a-mo-z0-9-][a-z0-9-]{0,61})?|gen(?:[a-df-z0-9-][a-z0-9-]{0,60})?|gene(?:[a-qs-z0-9-][a-z0-9-]{0,59})?|gener(?:[a-hj-z0-9-][a-z0-9-]{0,58})?|generi(?:[abd-z0-9-][a-z0-9-]{0,57})?|generic[a-z0-9-][a-z0-9-]{0,56})$'
-    description: The asked role, a role token other than the reserved generic.
+    description: >-
+      The role selection read, a role token other than the reserved generic: the asked role, or the role the asked
+      step names. Absent only for a step that names no role.
     x-derived:
-      rule: The {role} path segment.
+      rule: >-
+        The {role} path segment of selectAgentProfile; for selectAgentProfileForStep, the role of the step at its place
+        (MissionStep.role), absent when the step declares none.
       inputs:
       - openapi.yaml#/paths
+      - schemas/MissionStep.yaml#/properties/role
   context:
     $ref: ProfileSelectionContext.yaml
   candidates:

@@ -56,10 +56,20 @@ public record MissionStep(
             .must(Constraints.of(
                     "A mission step's description is at most " + DESCRIPTION_MAX_LENGTH + " characters.",
                     text -> text.codePointCount(0, text.length()) <= DESCRIPTION_MAX_LENGTH));
+    /** The longest role token, as a profile's roles are capped (#446). */
+    public static final int ROLE_MAX_LENGTH = 64;
+
+    /** The reserved role of a fallback profile, which no step asks for (ADR-0068 decision 4). */
+    private static final String GENERIC_ROLE = "generic";
+
     private static final ModularRuleset<String> ROLE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A mission step's role is a lower-case role token.",
-                    role -> ROLE_SHAPE.matcher(role).matches()));
+                    "A mission step's role is a lower-case role token of at most " + ROLE_MAX_LENGTH + " characters.",
+                    role -> ROLE_SHAPE.matcher(role).matches() && role.length() <= ROLE_MAX_LENGTH))
+            .must(Constraints.of(
+                    "A mission step never asks for the reserved role " + GENERIC_ROLE
+                            + ", which marks a fallback profile (ADR-0068 decision 4).",
+                    role -> !GENERIC_ROLE.equals(role)));
     private static final ModularRuleset<StepDocument> GUIDELINES_RULES = ModularRuleset.<StepDocument>emptyRules()
             .must(Constraints.of(
                     "A mission step's guidelines carry no detailed description; only its prompt does.",

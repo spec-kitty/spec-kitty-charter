@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.api.model.ProfileSelectionCandidate;
 import ai.speckitty.charter.api.model.ProfileSelectionRead;
 import ai.speckitty.charter.profiles.application.ProfileSelectionService.Selection;
+import ai.speckitty.charter.profiles.application.ProfileSelectionService.Subject;
 import ai.speckitty.charter.profiles.domain.selection.Fit;
 import ai.speckitty.charter.profiles.domain.selection.Pick;
 import ai.speckitty.charter.profiles.domain.selection.SelectionAnswer;
@@ -25,7 +26,11 @@ class ProfileSelectionDtosTest {
     private final ProfileSelectionDtos dtos = new ProfileSelectionDtos("/api/v1/");
 
     private static Selection selection(SelectionContext context, Pick... picks) {
-        return new Selection("a-1", "reviewer", context, new SelectionAnswer.Matched(List.of(picks), picks.length > 1));
+        return new Selection(
+                "a-1",
+                new Subject.Role("reviewer"),
+                context,
+                new SelectionAnswer.Matched(List.of(picks), picks.length > 1));
     }
 
     @Test
@@ -74,6 +79,28 @@ class ProfileSelectionDtosTest {
     }
 
     @Test
+    void aStepsSelectionIsSelfLinkedToTheStepAndCarriesTheStepsRoleOrNone() {
+        ProfileSelectionRead review = dtos.read(new Selection(
+                "a-1",
+                new Subject.Step("software-dev", "review", Optional.of("reviewer")),
+                new SelectionContext(Optional.of("java"), Optional.empty()),
+                new SelectionAnswer.Matched(List.of(new Pick("reviewer-renata", "built-in", Fit.PRIMARY)), false)));
+        ProfileSelectionRead specify = dtos.read(new Selection(
+                "a-1",
+                new Subject.Step("software-dev", "specify", Optional.empty()),
+                SelectionContext.NONE,
+                new SelectionAnswer.Matched(List.of(new Pick("generic-agent", "built-in", Fit.FALLBACK)), false)));
+
+        assertThat(review.getRole()).isEqualTo("reviewer");
+        assertThat(review.getLinks().get("self").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/review/profile-selection"
+                        + "?language=java");
+        assertThat(specify.getRole()).as("a step that names no role").isNull();
+        assertThat(specify.getLinks().get("self").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/specify/profile-selection");
+    }
+
+    @Test
     void everyFitHasItsWireToken() {
         assertThat(ProfileSelectionDtos.fit(Fit.PRIMARY)).isEqualTo(ProfileSelectionCandidate.FitEnum.PRIMARY);
         assertThat(ProfileSelectionDtos.fit(Fit.ALT)).isEqualTo(ProfileSelectionCandidate.FitEnum.ALT);
@@ -94,6 +121,14 @@ class ProfileSelectionDtosTest {
                 new Pick("java-jenny", "built-in", Fit.PRIMARY))));
 
         assertThat(none).contains("\"context\":{}").contains("\"fit\":\"fallback\"");
+        assertThat(json.writeValueAsString(dtos.read(new Selection(
+                        "a-1",
+                        new Subject.Step("software-dev", "specify", Optional.empty()),
+                        SelectionContext.NONE,
+                        new SelectionAnswer.Matched(
+                                List.of(new Pick("generic-agent", "built-in", Fit.FALLBACK)), false)))))
+                .as("a step that names no role leaves the role out")
+                .doesNotContain("\"role\"");
         assertThat(java).contains("\"context\":{\"language\":\"java\"}");
     }
 }

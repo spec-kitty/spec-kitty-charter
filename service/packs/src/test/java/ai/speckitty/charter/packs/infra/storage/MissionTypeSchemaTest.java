@@ -109,6 +109,10 @@ class MissionTypeSchemaTest {
                 "sequence index on a step | '- id: methodology\\n' >> '- id: methodology\\n  sequence_index: 2\\n'"
                         + " | additionalProperties /steps/1 sequence_index",
                 "uppercase role           | 'role: researcher' >> 'role: Researcher'" + " | pattern /steps/0/role -",
+                "reserved generic role    | 'role: researcher' >> 'role: generic'" + " | not /steps/0/role -",
+                "role too long            | 'role: researcher' >> 'role: "
+                        + "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr'"
+                        + " | maxLength /steps/0/role -",
                 "prompt in another place  | 'steps/scoping.prompt.md' >> 'scoping/prompt.md'"
                         + " | pattern /steps/0/prompt_path -",
                 "blocking false           | 'blocking: true\\n    template_path' >> 'blocking: false\\n    template_path'"

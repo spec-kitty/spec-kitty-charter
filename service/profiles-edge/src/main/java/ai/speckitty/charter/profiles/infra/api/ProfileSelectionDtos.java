@@ -6,6 +6,7 @@ import ai.speckitty.charter.api.model.ProfileSelectionContext;
 import ai.speckitty.charter.api.model.ProfileSelectionRead;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.profiles.application.ProfileSelectionService.Selection;
+import ai.speckitty.charter.profiles.application.ProfileSelectionService.Subject;
 import ai.speckitty.charter.profiles.domain.selection.Fit;
 import ai.speckitty.charter.profiles.domain.selection.Pick;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +22,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 
 /**
- * The wire form of a profile selection ({@code selectAgentProfile}): the asked role and context, each picked profile
+ * The wire form of a profile selection ({@code selectAgentProfile}, and {@code selectAgentProfileForStep}, whose role
+ * is the step's and absent for a step that names none): the asked role and context, each picked profile
  * with its pack and fit, and whether they tie. The links are built under the base path the controllers are mapped
  * under, the way {@link EffectiveProfileDtos} builds its own: the answer's {@code self} is the request, with the context
  * it asked and nothing else, and each candidate links {@code effective-artifact}, its read under the activation.
@@ -31,6 +33,7 @@ public class ProfileSelectionDtos {
 
     private static final String ACTIVATIONS = "activations";
     private static final String PROFILE = ArtifactKind.AGENT_PROFILE.token();
+    private static final String SELECTION = "profile-selection";
 
     private final String basePath;
 
@@ -54,14 +57,15 @@ public class ProfileSelectionDtos {
         ProfileSelectionContext context = new ProfileSelectionContext();
         selection.context().language().ifPresent(context::setLanguage);
         selection.context().framework().ifPresent(context::setFramework);
-        return new ProfileSelectionRead(
-                selection.role(),
+        ProfileSelectionRead read = new ProfileSelectionRead(
                 context,
                 selection.answer().picks().stream()
                         .map(pick -> candidate(pick, selection.activationId()))
                         .toList(),
                 selection.answer().tie(),
                 Map.of("self", new Link(self(selection))));
+        selection.subject().role().ifPresent(read::setRole);
+        return read;
     }
 
     private ProfileSelectionCandidate candidate(Pick pick, String activationId) {
@@ -81,12 +85,26 @@ public class ProfileSelectionDtos {
         };
     }
 
-    /** The request: the role's path and the asked context, language first, each query value percent-encoded. */
+    /**
+     * The request: the role's path, or the step's, and the asked context, language first, each query value
+     * percent-encoded.
+     */
     private String self(Selection selection) {
         List<String> query = new ArrayList<>();
         selection.context().language().ifPresent(language -> query.add("language=" + encoded(language)));
         selection.context().framework().ifPresent(framework -> query.add("framework=" + encoded(framework)));
-        String path = href(ACTIVATIONS, selection.activationId(), "roles", selection.role(), "profile-selection");
+        String path = switch (selection.subject()) {
+            case Subject.Role role -> href(ACTIVATIONS, selection.activationId(), "roles", role.name(), SELECTION);
+            case Subject.Step step ->
+                href(
+                        ACTIVATIONS,
+                        selection.activationId(),
+                        "mission-types",
+                        step.missionType(),
+                        "actions",
+                        step.action(),
+                        SELECTION);
+        };
         return query.isEmpty() ? path : path + "?" + String.join("&", query);
     }
 

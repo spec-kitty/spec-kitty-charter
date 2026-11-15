@@ -93,4 +93,5 @@ operations:
   replaceActivation: {switch: ready}
   selectActivationArtifact: {switch: ready}
   selectAgentProfile: {switch: ready}
+  selectAgentProfileForStep: {switch: ready}
   unselectActivationArtifact: {switch: ready}

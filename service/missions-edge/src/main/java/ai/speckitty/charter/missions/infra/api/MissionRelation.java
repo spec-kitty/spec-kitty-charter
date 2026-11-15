@@ -17,7 +17,9 @@ public enum MissionRelation {
     /** The pack-scoped read of the winner a read under an activation answers, in the pack that holds it. */
     ARTIFACT("artifact"),
     /** The read under the activation of a substep's delegation candidate the activation's closure holds. */
-    EFFECTIVE_ARTIFACT("effective-artifact");
+    EFFECTIVE_ARTIFACT("effective-artifact"),
+    /** The profile selection of a step under the activation it is read under ({@code selectAgentProfileForStep}). */
+    PROFILE_SELECTION("profile-selection");
 
     private final String wireKey;
 

@@ -1,0 +1,145 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/MissionTypePath.yaml
+- $ref: ../parameters/ActionPath.yaml
+get:
+  operationId: selectAgentProfileForStep
+  summary: Select the agent profile of one step under an activation.
+  description: >-
+    Which agent profile acts on the step {action} of the mission type {missionType} under the activation (ADR-0032
+    decision 1, FR-012 of slice G): exactly what selectAgentProfile answers, with the same language and framework, for
+    the role the step names, so a client never reads the step's role and asks again. A step names a role and never a
+    profile, and a substep never delegates to one, so the role is the only source of the step's profile. The step is
+    read at its place, as getEffectiveMissionStep, getEffectiveActionContext and getEffectiveStepPrompt read it: the
+    version of the mission type that wins the layer merge when it declares the step, else the version of the pack
+    that holds the merged winner of action:<missionType>/<action>. A step that names no role is one any role may act
+    on: no pin and no role fit applies, and the fallback in force answers with fit fallback; with no fallback in
+    force, the read is refused 404 no_profile_matched. The answer's role is the step's, absent for a step that names
+    none, and its self link is this request.
+
+    The refusals come in this order. An activationId, missionType or action outside its pattern, or a language or
+    framework outside its own, is a 400 Problem without a code. An unknown activation is 404 activation_not_found.
+    Then an unknown mission type or step is 404 mission_type_not_found or action_not_found, judged against the merged
+    closure as getEffectiveActionContext judges it, whether or not the mission type is in force. A closure that cannot
+    compose or merge answers its 500. Then the conflicts and no_profile_matched follow as selectAgentProfile orders
+    them, a role pin conflict only for a step that names a role. Every refusal comes before the ETag is compared, so
+    none is a 304. stale_input and internal_error may be retried; the answer is never partial.
+
+    The ETag follows the rule of the effective reads: it names the mission type, the step and the asked context, and
+    changes with the activation's revision and with any file of a pack of its closure (the mission type that names the
+    step's role, the profiles' bodies, the policies with their pins and the descriptors with their fallbacks), and not
+    with a pack outside it; it never matches the tag of selectAgentProfile. A matching If-None-Match is a 304 without
+    a body.
+  tags:
+  - EffectiveAgentProfiles
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  - name: language
+    in: query
+    required: false
+    description: The language of the work the step is asked for, matched against a specialization's languages.
+    schema:
+      $ref: ../schemas/LanguageToken.yaml
+  - name: framework
+    in: query
+    required: false
+    description: The framework of the work the step is asked for, matched against a specialization's frameworks.
+    schema:
+      type: string
+      maxLength: 64
+      pattern: ^[a-z0-9][a-z0-9+#._-]*$
+  responses:
+    '200':
+      description: The profile that fills the step's role, every tied profile, or the fallback.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ProfileSelectionRead.yaml
+          examples:
+            review:
+              $ref: ../examples/ProfileSelectionRead.step-review.yaml
+            no-role:
+              $ref: ../examples/ProfileSelectionRead.step-no-role.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        Refused with 404, in this order: the activation (activation_not_found, also for an activation this client may
+        not see, so ids do not leak), then the mission type (mission_type_not_found) or the step (action_not_found) the
+        merged closure does not hold, then a step whose role no profile in force fills, or that names no role, with no
+        fallback in force or for the role operator (no_profile_matched).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            mission-type-not-found:
+              $ref: ../examples/CharterRefusal.mission-type-not-found.yaml
+            action-not-found:
+              $ref: ../examples/CharterRefusal.action-not-found.yaml
+            no-profile-matched:
+              summary: The step names no role, and no fallback profile is in force.
+              value:
+                title: No profile matched
+                status: 404
+                code: no_profile_matched
+                detail: No agent profile in force under the activation a-1 answers the step software-dev/specify, which
+                  names no role, and no fallback profile is in force.
+    '422':
+      description: >-
+        The closure's packs disagree on what selection reads, refused with 422 before any profile is matched, as for
+        selectAgentProfile: two packs, neither derived from the other, declare different fallback profiles
+        (fallback_profile_conflict), or two packs pin the step's role to different profiles (role_pin_conflict). Each
+        detail names the packs.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            fallback-profile-conflict:
+              summary: Two unrelated packs of the closure declare different fallback profiles.
+              value:
+                title: Fallback profile conflict
+                status: 422
+                code: fallback_profile_conflict
+                detail: The packs team-a, team-b of the activation a-1's closure, neither derived from the other, declare
+                  different fallback profiles.
+            role-pin-conflict:
+              summary: Two packs of the closure pin the step's role to different profiles.
+              value:
+                title: Role pin conflict
+                status: 422
+                code: role_pin_conflict
+                detail: The packs team-a, team-b of the activation a-1's closure pin the role reviewer to different
+                  profiles.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

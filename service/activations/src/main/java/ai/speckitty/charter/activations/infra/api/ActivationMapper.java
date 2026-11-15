@@ -7,6 +7,7 @@ import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.ActivationApi;
+import ai.speckitty.charter.api.EffectiveAgentProfilesApi;
 import ai.speckitty.charter.api.EffectiveAssetsApi;
 import ai.speckitty.charter.api.EffectiveGlossariesApi;
 import ai.speckitty.charter.api.EffectiveMissionTypesApi;
@@ -271,6 +272,20 @@ public class ActivationMapper {
      */
     public String prompt(String activationId, String missionTypeId, String action) {
         return expand(ActivationApi.PATH_GET_EFFECTIVE_STEP_PROMPT, activationId, missionTypeId, action);
+    }
+
+    /**
+     * The path of the profile selection of one step under an activation ({@code selectAgentProfileForStep}, FR-012),
+     * without a context, from the contract's path template.
+     *
+     * @param activationId the activation's id
+     * @param missionTypeId the mission type's id
+     * @param action the step's id
+     * @return the absolute path, each variable strictly percent-encoded
+     */
+    public String stepProfileSelection(String activationId, String missionTypeId, String action) {
+        return expand(
+                EffectiveAgentProfilesApi.PATH_SELECT_AGENT_PROFILE_FOR_STEP, activationId, missionTypeId, action);
     }
 
     /**

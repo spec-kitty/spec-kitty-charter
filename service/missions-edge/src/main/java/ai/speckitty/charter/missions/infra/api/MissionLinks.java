@@ -2,6 +2,7 @@ package ai.speckitty.charter.missions.infra.api;
 
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.ArtifactsApi;
+import ai.speckitty.charter.api.EffectiveAgentProfilesApi;
 import ai.speckitty.charter.api.EffectiveMissionTypesApi;
 import ai.speckitty.charter.api.MissionTypesApi;
 import ai.speckitty.charter.api.model.Link;
@@ -81,6 +82,19 @@ final class MissionLinks {
      */
     Scope activation(String activationId) {
         return new Scope(ACTIVATION, activationId);
+    }
+
+    /**
+     * The profile selection of one step under an activation ({@code selectAgentProfileForStep}, FR-012), which only an
+     * activation's step read links: a pack selects no profile.
+     *
+     * @param activationId the activation's id, as the request names it
+     * @param missionTypeId the step's mission type
+     * @param stepId the step
+     * @return the link
+     */
+    Link stepProfileSelection(String activationId, String missionTypeId, String stepId) {
+        return link(EffectiveAgentProfilesApi.PATH_SELECT_AGENT_PROFILE_FOR_STEP, activationId, missionTypeId, stepId);
     }
 
     /**
