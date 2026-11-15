@@ -8,14 +8,18 @@ import ai.speckitty.charter.profiles.application.EffectiveProfiles;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
 import ai.speckitty.charter.profiles.application.ProfileRead;
 import ai.speckitty.charter.profiles.application.ProfileReadService;
+import ai.speckitty.charter.profiles.application.ProfileSelectionService;
 import ai.speckitty.charter.profiles.application.ProfileSource;
+import ai.speckitty.charter.profiles.application.SelectionCandidates;
 import ai.speckitty.charter.profiles.application.config.ProfilesApplicationConfiguration;
 import ai.speckitty.charter.profiles.infra.activations.ActivationsEffectiveProfiles;
+import ai.speckitty.charter.profiles.infra.activations.ActivationsSelectionCandidates;
 import ai.speckitty.charter.profiles.infra.activations.config.ProfilesActivationsConfiguration;
 import ai.speckitty.charter.profiles.infra.api.AgentProfilesController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveProfileDtos;
 import ai.speckitty.charter.profiles.infra.api.ProfileDtos;
+import ai.speckitty.charter.profiles.infra.api.ProfileSelectionDtos;
 import ai.speckitty.charter.profiles.infra.api.config.ProfilesApiConfiguration;
 import ai.speckitty.charter.profiles.infra.packs.PacksProfileSource;
 import ai.speckitty.charter.profiles.infra.packs.config.ProfilesPacksConfiguration;
@@ -28,6 +32,10 @@ import tools.jackson.databind.JacksonModule;
 /** Each ring's configuration is a Spring configuration that starts on its own, over the bean its ring asks for. */
 class ProfilesEdgeConfigurationsTest {
 
+    private static final SelectionCandidates NO_SELECTION = (activationId, role, context) -> {
+        throw new AssertionError("only the wiring is under test");
+    };
+
     private static final ProfileSource SOURCE = (pack, profileId, depth) ->
             new ProfileRead(ProfileFixtures.leanProfile(pack.value(), profileId), "r", "f", List.of(), List.of());
 
@@ -37,9 +45,11 @@ class ProfilesEdgeConfigurationsTest {
                 .withUserConfiguration(ProfilesApplicationConfiguration.class)
                 .withBean(ProfileSource.class, () -> SOURCE)
                 .withBean(EffectiveProfiles.class, () -> ProfileFixtures.NO_ACTIVATIONS)
+                .withBean(SelectionCandidates.class, () -> NO_SELECTION)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(ProfileReadService.class);
+                    assertThat(context).hasSingleBean(ProfileSelectionService.class);
                 });
     }
 
@@ -49,11 +59,13 @@ class ProfilesEdgeConfigurationsTest {
                 .withUserConfiguration(ProfilesApiConfiguration.class)
                 .withBean(
                         ProfileReadService.class, () -> new ProfileReadService(SOURCE, ProfileFixtures.NO_ACTIVATIONS))
+                .withBean(ProfileSelectionService.class, () -> new ProfileSelectionService(NO_SELECTION))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(AgentProfilesController.class);
                     assertThat(context).hasSingleBean(EffectiveAgentProfilesController.class);
                     assertThat(context).hasSingleBean(EffectiveProfileDtos.class);
+                    assertThat(context).hasSingleBean(ProfileSelectionDtos.class);
                     assertThat(context).hasSingleBean(ProfileDtos.class);
                     assertThat(context).hasSingleBean(JacksonModule.class);
                 });
@@ -83,6 +95,8 @@ class ProfilesEdgeConfigurationsTest {
                     assertThat(context).hasSingleBean(ActivationsEffectiveProfiles.class);
                     assertThat(context.getBean(EffectiveProfiles.class))
                             .isInstanceOf(ActivationsEffectiveProfiles.class);
+                    assertThat(context.getBean(SelectionCandidates.class))
+                            .isInstanceOf(ActivationsSelectionCandidates.class);
                 });
     }
 }

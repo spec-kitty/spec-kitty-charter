@@ -1267,6 +1267,54 @@ Feature: Registering a whole pack replaces the pack the service holds
       | fallback_profile_not_role_neutral | generic-agent | locked     | role: generic     | alt-roles: [reviewer]   |
       | fallback_profile_not_agent        | generic-agent | locked     | role: generic     | performer: human        |
 
+  # bound by: ruling D4 and WP01 of slice G (#512): only a human-performed profile takes the reserved role operator, and the
+  # retired sentinel key is an undeclared key of the closed profile schema, refused like any other
+  Scenario Outline: An agent-performed operator profile and a profile that carries sentinel are refused as invalid, and a human operator is accepted
+    Given the archive "operator" is a copy of the archive "v1"
+    And the archive "operator" holds the file "agent_profiles/human-operator.agent.yaml":
+      """
+      profile-id: human-operator
+      name: Human operator
+      role: operator
+      <performer>
+      <extra>
+      purpose: Decide what is in scope.
+      specialization:
+        primary-focus: Operator decisions
+      """
+    And the archive "sound" is a copy of the archive "v1"
+    And the archive "sound" holds the file "agent_profiles/human-operator.agent.yaml":
+      """
+      profile-id: human-operator
+      name: Human operator
+      role: operator
+      performer: human
+      purpose: Decide what is in scope.
+      specialization:
+        primary-focus: Operator decisions
+      """
+    When I PUT "/packs/acme" with the archive "operator"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/detail" contains "<names>"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I GET "/packs/acme/artifacts/agent_profile/human-operator"
+    Then the response status is 200
+    And the field at "/agentProfile/performer" is "human"
+
+    Examples:
+      | performer        | extra                    | names    |
+      | performer: agent | description: An operator | operator |
+      | description: Any | max-concurrent-tasks: 1  | operator |
+      | performer: human | sentinel: true           | sentinel |
+
   # bound by: ruling D3 (ADR-0030): a role pin names a profile the closure holds that fits the pinned role, a human one included
   Scenario Outline: A role pin that breaks ruling D3 is refused with its code, and a pin to a fitting profile is accepted
     Given the archive "pinned" is a copy of the archive "v1"

@@ -192,6 +192,9 @@ Keep it small; add a step only when a scenario cannot be written without it.
   `<packId>` is the pack that holds that winner, and `linked` says its `_links.artifact` is the pack-scoped read of the
   entry in that pack (`unlinked` for an entry without the link, a kind the generic route does not serve); then ` edge {}` for an `edge` that states neither word or ` edge {when "<when>" because "<reason>"}` for one that
   states any, whatever the entry's relation and state (effective-agent-profile.feature, bound in `ProfileSteps`).
+- `Then the selection answers exactly:` followed by a doc string, one candidate of a profile selection per line, in the
+  answer's order: `<id> in <pack> as <fit>`; each candidate's `effective-artifact` link must be the read of that profile
+  under the activation of the request (profile-selection.feature, bound in `ProfileSteps`).
 - `Then the operation is refused as not implemented` — the last request's operation is declared in `../openapi.yaml`
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the

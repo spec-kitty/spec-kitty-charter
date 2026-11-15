@@ -1,6 +1,6 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: 879afb7df5b40d3901191c161e1d0b063da683298a47c8bb23086ffdef3fa42d
+manifest_hash: 5f3603e9240057401afddac7c3f735064bd503daa6b98d67bdcaa6c9cd6f3874
 constituents:
 - kind: agent_profile
   id: human-operator
@@ -14,6 +14,10 @@ constituents:
   id: reviewer-renata-org
   path: agent_profiles/reviewer-renata-org.agent.yaml
   content_hash: bd98bc3e26b88f465f7ee3c9d99c69635ac5f9aa90a5192a43df442fcc0356cf
+- kind: agent_profile
+  id: reviewer-rita
+  path: agent_profiles/reviewer-rita.agent.yaml
+  content_hash: 4b8da2e206f3eabd2fc7e23bb8b66f4c900fcfb26a83c4e317a1d792128bd69b
 - kind: directive
   id: DIRECTIVE_038
   path: directives/038-structured-prompt-boundary.directive.yaml

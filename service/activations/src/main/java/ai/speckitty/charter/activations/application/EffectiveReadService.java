@@ -244,6 +244,46 @@ public class EffectiveReadService {
     }
 
     /**
+     * What a profile selection under an activation chooses from, judged and tagged (selectAgentProfile, ruling D1 of
+     * slice G). The selection and the {@code If-None-Match} are the profiles slice's: it refuses
+     * {@code no_profile_matched} before it compares the tag, so no refusal is a {@code 304}.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param query the role and the asked context
+     * @param candidates the profiles in force, the pin and the fallback, with no conflict among them
+     * @param etag the tag of the representation, unquoted
+     */
+    public record SelectionRead(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveTag.SelectionQuery query,
+            ProfileCandidates candidates,
+            String etag) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param query the role and the context
+         * @param candidates the candidates
+         * @param etag the tag
+         */
+        public SelectionRead {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(query, "query");
+            Objects.requireNonNull(candidates, "candidates");
+            Objects.requireNonNull(etag, "etag");
+        }
+    }
+
+    /**
      * The place of a step under an activation.
      *
      * @param packId the configured id of the pack that holds the merged winner of the step's action
@@ -559,6 +599,49 @@ public class EffectiveReadService {
         EffectivePrompt prompt = session.prompt(query.missionType(), query.action(), asked);
         return new Read.Found<>(
                 new PromptRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, prompt), etag);
+    }
+
+    /**
+     * {@code selectAgentProfile}, the activation's half (ruling D1 of slice G, research R10's order): the candidates of
+     * one role, read from one {@link PacksSession} under the stored document, with the pin and the fallback in force,
+     * and the tag of the representation. The order follows the action context and the prompt reads: the activation,
+     * then the closure's own refusals (the merge and the in-force resolution), then the conflicts, the fallback's before
+     * the pin's, whether or not a profile would match, and only then the tag. The profiles slice then selects, refuses
+     * {@code no_profile_matched}, and compares {@code If-None-Match}.
+     *
+     * @param id the activation's id
+     * @param query the role and the asked context
+     * @return the candidates, conflict-free, and the tag
+     * @throws CharterRefusal with {@code activation_not_found}; as {@link #activation} does; then
+     *     {@code fallback_profile_conflict} when two packs of the closure, neither derived from the other, declare
+     *     different fallbacks, or {@code role_pin_conflict} when two packs pin the role to different profiles, each
+     *     naming the packs; {@code stale_input} when the packs changed since the session was verified
+     */
+    public SelectionRead profileSelection(ActivationId id, EffectiveTag.SelectionQuery query) {
+        Objects.requireNonNull(query, "query");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        ProfileCandidates candidates = session.profileCandidates(query.role(), EffectiveSet.queryOf(stored.document()));
+        requireNoConflict(id, query.role(), candidates);
+        String etag = EffectiveTag.selection(stored.revision(), closure, query).token();
+        return new SelectionRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, candidates, etag);
+    }
+
+    /** The conflicts selection cannot read past (ADR-0068 decision 7, ruling D3): the fallback's, then the pin's. */
+    private static void requireNoConflict(ActivationId id, String role, ProfileCandidates candidates) {
+        if (candidates.fallback() instanceof ProfileCandidates.Fallback.Conflict conflict) {
+            throw new CharterRefusal(
+                    RefusalCode.FALLBACK_PROFILE_CONFLICT,
+                    "The packs " + String.join(", ", conflict.packs()) + " of the activation " + id.value()
+                            + "'s closure, neither derived from the other, declare different fallback profiles.");
+        }
+        if (candidates.pin() instanceof ProfileCandidates.Pin.Conflict conflict) {
+            throw new CharterRefusal(
+                    RefusalCode.ROLE_PIN_CONFLICT,
+                    "The packs " + String.join(", ", conflict.packs()) + " of the activation " + id.value()
+                            + "'s closure pin the role " + role + " to different profiles.");
+        }
     }
 
     /**

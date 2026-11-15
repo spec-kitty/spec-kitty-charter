@@ -124,6 +124,6 @@ class PackArtifactExamplesRoundTripTest {
         assertThat(problems)
                 .as("agent profiles whose written form differs from the source")
                 .isEmpty();
-        assertThat(files).as("agent profiles in the corpus").hasSize(9);
+        assertThat(files).as("agent profiles in the corpus").hasSize(10);
     }
 }

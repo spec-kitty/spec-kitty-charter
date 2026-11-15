@@ -211,4 +211,25 @@ public interface PacksSession {
      *     the session was verified
      */
     Optional<String> stepPlace(String missionType, String action);
+
+    /**
+     * What a profile selection for one role chooses from under a document's request (ADR-0069 decision 4, rulings D2
+     * and D3 of slice G): the agent profiles in force that enhance no agent profile, each with the entity its winning
+     * pack stores, that pack, its pack's position in the closure and its longest in-force {@code specializes_from}
+     * chain; the pin in force for the role and the fallback in force, as the closure's packs declare them. It answers
+     * from this session's read and its in-force resolution, the entities read against the digest the session was
+     * verified at. The default answers {@link ProfileCandidates#NONE}: a session that holds no closure puts nothing in
+     * force.
+     *
+     * @param role the asked role
+     * @param query what the document selects, denies and filters
+     * @return the candidates, the pin and the fallback; a conflict is answered, not refused, so the caller orders the
+     *     refusals
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does, with {@code pack_unreadable}
+     *     when a winner's pack cannot read a profile, and with {@code stale_input} when the packs changed since the
+     *     session was verified
+     */
+    default ProfileCandidates profileCandidates(String role, InForceQuery query) {
+        return ProfileCandidates.NONE;
+    }
 }

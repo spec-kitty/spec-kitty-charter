@@ -9,7 +9,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The step vocabulary of the agent profile reads (agent-profile-reads.feature, effective-agent-profile.feature): the
+ * The step vocabulary of the agent profile reads (agent-profile-reads.feature, effective-agent-profile.feature) and of
+ * the profile selection (profile-selection.feature): the
  * {@code governance} list of the last answer as lines of text, compared with the doc string in the order the answer gives. The order is part of what is
  * pinned: the entries are sorted by urn. A line also says whether the entry links to the pack-scoped read of its
  * artifact and where that read is, so a scenario states which entries link and which do not.
@@ -52,6 +53,40 @@ public class ProfileSteps {
         list.forEach(entry -> lines.add(effectiveLine(entry)));
         assertThat(lines)
                 .as("the effective governance entries of the answer")
+                .isEqualTo(expected.lines()
+                        .map(String::strip)
+                        .filter(text -> !text.isEmpty())
+                        .toList());
+    }
+
+    /**
+     * The candidates of a profile selection (profile-selection.feature) as lines, {@code <id> in <pack> as <fit>}, in the
+     * answer's order. Each candidate must link {@code effective-artifact}, the read of its profile under the activation
+     * the request named.
+     */
+    @Then("the selection answers exactly:")
+    public void selection(String expected) throws Exception {
+        JsonNode list = JSON.readTree(http.body()).path("candidates");
+        assertThat(list.isArray()).as("candidates is an array: %s", http.body()).isTrue();
+        // The path is /activations/{activationId}/roles/{role}/profile-selection.
+        String path = http.path();
+        int start = path.indexOf('/', 1) + 1;
+        String activation = path.substring(start, path.indexOf('/', start));
+        List<String> lines = new ArrayList<>();
+        list.forEach(candidate -> {
+            String id = candidate.path("id").asString();
+            assertThat(candidate
+                            .path("_links")
+                            .path("effective-artifact")
+                            .path("href")
+                            .asString())
+                    .as("the effective-artifact link of %s", id)
+                    .isEqualTo("/api/v1/activations/" + activation + "/artifacts/agent_profile/" + id);
+            lines.add(id + " in " + candidate.path("pack").asString() + " as "
+                    + candidate.path("fit").asString());
+        });
+        assertThat(lines)
+                .as("the candidates of the selection")
                 .isEqualTo(expected.lines()
                         .map(String::strip)
                         .filter(text -> !text.isEmpty())
