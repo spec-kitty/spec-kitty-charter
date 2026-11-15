@@ -10,8 +10,10 @@ import java.util.Set;
  * ADR-0027 Decision 5). Each constant declares its {@link #directionality()} and {@link #token()};
  * directionality is derived from the type, never stored on a {@link Relationship}.
  *
- * <p>Supersedes the kernel {@link Relation} enum conceptually. The tokens mirror {@code Relation}
- * one-for-one — the catalogue is closed and the wire spelling is contractual.
+ * <p>The one relation catalogue: the catalogue is closed and the wire spelling is contractual. {@code impacts},
+ * {@code replaces} and {@code delegates_to} are retired (slice F, operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5): a
+ * tension between two rules is a {@link Tension} (ADR-0028), a former {@code replaces} edge is an {@code overrides}
+ * edge, and a delegation is a substep's data (ADR-0064 decision 11).
  *
  * <p>{@code propagation()} is deferred (ADR-0025 remediation / ADR-0027); this type ships only
  * {@link #directionality()} and {@link #token()}.
@@ -33,24 +35,10 @@ public enum RelationType {
     REFINES(Directionality.DIRECTED),
     /** Static lineage between profiles or artifacts; never a runtime handoff. */
     SPECIALIZES_FROM(Directionality.DIRECTED),
-    /**
-     * Runtime handoff from one agent to another; never inferred from lineage. Should a genuinely
-     * symmetric (bidirectional) {@code delegates_to} ever be minted, it is an ADR-0027 revisit
-     * trigger for the unordered-pair identity collapse; today it stays {@link Directionality#DIRECTED}.
-     */
-    DELEGATES_TO(Directionality.DIRECTED),
-    /** Field-merge into a target artifact, keeping its action sequence and step inputs and outputs. */
+    /** Field-merge into a target artifact of the same kind, or a step enhancement's additions to a step. */
     ENHANCES(Directionality.DIRECTED),
     /** Full replacement of a target artifact. */
     OVERRIDES(Directionality.DIRECTED),
-    /** Supersession; kept for older hand-authored fragments. */
-    REPLACES(Directionality.DIRECTED),
-    /**
-     * The signed {@code impacts} relation that ADR-0028 retires; its strength lives on the storage DSO. It is
-     * {@link Directionality#BIDIRECTIONAL}. It is not the tension between two rules: that is a {@link Tension}, held
-     * beside the relationships and outside their pair identity (ADR-0028 Decision 3, ADR-0045).
-     */
-    IMPACTS(Directionality.BIDIRECTIONAL),
     /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
     RECONCILES_TENSION(Directionality.DIRECTED),
     /** From a good artifact to an {@code anti_pattern} node. */

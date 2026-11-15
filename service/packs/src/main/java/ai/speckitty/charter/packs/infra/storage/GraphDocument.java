@@ -51,15 +51,8 @@ public sealed interface GraphDocument permits GraphDocument.Shard, GraphDocument
      * @param relation the relation as written
      * @param when the {@code when} text, when written
      * @param reason the {@code reason} text, when written
-     * @param impacts the {@code impacts} weight, when written
      */
-    record Edge(
-            String source,
-            String target,
-            String relation,
-            Optional<String> when,
-            Optional<String> reason,
-            Optional<Double> impacts) {
+    record Edge(String source, String target, String relation, Optional<String> when, Optional<String> reason) {
         /**
          * Checks the fields.
          *
@@ -68,7 +61,6 @@ public sealed interface GraphDocument permits GraphDocument.Shard, GraphDocument
          * @param relation the relation
          * @param when the {@code when} text, possibly empty
          * @param reason the {@code reason} text, possibly empty
-         * @param impacts the weight, possibly empty
          */
         public Edge {
             Objects.requireNonNull(source, "source");
@@ -76,7 +68,6 @@ public sealed interface GraphDocument permits GraphDocument.Shard, GraphDocument
             Objects.requireNonNull(relation, "relation");
             Objects.requireNonNull(when, "when");
             Objects.requireNonNull(reason, "reason");
-            Objects.requireNonNull(impacts, "impacts");
         }
     }
 

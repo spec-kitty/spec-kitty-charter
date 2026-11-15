@@ -1,10 +1,10 @@
 title: Relation
 description: >-
-  The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md. impacts is a
-  directed, signed edge whose strength runs from -1 (sabotages) to +1 (reinforces); ADR-0028
-  retires it as a relation. A tension between two rules is not a value of this enum (not a
+  The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md. Each relation names
+  the source and target kinds it may connect (ADR-0064 decision 13); impacts, replaces and delegates_to
+  are retired (slice F). A tension between two rules is not a value of this enum (not a
   relation type of the service): the service holds a
-  graph document's in_tension_with edge as a tension beside the relationships, never as impacts,
+  graph document's in_tension_with edge as a tension beside the relationships,
   and does not answer it as a relationship (ADR-0045). reconciles_tension points at the sides of a
   pair joined by a tension.
 type: string
@@ -17,13 +17,10 @@ enum:
   - instantiates
   - refines
   - specializes_from
-  - delegates_to
   - enhances
   - overrides
-  - replaces
-  - impacts
   - reconciles_tension
   - rejects
 x-source:
-  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relation.java
-  symbol: Relation
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
+  symbol: RelationType

@@ -155,7 +155,7 @@ class PackPolicyTest {
     }
 
     private static PackContents.RawEdge edge(String source, String target, String relation) {
-        return new PackContents.RawEdge(source, target, relation, Optional.empty(), Optional.empty(), Optional.empty());
+        return new PackContents.RawEdge(source, target, relation, Optional.empty(), Optional.empty());
     }
 
     @Test

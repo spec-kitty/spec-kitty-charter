@@ -7,37 +7,12 @@ import org.junit.jupiter.api.Test;
 class RelationTypeTest {
 
     @Test
-    void everyRelationTokenHasAMatchingRelationType() {
-        // Pins the two catalogues together: RelationType supersedes Relation, so every Relation
-        // token must resolve to a RelationType. Iterating Relation.values() keeps this non-vacuous
-        // — a missing or renamed token fails here.
-        for (Relation relation : Relation.values()) {
-            assertThat(RelationType.fromToken(relation.token()))
-                    .as("RelationType for token '%s'", relation.token())
-                    .isPresent();
-        }
-    }
-
-    @Test
-    void everyRelationTypeTokenHasAMatchingRelation() {
-        // The reverse direction: no RelationType may carry a token the Relation catalogue lacks, but a derived one
-        // (implemented_by, ADR-0054 decision 3), which no graph document spells and so Relation does not list.
-        for (RelationType type : RelationType.values()) {
-            if (type.derived()) {
-                assertThat(Relation.fromToken(type.token()))
-                        .as("derived '%s'", type.token())
-                        .isEmpty();
-                continue;
-            }
-            assertThat(Relation.fromToken(type.token()))
-                    .as("Relation for token '%s'", type.token())
-                    .isPresent();
-        }
-    }
-
-    @Test
-    void impactsIsBidirectional() {
-        assertThat(RelationType.IMPACTS.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
+    void theRetiredRelationsAreGone() {
+        // Operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5 (slice F): impacts, replaces and delegates_to have no endpoint
+        // row, so the catalogue does not name them and a graph document that spells one meets an unknown relation.
+        assertThat(RelationType.fromToken("impacts")).isEmpty();
+        assertThat(RelationType.fromToken("replaces")).isEmpty();
+        assertThat(RelationType.fromToken("delegates_to")).isEmpty();
     }
 
     @Test
@@ -60,6 +35,6 @@ class RelationTypeTest {
 
     @Test
     void fromTokenResolvesAKnownToken() {
-        assertThat(RelationType.fromToken("impacts")).contains(RelationType.IMPACTS);
+        assertThat(RelationType.fromToken("overrides")).contains(RelationType.OVERRIDES);
     }
 }

@@ -98,7 +98,6 @@ class WholePackStoreTest {
                 - source: tactic:gamma-tactic
                   target: directive:DIRECTIVE_043
                   relation: requires
-                  impacts: 0.5
                   when: always
                   reason: because
                 """);
@@ -179,7 +178,6 @@ class WholePackStoreTest {
         assertThat(shard.generatedBy()).contains("drg-migration-v1");
         assertThat(shard.nodes().getFirst().provenance()).contains("hand-written");
         assertThat(shard.nodes().getFirst().tags()).containsExactly("analysis", "analysis");
-        assertThat(shard.edges().getFirst().impacts()).contains(0.5);
         GraphDocument.Fragment fragment =
                 (GraphDocument.Fragment) loaded.graphs().get(1);
         assertThat(fragment.nodes().getFirst().bodyPath()).contains(DIRECTIVE_FILE);

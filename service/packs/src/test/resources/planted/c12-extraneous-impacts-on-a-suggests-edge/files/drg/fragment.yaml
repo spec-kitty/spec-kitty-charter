@@ -1,6 +1,0 @@
-nodes: []
-edges: 
-- source: directive:DIRECTIVE_010
-  target: directive:DIRECTIVE_010
-  relation: suggests
-  impacts: 0.5

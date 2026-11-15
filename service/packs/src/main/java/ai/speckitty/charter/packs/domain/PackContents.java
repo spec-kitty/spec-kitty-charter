@@ -429,24 +429,17 @@ public record PackContents(
      * @param source the source endpoint as written
      * @param target the target endpoint as written
      * @param relation the relation as written
-     * @param impacts the {@code impacts} weight, when written
      * @param when the {@code when} text, when written
      * @param reason the {@code reason} text, when written
      */
     public record RawEdge(
-            String source,
-            String target,
-            String relation,
-            Optional<Double> impacts,
-            Optional<String> when,
-            Optional<String> reason) {
+            String source, String target, String relation, Optional<String> when, Optional<String> reason) {
         /**
          * Checks the fields.
          *
          * @param source the source endpoint
          * @param target the target endpoint
          * @param relation the relation
-         * @param impacts the weight, possibly empty
          * @param when the {@code when} text, possibly empty
          * @param reason the {@code reason} text, possibly empty
          */
@@ -454,7 +447,6 @@ public record PackContents(
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(target, "target");
             Objects.requireNonNull(relation, "relation");
-            Objects.requireNonNull(impacts, "impacts");
             Objects.requireNonNull(when, "when");
             Objects.requireNonNull(reason, "reason");
         }

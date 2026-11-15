@@ -5,6 +5,6 @@
   },
   "refusal": {
     "code": "drg_schema_error",
-    "detail": "qa/tactic.graph.yaml: 'impacts' 1.5 is outside [-1, 1]"
+    "detail": "qa/tactic.graph.yaml: unknown relation 'replaces'"
   }
 }

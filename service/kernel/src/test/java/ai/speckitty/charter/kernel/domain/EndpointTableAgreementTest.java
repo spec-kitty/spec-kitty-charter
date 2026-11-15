@@ -88,11 +88,10 @@ class EndpointTableAgreementTest {
     }
 
     @Test
-    @DisplayName("every relation that can be authored has a row, and no retired one does")
-    void everyLiveRelationHasRows() {
-        Set<RelationType> retired = EnumSet.of(RelationType.IMPACTS, RelationType.REPLACES, RelationType.DELEGATES_TO);
+    @DisplayName("every relation has at least one row")
+    void everyRelationHasRows() {
         for (RelationType type : RelationType.values()) {
-            assertThat(type.endpoints().isEmpty()).as(type.token()).isEqualTo(retired.contains(type));
+            assertThat(type.endpoints()).as(type.token()).isNotEmpty();
         }
     }
 

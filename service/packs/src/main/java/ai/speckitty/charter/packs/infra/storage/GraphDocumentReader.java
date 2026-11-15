@@ -75,7 +75,6 @@ public final class GraphDocumentReader {
                     string(edge, "source"),
                     string(edge, "target"),
                     string(edge, "relation"),
-                    edge.get("impacts") instanceof Number n ? Optional.of(n.doubleValue()) : Optional.empty(),
                     optionalString(edge, "when"),
                     optionalString(edge, "reason")));
         }

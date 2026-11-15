@@ -38,11 +38,10 @@ class ExamplePacksComposeTest {
     private static final String ORG_DEPENDENCY =
             "depends_on:\n  - pack_id: " + ORG_PACK_ID + "\n    range: \"" + RANGE + "\"\n";
     private static final String ORG_EDGE_TO_BUILT_IN = "target: built-in::action:software-dev/specify";
-    private static final String IMPACTS_EDGE = """
+    private static final String SUGGESTS_EDGE = """
             - source: directive:PROJECT_001
               target: org-base::directive:DIRECTIVE_038
-              relation: impacts
-              impacts: 0.5
+              relation: suggests
             """;
     private static final String OVERRIDES_EDGE = """
             - source: skill:project-triage
@@ -153,7 +152,7 @@ class ExamplePacksComposeTest {
                 ORG_OVERRIDE,
                 "",
                 "project.graph.yaml",
-                IMPACTS_EDGE,
+                SUGGESTS_EDGE,
                 "");
 
         assertThatThrownBy(() -> offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent))
@@ -198,7 +197,7 @@ class ExamplePacksComposeTest {
     @Test
     @DisplayName("a pack that writes no reference, without its depends_on, composes and serves no edge")
     void aPackWithoutReferencesOrDependencyIsNotRefused() throws IOException {
-        // The project example writes its references to org-base in project.graph.yaml, an impacts and an overrides
+        // The project example writes its references to org-base in project.graph.yaml, a suggests and an overrides
         // edge,
         // and in its pack.yaml overrides. With them and its depends_on gone, nothing refuses, so only the served edge
         // can tell that the dependency left.
@@ -211,7 +210,7 @@ class ExamplePacksComposeTest {
                 ORG_OVERRIDE,
                 "",
                 "project.graph.yaml",
-                IMPACTS_EDGE + OVERRIDES_EDGE,
+                SUGGESTS_EDGE + OVERRIDES_EDGE,
                 "");
 
         List<OfferingEntry> served = offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent);

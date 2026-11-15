@@ -469,16 +469,23 @@ class PackSchemasTest {
 
     @ParameterizedTest
     @ValueSource(strings = {".nan", ".inf", "-.inf", "1e400"})
-    void aNonFiniteImpactsIsNoSchemaFindingBecauseTheDomainJudgesItsRange(String written) {
+    void anEdgeThatStillWritesAnImpactsStrengthIsRefusedAsAnUnknownMemberWhateverItsValue(String written) {
+        // impacts is retired with its strength (slice F): the key is unknown on every edge, a non-finite value
+        // included.
         String shard =
-                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: "
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: requires, impacts: "
                         + written + "}\n";
         assertThat(PackSchemas.bundled().validate("graph-shard", "x.graph.yaml", Yaml.load(shard)))
-                .isEmpty();
-        String fragment = "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: "
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("additionalProperties");
+                    assertThat(v.property()).contains("impacts");
+                });
+        String fragment = "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: requires, impacts: "
                 + written + "}\n";
         assertThat(PackSchemas.bundled().validate("org-fragment", "drg/fragment.yaml", Yaml.load(fragment)))
-                .isEmpty();
+                .singleElement()
+                .satisfies(v -> assertThat(v.property()).contains("impacts"));
     }
 
     @Test

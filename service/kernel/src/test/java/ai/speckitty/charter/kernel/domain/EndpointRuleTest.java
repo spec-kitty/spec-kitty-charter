@@ -43,10 +43,7 @@ class EndpointRuleTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = RelationType.class,
-            names = {"IMPACTS", "REPLACES", "DELEGATES_TO"},
-            mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(RelationType.class)
     @DisplayName("every relation refuses a pair next to its rows")
     void everyRelationRefusesANeighbour(RelationType type) {
         EndpointPair neighbour = neighbourOf(type);
@@ -132,12 +129,6 @@ class EndpointRuleTest {
 
         assertThat(fault.code()).isEqualTo(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
         assertThat(fault.message()).contains("template is not");
-    }
-
-    @Test
-    @DisplayName("a retired relation binds nothing")
-    void aRetiredRelationBindsNothing() {
-        assertThat(bind(RelationType.IMPACTS, "directive:a", "directive:b")).isInstanceOf(Fault.class);
     }
 
     @Test
