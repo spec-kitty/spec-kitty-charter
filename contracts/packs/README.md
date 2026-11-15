@@ -82,7 +82,8 @@ prompt_fragments:
     path: spdd-specify.prompt-fragment.md
 ```
 
-- `slot` is one `<namespace>:<name>` slot id. Each part matches `[a-z][a-z0-9-]*`; the namespace names a concern,
+- `slot` is one `<namespace>:<name>` slot id. Each part is a letter-first kebab slug, `[a-z][a-z0-9]*(-[a-z0-9]+)*`, of at most 64 characters (ADR-0075
+  decision 2; the schema writes the grammar, the service also checks the cap); the namespace names a concern,
   not a pack. One enhancement names a slot at most once.
 - `path` names one `<id>.prompt-fragment.md` companion beside the enhancement. It is a file name, not a
   subdirectory, URL or pack-qualified reference. The companion is Markdown content with no frontmatter and

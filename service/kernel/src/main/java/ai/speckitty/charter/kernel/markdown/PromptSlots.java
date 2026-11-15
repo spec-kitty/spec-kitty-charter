@@ -266,7 +266,10 @@ public final class PromptSlots {
 
         void accept(Marker marker) {
             if (marker.id().isEmpty()) {
-                malformed(marker, "the id '" + bounded(marker.rawId()) + "' does not match " + SlotId.GRAMMAR);
+                malformed(
+                        marker,
+                        "the id '" + bounded(marker.rawId()) + "' does not match " + SlotId.GRAMMAR
+                                + " with each part at most 64 characters");
             } else if (marker.start()) {
                 start(marker, marker.id().get());
             } else {

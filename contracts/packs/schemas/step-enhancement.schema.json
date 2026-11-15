@@ -38,6 +38,7 @@
           "slot": {
             "description": "The slot declared by the prompt in force for the enhanced step: <namespace>:<name>, each part lower-case and starting with a letter.",
             "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*:[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "maxLength": 129,
             "title": "Slot",
             "type": "string"
           },
