@@ -46,9 +46,6 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     /** The role reserved for human-performed profiles: a profile takes it only when its performer is a human. */
     public static final String OPERATOR_ROLE = "operator";
 
-    /** The longest role token; the cap of an identifier (#446). */
-    public static final int ROLE_MAX = RoleBearer.ROLE_MAX_LENGTH;
-
     private static final ModularRuleset<AgentProfile> RULES = ModularRuleset.<AgentProfile>emptyRules()
             .must(Constraints.of(
                     "An agent profile's schema version must be 1.0 or 2.",
@@ -57,7 +54,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
                             .orElse(true)))
             .must(Constraints.of(
                     "An agent profile's role and alt-roles must be letter-first kebab slugs: lowercase letters and digits in"
-                            + " hyphen-separated runs, starting with a letter, at most " + AgentProfile.ROLE_MAX
+                            + " hyphen-separated runs, starting with a letter, at most " + RoleBearer.ROLE_MAX_LENGTH
                             + " characters.",
                     profile -> java.util.stream.Stream.concat(
                                     java.util.stream.Stream.of(profile.role), profile.altRoles.stream())

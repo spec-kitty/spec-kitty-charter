@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
 import java.util.Optional;
@@ -151,9 +152,9 @@ class MissionValuesTest {
         assertThatThrownBy(() -> step(Optional.of("generic")))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("generic");
-        assertThatThrownBy(() -> step(Optional.of("r".repeat(MissionStep.ROLE_MAX_LENGTH + 1))))
+        assertThatThrownBy(() -> step(Optional.of("r".repeat(RoleBearer.ROLE_MAX_LENGTH + 1))))
                 .isInstanceOf(ConstraintBreachException.class);
-        assertThat(step(Optional.of("r".repeat(MissionStep.ROLE_MAX_LENGTH))).role())
+        assertThat(step(Optional.of("r".repeat(RoleBearer.ROLE_MAX_LENGTH))).role())
                 .as("the cap itself is a role")
                 .isPresent();
         assertThat(step(Optional.of("generic-reviewer")).role()).contains("generic-reviewer");

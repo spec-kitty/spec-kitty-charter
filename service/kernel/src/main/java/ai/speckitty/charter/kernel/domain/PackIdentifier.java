@@ -45,7 +45,7 @@ public record PackIdentifier(String value) {
      * Whether a text is a pack id, for a caller that refuses a bad one in its own terms.
      *
      * @param text the candidate, possibly {@code null}
-     * @return {@code true} when {@code new PackIdentifier(text)} succeeds
+     * @return {@code true} when the text is a kebab slug of at most {@value #MAX_LENGTH} characters
      */
     public static boolean isPackId(@Nullable String text) {
         return text != null && RULE.predicate().test(text);

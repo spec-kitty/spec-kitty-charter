@@ -28,6 +28,10 @@ Profile: java-jenny. Kind: feature and tidy. Size: S/M. Parent epic: #549 (ADR-0
 | `PackQualifiedReference` pack name, activations `PackRef` | kernel, activations | `^[a-z0-9][a-z0-9_-]*$` | yes | **Q2, pending** |
 | profile-id (`RolePins`, `MissionSubstepDelegation`), kind tokens | packs, contract | `^[a-z0-9][a-z0-9_-]*$` | yes | out: not in decision 2, underscores are part of the grammar |
 | `ActivationId` | activations | `[A-Za-z0-9][A-Za-z0-9-]{0,63}` | yes | out: opaque id (ADR-0020 D2), not a pack identifier |
+| `SubstepCandidate.ID_GRAMMAR` | missions | `[A-Za-z0-9][A-Za-z0-9_-]{0,63}` | yes | out: a delegation candidate's id spans kinds (directive ids are upper case), not one identifier type |
+| `StepEnhancementRules.STEP_ID` | packs | `^[^/\s]+/[^/\s]+$` | yes | out: a reference to `<mission>/<step>`, whose parts are judged by the mission type and step ids |
+| `IdentifierGrammar.DOTTED_KEY` | kernel | first segment `[a-z][a-z0-9-]*` | yes | out: an artifact key, not in decision 2 |
+| descriptor `name` (`pack-descriptor.schema.json`) | contract | `^[a-z0-9][a-z0-9_-]*$` | yes | with Q2: `PackSourceStagers` requires it to equal the `packId`, so a source registration already refuses a `name` off the pack-id grammar |
 
 The roles had four copies of one grammar, each a little different (a cap or none). `RoleBearer`, the kernel interface
 every role-bearing artifact already shares, now holds `isRole` and `ROLE_MAX_LENGTH`.
@@ -85,8 +89,12 @@ list checks (`content.map(...)`, `noneMatch(String::isBlank)`), which are not a 
   `slug(63)`? Recommended: no, leave them and record why.
 - **Q3.** `PackIdentifier` carries three values: the registered pack id (a slug), the descriptor `pack_id` (a ULID,
   in `EdgeIndex.idOf`, `EdgeIndex` l.218, `ClosureView` l.364 and `ClosureViewSession` l.533) and the descriptor
-  `name` (`InboundReferences` l.214, which may hold `_`). A `slug(63)` constructor throws on every real pack in the
-  edge and closure reads. Recommended: the type holds the rule as `isPackId` and `GRAMMAR_DETAIL`, registration,
+  `name` (`InboundReferences` l.214, which may hold `_`). The squad found more: the descriptor ULID also in
+  `WholePackStore` l.282 and `ArtifactFiles` l.42; staging directory names (`.pack-commit-…`) in `PackCommitStore`
+  l.297 and l.417; `dropped.pack()` in `ClosureView` l.885 and `ProfileEnhancementRule` l.95. A `slug(63)` constructor
+  throws on every real pack in the edge and closure reads. A stored pack directory is served under any name that does
+  not start with a dot (`StorageRootLocations.isPack`, `DomainRepositoryService` l.374), so a directory seeded by hand
+  as `a--b` is read with no grammar check; every write path (archive upload, from-source) refuses it. Recommended: the type holds the rule as `isPackId` and `GRAMMAR_DETAIL`, registration,
   admission and the contract refuse through it, the constructor stays not blank, and the split of the type is a
   `follow-up` after #554.
 
@@ -124,3 +132,13 @@ pass too. The descriptor `pack_id` is a ULID and is not a pack id in this sense 
 
 Since nothing breaks, the orchestrator may file it as a notice or not file it; Rule 4 asks for an issue only where pack
 content must change.
+
+## Not done
+
+- **The split of `PackIdentifier`** (Q3): the registered pack id, the descriptor ULID and the descriptor `name` share
+  one type, so its constructor checks only that the id is not blank, and a stored directory is not checked against
+  `isPackId` on read. Proposed as a `follow-up` under #549, after #554.
+- **The descriptor diagrams** `descriptor-agent-profile.puml` and `descriptor-doctrine-kinds.puml` still write
+  `^[a-z][a-z0-9-]*$`: their SVGs must be regenerated with PlantUML, which this session does not have. The Markdown
+  beside them (`descriptor-schemas.md`) and the divergence register (DIV-401) are fixed.
+- **The tactic id** waits on Q1, and the pack-name references on Q2.
