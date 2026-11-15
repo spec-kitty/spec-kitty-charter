@@ -36,11 +36,12 @@ public final class GlossaryContext implements CharterArtifact, TermHolder {
     public static final String SCHEMA_VERSION = "1.0";
 
     private static final ModularRuleset<GlossaryContext> RULES = ModularRuleset.<GlossaryContext>emptyRules()
-            .must(Constraints.of(
-                    "A glossary context needs a name that is not blank.", context -> !context.name.isBlank()))
-            .must(Constraints.of(
-                    "A glossary context needs a description that is not blank.",
-                    context -> !context.description.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A glossary context needs a name that is not blank.")
+                    .on(context -> context.name))
+            .must(Constraints.notBlank()
+                    .described("A glossary context needs a description that is not blank.")
+                    .on(context -> context.description))
             .must(Constraints.of(
                     "A glossary context's tags are not blank.",
                     context -> context.tags.stream().noneMatch(String::isBlank)))

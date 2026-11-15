@@ -14,7 +14,7 @@ import java.util.Optional;
 public record SkillExpansion(String target, Optional<String> args) {
 
     private static final ModularRuleset<String> TARGET_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A skill expansion needs a target that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A skill expansion needs a target that is not blank."));
 
     /**
      * Checks the fields.

@@ -32,8 +32,7 @@ public record Substep(
                     "A substep id is a letter-first kebab slug of at most 64 characters.",
                     IdentifierGrammar::isLetterFirstSlug));
     private static final ModularRuleset<String> TEXT_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of(
-                    "A substep's description, command and guidance are not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A substep's description, command and guidance are not blank."));
 
     /**
      * Checks every component and copies the inputs.

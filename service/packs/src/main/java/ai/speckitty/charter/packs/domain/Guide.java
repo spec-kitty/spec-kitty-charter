@@ -31,7 +31,7 @@ import java.util.Optional;
 public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections) {
 
     private static final ModularRuleset<String> OVERVIEW_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A guide needs an overview that is not blank.", overview -> !overview.isBlank()));
+            .must(Constraints.notBlank().described("A guide needs an overview that is not blank."));
 
     /**
      * Checks the rules and copies the parts.

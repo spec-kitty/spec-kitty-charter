@@ -23,9 +23,12 @@ public final class Tactic implements CharterArtifact {
 
     private static final ModularRuleset<Tactic> RULES = ModularRuleset.<Tactic>emptyRules()
             .must(Constraints.of("A tactic needs at least one step.", tactic -> !tactic.steps.isEmpty()))
-            .must(Constraints.of("A tactic needs a name that is not blank.", tactic -> !tactic.name.isBlank()))
-            .must(Constraints.of(
-                    "A tactic needs a schema version that is not blank.", tactic -> !tactic.schemaVersion.isBlank()));
+            .must(Constraints.notBlank()
+                    .described("A tactic needs a name that is not blank.")
+                    .on(tactic -> tactic.name))
+            .must(Constraints.notBlank()
+                    .described("A tactic needs a schema version that is not blank.")
+                    .on(tactic -> tactic.schemaVersion));
 
     private final TacticIdentifier id;
     private final PackIdentifier packId;

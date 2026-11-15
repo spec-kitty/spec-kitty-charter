@@ -13,7 +13,7 @@ import ai.speckitty.charter.kernel.validation.ModularRuleset;
 public record PresetItem(String id, boolean mustHave) {
 
     private static final ModularRuleset<String> ID_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A preset item's id must not be blank.", id -> id != null && !id.isBlank()));
+            .must(Constraints.notBlank().described("A preset item's id must not be blank."));
 
     /**
      * Checks the id.

@@ -16,7 +16,7 @@ import java.util.Optional;
 public record TacticStep(String title, Optional<String> description, List<String> examples) {
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A tactic step needs a title that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A tactic step needs a title that is not blank."));
 
     /**
      * Checks that required fields are present and copies the lists.

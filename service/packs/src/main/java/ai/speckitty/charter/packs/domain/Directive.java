@@ -27,10 +27,12 @@ public final class Directive implements CharterArtifact {
             .must(Constraints.of(
                     "A directive needs a schema version of 1.0.",
                     directive -> SCHEMA_VERSION.matcher(directive.schemaVersion).matches()))
-            .must(Constraints.of(
-                    "A directive needs a title that is not blank.", directive -> !directive.title.isBlank()))
-            .must(Constraints.of(
-                    "A directive needs an intent that is not blank.", directive -> !directive.intent.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A directive needs a title that is not blank.")
+                    .on(directive -> directive.title))
+            .must(Constraints.notBlank()
+                    .described("A directive needs an intent that is not blank.")
+                    .on(directive -> directive.intent))
             .must(Constraints.of(
                     "A lenient-adherence directive needs at least one explicit allowance.",
                     directive -> directive.enforcement != Enforcement.LENIENT_ADHERENCE

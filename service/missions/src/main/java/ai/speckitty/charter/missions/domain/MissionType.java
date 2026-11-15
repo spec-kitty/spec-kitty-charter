@@ -27,11 +27,15 @@ public final class MissionType implements CharterArtifact, StepRoles {
 
     private static final ModularRuleset<MissionType> RULES = ModularRuleset.<MissionType>emptyRules()
             .must(Constraints.of("A mission type needs at least one step.", type -> !type.steps.isEmpty()))
-            .must(Constraints.of("A mission type needs a title that is not blank.", type -> !type.title.isBlank()))
-            .must(Constraints.of(
-                    "A mission type needs a description that is not blank.", type -> !type.description.isBlank()))
-            .must(Constraints.of(
-                    "A mission type needs a schema version that is not blank.", type -> !type.schemaVersion.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A mission type needs a title that is not blank.")
+                    .on(type -> type.title))
+            .must(Constraints.notBlank()
+                    .described("A mission type needs a description that is not blank.")
+                    .on(type -> type.description))
+            .must(Constraints.notBlank()
+                    .described("A mission type needs a schema version that is not blank.")
+                    .on(type -> type.schemaVersion))
             .must(Constraints.of(
                     "A mission type's content is not blank.",
                     type -> type.content.map(text -> !text.isBlank()).orElse(true)))

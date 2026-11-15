@@ -26,9 +26,9 @@ public record StepDocument(
         Optional<String> title, Optional<String> description, String preamble, List<StepSection> sections) {
 
     private static final ModularRuleset<String> TITLE_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A step document's title is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A step document's title is not blank."));
     private static final ModularRuleset<String> DESCRIPTION_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A step document's detailed description is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A step document's detailed description is not blank."));
 
     /**
      * Checks that every part is present and copies the sections.

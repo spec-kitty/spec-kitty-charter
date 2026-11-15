@@ -25,9 +25,12 @@ public final class Guard implements CharterArtifact {
     public static final String INTERFACE = "guard/1";
 
     private static final ModularRuleset<Guard> RULES = ModularRuleset.<Guard>emptyRules()
-            .must(Constraints.of("A guard needs a title that is not blank.", guard -> !guard.title.isBlank()))
-            .must(Constraints.of(
-                    "A guard needs a schema version that is not blank.", guard -> !guard.schemaVersion.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A guard needs a title that is not blank.")
+                    .on(guard -> guard.title))
+            .must(Constraints.notBlank()
+                    .described("A guard needs a schema version that is not blank.")
+                    .on(guard -> guard.schemaVersion))
             .must(Constraints.of(
                     "A guard is run to the guard/1 interface.", guard -> guard.interfaceName.equals(INTERFACE)))
             .must(Constraints.of(

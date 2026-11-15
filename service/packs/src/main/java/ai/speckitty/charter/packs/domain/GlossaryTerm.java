@@ -38,10 +38,10 @@ public record GlossaryTerm(
         List<PackQualifiedReference> seeAlso) {
 
     private static final ModularRuleset<String> NAME_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A term needs a name that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A term needs a name that is not blank."));
 
     private static final ModularRuleset<String> DEFINITION_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A term needs a definition that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A term needs a definition that is not blank."));
 
     private static final ModularRuleset<List<PackQualifiedReference>> SEE_ALSO_RULES =
             ModularRuleset.<List<PackQualifiedReference>>emptyRules()

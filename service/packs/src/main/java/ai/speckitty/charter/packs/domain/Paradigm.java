@@ -26,9 +26,12 @@ public final class Paradigm implements CharterArtifact {
             .must(Constraints.of(
                     "A paradigm needs a schema version of 1.0.",
                     paradigm -> SCHEMA_VERSION.matcher(paradigm.schemaVersion).matches()))
-            .must(Constraints.of("A paradigm needs a name that is not blank.", paradigm -> !paradigm.name.isBlank()))
-            .must(Constraints.of(
-                    "A paradigm needs a summary that is not blank.", paradigm -> !paradigm.summary.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A paradigm needs a name that is not blank.")
+                    .on(paradigm -> paradigm.name))
+            .must(Constraints.notBlank()
+                    .described("A paradigm needs a summary that is not blank.")
+                    .on(paradigm -> paradigm.summary))
             .must(Constraints.of(Principles.SHAPE, paradigm -> Principles.wellFormed(paradigm.principles)))
             .must(Constraints.of(Principles.UNIQUE, paradigm -> Principles.uniqueNames(paradigm.principles)));
 

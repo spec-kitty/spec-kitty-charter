@@ -26,7 +26,9 @@ public final class Styleguide implements CharterArtifact {
     private static final ModularRuleset<Styleguide> RULES = ModularRuleset.<Styleguide>emptyRules()
             .must(Constraints.of(
                     "A styleguide needs a schema version of 1.0.", sg -> sg.schemaVersion.matches("^1\\.0$")))
-            .must(Constraints.of("A styleguide needs a title that is not blank.", sg -> !sg.title.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A styleguide needs a title that is not blank.")
+                    .on(sg -> sg.title))
             .must(Constraints.of("A styleguide needs at least one principle.", sg -> !sg.principles.isEmpty()))
             .must(Constraints.of(Principles.SHAPE, sg -> Principles.wellFormed(sg.principles)))
             .must(Constraints.of(Principles.UNIQUE, sg -> Principles.uniqueNames(sg.principles)))

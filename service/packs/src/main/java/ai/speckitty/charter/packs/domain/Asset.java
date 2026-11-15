@@ -20,8 +20,12 @@ import org.jspecify.annotations.Nullable;
 public final class Asset implements CharterArtifact {
 
     private static final ModularRuleset<Asset> RULES = ModularRuleset.<Asset>emptyRules()
-            .must(Constraints.of("An asset needs a mime that is not blank.", asset -> !asset.mime.isBlank()))
-            .must(Constraints.of("An asset needs a path that is not blank.", asset -> !asset.path.isBlank()));
+            .must(Constraints.notBlank()
+                    .described("An asset needs a mime that is not blank.")
+                    .on(asset -> asset.mime))
+            .must(Constraints.notBlank()
+                    .described("An asset needs a path that is not blank.")
+                    .on(asset -> asset.path));
 
     private final AssetIdentifier id;
     private final PackIdentifier packId;

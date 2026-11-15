@@ -23,11 +23,15 @@ import org.jspecify.annotations.Nullable;
 public final class Skill implements CharterArtifact {
 
     private static final ModularRuleset<Skill> RULES = ModularRuleset.<Skill>emptyRules()
-            .must(Constraints.of(
-                    "A skill needs a schema version that is not blank.", skill -> !skill.schemaVersion.isBlank()))
-            .must(Constraints.of("A skill needs a title that is not blank.", skill -> !skill.title.isBlank()))
-            .must(Constraints.of(
-                    "A skill needs a description that is not blank.", skill -> !skill.description.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A skill needs a schema version that is not blank.")
+                    .on(skill -> skill.schemaVersion))
+            .must(Constraints.notBlank()
+                    .described("A skill needs a title that is not blank.")
+                    .on(skill -> skill.title))
+            .must(Constraints.notBlank()
+                    .described("A skill needs a description that is not blank.")
+                    .on(skill -> skill.description))
             .must(Constraints.of(
                     "A prompt skill needs a body path and its body, and no expansion.",
                     skill -> skill.form != SkillForm.PROMPT
