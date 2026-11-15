@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-15T10:06:34.238458Z",
+      "decision_id": "01M7FARH7YMGS2X0BRV1HKH47B",
+      "final_answer": null,
+      "input_key": "unmodelled_file_code",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a) keep unmodelled as a violation and file_not_held as the excluded-file warning, both typed; wire unchanged",
+        "(b) unmodelled file becomes file_not_held WARNING and is accepted; breaking",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Decision 5 says an unmodelled file is file_not_held at WARNING, but today registration refuses it with violation 'unmodelled' (pinned in scenarios) and #554 says wire codes do not change. Keep both typed codes with the wire unchanged (a), or apply decision 5 literally: an unmodelled file becomes a file_not_held warning and is accepted (b, breaking)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.wire.unmodelled-file",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+  "version": 1
+}
