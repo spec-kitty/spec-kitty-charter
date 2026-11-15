@@ -285,6 +285,11 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     }
 
     @Override
+    public List<Relationship> authoredRelationships(PackIdentifier pack) {
+        return authored(pack).edges();
+    }
+
+    @Override
     public Authored authored(PackIdentifier pack) {
         return reading(pack, directory -> authored(pack, directory));
     }
@@ -337,12 +342,66 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
                             == registeredRelationships(pack).size()
                     ? null
                     : RelationshipShard.write(removal.relationships());
-            Map<String, String> presets = new LinkedHashMap<>();
+            Map<String, String> rewritten = new LinkedHashMap<>();
             removal.presets()
-                    .forEach(preset ->
-                            presets.put(PresetFiles.pathOf(preset.id()), PresetYaml.write(PresetFiles.toDso(preset))));
-            return generation.bracket(location.name(), () -> commitStore.remove(pack, files, shard, presets));
+                    .forEach(preset -> rewritten.put(
+                            PresetFiles.pathOf(preset.id()), PresetYaml.write(PresetFiles.toDso(preset))));
+            rewritten.putAll(withoutLinks(directory, removal.droppedLinks()));
+            return generation.bracket(location.name(), () -> commitStore.remove(pack, files, shard, rewritten));
         });
+    }
+
+    /**
+     * Each author-written graph document that holds one of the links a removal drops, written again without them
+     * (operator ruling DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ): a removed mission type goes with the edges that link it to its
+     * steps, and nothing else of the document changes but its layout, which is written from scratch.
+     */
+    private Map<String, String> withoutLinks(Path directory, List<Relationship> dropped) {
+        Path parent = directory.getParent();
+        if (dropped.isEmpty() || parent == null || directory.getFileName() == null) {
+            return Map.of();
+        }
+        FilesystemPackStore.GraphRead read = new FilesystemPackStore(parent, strategy)
+                .readGraphs(new PackIdentifier(directory.getFileName().toString()));
+        Map<String, String> out = new LinkedHashMap<>();
+        for (GraphDocument document : read.documents()) {
+            if (RelationshipShard.SHARD_PATH.equals(document.file())) {
+                continue;
+            }
+            List<GraphDocument.Edge> kept = document.edges().stream()
+                    .filter(edge -> DomainRepositoryService.typedEdge(edge)
+                            .filter(typed -> dropped.stream().anyMatch(link -> sameEdge(link, typed)))
+                            .isEmpty())
+                    .toList();
+            if (kept.size() != document.edges().size()) {
+                out.put(document.file(), GraphDocumentYaml.write(withEdges(document, kept)));
+            }
+        }
+        return out;
+    }
+
+    /** The same written edge: its relation and both ends as written, qualifiers included. */
+    private static boolean sameEdge(Relationship one, Relationship other) {
+        return one.type() == other.type()
+                && one.from().equals(other.from())
+                && one.fromPack().equals(other.fromPack())
+                && one.to().equals(other.to())
+                && one.toPack().equals(other.toPack());
+    }
+
+    private static GraphDocument withEdges(GraphDocument document, List<GraphDocument.Edge> edges) {
+        return switch (document) {
+            case GraphDocument.Shard shard ->
+                new GraphDocument.Shard(
+                        shard.file(),
+                        shard.schemaVersion(),
+                        shard.generatedAt(),
+                        shard.generatedBy(),
+                        shard.nodes(),
+                        edges);
+            case GraphDocument.Fragment fragment ->
+                new GraphDocument.Fragment(fragment.file(), fragment.nodes(), edges);
+        };
     }
 
     /** The pack's live directory, at the location {@link PackLocator} resolves: what a write under the lock addresses. */

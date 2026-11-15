@@ -24,6 +24,8 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.MissionTypeSteps;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -568,6 +570,8 @@ public final class DomainRepositoryService
             }
         }
         defined.addAll(declared);
+        references.removeAll(
+                ownStepLinkTargets(graphs.documents(), assembled.descriptor().name(), steps));
         return new PackCompositionFacts(
                 List.copyOf(changed),
                 List.copyOf(defined),
@@ -745,6 +749,44 @@ public final class DomainRepositoryService
             references.add(edge.source());
             references.add(edge.target());
         }
+    }
+
+    /**
+     * The targets of the pack's own step links, {@code mission_type:T requires action:T/<step>} from a type the pack
+     * holds to a step its type file declares (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN): such a target is the
+     * pack's own step, whichever pack's graph declares the action node, so the compose does not judge it as a reference
+     * that must resolve in the pack.
+     */
+    private static Set<String> ownStepLinkTargets(
+            List<GraphDocument> documents, String packName, Map<Urn, List<String>> steps) {
+        Set<String> own = new LinkedHashSet<>();
+        for (GraphDocument document : documents) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                if (!RelationType.REQUIRES.token().equals(edge.relation())) {
+                    continue;
+                }
+                try {
+                    PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
+                    PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
+                    Optional<Urn> type = source.asUrn()
+                            .filter(urn ->
+                                    source.packName().map(packName::equals).orElse(true))
+                            .filter(steps::containsKey);
+                    Optional<Urn> step =
+                            target.asUrn().filter(urn -> target.packName().isEmpty() && urn.kind() == NodeKind.ACTION);
+                    if (type.isPresent()
+                            && step.isPresent()
+                            && steps.getOrDefault(type.get(), List.of()).stream()
+                                    .anyMatch(id ->
+                                            step.get().id().equals(type.get().id() + "/" + id))) {
+                        own.add(edge.target());
+                    }
+                } catch (IllegalArgumentException malformed) {
+                    // not a reference: the reads that judge the document report it
+                }
+            }
+        }
+        return own;
     }
 
     /**
@@ -968,7 +1010,40 @@ public final class DomainRepositoryService
         Pack.Builder builder = assembly(pack, judged(read, faults), places);
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
+        missionStepViolations(read, places, graphs).forEach(builder::violation);
         return builder;
+    }
+
+    /**
+     * Each fault of {@link MissionStepLinkRule} over the mission types the assembly holds (one the domain refuses is
+     * refused on its own and not judged) and the edges of the readable graph documents, at its file. When a graph
+     * document could not be read the rule is not judged: the read reports that document, and a step would otherwise
+     * lack an edge the pack may well hold.
+     */
+    private static List<PackElementViolation> missionStepViolations(
+            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
+        if (!graphs.violations().isEmpty()) {
+            return List.of();
+        }
+        List<MissionTypeFacts> types = new ArrayList<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            MissionTypeDso type = stored.dso();
+            if (stored.file().equals(places.get(new Urn(NodeKind.MISSION_TYPE, type.id())))) {
+                List<String> steps = new ArrayList<>();
+                type.steps().forEach(step -> steps.add(step.id()));
+                type.onDemandSteps().forEach(step -> steps.add(step.id()));
+                types.add(new MissionTypeFacts(stored.file(), type.id(), steps));
+            }
+        }
+        List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                edges.add(new MissionStepLinkRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
+            }
+        }
+        return MissionStepLinkRule.judge(read.descriptor().name(), types, edges).stream()
+                .map(fault -> new PackElementViolation(fault.file(), MissionStepLinkRule.CODE, fault.reason()))
+                .toList();
     }
 
     /**

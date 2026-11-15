@@ -748,6 +748,12 @@ class EffectiveSetTest {
                 throw new UnsupportedOperationException("the closure never writes");
             }
         };
+        Relationship link = Relationship.of(
+                Urn.parse("mission_type:M").orElseThrow(),
+                Urn.parse("action:M/s").orElseThrow(),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
         Relationship enhances = Relationship.of(
                 Urn.parse("step_enhancement:x").orElseThrow(),
                 Urn.parse("action:M/s").orElseThrow(),
@@ -760,7 +766,7 @@ class EffectiveSetTest {
                 List.of(),
                 MutabilityPolicySource.empty(),
                 List.of(),
-                List.of(enhances),
+                List.of(link, enhances),
                 Map.of());
         PackCatalogRepository catalog = () -> List.of(configured);
         ConsistentRead read = new ConsistentRead(() -> "sha256:" + "1".repeat(64));

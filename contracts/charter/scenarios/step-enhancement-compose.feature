@@ -56,7 +56,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -150,7 +153,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -237,7 +243,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "other" with the file "pack.yaml":
       """
@@ -273,7 +282,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:research/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -351,7 +363,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "other" with the file "pack.yaml":
       """
@@ -387,7 +402,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:research/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -464,7 +482,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "enhancer" holds the file "pack.yaml":
       """
@@ -559,7 +580,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -660,7 +684,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -766,7 +793,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -868,7 +898,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -962,7 +995,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "enhancer" holds the file "pack.yaml":
       """
@@ -1053,7 +1089,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the archive "enhancer" holds the file "pack.yaml":
       """
@@ -1136,7 +1175,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """
@@ -1244,7 +1286,10 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "enhancer" with the file "pack.yaml":
       """

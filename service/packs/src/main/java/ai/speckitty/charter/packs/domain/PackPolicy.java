@@ -197,6 +197,7 @@ public final class PackPolicy {
         findings.addAll(promptSlotFindings(contents));
         findings.addAll(overrideSourceFindings(name, contents));
         findings.addAll(endpointFindings(name, contents));
+        findings.addAll(missionStepFindings(name, contents));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
@@ -296,6 +297,7 @@ public final class PackPolicy {
             case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
             case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> OverrideSourceRule.CODE;
             case RELATIONSHIP_ENDPOINT_NOT_ALLOWED -> RelationshipEndpointRule.CODE;
+            case MISSION_STEP_UNLINKED -> MissionStepLinkRule.CODE;
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
@@ -363,6 +365,37 @@ public final class PackPolicy {
             }
         }
         return findings;
+    }
+
+    /**
+     * Judges the pack's mission types over the edges of every graph document that was read by
+     * {@link MissionStepLinkRule}, as the load does: one blocking finding per fault, at the mission type file of an
+     * unlinked step or at the graph document of a stray edge. When a graph document could not be read the rule is not
+     * judged, as a step would otherwise lack an edge the pack may well hold.
+     */
+    private static List<PackFinding> missionStepFindings(String packName, PackContents contents) {
+        if (!graphsRead(contents)) {
+            return List.of();
+        }
+        List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
+        for (FileRead<RawGraph> document : documents(contents)) {
+            if (document instanceof FileRead.Read<RawGraph> read) {
+                for (RawEdge edge : read.value().edges()) {
+                    edges.add(new MissionStepLinkRule.Edge(
+                            read.value().file(), edge.source(), edge.target(), edge.relation()));
+                }
+            }
+        }
+        String ownName = contents.descriptor() instanceof FileRead.Read<PackDescriptor> descriptor
+                ? descriptor.value().name()
+                : packName;
+        return MissionStepLinkRule.judge(ownName, contents.missionTypes(), edges).stream()
+                .map(fault -> new PackFinding(
+                        PackFindingCode.MISSION_STEP_UNLINKED,
+                        fault.file(),
+                        List.of(),
+                        origin(packName, fault.file()) + ": " + fault.reason()))
+                .toList();
     }
 
     // ---- step prompt slots ------------------------------------------------------------------------

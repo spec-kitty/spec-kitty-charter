@@ -306,14 +306,15 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /**
      * Commits a removal as one atomic directory swap and returns its new revision: the files go, the registered shard and
-     * the presets given are written whole, and nothing else of the pack is rewritten. The version history is not touched:
+     * the files given (presets, and the graph documents a removed mission type's own step links are dropped from) are
+     * written whole, and nothing else of the pack is rewritten. The version history is not touched:
      * a removal registers no version (IC-16). The caller holds the registry lock and the pack's lock, and has checked the
      * {@code If-Match} under them.
      *
      * @param pack the pack to commit
      * @param files the pack-relative files to remove: an artifact's own and its companions
      * @param relationshipShardText the registered-relationship shard text to persist, or null to leave it as staged
-     * @param presets the text of each preset file to write, by its pack-relative path
+     * @param rewritten the text of each file to write whole, by its pack-relative path
      * @return the revision of the committed state
      * @throws CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has this identifier, or with
      *     {@code PACK_UNREADABLE} when the pack is read-only through the service or the commit fails; in every failure
@@ -323,7 +324,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             PackIdentifier pack,
             List<String> files,
             @Nullable String relationshipShardText,
-            Map<String, String> presets) {
+            Map<String, String> rewritten) {
         return commitEdited(pack, null, (staging, parent) -> {
             for (String file : files) {
                 Files.deleteIfExists(staging.resolve(file));
@@ -333,8 +334,8 @@ public final class PackCommitStore implements WholePackWriteStore {
                 Files.writeString(
                         staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);
             }
-            for (Map.Entry<String, String> preset : presets.entrySet()) {
-                Files.writeString(staging.resolve(preset.getKey()), preset.getValue(), StandardCharsets.UTF_8);
+            for (Map.Entry<String, String> file : rewritten.entrySet()) {
+                Files.writeString(staging.resolve(file.getKey()), file.getValue(), StandardCharsets.UTF_8);
             }
         });
     }

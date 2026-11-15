@@ -112,7 +112,19 @@ Feature: The effective prompt of a step is the prompt in force with the fragment
       - urn: action:research/gather
         kind: action
         label: gather
-      edges: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/review
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -257,6 +269,9 @@ Feature: The effective prompt of a step is the prompt in force with the fragment
         kind: action
         label: plan
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       - source: step_enhancement:zz-base-note
         target: action:software-dev/plan
         relation: enhances
@@ -585,7 +600,10 @@ Feature: The effective prompt of a step is the prompt in force with the fragment
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the stored file of the activation "a-3" holds:
       """

@@ -56,7 +56,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -114,7 +117,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the stored file of the activation "a-1" holds:
       """
@@ -175,7 +181,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -233,7 +242,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the stored file of the activation "a-1" holds:
       """
@@ -286,7 +298,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -348,7 +363,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     When I PUT "/packs/proj" with the archive "proj"
     And I poll the registration until it ends
@@ -400,7 +418,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -462,7 +483,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     When I PUT "/packs/proj" with the archive "proj"
     And I poll the registration until it ends
@@ -506,7 +530,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -564,7 +591,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the project pack "proj" with the file "directives/A.directive.yaml":
       """
@@ -636,7 +666,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -696,7 +729,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the project pack "proj" with the file "directives/A.directive.yaml":
       """
@@ -766,7 +802,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -824,7 +863,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the activation "a-1" holds:
       """
@@ -883,7 +925,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the org pack "base" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
       """
@@ -943,7 +988,10 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
       - urn: action:software-dev/plan
         kind: action
         label: plan
-      edges: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
       """
     And the activation "a-1" holds:
       """

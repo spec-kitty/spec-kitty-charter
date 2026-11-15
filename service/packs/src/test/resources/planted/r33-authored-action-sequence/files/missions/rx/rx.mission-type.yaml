@@ -1,0 +1,12 @@
+schema_version: '1.0'
+id: rx
+title: Rx
+description: A mission type.
+action_sequence:
+- a
+- b
+steps:
+- id: a
+  title: A
+- id: b
+  title: B

@@ -208,7 +208,16 @@ class PackRegistrationServiceTest {
 
     private static final String PLAN_PROMPT = "missions/software-dev/steps/plan.prompt.md";
 
-    /** A pack with a software-dev mission type whose step plan has a prompt of the given text. */
+    /** The authored graph document that links software-dev to its one step, plan (FR-009). */
+    static final String PLAN_LINK = """
+            schema_version: '1.0'
+            generated_at: STATIC
+            nodes: []
+            edges:
+            - {source: 'mission_type:software-dev', target: 'action:software-dev/plan', relation: requires}
+            """;
+
+    /** A pack with a software-dev mission type, linked to its step plan, whose plan has a prompt of the given text. */
     private static Packs withPlanPrompt(String descriptorExtra, String prompt) {
         return Packs.of(ORG_PACK, "pack-x", "1.0.0", "org", descriptorExtra)
                 .file("missions/software-dev/software-dev.mission-type.yaml", """
@@ -221,6 +230,7 @@ class PackRegistrationServiceTest {
                             title: Plan
                             prompt_path: steps/plan.prompt.md
                         """)
+                .file("mission_type.graph.yaml", PLAN_LINK)
                 .file(PLAN_PROMPT, prompt);
     }
 

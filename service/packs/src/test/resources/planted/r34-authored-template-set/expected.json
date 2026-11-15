@@ -1,0 +1,18 @@
+{
+  "covers": [
+    "FR-009"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "missions/rx/rx.mission-type.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false
+  }
+}

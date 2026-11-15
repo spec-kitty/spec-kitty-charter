@@ -147,6 +147,10 @@ class ActivationImpactAdapterTest {
         return Urn.parse(urn).orElseThrow();
     }
 
+    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-009). */
+    private static final Relationship LINK =
+            Relationship.of(u("mission_type:M"), u("action:M/s"), RelationType.REQUIRES);
+
     private static PromptFacts.DeclaredSlot slot(String id) {
         return new PromptFacts.DeclaredSlot(new SlotId(id), false);
     }
@@ -164,14 +168,16 @@ class ActivationImpactAdapterTest {
                 facts,
                 "base",
                 PackLevel.ORG,
-                List.of(Relationship.of(
-                        u("step_enhancement:x"),
-                        Optional.empty(),
-                        u("action:M/s"),
-                        Optional.empty(),
-                        RelationType.ENHANCES,
-                        Optional.empty(),
-                        Optional.empty())),
+                List.of(
+                        LINK,
+                        Relationship.of(
+                                u("step_enhancement:x"),
+                                Optional.empty(),
+                                u("action:M/s"),
+                                Optional.empty(),
+                                RelationType.ENHANCES,
+                                Optional.empty(),
+                                Optional.empty())),
                 new PromptFacts(
                         Map.of(u("action:M/s"), List.of(slot("spdd:reasons-block"))),
                         Map.of(
@@ -187,7 +193,7 @@ class ActivationImpactAdapterTest {
                     facts,
                     "proj",
                     PackLevel.PROJECT,
-                    List.of(),
+                    List.of(LINK),
                     new PromptFacts(
                             Map.of(
                                     u("action:M/s"),

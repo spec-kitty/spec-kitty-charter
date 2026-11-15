@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -189,7 +190,8 @@ public final class FileSystemPackInspector implements PackInspector {
                 full.assets,
                 full.unreadable,
                 full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
-                full.promptSlots);
+                full.promptSlots,
+                full.missionTypes);
     }
 
     /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
@@ -316,6 +318,7 @@ public final class FileSystemPackInspector implements PackInspector {
         final List<ClassifiedFile> files = new ArrayList<>();
         final List<FileRead.Unreadable<?>> unreadable = new ArrayList<>();
         final List<StepContractFacts> stepContracts = new ArrayList<>();
+        final List<MissionTypeFacts> missionTypes = new ArrayList<>();
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
         private final List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
@@ -498,9 +501,13 @@ public final class FileSystemPackInspector implements PackInspector {
                 }
                 case FileRead.Read<Object> good -> {
                     factsOf(file, kind, good.value());
-                    MissionTypeChecks.refusal(directory, file, kind, good.value(), table)
-                            .ifPresent(refusal -> unreadable.add(
-                                    new FileRead.Unreadable<>(file, ParseFailure.refused(file, refusal), List.of())));
+                    Optional<String> refused = MissionTypeChecks.refusal(directory, file, kind, good.value(), table);
+                    refused.ifPresent(refusal -> unreadable.add(
+                            new FileRead.Unreadable<>(file, ParseFailure.refused(file, refusal), List.of())));
+                    // The load holds no mission type its checks refuse, so neither do the step-link facts.
+                    if (refused.isEmpty()) {
+                        missionTypeFactsOf(file, kind, good.value());
+                    }
                 }
                 case FileRead.Absent<Object> absent -> {}
             }
@@ -524,6 +531,17 @@ public final class FileSystemPackInspector implements PackInspector {
                 if ("asset".equals(kind) && assetIds.add(id)) {
                     assets.add(assetFacts(file, id, map));
                 }
+            }
+        }
+
+        /** The step-link facts of a mission type the load holds: its id and the ids of its steps and on-demand steps. */
+        private void missionTypeFactsOf(String file, String kind, Object document) {
+            if ("mission-type".equals(kind)
+                    && document instanceof Map<?, ?> map
+                    && map.get("id") instanceof String id) {
+                List<String> steps = new ArrayList<>(idsOf(map.get("steps")));
+                steps.addAll(idsOf(map.get("on_demand_steps")));
+                missionTypes.add(new MissionTypeFacts(file, id, steps));
             }
         }
 
@@ -581,8 +599,13 @@ public final class FileSystemPackInspector implements PackInspector {
         }
 
         private static List<String> stepIds(Map<?, ?> contract) {
+            return idsOf(contract.get("steps"));
+        }
+
+        /** The {@code id} of each map of a list, in order; none for anything that is not a list. */
+        private static List<String> idsOf(@Nullable Object list) {
             List<String> ids = new ArrayList<>();
-            if (contract.get("steps") instanceof List<?> steps) {
+            if (list instanceof List<?> steps) {
                 for (Object step : steps) {
                     if (step instanceof Map<?, ?> s && s.get("id") instanceof String id) {
                         ids.add(id);

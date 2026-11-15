@@ -76,6 +76,9 @@ class ClosureViewSessionStepRefsTest {
     private static final Urn D = urn("directive:D");
     private static final ArtifactRef D_REF = ref("directive:D");
 
+    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-009). */
+    private static final Relationship LINK = relationship("mission_type:M", RelationType.REQUIRES, "action:M/s");
+
     private static Urn urn(String text) {
         return Urn.parse(text).orElseThrow();
     }
@@ -354,6 +357,7 @@ class ClosureViewSessionStepRefsTest {
                         PackLevel.ORG,
                         List.of(),
                         List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                        LINK,
                         relationship("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"));
         PacksSession session = closure.session();
 
@@ -448,6 +452,7 @@ class ClosureViewSessionStepRefsTest {
                         PackLevel.BUILT_IN,
                         List.of(),
                         List.of("mission_type:M", "action:M/s", "directive:D", "tactic:t", "step_enhancement:e"),
+                        LINK,
                         scopes,
                         enhancesStep,
                         requires);
@@ -465,7 +470,12 @@ class ClosureViewSessionStepRefsTest {
     void aStepHasNoLanguagesInTheMergedSnapshotAndAnArtifactHas() {
         Closure closure = new Closure()
                 .languages(Map.of("action:M/s", List.of("java"), "directive:D", List.of("java")))
-                .pack("beta", PackLevel.BUILT_IN, List.of(), List.of("mission_type:M", "action:M/s", "directive:D"));
+                .pack(
+                        "beta",
+                        PackLevel.BUILT_IN,
+                        List.of(),
+                        List.of("mission_type:M", "action:M/s", "directive:D"),
+                        LINK);
 
         MergedSnapshot merged = closure.session().merged();
 
@@ -492,8 +502,8 @@ class ClosureViewSessionStepRefsTest {
                 "lifecycle:l",
                 "directive:Unselected");
         return new Closure()
-                .pack("beta", PackLevel.BUILT_IN, List.of(), held)
-                .pack("alpha", PackLevel.ORG, List.of("beta"), held);
+                .pack("beta", PackLevel.BUILT_IN, List.of(), held, LINK)
+                .pack("alpha", PackLevel.ORG, List.of("beta"), held, LINK);
     }
 
     private static InForceQuery selecting(String... urns) {

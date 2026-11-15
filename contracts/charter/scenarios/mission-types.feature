@@ -189,6 +189,18 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       generated_at: STATIC
       nodes: []
       edges:
+      - source: mission_type:documentation
+        target: action:documentation/discover
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/specify
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      - source: mission_type:software-dev
+        target: action:software-dev/retrospect
+        relation: requires
       - source: mission_type:software-dev
         target: directive:GUARD
         relation: scope
@@ -542,8 +554,10 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     And following the link "self" of every element of "items" answers 200
 
   Scenario: The references of a mission type and of a step contract are read like any served kind's
-    FR-001: /references answers for both kinds; an unknown id is the not-found code of its kind. The step contract's
-    edge joins it to the other step contract, the one kind a step contract may enhance (ADR-0064 decision 13).
+    FR-001: /references answers for both kinds; an unknown id is the not-found code of its kind. The mission type's
+    references are its scope edge and the requires edge to each of its steps (operator ruling
+    DM-01M7B1YQR5ZKQPDW6DX64KPNRN). The step contract's edge joins it to the other step contract, the one kind a step
+    contract may enhance (ADR-0064 decision 13).
     Given the org pack "main" with the file "contracts.graph.yaml":
       """
       schema_version: '1.0'
@@ -556,10 +570,14 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       """
     When I GET "/packs/main/artifacts/mission_type/software-dev/references"
     Then the response status is 200
-    And the field at "/items" holds exactly 1 item
-    And the field at "/items/0/urn" is "directive:GUARD"
-    And the field at "/items/0/relation" is "scope"
-    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/GUARD"
+    And the field at "/items" holds exactly 4 items
+    And the field at "/items/0/urn" is "action:software-dev/specify"
+    And the field at "/items/0/relation" is "requires"
+    And the field at "/items/1/urn" is "action:software-dev/plan"
+    And the field at "/items/2/urn" is "action:software-dev/retrospect"
+    And the field at "/items/3/urn" is "directive:GUARD"
+    And the field at "/items/3/relation" is "scope"
+    And the field at "/items/3/_links/artifact/href" is "/api/v1/packs/main/artifacts/directive/GUARD"
     When I GET "/packs/main/artifacts/mission_step_contract/specify/references"
     Then the response status is 200
     And the field at "/items" holds exactly 1 item
@@ -638,6 +656,16 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       steps:
       - id: specify
         title: Specification
+      """
+    And the org pack "bare" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/specify
+        relation: requires
       """
     When I GET "/packs/bare/artifacts/mission_type/software-dev/steps/specify"
     Then the response status is 500
@@ -882,3 +910,299 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       | case                 | id   | shown | reason                                    |
       | longer than 64       | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… | is longer than 64 character(s)            |
       | an upper-case letter | Main | Main | is not in the form this parameter accepts |
+
+  # FR-009 (#520): action_sequence and template_set are retired; the closed schema refuses either by its name, and the
+  # same archive without the field registers.
+  Scenario Outline: A whole-pack registration whose mission type authors <field> is refused, naming the field
+    Given registration is switched on
+    And the archive "rxp" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXP01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxp
+      pack_level: org
+      """
+    And the archive "rxp" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      steps:
+      - id: a
+        title: A
+      """
+    And the archive "rxp" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    And the archive "retired" is a copy of the archive "rxp"
+    And the archive "retired" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      <field>: <value>
+      steps:
+      - id: a
+        title: A
+      """
+    When I PUT "/packs/rxp" with the archive "retired"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    And the field at "/problem/violations/0/detail" contains "<field>"
+    When I PUT "/packs/rxp" with the archive "rxp"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples:
+      | field           | value      |
+      | action_sequence | [a]        |
+      | template_set    | rx-default |
+
+  # FR-011 (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN): every step of a type is linked from it. An override that
+  # drops a step and keeps the step's edge is refused where it enters, at its own registration, with the stray edge at
+  # its graph document; the same override without the edge registers.
+  Scenario: A mission type that drops a step and keeps its requires edge is refused at registration, beside the one that drops both
+    Given registration is switched on
+    And the archive "rxp" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXP01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxp
+      pack_level: org
+      """
+    And the archive "rxp" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type that dropped its step b.
+      steps:
+      - id: a
+        title: A
+      """
+    And the archive "rxp" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: mission_type:rx
+        target: action:rx/b
+        relation: requires
+      """
+    When I PUT "/packs/rxp" with the archive "rxp"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "mission_step_unlinked"
+    And the field at "/problem/violations/0/pointer" is "mission_type.graph.yaml"
+    And the field at "/problem/violations/0/detail" contains "action:rx/b names no step of the type"
+    Given the archive "fixed" is a copy of the archive "rxp"
+    And the archive "fixed" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    When I PUT "/packs/rxp" with the archive "fixed"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # FR-011: a step without its edge is refused at the mission type file.
+  Scenario: A mission type with a step its type does not link is refused at registration, naming the step
+    Given registration is switched on
+    And the archive "rxp" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXP01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxp
+      pack_level: org
+      """
+    And the archive "rxp" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      steps:
+      - id: a
+        title: A
+      on_demand_steps:
+      - id: help
+        title: Help
+      """
+    And the archive "rxp" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    When I PUT "/packs/rxp" with the archive "rxp"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "mission_step_unlinked"
+    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    And the field at "/problem/violations/0/detail" contains "the step help of mission_type:rx has no requires edge"
+
+  # FR-011 at compose: each pack's own links are judged at its load; a requires edge another pack writes at the mission
+  # type in force is judged once the merge has placed it. Naming an action that is no step of the type, it makes every
+  # read of a closure that holds it refuse; the twin, naming a step of the type, is read.
+  Scenario: Another pack's requires edge at a mission type to an action that is no step of it makes the closure unreadable, beside the edge to its step
+    Given the org pack "rxbase" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXB01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxbase
+      pack_level: org
+      """
+    And the org pack "rxbase" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      steps:
+      - id: a
+        title: A
+      """
+    And the org pack "rxbase" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:rx/a
+        kind: action
+        label: a
+      - urn: action:rx/c
+        kind: action
+        label: c
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    And the org pack "rxext" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXE01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxext
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000RXB01
+        range: '>=1.0'
+      """
+    And the org pack "rxext" with the file "extra.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: rxbase::mission_type:rx
+        target: rxbase::action:rx/c
+        relation: requires
+      """
+    And the activation "rx-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "rxext"}], "selected": {"mission_type": ["rx"]}}
+      """
+    When I GET "/activations/rx-1/graph"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field at "/detail" contains "mission_type:rx"
+    And the field at "/detail" contains "mission_step_unlinked"
+    Given the org pack "rxext" with the file "extra.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: rxbase::mission_type:rx
+        target: rxbase::action:rx/a
+        relation: requires
+      """
+    When I GET "/activations/rx-1/graph"
+    Then the response status is 200
+
+  # FR-011 on a composing read: a configured pack whose own mission type has a step without its requires edge makes
+  # every read of a closure that holds it refuse, naming the mission type file; the twin with the edge is read.
+  Scenario: A closure holding a pack whose mission type has an unlinked step is unreadable and names the type file
+    Given the org pack "rxlone" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXN01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxlone
+      pack_level: org
+      """
+    And the org pack "rxlone" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      steps:
+      - id: a
+        title: A
+      - id: b
+        title: B
+      """
+    And the org pack "rxlone" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field at "/detail" contains "missions/rx/rx.mission-type.yaml"
+    Given the org pack "rxlone" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: mission_type:rx
+        target: action:rx/b
+        relation: requires
+      """
+    When I GET "/offering"
+    Then the response status is 200

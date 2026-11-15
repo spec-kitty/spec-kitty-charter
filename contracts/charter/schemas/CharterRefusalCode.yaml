@@ -103,6 +103,13 @@ description: >-
   refused wherever it enters, in the same three places, with putPackRelationship's violation at /type. An overrides
   edge from a kind that is not activatable keeps overrides_source_not_activatable; an enhances or overrides edge from
   a step enhancement the pack holds keeps prompt_fragment_invalid.
+  mission_step_unlinked (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN, FR-011) is a third: every step and on-demand
+  step of a mission type is linked by an authored requires edge from its type, and no such edge names an action that
+  is not one of its steps. A registration lists one violation per unlinked step at the mission type file and one per
+  stray edge at its graph document, and a composing read answers 500 pack_unreadable, also when another pack writes a
+  requires edge at the mission type in force that names no step of the type. putPackRelationship of such a stray edge
+  answers 422 validation_failed with the violation at /to, and deletePackRelationship of the last edge that links a
+  step answers 422 validation_failed with the violation at /to.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -366,8 +373,9 @@ x-refusal:
       the request or the pack it registers breaks a schema or an invariant; a refused registration lists every fault as
       a violation at its pack-relative file. Its violation codes include the raised codes above and
       overrides_source_not_activatable, an overrides edge whose source is not of an activatable kind (FR-014), which
-      putPackRelationship lists at /from, and relationship_endpoint_not_allowed, an edge whose relation does not allow
-      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type
+      putPackRelationship lists at /from, relationship_endpoint_not_allowed, an edge whose relation does not allow
+      its endpoint kinds (ADR-0064 decision 13), which putPackRelationship lists at /type, and mission_step_unlinked, a
+      mission type step without its requires edge, or a requires edge from the type to an action that is not its step
   registration_conflict:
     status: 409
     retryable: false

@@ -11,12 +11,14 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -90,7 +92,10 @@ public final class RelationshipRegistrationService {
      *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value OverrideSourceRule#CODE} at
      *     {@code /from} when the edge is an {@code overrides} edge whose source kind is not activatable (FR-014), and
      *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value RelationshipEndpointRule#CODE} at
-     *     {@code /type} when the relation does not allow the endpoint kinds (ADR-0064 decision 13); after them the
+     *     {@code /type} when the relation does not allow the endpoint kinds (ADR-0064 decision 13), then
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) with the violation {@value MissionStepLinkRule#CODE} at
+     *     {@code /to} when a {@code requires} edge from a mission type of the pack names an action that is no step of
+     *     it; after them the
      *     compose's {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
      *     {@link RefusalCode#PACK_REFERENCE_ARTIFACT_MISSING} (422 here) when {@code to} cannot resolve, a composition
      *     refusal (500) when the configured packs do not compose, or the policy's
@@ -125,6 +130,7 @@ public final class RelationshipRegistrationService {
             refuseStepEnhancementEdge(current, draft, existing);
             refuseInactivatableOverrider(draft);
             Relationship relationship = bound(draft);
+            refuseStrayStepLink(pack, current.descriptor().name(), relationship, existing);
             targets.require(pack, relationship.toReference());
             policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
             boolean created = existing.stream().noneMatch(relationship::equals);
@@ -164,6 +170,37 @@ public final class RelationshipRegistrationService {
                         "The relationship is refused: " + fault.message() + ".",
                         List.of(new RefusalViolation("/type", RelationshipEndpointRule.CODE, fault.message())));
         };
+    }
+
+    /**
+     * Refuses a {@code requires} edge from a mission type of the pack to an action that is not one of its steps
+     * (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN): every composing read of the pack would refuse it. The type's
+     * steps are the targets of its own step links, authored or registered, which the load matched to its file; a step
+     * link is added with its step, by registering the whole pack. The refusal is {@code validation_failed} with one
+     * violation {@value MissionStepLinkRule#CODE} at {@code /to}.
+     */
+    private void refuseStrayStepLink(
+            PackIdentifier pack, String packName, Relationship relationship, List<Relationship> registered) {
+        Urn from = relationship.from();
+        if (relationship.type() != RelationType.REQUIRES
+                || from.kind() != NodeKind.MISSION_TYPE
+                || relationship.to().kind() != NodeKind.ACTION) {
+            return;
+        }
+        List<Relationship> links = new ArrayList<>(writeStore.authoredRelationships(pack));
+        links.addAll(registered);
+        boolean ownStep = MissionStepLinkRule.isOwnStepLink(packName, from, relationship)
+                && links.stream()
+                        .anyMatch(link -> MissionStepLinkRule.isOwnStepLink(packName, from, link)
+                                && link.to().equals(relationship.to()));
+        if (!ownStep) {
+            String reason = "the requires edge from " + from + " to " + relationship.toReference()
+                    + " names no step of the type";
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The relationship is refused: " + reason + ".",
+                    List.of(new RefusalViolation("/to", MissionStepLinkRule.CODE, reason)));
+        }
     }
 
     /**

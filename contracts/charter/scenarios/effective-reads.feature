@@ -158,6 +158,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
           title: implement
           role: implementer
       """
+    And the org pack "main" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      """
     And the activation "a-1" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["rehearse"], "mission_type": ["software-dev"]}}
@@ -261,6 +271,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
           title: implement
           role: implementer
       """
+    And the org pack "main" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      """
     And the org pack "main" with the file "missions/research/research.mission-type.yaml":
       """
       schema_version: "1.0"
@@ -271,6 +291,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+      """
+    And the org pack "main" with the file "research.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the org pack "main" with the file "mission_step_contracts/sd-implement.step-contract.yaml":
       """
@@ -993,6 +1023,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
           title: implement
           role: implementer
       """
+    And the org pack "main" with the file "software-dev.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
+      """
     And the org pack "main" with the file "missions/research/research.mission-type.yaml":
       """
       schema_version: "1.0"
@@ -1003,6 +1043,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+      """
+    And the org pack "main" with the file "research.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the org pack "main" with the file "mission_step_contracts/sd-implement.step-contract.yaml":
       """
@@ -1071,6 +1121,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: gather
           title: gather
           role: implementer
+      """
+    And the org pack "main" with the file "research.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       """
     And the org pack "main" with the file "mission_step_contracts/research-gather.step-contract.yaml":
       """
@@ -1838,6 +1898,9 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
+      - source: mission_type:research
+        target: action:research/gather
+        relation: requires
       - source: directive:OVR
         target: directive:OV
         relation: overrides

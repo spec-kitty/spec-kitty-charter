@@ -191,7 +191,13 @@ class PromptSlotLoadChecksTest {
                 yaml.append("on_demand_steps:\n");
                 onDemand.forEach(id -> yaml.append(entry(id)));
             }
-            return file("missions/" + TYPE + "/" + TYPE + ".mission-type.yaml", yaml.toString());
+            StringBuilder links = new StringBuilder("schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n");
+            List<String> all = new ArrayList<>(steps);
+            all.addAll(onDemand);
+            all.forEach(id -> links.append("- {source: 'mission_type:" + TYPE + "', target: 'action:" + TYPE + "/"
+                    + (id.endsWith("!") ? id.substring(0, id.length() - 1) : id) + "', relation: requires}\n"));
+            return file("mission_type.graph.yaml", links.toString())
+                    .file("missions/" + TYPE + "/" + TYPE + ".mission-type.yaml", yaml.toString());
         }
 
         private static String entry(String id) {

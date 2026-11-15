@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.edge;
+import static ai.speckitty.charter.packs.application.EdgeIndexTest.linked;
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -45,11 +46,14 @@ class ActionContextWalkOwnershipTest {
         return true;
     }
 
-    /** A closure of one pack that holds mission type {@code M}, its steps {@code a} and {@code b}, and the rest. */
+    /**
+     * A closure of one pack that holds mission type {@code M}, its steps {@code a} and {@code b} it links, and the
+     * rest.
+     */
     private static Closure closure(List<String> artifacts, Relationship... edges) {
         List<String> held = new ArrayList<>(List.of("mission_type:M", START, "action:M/b"));
         held.addAll(artifacts);
-        return new Closure().pack("alpha", held, edges);
+        return new Closure().pack("alpha", held, linked("M", List.of("a", "b"), edges));
     }
 
     private static Context effective(Closure closure, String action, int depth, Predicate<Urn> inForce) {
@@ -142,6 +146,7 @@ class ActionContextWalkOwnershipTest {
     void aDirectiveScopedByAnotherMissionTypeIsAbsent() {
         Closure closure = closure(
                 List.of("mission_type:N", "action:N/x", "directive:O"),
+                edge("mission_type:N", RelationType.REQUIRES, "action:N/x"),
                 edge("mission_type:N", RelationType.SCOPE, "directive:O"));
 
         assertThat(listed(effective(closure, 0, ActionContextWalkOwnershipTest::everything)))
@@ -533,7 +538,8 @@ class ActionContextWalkOwnershipTest {
                 "action:software-dev/specify",
                 "directive:DIRECTIVE_003",
                 "directive:QA_003"));
-        List<Relationship> edges = new ArrayList<>();
+        List<Relationship> edges =
+                new ArrayList<>(List.of(linked("software-dev", List.of("implement", "plan", "review", "specify"))));
         IMPLEMENT_SCOPED.forEach(id -> {
             held.add("directive:" + id);
             edges.add(edge(implement, RelationType.SCOPE, "directive:" + id));
@@ -607,7 +613,7 @@ class ActionContextWalkOwnershipTest {
                                     "directive:A2",
                                     "tactic:AS",
                                     "directive:AB"),
-                            inOrder(ALPHA, reversedLinks));
+                            inOrder(linked("M", List.of("a", "b"), ALPHA), reversedLinks));
                 case "beta" ->
                     closure.pack(
                             "beta",
@@ -683,7 +689,7 @@ class ActionContextWalkOwnershipTest {
      */
     private static Closure ofSize(int size) {
         List<String> held = new ArrayList<>(List.of("mission_type:M", START, "action:M/b"));
-        List<Relationship> edges = new ArrayList<>();
+        List<Relationship> edges = new ArrayList<>(List.of(linked("M", List.of("a", "b"))));
         int quarter = size / 4;
         for (int i = 0; i < quarter; i++) {
             for (String group : List.of("A", "T", "B", "U")) {

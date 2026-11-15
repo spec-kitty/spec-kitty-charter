@@ -4,11 +4,14 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,7 +64,9 @@ public final class RelationshipRemovalService {
      * @param ifMatch the {@code If-Match} precondition, required
      * @return the revision after the removal
      * @throws CharterRefusal {@code pack_not_found} or {@code relationship_not_found} (404);
-     *     {@code relationship_not_registered} (409); a composition code or a relation code of the impact check (422)
+     *     {@code relationship_not_registered} (409); {@code validation_failed} with the violation
+     *     {@value MissionStepLinkRule#CODE} at {@code /to} when the edge is the last that links a mission type's step
+     *     (422); a composition code or a relation code of the impact check (422)
      * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code MISSING} (428) or {@code STALE} (412)
      * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
      */
@@ -124,10 +129,39 @@ public final class RelationshipRemovalService {
         named.forEach(edge -> gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
         List<Relationship> retained =
                 registered.stream().filter(edge -> !names(edge, from, to)).toList();
+        refuseUnlinkingAStep(pack, current.descriptor().name(), named, retained);
         impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
         PackRevision after = store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
         trail.moved(before, after);
         return after;
+    }
+
+    /**
+     * Refuses the removal of a mission type's own step link that no other document of the pack still holds (operator
+     * ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN): the step would be left without its edge, and every read of the pack would
+     * refuse it. A step goes with its link by registering the whole pack. The refusal is {@code validation_failed}
+     * with one violation {@value MissionStepLinkRule#CODE} at {@code /to}.
+     */
+    private void refuseUnlinkingAStep(
+            PackIdentifier pack, String packName, List<Relationship> removed, List<Relationship> retained) {
+        // The authored edges count too: a link the author wrote in another spelling (the source written with the pack's
+        // own name) still links the step when the registered copy goes.
+        List<Relationship> kept = new ArrayList<>(store.authored(pack).edges());
+        kept.addAll(retained);
+        for (Relationship edge : removed) {
+            boolean ownLink = MissionStepLinkRule.isOwnStepLink(packName, edge.from(), edge);
+            boolean stillLinked = kept.stream()
+                    .anyMatch(other -> MissionStepLinkRule.isOwnStepLink(packName, edge.from(), other)
+                            && other.to().equals(edge.to()));
+            if (ownLink && !stillLinked) {
+                String reason =
+                        "the step " + edge.to() + " of " + edge.from() + " would have no requires edge from its type";
+                throw CharterRefusal.withViolations(
+                        RefusalCode.VALIDATION_FAILED,
+                        "The relationship removal is refused: " + reason + ".",
+                        List.of(new RefusalViolation("/to", MissionStepLinkRule.CODE, reason)));
+            }
+        }
     }
 
     /**

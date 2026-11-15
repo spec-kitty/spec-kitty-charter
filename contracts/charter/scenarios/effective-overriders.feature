@@ -89,6 +89,9 @@ Feature: Every overrider in force that satisfies or hides an artifact is named, 
         kind: action
         label: implement
       edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/implement
+        relation: requires
       - source: directive:E3
         target: directive:T
         relation: overrides

@@ -821,6 +821,12 @@ class RelationshipRegistrationServiceTest {
         }
 
         @Override
+        public List<Relationship> authoredRelationships(PackIdentifier pack) {
+
+            return List.of();
+        }
+
+        @Override
         public List<Relationship> registeredRelationships(PackIdentifier pack) {
             return List.copyOf(edges.getOrDefault(pack, List.of()));
         }

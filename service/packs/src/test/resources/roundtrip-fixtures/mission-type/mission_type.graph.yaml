@@ -1,0 +1,13 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- source: mission_type:research
+  target: action:research/scoping
+  relation: requires
+- source: mission_type:research
+  target: action:research/methodology
+  relation: requires
+- source: mission_type:research
+  target: action:research/retrospect
+  relation: requires

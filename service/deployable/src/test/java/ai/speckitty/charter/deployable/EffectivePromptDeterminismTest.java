@@ -215,6 +215,9 @@ class EffectivePromptDeterminismTest {
                       kind: action
                       label: plan
                     edges:
+                    - source: mission_type:software-dev
+                      target: action:software-dev/plan
+                      relation: requires
                     - source: step_enhancement:z-core-note
                       target: action:software-dev/plan
                       relation: enhances

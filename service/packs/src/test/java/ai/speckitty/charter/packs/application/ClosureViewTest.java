@@ -86,6 +86,11 @@ class ClosureViewTest {
                 Optional.empty());
     }
 
+    /** The {@code requires} edge a pack writes from mission type {@code type} to its step {@code step} (FR-009). */
+    private static Relationship link(String type, String step) {
+        return edge("mission_type:" + type, RelationType.REQUIRES, "action:" + type + "/" + step);
+    }
+
     /** A pack of the closure holding the artifacts and writing the edges, with no facts binding. */
     private void pack(String name, PackLevel level, List<String> dependsOn, List<String> held, Relationship... edges) {
         pack(name, level, dependsOn, MutabilityPolicySource.empty(), held, edges);
@@ -168,6 +173,7 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                link("M", "s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"));
     }
 
@@ -194,7 +200,7 @@ class ClosureViewTest {
 
     @Test
     void aStepEnhancerOfAStepThatAnotherPackOverridesWithoutTheMissionTypeIsStillBoundToIt() {
-        pack("org", PackLevel.ORG, List.of(), List.of("mission_type:M", "action:M/s"));
+        pack("org", PackLevel.ORG, List.of(), List.of("mission_type:M", "action:M/s"), link("M", "s"));
         pack(
                 "tools",
                 PackLevel.ORG,
@@ -218,6 +224,7 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                link("M", "s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/missing"));
 
         assertThatThrownBy(() -> select("step_enhancement:x", "mission_type:M"))
@@ -232,6 +239,7 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                link("M", "s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"));
 
         expect(select("step_enhancement:x", "mission_type:M"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
@@ -240,7 +248,7 @@ class ClosureViewTest {
     // beta is a project pack, so its mission type in the twin is a layer override of alpha's, no sibling contest.
     @Test
     void aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsRefusedByTheComposeAsTargetMissing() {
-        pack("alpha", List.of("mission_type:M", "action:M/s"));
+        pack("alpha", List.of("mission_type:M", "action:M/s"), link("M", "s"));
         pack(
                 "beta",
                 PackLevel.PROJECT,
@@ -257,12 +265,13 @@ class ClosureViewTest {
 
     @Test
     void theTwinAStepEnhancerOfAnActionDeclaredWithItsMissionTypeComposes() {
-        pack("alpha", List.of("mission_type:M", "action:M/s"));
+        pack("alpha", List.of("mission_type:M", "action:M/s"), link("M", "s"));
         pack(
                 "beta",
                 PackLevel.PROJECT,
                 List.of("alpha"),
                 List.of("mission_type:M", "action:M/other", "step_enhancement:x"),
+                link("M", "other"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/other"));
 
         expect(select("step_enhancement:x", "mission_type:M"), "step_enhancement:x", State.ACTIVE, Reason.SELECTED);
@@ -278,7 +287,8 @@ class ClosureViewTest {
                 MutabilityPolicySource.builder()
                         .entry(u("mission_type:M"), missionTypeLevel)
                         .build(),
-                List.of("mission_type:M", "action:M/s"));
+                List.of("mission_type:M", "action:M/s"),
+                link("M", "s"));
         pack(
                 "enhancer",
                 PackLevel.ORG,
@@ -313,6 +323,8 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/s", "action:M/t", "step_enhancement:x"),
+                link("M", "s"),
+                link("M", "t"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/t"));
 
@@ -366,7 +378,8 @@ class ClosureViewTest {
                         "tactic:E"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
                 edge("action:M/b", RelationType.SCOPE, "tactic:E"),
-                edge("mission_type:M", RelationType.REQUIRES, "action:M/b"),
+                link("M", "a"),
+                link("M", "b"),
                 edge("tactic:T", RelationType.REQUIRES, "directive:D"),
                 edge("tactic:T", RelationType.SUGGESTS, "tactic:U"),
                 edge("tactic:E", RelationType.ENHANCES, "tactic:T"));
@@ -389,7 +402,10 @@ class ClosureViewTest {
         assertThat(names(graph.nodes())).containsExactly("action:M/a", "action:M/b", "mission_type:M", "tactic:T");
         assertThat(graph.edges())
                 .extracting(edge -> edge.source() + " " + edge.relation().token() + " " + edge.target())
-                .containsExactly("action:M/a scope tactic:T", "mission_type:M requires action:M/b");
+                .containsExactly(
+                        "action:M/a scope tactic:T",
+                        "mission_type:M requires action:M/a",
+                        "mission_type:M requires action:M/b");
     }
 
     @Test
@@ -413,6 +429,7 @@ class ClosureViewTest {
                         .entry(u("template:Tpl"), MutabilityLevel.LOCKED)
                         .build(),
                 List.of("mission_type:M", "action:M/a", "template:Tpl", "tactic:T"),
+                link("M", "a"),
                 edge("tactic:T", RelationType.REQUIRES, "template:Tpl"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"));
         ClosureView view = view();
@@ -433,7 +450,12 @@ class ClosureViewTest {
 
     @Test
     void theLayerOverridesFollowTheNodesOfTheGraph() {
-        pack("org", PackLevel.ORG, List.of(), List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:Out"));
+        pack(
+                "org",
+                PackLevel.ORG,
+                List.of(),
+                List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:Out"),
+                link("M", "a"));
         pack("project", PackLevel.PROJECT, List.of("org"), List.of("action:M/a", "tactic:T", "tactic:Out"));
         ClosureView view = view();
 
@@ -466,6 +488,7 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:U"),
+                link("M", "a"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
                 Relationship.of(
                         u("tactic:T"),
@@ -492,6 +515,7 @@ class ClosureViewTest {
         pack(
                 "alpha",
                 List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:S", "glossary_context:Other"),
+                link("M", "a"),
                 edge("action:M/a", RelationType.SCOPE, "tactic:T"),
                 edge("tactic:T", RelationType.VOCABULARY, "glossary_context:Other"),
                 Relationship.of(
@@ -596,6 +620,7 @@ class ClosureViewTest {
                 PackLevel.ORG,
                 List.of(),
                 List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                link("M", "s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:M/s"));
         prompts(
                 "base",
@@ -605,7 +630,7 @@ class ClosureViewTest {
                                 u("step_enhancement:x"),
                                 List.of(new PromptFacts.Fill(new SlotId("spdd:reasons-block"), "Fill it.\n"))),
                         Map.of(u("mission_type:M"), List.of("s"))));
-        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:M", "action:M/s"));
+        pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:M", "action:M/s"), link("M", "s"));
         prompts(
                 "proj",
                 new PromptFacts(
@@ -782,7 +807,7 @@ class ClosureViewTest {
     @Test
     void aStepTheWinningVersionDeclaresIsPlacedAtTheWinnerWhicheverPacksGraphDeclaresTheAction() {
         // probe 1: proj's winning md declares s; only base declares action:md/s.
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "s");
         missionType("proj", "s");
@@ -793,7 +818,7 @@ class ClosureViewTest {
     @Test
     void aStepOnlyTheWinnerDeclaresIsPlacedAtTheWinnerAlthoughTheActionsWinnerIsAnotherPack() {
         // probe 2: base declares action:md/s and its md lacks s; proj's winning md declares it.
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "t");
         missionType("proj", "s");
@@ -804,7 +829,7 @@ class ClosureViewTest {
     @Test
     void aStepOnlyAReplacedVersionKeepsIsPlacedAtTheActionsWinner() {
         // A7: proj's winning md drops s, which base's md declares and base's graph holds.
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "s");
         missionType("proj", "t");
@@ -814,7 +839,7 @@ class ClosureViewTest {
 
     @Test
     void theTwinAHeldStepNoVersionAtEitherPlaceDeclaresHasNoPlace() {
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "t");
         missionType("proj", "t");
@@ -842,7 +867,7 @@ class ClosureViewTest {
     @Test
     void thePromptOfAStepTheWinningVersionDeclaresIsTheWinnersWhicheverPacksGraphDeclaresTheAction() {
         // probe 1's shape: proj's winning md declares s; only base declares action:md/s.
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "s");
         missionType("proj", "s");
@@ -858,7 +883,7 @@ class ClosureViewTest {
     @Test
     void theTwinThePromptOfAStepOnlyAReplacedVersionKeepsIsTheActionsWinners() {
         // A7: proj's winning md drops s, which base's md declares and base's graph holds.
-        pack("base", List.of("mission_type:md", "action:md/s"));
+        pack("base", List.of("mission_type:md", "action:md/s"), link("md", "s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "s");
         missionType("proj", "t");
@@ -883,6 +908,7 @@ class ClosureViewTest {
                 PackLevel.ORG,
                 List.of(),
                 List.of("mission_type:md", "action:md/s", "step_enhancement:x"),
+                link("md", "s"),
                 edge("step_enhancement:x", RelationType.ENHANCES, "action:md/s"));
         pack("proj", PackLevel.PROJECT, List.of(), List.of("mission_type:md"));
         missionType("base", "s");

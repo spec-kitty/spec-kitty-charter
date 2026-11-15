@@ -28,6 +28,16 @@ Feature: A relationship may be authored from a mission type
           title: Research Scoping
           role: researcher
       """
+    And the org pack "qa" with the file "research.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:research
+        target: action:research/scoping
+        relation: requires
+      """
 
   Scenario: A relationship from a mission type of the pack is registered (ADR-0044, NFR-001)
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:

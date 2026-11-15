@@ -114,7 +114,9 @@ delete:
     ancestor of the pack holds the id and locks it, so a pack removes its own artifact freely; and 409
     registration_conflict when a source shard or drg/fragment.yaml the author wrote declares the artifact's node (or,
     for a mission type, the node of one of its skeletons or action nodes) or holds an edge from it, which a DELETE never
-    rewrites (register the whole pack instead). A client sends in If-Match the ETag the item read answered (every
+    rewrites (register the whole pack instead). A mission type's own step links (mission_type:T requires
+    action:T/<step>) are the one exception: they go with the type, and each author-written document that holds one is
+    written again without it. A client sends in If-Match the ETag the item read answered (every
     pack item read carries the pack revision, a mission type and a step contract included), or *, as for any kind. PR A is strict: when the
     closures that contain the pack, after the removal, no longer compose or break a rule, the answer is 422 with the
     composition code or one of override_not_permitted, enhances_cycle, conflicting_relations, self_override and
@@ -196,7 +198,7 @@ delete:
         governance_policy_violation, an ancestor of the pack holds the id and locks it (the REMOVE operation of the
         write gate); or registration_conflict, the artifact is written in the pack's author-written graph documents
         (a source shard or drg/fragment.yaml), or for a mission type one of its skeletons or action nodes is, which a
-        DELETE never rewrites. Nothing is written.
+        DELETE never rewrites; a mission type's own step links do not count, as they go with it. Nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

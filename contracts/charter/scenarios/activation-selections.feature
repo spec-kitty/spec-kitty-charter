@@ -211,6 +211,9 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       generated_at: STATIC
       nodes: []
       edges:
+      - source: mission_type:research
+        target: action:research/scoping
+        relation: requires
       - source: directive:D
         target: tactic:t
         relation: requires

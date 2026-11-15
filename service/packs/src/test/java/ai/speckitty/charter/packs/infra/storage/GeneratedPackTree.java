@@ -55,6 +55,8 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>a file symlink inside the pack to an external valid tactic</td><td>loaded</td></tr>
  * <tr><td>root {@code a.graph.yaml}, hidden root {@code .b.graph.yaml}, {@code drg/fragment.yaml}</td>
  *     <td>graph input</td></tr>
+ * <tr><td>root {@code mission_type.graph.yaml}, part of the row of each valid mission type: the {@code requires} edge
+ *     from the type to its step (FR-009)</td><td>graph input</td></tr>
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
@@ -226,6 +228,9 @@ final class GeneratedPackTree {
     };
 
     private static final int LATE_COUNTER = 1_000_000;
+    /** The root graph document that links each valid mission type to its step (FR-009). */
+    private static final String MISSION_TYPE_LINKS = "mission_type.graph.yaml";
+
     private static final String PACK_YAML = packYaml();
 
     /**
@@ -269,6 +274,7 @@ final class GeneratedPackTree {
         private final PackLocation location;
         private final Map<String, Planted> planted = new LinkedHashMap<>();
         private final List<Target> externalDecoys = new ArrayList<>();
+        private final List<String> missionTypeLinks = new ArrayList<>();
 
         private Pack(String name, String directoryName, Path directory, RootForm rootForm) {
             this.name = name;
@@ -538,6 +544,9 @@ final class GeneratedPackTree {
         Path file = write(pack, path, content);
         if (valid) {
             plantCompanion(file, kind, id);
+            if (kind == Kind.MISSION_TYPE && n < LATE_COUNTER) {
+                linkMissionType(pack, id);
+            }
         }
         Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
         remember(pack, shape, planted);
@@ -596,6 +605,23 @@ final class GeneratedPackTree {
             Files.writeString(
                     file.resolveSibling(id + ".prompt-fragment.md"), ENHANCEMENT_FRAGMENT, StandardCharsets.UTF_8);
         }
+    }
+
+    /**
+     * Links a valid mission type to its one step {@code s} (FR-009): the {@code requires} edge joins the pack's root
+     * {@code mission_type.graph.yaml}, a graph input planted with the first type. A late file is removed again after
+     * the digest check, so a late type is not linked: its edge would stay behind and change the baseline.
+     */
+    private void linkMissionType(Pack pack, String id) throws IOException {
+        pack.missionTypeLinks.add(
+                "- {source: 'mission_type:" + id + "', target: 'action:" + id + "/s', relation: requires}\n");
+        String path = MISSION_TYPE_LINKS;
+        Path file = write(
+                pack,
+                path,
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n"
+                        + String.join("", pack.missionTypeLinks));
+        pack.planted.put(path, new Planted(path, Verdict.GRAPH_INPUT, null, null, file, null));
     }
 
     /**
