@@ -196,7 +196,9 @@ public class ProfileDtos {
         profile.schemaVersion().ifPresent(wire::setSchemaVersion);
         profile.routingPriority().ifPresent(wire::setRoutingPriority);
         profile.maxConcurrentTasks().ifPresent(wire::setMaxConcurrentTasks);
-        profile.sentinel().ifPresent(wire::setSentinel);
+        profile.performer()
+                .map(performer -> AgentProfile.PerformerEnum.fromValue(performer.token()))
+                .ifPresent(wire::setPerformer);
         profile.initializationDeclaration().ifPresent(wire::setInitializationDeclaration);
         return wire;
     }

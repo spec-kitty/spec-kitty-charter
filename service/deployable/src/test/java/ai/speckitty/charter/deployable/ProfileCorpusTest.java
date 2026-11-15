@@ -164,7 +164,7 @@ class ProfileCorpusTest {
     private static void putIfDeclared(Map<String, Object> wire, String name, Map<String, Object> yaml, String key) {
         Object value = yaml.get(key);
         if (value != null) {
-            wire.put(name, value instanceof Number || value instanceof Boolean ? value : String.valueOf(value));
+            wire.put(name, value instanceof Number ? value : String.valueOf(value));
         }
     }
 
@@ -182,7 +182,7 @@ class ProfileCorpusTest {
         putIfDeclared(wire, "maxConcurrentTasks", yaml, "max-concurrent-tasks");
         wire.put("model", yaml.get("model"));
         wire.put("effort", yaml.get("effort"));
-        putIfDeclared(wire, "sentinel", yaml, "sentinel");
+        putIfDeclared(wire, "performer", yaml, "performer");
         wire.put("purpose", yaml.get("purpose"));
         Map<String, Object> specialization = map(yaml, "specialization");
         Map<String, Object> expectedSpecialization = new LinkedHashMap<>();

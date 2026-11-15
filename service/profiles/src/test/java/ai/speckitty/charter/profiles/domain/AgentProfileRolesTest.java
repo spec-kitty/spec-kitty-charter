@@ -68,6 +68,40 @@ class AgentProfileRolesTest {
     }
 
     @Test
+    @DisplayName("the reserved role operator is taken only by a human-performed profile, as role or as alt-role")
+    void operatorIsHumanOnly() {
+        AgentProfile human = base("human-operator")
+                .role(AgentProfile.OPERATOR_ROLE)
+                .performer(Optional.of(Performer.HUMAN))
+                .build();
+        AgentProfile humanAlt = base("lead")
+                .role("reviewer")
+                .altRole(AgentProfile.OPERATOR_ROLE)
+                .performer(Optional.of(Performer.HUMAN))
+                .build();
+
+        assertThat(human.humanPerformed()).isTrue();
+        assertThat(humanAlt.roleFit(AgentProfile.OPERATOR_ROLE)).isEqualTo(RoleFit.ALT);
+        for (AgentProfile.Builder agent : List.of(
+                base("silent").role(AgentProfile.OPERATOR_ROLE),
+                base("agent").role(AgentProfile.OPERATOR_ROLE).performer(Optional.of(Performer.AGENT)),
+                base("agent-alt").role("reviewer").altRole(AgentProfile.OPERATOR_ROLE))) {
+            assertThatThrownBy(agent::build)
+                    .isInstanceOf(ConstraintBreachException.class)
+                    .hasMessageContaining(AgentProfile.OPERATOR_ROLE_HUMAN_ONLY);
+        }
+    }
+
+    @Test
+    @DisplayName("a performer token reads back as its performer, and an unknown token as none")
+    void performerTokens() {
+        assertThat(Performer.fromToken("agent")).contains(Performer.AGENT);
+        assertThat(Performer.fromToken("human")).contains(Performer.HUMAN);
+        assertThat(Performer.HUMAN.token()).isEqualTo("human");
+        assertThat(Performer.fromToken("robot")).isEmpty();
+    }
+
+    @Test
     @DisplayName("each malformed declaration is refused, while its well-formed control builds")
     void refusals() {
         assertThat(base("ok").role("implementer").altRole("reviewer").build()).isNotNull();

@@ -32,7 +32,7 @@ class ProfileJsonTest {
         assertThat(written.has("schemaVersion")).isFalse();
         assertThat(written.has("routingPriority")).isFalse();
         assertThat(written.has("maxConcurrentTasks")).isFalse();
-        assertThat(written.has("sentinel")).isFalse();
+        assertThat(written.has("performer")).isFalse();
         assertThat(written.has("initializationDeclaration")).isFalse();
         assertThat(written.get("avatarImage").isNull()).isTrue();
         assertThat(written.get("model").isNull()).isTrue();

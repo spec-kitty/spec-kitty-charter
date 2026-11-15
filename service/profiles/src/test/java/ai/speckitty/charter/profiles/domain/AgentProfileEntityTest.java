@@ -58,7 +58,7 @@ class AgentProfileEntityTest {
 
     /**
      * The built-in {@code java-jenny} profile as the pack authors it (abridged texts), every list with more than one
-     * entry so order counts. The fields she does not declare (avatar, model, effort, sentinel, toolguide and
+     * entry so order counts. The fields she does not declare (avatar, model, effort, toolguide and
      * styleguide references, excluding) carry plausible values so that every field of the schema is set.
      */
     private static AgentProfile.Builder javaJenny() {
@@ -90,7 +90,7 @@ class AgentProfileEntityTest {
                         "Investigating and fixing defects with reproduction tests",
                         "Resolving bug reports with a failing test first"))
                 .initializationDeclaration(Optional.of("I am Java Jenny. I write idiomatic, well-tested Java code."))
-                .sentinel(Optional.of(true))
+                .performer(Optional.of(Performer.AGENT))
                 .specializationContext(JENNY_CONTEXT)
                 .appliesToLanguage("java")
                 .appliesToLanguage("kotlin")
@@ -132,7 +132,8 @@ class AgentProfileEntityTest {
         assertThat(p.maxConcurrentTasks()).contains(5);
         assertThat(p.model()).contains("a-model");
         assertThat(p.effort()).contains("high");
-        assertThat(p.sentinel()).contains(true);
+        assertThat(p.performer()).contains(Performer.AGENT);
+        assertThat(p.humanPerformed()).isFalse();
         assertThat(p.appliesToLanguages()).containsExactly("java", "kotlin");
     }
 
@@ -290,7 +291,8 @@ class AgentProfileEntityTest {
         assertThat(profile.description()).isEmpty();
         assertThat(profile.routingPriority()).isEmpty();
         assertThat(profile.maxConcurrentTasks()).isEmpty();
-        assertThat(profile.sentinel()).isEmpty();
+        assertThat(profile.performer()).isEmpty();
+        assertThat(profile.humanPerformed()).isFalse();
         assertThat(profile.initializationDeclaration()).isEmpty();
         assertThat(profile.collaboration()).isEqualTo(Collaboration.NONE);
         assertThat(profile.specializationContext()).isEqualTo(SpecializationContext.NONE);
@@ -304,7 +306,7 @@ class AgentProfileEntityTest {
                 .schemaVersion(Optional.of("1.0"))
                 .routingPriority(Optional.of(0))
                 .maxConcurrentTasks(Optional.of(1))
-                .sentinel(Optional.of(false))
+                .performer(Optional.of(Performer.HUMAN))
                 .role("reviewer")
                 .altRole("implementer")
                 .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
@@ -314,7 +316,8 @@ class AgentProfileEntityTest {
         assertThat(profile.schemaVersion()).contains("1.0");
         assertThat(profile.routingPriority()).contains(0);
         assertThat(profile.maxConcurrentTasks()).contains(1);
-        assertThat(profile.sentinel()).contains(false);
+        assertThat(profile.performer()).contains(Performer.HUMAN);
+        assertThat(profile.humanPerformed()).isTrue();
         assertThat(profile.role()).isEqualTo("reviewer");
         assertThat(profile.altRoles()).containsExactly("implementer");
         assertThat(profile.directiveReferences()).hasSize(2);

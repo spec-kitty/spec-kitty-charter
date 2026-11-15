@@ -25,4 +25,12 @@ public interface RoleBearer {
      * @return the alt-roles; empty when there are none
      */
     List<String> altRoles();
+
+    /**
+     * Whether a human carries out the artifact rather than an agent. An artifact that declares no performer is
+     * agent-performed.
+     *
+     * @return {@code true} only when the artifact declares a human performer
+     */
+    boolean humanPerformed();
 }

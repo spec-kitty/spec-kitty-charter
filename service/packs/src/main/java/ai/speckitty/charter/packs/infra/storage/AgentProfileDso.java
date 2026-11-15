@@ -34,7 +34,7 @@ import java.util.Optional;
  * @param collaboration the {@code collaboration}
  * @param modeDefaults the {@code mode-defaults}, in authored order
  * @param initializationDeclaration the {@code initialization-declaration}, when declared
- * @param sentinel the {@code sentinel}, when declared
+ * @param performer the {@code performer} token, when declared
  * @param specializationContext the {@code specialization-context}
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
  * @param directiveReferences the {@code directive-references}, in authored order
@@ -62,7 +62,7 @@ record AgentProfileDso(
         Collaboration collaboration,
         List<ModeDefault> modeDefaults,
         Optional<String> initializationDeclaration,
-        Optional<Boolean> sentinel,
+        Optional<String> performer,
         SpecializationContext specializationContext,
         List<String> appliesToLanguages,
         List<DirectiveRef> directiveReferences,
@@ -92,7 +92,7 @@ record AgentProfileDso(
      * @param collaboration the collaboration
      * @param modeDefaults the mode defaults
      * @param initializationDeclaration the initialization declaration
-     * @param sentinel the sentinel flag
+     * @param performer the performer token
      * @param specializationContext the specialization context
      * @param appliesToLanguages the languages it applies to
      * @param directiveReferences the directive references
@@ -120,7 +120,7 @@ record AgentProfileDso(
         Objects.requireNonNull(collaboration, "collaboration");
         modeDefaults = List.copyOf(modeDefaults);
         Objects.requireNonNull(initializationDeclaration, "initializationDeclaration");
-        Objects.requireNonNull(sentinel, "sentinel");
+        Objects.requireNonNull(performer, "performer");
         Objects.requireNonNull(specializationContext, "specializationContext");
         appliesToLanguages = List.copyOf(appliesToLanguages);
         directiveReferences = List.copyOf(directiveReferences);

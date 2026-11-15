@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.Exclusion;
+import ai.speckitty.charter.profiles.domain.Performer;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -52,17 +53,17 @@ class AgentProfileYamlTest {
 
         assertThat(written)
                 .doesNotContain(
-                        "routing-priority", "max-concurrent-tasks", "schema-version", "sentinel", "description");
+                        "routing-priority", "max-concurrent-tasks", "schema-version", "performer", "description");
     }
 
     @Test
-    @DisplayName("number-looking strings stay strings; integers and the flag stay typed")
+    @DisplayName("number-looking strings stay strings; integers stay typed; the performer stays its token")
     void scalarTypesSurvive() {
         String source = MINIMAL + """
                 schema-version: "1.0"
                 routing-priority: 50
                 max-concurrent-tasks: 3
-                sentinel: true
+                performer: agent
                 directive-references:
                   - code: "003"
                     name: Decision Documentation
@@ -74,7 +75,7 @@ class AgentProfileYamlTest {
         Map<?, ?> document = (Map<?, ?>) Yaml.load(written);
         assertThat(document.get("schema-version")).isEqualTo("1.0");
         assertThat(document.get("routing-priority")).isInstanceOf(Number.class);
-        assertThat(document.get("sentinel")).isEqualTo(true);
+        assertThat(document.get("performer")).isEqualTo("agent");
         assertThat(((Map<?, ?>) ((List<?>) document.get("directive-references")).get(0)).get("code"))
                 .isEqualTo("003");
     }
@@ -130,7 +131,7 @@ class AgentProfileYamlTest {
                 description: d1
                 use-case: u1
             initialization-declaration: I
-            sentinel: false
+            performer: human
             specialization-context:
               languages: [java]
               frameworks: [spring]
@@ -225,6 +226,70 @@ class AgentProfileYamlTest {
         assertThat(MEANING.compareTexts("agent-profile", map, MINIMAL + "excluding: {capabilities: [deploy]}\n"))
                 .as("inside the open map an empty list is data")
                 .isPresent();
+    }
+
+    @Test
+    @DisplayName("performer round-trips as declared, maps to the entity, and an absent performer stays absent")
+    void performerRoundTrips() {
+        for (String token : List.of("agent", "human")) {
+            String written = roundTrip(MINIMAL + "performer: " + token + "\n");
+
+            assertThat(((Map<?, ?>) Yaml.load(written)).get("performer")).isEqualTo(token);
+        }
+        AgentProfile human =
+                AgentProfileBinding.INSTANCE.toEntity(new PackIdentifier("p"), read(MINIMAL + "performer: human\n"));
+        assertThat(human.performer()).contains(Performer.HUMAN);
+        assertThat(human.humanPerformed()).isTrue();
+        AgentProfileDso silent = read(MINIMAL);
+        assertThat(silent.performer()).isEmpty();
+        assertThat(AgentProfileBinding.INSTANCE
+                        .toEntity(new PackIdentifier("p"), silent)
+                        .performer())
+                .isEmpty();
+        assertThat(roundTrip(MINIMAL)).doesNotContain("performer");
+    }
+
+    @Test
+    @DisplayName("a performer outside agent and human is unreadable")
+    void anUnknownPerformerIsUnreadable() {
+        assertThat(YAML.read(AgentProfileBinding.INSTANCE, MINIMAL + "performer: robot\n", "p.agent.yaml"))
+                .isInstanceOf(FileRead.Unreadable.class);
+    }
+
+    @Test
+    @DisplayName("the operator role without performer human is a schema violation at the item, as role or as alt-role")
+    void operatorWithoutAHumanIsUnreadableWithAPointer() {
+        String head = "profile-id: p\nname: P\npurpose: Do.\nspecialization:\n  primary-focus: F\n";
+        for (String human : List.of(
+                head + "role: operator\nperformer: human\n",
+                head + "role: reviewer\nalt-roles: [operator]\nperformer: human\n")) {
+            assertThat(YAML.read(AgentProfileBinding.INSTANCE, human, "p.agent.yaml"))
+                    .as(human)
+                    .isInstanceOf(FileRead.Read.class);
+        }
+        record Case(String text, List<String> pointer) {}
+        for (Case c : List.of(
+                new Case(head + "role: operator\n", List.of("role")),
+                new Case(head + "role: operator\nperformer: agent\n", List.of("role")),
+                new Case(head + "role: reviewer\nalt-roles: [implementer, operator]\n", List.of("alt-roles", "1")))) {
+            FileRead<AgentProfileDso> read = YAML.read(AgentProfileBinding.INSTANCE, c.text(), "p.agent.yaml");
+
+            assertThat(read).as(c.text()).isInstanceOf(FileRead.Unreadable.class);
+            var violations = ((FileRead.Unreadable<AgentProfileDso>) read).violations();
+            assertThat(violations).as(c.text()).hasSize(1);
+            assertThat(violations.getFirst().pointer()).as(c.text()).isEqualTo(c.pointer());
+            assertThat(violations.getFirst().keyword()).isEqualTo("not");
+            assertThat(violations.getFirst().value()).contains("operator");
+        }
+    }
+
+    @Test
+    @DisplayName("a file that carries the removed sentinel key is unreadable: the schema is closed")
+    void theRemovedSentinelKeyIsUnreadable() {
+        assertThat(YAML.read(AgentProfileBinding.INSTANCE, MINIMAL, "p.agent.yaml"))
+                .isInstanceOf(FileRead.Read.class);
+        assertThat(YAML.read(AgentProfileBinding.INSTANCE, MINIMAL + "sentinel: false\n", "p.agent.yaml"))
+                .isInstanceOf(FileRead.Unreadable.class);
     }
 
     @Test

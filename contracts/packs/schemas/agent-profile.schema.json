@@ -277,7 +277,7 @@
       "pattern": "^[a-z][a-z0-9-]*$",
       "maxLength": 64,
       "title": "Role",
-      "description": "The profile's primary role (ADR-0069). A step asking for it finds a primary-role fit, which outranks every alt-role fit. 'generic' is reserved for a fallback profile and fits no role (ADR-0068)."
+      "description": "The profile's primary role (ADR-0069). A step asking for it finds a primary-role fit, which outranks every alt-role fit. 'generic' is reserved for a fallback profile and fits no role (ADR-0068). 'operator' is reserved for a human-performed profile (see performer)."
     },
     "alt-roles": {
       "title": "Alt-Roles",
@@ -372,10 +372,14 @@
       "title": "Initialization-Declaration",
       "type": "string"
     },
-    "sentinel": {
-      "default": false,
-      "title": "Sentinel",
-      "type": "boolean"
+    "performer": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "human"
+      ],
+      "title": "Performer",
+      "description": "Who carries out the profile: an agent or a human. Absent means the file is silent; no default is invented, and selection treats the profile as agent-performed. The role 'operator' is reserved for 'human': a profile whose role or alt-roles take it and which is not 'human' is invalid (checked by the reader, reported as not at the item)."
     },
     "specialization-context": {
       "anyOf": [
