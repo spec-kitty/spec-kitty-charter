@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripObservation;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -97,6 +98,19 @@ class WholePackFlowTest {
                 .isNotEmpty()
                 .allSatisfy(path -> assertThat(target.resolve(path)).isRegularFile())
                 .contains(((FileOutcome.Written) result.outcomes().get(PolicyYaml.FILE)).writtenPath());
+    }
+
+    /**
+     * The verdict's comparator names the manifest's gate kind and the graph shard's by literal, as {@code pack-validation}
+     * cannot name the codecs: they stay the flow's own kinds.
+     */
+    @Test
+    void theComparatorsKindNamesAreTheFlows() {
+        assertThat(MeaningComparator.MANIFEST)
+                .isEqualTo(PackManifestYaml.SCHEMA)
+                .isEqualTo(DomainRoundTrip.MANIFEST);
+        assertThat(MeaningComparator.GRAPH_SHARD).isEqualTo(DomainRoundTrip.GRAPH_SHARD);
+        assertThat(PackRoundTrip.modelledKinds()).contains(MeaningComparator.MANIFEST, MeaningComparator.GRAPH_SHARD);
     }
 
     private static Reading source(PackRoundTripResult result, String path) {
