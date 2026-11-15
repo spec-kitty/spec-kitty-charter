@@ -15,9 +15,7 @@ public record TacticIdentifier(String value) {
     private static final int MAX_LENGTH = 64;
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A tactic identifier must not be blank.", text -> {
-                return text != null && !text.isBlank();
-            }))
+            .must(Constraints.notBlank().described("A tactic identifier must not be blank."))
             .must(Constraints.of(
                     "A tactic identifier must be at most 64 characters.", text -> text.length() <= MAX_LENGTH));
 

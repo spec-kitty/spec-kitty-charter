@@ -15,7 +15,7 @@ import java.util.Objects;
 public record SubstepInput(String flag, String source, boolean optional) {
 
     private static final ModularRuleset<String> TEXT_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A substep input's flag and source are not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A substep input's flag and source are not blank."));
 
     /**
      * Checks the texts.

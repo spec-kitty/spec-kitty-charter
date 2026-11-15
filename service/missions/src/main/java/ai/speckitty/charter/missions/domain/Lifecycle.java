@@ -28,9 +28,12 @@ import org.jspecify.annotations.Nullable;
 public final class Lifecycle implements CharterArtifact {
 
     private static final ModularRuleset<Lifecycle> RULES = ModularRuleset.<Lifecycle>emptyRules()
-            .must(Constraints.of("A lifecycle needs a title that is not blank.", l -> !l.title.isBlank()))
-            .must(Constraints.of(
-                    "A lifecycle needs a schema version that is not blank.", l -> !l.schemaVersion.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A lifecycle needs a title that is not blank.")
+                    .on(l -> l.title))
+            .must(Constraints.notBlank()
+                    .described("A lifecycle needs a schema version that is not blank.")
+                    .on(l -> l.schemaVersion))
             .must(Constraints.of("A lifecycle declares at least one state.", l -> !l.states.isEmpty()))
             .must(Constraints.of("A lifecycle declares each state once.", Lifecycle::statesAreUnique))
             .must(Constraints.of(

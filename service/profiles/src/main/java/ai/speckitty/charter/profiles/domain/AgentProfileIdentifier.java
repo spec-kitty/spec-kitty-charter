@@ -12,8 +12,7 @@ import ai.speckitty.charter.kernel.validation.ModularRuleset;
 public record AgentProfileIdentifier(String value) {
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of(
-                    "An agent profile identifier must not be blank.", text -> text != null && !text.isBlank()));
+            .must(Constraints.notBlank().described("An agent profile identifier must not be blank."));
 
     /**
      * Checks that the identifier is not blank.

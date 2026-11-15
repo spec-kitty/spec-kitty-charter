@@ -17,7 +17,7 @@ public record SkillParameter(
         String name, Optional<Boolean> required, Optional<String> description, Optional<String> defaultValue) {
 
     private static final ModularRuleset<String> NAME_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("A skill parameter needs a name that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("A skill parameter needs a name that is not blank."));
 
     /**
      * Checks the fields.

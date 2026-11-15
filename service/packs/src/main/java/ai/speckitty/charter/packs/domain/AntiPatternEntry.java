@@ -21,7 +21,7 @@ public record AntiPatternEntry(
         String title, Optional<String> content, Optional<String> badExample, Optional<String> goodExample) {
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of("An anti-pattern entry needs a title that is not blank.", text -> !text.isBlank()));
+            .must(Constraints.notBlank().described("An anti-pattern entry needs a title that is not blank."));
 
     /**
      * Checks that every component is present and the title is not blank.

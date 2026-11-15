@@ -24,20 +24,21 @@ public final class Procedure implements CharterArtifact {
 
     private static final ModularRuleset<Procedure> RULES = ModularRuleset.<Procedure>emptyRules()
             .must(Constraints.of("A procedure needs at least one step.", procedure -> !procedure.steps.isEmpty()))
-            .must(Constraints.of(
-                    "A procedure needs a title that is not blank.", procedure -> !procedure.title.isBlank()))
-            .must(Constraints.of(
-                    "A procedure needs a description that is not blank.",
-                    procedure -> !procedure.description.isBlank()))
-            .must(Constraints.of(
-                    "A procedure needs an entry condition that is not blank.",
-                    procedure -> !procedure.entryCondition.isBlank()))
-            .must(Constraints.of(
-                    "A procedure needs an exit condition that is not blank.",
-                    procedure -> !procedure.exitCondition.isBlank()))
-            .must(Constraints.of(
-                    "A procedure needs a schema version that is not blank.",
-                    procedure -> !procedure.schemaVersion.isBlank()));
+            .must(Constraints.notBlank()
+                    .described("A procedure needs a title that is not blank.")
+                    .on(procedure -> procedure.title))
+            .must(Constraints.notBlank()
+                    .described("A procedure needs a description that is not blank.")
+                    .on(procedure -> procedure.description))
+            .must(Constraints.notBlank()
+                    .described("A procedure needs an entry condition that is not blank.")
+                    .on(procedure -> procedure.entryCondition))
+            .must(Constraints.notBlank()
+                    .described("A procedure needs an exit condition that is not blank.")
+                    .on(procedure -> procedure.exitCondition))
+            .must(Constraints.notBlank()
+                    .described("A procedure needs a schema version that is not blank.")
+                    .on(procedure -> procedure.schemaVersion));
 
     private final ProcedureIdentifier id;
     private final PackIdentifier packId;

@@ -35,11 +35,15 @@ public final class Toolguide implements CharterArtifact {
             .must(Constraints.of(
                     "A toolguide needs a schema version of 1.0.",
                     toolguide -> SCHEMA_VERSION.matcher(toolguide.schemaVersion).matches()))
-            .must(Constraints.of("A toolguide needs a tool that is not blank.", toolguide -> !toolguide.tool.isBlank()))
-            .must(Constraints.of(
-                    "A toolguide needs a title that is not blank.", toolguide -> !toolguide.title.isBlank()))
-            .must(Constraints.of(
-                    "A toolguide needs a summary that is not blank.", toolguide -> !toolguide.summary.isBlank()))
+            .must(Constraints.notBlank()
+                    .described("A toolguide needs a tool that is not blank.")
+                    .on(toolguide -> toolguide.tool))
+            .must(Constraints.notBlank()
+                    .described("A toolguide needs a title that is not blank.")
+                    .on(toolguide -> toolguide.title))
+            .must(Constraints.notBlank()
+                    .described("A toolguide needs a summary that is not blank.")
+                    .on(toolguide -> toolguide.summary))
             .must(Constraints.of(
                     "A toolguide's guide path is <id>.guide.md, beside the toolguide's file.",
                     toolguide -> toolguide.guidePath.equals(guideFileOf(toolguide.id))));
