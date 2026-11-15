@@ -115,6 +115,15 @@ No issue is filed. Nothing found is a correctness, data or security risk beyond 
 - **#556** and **#478** follow #554. #556's ruling 3 is kept compatible: `Severity` has no `ERROR` today. #556 adds
   it, or its named code, when it adds the external checks. #554 adds no external check.
 - **#552** waits for slice G and is untouched here.
+- **Slice F, as relayed by the orchestrator on 2026-11-15.** These are to be checked against #567 at rebase.
+  - F is rebased onto `5decda0`.
+  - The endpoint table governs every relation. `glossary_context` is only a vocabulary target, and `enhances` and
+    `overrides` must join the same kind. Any other edge is refused with `relationship_endpoint_not_allowed`.
+  - A retired rule beats a files rule.
+  - `PackCompositionFacts` loses `bindings` and gains `delegations`, after `terms`.
+  - The kernel gains the kind types `GlossaryContext`, `Term` and `VocabularyTarget`.
+  - A `Relationship` is built only through `Relationship.of` or the typed factories.
+  - The plan's graph and CLOSURE rules read these shapes. They do not read today's.
 
 ## Open questions
 
