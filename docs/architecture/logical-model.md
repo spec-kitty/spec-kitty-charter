@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-15T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -270,7 +270,8 @@ consumer-declared `replaceable-builtins.yaml` allowlist, with a migration. The s
 holds role locks and role pins ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/),
 [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
 
-Candidate, undecided: the shape of a removal entry, a role lock and a role pin in the policy
+A role pin is `role_pins: {<role>: <profile-id>}` in the policy file, tighten-only along the closure
+([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 3). Candidate, undecided: the shape of a removal entry and a role lock in the policy
 file, and how a removal reaches the write surface.
 
 ## Artifact kinds
@@ -545,25 +546,37 @@ and toolguides.
 - **Lineage** is a `specializes_from` edge in the CRG, not a field on the profile. A
   per-profile lineage field is refused at load time.
 - **Augmentation** by another pack uses `enhances` (field-merge) or `overrides` (full
-  replacement).
-- **Profile resolution** (current state) takes `(profile_id, action)` and returns the resolved
-  profile with lineage and overlays applied, plus compact context. An unresolved profile is an
-  error.
-- **Profile selection** (target, [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/))
-  answers "best profile for role R in context C": role fit (primary before alt-role), then
-  specialization (`specializes_from` lineage plus the specificity level, which is
-  `routing-priority`), then the pack-declared fallback profile marked as a fallback, then a
-  not-found refusal. A derived pack may pin the profile for a role in its pack-root policy file;
-  profiles that specialize the pinned one still fit. Tie handling is an open question (ADR-0032 rules none; no
-  service code breaks a tie yet). Current
-  state: core selects by weighted score, with role as one signal, and accepts a profile id as a
-  role ([conceptual model, appendix A](/context/conceptual-model/#appendix-a-research-findings)).
-- **Roles** (Operator ruling (concept session 2026-10-26), not yet ADR-backed): a role is an `ExecutorRole` value object wrapping the role
-  name. Today a profile's `roles:` list gives the primary role by position only.
-- **Selection operation** (candidate, undecided): a query on the profiles collection, perhaps
-  under `/offering`, following [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) and
-  [ADR-0020](/adr/0020-offering-and-activations/) naming; domain form
-  `findByRoleAndContext(Role, Context)`.
+  replacement). A profile enhancer is a complete profile: its identity fields (`profile-id`, `name`, `purpose`,
+  `role`, `alt-roles`, `performer`, `routing-priority`) are its own, and every other top-level field it declares
+  replaces the base's. A replacement that loses a list item, a sub-field or a value, or a non-empty `excluding`, is
+  refused with `profile_enhancement_drops_field` ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decisions 5 and 7, #380). A step's merge stays add-only.
+- **Profile resolution** (R8, [ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 6): `getEffectiveAgentProfile` answers the effective profile. Each
+  profile on the in-force `specializes_from` chain is merged with its own in-force enhancers, and the chain is then
+  folded root to leaf: a field a descendant declares replaces the ancestor's, a field it leaves absent is inherited,
+  and identity fields are never inherited. The answer carries `lineage`, the in-force ancestors nearest first, each
+  `{id, pack, depth}`. The pack read keeps the stored body.
+- **Profile selection** ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/),
+  [ADR-0069](/adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles/), [ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decisions 1 to 4)
+  answers "which profile in force fills role R in context C" under an activation: `selectAgentProfile`
+  (`…/activations/{activationId}/roles/{role}/profile-selection`) and, for the role one step names,
+  `selectAgentProfileForStep` (`…/mission-types/{missionType}/actions/{action}/profile-selection`). The filters run
+  first: the role pin (`policy.yaml` `role_pins`, the pinned profile and its in-force specializations), the
+  performer rule (a human-performed profile serves only `operator` or a role pinned to it), role fit (primary or
+  alt-role) and the context (`language`, `framework`, judged only for a specialization that declares `languages` or
+  `frameworks`). Then the best role-fit tier, the longest in-force `specializes_from` chain and `routing-priority`
+  (50 when absent). Several left are a tie, answered whole and marked (ADR-0032 decision 8); none left, the fallback
+  in force marked `fallback` (never for `operator`); no fallback, `404 no_profile_matched`. Each candidate is marked
+  `primary`, `alt` or `fallback`. An enhancer is never a candidate, and selection reads declared fields, never
+  inherited ones. The domain is `ProfileSelection` in the profiles slice, a pure service fed by the activations slice.
+  Current state in core: a weighted score, with role as one signal, that accepts a profile id as a role
+  ([conceptual model, appendix A](/context/conceptual-model/#appendix-a-research-findings)).
+- **Roles** ([ADR-0069](/adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles/)): a profile declares its
+  primary `role` and optional `alt-roles`, each a kebab-case token of at most 64 characters. `generic` is reserved
+  for a fallback profile and fits no role (ADR-0068); a mission step's `role` is never `generic`. `operator` is
+  reserved for a human-performed profile.
+- **Performer** ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 4): `performer: agent | human`, optional, omitted on the wire when the file is
+  silent and read as `agent` by selection. It replaces `sentinel`, which has no reader. A fallback profile is
+  agent-performed (`fallback_profile_not_agent`).
 - **Opening statement** (Operator ruling (concept session 2026-10-26), not yet ADR-backed): a computed API field derived from purpose,
   specialization, applicable context and ethos; it is not stored in the profile file.
 - Profiles that fail to load are listed in `AgentProfileRepository.skipped_profiles` and
