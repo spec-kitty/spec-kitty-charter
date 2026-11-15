@@ -2,8 +2,8 @@
 title: "ADR-0054: Guards are enforced checks implemented by executable assets"
 description: "Transitions name guard artifacts, each implemented_by an executable asset or a closed built-in, run to a fixed interface and failing closed; replaces the gate kind."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-14T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-13 (ADR-0077)
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -39,6 +39,14 @@ day ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/
 This record **supersedes ADR-0050 decision 14** and **amends ADR-0050 decision 12** (the guard entry shape). It
 settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), which should be renamed to the
 `guard` kind, and [#155](https://github.com/spec-kitty/spec-kitty-charter/issues/155) folds into the guard entry.
+
+### Amendment 2026-11-13
+
+The operator's slice F rulings of 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) retire `mission_step_contract`, so decision 12's migration is done
+in charter: the example pack holds the `review` gate as the guard `spec-kitty-pre-review` on the work-package
+lifecycle's `in_progress -> for_review` transition, with `on_indeterminate: pass`, and
+`mission-step-contract.schema.json` is removed whole, not trimmed. open-packs authors the same lifecycle and guard
+from the mission's drafts. The original text stands, and decision 12 is annotated.
 
 ## Context
 
@@ -170,6 +178,7 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
       cannot evaluate, or a guard that returns pass itself. `provenance` is dropped,
       because the pack gives the origin.
     - `gates` and `$defs.GateBinding` leave `mission-step-contract.schema.json`.
+      *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 3): the whole schema and the kind are retired.*
     - Core's `GATE_REGISTRY` becomes its table of built-in implementations, and core #2599 becomes the asset runner.
     - Today's pre-review gate returns `SKIPPED` when no test command is configured. It counts as a pass, so the move
       to fail-closed does not block such projects.

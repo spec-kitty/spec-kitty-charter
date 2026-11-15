@@ -123,8 +123,9 @@ public final class MissionStepLinkRule {
 
     /**
      * Whether an edge is one of a mission type's own step links: {@code mission_type:T requires action:T/<step>}, its
-     * source written bare or with the pack's own name, its target bare. The one definition the load, the compose, the
-     * relationship writes and the removal of the type share.
+     * source written bare or with the pack's own name, its target bare. The relationship writes and the removal of the
+     * type call it. The load and the compose do not: they read the same shape from the graph documents as written,
+     * and agree with it.
      *
      * @param packName the name composition knows the pack by
      * @param type the mission type

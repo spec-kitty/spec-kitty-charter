@@ -4,10 +4,12 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.Objects;
 
 /**
- * An artifact a scope holds, by its kind and id: a delegation candidate links its read when the scope holds it.
+ * An artifact a scope holds, by its kind and a reference to it: a delegation candidate links its read when the scope
+ * holds it. A scope's holdings name each artifact by its bare id; a held candidate ({@link
+ * MissionTypeHolding#heldCandidates}) names it as the candidate is written, {@code [<pack>::]<id>}.
  *
  * @param kind the artifact's kind
- * @param id the artifact's id
+ * @param id the artifact's bare id, or the candidate as written, {@code [<pack>::]<id>}
  */
 public record HeldArtifact(ArtifactKind kind, String id) {
 

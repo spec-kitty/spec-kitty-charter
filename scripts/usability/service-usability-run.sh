@@ -734,20 +734,21 @@ walk_activation() {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-# Mission type walk (#99, SC-001 of mission-type-reads): software-dev, its 13 steps, the 5 step contracts bound to them,
-# the 2 skeletons steps bind and the 4 skeletons the type lists, pack-scoped and under the activation. Links only.
+# Mission type walk (#99, SC-001 of mission-type-reads): software-dev, its 13 steps, the 5 steps that author substeps
+# (the former step contracts, folded into their steps by ADR-0077), the 2 skeletons steps bind and the 4 skeletons the
+# type lists, pack-scoped and under the activation. Links only.
 
 MT_ID=software-dev
 MT_PACK=built-in # the pack holding MT_ID at the pin; provision() sets it (#466)
 MT_SEQUENCE="discovery specify plan tasks analyze implement review accept"
 MT_ON_DEMAND="charter tasks-finalize tasks-outline tasks-packages retrospect"
-MT_CONTRACTS="implement plan review specify tasks"
+MT_SUBSTEPS="implement plan review specify tasks"
 MT_BOUND="plan:plan-template.md specify:spec-template.md"
 MT_SKELETONS="plan-template.md spec-template.md task-prompt-template.md tasks-template.md"
 MT_ACTIONS="specify"
 MT_LINES=()
 MT_FOUND_STEPS=""
-MT_FOUND_CONTRACTS=""
+MT_FOUND_SUBSTEPS=""
 MT_FOUND_BOUND=""
 MT_FOUND_SKELETONS=""
 
@@ -797,10 +798,10 @@ mt_expect() { # id what found expected relation: fails, naming the relation, for
     return 1
 }
 
-walk_mt_body() { # prefix doc scope: the type's steps, their step contracts and bound skeletons, the listed skeletons
+walk_mt_body() { # prefix doc scope: the type's steps, their substeps and bound skeletons, the listed skeletons
     local p=$1 doc=$2 scope=$3 line sid on_demand seq="" ond="" n=0 out sk
     MT_FOUND_STEPS=""
-    MT_FOUND_CONTRACTS=""
+    MT_FOUND_SUBSTEPS=""
     MT_FOUND_BOUND=""
     MT_FOUND_SKELETONS=""
     if ! jq -e --arg t "$MT_ID" '.kind == "mission_type" and .missionType.id == $t' "$doc" >/dev/null 2>&1; then
@@ -828,8 +829,9 @@ walk_mt_body() { # prefix doc scope: the type's steps, their step contracts and 
             continue
         fi
         MT_FOUND_STEPS+="${MT_FOUND_STEPS:+ }$sid"
-        if [[ -n $(jq -r '._links["step-contract"].href // empty' "$out") ]]; then
-            follow "${p}7.$sid" "$out" step-contract "step $sid $scope" && MT_FOUND_CONTRACTS+="${MT_FOUND_CONTRACTS:+ }$sid"
+        if [[ $(jq '.substeps // [] | length' "$out") -gt 0 ]]; then
+            hop_ok "${p}7.$sid" "step $sid $scope: $(jq '.substeps | length' "$out") substeps, $(jq '[.substeps[].delegatesTo.candidates[]? | select((._links // {}) != {})] | length' "$out") delegation candidates linked"
+            MT_FOUND_SUBSTEPS+="${MT_FOUND_SUBSTEPS:+ }$sid"
         fi
         local i=0 outputs
         outputs=$(jq '[.expectedOutputArtifacts[]? | select(._links.skeleton.href != null)] | length' "$out")
@@ -842,7 +844,7 @@ walk_mt_body() { # prefix doc scope: the type's steps, their step contracts and 
         done
     done < <(jq -c '.missionType.steps[]?' "$doc")
     mt_expect "${p}9" "steps read $scope" "$MT_FOUND_STEPS" "$MT_SEQUENCE $MT_ON_DEMAND" self || true
-    mt_expect "${p}9" "step contracts bound to steps $scope" "$MT_FOUND_CONTRACTS" "$MT_CONTRACTS" step-contract || true
+    mt_expect "${p}9" "steps that author substeps $scope" "$MT_FOUND_SUBSTEPS" "$MT_SUBSTEPS" substeps || true
     mt_expect "${p}9" "skeletons bound by steps $scope" "$MT_FOUND_BOUND" "$MT_BOUND" skeleton || true
     while IFS= read -r line; do
         printf '%s\n' "$line" >"$WORK/mt-skeleton.json"
@@ -859,13 +861,13 @@ walk_mt_body() { # prefix doc scope: the type's steps, their step contracts and 
 }
 
 mt_line() { # scope ok-before fail-before: the section's line for the summary
-    MT_LINES+=("MISSION $1 type=$MT_ID steps=$(words_count "$MT_FOUND_STEPS")/13 contracts=$(words_count "$MT_FOUND_CONTRACTS")/5 bound-skeletons=$(words_count "$MT_FOUND_BOUND")/2 skeletons=$(words_count "$MT_FOUND_SKELETONS")/4 hops=$((HOP_OK - $2))/$((HOP_OK - $2 + HOP_FAIL - $3))")
+    MT_LINES+=("MISSION $1 type=$MT_ID steps=$(words_count "$MT_FOUND_STEPS")/13 substeps=$(words_count "$MT_FOUND_SUBSTEPS")/5 bound-skeletons=$(words_count "$MT_FOUND_BOUND")/2 skeletons=$(words_count "$MT_FOUND_SKELETONS")/4 hops=$((HOP_OK - $2))/$((HOP_OK - $2 + HOP_FAIL - $3))")
 }
 
 walk_mt_pack() {
-    say "== walk 3: mission type, pack-scoped (root -> artifacts -> $MT_ID -> steps -> step contracts -> skeletons)"
+    say "== walk 3: mission type, pack-scoped (root -> artifacts -> $MT_ID -> steps and their substeps -> skeletons)"
     local ok=$HOP_OK failed=$HOP_FAIL
-    MT_FOUND_STEPS="" MT_FOUND_CONTRACTS="" MT_FOUND_BOUND="" MT_FOUND_SKELETONS=""
+    MT_FOUND_STEPS="" MT_FOUND_SUBSTEPS="" MT_FOUND_BOUND="" MT_FOUND_SKELETONS=""
     if follow M1 "$WORK/root.json" artifacts "the API root" "packId=$MT_PACK" kind=mission_type &&
         find_artifact M2 "$WORK/hop-M1.json" "the mission_type list of pack $MT_PACK" mission_type "$MT_ID" &&
         follow M3 "$WORK/item.json" self "the $MT_ID list item"; then
@@ -927,9 +929,9 @@ mt_graph_and_context() { # the action nodes of the graph and the action context,
 }
 
 walk_mt_activation() {
-    say "== walk 4: mission type under the activation (activation -> artifacts -> $MT_ID -> steps -> step contracts -> skeletons; graph and action context)"
+    say "== walk 4: mission type under the activation (activation -> artifacts -> $MT_ID -> steps and their substeps -> skeletons; graph and action context)"
     local ok=$HOP_OK failed=$HOP_FAIL
-    MT_FOUND_STEPS="" MT_FOUND_CONTRACTS="" MT_FOUND_BOUND="" MT_FOUND_SKELETONS=""
+    MT_FOUND_STEPS="" MT_FOUND_SUBSTEPS="" MT_FOUND_BOUND="" MT_FOUND_SKELETONS=""
     if [[ ! -s $WORK/hop-A3.json ]]; then
         hop_fail N1 "no activation was created and read (walk 2), so there is no 'artifacts' relation to follow"
     elif follow N1 "$WORK/hop-A3.json" artifacts "the activation" kind=mission_type &&
@@ -997,18 +999,18 @@ self_check() {
     check "--profile followed by an option exits 2, for the reason" "$rc ${err%%$'\n'*}" "2 error: --profile needs a value"
     echo "== self-check: mission type walk"
     check "words_minus keeps what the second list lacks" "$(words_minus "c a b" "b")" "a c"
-    check "words_minus of equal sets is empty" "$(words_minus "$MT_CONTRACTS" "tasks review specify plan implement")" ""
+    check "words_minus of equal sets is empty" "$(words_minus "$MT_SUBSTEPS" "tasks review specify plan implement")" ""
     check "words_count of the steps SC-001 names" "$(words_count "$MT_SEQUENCE $MT_ON_DEMAND")" "13"
     check "words_count of an empty list" "$(words_count "")" "0"
     jq -n '{kind: "mission_type", missionType: {id: "t", steps: [{id: "a", onDemand: false}, {id: "b"}, {id: "c", onDemand: true}]}}' >"$WORK/mt-fixture.json"
     check "mt_steps lists each step in body order with its onDemand" "$(mt_steps "$WORK/mt-fixture.json" | tr '\n' ',')" "a false,b false,c true,"
     local before=$HOP_FAIL
-    out=$(mt_expect X "fixture" "plan" "plan specify" step-contract)
+    out=$(mt_expect X "fixture" "plan" "plan specify" substeps)
     check "mt_expect names the relation and what it did not reach" "$out" \
-        "  [FAIL] X    fixture: 1/2 reached; expected relation 'step-contract' not reached for: specify"
-    out=$(mt_expect X "fixture" "specify plan" "plan specify" step-contract)
+        "  [FAIL] X    fixture: 1/2 reached; expected relation 'substeps' not reached for: specify"
+    out=$(mt_expect X "fixture" "specify plan" "plan specify" substeps)
     check "mt_expect passes on the same set in another order" "$out" "  [ ok ] X    fixture: 2/2 reached"
-    out=$(mt_expect X "fixture" "plan plan specify" "plan specify" step-contract)
+    out=$(mt_expect X "fixture" "plan plan specify" "plan specify" substeps)
     check "mt_expect fails on a repeated item" "$out" "  [FAIL] X    fixture: 3/2 reached"
     HOP_FAIL=$before
     echo "== self-check: charter-to-activation.py --self-test"

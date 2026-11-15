@@ -65,7 +65,6 @@ class Edge {
   + relation : Relation
   - reason : string
   - when : string [shards only]
-  - impacts : number [-1..1, only on impacts]
 }
 class ArtifactFile <<*.directive.yaml, *.tactic.yaml, *.styleguide.yaml, *.toolguide.yaml, *.paradigm.yaml, *.procedure.yaml, *.agent.yaml>> {
   + id : string [profile-id for *.agent.yaml]
@@ -101,8 +100,8 @@ class MissionTypeBundle <<directory>> {
   <type>.mission-type.yaml
   steps/<step>.prompt.md
   steps/<step>.guidelines.md
-  step_contracts/<id>.step-contract.yaml
   templates/...
+  (a step's substeps are in the mission-type file; ADR-0077)
 }
 class StepEnhancementFile <<pending>> {
   enhancements/<id>.step-enhancement.yaml
@@ -118,7 +117,7 @@ class AssetManifest <<*.asset.yaml>> {
 enum FragmentKind {
   directives, tactics, styleguides, toolguides
   paradigms, procedures, agent_profiles
-  mission_step_contracts, skills
+  skills
   assets, templates, mission_types, actions
   lifecycles
   <glossary plural> (not spelled by ADR-0049; follow-up #114)
@@ -168,9 +167,9 @@ end note
 
 note bottom of FragmentKind
   One name per concept (R14):
-  mission_step_contracts, not mission_steps;
   mission_types, not mission_type.
-  Refused: mission_steps, mission_type, glossary_scope.
+  Refused: mission_steps, mission_step_contracts (retired,
+  ADR-0077), mission_type, glossary_scope.
 end note
 
 legend right

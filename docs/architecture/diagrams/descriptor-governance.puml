@@ -44,12 +44,11 @@ class DRGEdge {
   + relation : Relation
   - when : string
   - reason : string
-  - impacts : number [shards only]
 }
 enum NodeKind {
   directive, tactic, paradigm, styleguide,
   toolguide, procedure, agent_profile,
-  mission_step_contract, template, asset,
+  template, asset,
   action, term, mission_type,
   anti_pattern, skill, lifecycle
   glossary <color:#8A6D00>[pending ADR-0049 OQ3: core node clash]</color>
@@ -58,22 +57,21 @@ enum NodeKind {
 }
 enum Relation {
   requires, suggests, applies, scope,
-  vocabulary, instantiates, replaces,
-  delegates_to, specializes_from, enhances,
+  vocabulary, instantiates,
+  specializes_from, enhances,
   overrides, refines, in_tension_with,
   reconciles_tension, rejects
+  (replaces, delegates_to, impacts retired: ADR-0077)
 }
 class GovernanceCharterConfig <<project charter>> {
   - selected_paradigms, selected_directives,
     selected_tactics, selected_styleguides,
     selected_toolguides, selected_procedures,
     selected_agent_profiles,
-    selected_mission_step_contracts,
     selected_mission_types, selected_anti_patterns,
     selected_<glossary plural>,
     selected_assets : string[] = []
   - available_tools : string[]
-  - template_set : string
   - authority_paths : string[]
   - governance_references : string[]
 }

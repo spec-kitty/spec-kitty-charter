@@ -2,7 +2,7 @@
 title: "ADR-0073: Real packs register as they are: the pack document, excluded files, and readers during a swap"
 description: The calls slice B made beyond the operator's rulings on #451, #431 and #490, each with the alternatives it rejected.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-12'
 type: ADR
@@ -254,7 +254,8 @@ verified read in the window.
   of `diagnostics` as "the whole tree was stored" must read it.
 - A pack stored before slice B with a retired file (`pack.md`, `PROVENANCE.md` or `org-charter.yaml`) cannot have
   its aggregate read until it is registered again. The reads of its descriptor, revision, document and of one kind's
-  files still answer; the step contract item read answers `404 pack_not_found`; a read that composes the pack with the
+  files still answer; the step contract item read answers `404 pack_not_found` *(that read is retired 2026-11-13,
+  [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/))*; a read that composes the pack with the
   others (`GET /offering`, the activation and effective reads) answers `500 pack_unreadable`, whichever pack it was
   asked about. A stored `pack.yaml` that declares `active_charter` cannot be read, so every read of that pack's
   descriptor (`getPack`, `/doc`, the artifact listing and item reads) and every composed read answers

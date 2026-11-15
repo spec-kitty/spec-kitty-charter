@@ -107,9 +107,11 @@ from its starting set. Both always exist here, because every universe is finite.
   or `deactivated` list and no state of its own, only the state of its mission type (E6, E15).
 - `U`: URNs `<kind>:<id>`, with `kind: U → K`. A reference is a bare URN `u` or a qualified `n::u`.
 - `holds ⊆ P × U`. A **place** is a pair `(p, u)` with `holds(p, u)`. Two packs holding one URN are two places.
-- `Rel`: the relations, among them `requires`, `suggests`, `refines`, `scope`, `instantiates`, `enhances`,
-  `overrides`, `replaces`, `specializes_from`, `applies`, `vocabulary`, `delegates_to`, `rejects`,
-  `reconciles_tension`, `tension` and `implemented_by`.
+- `Rel`: the relations, `requires`, `suggests`, `refines`, `scope`, `instantiates`, `enhances`, `overrides`,
+  `specializes_from`, `applies`, `vocabulary`, `rejects`, `reconciles_tension`, `implemented_by` and, held beside them,
+  `tension`. Each joins only the source and target kinds of its endpoint table ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5); an edge outside it is
+  refused at read and at write (`relationship_endpoint_not_allowed`, or `overrides_source_not_activatable` for an
+  `overrides` edge from a kind that is not activatable). `replaces`, `delegates_to` and `impacts` are retired.
 - `E ⊆ U × Rel × U`: the edges, after each reference is resolved to the place that holds it. `r(x, y)` abbreviates
   `(x, r, y) ∈ E`.
 - `Rc = {requires, suggests, refines, scope, instantiates, enhances}`: the cascade relations.
@@ -346,12 +348,18 @@ and cannot stand in for governance: at registration as the violation `overrides_
 `422 validation_failed`, at the pack-relative graph document; on `putPackRelationship` as the same violation at `/from`,
 nothing written; and on a composing read that meets one in a stored pack, `500 pack_unreadable` naming the graph
 document. The read and the write then never disagree on what satisfies a required artifact. An edge of another relation
-from such a kind, and an `overrides` edge to one, are not judged by this rule. **Built (slice C).** *Pinned by:*
-`OverrideSourceRuleTest` (`anOverridesEdgeFromEachKindThatIsNotActivatableIsOneFaultAtItsFile`,
+from such a kind, and an `overrides` edge to one, are not judged by this rule. **Built (slice C).** *Amended
+2026-11-14 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5, operator ruling
+`DM-01M7B1Z03VF9A36FBV65431HR3`):* the rule is folded into the kernel's endpoint rule, `EndpointRule`, which owns its one
+predicate and its one code and checks it before the endpoint table; `OverrideSourceRule` is gone, and the load,
+validate mode and the relationship write report the bridge's fault. *Pinned by:*
+`EndpointRuleTest` (`anOverridesEdgeFromEachKindThatIsNotActivatableIsRefused`,
 `anOverridesEdgeFromEachActivatableKindPasses`, `theFourKindsTheRuleRefusesAreExactlyTheKindsThatAreNotActivatable`,
-`aSourceQualifiedWithAPackNameIsJudgedLikeABareOne`, `anEdgeOfAnotherRelationFromATemplatePasses`,
-`theRuleJudgesTheSourceOnlySoAnOverridesEdgeToATemplatePasses`, `aRelationshipOverridingFromATemplateIsRefusedAndItsTwinFromADirectivePasses`,
-`validateModeReportsTheEdgeAsOneBlockingFindingAtItsGraphDocumentAndTheTwinPasses`),
+`theSourceRuleJudgesOverridesAndTheSourceOnly`), `RelationshipEndpointRuleTest`
+(`anOverridesEdgeFromEachKindThatIsNotActivatableIsOneViolationAtItsFile`,
+`aSourceQualifiedWithAPackNameIsJudgedLikeABareOne`, `theSourceRuleJudgesTheSourceOnlyWhateverTheTarget`,
+`theLoadListsTheSourceFaultsFirstThenTheTablesEachInEdgeOrder`,
+`validateModeReportsAnInactivatableOverriderAsOneBlockingFindingAndTheTwinPasses`),
 `RelationshipRegistrationServiceTest` (`anOverridesEdgeFromATemplateOrAnAssetIsRefusedAndTheSameEdgeFromADirectiveRegisters`,
 `aStoredOverridesEdgeFromATemplateIsALoadViolationAtItsGraphDocument`) and the seven scenarios of
 `override-source-kind.feature` (a registration, two edges as two violations, a `requires` edge that registers, the
@@ -789,7 +797,7 @@ A preset member the closure does not hold is selected and then refused by W5 (`4
 
 **W19 Cascade relations.** A walk crosses exactly `Rc`, each edge from its source to its target; `enhances(E, T)` is
 crossed from `E` to `T`.
-No other relation (`overrides`, `replaces`, `rejects`, `delegates_to`, `vocabulary`, `applies`, the tension edges,
+No other relation (`overrides`, `rejects`, `vocabulary`, `applies`, the tension edges,
 `implemented_by`, pack `depends_on`) is followed.
 *Source:* ADR-0059 D2.1, D2.5 and operator ruling A4; DIV-207; `CascadeRules.CASCADE_RELATIONS`. **Built.**
 > ⚠ **Unclear:** two design pages still carry the superseded `enhances` pull of ADR-0059 D2.2. The logical model's
@@ -1000,7 +1008,8 @@ required-but-ungrounded (E14). An enhancer is never in force on its own, and not
 (least fixed point); decision `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ` (the enhancer rule wins over the floor); A7 Q1, decision
 `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (the binding; it replaces the former `stepEnh` exemption); OD-6 (decisions
 `01M702A8XYB588PSGTXRKQ4NKK` and, for the held target, `01M7037V93Y077H8M4W9V8Y6B3`; fragment
-`2026-11-09-c-step-enhancer-binding.md`). **Built (PR B)** for the binding of step contracts (DIV-224), **Built (PR C)**
+`2026-11-09-c-step-enhancer-binding.md`). **Built (PR B)** for the binding of step contracts (DIV-224; the step
+contract is retired since, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)), **Built (PR C)**
 for the step enhancer's binding and the unheld target ([DIV-241](/conformance/divergence-register/)). C36 refuses
 `enhances` cycles at registration, so the least and greatest fixed points agree on every registered closure.
 *Pinned by:* `InForceResolutionTest` (`aStepEnhancerBoundToItsMissionTypeWithNoEnhancesEdgeIsInForceOnlyWhileTheMissionTypeIs`,
@@ -1254,8 +1263,7 @@ declares a step is read from the composition facts (`PromptFacts.steps`: per hel
 steps its version declares). *Amended 2026-11-13 (operator ruling Q3): every judgement of the prompt in force follows
 the rule.* It places the step for the step read `getEffectiveMissionStep` (read from the place's pack, with its prompt
 and guidelines; a place step's skeleton links name that pack's `getPackMissionSkeleton`), for the action context's
-`artifact` link (so it and `effective-artifact` answer the same step), for a step contract's `step` link under an
-activation (offered whenever the step has a place), for the effective step prompt (F8) and for the slot check C38 on
+`artifact` link (so it and `effective-artifact` answer the same step), for the effective step prompt (F8) and for the slot check C38 on
 composing reads, registration, the impact-checked writes and the activation writes. So the slot check never judges a
 prompt other than the one the prompt read serves: a closure whose action winner's prompt lacks a slot that the winning
 version's prompt declares now composes, and the reverse is refused. A step only a version the winning mission type
@@ -1271,7 +1279,6 @@ is stated in the contract's path description, and no test of the prompt read pin
 `WP09, A7 - a step only the replaced version keeps is read from its place, as the context and the prompt read it`,
 `WP09 review H1, Q3 - a step the winning type declares is placed at the winner, whichever pack's graph declares it`,
 `WP09 review H1 - the context's artifact link answers a step only the winning type declares, whose action another pack's graph declares`
-`D11 - a step contract links its mission type when the closure holds it, and its step when the step read answers it`,
 `WP09 Q3 - the slot check judges the prompt at the step's place, the one the prompt read serves` and
 `WP09 Q3 - the twin: proj's prompt at the step's place declares the slot, so the read answers and the write is stored`;
 `ClosureViewTest` (`aStepTheWinningVersionDeclaresIsPlacedAtTheWinnerWhicheverPacksGraphDeclaresTheAction`,
@@ -1280,18 +1287,17 @@ is stated in the contract's path description, and no test of the prompt read pin
 `theTwinAStepADeclaringVersionKeepsWithoutTheClosureHoldingItHasNoPlace`); `EffectiveReadServiceMissionWinnerTest`
 (`aStepsPlaceIsThePackOfTheMergedWinnerOfItsActionWithTheSourceFingerprint`, `aHeldStepNoVersionAtItsPlaceDeclaresIsActionNotFound`,
 `aStepTheClosureDoesNotHoldIsTheSessionsRefusalBeforeAnyPlaceIsAsked`); `EffectiveMissionTypeReadServiceTest`
-(`aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFilesAndTheMergedStepContract`,
+(`aStepOnlyAReplacedVersionKeepsIsReadFromItsPlaceWithThatPacksFiles`,
 `aStepNoVersionDeclaresIsTheRefusalOfThePlaceAsTheContextGivesItAndNoPackIsRead`,
-`aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`,
-`aStepContractWhoseStepOnlyAReplacedVersionKeepsLinksTheStepTheStepReadAnswers`,
-`theTwinAStepContractWhoseStepNoVersionHoldsLinksNoStep`); `EffectiveMissionTypesControllerTest.aStepOnlyAReplacedVersionKeepsLinksItsSkeletonInThePlacesPack`;
+`aStepTheWinningTypeDeclaresIsReadFromTheWinnerAndNoPlaceIsAsked`); `EffectiveMissionTypesControllerTest.aStepOnlyAReplacedVersionKeepsLinksItsSkeletonInThePlacesPack`;
 `EffectiveReadServiceTest.theContextNamesThePackOfTheStepsPlaceAndNoneWhenTheSetDoesNotListTheMissionType`;
 and, for Q3, `ClosureViewTest` (`theSlotCheckJudgesThePromptAtTheStepsPlaceNotTheActionsWinner`,
 `theTwinTheWinningVersionsPromptDeclaresTheSlotAndTheReadServesItsFragment`), the `SlotComposeTest` cases named under
 C38, `PromptFactsTest` (`aStepIsDeclaredWhenThePacksVersionOfItsMissionTypeListsIt`,
 `aMissionTypeRemovedTakesItsDeclaredStepsWithIt`, `aStepsKeyThatIsNoMissionTypeIsRefused`),
-`DomainRepositoryServicePromptFactsTest.theFactsCarryTheStepsEachMissionTypeDeclaresWhichPlaceAStepsPrompt` and
-`EffectiveMissionTypeReadServiceTest.aStepContractPassesARefusalOfThePlaceReadOtherThanActionNotFoundThroughUnchanged`.
+`DomainRepositoryServicePromptFactsTest.theFactsCarryTheStepsEachMissionTypeDeclaresWhichPlaceAStepsPrompt`.
+*Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)): the step contract is retired, so its `step` link, the D11 scenario and the step-contract
+tests this rule named are gone; the place rule is unchanged for the other reads.*
 
 **E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
@@ -1737,7 +1743,7 @@ with its fragments and a prompt_slot_not_empty diagnostic`; and the refusal scen
   `service/activations`: `DocumentRules`, `InForceFacts`, `CascadeRules`, `StaleIds`, `PresetRules`, `ActivationWrites`,
   `ActivationExclusionService`, `EffectiveSet`, `EffectiveContext`. PR C adds, in `service/packs`: `StepHolding`, `GraphProjection`,
   `ActionContextWalk`, `InForceResolution`'s step enhancer binding. Slice C adds, in `service/packs`: `EnhancementCompose`,
-  `SlotCompose`, `OverrideSourceRule`, `EffectivePromptQuery`, the effective form of `ActionContextWalk` and
+  `SlotCompose`, `OverrideSourceRule` (folded into the kernel's `EndpointRule` by slice F), `EffectivePromptQuery`, the effective form of `ActionContextWalk` and
   `EdgeIndex`'s scope owners; in `service/activations`: `EffectivePrompt` and `ActivationImpactAdapter`'s gate.
 - Operator rulings of 2026-11-06 not yet in an ADR: registration is a full replacement (planned ADR-0065), and the answers to the ruleset consistency review
   (`research/ruleset-review-2026-11-06.md` of the layer-merge mission; decisions `DM-01M6RA7FHR…` to `DM-01M6RAA6Y7…`).

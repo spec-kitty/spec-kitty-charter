@@ -79,18 +79,19 @@ another option in its place, exits 2 with the usage text.
    `held=false` have no pack and are counted in the walk line.
 
    - mission type, pack-scoped (#99): root `artifacts` (`packId=` the pack holding the type, `kind=mission_type`) → the `software-dev`
-     list item `self` → each step's `self` (13: 8 in sequence, in order, and 5 on demand) → each step's `step-contract`
-     where present (exactly 5: specify, plan, tasks, implement, review) → each expected output's `skeleton` (exactly 2:
+     list item `self` → each step's `self` (13: 8 in sequence, in order, and 5 on demand) → each step's `substeps`
+     where present (exactly 5 steps author them: specify, plan, tasks, implement, review; the step contracts are folded
+     into the steps, ADR-0077) → each expected output's `skeleton` (exactly 2:
      specify → `spec-template.md`, plan → `plan-template.md`) → each listed skeleton's `self` (4);
    - mission type under the activation: the activation's `artifacts` (`kind=mission_type`) → the item's
-     `effective-artifact` → the same steps, step contracts (the generic effective read) and skeletons → the graph's
+     `effective-artifact` → the same steps, their substeps and skeletons → the graph's
      action nodes of `software-dev`, each `effective-artifact` (its step read; `specify` must be among them) → the
      action context of `software-dev/specify`, its `effective-artifact` and `artifact` (the step under the activation
      and in the pack that holds the type).
 
-   The expected ids are constants at the top of the mission type section (`MT_*`). A step id, contract, skeleton or
+   The expected ids are constants at the top of the mission type section (`MT_*`). A step id, a step with substeps, a skeleton or
    listed skeleton the walk did not reach fails a hop that names the relation it expected; one it reached but did not
-   expect fails too. Each scope prints a `MISSION <scope> type=software-dev steps=<n>/13 contracts=<n>/5
+   expect fails too. Each scope prints a `MISSION <scope> type=software-dev steps=<n>/13 substeps=<n>/5
    bound-skeletons=<n>/2 skeletons=<n>/4 hops=<ok>/<all>` line before `RESULT`, and the graph and context part a
    `MISSION graph+context` line; their hops count in `RESULT` too.
 

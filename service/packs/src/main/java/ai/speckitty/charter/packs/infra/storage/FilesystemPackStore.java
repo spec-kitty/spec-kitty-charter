@@ -6,7 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.AssetFile;
-import ai.speckitty.charter.packs.domain.OverrideSourceRule;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -373,8 +372,9 @@ final class FilesystemPackStore {
     /**
      * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
      *
-     * <p>Last it judges the edges of the pack's readable graph documents by {@link OverrideSourceRule} (FR-014): each
-     * {@code overrides} edge whose source kind is not activatable is a violation at its document. Every assembly of the
+     * <p>Last it judges the edges of the pack's readable graph documents by {@link RelationshipEndpointRule} (FR-014,
+     * ADR-0064 decision 13): each {@code overrides} edge whose source kind is not activatable, then each edge whose
+     * relation does not allow its endpoint kinds, is a violation at its document. Every assembly of the
      * read records it, so a registration lists it and a composing read refuses the pack {@code pack_unreadable} naming
      * the document, as a step enhancement's edge fault (ADR-0066 OD-3 (a)). A graph document that cannot be read is
      * not judged here: {@link #readGraphs} reports it on its own.
@@ -419,16 +419,8 @@ final class FilesystemPackStore {
         List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
-        violations.addAll(overrideSourceViolations(graphs));
         violations.addAll(RelationshipEndpointRule.violations(edgesOf(graphs), endpointScope(descriptor, elements)));
         return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
-    }
-
-    /** Each {@code overrides} edge of a readable graph document whose source kind is not activatable, at its file. */
-    private static List<PackElementViolation> overrideSourceViolations(GraphRead graphs) {
-        return OverrideSourceRule.judge(edgesOf(graphs)).stream()
-                .map(OverrideSourceRule::violationOf)
-                .toList();
     }
 
     /**
@@ -447,11 +439,12 @@ final class FilesystemPackStore {
     }
 
     /** The edges of the readable graph documents as written, in document order. */
-    private static List<OverrideSourceRule.Edge> edgesOf(GraphRead graphs) {
-        List<OverrideSourceRule.Edge> edges = new ArrayList<>();
+    private static List<RelationshipEndpointRule.Edge> edgesOf(GraphRead graphs) {
+        List<RelationshipEndpointRule.Edge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
-                edges.add(new OverrideSourceRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
+                edges.add(new RelationshipEndpointRule.Edge(
+                        document.file(), edge.source(), edge.target(), edge.relation()));
             }
         }
         return edges;

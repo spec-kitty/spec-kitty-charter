@@ -293,7 +293,7 @@ facts; it does not restate them.
 | `paradigm` | `paradigm` | yes | yes | yes | yes | all |
 | `procedure` | `procedure` | yes | yes | yes | yes | all |
 | `agent_profile` | `agent-profile` | yes | yes | yes | yes | all |
-| `mission_step_contract` | `mission-step-contract` | yes | yes | yes | yes | all |
+| `mission_step_contract` (core only: retired in the service, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) | `mission-step-contract` | yes | yes | yes | yes | all |
 | `glossary_pack` | `glossary-pack` | yes | yes | yes | no | all |
 | `skill` | `skill` | yes | yes | yes | no | required |
 | `anti_pattern` | `anti-pattern` | no | yes | no | no | all |
@@ -325,7 +325,7 @@ outright ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); 
   kind; `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
   mission-type path. The service makes it an artifact kind
   ([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), DIV-501), with its
-  own domain model ([Mission types](#mission-types-actions-and-step-contracts)). It is activatable
+  own domain model ([Mission types](#mission-types-actions-and-substeps)). It is activatable
   because a preset lists it in its own `activated_mission_types` slot, not among its activated
   kinds.
 - `step_enhancement`: an add-only enhancement joined to a mission step by an `enhances` edge
@@ -355,47 +355,51 @@ The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-an
 **What this means:** [Relationships](/context/conceptual-model/#relationships).
 
 The CRG is a typed graph. Every node has a URN `<kind>:<id>`; every edge has a source URN, a
-target URN, a relation and optional `when` and `reason` fields; in current state an `impacts` edge also
-carries its signed `impacts` strength (see the note under [Relations](#relations)). A graph document carries
+target URN, a relation and optional `when` and `reason` fields. The `impacts` strength an edge carried is retired with
+the `impacts` relation ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6). A graph document carries
 `schema_version: "1.0"` and `generated_at`, and refuses unknown keys
 (`DRGGraphSchemaError`).
 
 ### Node kinds
 
 The CRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it has `action`;
-the `mission_type` node is listed here too, because its edges carry the action sequence. In the
+the `mission_type` node is listed here too, because its edges link its steps' actions. In the
 service it is the node of the `mission_type` artifact kind (DIV-501):
 
 | Node kind | URN example | Role |
 |---|---|---|
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
-| `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
+| `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges link the action of each of its steps, one per step, on-demand steps included ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 4); the run order is its `steps` list. Its `scope` edges carry type-wide governance. |
 | `step_enhancement` | `step_enhancement:spdd-specify` | Add-only contributions joined to a step by `enhances`; prompt fragments address slots in the step's prompt (ADR-0066). |
 | `glossary_context` / `term` (service only, #106) | `glossary_context:spec-kitty-core`, `term:spec-kitty-core/mission` | A glossary context is the node of the `glossary` kind (its token differs from the kind's on purpose, ADR-0053 d13). A term is an item of its context: a `vocabulary` edge may target it, but no graph document declares it. |
 | `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations
 
-| Relation | Direction and meaning |
-|---|---|
-| `requires` | Hard dependency. Cascade activation follows it. |
-| `suggests` | Soft recommendation. Cascade activation also follows it. |
-| `applies` | An action applies a directive or tactic. |
-| `scope` | Governance scope: the target is in force within the source's scope (for example a mission type). |
-| `vocabulary` | Links to the glossary that supplies a node's terms. |
-| `instantiates` | A node instantiates a template. |
-| `refines` | Narrows or sharpens the target without replacing it. |
-| `specializes_from` | Static lineage between profiles or artifacts. Never used for runtime handoff. |
-| `delegates_to` | Runtime handoff from one agent to another. Never inferred from lineage. |
-| `enhances` | Field-merge into a target artifact; keeps the action sequence and step inputs and outputs. |
-| `overrides` | Full replacement of a target artifact. |
-| `replaces` | Supersession; kept for older hand-authored fragments. |
-| `supports` | A resource helps check a rule (an asset supports a directive). Target ([conceptual model](/context/conceptual-model/#relationships)); candidate, undecided as a relation name in the schemas. |
-| `tension` | Two rules pull against each other. Authored, never derived from value impacts; it may sit beside one structural relationship on the same pair. Target ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)); it replaces `in_tension_with` and the signed `impacts` edge. |
-| `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
-| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). |
-| `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
-| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.derivedRelationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
+Each relation names the source and target kinds it may connect: the endpoint table of
+[ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5, which the service serves as the kind taxonomy
+(`GET /offering/kinds`). G stands for the six guidance kinds (directive, tactic, styleguide, toolguide, paradigm and
+procedure). An edge whose kinds its relation does not allow is refused at read and at write
+(`relationship_endpoint_not_allowed`). `delegates_to`, `replaces` and `impacts` are retired as relations: a delegation
+is a substep's data, a `replaces` edge is written `overrides`, and an `impacts` edge is an unknown relation.
+
+| Relation | Direction and meaning | Source → target |
+|---|---|---|
+| `requires` | Hard dependency. Cascade activation follows it. | G, agent_profile or skill → G, asset or template; asset → asset; mission_type → action |
+| `suggests` | Soft recommendation. Cascade activation also follows it. | G, agent_profile or skill → G, asset, template or agent_profile |
+| `applies` | An action applies a directive or tactic. | action → directive or tactic |
+| `scope` | Governance scope: the target is in force within the source's scope (for example a mission type). | mission_type or action → G or agent_profile |
+| `vocabulary` | Links to the glossary that supplies a node's terms. | any kind authored in graphs → the glossary kind |
+| `instantiates` | A node instantiates a template. | action → template |
+| `refines` | Narrows or sharpens the target without replacing it. | G → G |
+| `specializes_from` | Static lineage between profiles. Never used for runtime handoff. | agent_profile → agent_profile |
+| `enhances` | Field-merge into a target artifact; keeps the step sequence and step inputs and outputs. | step_enhancement → action; X → X for every activatable X except mission_type and step_enhancement |
+| `overrides` | Full replacement of a target artifact of the same kind. | X → X, X activatable and not step_enhancement |
+| `supports` | A resource helps check a rule (an asset supports a directive). Target ([conceptual model](/context/conceptual-model/#relationships)); candidate, undecided as a relation name in the schemas. | not a relation of the model |
+| `tension` | Two rules pull against each other. Authored, never derived from value impacts; it may sit beside one structural relationship on the same pair. Written `in_tension_with` and held beside the relations ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/), [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). | G ↔ G |
+| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). | G → G |
+| `rejects` | Directional, from a good artifact to an `anti_pattern` node. | G → anti_pattern |
+| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.derivedRelationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. | guard → asset |
 
 The activation cascade follows `requires`, `suggests`, `refines`, `scope`, `instantiates` and `enhances` forward, each in its declared direction (an enhancer to what it enhances), and qualified `<pack>::` targets; it passes through `specializes_from` without putting the parent in force, and follows no other relation ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2 and its amendment of 2026-11-06, A4: there is no read-time pull). At read, an enhancer is in force only while a target of its enhancement is, and a step enhancer only while the mission type of its step is (rule E6; [Composition and activation rules](/architecture/composition-and-activation-rules/)). The cascade follows only held steps: a step is held by a pack that defines its mission type and declares it, and by the closure when some pack holds it (rule W20, DIV-242, DIV-243).
 
@@ -406,9 +410,10 @@ schemas are in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas);
 the authored files are drawn in the [pack write model](/architecture/descriptor-schemas/#pack-write-model).
 
-Current state: core still writes `in_tension_with` until its migration lands, and the contract
-reserved `impacts` as a relation for 1.0, with core's seam mapping an `in_tension_with` edge to a
-negative `impacts` edge (provisional, [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), superseded in part by ADR-0028).
+Current state: core still writes `in_tension_with` until its migration lands. The contract once reserved `impacts` as
+a relation for 1.0, with core's seam mapping an `in_tension_with` edge to a negative `impacts` edge (provisional,
+[ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), superseded in part by ADR-0028); the
+relation is retired ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6).
 Target: [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) supersedes that
 naming in part; the relation is `tension` and `impacts` is a per-value list on one artifact
 (see [Values and value impacts](#values-and-value-impacts)). The domain representation of the
@@ -565,22 +570,25 @@ and toolguides.
   reported by `spec-kitty doctor charter-packs --json`; a pack with skipped profiles is not
   reported healthy.
 
-## Mission types, actions and step contracts
+## Mission types, actions and substeps
 
 **What this means:** [Mission types and roles](/context/conceptual-model/#mission-types-and-roles).
 
 A **mission type** (for example `software-dev`, `documentation`, `research`, `plan`) defines a
 workflow as an ordered list of **mission steps**, plus **on-demand steps** invoked by a command
-outside that order. In the graph a step is an **action** (`action:<mission-type>/<step>`). A
-**mission step contract** describes the structural sub-steps of one mission step and, per
-sub-step, the kind of artifact it delegates to and its candidates. Action-scoped context answers
+outside that order. In the graph a step is an **action** (`action:<mission-type>/<step>`), and every step is linked
+from its type by an authored `mission_type:<type> requires action:<type>/<step>` edge. A step may hold **substeps**: a
+flat, ordered list of `{id, description, command, inputs, delegates_to {kind, candidates}, guidance}`, one level deep.
+A substep's delegation names the kind of artifact it hands off to and its candidates, and the step's action has a
+`scope` edge to each candidate. Core's **mission step contract**, a separate artifact that held these substeps, is
+retired in the service ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)). Action-scoped context answers
 "what governs this action of this mission type in this project".
 
 The service stores a mission type in one file, `missions/<id>/<id>.mission-type.yaml`, its steps
 as sub-items, each step's prompt and guidelines as Markdown companions in `steps/`
 ([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/); fields in
 [Descriptors](/architecture/descriptors/)). The domain is the `:missions` module
-(`ai.speckitty.charter.missions.domain`): `MissionType`, `MissionStep`, `ExpectedInput`,
+(`ai.speckitty.charter.missions.domain`): `MissionType`, `MissionStep`, `Substep`, `ExpectedInput`,
 `ExpectedArtifact` with `ArtifactClass`, `MissionReference`, `PathConventions`, and
 `StepDocument` with `StepSection` for a prompt or guidelines. It holds no file paths; the pack
 store binds the kind and depends on the module.
@@ -617,7 +625,7 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 | FSM concept | Today (ADR-0044) | Accepted (ADR-0050; names pending where it marks them proposed) |
 |---|---|---|
 | State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
-| Composite state | a step with a `mission_step_contract` | unchanged |
+| Composite state | a step with `substeps` (a separate `mission_step_contract` until [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) | unchanged |
 | Submachine state | none; the work-package lanes are hardcoded in core | a step's `submachine: {lifecycle, per: work_package}`, one instance per work package |
 | Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, event?, guard?, on_transition?}]` (the key `event`, not `on`: ADR-0050 as amended); absent means "next in the list" |
 | Guard | blocking expected input and output artifacts | `guard: [{ref, config?, blocking?}]` naming guard artifacts backed by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); blocking artifacts stay the built-in guard |

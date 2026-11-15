@@ -96,7 +96,9 @@ contexts:
         meta:
           status: "canonical"
       - name: "Delegation — `delegates_to` (CRG Relation)"
-        definition: "A directional Three-layer CRG relation expressing a *runtime* handoff: one agent profile hands work to another at execution time. It is kept deliberately separate from Lineage so a static \"derives from\" relationship never gets conflated with a live work handoff. No built-in artifact emits a `delegates_to` edge today — delegation is currently expressed in profile `collaboration.handoff_to` prose rather than as a graph edge, so treat this relation as intended-but-dormant. Canonical source: `RELATION_DESCRIPTIONS[Relation.DELEGATES_TO]` in `src/charter/offering/drg/models.py`."
+        definition: "Retired as a relation (ADR-0077): a runtime handoff is a substep's `delegates_to` data, its kind and its candidates, and the step's action has a `scope` edge to each candidate; an edge that names `delegates_to` is refused as an unknown relation. Former definition, kept for history: A directional Three-layer CRG relation expressing a *runtime* handoff: one agent profile hands work to another at execution time. It is kept deliberately separate from Lineage so a static \"derives from\" relationship never gets conflated with a live work handoff. No built-in artifact emits a `delegates_to` edge today — delegation is currently expressed in profile `collaboration.handoff_to` prose rather than as a graph edge, so treat this relation as intended-but-dormant. Canonical source: `RELATION_DESCRIPTIONS[Relation.DELEGATES_TO]` in `src/charter/offering/drg/models.py`."
+        meta:
+          status: "deprecated"
       - name: "Derived pack"
         definition: "A Charter Pack that builds on a broader one (an org pack on built-in) and customizes it for its context. It may add artifacts, change existing ones within their integrity level, suggest a selection through presets, remove artifacts, lock or remove roles, pin the profile for a role and declare a fallback profile."
         meta:
@@ -116,7 +118,7 @@ contexts:
       - name: "Example Mapping Workshop (Procedure)"
         definition: "Procedure `example-mapping-workshop`. Turns a behavior request into concrete rules, canonical examples, and open questions that stakeholders and implementers share as the current source of truth for the behavior."
       - name: "Foundation pack"
-        definition: "The slimmed base pack the other packs build on: the cross-cutting directives, paradigms, glossary, base templates and assets, the shipped mission types with their step contracts, and the base agent profiles. `built-in` aggregates it (ADR-0048)."
+        definition: "The slimmed base pack the other packs build on: the cross-cutting directives, paradigms, glossary, base templates and assets, the shipped mission types, and the base agent profiles. `built-in` aggregates it (ADR-0048)."
         meta:
           status: "canonical"
       - name: "Gate"
@@ -301,8 +303,16 @@ contexts:
           status: "canonical"
       - name: "Specification by Example (Paradigm)"
         definition: "A paradigm that builds shared understanding of behavior through concrete, business-readable examples which become the canonical source of truth for requirements, acceptance checks, and living documentation."
-      - name: "Step contract"
-        definition: "The structural sub-steps of one mission step and what each delegates to (the `mission_step_contract` kind). The step's role and expected artifacts live on the mission step, not on its contract (ADR-0044)."
+      - name: "Substep"
+        definition: "An entry of a mission-type step's `substeps`: a flat, ordered list, one level deep, authored in the mission type beside its step. A substep has an `id` unique within its step and a `description`, and may have a `command`, `inputs`, a `delegates_to {kind, candidates}` and `guidance`. A delegation candidate is written `[<pack>::]<id>`, and the step's action has a `scope` edge to it. Substeps replace core's separate step contract, which the service retires (ADR-0077)."
+        meta:
+          status: "canonical"
+      - name: "Kind taxonomy"
+        definition: "The served table of the model's kinds and relations, `GET /offering/kinds`: every kind with its plural and whether it is an artifact, activatable and authored in graphs, and every relation with the source and target kinds it may connect (ADR-0077). It holds none of core's organization facts."
+        meta:
+          status: "canonical"
+      - name: "Endpoint kinds"
+        definition: "The source and target kinds a relation may join, set by the endpoint table of ADR-0077 (for example `scope`: a mission type or an action to a guidance kind or an agent profile). An edge whose kinds its relation does not allow is refused at read and at write as `relationship_endpoint_not_allowed`."
         meta:
           status: "canonical"
       - name: "Step enhancement"
@@ -328,7 +338,9 @@ contexts:
       - name: "Styleguide"
         definition: "A charter artifact defining cross-cutting quality and consistency conventions (for example coding, documentation, or testing style) that apply across missions and templates."
       - name: "Supersession — `replaces` (CRG Relation)"
-        definition: "A directional Three-layer CRG relation asserting that the source artifact fully supersedes the target, which stops applying once the source is active. It is retained for backward compatibility with older, hand-authored fragments; no built-in artifact emits it today, since current practice either deactivates the superseded artifact directly or, for pack overlays, expresses supersession through Overlay Override. Distinct from Tension, which never implies either side is deprecated or wrong. Canonical source: `RELATION_DESCRIPTIONS[Relation.REPLACES]` in `src/charter/offering/drg/models.py`."
+        definition: "Retired as a relation (ADR-0077): `replaces` was sometimes written to mean `overrides`, so a `replaces` edge is written `overrides`; one left in a graph document is refused as an unknown relation. Former definition, kept for history: A directional Three-layer CRG relation asserting that the source artifact fully supersedes the target, which stops applying once the source is active. It is retained for backward compatibility with older, hand-authored fragments; no built-in artifact emits it today, since current practice either deactivates the superseded artifact directly or, for pack overlays, expresses supersession through Overlay Override. Distinct from Tension, which never implies either side is deprecated or wrong. Canonical source: `RELATION_DESCRIPTIONS[Relation.REPLACES]` in `src/charter/offering/drg/models.py`."
+        meta:
+          status: "deprecated"
       - name: "Supports — `supports` (CRG Relation)"
         definition: "A relationship from a resource to a rule it helps check, for example a companion asset that lets an agent verify its own compliance with a directive deterministically. Distinct from `suggests`, which points at optional relevant content."
         meta:
@@ -340,7 +352,9 @@ contexts:
       - name: "Template Instantiation — `instantiates` (CRG Relation)"
         definition: "A directional Three-layer CRG relation from a mission-step action node to the template it produces as its concrete output. It appears only between `action` and `template` nodes in the built-in graph, in modest numbers, and is distinct from Governance Scope: `scope` links an action to content it must follow, `instantiates` links it to content it produces. Canonical source: `RELATION_DESCRIPTIONS[Relation.INSTANTIATES]` in `src/charter/offering/drg/models.py`."
       - name: "Template Set"
-        definition: "A structured set of charter templates that shape output artifacts and interaction contracts for mission actions and procedures. Template sets allow consistent behavior across mission types while remaining configurable through charter selections."
+        definition: "Retired (ADR-0077): \"template\" names only the template artifact kind. `template_set` is refused as an unknown field in a mission type and in the project charter. Former definition, kept for history: A structured set of charter templates that shape output artifacts and interaction contracts for mission actions and procedures. Template sets allow consistent behavior across mission types while remaining configurable through charter selections."
+        meta:
+          status: "deprecated"
       - name: "Sibling conflict"
         definition: "Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict."
         meta:

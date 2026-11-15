@@ -27,10 +27,9 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Graph shard](/architecture/pack-schemas/graph-shard/) — a document of the Charter Reference Graph.
 - [Guard](/architecture/pack-schemas/guard/) — an enforced check a transition names, implemented by an executable asset or a built-in.
 - [Lifecycle](/architecture/pack-schemas/lifecycle/) — a reusable state machine of states and guarded transitions.
-- [Mission step contract](/architecture/pack-schemas/mission-step-contract/) — the legacy structural contract of a mission action.
 - [Mission step guidelines](/architecture/pack-schemas/mission-step-guidelines/) — the parsed Markdown structure of a step guidelines file.
 - [Mission step prompt](/architecture/pack-schemas/mission-step-prompt/) — the parsed Markdown structure of a step prompt file.
-- [Mission type](/architecture/pack-schemas/mission-type/) — the ordered steps, expected artifacts and guidance of a mission type.
+- [Mission type](/architecture/pack-schemas/mission-type/) — the ordered steps, their substeps, expected artifacts and guidance of a mission type. A step's substeps were a separate mission step contract until it was retired ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)).
 - [Organization graph fragment](/architecture/pack-schemas/org-fragment/) — a loaded organization-tier graph fragment with its provenance.
 - [Pack descriptor](/architecture/pack-schemas/pack-descriptor/) — the identity and lineage of a charter pack.
 - [Pack document](/architecture/pack-schemas/pack-document/) — the parsed Markdown structure of the pack document, the pack's README.md.

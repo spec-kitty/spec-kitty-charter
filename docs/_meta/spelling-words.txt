@@ -285,3 +285,6 @@ tmpfs
 # owner-only staging on Windows (#510)
 jimfs
 ntfs
+# mission-type step substeps (ADR-0077)
+substep
+substeps

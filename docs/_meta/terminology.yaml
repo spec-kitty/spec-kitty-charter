@@ -44,8 +44,8 @@ avoid:
     reason: a Charter Pack is the distributable bundle; Charter Bundle is the .kittify/charter tree
   - term: mission-steps-fragment-kind
     pattern: '\bmission_steps\b'
-    prefer: mission_step_contracts
-    reason: the service's one name for the fragment node kind (R14); core's mission_steps is refused here
+    prefer: actions (a step's graph node) or substeps (a step's sub-steps)
+    reason: core's fragment node kind for step contracts is refused here (R14), and the service's own plural is retired with the kind (ADR-0077)
 
 allow:
   - path: docs/context/domain.md

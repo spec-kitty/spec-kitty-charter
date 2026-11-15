@@ -2,7 +2,7 @@
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
 description: "Operator rulings of 2026-11-04 to 2026-11-09: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-04'
 type: ADR
@@ -162,6 +162,8 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    handoff. `vocabulary`, `applies`, `reconciles_tension`, the tension edges and the derived `implemented_by` are
    not followed either, as in core. Pack-level
    `depends_on` is not an artifact edge: activation stays per artifact (ADR-0048).
+   *(Note 2026-11-13: `replaces` and `delegates_to` are retired as relations, [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)
+   decision 6; a delegation is a substep's data.)*
 
 **Why.** The five relations keep core's reach, so a project activates what it activated before. In this repository's
 [logical model](/architecture/logical-model/#relations) each of them points from an artifact to what it needs in

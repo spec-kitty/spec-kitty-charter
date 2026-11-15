@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-14T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -37,6 +37,9 @@ audience:
 - **The identifier ruling.** When the landing review raised that the pack id, the roles and the slot ids were left out,
   the operator ruled on 2026-11-13: "everything strict", meaning every identifier, including the pack id, roles and
   slot ids.
+
+**Amendment 2026-11-13** ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)): decision 2 drops `MissionStepContractIdentifier`, which slice F deletes with its
+kind.
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
@@ -155,6 +158,8 @@ The other decisions follow the reversed direction. Each is confirmed, or changed
    - **The letter-first types** move to `letterFirstSlug`, because each is letter-first today:
      - `ParadigmIdentifier`, `StyleguideIdentifier`, `MissionStepContractIdentifier` and `ProcedureStep`, which write
        `^[a-z][a-z0-9-]*$` and accept `a--b`;
+       *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 3): `MissionStepContractIdentifier` is deleted with its kind, so it leaves
+       this list. A substep id is a letter-first kebab slug.*
      - the agent role (`AgentProfile`) and the mission step role (`MissionStep`), which write `[a-z][a-z0-9-]*`;
      - the slot id (`SlotId`, and the slot of `StepEnhancement`): each of its two parts is a `letterFirstSlug`.
    - The charter's model is canonical: fixtures and example packs follow, and an open-packs id that breaks is fixed

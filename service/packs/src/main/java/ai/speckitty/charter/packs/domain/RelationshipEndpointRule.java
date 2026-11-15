@@ -12,20 +12,22 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * The endpoint table of ADR-0064 decision 13 applied to the edges of a pack's graph documents (FR-008, #350): an edge
- * whose relation does not allow its source and target kinds is refused with {@value EndpointRule#ENDPOINT_NOT_ALLOWED}.
+ * The kernel's endpoint rule ({@link EndpointRule}) applied to the edges of a pack's graph documents (FR-014, FR-015,
+ * #350, #447): an edge is refused with the fault the bridge gives, in the bridge's order.
  *
- * <p>The table is the kernel's ({@link EndpointRule}); this class only reads a document's edges as written. Two faults
- * belong to earlier rules and are not reported again here:
+ * <ol>
+ *   <li>An {@code overrides} edge whose source is not of an activatable kind is refused with
+ *       {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} (slice C's rule, folded into the bridge by operator
+ *       ruling DM-01M7B1Z03VF9A36FBV65431HR3). It is judged on the source alone, whatever the target is, a source
+ *       written with a pack name like a bare one ({@link EndpointRule#overridesSourceRefusal}).
+ *   <li>Otherwise an edge whose relation does not allow its source and target kinds is refused with
+ *       {@value EndpointRule#ENDPOINT_NOT_ALLOWED} ({@link EndpointRule#bind}).
+ * </ol>
  *
- * <ul>
- *   <li>an {@code overrides} edge from a kind that is not activatable, {@link OverrideSourceRule}'s
- *       {@code overrides_source_not_activatable};
- *   <li>an {@code enhances} or {@code overrides} edge from a step enhancement the pack holds, written bare or qualified
- *       with the pack's own name, which the step-enhancement rules of ADR-0066 judge first under
- *       {@code prompt_fragment_invalid}. An edge from a step enhancement the pack does not hold, or from another pack's,
- *       is no fact of those rules, so the table judges it here.
- * </ul>
+ * <p>An {@code enhances} or {@code overrides} edge from a step enhancement the pack holds, written bare or qualified with
+ * the pack's own name, is judged before both by the step-enhancement rules of ADR-0066, under
+ * {@code prompt_fragment_invalid}, so the table does not judge it. An edge from a step enhancement the pack does not
+ * hold, or from another pack's, is no fact of those rules, so the table judges it here.
  *
  * <p>An endpoint that is no reference, an unknown relation, a derived relation and a bare self-loop are faults of the
  * graph rules, which refuse them on their own. An {@code in_tension_with} edge joins two guidance kinds
@@ -37,8 +39,52 @@ import java.util.Set;
  */
 public final class RelationshipEndpointRule {
 
-    /** The violation code of a refused edge: the one spelling, at registration, on the write and at load. */
+    /** The violation code of an edge the table refuses: the one spelling, at registration, on the write and at load. */
     public static final String CODE = EndpointRule.ENDPOINT_NOT_ALLOWED;
+
+    /**
+     * One edge of a graph document, as written.
+     *
+     * @param file the pack-relative path of the graph document
+     * @param source the source, bare or written with a pack name
+     * @param target the target, as written
+     * @param relation the relation token, as written
+     */
+    public record Edge(String file, String source, String target, String relation) {
+        /**
+         * Checks that every field is present.
+         *
+         * @param file the graph document
+         * @param source the source
+         * @param target the target
+         * @param relation the relation
+         */
+        public Edge {
+            Objects.requireNonNull(file, "file");
+            Objects.requireNonNull(source, "source");
+            Objects.requireNonNull(target, "target");
+            Objects.requireNonNull(relation, "relation");
+        }
+    }
+
+    /**
+     * Why one edge is refused.
+     *
+     * @param code the bridge's fault code, {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} or {@value #CODE}
+     * @param reason what is wrong, naming the edge
+     */
+    public record Refusal(String code, String reason) {
+        /**
+         * Checks that every field is present.
+         *
+         * @param code the code
+         * @param reason the reason
+         */
+        public Refusal {
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
 
     private static final String TENSION = "in_tension_with";
 
@@ -77,9 +123,29 @@ public final class RelationshipEndpointRule {
      *
      * @param edge the edge
      * @param scope the pack whose document holds it
-     * @return the reason it is refused, or empty when its relation allows its endpoints or another rule judges it
+     * @return why it is refused, or empty when the bridge allows it or another rule judges it
      */
-    public static Optional<String> refusal(OverrideSourceRule.Edge edge, Scope scope) {
+    public static Optional<Refusal> refusal(Edge edge, Scope scope) {
+        Optional<String> overridesSource = overridesSourceRefusal(edge);
+        if (overridesSource.isPresent()) {
+            return Optional.of(new Refusal(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE, overridesSource.get()));
+        }
+        return tableRefusal(edge, scope).map(reason -> new Refusal(CODE, reason));
+    }
+
+    /** The bridge's source rule on the source as written; a source that is no reference is the graph rules'. */
+    private static Optional<String> overridesSourceRefusal(Edge edge) {
+        if (!RelationType.OVERRIDES.token().equals(edge.relation())) {
+            return Optional.empty();
+        }
+        return reference(edge.source())
+                .flatMap(PackQualifiedReference::asUrn)
+                .flatMap(from -> EndpointRule.overridesSourceRefusal(
+                        RelationType.OVERRIDES, from, edge.source(), edge.target()));
+    }
+
+    /** The bridge's table, for an edge the source rule does not refuse. */
+    private static Optional<String> tableRefusal(Edge edge, Scope scope) {
         Optional<PackQualifiedReference> source = reference(edge.source());
         Optional<PackQualifiedReference> target = reference(edge.target());
         if (source.isEmpty() || target.isEmpty()) {
@@ -115,9 +181,7 @@ public final class RelationshipEndpointRule {
             // A qualifier that breaks the pack-name grammar: the graph rules refuse the edge on their own.
             return Optional.empty();
         }
-        return binding instanceof EndpointRule.Fault fault && CODE.equals(fault.code())
-                ? Optional.of(fault.message())
-                : Optional.empty();
+        return binding instanceof EndpointRule.Fault fault ? Optional.of(fault.message()) : Optional.empty();
     }
 
     /**
@@ -125,13 +189,19 @@ public final class RelationshipEndpointRule {
      *
      * @param edges the edges of the pack's graph documents, in document order
      * @param scope the pack
-     * @return one violation per refused edge, at its graph document, in the order of the edges
+     * @return one violation per refused edge, at its graph document, under the fault's code: first every
+     *     {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} in the order of the edges, then every {@value #CODE}
      */
-    public static List<PackElementViolation> violations(List<OverrideSourceRule.Edge> edges, Scope scope) {
-        List<PackElementViolation> out = new ArrayList<>();
-        for (OverrideSourceRule.Edge edge : edges) {
-            refusal(edge, scope).ifPresent(reason -> out.add(new PackElementViolation(edge.file(), CODE, reason)));
+    public static List<PackElementViolation> violations(List<Edge> edges, Scope scope) {
+        List<PackElementViolation> sources = new ArrayList<>();
+        List<PackElementViolation> table = new ArrayList<>();
+        for (Edge edge : edges) {
+            refusal(edge, scope)
+                    .ifPresent(refused -> (CODE.equals(refused.code()) ? table : sources)
+                            .add(new PackElementViolation(edge.file(), refused.code(), refused.reason())));
         }
+        List<PackElementViolation> out = new ArrayList<>(sources);
+        out.addAll(table);
         return List.copyOf(out);
     }
 

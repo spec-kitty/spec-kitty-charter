@@ -194,9 +194,9 @@
     back-compat alias; also accepts the mission_type singular alias, and refuses actions and
     anti_patterns (offering/drg/org_pack_loader.py:72-100, 118-139).
   service: >-
-    One name per concept, 15 plurals. The canonical name is the reverse of core's:
-    mission_step_contracts is the one name, and core's canonical mission_steps is refused, as is
-    mission_type. actions and anti_patterns are accepted.
+    One name per concept, 15 plurals. Neither of core's names for the step contract is one of them:
+    core's canonical mission_steps is refused, as is mission_type, and mission_step_contracts is
+    retired with its kind (ADR-0077, 2026-11-13). actions and anti_patterns are accepted.
   rationale: One name per concept, with no aliases. The glossary records the canonical names.
   ruling: R14 (2026-10-19); plan call P9
   status: open
@@ -205,6 +205,7 @@
     - "core: offering/drg/org_pack_loader.py:72-100 (mission_steps is the canonical plural; mission_step_contracts is the input alias)"
     - "core: offering/drg/org_pack_loader.py:118-139"
     - "charter: contracts/packs/schemas/org-fragment.schema.json: the node kind is an enum of the 15 fragment plurals (import change C5; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
+    - "charter: contracts/packs/file-kinds.yaml fragment_kinds (no step-contract plural since ADR-0077)"
 
 - id: DIV-012
   surface: URN node kinds
@@ -315,9 +316,14 @@
     The contract leads and core aligns at the cutover. The service's own Relation type has 15
     values, the same set without in_tension_with, which is a known difference: a tension is not a
     relation type (ADR-0045).
-  ruling: ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045
-  status: open
+  ruling: ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045; retired by ADR-0077 decision 6
+  status: retired
   since: 2026-10-19
+  note: >-
+    Retired 2026-11-13 (ADR-0077 decision 6): the impacts relation and the edge impacts strength are
+    gone from the domain, the contract and the pack schemas, so the service, like core, has neither.
+    An impacts edge is an unknown relation and an edge's impacts key an unknown member. Core's
+    replaces and delegates_to, which the service also retired, are DIV-026.
   evidence:
     - "core: offering/drg/models.py:83-148"
     - "charter: contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json: the Relation enum adds impacts and keeps in_tension_with, and an edge has an optional impacts number (import changes C7 and C12, and the known C7 difference; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
@@ -439,6 +445,29 @@
   evidence:
     - "core: offering/packs/pack_validator.py:288 and 301 (_yaml_parser().load(path), no explicit encoding)"
     - "charter: planted plant artifact-utf16-with-a-byte-order-mark (core verdict in planted/core-verdicts.json: ok, no findings)"
+
+- id: DIV-026
+  surface: The relations and the kinds each may connect
+  core: >-
+    Its relation enum has 15 values, among them replaces and delegates_to, and a relation may join
+    any two node kinds: nothing checks an edge's kinds beyond the node kinds it knows
+    (offering/drg/models.py:83-148).
+  service: >-
+    replaces and delegates_to are retired: an edge that names one is refused as an unknown
+    relation. Each relation joins only its endpoint kinds (ADR-0077 decision 5), and an edge outside
+    them is refused at read and at write: relationship_endpoint_not_allowed, or
+    overrides_source_not_activatable for an overrides edge from a kind an activation cannot select.
+    For example, a procedure that requires a step's action, or an overrides edge between two kinds,
+    loads in core and is refused here.
+  rationale: >-
+    Each relation means one thing in the charter's model, and the model is canonical (charter.md,
+    2026-11-10); core aligns through the generated client. A replaces edge is written overrides.
+  ruling: ADR-0064 decision 13; ADR-0077 decisions 5 and 6 (operator rulings of 2026-11-13)
+  status: open
+  since: 2026-11-13
+  evidence:
+    - "core: offering/drg/models.py:83-148"
+    - "charter: contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json (the Relation enum); planted plants r30-edge-procedure-requires-action and r31-edge-overrides-across-kinds; load fixture shard-retired-relation"
 
 # Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
 # ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence
@@ -1160,9 +1189,9 @@
     force and the support chain reaches an artifact that enhances nothing (a least fixed point),
     so an `enhances` ring is not in force. Otherwise it is `inactive` with reason
     `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets.
-    A step contract is bound to its mission type and is in force only while the mission type is
-    (`mission_type_not_in_force`); only step contracts are bound, and the binding of a step
-    enhancer is PR C. A denied artifact that the rule prunes (a denied enhancer whose target is
+    A step contract was bound to its mission type and in force only while the mission type was
+    (`mission_type_not_in_force`); the step contract is retired since (ADR-0077, 2026-11-13), and a
+    step enhancer is bound as DIV-241 says. A denied artifact that the rule prunes (a denied enhancer whose target is
     out of force) is `inactive`, listed in `enhancedTargetNotInForce` and never in
     `skippedDeactivated`, and not `excluded`: only the reason `deactivated` is `excluded`. A
     write that selects such an enhancer is accepted and answers a warning (`warnings`,
@@ -1916,6 +1945,47 @@
   evidence:
     - "charter: contracts/charter/scenarios/relationships.feature; RelationshipRegistrationService"
     - "charter: contracts/charter/CHANGELOG.md, 0.1.0-SNAPSHOT, Mission types are an artifact kind (issue #194)"
+
+- id: DIV-504
+  surface: The mission step contract and a step's substeps
+  core: >-
+    A mission_step_contract artifact, a *.step-contract.yaml file per step, holds the step's
+    substeps (command, inputs, delegates_to, guidance) and its gates
+    (offering/missions/step_contracts.py).
+  service: >-
+    The kind is retired. A step authors its substeps in the mission-type file, a flat, ordered
+    substeps list with every field kept; each delegation candidate must resolve to an artifact of
+    its kind and have a scope edge from the step's action. A *.step-contract.yaml file or a
+    mission_step_contract.graph.yaml fragment is refused by name as a retired file kind, and the
+    review gate is the guard spec-kitty-pre-review on the work-package lifecycle.
+  rationale: >-
+    A step is authored in one place, and the model is canonical (charter.md, 2026-11-10); core
+    aligns through the generated client.
+  ruling: ADR-0077 decisions 2 and 3 (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9, 2026-11-13); ADR-0054 decision 12
+  status: open
+  since: 2026-11-13
+  evidence:
+    - "core: offering/missions/step_contracts.py"
+    - "charter: contracts/packs/file-kinds.yaml (retired); contracts/packs/schemas/mission-type.schema.json (substeps); contracts/charter/scenarios/removed-routes.feature"
+
+- id: DIV-505
+  surface: The link from a mission type to each of its steps, and template_set
+  core: >-
+    The service's understanding of core, to be confirmed against core: a mission type's requires
+    edges to its actions are not required, and the project charter may carry a template_set.
+  service: >-
+    Every step and on-demand step has an authored mission_type:<type> requires
+    action:<type>/<step> edge, and no such edge names an action that is no step of the type; a pack
+    that breaks either is refused with mission_step_unlinked. template_set is refused as an unknown
+    field in a mission type and in the project charter.
+  rationale: >-
+    The chain from a type to its steps is complete in the graph, and template sets are core's
+    selection, not part of the charter's model.
+  ruling: ADR-0077 decisions 4 and 7 (operator rulings DM-01M7B1YQR5ZKQPDW6DX64KPNRN and DM-01M7B1YKY84DQHZFDXEWNJGB5E, 2026-11-13)
+  status: open
+  since: 2026-11-13
+  evidence:
+    - "charter: planted plants r32-mission-step-unlinked, r33-authored-action-sequence and r34-authored-template-set; contracts/packs/schemas/charter.schema.json"
 - id: DIV-601
   surface: What a pack registration does to the pack the service holds, and how it answers
   core: >-

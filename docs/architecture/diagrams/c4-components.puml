@@ -49,7 +49,7 @@ System_Boundary(svc, "charter offering service") {
       Component(reposvc, "@Service DomainRepositoryService", "Spring", "Realises ALL per-kind ports + ComponentResolver; ctor-injects a SerializationStrategy + FilesystemPackStore; maps DSO <-> entity. load() returns the entity with relationships() already populated.", $tags="edge")
       Component(strategy, "«Strategy» SerializationStrategy", "interface + YamlSerializationStrategy", "entity <-> DSO <-> YAML text, per kind. ONE concrete impl today; future @Repository DB sibling of the same ports.", $tags="edge")
       Component(dso, "«DSO» per-kind DSOs + FilesystemPackStore", "records + store", "TacticDso / DirectiveDso / StyleguideDso / ParadigmDso / ToolguideDso + PackDescriptorDso. Persistence shape. Atomic temp -> ATOMIC_MOVE, PackIdentifier -> path, pack-root containment.", $tags="edge")
-      Component(drgedge, "«DSO» DrgEdge", "record", "Flat relation-token record (impacts / when / reason); record equality = round-trip fidelity.", $tags="edge")
+      Component(drgedge, "«DSO» DrgEdge", "record", "Flat relation-token record (when / reason); record equality = round-trip fidelity.", $tags="edge")
     }
 
     Container_Boundary(papi, "packs.infra.api  (EDGE · inbound/driving adapter)") {

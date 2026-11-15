@@ -2,7 +2,7 @@
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064); Amendment 2026-11-08 (ADR-0066, prompt fragments and sibling enhancers)
 decision_date: '2026-11-02'
 type: ADR
@@ -259,7 +259,7 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
    [Pack schema: Step enhancement](/architecture/pack-schemas/step-enhancement/).
 3. ~~**URN kind tokens**~~ **Ruled 2026-11-02 (operator):** the multi-word URN kind tokens move to kebab case directly
    (`agent-profile:<id>`, `mission-step-contract:<id>`, `mission-type:<id>`, `anti-pattern:<id>`,
-   `event-registry:<id>`), in the same change as the kebab path token. No split-migration reader: the service has no
+   `event-registry:<id>`), in the same change as the kebab path token. *(Note 2026-11-13: `mission_step_contract` is retired, its substeps authored in the mission-type step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)* No split-migration reader: the service has no
    consumers yet, so there is nothing to keep loading the snake-case spelling for. The glossary context token stays
    `glossary_context` (decision 13), because it is not a multi-word kind token but the deliberate split of a URN
    prefix from its `glossary` kind.

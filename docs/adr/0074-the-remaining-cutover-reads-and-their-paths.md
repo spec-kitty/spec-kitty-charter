@@ -2,8 +2,8 @@
 title: "ADR-0074: The remaining cutover reads, and the paths a client reads them by"
 description: How the seven open cutover reads (R4, R11 to R16) are decided, and the paths assets, skills, glossary contexts and presets are read by.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
-decision_status: Accepted; decision 9 amended for assets under an activation (2026-11-12, accepted by operator ruling 2026-11-13)
+updated: 2026-11-14T00:00:00Z
+decision_status: "Accepted; decision 9 amended for assets under an activation (2026-11-12, accepted by operator ruling 2026-11-13); decision 12's step-contract gap closed by ADR-0077 (2026-11-13)"
 decision_date: '2026-11-12'
 type: ADR
 kind: ADR
@@ -198,6 +198,9 @@ both to the operator, who ruled on each (decisions 9 to 14).
     `listArtifactReferences` has its twin, `listEffectiveArtifactReferences`, the pack read of the winner's pack
     (#532). The step-contract gap (#533) stays open. The twin of an asset answers no state (see
     [Amendment 2026-11-12](#amendment-2026-11-12)).*
+
+    *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 3): the step-contract gap (#533) is closed as moot. `mission_step_contract`
+    is retired, and `getEffectiveMissionStepContract` with it, so no literal step-contract read is left to twin.*
 13. **An artifact is addressed by its identity, never by its file path.** An asset is read by its id, which is the
     reference a guard writes (`asset:<id>`). ADR-0019's `/packs/{packId}/assets` and `/packs/{packId}/assets/{path}`
     are dropped. An id that is one path segment is a precondition: the asset and glossary schemas pin no `id`

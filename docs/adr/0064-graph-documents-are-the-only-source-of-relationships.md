@@ -3,7 +3,7 @@ title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
 updated: 2026-11-14T00:00:00Z
-decision_status: Accepted, with Amendments 2026-11-07 and 2026-11-12, and a note of 2026-11-14 on the glossary see_also
+decision_status: Accepted, with Amendments 2026-11-07, 2026-11-12 and 2026-11-13 (ADR-0077), and a note of 2026-11-14 on the glossary see_also
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR
@@ -92,6 +92,20 @@ authored edge. An artifact registration still writes the artifact's own content 
 ### Amendment 2026-11-12
 
 Operator ruling on [#515](https://github.com/spec-kitty/spec-kitty-charter/issues/515): each relation names the source and target kinds it may connect, typed in the domain; an edge that breaks them is refused when the pack is read or written (decision 13).
+
+### Amendment 2026-11-13
+
+The operator's slice F rulings of 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)) set decision 13's table and settle two neighbors. The original
+text stands, and each changed point is annotated:
+
+- decision 13: the endpoint table is [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5, typed by kind markers, bound through one checked bridge
+  (`EndpointRule`), and refused with `relationship_endpoint_not_allowed`. Slice C's `overrides_source_not_activatable`
+  keeps its code and is checked before the table.
+- decision 11: the step contract's delegations become a substep's `delegates_to`, still data; each candidate now also
+  needs a `scope` edge from the step's action ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 2).
+- the relations: `impacts` (the relation and its edge strength), `replaces` and `delegates_to` are retired
+  ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6). Decision 11's per-value `impacts` list on an
+  artifact ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)) stays.
 
 ## Context
 
@@ -209,7 +223,7 @@ such pair. Several later records kept their reference fields "until #189 rules o
     | pack `depends_on` | a pack-level dependency, not an artifact edge ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) |
     | `activated_*` and `selected_*` | a preset's or charter's selection |
     | glossary `see_also` | a cross-reference between terms; *since the operator ruling of 2026-11-14 (#106), each entry is a term reference that may name its pack whose `vocabulary` relation from its context is derived, as `implemented_by` is* |
-    | mission-step-contract delegations | a runtime handoff |
+    | mission-step-contract delegations | a runtime handoff. *Amended 2026-11-13 (ADR-0077): a substep's `delegates_to`, with a `scope` edge per candidate* |
     | lifecycle guards | a transition's guard |
     | per-value `impacts` | the artifact's value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)) |
 
@@ -234,6 +248,7 @@ such pair. Several later records kept their reference fields "until #189 rules o
     is refused when the pack is read or written, with a named refusal. The endpoint kinds of each
     relation are set by slice F (#537), which also settles #447 (an `overrides` edge from a kind an
     activation cannot select).
+    *Amended 2026-11-13: the table is [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5. Slice C delivered #447 and keeps its code.*
 
 ## Consequences
 

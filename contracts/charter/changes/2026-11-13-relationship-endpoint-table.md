@@ -1,6 +1,6 @@
 ### Breaking
 
-- An edge whose relation does not allow its source and target kinds is refused (ADR-0064 decision 13, #514, #350).
+- An edge whose relation does not allow its source and target kinds is refused (ADR-0064 decision 13, #515, #350).
   The endpoint table names, per relation, the kinds each side may hold: a procedure no longer requires a step's
   action, and an `overrides` or `enhances` edge joins two artifacts of one kind. A registration answers
   `422 validation_failed` with one violation per such edge, code `relationship_endpoint_not_allowed`, at its

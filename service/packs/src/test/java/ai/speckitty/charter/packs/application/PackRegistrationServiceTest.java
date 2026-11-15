@@ -208,7 +208,7 @@ class PackRegistrationServiceTest {
 
     private static final String PLAN_PROMPT = "missions/software-dev/steps/plan.prompt.md";
 
-    /** The authored graph document that links software-dev to its one step, plan (FR-009). */
+    /** The authored graph document that links software-dev to its one step, plan (FR-011). */
     static final String PLAN_LINK = """
             schema_version: '1.0'
             generated_at: STATIC

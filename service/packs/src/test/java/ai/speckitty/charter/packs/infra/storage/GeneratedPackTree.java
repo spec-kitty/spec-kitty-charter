@@ -56,7 +56,7 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>root {@code a.graph.yaml}, hidden root {@code .b.graph.yaml}, {@code drg/fragment.yaml}</td>
  *     <td>graph input</td></tr>
  * <tr><td>root {@code mission_type.graph.yaml}, part of the row of each valid mission type: the {@code requires} edge
- *     from the type to its step (FR-009)</td><td>graph input</td></tr>
+ *     from the type to its step (FR-011)</td><td>graph input</td></tr>
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
@@ -227,7 +227,7 @@ final class GeneratedPackTree {
     };
 
     private static final int LATE_COUNTER = 1_000_000;
-    /** The root graph document that links each valid mission type to its step (FR-009). */
+    /** The root graph document that links each valid mission type to its step (FR-011). */
     private static final String MISSION_TYPE_LINKS = "mission_type.graph.yaml";
 
     private static final String PACK_YAML = packYaml();
@@ -607,7 +607,7 @@ final class GeneratedPackTree {
     }
 
     /**
-     * Links a valid mission type to its one step {@code s} (FR-009): the {@code requires} edge joins the pack's root
+     * Links a valid mission type to its one step {@code s} (FR-011): the {@code requires} edge joins the pack's root
      * {@code mission_type.graph.yaml}, a graph input planted with the first type. A late file is removed again after
      * the digest check, so a late type is not linked: its edge would stay behind and change the baseline.
      */

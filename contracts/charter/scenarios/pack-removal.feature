@@ -780,6 +780,64 @@ Feature: One artifact or one registered relationship is removed from a pack
     When I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
     Then the response status is 204
 
+  # FR-005 (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9): a substep's delegation candidate needs a scope edge from its
+  # step's action, so the last such edge is not removed while the substep delegates to the candidate, and nothing is
+  # written. The control removes a registered scope edge from the same action that no substep needs.
+  Scenario: Removing the last scope edge a substep's delegation candidate needs is refused, naming the edge at /to
+    Given the org pack "qa" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose one step delegates to the tactic t.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: apply
+          description: Apply the tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - t
+      """
+    And the org pack "qa" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    And the org pack "qa" with the file "registered.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      generated_by: charter-registration
+      nodes: []
+      edges:
+      - source: action:rx/a
+        target: tactic:t
+        relation: scope
+      - source: action:rx/a
+        target: directive:D2
+        relation: scope
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/qa/relationships?from=action:rx/a&to=tactic:t" with the header "If-Match": "*"
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field at "/violations" holds exactly 1 item(s)
+    And the field at "/violations/0/code" is "substep_delegation_unscoped"
+    And the field at "/violations/0/pointer" is "/to"
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    When I DELETE "/packs/qa/relationships?from=action:rx/a&to=directive:D2" with the header "If-Match": "*"
+    Then the response status is 204
+
   Scenario Outline: A relationship removal whose ends are malformed or missing is a 400 Problem without a code that says why (<query>)
     #411: the detail names the query parameter, and the value it carried when it carried one.
     When I DELETE "/packs/qa/relationships?<query>" with the header "If-Match": "*"

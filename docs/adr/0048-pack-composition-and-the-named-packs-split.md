@@ -2,7 +2,7 @@
 title: "ADR-0048: Pack composition: a dependency graph of named packs, with built-in as a distribution pack"
 description: Packs compose through versioned depends_on edges into a diamond-shaped graph; built-in becomes a content-free distribution pack over a slimmed foundation pack.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-08 (sibling step enhancers compose)'
 decision_date: '2026-11-02'
 type: ADR
@@ -179,6 +179,7 @@ question 5 each carry an annotation; the original text stands. [ADR-0053](/adr/0
     `built-in` as its parent.
 16. **The split renames `missions/` to `mission_types/`** in every member that holds a mission type, and moves
     the step contracts into the type's bundle (ADR-0050 decisions 4 and 5). Both moves land in the split's re-pin.
+    *(Note 2026-11-13: `mission_step_contract` is retired, its substeps authored in the mission-type step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
 17. **Members version separately but release together.** Each member has its own `pack_version`.
     Until a need arises they are released in lockstep, and `built-in` pins its members' exact
     versions.

@@ -32,7 +32,7 @@ reused.
 Entries are grouped by block, one block per mission, so that two missions never share an id:
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
-- **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
+- **Pack schemas (DIV-001..026, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..245, ADR-0020)** is below. DIV-201 and DIV-202 were proposed until the effective reads were
@@ -122,7 +122,7 @@ need no entry here. For an activated case the harness asserts both sides (ADR-00
 The seam does not switch its context read to the service until R9's effective-context operation
 exists (cutover stage 3).
 
-## Pack schemas (DIV-001..025, ADR-0017)
+## Pack schemas (DIV-001..026, ADR-0017)
 
 The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
 and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
@@ -255,7 +255,7 @@ ruling, its status and the evidence.
 ### DIV-011: Org-fragment node kinds
 
 - **Core:** Canonical fragment kind name is mission_steps, with mission_step_contracts kept as the back-compat alias; also accepts the mission_type singular alias, and refuses actions and anti_patterns (offering/drg/org_pack_loader.py:72-100, 118-139).
-- **Service:** One name per concept, 15 plurals. The canonical name is the reverse of core's: mission_step_contracts is the one name, and core's canonical mission_steps is refused, as is mission_type. actions and anti_patterns are accepted.
+- **Service:** One name per concept, 15 plurals. Neither of core's names for the step contract is one of them: core's canonical mission_steps is refused, as is mission_type, and mission_step_contracts is retired with its kind ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/), 2026-11-13). actions and anti_patterns are accepted.
 - **Rationale:** One name per concept, with no aliases. The glossary records the canonical names.
 - **Ruling:** R14 (2026-10-19); plan call P9
 - **Status:** open, since 2026-10-19
@@ -338,8 +338,10 @@ ruling, its status and the evidence.
 - **Core:** Has neither yet. The relation enum has no impacts member (offering/drg/models.py:83-148).
 - **Service:** Models both. The pack schemas' Relation enum is core's 15 values, including in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. in_tension_with is today's spelling of the ADR-0028 tension: the service holds it as a tension beside the relationships and writes it back as written (ADR-0045); it is never read as impacts.
 - **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference: a tension is not a relation type (ADR-0045).
-- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045
-- **Status:** open, since 2026-10-19
+- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045; retired by [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6
+- **Status:** retired, 2026-11-13. The impacts relation and the edge impacts strength are gone from the domain, the
+  contract and the pack schemas, so the service, like core, has neither. An impacts edge is an unknown relation and an
+  edge's impacts key an unknown member. Core's replaces and delegates_to, which the service also retired, are DIV-026.
 - **Evidence:**
   - Core: `offering/drg/models.py:83-148`
   - Charter: `contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json: the Relation enum adds impacts and keeps in_tension_with, and an edge has an optional impacts number (import changes C7 and C12, and the known C7 difference; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
@@ -424,6 +426,17 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:288` and `:301` (`_yaml_parser().load(path)`, no explicit encoding)
   - Charter: `service/packs/src/test/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
+
+### DIV-026: The relations and the kinds each may connect
+
+- **Core:** Its relation enum has 15 values, among them replaces and delegates_to, and a relation may join any two node kinds: nothing checks an edge's kinds beyond the node kinds it knows (offering/drg/models.py:83-148).
+- **Service:** `replaces` and `delegates_to` are retired: an edge that names one is refused as an unknown relation. Each relation joins only its endpoint kinds ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 5), and an edge outside them is refused at read and at write: `relationship_endpoint_not_allowed`, or `overrides_source_not_activatable` for an `overrides` edge from a kind an activation cannot select. For example, a procedure that requires a step's action, or an `overrides` edge between two kinds, loads in core and is refused here.
+- **Rationale:** Each relation means one thing in the charter's model, and the model is canonical (charter.md, 2026-11-10); core aligns through the generated client. A `replaces` edge is written `overrides`.
+- **Ruling:** ADR-0064 decision 13; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 5 and 6 (operator rulings of 2026-11-13)
+- **Status:** open, since 2026-11-13
+- **Evidence:**
+  - Core: `offering/drg/models.py:83-148`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json` and `org-fragment.schema.json` (the Relation enum); planted plants `r30-edge-procedure-requires-action` and `r31-edge-overrides-across-kinds`; load fixture `shard-retired-relation`
 
 ## Adding an entry
 
@@ -535,7 +548,7 @@ by level then URN (rule E9). Core has no counterpart for either member, so this 
 | DIV-221 | Overrides compose transitively from the top: in `F -> E -> T` only `F` stays in force, and `F` satisfies a requirement on `E` and on `T`. A hidden artifact that was selected is `inactive` with reason `overridden`, in the `overridden` bucket with its `overriddenBy`; an unselected one stays `not_selected`. A required target an override satisfies keeps its state and gains `satisfiedBy`. A target that is not `open` (locked, or `extendable`) is never hidden: it stays, and the pair is in `overrideNotApplied`. The edge is judged at registration and again at read, because a later pack may tighten the target. | The service's understanding of core, to be confirmed against core: core's read does not hide an artifact because another overrides it, and a requirement on T is not satisfied by an override. | Decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`, `DM-01M6RA7RPNZS810FTFC98Z13GH` (A3), `DM-01M6RA86QPBM1VE5QZTB9AZ195` (A6); research R11, R13; FR-016 | `override-hides-and-satisfies` |
 | DIV-222 | A cycle of `overrides` edges among `open` artifacts that the candidates or the required floor reach is refused `500 pack_unreadable`, naming a node of it (`override_cycle`); no pick breaks it. A cycle that nothing reaches is not judged. A registration refuses the same cycle (PR A). | The service's understanding of core, to be confirmed against core: core's read applies no `overrides` edge, so it has no cycle to refuse. | Decisions `DM-01M6RA7M56M1409EV9JX1EW83K` (A2), `DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`; FR-016; research R13 | `override-cycle-refused` |
 | DIV-223 | What is in force is solved in four strata to a fixed point (research R13): candidates, overrides, the requirement, then enhancers. An overrider that the enhancer or binding pruning removes loses its overrides, and the requirement and the pruning run again until no overrider is newly removed. When an overrider is pruned while its overrides apply and is in force once they are withdrawn, the answer has no stable value, and the read refuses `500 pack_unreadable` (`override_unstable`). This replaces the earlier rule of one re-run. | The service's understanding of core, to be confirmed against core: core resolves no enhancer or override at read. | Decisions `DM-01M6RA8S9G57W4BW55SNVHBQ10` (A11), `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8); research R13 | `in-force-fixed-point` |
-| DIV-224 | An artifact that declares `enhances` is in force only when a target of its enhancement is in force and the support chain reaches an artifact that enhances nothing (a least fixed point), so an `enhances` ring is not in force. Otherwise it is `inactive` with reason `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets. A step contract is bound to its mission type and is in force only while the mission type is (`mission_type_not_in_force`); only step contracts are bound, and the binding of a step enhancer is PR C. A denied artifact that the rule prunes (a denied enhancer whose target is out of force) is `inactive`, listed in `enhancedTargetNotInForce` and never in `skippedDeactivated`, and not `excluded`: only the reason `deactivated` is `excluded`. A write that selects such an enhancer is accepted and answers a warning (`warnings`, `enhanced_target_not_in_force`). | The service's understanding of core, to be confirmed against core: core returns an enhancement without asking whether its target is in force. | Operator ruling Q8 of 2026-11-06; decisions `DM-01M6R3YTNT1P2MBERBN7WV71ND`, `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`, `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8), `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`; FR-015 | `enhancer-needs-target` |
+| DIV-224 | An artifact that declares `enhances` is in force only when a target of its enhancement is in force and the support chain reaches an artifact that enhances nothing (a least fixed point), so an `enhances` ring is not in force. Otherwise it is `inactive` with reason `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets. A step contract was bound to its mission type and in force only while the mission type was (`mission_type_not_in_force`); the step contract is retired since (ADR-0077, 2026-11-13), and a step enhancer is bound as DIV-241 says. A denied artifact that the rule prunes (a denied enhancer whose target is out of force) is `inactive`, listed in `enhancedTargetNotInForce` and never in `skippedDeactivated`, and not `excluded`: only the reason `deactivated` is `excluded`. A write that selects such an enhancer is accepted and answers a warning (`warnings`, `enhanced_target_not_in_force`). | The service's understanding of core, to be confirmed against core: core returns an enhancement without asking whether its target is in force. | Operator ruling Q8 of 2026-11-06; decisions `DM-01M6R3YTNT1P2MBERBN7WV71ND`, `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`, `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8), `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`; FR-015 | `enhancer-needs-target` |
 | DIV-225 | A required artifact is satisfied by itself in force or by an artifact in force that overrides it, directly or through a chain (`satisfiedBy` names it), never by an enhancement. Otherwise it is put in force with reason `required`, and a deny entry on it is listed in `denyNotApplied`. A locked artifact is in force unless the enhancer or binding rule prunes it (E9). The requirement is the union, across the levels, of the must-have items of the copy of a preset id in force at each level, read from the merged closure (DIV-205); a must-have item no pack holds is in `requiredNotHeld`. The writes' floor refusal and the registration notices judge the floor by the same rule (DIV-204, DIV-205): a deny of an artifact only an earlier level's copy requires, which a later level's copy replaced, is refused. A required or locked artifact that the enhancer or binding rule prunes stays out of force and is listed once, in `requiredNotInForce`. A required, unselected artifact an override hides is `not_selected` with `satisfiedBy`. | Promotes org `required_*` into the allow list at write time (DIV-202). The service's understanding of core, to be confirmed against core: an override does not satisfy a required artifact. | Operator rulings Q6 and Q8 of 2026-11-06; decisions `DM-01M6R0TK6F4CC0Z00CZTS21V72`, `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8` (A1), `01M6YKZRM7VF19A57E40D59N81`, `01M6ZCXAJ9MTTF9XJSR89F3NYG`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`, `DM-01M6RFGFW3S0YJ222QMHD2W11B`; research R11 | `required-is-a-requirement` |
 | DIV-226 | The language filter narrows the candidates, and the requirement then adds a required artifact whatever its `applies_to_languages` say; a locked artifact is a candidate whatever the filter says. Such an artifact is `active` with reason `required` or `locked`, and is not in the `languageFiltered` bucket, which lists only a selected artifact the filter excluded. | The service's understanding of core, to be confirmed against core: the sources of this mission do not say how core combines its language filter with a required artifact. | Rules E3 and E5 (the Unclear note of E5 resolved on 2026-11-08); decision `DM-01M6R2X2SW8KVAJCDX23PGJBMT` | `required-despite-language-filter` |
 | DIV-227 | The activation document stays language-neutral, and a write applies no language filter. The two effective reads apply it: an artifact with a non-empty `applies_to_languages` that shares none with the document's `languages` is `inactive` with reason `language_filtered`. An absent `languages` filters nothing; `[]` filters every tagged artifact. This is the one absent list that does not mean none (DIV-203). A read with no activation applies no filtering. | The service's understanding of core, to be confirmed against core: core applies `languages` where it builds the active list, not only on a read. | Operator ruling on #408 of 2026-11-07 (ruling 2); FR-013, FR-017 | `language-filter-at-read-only` |
@@ -749,6 +762,27 @@ over to the service. Core paths are at spec-kitty `c678037c`.
 - **Evidence:**
   - Charter: `contracts/charter/scenarios/relationships.feature`; `RelationshipRegistrationService`
   - Charter: `contracts/charter/CHANGELOG.md`, 0.1.0-SNAPSHOT, "Mission types are an artifact kind (issue #194)"
+
+### DIV-504: The mission step contract and a step's substeps
+
+- **Core:** A `mission_step_contract` artifact, a `*.step-contract.yaml` file per step, holds the step's substeps (command, inputs, `delegates_to`, guidance) and its gates (`offering/missions/step_contracts.py`).
+- **Service:** The kind is retired. A step authors its substeps in the mission-type file, a flat, ordered `substeps` list with every field kept; each delegation candidate must resolve to an artifact of its kind and have a `scope` edge from the step's action. A `*.step-contract.yaml` file or a `mission_step_contract.graph.yaml` fragment is refused by name as a retired file kind, and the review gate is the guard `spec-kitty-pre-review` on the work-package lifecycle.
+- **Rationale:** A step is authored in one place, and the model is canonical (charter.md, 2026-11-10); core aligns through the generated client.
+- **Ruling:** [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 2 and 3 (operator ruling `DM-01M7B1YH1GF15RD0G4ZPSA8KW9`, 2026-11-13); ADR-0054 decision 12
+- **Status:** open, since 2026-11-13
+- **Evidence:**
+  - Core: `offering/missions/step_contracts.py`
+  - Charter: `contracts/packs/file-kinds.yaml` (`retired`); `contracts/packs/schemas/mission-type.schema.json` (`substeps`); `contracts/charter/scenarios/removed-routes.feature`
+
+### DIV-505: The link from a mission type to each of its steps, and `template_set`
+
+- **Core:** The service's understanding of core, to be confirmed against core: a mission type's `requires` edges to its actions are not required, and the project charter may carry a `template_set`.
+- **Service:** Every step and on-demand step has an authored `mission_type:<type> requires action:<type>/<step>` edge, and no such edge names an action that is no step of the type; a pack that breaks either is refused with `mission_step_unlinked`. `template_set` is refused as an unknown field in a mission type and in the project charter.
+- **Rationale:** The chain from a type to its steps is complete in the graph, and template sets are core's selection, not part of the charter's model.
+- **Ruling:** [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decisions 4 and 7 (operator rulings `DM-01M7B1YQR5ZKQPDW6DX64KPNRN` and `DM-01M7B1YKY84DQHZFDXEWNJGB5E`, 2026-11-13)
+- **Status:** open, since 2026-11-13
+- **Evidence:**
+  - Charter: planted plants `r32-mission-step-unlinked`, `r33-authored-action-sequence` and `r34-authored-template-set`; `contracts/packs/schemas/charter.schema.json`
 
 ## Registration (DIV-601..699, ADR-0065)
 

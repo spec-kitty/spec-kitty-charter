@@ -76,7 +76,7 @@ class ClosureViewSessionStepRefsTest {
     private static final Urn D = urn("directive:D");
     private static final ArtifactRef D_REF = ref("directive:D");
 
-    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-009). */
+    /** The {@code requires} edge a pack that holds mission type {@code M} writes to its step {@code s} (FR-011). */
     private static final Relationship LINK = relationship("mission_type:M", RelationType.REQUIRES, "action:M/s");
 
     private static Urn urn(String text) {

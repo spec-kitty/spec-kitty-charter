@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-14T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -83,9 +83,9 @@ contract").
 | Term | Meaning |
 |---|---|
 | **Artifact kind** | One of the members of core's `ArtifactKind` enum, which is the single authority for each kind's facts. The kinds and their facts are tabulated in the [Logical model](/architecture/logical-model/#artifact-kinds). The Java domain derives from the same facts and does not restate them. |
-| **CRG** | The Charter Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, `tension`, and others; `tension` replaces `in_tension_with` and the signed `impacts` edge, [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)). An edge endpoint is a URN `<kind>:<id>`, always; anything else is refused as `drg_schema_error`. |
+| **CRG** | The Charter Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `enhances`, `overrides`, `tension`, and others; `tension` replaces `in_tension_with` and the signed `impacts` edge, [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)). Each relation joins only its endpoint kinds, and `impacts`, `replaces` and `delegates_to` are retired ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)). An edge endpoint is a URN `<kind>:<id>`, always; anything else is refused as `drg_schema_error`. |
 | **`specializes_from`** | Profile lineage, declared as a CRG edge between two `agent_profile` nodes, never as a per-profile field. |
-| **`enhances` / `overrides`** | `enhances` merges fields and keeps the action sequence and step inputs and outputs; `overrides` replaces in full. Silently dropping steps is refused. |
+| **`enhances` / `overrides`** | `enhances` merges fields and keeps the step sequence and step inputs and outputs; `overrides` replaces in full, an artifact of the same kind. Silently dropping steps is refused. |
 | **Removal / deactivation** | Removal is pack-wide, by a derived pack; deactivation is one project's choice ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)). |
 | **Cascade** | Activating an artifact follows its CRG `requires` and `suggests` edges to the artifacts it needs. Deactivation skips artifacts another active artifact still references. |
 | **Layer merge** | Built-in, org and project layers merge into one active graph under the semantics of core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (layer merge semantics). |
@@ -105,7 +105,7 @@ artifact kind (`mission_types` and `anti_patterns` included), or with `actions`.
 
 | Term | Meaning |
 |---|---|
-| **Mission step contract** | The structural sub-steps of one mission step and what each delegates to; the fragment kind is `mission_step_contracts`. The step's role and expected artifacts live on the mission step, not here. Avoid `mission_steps`. In core `mission_steps` is the canonical name and `mission_step_contracts` its back-compat alias; the service's canonical choice is the reverse, and it refuses `mission_steps`. |
+| **Substep** | [Glossary](/glossary/charter/#substep). One structural sub-step of a mission step, authored in the step's `substeps`; it is no node and has no fragment kind. Core's separate mission step contract is retired in the service, and a fragment node that names its kind, by either of core's plurals, is refused ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)). |
 | **Action** | A mission step as the graph names it, the node `action:<mission-type>/<step>`; the fragment kind is `actions`. Core refuses it in a fragment. The node stays until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) rules on edge authority; until then the action and the mission step name the same thing. |
 | **Anti-pattern** | A node that good artifacts `reject`; it has no descriptor file. The fragment kind is `anti_patterns`. Core refuses it in a fragment. |
 | **Mission type** | [Glossary](/glossary/charter/#mission-type). An artifact kind in the service (`mission_type`, ADR-0044), the node `mission_type:<id>`; the fragment kind is `mission_types`. Avoid the singular `mission_type` as a kind name in a fragment: it is refused. |

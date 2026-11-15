@@ -41,7 +41,6 @@ package "Descriptor kinds (one YAML file per artifact)" as kinds {
   entity Toolguide
   entity Procedure
   entity AgentProfile
-  entity MissionStepContract
   entity MissionType <<ordinary kind>> {
     steps (transitions, guards, actions)
   }
@@ -86,7 +85,6 @@ PS ..> kinds : activates; must_have items\nare the required floor (ADR-0031)
 GC ..> kinds : selects (selected_* per activatable kind)
 
 ' Containment inside a mission type's bundle, and links between kinds
-MissionType "1" o-- "*" MissionStepContract : bundle (step_contracts/)
 MissionType ..> Lifecycle : work_package_lifecycle\n(on a step)\n<color:#8A6D00>[pending ADR-0050 OQ5]</color>
 MissionType ..> Gate : guard {gate, config}
 Lifecycle ..> Gate : guard {gate, config}
@@ -112,13 +110,15 @@ Procedure --> Tactic : requires
 Paradigm --> Directive : requires
 AgentProfile --> AgentProfile : specializes_from
 ' Model-level links (fields)
-MissionStepContract ..> AgentProfile : steps[].delegates_to\n(kind + candidates)
+MissionType ..> AgentProfile : steps[].substeps[].delegates_to\n(kind + candidates; ADR-0077)
 PackSkill ..> PackSkill : enhances / overrides (fields)
 
 note bottom of kinds
   Relation enum (drg/models.py): requires, suggests, applies, scope,
-  vocabulary, instantiates, replaces, delegates_to, specializes_from,
-  enhances, overrides, refines, in_tension_with, reconciles_tension, rejects.
+  vocabulary, instantiates, specializes_from, enhances, overrides,
+  refines, in_tension_with, reconciles_tension, rejects
+  (replaces and delegates_to retired, ADR-0077).
+  Each relation joins only its endpoint kinds (ADR-0077 d5).
   vocabulary targets glossary and term (ADR-0049 d4).
   A step enhancement is a file, not the enhances relation (ADR-0050 d22).
 end note

@@ -179,8 +179,8 @@ Repository ports (domain-owned, impl in storage ring):
 
 ### 3.2 Mission types (`missiontypes.domain`)
 
-- `MissionType {id}`, `Action (action:<missionType>/<action>)`, `MissionStepContract {step → delegated kind + candidates}`.
-- `MissionTypeService` — list/describe; `ActionSequenceService` (from `requires` edges).
+- `MissionType {id}`, `Action (action:<missionType>/<action>)`, `MissionStep {substeps: Substep {delegatesTo → delegated kind + candidates}}`. *(Amended 2026-11-13: the separate `MissionStepContract` is retired, its substeps held by the step; [ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/).)*
+- `MissionTypeService` — list/describe; the run order is the type's `steps` list, and each step is linked from its type by a `requires` edge.
 - Ports: `MissionTypeRepository`.
 
 ### 3.3 Profiles (`profiles.domain`)
@@ -191,7 +191,7 @@ Repository ports (domain-owned, impl in storage ring):
 
 ### 3.4 Other charter artifacts (`artifacts.domain`)
 
-- `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary, skill, anti_pattern, asset, template, mission_step_contract).
+- `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary, skill, anti_pattern, asset, template; `mission_step_contract` is retired).
 - `ActiveGraph`, `LayerMerge`, `Activation {activated_<kind>, activated_kinds, mission_type_activations}`; a requirement is the must-have items of a governing preset (`Preset`, `RequiredFloor`), since `org-charter.yaml` is retired (#431).
 - `ArtifactService`, `GraphQueryService`, `ActivationService` (plan → commit).
 - Ports: `ArtifactRepository`, `ActiveGraphRepository`.
