@@ -2,8 +2,8 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431)
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431); the round trip made main code by ADR-0075 (2026-11-15, #555)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -16,6 +16,7 @@ related:
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - adr/0073-real-packs-register-as-they-are
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
   - architecture/descriptors
   - architecture/logical-model
   - conformance/divergence-register
@@ -156,6 +157,24 @@ this note changes are annotated where they stand:
 - **The per-kind table.** The `*/org-charter.yaml` row is retired. On the `*.md` row, `*/README.md` takes the place
   of `*/pack.md` as the pack document (structure schema `pack-document`, compared by the `markdown` model), and
   `pack.md` and `PROVENANCE.md` at the pack root are retired, refused by name.
+
+### Amendment 2026-11-15 (#555): the round trip is main code
+
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 8, as the
+operator amended it on 2026-11-15 (ruling 2 on [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549)),
+moves the round trip this record defines out of the test source sets. The rules of Decisions 2 to 7 do not change.
+
+- **The flow is production code.** `PackRoundTrip` in `packs.infra.storage` reads a pack into the domain, writes it
+  through the storage service and reads it back. It reads both sides of each file in its content form, with the pack
+  readers' own settings, and verifies the manifest's derived fields on both sides. It returns a
+  `packs.domain.roundtrip.PackRoundTripResult` and judges nothing.
+- **The verdict is `pack-validation`'s.** Equality of meaning (`MeaningComparator`), the per-file observation, the
+  expected-red, exclusion and known-failure lists (`WholePackExpectation`) and the report are main code of
+  `pack-validation`. `WholePackRoundTripRule` is a kernel `Rule` over the result. It never reads a file.
+- **The lists stay test data.** Open question 1's known-failure list, with the expected-red and exclusion lists, now
+  sits beside the example packs in `:packs` test fixtures (`whole-pack/`), because it names their files.
+- **The gate and the drift test run in `pack-validation`.** The tasks are `:pack-validation:wholePackRoundTrip` and
+  `:pack-validation:driftTest`.
 
 ## Context
 

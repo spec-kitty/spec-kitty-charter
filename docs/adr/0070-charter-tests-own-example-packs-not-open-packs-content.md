@@ -43,7 +43,8 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
 - **open-packs runs the whole-pack round trip as a gate.** Its `charter-service` job already builds charter at the
   commit in `charter.lock.yaml`. It also runs charter's round trip over every pack there, at that pin, and the job
   stays required. Until charter publishes `pack-check` ([#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478)),
-  the job runs `./gradlew :packs:driftTest -PopenPacksDir=<the open-packs checkout>` from the pinned charter checkout.
+  the job runs `./gradlew :pack-validation:driftTest -PopenPacksDir=<the open-packs checkout>` from the pinned charter
+  checkout (`:packs:driftTest` at a pin before #555).
   After that, it runs `pack-check` from the pinned release, and the Python port of charter's file classification retires.
   Tracked in [spec-kitty-open-packs#252](https://github.com/spec-kitty/spec-kitty-open-packs/issues/252).
 - **Charter keeps the round trip runnable and complete, and no longer runs it over open-packs.**

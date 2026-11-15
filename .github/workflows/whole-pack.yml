@@ -1,9 +1,10 @@
 name: whole-pack
 
 # The whole-pack round-trip gate (#187, epic #186): every file of every charter-owned example pack (ADR-0070, #547:
-# built-in, org-base and project, under service/packs/src/testFixtures) is read into the domain, written back, read
-# again and compared with its source by meaning, against the checked-in expected-red baseline
-# (service/packs/src/test/resources/whole-pack). It uploads one report per pack as `whole-pack-report`.
+# built-in, org-base and project, under service/packs/src/testFixtures) goes through the production flow (PackRoundTrip,
+# packs main): read into the domain, written back and read again. pack-validation's WholePackRoundTripRule compares it
+# with its source by meaning, against the checked-in expected-red baseline (service/packs/src/testFixtures/resources/
+# whole-pack; ADR-0075 decision 8, as amended 2026-11-15). It uploads one report per pack as `whole-pack-report`.
 #
 # A required check (epic #186, operator ruling of 2026-11-05): ci.yml calls this workflow for its `wholepack` group, so
 # it feeds `CI gate / gate` (ADR-0023), and every pull request that changes what it covers has to keep packs
@@ -11,7 +12,8 @@ name: whole-pack
 on:
   # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
   # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
-  # The paths are ci.yml's `wholepack_re`: :packs also reads contracts/charter and contracts/offering.
+  # The paths are ci.yml's `wholepack_re`: :packs, which :pack-validation runs, also reads contracts/charter and
+  # contracts/offering.
   push:
     branches: [main]
     paths:
@@ -54,12 +56,12 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       - name: Whole-pack round trip
-        run: ./gradlew :packs:wholePackRoundTrip
+        run: ./gradlew :pack-validation:wholePackRoundTrip
 
       - name: Show the reports
         if: always()
         run: |
-          for report in service/packs/build/reports/whole-pack/*.md; do
+          for report in service/pack-validation/build/reports/whole-pack/*.md; do
             if [ -f "$report" ]; then sed -n '1,/^## Files/p' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
           done
 
@@ -69,5 +71,5 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: whole-pack-report
-          path: service/packs/build/reports/whole-pack/*.md
+          path: service/pack-validation/build/reports/whole-pack/*.md
           if-no-files-found: warn

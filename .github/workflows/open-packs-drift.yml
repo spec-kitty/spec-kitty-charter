@@ -2,8 +2,9 @@ name: Open-packs drift (nightly)
 
 # The nightly open-packs drift watch (ADR-0070): charter's tests read the charter-owned example packs, never
 # spec-kitty-open-packs, so this workflow is the only place charter's loader meets open-packs content. It checks out
-# open-packs `main` and runs `:packs:driftTest`, which puts every pack with a pack.yaml through the gate's whole-pack
-# round trip (load, write, compare by meaning) and also reports unmodelled files and load warnings. It has no
+# open-packs `main` and runs `:pack-validation:driftTest`, which puts every pack with a pack.yaml through the gate's
+# whole-pack round trip (the production flow, then pack-validation's rule: load, write, compare by meaning) and also
+# reports unmodelled files and load warnings. It has no
 # expected-red baseline, so it can be red against today's open-packs.
 # - Schedule and workflow_dispatch only: no pull_request or push trigger, not a required check, and not in ci.yml's
 #   path routers. `driftTest` is its own source set: `check` and `verifyAll` compile and lint it but never run it.
@@ -56,18 +57,18 @@ jobs:
 
       - name: Build the drift test
         id: build
-        run: ./gradlew :packs:driftTestClasses
+        run: ./gradlew :pack-validation:driftTestClasses
 
       - name: Load every open-packs pack
         id: drift
-        run: ./gradlew :packs:driftTest -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+        run: ./gradlew :pack-validation:driftTest -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
 
       - name: Upload the drift report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: open-packs-drift-report
-          path: service/packs/build/reports/tests/driftTest
+          path: service/pack-validation/build/reports/tests/driftTest
           if-no-files-found: warn
           retention-days: 14
 
