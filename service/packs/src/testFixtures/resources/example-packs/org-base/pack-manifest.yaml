@@ -1,6 +1,6 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: 3db285a20e8b1b6590a45c01b900e71d48f331543e9aee2b1409ac044d366165
+manifest_hash: 879afb7df5b40d3901191c161e1d0b063da683298a47c8bb23086ffdef3fa42d
 constituents:
 - kind: agent_profile
   id: human-operator
@@ -10,6 +10,10 @@ constituents:
   id: qa-defect-triager-dmitri
   path: agent_profiles/qa-defect-triager-dmitri.agent.yaml
   content_hash: 588ab434a385d8d9db27dc73e4eb8b2c4582f39cb41fe7a0c041697b3e66bf0b
+- kind: agent_profile
+  id: reviewer-renata-org
+  path: agent_profiles/reviewer-renata-org.agent.yaml
+  content_hash: bd98bc3e26b88f465f7ee3c9d99c69635ac5f9aa90a5192a43df442fcc0356cf
 - kind: directive
   id: DIRECTIVE_038
   path: directives/038-structured-prompt-boundary.directive.yaml

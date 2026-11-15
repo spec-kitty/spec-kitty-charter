@@ -307,6 +307,7 @@ enum:
   - role_pin_not_fitting
   - role_pin_conflict
   - specialization_cycle
+  - profile_enhancement_drops_field
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -976,6 +977,41 @@ x-refusal:
     retryable: false
     raised: true
     description: the specializes_from edges among the agent profiles of a closure form a cycle (ruling D2)
+  profile_enhancement_drops_field:
+    status: 500
+    retryable: false
+    raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
+      putPackRelationship:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
+    description: >-
+      an agent profile that enhances another would drop part of it: a list item, a sub-field or a value of a top-level
+      field it declares is missing or changed, or it declares a non-empty excluding (rulings D5 and D7, #380). Identity
+      fields are the enhancer's own and never merged. The detail names the enhancing pack first and the field. A write
+      judged over the closures its pack joins answers 422; a read of content stored before the rule answers 500, the
+      stored packs being at fault
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

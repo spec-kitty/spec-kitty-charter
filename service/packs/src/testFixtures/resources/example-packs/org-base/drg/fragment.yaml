@@ -61,3 +61,7 @@ edges:
 - source: step_enhancement:spdd-review
   target: built-in::action:software-dev/review
   relation: enhances
+# The org's enhancement of the built-in reviewer (ruling D5): it restates her and adds a directive reference.
+- source: agent_profile:reviewer-renata-org
+  target: built-in::agent_profile:reviewer-renata
+  relation: enhances

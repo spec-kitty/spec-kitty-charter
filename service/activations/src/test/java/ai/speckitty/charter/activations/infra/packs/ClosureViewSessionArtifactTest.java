@@ -185,6 +185,7 @@ class ClosureViewSessionArtifactTest {
                                 Optional.of("its words"),
                                 true,
                                 Optional.empty())),
+                List.of(),
                 List.of());
 
         assertThat(ClosureViewSession.governanceOf(walked).entries())
@@ -249,14 +250,15 @@ class ClosureViewSessionArtifactTest {
         ProfileGovernance.Governance walked = new ProfileGovernance.Governance(
                 P,
                 List.of(entry(D, GovernanceWalk.Step.REQUIRES, P), entry(action, GovernanceWalk.Step.VOCABULARY, P)),
+                List.of(),
                 List.of());
 
         GovernanceFacts facts = ClosureViewSession.governanceOf(walked);
 
         assertThat(facts.entries()).extracting(GovernanceFacts.Entry::ref).containsExactly(D_REF);
 
-        ProfileGovernance.Governance broken =
-                new ProfileGovernance.Governance(P, List.of(entry(D, GovernanceWalk.Step.REQUIRES, action)), List.of());
+        ProfileGovernance.Governance broken = new ProfileGovernance.Governance(
+                P, List.of(entry(D, GovernanceWalk.Step.REQUIRES, action)), List.of(), List.of());
         assertThatThrownBy(() -> ClosureViewSession.governanceOf(broken))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("action:M/s");
@@ -285,6 +287,7 @@ class ClosureViewSessionArtifactTest {
                                 Optional.empty(),
                                 true,
                                 Optional.empty())),
+                List.of(),
                 List.of());
 
         GovernanceFacts facts = ClosureViewSession.governanceOf(walked);
