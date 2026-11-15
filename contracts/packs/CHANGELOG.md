@@ -21,7 +21,7 @@ The first packs contract version, not yet released (#559).
 ### Added
 
 - Role pins (slice G, #42; ADR-0030, ADR-0078 decision 3): `policy.schema.json` gains `role_pins`, a map from a
-  role token (`^[a-z][a-z0-9-]*$`, never `generic`, at most 64 characters) to a profile id
+  role token (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, never `generic`, at most 64 characters) to a profile id
   (`^[a-z0-9][a-z0-9_-]*$`, 1 to 64 characters), in authored order. A pin is tighten-only along the closure; a roles
   key (role locks) stays reserved and is refused as undeclared.
 - The packs contract as a versioned line of its own, published as a release
@@ -34,6 +34,12 @@ The first packs contract version, not yet released (#559).
 
 ### Changed
 
+- Identifiers on the shared grammar (ADR-0075 decision 2, #552): a role (`agent-profile.schema.json` `role` and
+  `alt-roles`, `mission-type.schema.json` step `role`, `procedure.schema.json` step `role`, now also at most 64
+  characters, and the `role_pins` keys of `policy.schema.json`), a paradigm `id`, a styleguide `id` and each part of a
+  step enhancement's `slot` are letter-first kebab slugs, `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, so a doubled, leading or
+  trailing hyphen is invalid where `^[a-z][a-z0-9-]*$` accepted it. No spec-kitty-open-packs id breaks (census at
+  `openPacksRef` and at open-packs `main`).
 - The agent profile's performer (slice G, #512; ADR-0078 decision 4): `agent-profile.schema.json` replaces
   `sentinel` (boolean) with `performer` (`agent` or `human`, optional, no default). The role `operator` is reserved for
   a human-performed profile: a profile whose `role` or `alt-roles` take it and that is not `performer: human` is

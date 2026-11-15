@@ -98,7 +98,7 @@
       },
       "description": "The profile-id each pinned role is fixed to, keyed by role token, in authored order (ADR-0030, ADR-0032 decision 4). The pinned profile is held in the pack's closure and fits the role, as its role or one of its alt-roles. Never the reserved role 'generic' (ADR-0068).",
       "propertyNames": {
-        "pattern": "^[a-z][a-z0-9-]*$",
+        "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
         "maxLength": 64,
         "not": {
           "const": "generic"
