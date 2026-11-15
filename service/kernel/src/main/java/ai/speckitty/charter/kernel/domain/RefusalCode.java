@@ -222,6 +222,11 @@ public enum RefusalCode {
      * decision 4). Answered as 422, naming the packs.
      */
     FALLBACK_PROFILE_NOT_ROLE_NEUTRAL("fallback_profile_not_role_neutral"),
+    /**
+     * A pack's fallback profile is human-performed (ruling D4): a fallback serves every role nothing else fits, so it is
+     * agent-performed. Answered as 422, naming the packs.
+     */
+    FALLBACK_PROFILE_NOT_AGENT("fallback_profile_not_agent"),
     /** The built-in pack declares no fallback profile (ADR-0068; reserved until open-packs ships the declaration). */
     FALLBACK_PROFILE_MISSING("fallback_profile_missing"),
     /**
@@ -237,7 +242,27 @@ public enum RefusalCode {
      * {@code getEffectiveStepPrompt} alone, after the not-found codes and before any {@code 304}; the action context of
      * the same action answers 200 with nothing in it.
      */
-    MISSION_TYPE_NOT_IN_FORCE("mission_type_not_in_force");
+    MISSION_TYPE_NOT_IN_FORCE("mission_type_not_in_force"),
+    /**
+     * A role pin of a pack's {@code policy.yaml} names no agent profile the pack's closure holds (ADR-0030, ruling D3).
+     * Answered as 422, naming the packs.
+     */
+    ROLE_PIN_UNKNOWN("role_pin_unknown"),
+    /**
+     * A role pin names a profile that does not fit the pinned role: the role is neither the profile's {@code role} nor
+     * one of its {@code alt-roles}, whoever performs it (ruling D3). Answered as 422, naming the packs.
+     */
+    ROLE_PIN_NOT_FITTING("role_pin_not_fitting"),
+    /**
+     * Two packs of one closure pin one role to different profiles; pins are tighten-only, whatever the packs'
+     * derivation (ruling D3). Answered as 422, naming the packs.
+     */
+    ROLE_PIN_CONFLICT("role_pin_conflict"),
+    /**
+     * The {@code specializes_from} edges among the agent profiles of a closure form a cycle (ruling D2). Answered as
+     * 422, naming the packs.
+     */
+    SPECIALIZATION_CYCLE("specialization_cycle");
 
     /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
     private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(

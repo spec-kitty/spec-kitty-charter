@@ -31,8 +31,12 @@ class PolicyRoundTripTest {
     private static final String PACK_YAML =
             "pack_id: 01M60H1A0000000000000000PQ\npack_version: 0.1.0\nname: qa\npack_level: project\n";
     private static final String NAMES_POLICY = "mutability_policy: policy.yaml\n";
-    private static final String POLICY =
-            "schema_version: 1\nkind_defaults: {tactic: extendable}\nartifacts: {directive:X: locked}\n";
+    private static final String POLICY = """
+            schema_version: 1
+            kind_defaults: {tactic: extendable}
+            artifacts: {directive:X: locked}
+            role_pins: {reviewer: reviewer-renata}
+            """;
 
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
@@ -52,7 +56,7 @@ class PolicyRoundTripTest {
     }
 
     @Test
-    @DisplayName("a named policy file is modelled, written after pack.yaml and reloads with the same levels")
+    @DisplayName("a named policy file is modelled, written after pack.yaml and reloads with the same levels and pins")
     void aNamedPolicyFileRoundTripsWithItsLevels(@TempDir Path host) throws IOException {
         Path source = pack(host, PACK_YAML + NAMES_POLICY, Optional.of(POLICY));
         WholePackStore.LoadedPack loaded = store.load(source);
@@ -67,6 +71,7 @@ class PolicyRoundTripTest {
         assertThat(Files.readString(target.resolve("policy.yaml"))).isEqualTo(POLICY);
         assertThat(policyOf(target)).isEqualTo(policyOf(source));
         assertThat(policyOf(target).levelOf(new Urn(NodeKind.DIRECTIVE, "X"))).isEqualTo(MutabilityLevel.LOCKED);
+        assertThat(policyOf(target).rolePins().pinOf("reviewer")).contains("reviewer-renata");
         WholePackStore.LoadedPack reloaded = store.load(target);
         assertThat(reloaded.pack().descriptor()).isEqualTo(loaded.pack().descriptor());
         assertThat(reloaded.policy()).isEqualTo(loaded.policy());

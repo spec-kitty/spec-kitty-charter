@@ -210,8 +210,9 @@ public final class RegistrationImpact {
      * @param replacement the pack as it will be stored
      * @return the floor and lock changes over those closures
      * @throws CharterRefusal a composition code, or {@code override_not_permitted}, {@code enhances_cycle},
-     *     {@code conflicting_relations}, {@code self_override} or {@code override_cycle} (422), naming the closure's
-     *     roots and the packs involved, {@code prompt_slot_missing} (422) when a stored activation whose closure the
+     *     {@code conflicting_relations}, {@code self_override}, {@code override_cycle} or {@code specialization_cycle}
+     *     (422), naming the closure's roots and the packs involved, a {@code fallback_profile_*} or {@code role_pin_*}
+     *     code (422) for a pack's fallback profile or role pins, {@code prompt_slot_missing} (422) when a stored activation whose closure the
      *     pack joins would put a step enhancement in force without its slot ({@link ActivationImpact#requireComposable}),
      *     or {@code pack_unreadable} when a pack of a closure cannot be read
      */
@@ -307,7 +308,7 @@ public final class RegistrationImpact {
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now));
         }
-        judgeFallbacks(found, replacement, after, staged, session);
+        judgeFallbacksAndPins(found, replacement, changes, staged, session);
         ActivationImpact.ClosureChanges joined =
                 roots -> found.holding().apply(roots).map(changes::get);
         activations.requireComposable(joined);
@@ -364,8 +365,9 @@ public final class RegistrationImpact {
             Optional<ai.speckitty.charter.packs.domain.PackRepository> packsOfCensus) {
         String name = pack.id().value();
         try {
-            Optional<Finding> relations = ImpactRelations.check(
-                            composing.offering().composedWithFacts(List.of(pack.id())))
+            OfferingReadService.ComposedClosure composed = composing.offering().composedWithFacts(List.of(pack.id()));
+            Optional<Finding> relations = ImpactRelations.check(composed)
+                    .or(() -> SpecializationCycleRule.check(composed))
                     .map(broken ->
                             new Finding(name, broken.code(), broken.detail() + " (packs " + packsOf(broken) + ")"));
             if (relations.isPresent()) {
@@ -373,7 +375,13 @@ public final class RegistrationImpact {
             }
             FallbackProfileRule.Profiles profiles =
                     (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
-            return fallbackBreach(pack.id(), stored.descriptors().get(pack.id()), composing, profiles)
+            ClosureView own = composing.queries().snapshot(Optional.of(List.of(pack.id())));
+            Optional<Finding> fallback = fallbackBreach(stored.descriptors().get(pack.id()), pack.id(), own, profiles)
+                    .map(breach -> new Finding(name, breach.code(), breach.detail()));
+            if (fallback.isPresent()) {
+                return fallback;
+            }
+            return RolePinRule.check(pack.id(), own, profiles)
                     .map(breach -> new Finding(name, breach.code(), breach.detail()));
         } catch (CharterRefusal refused) {
             return Optional.of(new Finding(name, refused.code(), String.valueOf(refused.getMessage())));
@@ -414,18 +422,19 @@ public final class RegistrationImpact {
         activations.registered(packId, notices);
     }
 
-    // ---- the fallback profile (ADR-0068) --------------------------------------------------------------------------
+    // ---- the fallback profile (ADR-0068) and the role pins (ruling D3) -------------------------------------------
 
     /**
-     * Judges the {@code fallback_profile} of every staged pack whose closure holds the written pack, the write in place
-     * (ADR-0068 decisions 2 to 4): the written pack itself, and each pack that builds on it, whose declared fallback may
-     * be held in the written pack and so be removed, unlocked or given a role by this write. A pack that declares none is
-     * not judged.
+     * Judges the {@code fallback_profile} and the role pins of every staged pack whose closure holds the written pack,
+     * the write in place (ADR-0068 decisions 2 to 4, rulings D3 and D4): the written pack itself, and each pack that
+     * builds on it, whose declared fallback or pinned profile may be held in the written pack and so be removed,
+     * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin. Each is judged
+     * over its own closure, the fallback first.
      */
-    private static void judgeFallbacks(
+    private static void judgeFallbacksAndPins(
             ClosureRoots.Found found,
             Replacement replacement,
-            Views views,
+            Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged,
             StagedPackViews.View staged,
             StagedPackViews.Session session) {
         PackIdentifier written = replacement.configured().id();
@@ -441,7 +450,9 @@ public final class RegistrationImpact {
             PackDescriptor descriptor = declaring.equals(written)
                     ? replacement.descriptor()
                     : staged.descriptors().get(declaring);
-            Optional<FallbackProfileRule.Breach> breach = fallbackBreach(declaring, descriptor, views, profiles);
+            ClosureView own = Objects.requireNonNull(judged.get(roots), "a judged closure")
+                    .after();
+            Optional<FallbackProfileRule.Breach> breach = fallbackBreach(descriptor, declaring, own, profiles);
             if (breach.isPresent()) {
                 throw new CharterRefusal(
                         breach.get().code(),
@@ -449,7 +460,27 @@ public final class RegistrationImpact {
                                 + breach.get().detail(),
                         withRoots(List.of(), roots, staged));
             }
+            Optional<RolePinRule.Breach> pins = RolePinRule.check(declaring, own, profiles);
+            if (pins.isPresent()) {
+                throw new CharterRefusal(
+                        pins.get().code(),
+                        "In the closure rooted at " + roots.label() + ": "
+                                + pins.get().detail(),
+                        withRoots(involved(pins.get().packs(), staged), roots, staged));
+            }
         }
+    }
+
+    /** The packs a breach names, as refusal packs, each with its descriptor. */
+    private static List<RefusalPack> involved(List<PackIdentifier> packs, StagedPackViews.View staged) {
+        List<RefusalPack> involved = new ArrayList<>();
+        for (PackIdentifier pack : packs) {
+            staged.descriptors()
+                    .find(pack)
+                    .map(descriptor -> new RefusalPack(descriptor.packId(), pack.value(), descriptor.name()))
+                    .ifPresent(involved::add);
+        }
+        return involved;
     }
 
     /** The store that loads the aggregates; a session that has none cannot judge a fallback, which is a defect, not a refusal. */
@@ -464,13 +495,10 @@ public final class RegistrationImpact {
     }
 
     private static Optional<FallbackProfileRule.Breach> fallbackBreach(
-            PackIdentifier pack, PackDescriptor descriptor, Views views, FallbackProfileRule.Profiles profiles) {
-        Optional<String> named = descriptor.fallbackProfile();
-        if (named.isEmpty()) {
-            return Optional.empty();
-        }
-        ClosureView own = views.queries().snapshot(Optional.of(List.of(pack)));
-        return FallbackProfileRule.check(pack.value(), named.get(), own, profiles);
+            PackDescriptor descriptor, PackIdentifier pack, ClosureView own, FallbackProfileRule.Profiles profiles) {
+        return descriptor
+                .fallbackProfile()
+                .flatMap(named -> FallbackProfileRule.check(pack.value(), named, own, profiles));
     }
 
     /** The agent profile of this id an aggregate holds. */
@@ -491,7 +519,8 @@ public final class RegistrationImpact {
         } catch (CharterRefusal refused) {
             throw inClosure(roots, refused, staged);
         }
-        Optional<ImpactRelations.Violation> broken = ImpactRelations.check(composed);
+        Optional<ImpactRelations.Violation> broken =
+                ImpactRelations.check(composed).or(() -> SpecializationCycleRule.check(composed));
         if (broken.isPresent()) {
             throw refusal(roots, broken.get(), staged);
         }

@@ -17,7 +17,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The pack mutability policy file (ADR-0063, FR-022): {@code policy.schema.json} is closed, accepts the designed shape
- * and refuses every other spelling, role locks and pins included (reserved, ADR-0030). Each refusal departs from the
+ * and refuses every other spelling, role locks included (reserved, ADR-0030); role pins are declared in
+ * {@code role_pins} (ruling D3). Each refusal departs from the
  * clean document by one line, so a schema that accepted everything, or refused everything, fails here. The descriptor's
  * {@code mutability_policy} key admits only {@code policy.yaml} in this version.
  */
@@ -35,6 +36,9 @@ class PolicySchemaTest {
               directive:DIRECTIVE_001: locked
               tactic:acceptance-test-first: extendable
               template:writing/minutes.md: open
+            role_pins:
+              reviewer: reviewer-renata
+              implementer: java-jenny
             """;
 
     private static final String DESCRIPTOR = """
@@ -54,7 +58,7 @@ class PolicySchemaTest {
     @Test
     void theDesignedShapePassesAndSoDoesTheSmallestFile() {
         assertThat(policy(VALID)).isEmpty();
-        assertThat(policy("schema_version: 1\n")).as("both maps are optional").isEmpty();
+        assertThat(policy("schema_version: 1\n")).as("every map is optional").isEmpty();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -63,7 +67,11 @@ class PolicySchemaTest {
             value = {
                 "an unknown top-level key|schema_version: 1\\nowner: qa|additionalProperties",
                 "role locks are reserved|schema_version: 1\\nroles: {implementer: locked}|additionalProperties",
-                "pins are reserved|schema_version: 1\\npins: [directive:D1]|additionalProperties",
+                "a pins key is no role_pins|schema_version: 1\\npins: [directive:D1]|additionalProperties",
+                "a pin of the reserved role generic|schema_version: 1\\nrole_pins: {generic: generic-agent}|propertyNames",
+                "a pin of a role outside the role grammar|schema_version: 1\\nrole_pins: {Reviewer: renata}|propertyNames",
+                "a pin to an id outside the identifier grammar|schema_version: 1\\nrole_pins: {reviewer: Renata}|pattern",
+                "a pin to no profile|schema_version: 1\\nrole_pins: {reviewer: [renata]}|type",
                 "a level outside the three|schema_version: 1\\nartifacts: {directive:D1: frozen}|enum",
                 "a kind default outside the three levels|schema_version: 1\\nkind_defaults: {directive: frozen}|enum",
                 "a kind token that is no artifact kind|schema_version: 1\\nkind_defaults: {action: locked}|additionalProperties",

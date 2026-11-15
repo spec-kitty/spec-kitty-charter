@@ -1265,6 +1265,192 @@ Feature: Registering a whole pack replaces the pack the service holds
       | fallback_profile_not_locked       | generic-agent | extendable | role: generic     | description: Any work.  |
       | fallback_profile_not_role_neutral | generic-agent | locked     | role: implementer | description: Any work.  |
       | fallback_profile_not_role_neutral | generic-agent | locked     | role: generic     | alt-roles: [reviewer]   |
+      | fallback_profile_not_agent        | generic-agent | locked     | role: generic     | performer: human        |
+
+  # bound by: ruling D3 (ADR-0030): a role pin names a profile the closure holds that fits the pinned role, a human one included
+  Scenario Outline: A role pin that breaks ruling D3 is refused with its code, and a pin to a fitting profile is accepted
+    Given the archive "pinned" is a copy of the archive "v1"
+    And the archive "pinned" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the archive "pinned" holds the file "agent_profiles/reviewer-renata.agent.yaml":
+      """
+      profile-id: reviewer-renata
+      name: Reviewer Renata
+      role: reviewer
+      purpose: Review the work.
+      specialization:
+        primary-focus: Review
+      """
+    And the archive "pinned" holds the file "agent_profiles/human-operator.agent.yaml":
+      """
+      profile-id: human-operator
+      name: Human operator
+      role: operator
+      performer: human
+      purpose: Decide what is in scope.
+      specialization:
+        primary-focus: Operator decisions
+      """
+    And the archive "sound" is a copy of the archive "pinned"
+    And the archive "pinned" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      role_pins:
+        reviewer: <pinned>
+      """
+    And the archive "sound" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      role_pins:
+        reviewer: reviewer-renata
+      """
+    When I PUT "/packs/acme" with the archive "pinned"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "<code>"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples:
+      | code                 | pinned         |
+      | role_pin_unknown     | reviewer-rex   |
+      | role_pin_not_fitting | human-operator |
+
+  # bound by: ruling D3: pins are tighten-only, so a pack that pins a role its dependency pins to another profile conflicts
+  Scenario: A pin that differs from a pin of the closure is role_pin_conflict, and the same pin is accepted
+    Given the archive "acme-pinned" is a copy of the archive "v1"
+    And the archive "acme-pinned" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the archive "acme-pinned" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      role_pins:
+        reviewer: reviewer-renata
+      """
+    And the archive "acme-pinned" holds the file "agent_profiles/reviewer-renata.agent.yaml":
+      """
+      profile-id: reviewer-renata
+      name: Reviewer Renata
+      role: reviewer
+      purpose: Review the work.
+      specialization:
+        primary-focus: Review
+      """
+    And the archive "derived" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943P
+      pack_version: 1.0.0
+      parent_pack: null
+      name: derived
+      pack_level: org
+      mutability_policy: policy.yaml
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "derived" holds the file "agent_profiles/reviewer-rhea.agent.yaml":
+      """
+      profile-id: reviewer-rhea
+      name: Reviewer Rhea
+      role: reviewer
+      purpose: Review the work of the derived pack.
+      specialization:
+        primary-focus: Review
+      """
+    And the archive "derived-same" is a copy of the archive "derived"
+    And the archive "derived" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      role_pins:
+        reviewer: reviewer-rhea
+      """
+    And the archive "derived-same" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      role_pins:
+        reviewer: reviewer-renata
+      """
+    When I PUT "/packs/acme" with the archive "acme-pinned"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/derived" with the archive "derived"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "role_pin_conflict"
+    When I GET "/packs/derived"
+    Then the response status is 404
+    When I PUT "/packs/derived" with the archive "derived-same"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # bound by: ruling D2: the specializes_from edges among a closure's agent profiles form no cycle
+  Scenario: A cycle of specializes_from edges among agent profiles is refused, and the acyclic lineage is accepted
+    Given the archive "lineage" is a copy of the archive "v1"
+    And the archive "lineage" holds the file "agent_profiles/implementer-ivan.agent.yaml":
+      """
+      profile-id: implementer-ivan
+      name: Implementer Ivan
+      role: implementer
+      purpose: Implement the work.
+      specialization:
+        primary-focus: Code
+      """
+    And the archive "lineage" holds the file "agent_profiles/java-jenny.agent.yaml":
+      """
+      profile-id: java-jenny
+      name: Java Jenny
+      role: implementer
+      purpose: Implement the work in Java.
+      specialization:
+        primary-focus: Java
+      """
+    And the archive "sound" is a copy of the archive "lineage"
+    And the archive "lineage" holds the file "lineage.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'agent_profile:java-jenny', target: 'agent_profile:implementer-ivan', relation: specializes_from}
+      - {source: 'agent_profile:implementer-ivan', target: 'agent_profile:java-jenny', relation: specializes_from}
+      """
+    And the archive "sound" holds the file "lineage.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'agent_profile:java-jenny', target: 'agent_profile:implementer-ivan', relation: specializes_from}
+      """
+    When I PUT "/packs/acme" with the archive "lineage"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "specialization_cycle"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
 
   # bound by: WP16 (IC-15, A8, A12 and the WP15 hand-off: an edge whose two ends name one artifact of another pack)
   # A self-loop the load can see in one pack is refused first as invalid (the outline above); an edge whose ends are qualified

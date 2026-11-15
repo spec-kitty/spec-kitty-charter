@@ -115,6 +115,29 @@ class FallbackProfileImpactTest {
                 .isEqualTo(Outcome.REPLACED);
     }
 
+    @Test
+    void aHumanPerformedFallbackIsRefusedAndTheAgentPerformedOneIsStored(@TempDir Path host) {
+        Rig rig = new Rig(host);
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "org-base", rig.stage(org("role: generic\nperformer: human\n", LOCK_GENERIC)), Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("a fallback serves every role nothing else fits, so it is agent-performed (ruling D4)")
+                .isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_AGENT);
+        assertThat(refused.getMessage())
+                .contains("closure rooted at org-base")
+                .contains("the fallback_profile generic-agent of pack org-base is human-performed");
+        assertThat(rig.packs.resolve("org-base")).as("nothing was stored").doesNotExist();
+        assertThat(rig.register(
+                                "org-base",
+                                rig.stage(org("role: generic\nperformer: agent\n", LOCK_GENERIC)),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: the same fallback, agent-performed")
+                .isEqualTo(Outcome.CREATED);
+    }
+
     private static AgentProfile agentProfile(String role) {
         return AgentProfile.builder()
                 .id(new AgentProfileIdentifier("generic-agent"))

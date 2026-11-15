@@ -353,10 +353,15 @@ class ReservedRefusalCodesTest {
                 RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                 RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
                 RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
                 RefusalCode.FALLBACK_PROFILE_MISSING,
                 RefusalCode.FALLBACK_PROFILE_CONFLICT,
                 RefusalCode.NO_PROFILE_MATCHED,
-                RefusalCode.MISSION_TYPE_NOT_IN_FORCE
+                RefusalCode.MISSION_TYPE_NOT_IN_FORCE,
+                RefusalCode.ROLE_PIN_UNKNOWN,
+                RefusalCode.ROLE_PIN_NOT_FITTING,
+                RefusalCode.ROLE_PIN_CONFLICT,
+                RefusalCode.SPECIALIZATION_CYCLE
             };
         }
     }
