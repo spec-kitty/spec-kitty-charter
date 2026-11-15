@@ -1,4 +1,4 @@
-### Changed
+### Breaking
 
 - A mission step's `role` is never the reserved `generic` and is at most 64 characters (ADR-0068 decision 4, #446),
   in the pack schema `mission-type.schema.json` (`not: {const: generic}`, `maxLength: 64`, reported at
