@@ -8,6 +8,7 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.Performer;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,8 +19,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The YAML form of the agent profile. Its keys are hyphenated as the schema spells them ({@code profile-id}), except
- * {@code applies_to_languages}. Integers and the {@code sentinel} flag are read and written as their YAML types, never
- * as text, and an undeclared field is not written, so no schema default is invented.
+ * {@code applies_to_languages}. Integers are read and written as their YAML type, never as text, and an undeclared
+ * field is not written, so no schema default is invented: a file silent on {@code performer} stays silent.
  */
 enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
     /** The format. */
@@ -55,7 +56,7 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
                 collaboration(mapping(root, "collaboration")),
                 modeDefaults(root),
                 optional(root, "initialization-declaration"),
-                root.get("sentinel") instanceof Boolean flag ? Optional.of(flag) : Optional.empty(),
+                optional(root, "performer"),
                 specializationContext(mapping(root, "specialization-context")),
                 strings(root, "applies_to_languages"),
                 directiveRefs(root),
@@ -70,15 +71,32 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
     public List<PackContents.SchemaViolation> rules(Map<?, ?> root, String file) {
         List<String> altRoles = strings(root, "alt-roles");
         // rules() runs after schema validation, which is what guarantees the required role is present
-        return AgentProfile.firstRepeatedAltRole(required(root, "role"), altRoles).stream()
-                .mapToObj(i -> new PackContents.SchemaViolation(
-                        file,
-                        List.of("alt-roles", String.valueOf(i)),
-                        "uniqueItems",
-                        Optional.empty(),
-                        Optional.of(altRoles.get(i)),
-                        Map.of()))
-                .toList();
+        String role = required(root, "role");
+        List<PackContents.SchemaViolation> violations = new ArrayList<>();
+        AgentProfile.firstRepeatedAltRole(role, altRoles)
+                .ifPresent(i -> violations.add(
+                        violation(file, List.of("alt-roles", String.valueOf(i)), "uniqueItems", altRoles.get(i))));
+        boolean human = optional(root, "performer")
+                .flatMap(Performer::fromToken)
+                .filter(Performer.HUMAN::equals)
+                .isPresent();
+        if (!human) {
+            // the reserved role operator is reported at each item that takes it, as the schema's not would be
+            if (AgentProfile.OPERATOR_ROLE.equals(role)) {
+                violations.add(violation(file, List.of("role"), "not", role));
+            }
+            for (int i = 0; i < altRoles.size(); i++) {
+                if (AgentProfile.OPERATOR_ROLE.equals(altRoles.get(i))) {
+                    violations.add(violation(file, List.of("alt-roles", String.valueOf(i)), "not", altRoles.get(i)));
+                }
+            }
+        }
+        return List.copyOf(violations);
+    }
+
+    private static PackContents.SchemaViolation violation(
+            String file, List<String> pointer, String keyword, String value) {
+        return new PackContents.SchemaViolation(file, pointer, keyword, Optional.empty(), Optional.of(value), Map.of());
     }
 
     @Override
@@ -104,7 +122,7 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
         }
         out.mappings("mode-defaults", modeDefaults(profile.modeDefaults()))
                 .scalar("initialization-declaration", profile.initializationDeclaration());
-        profile.sentinel().ifPresent(value -> out.present("sentinel", value));
+        out.scalar("performer", profile.performer());
         Map<String, Object> context = specializationContext(profile.specializationContext());
         if (!context.isEmpty()) {
             out.present("specialization-context", context);

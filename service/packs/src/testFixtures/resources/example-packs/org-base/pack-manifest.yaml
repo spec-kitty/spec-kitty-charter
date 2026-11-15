@@ -1,7 +1,11 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: 7a8022d6f739a2ced7bb0d5bca4468fadd9bca475180154952be72addecd9910
+manifest_hash: 3db285a20e8b1b6590a45c01b900e71d48f331543e9aee2b1409ac044d366165
 constituents:
+- kind: agent_profile
+  id: human-operator
+  path: agent_profiles/human-operator.agent.yaml
+  content_hash: b625971b74befeb3637431bc8ac6e10ae4ec80b2e43cde40bd15292fd106c443
 - kind: agent_profile
   id: qa-defect-triager-dmitri
   path: agent_profiles/qa-defect-triager-dmitri.agent.yaml

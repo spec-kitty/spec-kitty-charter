@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 3a5661bbacd29876911ac601fddc301061095ac70d12c320802edcee2e3c7c82
+manifest_hash: a78e18d1351b14f60b95690fc967dc311ab5ea87c03d756dde8237cac77f1b20
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -12,7 +12,7 @@ constituents:
 - kind: agent_profile
   id: java-jenny
   path: agent_profiles/java-jenny.agent.yaml
-  content_hash: e7a2df4e9d0fb981227b140e84cfef2ff5a947f160faf02af527919eb29242a2
+  content_hash: 0ddda9d8299d4c16a76e4fdc542c57a1ffec1200f59300d651b1fe94dd928a01
 - kind: agent_profile
   id: python-pedro
   path: agent_profiles/python-pedro.agent.yaml

@@ -37,8 +37,15 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     public static final String ALT_ROLES_NOT_GENERIC =
             "An agent profile's alt-roles must not contain the reserved role generic.";
 
+    /** The rule text of a profile that takes the reserved role {@value #OPERATOR_ROLE} and is not human-performed. */
+    public static final String OPERATOR_ROLE_HUMAN_ONLY =
+            "An agent profile that takes the role operator must be performed by a human.";
+
     /** The reserved role of a fallback profile (ADR-0068 decision 4); it never earns a role fit. */
     public static final String GENERIC_ROLE = RoleBearer.GENERIC;
+
+    /** The role reserved for human-performed profiles: a profile takes it only when its performer is a human. */
+    public static final String OPERATOR_ROLE = "operator";
 
     /** The longest role token; the cap of an identifier (#446). */
     public static final int ROLE_MAX = 64;
@@ -56,6 +63,10 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
                                     java.util.stream.Stream.of(profile.role), profile.altRoles.stream())
                             .allMatch(AgentProfile::wellFormedRole)))
             .must(Constraints.of(ALT_ROLES_NOT_GENERIC, profile -> !profile.altRoles.contains(GENERIC_ROLE)))
+            .must(Constraints.of(
+                    OPERATOR_ROLE_HUMAN_ONLY,
+                    profile -> profile.humanPerformed()
+                            || (!OPERATOR_ROLE.equals(profile.role) && !profile.altRoles.contains(OPERATOR_ROLE))))
             .must(Constraints.of(
                     ALT_ROLES_DISTINCT,
                     profile ->
@@ -87,7 +98,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     private final Collaboration collaboration;
     private final List<ModeDefault> modeDefaults;
     private final Optional<String> initializationDeclaration;
-    private final Optional<Boolean> sentinel;
+    private final Optional<Performer> performer;
     private final SpecializationContext specializationContext;
     private final List<String> appliesToLanguages;
     private final List<DirectiveReference> directiveReferences;
@@ -116,7 +127,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
         this.collaboration = builder.collaboration;
         this.modeDefaults = List.copyOf(builder.modeDefaults);
         this.initializationDeclaration = builder.initializationDeclaration;
-        this.sentinel = builder.sentinel;
+        this.performer = builder.performer;
         this.specializationContext = builder.specializationContext;
         this.appliesToLanguages = List.copyOf(builder.appliesToLanguages);
         this.directiveReferences = List.copyOf(builder.directiveReferences);
@@ -358,12 +369,23 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
     }
 
     /**
-     * The {@code sentinel} flag, when declared; the schema reads an absent one as {@code false}.
+     * The {@code performer}, when declared. No default is invented: selection reads an absent one as
+     * {@link Performer#AGENT}.
      *
-     * @return the declared flag, or empty
+     * @return the declared performer, or empty
      */
-    public Optional<Boolean> sentinel() {
-        return sentinel;
+    public Optional<Performer> performer() {
+        return performer;
+    }
+
+    /**
+     * Whether a human carries out the profile: only when it declares {@code performer: human}.
+     *
+     * @return {@code true} when the declared performer is {@link Performer#HUMAN}
+     */
+    @Override
+    public boolean humanPerformed() {
+        return performer.filter(Performer.HUMAN::equals).isPresent();
     }
 
     /**
@@ -474,7 +496,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
         private Collaboration collaboration = Collaboration.NONE;
         private final List<ModeDefault> modeDefaults = new ArrayList<>();
         private Optional<String> initializationDeclaration = Optional.empty();
-        private Optional<Boolean> sentinel = Optional.empty();
+        private Optional<Performer> performer = Optional.empty();
         private SpecializationContext specializationContext = SpecializationContext.NONE;
         private final List<String> appliesToLanguages = new ArrayList<>();
         private final List<DirectiveReference> directiveReferences = new ArrayList<>();
@@ -685,13 +707,13 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
         }
 
         /**
-         * Sets the declared sentinel flag.
+         * Sets the declared performer.
          *
-         * @param value the flag, or empty when not declared
+         * @param value the performer, or empty when not declared
          * @return this builder
          */
-        public Builder sentinel(Optional<Boolean> value) {
-            this.sentinel = Objects.requireNonNull(value, "sentinel");
+        public Builder performer(Optional<Performer> value) {
+            this.performer = Objects.requireNonNull(value, "performer");
             return this;
         }
 

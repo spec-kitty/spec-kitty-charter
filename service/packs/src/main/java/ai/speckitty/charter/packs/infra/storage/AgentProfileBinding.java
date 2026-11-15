@@ -9,6 +9,7 @@ import ai.speckitty.charter.profiles.domain.Collaboration;
 import ai.speckitty.charter.profiles.domain.DirectiveReference;
 import ai.speckitty.charter.profiles.domain.Exclusion;
 import ai.speckitty.charter.profiles.domain.ModeDefault;
+import ai.speckitty.charter.profiles.domain.Performer;
 import ai.speckitty.charter.profiles.domain.SelfReviewStep;
 import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.profiles.domain.SpecializationContext;
@@ -89,7 +90,7 @@ enum AgentProfileBinding implements KindBinding<AgentProfileDso, AgentProfile> {
                         collaboration.operatingProcedures(),
                         collaboration.canonicalVerbs()))
                 .initializationDeclaration(dso.initializationDeclaration())
-                .sentinel(dso.sentinel())
+                .performer(dso.performer().map(AgentProfileBinding::performer))
                 .specializationContext(new SpecializationContext(
                         context.languages(),
                         context.frameworks(),
@@ -153,7 +154,7 @@ enum AgentProfileBinding implements KindBinding<AgentProfileDso, AgentProfile> {
                         .map(mode -> new AgentProfileDso.ModeDefault(mode.mode(), mode.description(), mode.useCase()))
                         .toList(),
                 profile.initializationDeclaration(),
-                profile.sentinel(),
+                profile.performer().map(Performer::token),
                 new AgentProfileDso.SpecializationContext(
                         context.languages(),
                         context.frameworks(),
@@ -181,6 +182,12 @@ enum AgentProfileBinding implements KindBinding<AgentProfileDso, AgentProfile> {
         } catch (ArithmeticException tooLarge) {
             throw new IllegalArgumentException("the " + field + " " + value + " is out of range", tooLarge);
         }
+    }
+
+    /** A performer token as the domain holds it; the schema admits only the tokens of {@link Performer}. */
+    private static Performer performer(String token) {
+        return Performer.fromToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("the performer " + token + " is unknown"));
     }
 
     private static List<AgentProfileDso.ArtifactRef> artifactRefs(List<ArtifactReference> refs) {

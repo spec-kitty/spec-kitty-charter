@@ -6,13 +6,13 @@ description: >-
   enhances or excluding (ADR-0032); the lineage is answered as governance entries a client can follow. A list is an
   array, [] when the profile declares none (the stored profile does not tell an absent list from an empty one). A
   field the pack schema defaults (description, schemaVersion, routingPriority, maxConcurrentTasks,
-  initializationDeclaration, sentinel and the specialization's three prose fields) is omitted when the profile does not
-  declare it: no default is invented, so the answer says what the file said. A field the pack schema allows to be null
-  is null when the profile declares none: avatarImage, model, effort, specializationContext, selfReviewProtocol and
-  excluding. The stored profile does not tell an absent specialization context from one whose six lists are empty, so
-  both are null here; it does not tell an absent self-review protocol from one with no steps either, so both are null
-  here. The references (directiveReferences, tacticReferences, toolguideReferences, styleguideReferences) are body
-  fields of the profile: the governance walk does not follow them.
+  initializationDeclaration and the specialization's three prose fields), and performer, are omitted when the profile
+  does not declare them: no default is invented, so the answer says what the file said. A field the pack schema allows
+  to be null is null when the profile declares none: avatarImage, model, effort, specializationContext,
+  selfReviewProtocol and excluding. The stored profile does not tell an absent specialization context from one whose
+  six lists are empty, so both are null here; it does not tell an absent self-review protocol from one with no steps
+  either, so both are null here. The references (directiveReferences, tacticReferences, toolguideReferences,
+  styleguideReferences) are body fields of the profile: the governance walk does not follow them.
 type: object
 additionalProperties: false
 required:
@@ -124,12 +124,17 @@ properties:
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
       symbol: AgentProfile.effort
-  sentinel:
-    type: boolean
-    description: Whether the profile is a sentinel; omitted when the file declares none (the pack schema's default is false).
+  performer:
+    type: string
+    enum:
+      - agent
+      - human
+    description: >-
+      Who carries out the profile, an agent or a human; omitted when the file declares none (no default is invented;
+      selection reads an absent performer as agent). Only a human-performed profile takes the reserved role operator.
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/AgentProfile.java
-      symbol: AgentProfile.sentinel
+      symbol: AgentProfile.performer
   purpose:
     type: string
     description: The profile's mandate, what it does and does not do.
