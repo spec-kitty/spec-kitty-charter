@@ -4,10 +4,11 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.wire.unmodelled-file`
 - **Input key:** `unmodelled_file_code`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-15T10:06:34.238458+00:00`
+- **Resolved:** `2026-11-15T11:21:34.164459+00:00`
 - **Opened by:** `cli`
-- **Other answer:** `false`
+- **Other answer:** `true`
 
 ## Question
 
@@ -21,7 +22,7 @@ Decision 5 says an unmodelled file is file_not_held at WARNING, but today regist
 
 ## Final answer
 
-_(none)_
+Warning (operator, 2026-11-15): an unmodelled file is a file_not_held WARNING. Pack authors may add docs and reference files that do not affect the service: warn, then ignore. The file is not held and not round-tripped. Registration no longer refuses it (wire change: the 'unmodelled' violation goes).
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-15T10:06:34.238458+00:00` - opened
+- `2026-11-15T11:21:34.164459+00:00` - resolved (final_answer="Warning (operator, 2026-11-15): an unmodelled file is a file_not_held WARNING. Pack authors may add docs and reference files that do not affect the service: warn, then ignore. The file is not held and not round-tripped. Registration no longer refuses it (wire change: the 'unmodelled' violation goes).")

@@ -3,7 +3,7 @@
     {
       "created_at": "2026-11-15T10:06:34.238458Z",
       "decision_id": "01M7FARH7YMGS2X0BRV1HKH47B",
-      "final_answer": null,
+      "final_answer": "Warning (operator, 2026-11-15): an unmodelled file is a file_not_held WARNING. Pack authors may add docs and reference files that do not affect the service: warn, then ignore. The file is not held and not round-tripped. Registration no longer refuses it (wire change: the 'unmodelled' violation goes).",
       "input_key": "unmodelled_file_code",
       "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
       "mission_slug": "pack-closure-rulesets-01M7FA90",
@@ -14,13 +14,13 @@
         "Other"
       ],
       "origin_flow": "specify",
-      "other_answer": false,
+      "other_answer": true,
       "question": "Decision 5 says an unmodelled file is file_not_held at WARNING, but today registration refuses it with violation 'unmodelled' (pinned in scenarios) and #554 says wire codes do not change. Keep both typed codes with the wire unchanged (a), or apply decision 5 literally: an unmodelled file becomes a file_not_held warning and is accepted (b, breaking)?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-15T11:21:34.164459Z",
       "resolved_by": null,
       "slot_key": "specify.wire.unmodelled-file",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }
