@@ -2,8 +2,8 @@
 title: "ADR-0030: Removal by a derived pack is distinct from deactivation by a project"
 description: A derived pack may remove open and extendable artifacts pack-wide, never locked ones; deactivation stays per project; role locks and pins live in the pack-root policy file.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-14 (ADR-0078, the role pin's shape)
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
@@ -12,6 +12,7 @@ related:
   - adr/0013-persistent-deactivation
   - adr/0026-write-surface-is-functional-registration
   - adr/0032-steps-name-roles-and-profile-selection-order
+  - adr/0078-agent-profile-selection-performer-and-effective-profile
   - context/conceptual-model
 audience:
   - profile: governance-lead
@@ -38,6 +39,17 @@ Supersedes in part:
   also holds role locks and role pins.
 - [ADR-0026](/adr/0026-write-surface-is-functional-registration/) decision 2: "removing an artifact
   from force is deactivation" no longer covers a derived pack's removal.
+
+### Amendment 2026-11-14
+
+The operator's slice G rulings of 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/), ruling D3) give the role pin its shape. The original text stands,
+and each point is annotated:
+
+- decision 5: a pin is `role_pins: {<role>: <profile-id>}` in `policy.yaml`, tighten-only along the closure: two
+  packs of one closure that pin one role to different profiles are refused with `role_pin_conflict`. A pin must name a
+  profile the closure holds (`role_pin_unknown`) that fits the role (`role_pin_not_fitting`). Role locks stay
+  reserved.
+- decision 7: the pin's representation is decided; a removal entry and a role lock are still left to later records.
 
 ## Context
 
@@ -72,11 +84,15 @@ same integrity rules as artifacts: a derived pack can remove or lock them.
 5. **Roles follow the artifact rules.** A derived pack can remove or lock a role, and can pin the
    profile that fills a role. Role locks, role pins and other integrity settings live in the
    pack-root policy file that ADR-0012 decision 2 introduced.
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 3): a pin is `role_pins: {<role>: <profile-id>}`, tighten-only along the
+   closure.*
 6. **The tighten-never-loosen rule stands** (ADR-0012 decision 3). Removal is not loosening: the
    artifact is gone, not altered.
 7. **Representation is a candidate only.** The shape of a removal entry, a role lock or a role pin
    in the policy file, and how a removal reaches the write surface, are left to later records. No
    contract path changes (C-003).
+   *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 3): the role pin's shape is decided; a removal entry and a role lock are
+   not.*
 
 ## Consequences
 

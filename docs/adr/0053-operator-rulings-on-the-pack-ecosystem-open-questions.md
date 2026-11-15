@@ -2,8 +2,8 @@
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064); Amendment 2026-11-08 (ADR-0066, prompt fragments and sibling enhancers)
+updated: 2026-11-15T00:00:00Z
+decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064); Amendment 2026-11-08 (ADR-0066, prompt fragments and sibling enhancers); Amendment 2026-11-14 (ADR-0078, profile enhancements keep field-merge)
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -60,6 +60,15 @@ each is annotated:
 - decision 22: a step enhancement may also contribute prompt fragments to slots the step's prompt declares, the text of
   the `spdd:reasons-block` moving into the `spdd` pack. The rules are a new record, [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).
 - decision 21: sibling step overrides are refused; sibling step enhancers compose (composition rule C14).
+
+### Amendment 2026-11-14
+
+The operator's slice G ruling D5 of 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 5, [#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380))
+narrows one point. The original text stands and it is annotated:
+
+- decision 22: the add-only merge is for steps. An agent profile enhancement keeps its field-merge meaning: each
+  top-level field the enhancer declares, other than its identity fields, replaces the enhanced profile's, and a
+  replacement that loses base content is refused with `profile_enhancement_drops_field`.
 
 ## Context
 
@@ -160,11 +169,15 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
     the enhancing pack that holds only the additions (references, guards, emits *[amended: guards and emits from 2026-11-05, and prompt fragments from 2026-11-08, see below]*), plus a CRG `enhances` edge from it
     to the target step, `action:<type>/<step>`, pack-qualified as `<pack>::action:<type>/<step>` when the step is in
     another pack (decision 7). This is how an agent profile is augmented today. The edge
-    and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a
+    and merge rules are the same, and for a step the merge is add-only *[amended 2026-11-14, see below: a profile
+    keeps its field-merge]*. This amends ADR-0050 decisions 22 and 23 (a
     mechanism of its own, and a step-enhancement file with a `target:` field). The enhancing artifact's file layout
     is left to the schema work.
     *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12): the additions lose `references`. An enhancement holds guards and emits; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
     *Amended 2026-11-08 (operator, [open-packs#73](https://github.com/spec-kitty/spec-kitty-open-packs/issues/73)): the additions gain prompt fragments, text the enhancement inserts into slots the step's prompt declares. An enhancement now holds guards, emits and prompt fragments; the slot, activation, ordering and refusal rules are [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).*
+    *Amended 2026-11-14 ([ADR-0078](/adr/0078-agent-profile-selection-performer-and-effective-profile/) decision 5): the add-only merge is for steps only. An agent profile enhancement is
+    a complete profile whose declared fields, identity fields aside, replace the base's; a replacement that loses a
+    list item, a sub-field or a value is refused (`profile_enhancement_drops_field`).*
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,
     `event-registry`, `anti-pattern`, and the same in `selections/{kind}` and `exclusions/{kind}`.
     - This is a breaking change on the 0.x line, with a `### Breaking` entry (ADR-0022): every multi-word `{kind}`
